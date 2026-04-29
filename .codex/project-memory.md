@@ -9,6 +9,14 @@ Last reviewed: 2026-04-29
 - Do not begin product implementation from intuition. Read the relevant handoff/SPEC first, then check live GitHub tracking, then edit.
 - The product itself mirrors the workflow: evidence-first, audit-first, expert-reviewable. Regulatory claims without source evidence are defects.
 
+## Operating Guardrails
+
+- No issue, no implementation.
+- No ADR/wiki note, no durable architecture decision.
+- No citation/audit check, no RA feature completion.
+- Use Issue #1 as the standing project-philosophy anchor and link new work back to it when the work changes process, architecture, memory, or regulatory safety posture.
+- Treat GitHub Issues as task memory and GitHub Wiki as long-term memory. README is the entry point; this file is the minimal Codex reminder.
+
 ## Source Of Truth Order
 
 1. `RA-bot-design/design_handoff_regula/README.md` and screenshots/prototype for product, UX, and visual fidelity.
@@ -31,7 +39,7 @@ Last reviewed: 2026-04-29
 
 - No production Next.js app is scaffolded yet; root has no `package.json` at review time.
 - Wiki access is enabled and readable. Wiki currently has Home, Lessons Learned, and Architecture Decisions index.
-- Issues are enabled and readable; `gh issue list --state all` returned an empty list on 2026-04-29.
+- Issues are enabled and readable; Issue #1 is the standing project philosophy / 4-Layer Memory System anchor.
 - Current worktree had user-owned changes/deletions in `.wiki-temp/`; do not restore or stage them unless explicitly asked.
 
 ## Known Roadmap Risks

@@ -12,6 +12,7 @@
 ## 📋 목차
 
 - [개요](#개요)
+- [프로젝트 운영 철학](#프로젝트-운영-철학)
 - [아키텍처](#아키텍처)
 - [기술 스택](#기술-스택)
 - [시작 방법](#시작-방법)
@@ -39,6 +40,35 @@ Regula는 의료기기 규제(RA) 도메인에 특화된 AI 전문가 시스템�
 - **주 사용자**: 개발/QA팀 비RA 전문가 → RA 전문 지식 없이 규제 질의 → 근거 기반 답변
 - **부 사용자**: 사내 RA 리드 → 플래그된 답변 검토, expert review 큐 관리
 - **3차 사용자**: 해외 딜러/컨설턴트 → 특정 시장 규제 명확화 요청
+
+---
+
+## 프로젝트 운영 철학
+
+Regula는 코드만 저장하는 저장소가 아니라, **프로젝트의 장기 기억을 GitHub에 누적하는 저장소**입니다. 세션 컨텍스트는 사라질 수 있으므로 작업 의도와 의사결정은 반드시 GitHub Issues와 Wiki에 남깁니다.
+
+### 작업 전 필수 원칙
+
+```text
+No issue, no implementation.
+No ADR/wiki note, no durable architecture decision.
+No citation/audit check, no RA feature completion.
+```
+
+| 저장소 | 역할 | 사용 기준 |
+|------|------|----------|
+| **GitHub Issues** | 작업 의도, 범위, 진행 이력, PR 연결 | 의미 있는 작업은 기존 이슈를 재사용하거나 새 이슈 등록 후 시작 |
+| **GitHub Wiki** | ADR, Lessons Learned, 도메인/아키텍처 장기 기억 | 오래 유지될 결정·교훈·운영 규칙은 Wiki에 기록 |
+| **README.md** | 신규 참여자와 에이전트의 진입점 | 현재 운영 규칙, 문서 허브, 로드맵을 짧게 안내 |
+| **.codex/project-memory.md** | Codex 전용 최소 컨텍스트 | 자동화 에이전트가 매 세션 빠르게 로드할 작업 철학 |
+
+### 에이전트 작업 순서
+
+1. Git 상태와 원격 접근을 확인합니다.
+2. GitHub Issue와 Wiki를 확인합니다.
+3. 관련 Issue가 없으면 먼저 등록하고, 기존 철학 이슈는 [Issue #1](https://github.com/holee9/ra-med-bot/issues/1)에 연결합니다.
+4. 관련 handoff, SPEC, ADR을 읽고 작업 범위를 좁힙니다.
+5. 구현 후 PR/커밋에는 Issue 연결을 남기고, 장기 결정은 Wiki ADR 또는 Lessons Learned에 반영합니다.
 
 ---
 
