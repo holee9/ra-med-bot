@@ -3,7 +3,7 @@
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
 [![Next.js](https://img.shields.io/badge/Next.js-15-black)](https://nextjs.org/)
 [![TypeScript](https://img.shields.io/badge/TypeScript-5.4-blue)](https://www.typescriptlang.org/)
-[![abyz-lab](https://img.shields.io/badge/abyz--lab-Sonnet%204.5-orange)](https://abyz-lab.com)
+[![abyz-lab](https://img.shields.io/badge/abyz--lab-Sonnet%204.5-orange)](https://abyz-lab.work)
 
 > 규제(RA) 전문가 및 개발/QA 실무자가 규제 질의를 제출하면, **공식 규제 코퍼스와 사내 SOP를 교차 검색**하여 inline citation이 포함된 구조화 답변·체크리스트·비교표·타임라인을 즉시 제공하는 RAG 챗봇.
 
@@ -136,7 +136,7 @@ graph TB
 - **Auth**: Auth.js v5 (SAML/OIDC SSO)
 
 ### AI / RAG
-- **LLM**: abyz-lab Sonnet 4.5 (추론), abyz-lab Haiku 4.5 (분류/라우팅)
+- **LLM**: abyz-lab Sonnet 4.5 (추론), abyz-lab Haiku 4.5 (분류/라우팅) | abyz-lab.work
 - **Embedding**: OpenAI text-embedding-3
 - **Orchestration**: LangChain / LlamaIndex (TS)
 - **Reranking**: Cohere Rerank
@@ -281,4 +281,4 @@ MIT License - [LICENSE](LICENSE) 파일 참조
 
 ---
 
-**Built with ❤️ using [abyz-lab](https://abyz-lab.com)**
+**Built with ❤️ using [abyz-lab](https://abyz-lab.work)**
