@@ -211,6 +211,7 @@ pnpm start
 - [x] GitHub Issues Labels 체계 구축
 - [x] README.md 상세 작성
 - [x] Wiki 초기화
+- [x] **[Issue #1: 프로젝트 철학 수립](https://github.com/holee9/ra-med-bot/issues/1)** ← 현재 작업 중
 
 ### Phase 2: SPEC 작성 (진행 예정)
 - [ ] 제품 요구사항 정의 (EARS)
