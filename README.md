@@ -46,31 +46,31 @@ Regula는 의료기기 규제(RA) 도메인에 특화된 AI 전문가 시스템�
 
 ```mermaid
 graph TB
-    subgraph "Frontend (Next.js 15)"
+    subgraph "Frontend NextJS 15"
         UI[User Interface]
         Chat[Chat Composer]
         Answer[AnswerBlock SSE Streaming]
-        Sidebar[Project/History Sidebar]
+        Sidebar[Project History Sidebar]
     end
 
-    subgraph "API Layer (Next.js Route Handlers)"
-        Consult[/api/ra/consult POST]
-        Conversations[/api/ra/conversations]
-        Auth[Auth.js v5 SSO]
+    subgraph "API Layer NextJS Route Handlers"
+        Consult["/api/ra/consult POST"]
+        Conversations["/api/ra/conversations"]
+        Auth[AuthJS v5 SSO]
     end
 
-    subgraph "RAG Pipeline (LangChain / LlamaIndex)"
-        Router[Query Router<br/>Haiku 4.5]
-        Retriever[Hybrid Retriever<br/>pgvector + FTS]
+    subgraph "RAG Pipeline LangChain LlamaIndex"
+        Router["Query Router Haiku 4.5"]
+        Retriever["Hybrid Retriever pgvector and FTS"]
         Rerank[Cohere Rerank]
-        Generator[abyz-lab Sonnet 4.5<br/>Citation Forcing]
+        Generator["abyz-lab Sonnet 4.5 Citation Forcing"]
     end
 
     subgraph "Data Layer"
-        PG[(PostgreSQL 16 + pgvector)]
-        S3[(S3/R2<br/>Doc Origins)]
+        PG[(PostgreSQL 16 and pgvector)]
+        S3[(S3 and R2 Doc Origins)]
         Vector[(Vector Store)]
-        FTS[(Full-Text Search)]
+        FTS[(Full Text Search)]
     end
 
     subgraph "Regulatory Corpora"
@@ -79,7 +79,7 @@ graph TB
         MFDS[MFDS]
         NMPA[NMPA]
         PMDA[PMDA]
-        ISO[ISO/IEC]
+        ISO[ISO and IEC]
         SOP[Internal SOPs]
     end
 
