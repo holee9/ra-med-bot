@@ -165,13 +165,15 @@ graph TB
 - **DB**: PostgreSQL 16 + pgvector
 - **Auth**: Auth.js v5 (SAML/OIDC SSO)
 
-### AI / RAG
-- **LLM**: abyz-lab Sonnet 4.5 (추론), abyz-lab Haiku 4.5 (분류/라우팅) | abyz-lab.work
+### AI / RAG (멀티 LLM 전략)
+- **추론/생성**: abyz-lab Sonnet 4.5 (규제 분석, citation 포함 답변) | abyz-lab.work
+- **분류/라우팅**: abyz-lab Haiku 4.5 (의도 분류, 쿼리 재작성)
 - **Embedding**: OpenAI text-embedding-3
 - **Orchestration**: LangChain / LlamaIndex (TS)
 - **Reranking**: Cohere Rerank
 
 ### Infra
+- **개발 환경**: Docker (PostgreSQL 16 + pgvector) + 로컬 Node.js (Next.js dev server)
 - **Hosting**: Vercel (frontend), Railway/Fly.io (worker)
 - **CI/CD**: GitHub Actions
 - **Observability**: Sentry (error), PostHog (analytics), Langfuse (LLM trace)
@@ -186,7 +188,7 @@ graph TB
 |------|------|----------|
 | **Node.js** | 20+ | `node --version` |
 | **pnpm** | 10+ | `pnpm --version` |
-| **PostgreSQL** | 16+ | `psql --version` |
+| **Docker** | 최신 | `docker --version` |
 | **git** | 최신 | `git --version` |
 | **gh CLI** | 2.85+ | `gh --version` (선택) |
 
@@ -219,11 +221,8 @@ cp .env.example .env.local
 ### 4단계: 데이터베이스 설정
 
 ```bash
-# DB 생성
-createdb regula
-
-# pgvector 확장 설치
-psql -d regula -c "CREATE EXTENSION vector;"
+# Docker로 PostgreSQL 16 + pgvector 실행
+docker compose up -d
 
 # 마이그레이션 실행
 pnpm drizzle-kit push
@@ -245,8 +244,8 @@ pnpm start
 | 문제 | 해결책 |
 |------|--------|
 | `pnpm: command not found` | `npm install -g pnpm` |
-| `psql: command not found` | PostgreSQL 설치 확인 |
-| `Error: vector extension` | `psql -d regula -c "CREATE EXTENSION vector;"` |
+| `docker: command not found` | Docker Desktop 설치 확인 |
+| `Error: vector extension` | `docker compose up -d` 로 DB 컨테이너 시작 |
 | 포트 충돌 | `PORT=3001 pnpm dev` |
 
 ---
@@ -261,6 +260,7 @@ pnpm start
 | **SPEC 문서** | 요구사항 정의 (EARS 포맷) | `.moai/specs/` |
 | **Design Handoff** | 완전한 스펙 패키지 | `RA-bot-design/design_handoff_regula/README.md` |
 | **Codex Memory** | Codex 전용 최소 컨텍스트 작업 메모 | `.codex/project-memory.md` |
+| **Codemaps** | 아키텍처 다이어그램, 모듈 구조, 데이터 흐름 | `.moai/project/codemaps/` |
 | **명명 규칙** | abyz-lab 명명 규칙 정의 | [naming-rules.md](https://github.com/holee9/ra-med-bot/blob/main/.moai/project/brand/naming-rules.md) |
 
 ### 문서 조회 순서
@@ -303,48 +303,74 @@ pnpm start
 
 ---
 
+### Phase 1.5: 프로젝트 계획 수립 ✅ (2026-04-30 완료)
+
+**목표**: 구현 전략 및 기술 결정 확정
+
+- [x] 심층 인터뷰 (3라운드) 통한 방향성 수립
+- [x] Full MVP 범위 확정 (모든 구조화 출력 + DocViewer + Expert Review)
+- [x] 백엔드 우선 구현 전략 수립
+- [x] 멀티 LLM 전략 확정 (OpenAI 임베딩 + abyz-lab Claude 추론)
+- [x] 코퍼스 우선순위 결정 (MFDS, FDA, EU MDR 우선)
+- [x] 로컬 개발 + Docker 병용 환경 설계
+- [x] 프로젝트 문서 업데이트 (product.md, tech.md, structure.md)
+- [x] Codemaps 5종 생성 (아키텍처 다이어그램, 모듈 구조, 데이터 흐름 등)
+
+**성과물**:
+- ✅ 구현 로드맵 및 전략 문서화
+- ✅ 아키텍처 codemaps (overview, modules, dependencies, entry-points, data-flow)
+- ✅ 기술 스택 및 LLM 전략 확정
+
+---
+
 ### Phase 2: SPEC 작성 (진행 예정)
 
 **목표**: 제품 요구사항 정의 (EARS 포맷)
 
-- [ ] [Issue #2]: FDA Corpus Ingestion SPEC 작성
+- [ ] 코퍼스 Ingestion SPEC 작성 (MFDS, FDA, EU MDR)
 - [ ] 제품 요구사항 정의 (EARS)
 - [ ] 아키텍처 결정 (ADR-001: 기술 스택)
 - [ ] 데이터 모델 설계 (Drizzle Schema)
 - [ ] API 계약 정의 (Zod 스키마)
 
-**예상 기간**: 1주
-
 ---
 
-### Phase 3: MVP 구현 (계획)
+### Phase 3: MVP 구현 — Full MVP (계획)
 
-**목표**: 첫 번째 관할권 (FDA) RAG 파이프라인
+**목표**: 3개 관할권(MFDS, FDA, EU MDR) RAG 파이프라인 + 전체 기능
 
-- [ ] FDA corpus ingestion (21 CFR Part 820, Part 11)
-- [ ] RAG 파이프라인 기본 구현
+**백엔드 우선 구현**:
+- [ ] 코퍼스 ingestion (MFDS, FDA, EU MDR)
+- [ ] RAG 파이프라인 구현
   - [ ] PDF 파싱 → chunking → embedding
   - [ ] pgvector 임베딩 + FTS 인덱싱
   - [ ] Hybrid retriever (vector + keyword)
-- [ ] Chat UI (Composer + AnswerBlock)
+  - [ ] 멀티 LLM 오케스트레이션
+- [ ] API Route Handlers (/api/ra/*)
 - [ ] Expert review 게이팅 (신뢰도 < 0.70)
+- [ ] 21 CFR Part 11 감사 로깅
 
-**예상 기간**: 2-3주
+**프론트엔드 구현**:
+- [ ] App Shell (Sidebar + Topbar)
+- [ ] Chat UI (Composer + AnswerBlock + SSE 스트리밍)
+- [ ] 구조화 출력 (체크리스트, 비교표, 타임라인)
+- [ ] DocViewer (인용 클릭 → 문서 뷰어)
+
+**MVP 비목표** (이후 Phase에서):
+- 다크 모드 (라이트 테마만 지원)
 
 ---
 
 ### Phase 4: 확장 (계획)
 
-**목표**: 다중 관할권 지원
+**목표**: 추가 관할권 및 기능 확장
 
-- [ ] EU MDR corpus ingestion
-- [ ] MFDS corpus ingestion
-- [ ] NMPA corpus ingestion
-- [ ] PMDA corpus ingestion
+- [ ] NMPA (중국) corpus ingestion
+- [ ] PMDA (일본) corpus ingestion
 - [ ] 사내 SOP ingestion
+- [ ] 다크 모드 지원
 - [ ] 규제 업데이트 피드 (update-monitor)
-
-**예상 기간**: 4-6주
+- [ ] History, Templates, Knowledge Base, Dashboard
 
 ---
 
@@ -527,4 +553,4 @@ MIT License - [LICENSE](LICENSE) 파일 참조
 
 **Built with ❤️ using [abyz-lab](https://abyz-lab.work)**
 
-_마지막 업데이트: 2026-04-29_
+_마지막 업데이트: 2026-04-30_

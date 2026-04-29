@@ -1,0 +1,7 @@
+{
+  "detected": true,
+  "matched_keywords": ["postgresql", "drizzle", "pgvector"],
+  "source_files": ["package.json", ".moai/project/tech.md"],
+  "scanned_at": "2026-04-30T00:00:00Z",
+  "tech_md_hash": "updated-2026-04-30"
+}

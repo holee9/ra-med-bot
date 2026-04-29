@@ -1,6 +1,6 @@
 # 제품 개요 — Regula
 
-> 최종 업데이트: 2026-04-22
+> 최종 업데이트: 2026-04-30
 > 출처: `RA-bot-design/design_handoff_regula/README.md`
 
 ---
@@ -135,6 +135,56 @@
 | Phase 4 — Breadth | History, Templates, Knowledge Base, Regulatory Updates, Dashboard, Project switching | Medium |
 | Phase 5 — Enterprise hardening | Expert review flow, audit_logs, RBAC, 다크모드 polish, i18n, 접근성 감사, Sentry/Langfuse | High |
 | Phase 6 — Quality & launch | LLM eval harness, Playwright e2e, 부하 테스트, 보안 리뷰 | Medium |
+
+---
+
+## MVP 범위 (Full MVP)
+
+현재 MVP는 **Full MVP**로 구현됩니다. 범위가 넓지만 완전한 가치 검증을 위해 전체 기능 포함합니다.
+
+### 포함 기능 (Full MVP)
+- **모든 구조화 출력**: checklist, comparison table, timeline 제공
+- **DocViewer**: citation 클릭 시 관련 문서 단락 하이라이트
+- **Expert Review**: 신뢰도 기반 자동 플래깅 시스템
+- **RAG 파이프라인**: MFDS, FDA, EU MDR 코퍼스 기반 검색
+- **프로젝트 컨텍스트**: device class, target market 반영
+- **SSE 스트리밍**: 실시간 답변 생성 + 구조화 블록 전달
+
+### 코퍼스 우선순위
+- **1순위**: MFDS (한국), FDA (미국), EU MDR (유럽)
+- **2순위 (후연동)**: NMPA (중국), PMDA (일본)
+
+### 구현 전략: 백엔드 우선
+1. **Phase 1**: RAG 파이프라인, DB 스키마, API 엔드포인트 구현
+2. **Phase 2**: 프론트엔드 UI 연동 및 스트리밍 훅 구현
+3. **Phase 3**: 구조화 출력 컴포넌트 완성
+
+### MVP 비목표 (연기 기능)
+- **다크 모드**: 라이트 테마만 초기 버전에서 지원
+
+---
+
+## 구현 로드맵 요약 (§20)
+
+| Phase | 범위 | 우선순위 |
+|---|---|---|
+| Phase 1 — Foundation | Next.js 스캐폴딩, Tailwind 토큰 매핑, Auth.js SSO, Drizzle 스키마, RSC 셸(Sidebar+Topbar), Home + 빈 Chat | High |
+| Phase 2 — Chat core | Composer, 스트리밍 훅, Thinking, AnswerBlock(산문+citation+출처), DocViewer, 단일 코퍼스 RAG(FDA) | High |
+| Phase 3 — Structured outputs | Checklist, ComparisonTable, Timeline, SuggestedFollowups, RightContextPanel | High |
+| Phase 4 — Breadth | History, Templates, Knowledge Base, Regulatory Updates, Dashboard, Project switching | Medium |
+| Phase 5 — Enterprise hardening | Expert review flow, audit_logs, RBAC, 다크모드 polish, i18n, 접근성 감사, Sentry/Langfuse | High |
+| Phase 6 — Quality & launch | LLM eval harness, Playwright e2e, 부하 테스트, 보안 리뷰 | Medium |
+
+---
+
+## 프로젝트 단계: 기획/설계 → 구현
+
+**현재 단계**: 기획/설계 단계 완료 → 본격적 구현 단계 전환
+
+**Phase 1 Foundation**이 시작되며, 다음과 같은 전략으로 진행됩니다:
+- 백엔드 우선: RAG 파이프라인, DB 스키마, API 안정성 확보
+- 코퍼스 우선순위에 따른 MFDS, FDA, EU MDR 데이터 수집
+- Full MVP 기능 구현을 위한 아키텍처 기반 구축
 
 ---
 

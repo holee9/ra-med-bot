@@ -1,6 +1,6 @@
 # 프로젝트 구조 — Regula
 
-> 최종 업데이트: 2026-04-22
+> 최종 업데이트: 2026-04-30
 > 출처: `RA-bot-design/design_handoff_regula/README.md`
 
 ---
@@ -67,9 +67,27 @@ regula/
 ├── drizzle.config.ts
 ├── next.config.mjs
 ├── tailwind.config.ts
-├── tsconfig.json
 ├── biome.json
 └── package.json
+
+---
+
+## 백엔드 우선 전략 주의사항
+
+**구현 순서가 매우 중요합니다**:
+
+1. **먼저 구현해야 할 것** (백엔드)
+   - `lib/db/` — Drizzle 스키마와 쿼리
+   - `lib/ai/` — RAG 파이프라인 로직
+   - `app/api/ra/` — API 엔드포인트
+   - `hooks/` — 스트리밍 훅(`useStreamingAnswer`)
+
+2. **이후에 구현할 것** (프론트엔드)
+   - `components/` — UI 컴포넌트
+   - `app/(app)/` — Next.js 페이지
+   - `stores/` — 클라이언트 상태 관리
+
+이 순서를 지키지 않으면 API 연동 문제와 의존성 문제가 발생합니다.
 ```
 
 ---
@@ -140,7 +158,32 @@ regula/
 
 ---
 
-## Prototype vs. Production 경계
+## 현재 vs. 계획된 구현 상태
+
+### 현재 상태 (프로토타입/설계 단계)
+- **프로덕션 코드 없음**: 현재는 프로토타입과 설계 문서만 존재
+- **기술 결정 완료**: Next.js 15 + TypeScript + Tailwind v4 + Radix UI 스택 확정
+- **구조 설계 완료**: 폴더 구조와 컴포넌트 경계 완전 정의됨
+- **API 스펙 완성**: RAG 파이프라인과 엔드포인트 인터페이스 명확히 정의됨
+
+### 계획된 구현 (백엔드 우선)
+**백엔드 우선 전략**에 따라 다음 순서로 구현됩니다:
+
+1. **Phase 1 — Foundation** (DB, API, RAG 파이프라인)
+   - PostgreSQL 16 + pgvector DB 스키마
+   - `/api/ra/consult` 등 핵심 API 엔드포인트
+   - RAG 파이프라인 코어 로직
+
+2. **Phase 2 — Chat Core** (프론트엔드 연동)
+   - Next.js App Router 기반 UI
+   - Composer, AnswerBlock, DocViewer 컴포넌트
+   - SSE 스트리밍 훅 구현
+
+3. **Phase 3 — Structured Outputs** (고급 기능)
+   - Checklist, ComparisonTable, Timeline 컴포넌트
+   - Expert Review 자동 게이팅 시스템
+
+### Prototype vs. Production 경계
 
 CLAUDE.md "Prototype vs. Production Code" 블록 한국어 요약:
 

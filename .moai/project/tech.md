@@ -1,6 +1,6 @@
 # 기술 명세 — Regula
 
-> 최종 업데이트: 2026-04-22
+> 최종 업데이트: 2026-04-30
 > 출처: `RA-bot-design/design_handoff_regula/README.md`
 
 ---
@@ -98,18 +98,20 @@
 
 ## AI / RAG 파이프라인 (§4, §11.1)
 
-### LLM 구성
+### LLM 구성 — 멀티 LLM 접근 방식
 
-| 역할 | 모델 | 용도 |
-|---|---|---|
-| 주 추론 | **Claude Sonnet 4.5** | 규제 분석, 답변 생성, citation 포함 산문 작성 |
-| 분류/라우팅 | **Claude Haiku 4.5** | 의도 분류 (regulation-lookup / strategy / comparison 등), 쿼리 재작성 |
-| 임베딩 | OpenAI text-embedding-3 | 청크 임베딩, 벡터 검색 |
-| 재랭킹 | Cohere Rerank 또는 cross-encoder | 검색 결과 정밀도 향상 |
+| 역할 | 모델 | 용도 | 접근 방식 |
+|---|---|---|---|
+| 임베딩 | **OpenAI text-embedding-3** | 문서 임베딩, 벡터 검색 | OpenAI API 직접 호출 |
+| 주 추론 | **Claude Sonnet 4.5** | 규제 분석, 답변 생성, citation 포함 산문 작성 | abyz-lab 통한 접근 |
+| 분류/라우팅 | **Claude Haiku 4.5** | 의도 분류 (regulation-lookup / strategy / comparison 등), 쿼리 재작성 | abyz-lab 통한 접근 |
+| 재랭킹 | Cohere Rerank 또는 cross-encoder | 검색 결과 정밀도 향상 | 목적별 최적 모델 선택 |
+| 기타 작업 | **Best-fit 모델** | 기타 특수 작업 (요약, 분석 등) | 작업 유형에 따른 동적 선택 |
 
-### RAG 코퍼스
-- FDA, EU MDR, MFDS (식약처), NMPA (중국), PMDA (일본), ISO/IEC
-- 사내 SOP + 과거 제출 서류 (내부 지식)
+### RAG 코퍼스 — 초기 우선순위
+- **1순위 (초기 구현)**: MFDS (한국), FDA (미국), EU MDR (유럽)
+- **2순위 (후연동)**: NMPA (중국), PMDA (일본), ISO/IEC
+- **내부 지식**: 사내 SOP + 과거 제출 서류
 
 ### RAG 파이프라인 8단계 (§11.1)
 1. Haiku로 **의도 분류** (regulation-lookup / strategy / comparison / etc.)
@@ -231,6 +233,54 @@ Drizzle + PostgreSQL 16 핵심 테이블 12개:
 | **promptfoo** | LLM eval harness — 50개 이상 큐레이션 RA 질문 회귀 세트 (Phase 6) |
 | **Axe-core** | 접근성 자동 검사 (Playwright 통합, 0 violations 목표) |
 | **Drizzle Kit** | DB 마이그레이션 관리 |
+
+---
+
+## 배포 환경
+
+### 이중 배포 전략
+**로컬 개발 + Docker 병용** 접근 방식으로 개발 속도와 환경 일관성 모두 확보합니다.
+
+### Docker 환경
+**PostgreSQL 16 + pgvector** 컨테이너화로 개발 및 배포 환경을 표준화합니다.
+
+```yaml
+# docker-compose.yml 예시
+version: '3.8'
+services:
+  postgres:
+    image: postgres:16
+    environment:
+      POSTGRES_DB: regula
+      POSTGRES_USER: regula_user
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U regula_user -d regula"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+volumes:
+  postgres_data:
+```
+
+### 로컬 개발 환경
+**Next.js 개발 서버**로 빠른 개발 사이클을 제공합니다.
+
+```bash
+# 개발 서버 실행
+pnpm dev
+# http://localhost:3000
+```
+
+### 배포 절차
+1. **개발**: 로컬 Next.js 서버 + Docker DB
+2. **빌드**: `pnpm build` → 정적 생성
+3. **배포**: Vercel 배포 (프론트엔드), Railway/Fly.io (백엔드 워커)
 
 ---
 
