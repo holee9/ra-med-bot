@@ -230,6 +230,7 @@ pnpm start
 | **Issues** | 작업 이력, 의도 보존 | [Issues](https://github.com/holee9/ra-med-bot/issues) |
 | **SPEC 문서** | 요구사항 정의 (EARS 포맷) | `.moai/specs/` |
 | **Design Handoff** | 완전한 스펙 패키지 | `RA-bot-design/design_handoff_regula/README.md` |
+| **Codex Memory** | Codex 전용 최소 컨텍스트 작업 메모 | `.codex/project-memory.md` |
 | **명명 규칙** | abyz-lab 명명 규칙 정의 | [naming-rules.md](https://github.com/holee9/ra-med-bot/blob/main/.moai/project/brand/naming-rules.md) |
 
 ### 문서 조회 순서
@@ -243,6 +244,12 @@ pnpm start
 1. **[Development Guide/Workflow](https://github.com/holee9/ra-med-bot/wiki/Development-Guide#workflow)** — Issues → SPEC → PR
 2. **[Development Guide/Setup](https://github.com/holee9/ra-med-bot/wiki/Development-Guide#setup)** — 로컬 환경 설정
 3. **[Naming Rules](https://github.com/holee9/ra-med-bot/blob/main/.moai/project/brand/naming-rules.md)** — 명명 규칙 준수
+
+**Codex/자동화 에이전트 작업시**:
+1. **Git 접근 확인** — 로컬 상태, `origin`, Wiki, Issues 접근을 먼저 확인
+2. **[Codex Memory](.codex/project-memory.md)** — 최소 컨텍스트 작업 철학과 source-of-truth 순서 숙지
+3. **Design Handoff + SPEC** — 구현 전 관련 핸드오프와 `.moai/specs/` 대조
+4. **Issue 추적** — 의미 있는 작업은 GitHub Issue를 만들거나 재사용한 뒤 구현
 
 ---
 
@@ -262,6 +269,7 @@ pnpm start
 - ✅ 프로젝트 허브 완성 (README + Wiki)
 - ✅ 명명 규칙 확립 (abyz-lab.work)
 - ✅ 장기 기억 저장소 가동 (Wiki)
+- ✅ Codex 전용 최소 컨텍스트 메모 추가 (`.codex/project-memory.md`)
 
 ---
 
