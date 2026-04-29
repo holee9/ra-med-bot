@@ -3,7 +3,7 @@
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
 [![Next.js](https://img.shields.io/badge/Next.js-15-black)](https://nextjs.org/)
 [![TypeScript](https://img.shields.io/badge/TypeScript-5.4-blue)](https://www.typescriptlang.org/)
-[![Claude](https://img.shields.io/badge/Claude-Sonnet%204.5-orange)](https://www.anthropic.com/claude)
+[![abyz-lab](https://img.shields.io/badge/abyz--lab-Sonnet%204.5-orange)](https://abyz-lab.com)
 
 > 규제(RA) 전문가 및 개발/QA 실무자가 규제 질의를 제출하면, **공식 규제 코퍼스와 사내 SOP를 교차 검색**하여 inline citation이 포함된 구조화 답변·체크리스트·비교표·타임라인을 즉시 제공하는 RAG 챗봇.
 
@@ -29,7 +29,7 @@ Regula는 의료기기 규제(RA) 도메인에 특화된 AI 전문가 시스템�
 
 | 원칙 | 설명 |
 |------|------|
-| **Evidence-first** | 모든 LLM 주장에 근거 문서 inline `<sup>N</sup>` citation 필수 |
+| **Evidence-first** | 모든 AI 모델 주장에 근거 문서 inline `<sup>N</sup>` citation 필수 |
 | **Context-aware** | 프로젝트·제품 클래스·목표 시장 반영 |
 | **Expert-reviewable** | 낮은 신뢰도/고위험 답변 → 인간 RA 검토 자동 플래그 |
 | **Actionable** | 텍스트만이 아닌 체크리스트·비교표·제출 타임라인 제공 |
@@ -63,7 +63,7 @@ graph TB
         Router[Query Router<br/>Haiku 4.5]
         Retriever[Hybrid Retriever<br/>pgvector + FTS]
         Rerank[Cohere Rerank]
-        Generator[Claude Sonnet 4.5<br/>Citation Forcing]
+        Generator[abyz-lab Sonnet 4.5<br/>Citation Forcing]
     end
 
     subgraph "Data Layer"
@@ -136,7 +136,7 @@ graph TB
 - **Auth**: Auth.js v5 (SAML/OIDC SSO)
 
 ### AI / RAG
-- **LLM**: Claude Sonnet 4.5 (추론), Claude Haiku 4.5 (분류/라우팅)
+- **LLM**: abyz-lab Sonnet 4.5 (추론), abyz-lab Haiku 4.5 (분류/라우팅)
 - **Embedding**: OpenAI text-embedding-3
 - **Orchestration**: LangChain / LlamaIndex (TS)
 - **Reranking**: Cohere Rerank
@@ -155,7 +155,7 @@ graph TB
 - Node.js 20+
 - pnpm 10+
 - PostgreSQL 16 + pgvector
-- Anthropic API Key
+- abyz-lab API Key
 
 ### 설치
 
@@ -169,7 +169,7 @@ pnpm install
 
 # 환경 변수 설정
 cp .env.example .env.local
-# .env.local에 ANTHROPIC_API_KEY, DATABASE_URL 등 설정
+# .env.local에 ABYZ_LAB_API_KEY, DATABASE_URL 등 설정
 
 # DB 마이그레이션
 pnpm drizzle-kit push
@@ -207,7 +207,7 @@ pnpm start
 ## 개발 로드맵
 
 ### Phase 1: 기반 구축 ✅
-- [x] 프로젝트 초기 설정 (MoAI-ADK, Claude Code)
+- [x] 프로젝트 초기 설정 (abyz-lab 도구)
 - [x] GitHub Issues Labels 체계 구축
 - [x] README.md 상세 작성
 - [x] Wiki 초기화
@@ -237,7 +237,7 @@ pnpm start
 모든 작업은 GitHub Issue 등록부터 시작합니다.
 
 1. **Issue 등록**: 작업 의도를 명확히 기록
-2. **SPEC 작성**: 복잡한 기능은 `/moai plan`으로 SPEC 문서화
+2. **SPEC 작성**: 복잡한 기능은 `abyz-lab plan` 도구로 SPEC 문서화
 3. **구현**: SPEC 기반 구현 (또는 직접 구현)
 4. **PR**: `closes #N`으로 Issue와 연결
 5. **Wiki ADR**: 아키텍처 결정은 Wiki에 기록
@@ -281,4 +281,4 @@ MIT License - [LICENSE](LICENSE) 파일 참조
 
 ---
 
-**Built with ❤️ using [MoAI-ADK](https://github.com/moai-kg/moai-adk-go)**
+**Built with ❤️ using [abyz-lab](https://abyz-lab.com)**
