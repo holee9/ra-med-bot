@@ -5,7 +5,9 @@
 [![TypeScript](https://img.shields.io/badge/TypeScript-5.4-blue)](https://www.typescriptlang.org/)
 [![abyz-lab](https://img.shields.io/badge/abyz--lab-Sonnet%204.5-orange)](https://abyz-lab.work)
 
-> 규제(RA) 전문가 및 개발/QA 실무자가 규제 질의를 제출하면, **공식 규제 코퍼스와 사내 SOP를 교차 검색**하여 inline citation이 포함된 구조화 답변·체크리스트·비교표·타임라인을 즉시 제공하는 RAG 챗봇.
+> 사내 직원이 규제 질의를 제출하면, **MD-process(회사 정책·SOP)와 ra-project(RA 전문 지식베이스)를 Agent가 탐색**하여 팩트 기반·출처 명시 답변을 제공하는 전문 가이드 시스템. 단순 챗봇이 아닌 **두 지식 레포를 knowledge source로 통합 운영하는 인허가 전문 가이드**.
+>
+> 브레인스토밍 확정 문서: [`.moai/plans/brainstorming-2026-05-02.md`](.moai/plans/brainstorming-2026-05-02.md)
 
 ---
 
