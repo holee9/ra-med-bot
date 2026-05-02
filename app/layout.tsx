@@ -5,6 +5,7 @@
 import type { Metadata } from 'next';
 import { SessionProvider } from 'next-auth/react';
 import { IBM_Plex_Mono, IBM_Plex_Sans, Noto_Serif_KR, Source_Serif_4 } from 'next/font/google';
+import { ReactQueryProvider } from './providers';
 import '@fontsource/pretendard';
 import './globals.css';
 
@@ -54,7 +55,9 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
   return (
     <html lang="ko" suppressHydrationWarning className={fontVars}>
       <body>
-        <SessionProvider>{children}</SessionProvider>
+        <SessionProvider>
+          <ReactQueryProvider>{children}</ReactQueryProvider>
+        </SessionProvider>
       </body>
     </html>
   );
