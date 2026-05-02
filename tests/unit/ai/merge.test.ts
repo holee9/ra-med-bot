@@ -59,7 +59,7 @@ describe('lib/ai/merge.ts (REQ-BREADTH-039, REQ-BREADTH-042)', () => {
   beforeEach(() => {
     vi.clearAllMocks();
     // Ensure COHERE_API_KEY is absent so fallback sort is used in tests.
-    delete process.env.COHERE_API_KEY;
+    process.env.COHERE_API_KEY = undefined;
   });
 
   it('merge.ts file exists', async () => {

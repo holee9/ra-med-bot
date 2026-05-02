@@ -91,7 +91,7 @@ describe('IRetriever type conformance (compile-time structural check)', () => {
   });
 
   it('IRetriever.retrieve returns an array of RetrievalResult shapes', async () => {
-    const {} = await import('@/lib/ai/retrievers/types').catch(() => {
+    await import('@/lib/ai/retrievers/types').catch(() => {
       throw new Error('lib/ai/retrievers/types.ts does not exist. RED phase.');
     });
 

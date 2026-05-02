@@ -243,7 +243,7 @@ export async function* generateStructuredBlocks(
 
       // Retry once if fewer than 3 items (REQ-STRUCT-008)
       if (block === null && !signal?.aborted) {
-        const retryPrompt = buildRelatedGenerator(promptInput) + '\n\n반드시 3~5개를 생성하라.';
+        const retryPrompt = `${buildRelatedGenerator(promptInput)}\n\n반드시 3~5개를 생성하라.`;
         block = await generate(client, retryPrompt, RelatedBlockSchema, signal);
       }
 

@@ -42,7 +42,7 @@ describe('useConversation (REQ-BREADTH-012)', () => {
     });
     await waitFor(() => expect(result.current.isSuccess).toBe(true));
     expect(result.current.data).toEqual(mockConversation);
-    const url = (global.fetch as ReturnType<typeof vi.fn>).mock.calls[0]![0]! as string;
+    const [url] = (global.fetch as ReturnType<typeof vi.fn>).mock.calls[0] as [string];
     expect(url).toContain('/api/ra/conversations/c1');
   });
 

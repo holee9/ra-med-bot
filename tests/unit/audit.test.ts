@@ -50,7 +50,7 @@ describe('lib/audit.ts (REQ-BREADTH-057) — extended AuditAction type', () => {
     // Extract the AuditAction type block
     const typeMatch = src.match(/export type AuditAction\s*=\s*([\s\S]*?);/);
     expect(typeMatch, 'AuditAction type not found').toBeTruthy();
-    const typeBody = typeMatch![1] as string;
+    const typeBody = (typeMatch as RegExpMatchArray)[1] as string;
     // Count pipe-separated literal values
     const values = typeBody
       .split('|')

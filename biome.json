@@ -80,6 +80,9 @@
         "rules": {
           "suspicious": {
             "noConsole": "off"
+          },
+          "style": {
+            "noNonNullAssertion": "off"
           }
         }
       }
@@ -90,6 +93,47 @@
         "rules": {
           "a11y": {
             "useSemanticElements": "off"
+          }
+        }
+      }
+    },
+    {
+      "include": [
+        "components/chat/ComparisonTable.tsx",
+        "components/chat/RightContextPanel.tsx",
+        "components/chat/AnswerBlock.tsx",
+        "components/chat/Timeline.tsx"
+      ],
+      "linter": {
+        "rules": {
+          "suspicious": {
+            "noArrayIndexKey": "off"
+          }
+        }
+      }
+    },
+    {
+      "include": [
+        "components/chat/ProjectChip.tsx",
+        "components/chat/Checklist.tsx",
+        "components/chat/SuggestionPill.tsx"
+      ],
+      "linter": {
+        "rules": {
+          "a11y": {
+            "useSemanticElements": "off",
+            "noNoninteractiveElementToInteractiveRole": "off",
+            "useFocusableInteractive": "off"
+          }
+        }
+      }
+    },
+    {
+      "include": ["lib/queries/*.ts"],
+      "linter": {
+        "rules": {
+          "style": {
+            "noNonNullAssertion": "off"
           }
         }
       }

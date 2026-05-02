@@ -138,7 +138,7 @@ describe('ProjectChip (REQ-BREADTH-045)', () => {
     const dropdownItems = screen.getAllByRole('option');
     const proj2Item = dropdownItems.find((el) => el.textContent?.includes('프로젝트 B'));
     expect(proj2Item).toBeDefined();
-    fireEvent.click(proj2Item!);
+    if (proj2Item) fireEvent.click(proj2Item);
 
     expect(mockSetCurrentProjectId).toHaveBeenCalledWith('proj-2');
     // No page reload
