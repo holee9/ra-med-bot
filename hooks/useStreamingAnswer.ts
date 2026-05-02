@@ -11,8 +11,8 @@
 
 import { useQueryClient } from '@tanstack/react-query';
 import { useCallback, useEffect, useRef, useState } from 'react';
-import type { ConsultRequest } from '../types/consult';
 import { useUIStore } from '../stores/ui';
+import type { ConsultRequest } from '../types/consult';
 import {
   type ConfidenceEvent,
   type MetaEvent,
@@ -195,7 +195,10 @@ export function useStreamingAnswer(): UseStreamingAnswerReturn {
           const response = await fetch('/api/ra/consult', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ ...input, projectId: input.projectId ?? projectId ?? undefined }),
+            body: JSON.stringify({
+              ...input,
+              projectId: input.projectId ?? projectId ?? undefined,
+            }),
             signal: ac.signal,
           });
 

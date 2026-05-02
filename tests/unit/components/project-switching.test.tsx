@@ -161,8 +161,8 @@ describe('Sidebar project switching (REQ-BREADTH-044)', () => {
     const Sidebar = (await import('@/components/shell/Sidebar')).default;
     render(<Sidebar />);
 
-    const projAButton = screen.getByText('프로젝트 A').closest('button') ??
-      screen.getByText('프로젝트 A');
+    const projAButton =
+      screen.getByText('프로젝트 A').closest('button') ?? screen.getByText('프로젝트 A');
     fireEvent.click(projAButton);
 
     expect(mockSetCurrentProjectId).toHaveBeenCalledWith('proj-1');

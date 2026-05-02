@@ -28,10 +28,7 @@ const RETRIEVER_REGISTRY: Record<string, () => IRetriever> = {
  * Rerank results using Cohere Rerank API if COHERE_API_KEY is available.
  * Falls back to sorting by score when the key is absent (e.g. in tests).
  */
-async function rerankOrSort(
-  query: string,
-  results: RetrievalResult[],
-): Promise<RetrievalResult[]> {
+async function rerankOrSort(query: string, results: RetrievalResult[]): Promise<RetrievalResult[]> {
   if (!process.env.COHERE_API_KEY || results.length === 0) {
     // Fallback: sort by combined score descending.
     return [...results].sort((a, b) => b.score - a.score).slice(0, TOP_K);

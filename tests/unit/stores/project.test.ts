@@ -107,6 +107,6 @@ describe('stores/project.ts (REQ-BREADTH-049, REQ-BREADTH-050, REQ-BREADTH-051)'
     // proj-1 should appear only once
     expect(recent.filter((p) => p.id === 'proj-1')).toHaveLength(1);
     // proj-1 should be at the front (most recent)
-    expect(recent[0].id).toBe('proj-1');
+    expect((recent[0] as { id: string }).id).toBe('proj-1');
   });
 });

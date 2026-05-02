@@ -3,8 +3,8 @@
 
 import { cleanup, renderHook, waitFor } from '@testing-library/react';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
-import { createQueryWrapper } from './test-utils';
 import { useConversations } from '../../../lib/queries/useConversations';
+import { createQueryWrapper } from './test-utils';
 
 afterEach(() => {
   cleanup();
@@ -19,7 +19,7 @@ describe('useConversations (REQ-BREADTH-005, REQ-BREADTH-008, REQ-BREADTH-009)',
 
   beforeEach(() => {
     vi.spyOn(global, 'fetch').mockResolvedValue(
-      new Response(JSON.stringify(mockPage1), { status: 200 })
+      new Response(JSON.stringify(mockPage1), { status: 200 }),
     );
   });
 
@@ -44,7 +44,7 @@ describe('useConversations (REQ-BREADTH-005, REQ-BREADTH-008, REQ-BREADTH-009)',
       wrapper: createQueryWrapper(),
     });
     await waitFor(() => expect(result.current.isSuccess).toBe(true));
-    const url = (global.fetch as ReturnType<typeof vi.fn>).mock.calls[0][0] as string;
+    const url = ((global.fetch as ReturnType<typeof vi.fn>).mock.calls[0] as [string])[0];
     expect(url).toContain('limit=10');
   });
 
@@ -53,13 +53,13 @@ describe('useConversations (REQ-BREADTH-005, REQ-BREADTH-008, REQ-BREADTH-009)',
       wrapper: createQueryWrapper(),
     });
     await waitFor(() => expect(result.current.isSuccess).toBe(true));
-    const url = (global.fetch as ReturnType<typeof vi.fn>).mock.calls[0][0] as string;
+    const url = ((global.fetch as ReturnType<typeof vi.fn>).mock.calls[0] as [string])[0];
     expect(url).toContain('status=active');
   });
 
   it('throws error on HTTP failure', async () => {
     vi.spyOn(global, 'fetch').mockResolvedValue(
-      new Response('Internal Server Error', { status: 500, statusText: 'Internal Server Error' })
+      new Response('Internal Server Error', { status: 500, statusText: 'Internal Server Error' }),
     );
     const { result } = renderHook(() => useConversations(), {
       wrapper: createQueryWrapper(),
@@ -78,7 +78,7 @@ describe('useConversations (REQ-BREADTH-005, REQ-BREADTH-008, REQ-BREADTH-009)',
 
   it('hasNextPage is false when nextCursor is null', async () => {
     vi.spyOn(global, 'fetch').mockResolvedValue(
-      new Response(JSON.stringify({ data: [], nextCursor: null }), { status: 200 })
+      new Response(JSON.stringify({ data: [], nextCursor: null }), { status: 200 }),
     );
     const { result } = renderHook(() => useConversations(), {
       wrapper: createQueryWrapper(),

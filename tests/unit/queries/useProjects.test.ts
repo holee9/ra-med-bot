@@ -3,8 +3,8 @@
 
 import { cleanup, renderHook, waitFor } from '@testing-library/react';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
-import { createQueryWrapper } from './test-utils';
 import { useProjects } from '../../../lib/queries/useProjects';
+import { createQueryWrapper } from './test-utils';
 
 afterEach(() => {
   cleanup();
@@ -19,7 +19,7 @@ describe('useProjects (REQ-BREADTH-029)', () => {
 
   beforeEach(() => {
     vi.spyOn(global, 'fetch').mockResolvedValue(
-      new Response(JSON.stringify(mockProjects), { status: 200 })
+      new Response(JSON.stringify(mockProjects), { status: 200 }),
     );
   });
 
@@ -36,13 +36,13 @@ describe('useProjects (REQ-BREADTH-029)', () => {
     });
     await waitFor(() => expect(result.current.isSuccess).toBe(true));
     expect(result.current.data).toEqual(mockProjects);
-    const url = (global.fetch as ReturnType<typeof vi.fn>).mock.calls[0][0] as string;
+    const url = ((global.fetch as ReturnType<typeof vi.fn>).mock.calls[0] as [string])[0];
     expect(url).toContain('/api/ra/projects');
   });
 
   it('throws error on HTTP failure', async () => {
     vi.spyOn(global, 'fetch').mockResolvedValue(
-      new Response('Server Error', { status: 500, statusText: 'Internal Server Error' })
+      new Response('Server Error', { status: 500, statusText: 'Internal Server Error' }),
     );
     const { result } = renderHook(() => useProjects(), {
       wrapper: createQueryWrapper(),

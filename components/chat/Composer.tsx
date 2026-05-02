@@ -6,10 +6,10 @@
 // @MX:SPEC SPEC-REGULA-CHAT-001 (REQ-CHAT-031..036)
 // @MX:SPEC SPEC-REGULA-BREADTH-001 (REQ-BREADTH-003)
 
+import { useUIStore } from '@/stores/ui';
 import { Send, Square } from 'lucide-react';
 import { useCallback, useEffect, useRef } from 'react';
 import type { ChangeEvent, KeyboardEvent } from 'react';
-import { useUIStore } from '@/stores/ui';
 
 type SourceFilter = 'all' | 'regs' | 'internal';
 

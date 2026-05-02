@@ -16,7 +16,6 @@ export function Thinking({ traceSteps }: ThinkingProps) {
   const hasActive = traceSteps.some((s) => s.status === 'active');
 
   return (
-    // biome-ignore lint/a11y/useSemanticElements: role="status" with aria-live on div is the correct ARIA pattern for live regions
     <div
       className="rounded-lg border border-brand-100 bg-brand-50 p-3"
       role="status"

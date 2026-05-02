@@ -35,7 +35,6 @@ export function Citation({ sourceIndex, offset, sourceId = '' }: CitationProps) 
   );
 
   return (
-    // biome-ignore lint/a11y/useSemanticElements: REQ-CHAT-041 requires <sup class="cite"> for inline citation markup
     <sup
       className="cite bg-brand-100 text-brand-700 font-mono text-[10px] font-semibold rounded-[3px] cursor-pointer hover:bg-brand-600 hover:text-white transition-colors px-0.5"
       data-source={sourceIndex}

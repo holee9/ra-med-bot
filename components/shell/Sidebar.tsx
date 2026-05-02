@@ -4,9 +4,9 @@
 // canonical destinations in handoff §7 order, plus a "새 상담" primary action.
 // REQ-BREADTH-044: real project list added below nav links.
 
-import Link from 'next/link';
 import { useProjects } from '@/lib/queries/useProjects';
 import { useUIStore } from '@/stores/ui';
+import Link from 'next/link';
 
 type NavItem = { label: string; href: string };
 type ProjectRow = { id: string; name: string };
@@ -58,9 +58,7 @@ export default function Sidebar() {
       {/* REQ-BREADTH-044: Projects section */}
       {projects.length > 0 && (
         <section className="mt-2 px-2 py-2">
-          <p className="mb-1 px-3 text-[10px] uppercase tracking-widest text-ink-400">
-            프로젝트
-          </p>
+          <p className="mb-1 px-3 text-[10px] uppercase tracking-widest text-ink-400">프로젝트</p>
           <ul className="flex flex-col gap-0.5">
             {projects.map((project) => {
               const isActive = project.id === currentProjectId;

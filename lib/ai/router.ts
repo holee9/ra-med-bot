@@ -11,12 +11,7 @@ import { type LanguageModel, generateText } from 'ai';
 const MODEL = anthropic('claude-haiku-4-5') as unknown as LanguageModel;
 
 /** Five intent categories the router classifies user queries into. */
-export type RouterIntent =
-  | 'regulation-lookup'
-  | 'strategy'
-  | 'comparison'
-  | 'timeline'
-  | 'general';
+export type RouterIntent = 'regulation-lookup' | 'strategy' | 'comparison' | 'timeline' | 'general';
 
 const ROUTER_INTENTS: readonly RouterIntent[] = [
   'regulation-lookup',

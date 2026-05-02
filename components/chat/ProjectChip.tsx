@@ -5,10 +5,10 @@
 // a dropdown listing recent projects for fast switching.
 // @MX:SPEC SPEC-REGULA-BREADTH-001 (REQ-BREADTH-045, REQ-BREADTH-047)
 
-import { FolderOpen } from 'lucide-react';
-import { useEffect, useRef, useState } from 'react';
 import { useProjects } from '@/lib/queries/useProjects';
 import { useUIStore } from '@/stores/ui';
+import { FolderOpen } from 'lucide-react';
+import { useEffect, useRef, useState } from 'react';
 
 type ProjectRow = { id: string; name: string };
 

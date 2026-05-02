@@ -7,13 +7,12 @@
 // @MX:SPEC SPEC-REGULA-STRUCTURED-001 (REQ-STRUCT-001~010)
 
 import Anthropic from '@anthropic-ai/sdk';
-import type { ChecklistEvent, ComparisonEvent, RelatedEvent, TimelineEvent } from '../../types/streaming';
-import {
-  ChecklistBlockSchema,
-  ComparisonBlockSchema,
-  RelatedBlockSchema,
-  TimelineBlockSchema,
-} from './structured-schema';
+import type {
+  ChecklistEvent,
+  ComparisonEvent,
+  RelatedEvent,
+  TimelineEvent,
+} from '../../types/streaming';
 import {
   buildChecklistClassifier,
   buildChecklistGenerator,
@@ -23,6 +22,12 @@ import {
   buildTimelineClassifier,
   buildTimelineGenerator,
 } from './structured-prompts';
+import {
+  ChecklistBlockSchema,
+  ComparisonBlockSchema,
+  RelatedBlockSchema,
+  TimelineBlockSchema,
+} from './structured-schema';
 
 // ---------------------------------------------------------------------------
 // Types
@@ -72,9 +77,8 @@ async function callHaiku(
   signal: AbortSignal | undefined,
 ): Promise<string> {
   // Truncate prompt if it would exceed MAX_INPUT_TOKENS (rough char estimate)
-  const truncatedPrompt = prompt.length > MAX_INPUT_TOKENS * 4
-    ? prompt.slice(0, MAX_INPUT_TOKENS * 4)
-    : prompt;
+  const truncatedPrompt =
+    prompt.length > MAX_INPUT_TOKENS * 4 ? prompt.slice(0, MAX_INPUT_TOKENS * 4) : prompt;
 
   const response = await client.messages.create(
     {
@@ -115,7 +119,10 @@ async function generate<T>(
   const raw = await callHaiku(client, prompt, signal);
 
   // Strip markdown code fences if present
-  const cleaned = raw.replace(/^```(?:json)?\n?/m, '').replace(/\n?```$/m, '').trim();
+  const cleaned = raw
+    .replace(/^```(?:json)?\n?/m, '')
+    .replace(/\n?```$/m, '')
+    .trim();
 
   let parsed: unknown;
   try {
@@ -153,11 +160,7 @@ export async function* generateStructuredBlocks(
   // --- checklist (classifier first) ---
   if (!signal?.aborted) {
     try {
-      const shouldEmit = await classify(
-        client,
-        buildChecklistClassifier(promptInput),
-        signal,
-      );
+      const shouldEmit = await classify(client, buildChecklistClassifier(promptInput), signal);
 
       if (shouldEmit && !signal?.aborted) {
         const block = await generate(
@@ -180,11 +183,7 @@ export async function* generateStructuredBlocks(
   // --- comparison (classifier first) ---
   if (!signal?.aborted) {
     try {
-      const shouldEmit = await classify(
-        client,
-        buildComparisonClassifier(promptInput),
-        signal,
-      );
+      const shouldEmit = await classify(client, buildComparisonClassifier(promptInput), signal);
 
       if (shouldEmit && !signal?.aborted) {
         const block = await generate(
@@ -212,11 +211,7 @@ export async function* generateStructuredBlocks(
   // --- timeline (classifier first) ---
   if (!signal?.aborted) {
     try {
-      const shouldEmit = await classify(
-        client,
-        buildTimelineClassifier(promptInput),
-        signal,
-      );
+      const shouldEmit = await classify(client, buildTimelineClassifier(promptInput), signal);
 
       if (shouldEmit && !signal?.aborted) {
         const block = await generate(
@@ -248,8 +243,7 @@ export async function* generateStructuredBlocks(
 
       // Retry once if fewer than 3 items (REQ-STRUCT-008)
       if (block === null && !signal?.aborted) {
-        const retryPrompt =
-          buildRelatedGenerator(promptInput) + '\n\n반드시 3~5개를 생성하라.';
+        const retryPrompt = buildRelatedGenerator(promptInput) + '\n\n반드시 3~5개를 생성하라.';
         block = await generate(client, retryPrompt, RelatedBlockSchema, signal);
       }
 

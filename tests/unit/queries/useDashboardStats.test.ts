@@ -3,8 +3,8 @@
 
 import { cleanup, renderHook, waitFor } from '@testing-library/react';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
-import { createQueryWrapper } from './test-utils';
 import { useDashboardStats } from '../../../lib/queries/useDashboardStats';
+import { createQueryWrapper } from './test-utils';
 
 afterEach(() => {
   cleanup();
@@ -21,7 +21,7 @@ describe('useDashboardStats (REQ-BREADTH-028)', () => {
 
   beforeEach(() => {
     vi.spyOn(global, 'fetch').mockResolvedValue(
-      new Response(JSON.stringify(mockStats), { status: 200 })
+      new Response(JSON.stringify(mockStats), { status: 200 }),
     );
   });
 
@@ -38,7 +38,7 @@ describe('useDashboardStats (REQ-BREADTH-028)', () => {
     });
     await waitFor(() => expect(result.current.isSuccess).toBe(true));
     expect(result.current.data).toEqual(mockStats);
-    const url = (global.fetch as ReturnType<typeof vi.fn>).mock.calls[0][0] as string;
+    const url = ((global.fetch as ReturnType<typeof vi.fn>).mock.calls[0] as [string])[0];
     expect(url).toContain('/api/ra/dashboard');
   });
 
@@ -54,7 +54,7 @@ describe('useDashboardStats (REQ-BREADTH-028)', () => {
 
   it('throws error on HTTP failure', async () => {
     vi.spyOn(global, 'fetch').mockResolvedValue(
-      new Response('Server Error', { status: 500, statusText: 'Internal Server Error' })
+      new Response('Server Error', { status: 500, statusText: 'Internal Server Error' }),
     );
     const { result } = renderHook(() => useDashboardStats(), {
       wrapper: createQueryWrapper(),

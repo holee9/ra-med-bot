@@ -3,8 +3,8 @@
 
 import { cleanup, renderHook, waitFor } from '@testing-library/react';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
-import { createQueryWrapper } from './test-utils';
 import { useTemplates } from '../../../lib/queries/useTemplates';
+import { createQueryWrapper } from './test-utils';
 
 afterEach(() => {
   cleanup();
@@ -19,7 +19,7 @@ describe('useTemplates (REQ-BREADTH-006, REQ-BREADTH-025)', () => {
 
   beforeEach(() => {
     vi.spyOn(global, 'fetch').mockResolvedValue(
-      new Response(JSON.stringify(mockTemplates), { status: 200 })
+      new Response(JSON.stringify(mockTemplates), { status: 200 }),
     );
   });
 
@@ -36,7 +36,7 @@ describe('useTemplates (REQ-BREADTH-006, REQ-BREADTH-025)', () => {
     });
     await waitFor(() => expect(result.current.isSuccess).toBe(true));
     expect(result.current.data).toEqual(mockTemplates);
-    const url = (global.fetch as ReturnType<typeof vi.fn>).mock.calls[0][0] as string;
+    const url = ((global.fetch as ReturnType<typeof vi.fn>).mock.calls[0] as [string])[0];
     expect(url).toContain('/api/ra/templates');
   });
 
@@ -45,7 +45,7 @@ describe('useTemplates (REQ-BREADTH-006, REQ-BREADTH-025)', () => {
       wrapper: createQueryWrapper(),
     });
     await waitFor(() => expect(result.current.isSuccess).toBe(true));
-    const url = (global.fetch as ReturnType<typeof vi.fn>).mock.calls[0][0] as string;
+    const url = ((global.fetch as ReturnType<typeof vi.fn>).mock.calls[0] as [string])[0];
     expect(url).toContain('limit=5');
   });
 
@@ -54,13 +54,13 @@ describe('useTemplates (REQ-BREADTH-006, REQ-BREADTH-025)', () => {
       wrapper: createQueryWrapper(),
     });
     await waitFor(() => expect(result.current.isSuccess).toBe(true));
-    const url = (global.fetch as ReturnType<typeof vi.fn>).mock.calls[0][0] as string;
+    const url = ((global.fetch as ReturnType<typeof vi.fn>).mock.calls[0] as [string])[0];
     expect(url).toContain('sortBy=name');
   });
 
   it('throws error on HTTP failure', async () => {
     vi.spyOn(global, 'fetch').mockResolvedValue(
-      new Response('Server Error', { status: 500, statusText: 'Internal Server Error' })
+      new Response('Server Error', { status: 500, statusText: 'Internal Server Error' }),
     );
     const { result } = renderHook(() => useTemplates(), {
       wrapper: createQueryWrapper(),

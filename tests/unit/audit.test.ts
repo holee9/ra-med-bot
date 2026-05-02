@@ -38,24 +38,24 @@ describe('lib/audit.ts (REQ-BREADTH-057) — extended AuditAction type', () => {
     expect(src).toMatch(/'expert_review\.flag'/);
   });
 
-  it.each(BREADTH_ACTIONS)(
-    'AuditAction type includes new BREADTH action: %s',
-    (action) => {
-      const src = readText('lib/audit.ts');
-      // Escape dots for regex
-      const escaped = action.replace(/\./g, '\\.');
-      expect(src).toMatch(new RegExp(`'${escaped}'`));
-    },
-  );
+  it.each(BREADTH_ACTIONS)('AuditAction type includes new BREADTH action: %s', (action) => {
+    const src = readText('lib/audit.ts');
+    // Escape dots for regex
+    const escaped = action.replace(/\./g, '\\.');
+    expect(src).toMatch(new RegExp(`'${escaped}'`));
+  });
 
   it('AuditAction type contains exactly 13 values (3 original + 10 breadth)', () => {
     const src = readText('lib/audit.ts');
     // Extract the AuditAction type block
     const typeMatch = src.match(/export type AuditAction\s*=\s*([\s\S]*?);/);
     expect(typeMatch, 'AuditAction type not found').toBeTruthy();
-    const typeBody = typeMatch![1];
+    const typeBody = typeMatch![1] as string;
     // Count pipe-separated literal values
-    const values = typeBody.split('|').map((s) => s.trim()).filter((s) => s.startsWith("'"));
+    const values = typeBody
+      .split('|')
+      .map((s) => s.trim())
+      .filter((s) => s.startsWith("'"));
     expect(values).toHaveLength(13);
   });
 });

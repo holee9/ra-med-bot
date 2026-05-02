@@ -8,12 +8,7 @@ import { describe, expect, it, vi } from 'vitest';
 
 const root = path.resolve(__dirname, '..', '..', '..');
 
-// Mock next-auth getServerSession.
-vi.mock('next-auth', () => ({
-  getServerSession: vi.fn(),
-}));
-
-// Mock authOptions — it may have side effects on import.
+// Mock @/lib/auth — with-auth.ts calls auth() from here.
 vi.mock('@/lib/auth', () => ({
   auth: vi.fn(),
   handlers: {},
@@ -38,8 +33,8 @@ describe('lib/api/with-auth.ts (REQ-BREADTH-058)', () => {
   });
 
   it('returns 401 when no session exists', async () => {
-    const { getServerSession } = await import('next-auth');
-    vi.mocked(getServerSession).mockResolvedValueOnce(null);
+    const { auth } = await import('@/lib/auth');
+    vi.mocked(auth).mockResolvedValueOnce(null as never);
 
     const { withAuth } = await import('@/lib/api/with-auth');
     const handler = vi.fn();
@@ -55,8 +50,8 @@ describe('lib/api/with-auth.ts (REQ-BREADTH-058)', () => {
   });
 
   it('returns 403 when session has no organizationId', async () => {
-    const { getServerSession } = await import('next-auth');
-    vi.mocked(getServerSession).mockResolvedValueOnce({
+    const { auth } = await import('@/lib/auth');
+    vi.mocked(auth).mockResolvedValueOnce({
       user: { id: 'user-1', email: 'test@example.com' },
       // organizationId deliberately absent
     } as never);
@@ -75,8 +70,8 @@ describe('lib/api/with-auth.ts (REQ-BREADTH-058)', () => {
   });
 
   it('calls handler with AuthContext when session is valid', async () => {
-    const { getServerSession } = await import('next-auth');
-    vi.mocked(getServerSession).mockResolvedValueOnce({
+    const { auth } = await import('@/lib/auth');
+    vi.mocked(auth).mockResolvedValueOnce({
       user: {
         id: 'user-abc',
         email: 'user@corp.com',
@@ -101,8 +96,8 @@ describe('lib/api/with-auth.ts (REQ-BREADTH-058)', () => {
   });
 
   it('handler receives correct AuthContext fields', async () => {
-    const { getServerSession } = await import('next-auth');
-    vi.mocked(getServerSession).mockResolvedValueOnce({
+    const { auth } = await import('@/lib/auth');
+    vi.mocked(auth).mockResolvedValueOnce({
       user: {
         id: 'user-123',
         email: 'admin@medtech.com',

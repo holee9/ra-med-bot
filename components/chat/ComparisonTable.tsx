@@ -24,9 +24,7 @@ export function ComparisonTable({ title, cols, rows }: ComparisonTableProps) {
 
   return (
     <div className="flex flex-col gap-2">
-      {title && (
-        <p className="font-medium text-sm text-ink-800">{title}</p>
-      )}
+      {title && <p className="font-medium text-sm text-ink-800">{title}</p>}
 
       <div className="overflow-x-auto rounded-lg border border-surface-3">
         <table className="w-full border-collapse text-sm">
@@ -37,9 +35,7 @@ export function ComparisonTable({ title, cols, rows }: ComparisonTableProps) {
                   key={i}
                   scope="col"
                   className={`px-3 py-2 text-left font-medium text-ink-700 ${
-                    i === 0
-                      ? 'sticky left-0 z-10 bg-surface-2 border-r border-surface-3'
-                      : ''
+                    i === 0 ? 'sticky left-0 z-10 bg-surface-2 border-r border-surface-3' : ''
                   }`}
                 >
                   {col}
@@ -49,10 +45,7 @@ export function ComparisonTable({ title, cols, rows }: ComparisonTableProps) {
           </thead>
           <tbody>
             {rows.map((row, rowIdx) => (
-              <tr
-                key={rowIdx}
-                className="border-t border-surface-3 hover:bg-surface-1"
-              >
+              <tr key={rowIdx} className="border-t border-surface-3 hover:bg-surface-1">
                 {row.map((cell, colIdx) => (
                   <td
                     key={colIdx}

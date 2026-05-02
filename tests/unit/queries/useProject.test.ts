@@ -3,8 +3,8 @@
 
 import { cleanup, renderHook, waitFor } from '@testing-library/react';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
-import { createQueryWrapper } from './test-utils';
 import { useProject } from '../../../lib/queries/useProject';
+import { createQueryWrapper } from './test-utils';
 
 afterEach(() => {
   cleanup();
@@ -16,7 +16,7 @@ describe('useProject (REQ-BREADTH-031)', () => {
 
   beforeEach(() => {
     vi.spyOn(global, 'fetch').mockResolvedValue(
-      new Response(JSON.stringify(mockProject), { status: 200 })
+      new Response(JSON.stringify(mockProject), { status: 200 }),
     );
   });
 
@@ -41,13 +41,13 @@ describe('useProject (REQ-BREADTH-031)', () => {
     });
     await waitFor(() => expect(result.current.isSuccess).toBe(true));
     expect(result.current.data).toEqual(mockProject);
-    const url = (global.fetch as ReturnType<typeof vi.fn>).mock.calls[0][0] as string;
+    const url = ((global.fetch as ReturnType<typeof vi.fn>).mock.calls[0] as [string])[0];
     expect(url).toContain('/api/ra/projects/p1');
   });
 
   it('throws error on HTTP 404', async () => {
     vi.spyOn(global, 'fetch').mockResolvedValue(
-      new Response('Not Found', { status: 404, statusText: 'Not Found' })
+      new Response('Not Found', { status: 404, statusText: 'Not Found' }),
     );
     const { result } = renderHook(() => useProject('missing'), {
       wrapper: createQueryWrapper(),

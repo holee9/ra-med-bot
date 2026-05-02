@@ -64,12 +64,12 @@ describe('IRetriever type conformance (compile-time structural check)', () => {
   it('a mock class can structurally satisfy IRetriever', async () => {
     // Import the interface — if the file does not exist, this throws and the
     // test fails with a clear "module not found" message (RED phase intent).
-    const { type: _type } = await import('@/lib/ai/retrievers/types').catch(() => {
+    const { type: _type } = (await import('@/lib/ai/retrievers/types').catch(() => {
       throw new Error(
         'lib/ai/retrievers/types.ts does not exist or has a syntax error. ' +
           'This is expected in the RED phase.',
       );
-    }) as { type?: unknown };
+    })) as { type?: unknown };
 
     // Structural conformance: a plain object that satisfies the interface shape
     // must be accepted by TypeScript (compile-time) and pass duck-type checks.
@@ -91,7 +91,7 @@ describe('IRetriever type conformance (compile-time structural check)', () => {
   });
 
   it('IRetriever.retrieve returns an array of RetrievalResult shapes', async () => {
-    const { } = await import('@/lib/ai/retrievers/types').catch(() => {
+    const {} = await import('@/lib/ai/retrievers/types').catch(() => {
       throw new Error('lib/ai/retrievers/types.ts does not exist. RED phase.');
     });
 

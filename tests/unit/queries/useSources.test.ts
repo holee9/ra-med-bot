@@ -3,8 +3,8 @@
 
 import { cleanup, renderHook, waitFor } from '@testing-library/react';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
-import { createQueryWrapper } from './test-utils';
 import { useSources } from '../../../lib/queries/useSources';
+import { createQueryWrapper } from './test-utils';
 
 afterEach(() => {
   cleanup();
@@ -19,7 +19,7 @@ describe('useSources (REQ-BREADTH-052)', () => {
 
   beforeEach(() => {
     vi.spyOn(global, 'fetch').mockResolvedValue(
-      new Response(JSON.stringify(mockSources), { status: 200 })
+      new Response(JSON.stringify(mockSources), { status: 200 }),
     );
   });
 
@@ -44,13 +44,13 @@ describe('useSources (REQ-BREADTH-052)', () => {
     });
     await waitFor(() => expect(result.current.isSuccess).toBe(true));
     expect(result.current.data).toEqual(mockSources);
-    const url = (global.fetch as ReturnType<typeof vi.fn>).mock.calls[0][0] as string;
+    const url = ((global.fetch as ReturnType<typeof vi.fn>).mock.calls[0] as [string])[0];
     expect(url).toContain('/api/ra/sources');
   });
 
   it('throws error on HTTP failure', async () => {
     vi.spyOn(global, 'fetch').mockResolvedValue(
-      new Response('Server Error', { status: 500, statusText: 'Internal Server Error' })
+      new Response('Server Error', { status: 500, statusText: 'Internal Server Error' }),
     );
     const { result } = renderHook(() => useSources('c1'), {
       wrapper: createQueryWrapper(),
@@ -64,7 +64,7 @@ describe('useSources (REQ-BREADTH-052)', () => {
       wrapper: createQueryWrapper(),
     });
     await waitFor(() => expect(result.current.isSuccess).toBe(true));
-    const url = (global.fetch as ReturnType<typeof vi.fn>).mock.calls[0][0] as string;
+    const url = ((global.fetch as ReturnType<typeof vi.fn>).mock.calls[0] as [string])[0];
     expect(url).toContain('conversationId=conv-123');
   });
 });

@@ -18,7 +18,7 @@ interface ConversationPage {
 
 async function fetchConversations(
   opts: ConversationsOpts,
-  cursor?: string
+  cursor?: string,
 ): Promise<ConversationPage> {
   const params = new URLSearchParams();
   if (opts.limit !== undefined) params.set('limit', String(opts.limit));
@@ -41,8 +41,7 @@ async function fetchConversations(
 export function useConversations(opts: ConversationsOpts = {}) {
   return useInfiniteQuery({
     queryKey: ['conversations', opts],
-    queryFn: ({ pageParam }) =>
-      fetchConversations(opts, pageParam as string | undefined),
+    queryFn: ({ pageParam }) => fetchConversations(opts, pageParam as string | undefined),
     initialPageParam: undefined as string | undefined,
     getNextPageParam: (lastPage: ConversationPage) => lastPage.nextCursor ?? undefined,
   });

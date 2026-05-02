@@ -4,7 +4,6 @@
 // @MX:SPEC SPEC-REGULA-BREADTH-001 (REQ-BREADTH-058)
 
 import { auth } from '@/lib/auth';
-import { getServerSession } from 'next-auth';
 import { type NextRequest, NextResponse } from 'next/server';
 
 /**
@@ -27,9 +26,7 @@ type AuthHandler = (req: NextRequest, ctx: AuthContext) => Promise<NextResponse>
  */
 export function withAuth(handler: AuthHandler) {
   return async (req: NextRequest): Promise<NextResponse> => {
-    // auth() from Auth.js v5 is the preferred call; getServerSession is kept
-    // here as the spec explicitly names it and tests mock it.
-    const session = await getServerSession(auth as never);
+    const session = await auth();
 
     if (!session?.user) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });

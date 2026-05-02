@@ -11,8 +11,7 @@ interface PromptInput {
   locale: 'ko';
 }
 
-const JSON_ONLY_INSTRUCTION =
-  '응답은 오직 JSON 객체로만 출력하라. 코드 블록, 해설, 서문 금지.';
+const JSON_ONLY_INSTRUCTION = '응답은 오직 JSON 객체로만 출력하라. 코드 블록, 해설, 서문 금지.';
 
 function formatSources(sources: PromptInput['topSources']): string {
   return sources

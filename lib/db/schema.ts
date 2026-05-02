@@ -70,14 +70,23 @@ export const expertReviewStatusEnum = pgEnum('expert_review_status', [
   'resolved',
 ]);
 
-// @MX:NOTE Phase 1 audit_action values are intentionally limited to 3.
-// Phase 2 wires llm.call + source.access; Phase 5 adds auth.* and
-// expert_review.* via ALTER TYPE migration. Do not add more values here
-// without a follow-up migration in 0002_audit_action_phase5.sql.
+// @MX:NOTE audit_action values mirror AuditAction type in lib/audit.ts.
+// Phase 1: 3 values. Phase 3 / Breadth: +10 via 0003_breadth_audit_actions.sql.
+// Adding values here requires a matching ALTER TYPE migration.
 export const auditActionEnum = pgEnum('audit_action', [
   'llm.call',
   'source.access',
   'expert_review.flag',
+  'conversations.list',
+  'conversation.view',
+  'message.feedback',
+  'template.list',
+  'template.download',
+  'updates.list',
+  'dashboard.view',
+  'projects.list',
+  'project.create',
+  'project.update',
 ]);
 
 // ---------------------------------------------------------------------------

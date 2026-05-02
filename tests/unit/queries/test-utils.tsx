@@ -1,8 +1,8 @@
 // Shared test utilities for TanStack Query hook tests.
 // Provides QueryClientWrapper factory for renderHook.
 
-import React from 'react';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
+import type React from 'react';
 
 /**
  * Creates a fresh QueryClient wrapper for each test.
@@ -18,8 +18,6 @@ export function createQueryWrapper() {
     },
   });
   return function QueryWrapper({ children }: { children: React.ReactNode }) {
-    return (
-      <QueryClientProvider client={queryClient}>{children}</QueryClientProvider>
-    );
+    return <QueryClientProvider client={queryClient}>{children}</QueryClientProvider>;
   };
 }

@@ -1,8 +1,8 @@
 // @MX:NOTE [AUTO] T-009 TDD RED phase — merge.ts tests.
 // @MX:SPEC SPEC-REGULA-BREADTH-001 (REQ-BREADTH-039, REQ-BREADTH-042)
 
-import { beforeEach, describe, expect, it, vi } from 'vitest';
 import type { RetrievalResult } from '@/lib/ai/retrievers/types';
+import { beforeEach, describe, expect, it, vi } from 'vitest';
 
 // Mock all 5 retriever classes to prevent real DB/network calls.
 vi.mock('@/lib/ai/retrievers/eu-mdr', () => ({
@@ -139,9 +139,7 @@ describe('lib/ai/merge.ts (REQ-BREADTH-039, REQ-BREADTH-042)', () => {
   it('parallelRetrieveAndMerge returns at most 8 results (top-8 cap)', async () => {
     const { EuMdrRetriever } = await import('@/lib/ai/retrievers/eu-mdr');
 
-    const manyResults = Array.from({ length: 20 }, (_, i) =>
-      makeResult(`eu-${i}`, 1 - i * 0.04),
-    );
+    const manyResults = Array.from({ length: 20 }, (_, i) => makeResult(`eu-${i}`, 1 - i * 0.04));
 
     vi.mocked(EuMdrRetriever).mockImplementation(() => ({
       corpus: 'eu-mdr',
@@ -184,9 +182,9 @@ describe('lib/ai/merge.ts (REQ-BREADTH-039, REQ-BREADTH-042)', () => {
   it('parallelRetrieveAndMerge handles unknown corpus name gracefully', async () => {
     const { parallelRetrieveAndMerge } = await import('@/lib/ai/merge');
     // Should not throw — unknown corpus is skipped
-    await expect(
-      parallelRetrieveAndMerge('query', ['unknown-corpus'], {}),
-    ).resolves.toBeInstanceOf(Array);
+    await expect(parallelRetrieveAndMerge('query', ['unknown-corpus'], {})).resolves.toBeInstanceOf(
+      Array,
+    );
   });
 
   it('parallelRetrieveAndMerge recognizes fda corpus', async () => {

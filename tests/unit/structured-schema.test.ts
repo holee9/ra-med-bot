@@ -60,7 +60,11 @@ describe('ChecklistBlockSchema', () => {
   });
 
   it('rejects 21 items (max 20)', () => {
-    const items = Array.from({ length: 21 }, (_, i) => ({ id: `item-${i}`, title: 'T', completed: false }));
+    const items = Array.from({ length: 21 }, (_, i) => ({
+      id: `item-${i}`,
+      title: 'T',
+      completed: false,
+    }));
     const result = ChecklistBlockSchema.safeParse({ type: 'checklist', items });
     expect(result.success).toBe(false);
   });
@@ -90,7 +94,11 @@ describe('ChecklistBlockSchema', () => {
   });
 
   it('accepts exactly 20 items', () => {
-    const items = Array.from({ length: 20 }, (_, i) => ({ id: `item-${i}`, title: 'T', completed: false }));
+    const items = Array.from({ length: 20 }, (_, i) => ({
+      id: `item-${i}`,
+      title: 'T',
+      completed: false,
+    }));
     const result = ChecklistBlockSchema.safeParse({ type: 'checklist', items });
     expect(result.success).toBe(true);
   });
@@ -103,7 +111,10 @@ describe('ComparisonBlockSchema', () => {
       type: 'comparison',
       title: 'FDA vs EU 비교',
       cols: ['FDA', 'EU'],
-      rows: [['a', 'b'], ['c', 'd']],
+      rows: [
+        ['a', 'b'],
+        ['c', 'd'],
+      ],
     });
     expect(result.success).toBe(true);
   });
