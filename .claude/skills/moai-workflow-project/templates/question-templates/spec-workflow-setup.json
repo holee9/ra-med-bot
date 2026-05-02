@@ -138,7 +138,7 @@
       },
       "validation": {
         "rules": ["min_value", "max_value"],
-        "parameters": {"min_value": 1, "max_value": 5}
+        "parameters": { "min_value": 1, "max_value": 5 }
       }
     }
   ],

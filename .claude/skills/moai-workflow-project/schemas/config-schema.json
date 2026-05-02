@@ -30,10 +30,10 @@
           "items": {
             "type": "object",
             "properties": {
-              "from_version": {"type": "string"},
-              "to_version": {"type": "string"},
-              "timestamp": {"type": "string", "format": "date-time"},
-              "description": {"type": "string"}
+              "from_version": { "type": "string" },
+              "to_version": { "type": "string" },
+              "timestamp": { "type": "string", "format": "date-time" },
+              "description": { "type": "string" }
             }
           }
         }
@@ -110,9 +110,9 @@
         "caching": {
           "type": "object",
           "properties": {
-            "enabled": {"type": "boolean", "default": true},
-            "ttl_hours": {"type": "integer", "minimum": 1, "default": 24},
-            "max_cache_size_mb": {"type": "integer", "minimum": 1, "default": 100}
+            "enabled": { "type": "boolean", "default": true },
+            "ttl_hours": { "type": "integer", "minimum": 1, "default": 24 },
+            "max_cache_size_mb": { "type": "integer", "minimum": 1, "default": 100 }
           }
         }
       }
@@ -238,21 +238,21 @@
         "caching": {
           "type": "object",
           "properties": {
-            "enabled": {"type": "boolean", "default": true},
+            "enabled": { "type": "boolean", "default": true },
             "strategy": {
               "type": "string",
               "enum": ["memory", "disk", "redis"],
               "default": "memory"
             },
-            "ttl_minutes": {"type": "integer", "minimum": 1, "default": 60}
+            "ttl_minutes": { "type": "integer", "minimum": 1, "default": 60 }
           }
         },
         "validation": {
           "type": "object",
           "properties": {
-            "strict_mode": {"type": "boolean", "default": false},
-            "check_syntax": {"type": "boolean", "default": true},
-            "check_security": {"type": "boolean", "default": true}
+            "strict_mode": { "type": "boolean", "default": false },
+            "check_syntax": { "type": "boolean", "default": true },
+            "check_security": { "type": "boolean", "default": true }
           }
         },
         "custom_variables": {
@@ -295,15 +295,15 @@
             "python": {
               "type": "object",
               "properties": {
-                "enabled": {"type": "boolean", "default": true},
-                "tool": {"type": "string", "enum": ["pip", "poetry", "pipenv"], "default": "pip"}
+                "enabled": { "type": "boolean", "default": true },
+                "tool": { "type": "string", "enum": ["pip", "poetry", "pipenv"], "default": "pip" }
               }
             },
             "node": {
               "type": "object",
               "properties": {
-                "enabled": {"type": "boolean", "default": false},
-                "tool": {"type": "string", "enum": ["npm", "yarn", "pnpm"], "default": "npm"}
+                "enabled": { "type": "boolean", "default": false },
+                "tool": { "type": "string", "enum": ["npm", "yarn", "pnpm"], "default": "npm" }
               }
             }
           }

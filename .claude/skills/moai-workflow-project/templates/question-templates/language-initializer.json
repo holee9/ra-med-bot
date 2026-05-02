@@ -61,7 +61,7 @@
       },
       "validation": {
         "rules": ["required", "min_length"],
-        "parameters": {"min_length": 2}
+        "parameters": { "min_length": 2 }
       }
     },
     {

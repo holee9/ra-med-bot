@@ -22,6 +22,12 @@ skills:
 4. **공유 프리미티브 (Radix 래핑)** — `Button`, `IconButton`, `Chip`, `Dialog`, `Dropdown`, `Callout`. Radix 기본 a11y 동작 유지, 스타일은 Tailwind 토큰만 사용
 5. **useStreamingAnswer 훅** — SSE 연결, abort controller, `{ status, traceSteps[], prose, structured, error }` 노출. handoff §11.1의 모든 SSE event type 처리 필수
 6. **Zustand 스토어** — `ui.ts` (theme, sidebarCollapsed, currentProjectId, tweaksOpen, onboardingDone), `conversation.ts`
+7. **OnboardingModal (`components/shell/OnboardingModal.tsx`)** — §7.11 첫 방문 온보딩. 520px 너비 center-modal, 4-step 시퀀스:
+   - Step 1: 환영합니다 — `<ShieldCheck />` (lucide, 48px, brand-600)
+   - Step 2: 출처 중심 — `<BookOpen />` (lucide, 48px, brand-600)
+   - Step 3: 프로젝트 컨텍스트 — `<FolderOpen />` (lucide, 48px, brand-600)
+   - Step 4: 안전 장치 (전문가 검토) — `<AlertTriangle />` (lucide, 48px, amber-500)
+   Bottom bar: step dots (active dot `w-[18px]` expanded, inactive `w-2`), `건너뛰기` 버튼 (ghost), `다음 →` 버튼 (primary). 완료 또는 건너뛰기 시 `localStorage.setItem('regula_onboarded', '1')` + `onboardingDone = true` store 업데이트. 앱 마운트 시 `localStorage.getItem('regula_onboarded')` 확인 — 없으면 모달 표시. Radix `<Dialog>` 프리미티브 래핑, `aria-modal="true"`, `role="dialog"`, `aria-labelledby` 연결.
 7. **반응형 브레이크포인트** — ≥1100px 풀 스플릿, 900-1099 패널 숨김, 720-899 사이드바 숨김, <720 모바일
 
 ## 작업 원칙
