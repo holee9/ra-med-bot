@@ -1,0 +1,213 @@
+/* =========================================================
+   Regula — app/globals.css
+   SPEC-REGULA-FOUNDATION-001 T-002 (REQ-FND-022, REQ-FND-029)
+
+   Order:
+     1. Token custom properties (../styles/tokens.css)
+     2. Tailwind v4 import + @theme mapping
+     3. Base reset / global element styles
+   ========================================================= */
+
+@import "../styles/tokens.css";
+@import "tailwindcss";
+
+/* Font variables are also injected by app/layout.tsx via next/font/google
+   (Source Serif 4, Noto Serif KR, IBM Plex Sans, IBM Plex Mono).
+   Pretendard is loaded from @fontsource/pretendard in app/layout.tsx. */
+
+/* ---------------------------------------------------------
+   @theme — Tailwind v4 utility mapping (REQ-FND-029)
+   Re-exports the CSS custom properties from tokens.css as
+   Tailwind utility classes (bg-brand-800, text-brand-700,
+   font-serif, font-sans, rounded-xs, shadow-md, etc.).
+   --------------------------------------------------------- */
+@theme {
+  /* Brand palette */
+  --color-brand-50: var(--color-brand-50);
+  --color-brand-100: var(--color-brand-100);
+  --color-brand-200: var(--color-brand-200);
+  --color-brand-300: var(--color-brand-300);
+  --color-brand-400: var(--color-brand-400);
+  --color-brand-500: var(--color-brand-500);
+  --color-brand-600: var(--color-brand-600);
+  --color-brand-700: var(--color-brand-700);
+  --color-brand-800: var(--color-brand-800);
+  --color-brand-900: var(--color-brand-900);
+
+  /* Amber accent palette */
+  --color-amber-50: var(--color-amber-50);
+  --color-amber-100: var(--color-amber-100);
+  --color-amber-400: var(--color-amber-400);
+  --color-amber-500: var(--color-amber-500);
+  --color-amber-600: var(--color-amber-600);
+  --color-amber-700: var(--color-amber-700);
+
+  /* Semantic colors */
+  --color-success: var(--color-success);
+  --color-success-bg: var(--color-success-bg);
+  --color-warn: var(--color-warn);
+  --color-warn-bg: var(--color-warn-bg);
+  --color-danger: var(--color-danger);
+  --color-danger-bg: var(--color-danger-bg);
+  --color-info: var(--color-info);
+  --color-info-bg: var(--color-info-bg);
+
+  /* Ink ladder */
+  --color-ink-50: var(--color-ink-50);
+  --color-ink-100: var(--color-ink-100);
+  --color-ink-150: var(--color-ink-150);
+  --color-ink-200: var(--color-ink-200);
+  --color-ink-300: var(--color-ink-300);
+  --color-ink-400: var(--color-ink-400);
+  --color-ink-500: var(--color-ink-500);
+  --color-ink-600: var(--color-ink-600);
+  --color-ink-700: var(--color-ink-700);
+  --color-ink-800: var(--color-ink-800);
+  --color-ink-900: var(--color-ink-900);
+  --color-ink-950: var(--color-ink-950);
+  --color-paper: var(--color-paper);
+
+  /* Typography stacks */
+  --font-sans: var(--font-sans);
+  --font-serif: var(--font-serif);
+  --font-mono: var(--font-mono);
+
+  /* Type scale */
+  --text-xs: var(--text-xs);
+  --text-sm: var(--text-sm);
+  --text-base: var(--text-base);
+  --text-md: var(--text-md);
+  --text-lg: var(--text-lg);
+  --text-xl: var(--text-xl);
+  --text-2xl: var(--text-2xl);
+  --text-3xl: var(--text-3xl);
+  --text-4xl: var(--text-4xl);
+  --text-5xl: var(--text-5xl);
+
+  /* Line height */
+  --leading-tight: var(--leading-tight);
+  --leading-snug: var(--leading-snug);
+  --leading-normal: var(--leading-normal);
+  --leading-relaxed: var(--leading-relaxed);
+
+  /* Spacing */
+  --spacing-1: var(--spacing-1);
+  --spacing-2: var(--spacing-2);
+  --spacing-3: var(--spacing-3);
+  --spacing-4: var(--spacing-4);
+  --spacing-5: var(--spacing-5);
+  --spacing-6: var(--spacing-6);
+  --spacing-7: var(--spacing-7);
+  --spacing-8: var(--spacing-8);
+  --spacing-9: var(--spacing-9);
+  --spacing-10: var(--spacing-10);
+  --spacing-11: var(--spacing-11);
+  --spacing-12: var(--spacing-12);
+
+  /* Radii */
+  --radius-xs: var(--radius-xs);
+  --radius-sm: var(--radius-sm);
+  --radius-md: var(--radius-md);
+  --radius-lg: var(--radius-lg);
+  --radius-xl: var(--radius-xl);
+  --radius-2xl: var(--radius-2xl);
+  --radius-full: var(--radius-full);
+
+  /* Shadows */
+  --shadow-xs: var(--shadow-xs);
+  --shadow-sm: var(--shadow-sm);
+  --shadow-md: var(--shadow-md);
+  --shadow-lg: var(--shadow-lg);
+  --shadow-xl: var(--shadow-xl);
+
+  /* Motion */
+  --ease-out: var(--ease-out);
+  --ease-in-out: var(--ease-in-out);
+  --duration-fast: var(--duration-fast);
+  --duration-normal: var(--duration-normal);
+  --duration-slow: var(--duration-slow);
+}
+
+/* ---------------------------------------------------------
+   Base reset / global element styles
+   --------------------------------------------------------- */
+*,
+*::before,
+*::after {
+  box-sizing: border-box;
+}
+
+html,
+body {
+  margin: 0;
+  padding: 0;
+}
+
+html {
+  font-family: var(--font-sans);
+  color-scheme: light dark;
+}
+
+body {
+  font-family: var(--font-sans);
+  font-size: var(--text-md);
+  line-height: var(--leading-normal);
+  color: var(--text-primary);
+  background: var(--bg-app);
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+  font-feature-settings: "ss01", "cv11";
+  text-rendering: optimizeLegibility;
+}
+
+button {
+  font-family: inherit;
+}
+
+input,
+textarea,
+select {
+  font-family: inherit;
+  color: inherit;
+}
+
+::selection {
+  background: color-mix(in oklch, var(--color-amber-400), transparent 60%);
+  color: var(--text-primary);
+}
+
+/* Focus ring — accessibility default. Components may override but the
+   project-wide baseline is brand-500 with a 2px outset offset. */
+:focus-visible {
+  outline: 2px solid var(--color-brand-500);
+  outline-offset: 2px;
+}
+
+/* Reduced motion respect — disables all transitions and animations. */
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
+}
+
+/* Custom scrollbar (Webkit) — matches handoff prototype. */
+*::-webkit-scrollbar {
+  width: 10px;
+  height: 10px;
+}
+*::-webkit-scrollbar-track {
+  background: transparent;
+}
+*::-webkit-scrollbar-thumb {
+  background: var(--border-default);
+  border-radius: var(--radius-full);
+  border: 2px solid var(--bg-app);
+}
+*::-webkit-scrollbar-thumb:hover {
+  background: var(--border-strong);
+}
