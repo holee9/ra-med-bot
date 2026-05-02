@@ -74,6 +74,26 @@ vi.mock('../../components/chat/ChatShell', () => ({
   ChatShell: () => null,
 }));
 
+// Sidebar now uses useUIStore and useProjects — mock both.
+vi.mock('@/stores/ui', () => ({
+  useUIStore: Object.assign(
+    vi.fn((selector?: (s: unknown) => unknown) => {
+      const state = {
+        currentProjectId: null,
+        recentProjects: [],
+        setCurrentProjectId: vi.fn(),
+      };
+      if (typeof selector === 'function') return selector(state);
+      return state;
+    }),
+    { getState: vi.fn(() => ({ currentProjectId: null, recentProjects: [] })) },
+  ),
+}));
+
+vi.mock('@/lib/queries/useProjects', () => ({
+  useProjects: vi.fn(() => ({ data: [], isLoading: false })),
+}));
+
 const root = path.resolve(__dirname, '..', '..');
 const readText = (rel: string): string => fs.readFileSync(path.join(root, rel), 'utf8');
 

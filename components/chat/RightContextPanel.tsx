@@ -1,8 +1,14 @@
 'use client';
 
-// @MX:NOTE RightContextPanel — Phase 3 skeleton only. 3 sections: current project,
-// top 5 sources, 3 regulatory updates. Real API wire-up deferred to Phase 4.
+// @MX:NOTE RightContextPanel — 3 sections: current project (real data via
+// useProjects), top 5 sources skeleton, 3 regulatory updates skeleton.
+// Phase 4 will wire sources and updates.
 // @MX:SPEC SPEC-REGULA-STRUCTURED-001 (REQ-STRUCT-029~033)
+// @MX:SPEC SPEC-REGULA-BREADTH-001 (REQ-BREADTH-046, REQ-BREADTH-050)
+
+import { useProjects } from '@/lib/queries/useProjects';
+
+type ProjectRow = { id: string; name: string };
 
 interface RightContextPanelProps {
   currentProjectId: string | null;
@@ -10,6 +16,13 @@ interface RightContextPanelProps {
 }
 
 export function RightContextPanel({ currentProjectId }: RightContextPanelProps) {
+  // REQ-BREADTH-046: resolve project name from the shared projects list.
+  const { data = [] } = useProjects();
+  const allProjects = data as ProjectRow[];
+  const currentProject = currentProjectId
+    ? allProjects.find((p) => p.id === currentProjectId)
+    : undefined;
+
   return (
     // REQ-STRUCT-033: hidden below 1100px via lg:block
     <aside className="hidden min-w-0 w-[360px] flex-shrink-0 flex-col gap-6 overflow-y-auto p-4 xl:flex">
@@ -21,11 +34,17 @@ export function RightContextPanel({ currentProjectId }: RightContextPanelProps) 
         >
           현재 프로젝트
         </p>
-        {currentProjectId ? (
-          // REQ-STRUCT-030: non-null → placeholder card (Phase 4 will replace)
+        {currentProject ? (
+          // REQ-BREADTH-046: show real project name
+          <div className="flex items-center gap-2 rounded-lg border border-surface-3 p-3 text-sm text-ink-700">
+            <span className="h-2 w-2 rounded-full bg-brand-400 flex-shrink-0" />
+            {currentProject.name}
+          </div>
+        ) : currentProjectId ? (
+          // projectId set but not yet resolved (still loading)
           <div className="flex items-center gap-2 rounded-lg border border-surface-3 p-3 text-sm text-ink-500">
             <span className="h-2 w-2 rounded-full bg-brand-400 flex-shrink-0" />
-            프로젝트 정보 로딩 중 (Phase 4)
+            로딩 중…
           </div>
         ) : (
           // REQ-STRUCT-030: null → subdued placeholder

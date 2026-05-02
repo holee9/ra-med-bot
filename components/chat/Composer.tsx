@@ -2,12 +2,14 @@
 
 // @MX:NOTE Composer — textarea with autosize, source filter chips, submit button.
 // Handles abort mid-stream and keyboard submit (Shift+Enter = newline, Enter = submit).
-// @MX:SPEC SPEC-REGULA-CHAT-001 (REQ-CHAT-031, REQ-CHAT-032, REQ-CHAT-033,
-//   REQ-CHAT-034, REQ-CHAT-035, REQ-CHAT-036)
+// REQ-BREADTH-003: reads pendingQuestion from UIStore on mount and clears it.
+// @MX:SPEC SPEC-REGULA-CHAT-001 (REQ-CHAT-031..036)
+// @MX:SPEC SPEC-REGULA-BREADTH-001 (REQ-BREADTH-003)
 
 import { Send, Square } from 'lucide-react';
 import { useCallback, useEffect, useRef } from 'react';
 import type { ChangeEvent, KeyboardEvent } from 'react';
+import { useUIStore } from '@/stores/ui';
 
 type SourceFilter = 'all' | 'regs' | 'internal';
 
@@ -41,6 +43,17 @@ export function Composer({
   placeholder = '규제 관련 질문을 입력하세요...',
 }: ComposerProps) {
   const textareaRef = useRef<HTMLTextAreaElement>(null);
+
+  // REQ-BREADTH-003: on mount, read and consume pendingQuestion from UIStore.
+  // One-time effect (dep: []) — must not re-trigger on re-renders.
+  useEffect(() => {
+    const pending = useUIStore.getState().pendingQuestion;
+    if (pending) {
+      onChange(pending);
+      useUIStore.getState().setPendingQuestion(null);
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   // Autosize textarea: reset height then set to scrollHeight.
   const resizeTextarea = useCallback(() => {

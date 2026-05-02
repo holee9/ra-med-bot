@@ -4,10 +4,15 @@
 // @MX:REASON Core hook used by all chat UI components. Handles AbortController,
 // SSE parsing, and applyEvent state reducer.
 // @MX:SPEC SPEC-REGULA-CHAT-001 (REQ-CHAT-046..052)
+// @MX:SPEC SPEC-REGULA-BREADTH-001 (REQ-BREADTH-047)
+// @MX:NOTE REQ-BREADTH-047: projectId snapshot captured at submit time via
+// useUIStore.getState() so mid-stream project switching does not affect the
+// in-flight request.
 
 import { useQueryClient } from '@tanstack/react-query';
 import { useCallback, useEffect, useRef, useState } from 'react';
 import type { ConsultRequest } from '../types/consult';
+import { useUIStore } from '../stores/ui';
 import {
   type ConfidenceEvent,
   type MetaEvent,
@@ -169,6 +174,10 @@ export function useStreamingAnswer(): UseStreamingAnswerReturn {
 
   const start = useCallback(
     (input: ConsultRequest) => {
+      // REQ-BREADTH-047: snapshot projectId at submit time so that switching
+      // projects mid-stream does not affect this in-flight request.
+      const projectId = useUIStore.getState().currentProjectId;
+
       // Abort any in-flight request.
       abortRef.current?.abort();
       const ac = new AbortController();
@@ -186,7 +195,7 @@ export function useStreamingAnswer(): UseStreamingAnswerReturn {
           const response = await fetch('/api/ra/consult', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify(input),
+            body: JSON.stringify({ ...input, projectId: input.projectId ?? projectId ?? undefined }),
             signal: ac.signal,
           });
 

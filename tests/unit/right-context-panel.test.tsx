@@ -5,6 +5,11 @@ import { cleanup, render, screen } from '@testing-library/react';
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import { RightContextPanel } from '../../components/chat/RightContextPanel';
 
+// Mock useProjects so tests do not require QueryClientProvider.
+vi.mock('@/lib/queries/useProjects', () => ({
+  useProjects: vi.fn(() => ({ data: [], isLoading: false })),
+}));
+
 afterEach(() => {
   cleanup();
   vi.clearAllMocks();
@@ -45,9 +50,14 @@ describe('RightContextPanel project section (REQ-STRUCT-030)', () => {
     expect(screen.getByText('프로젝트를 선택하세요')).toBeDefined();
   });
 
-  it('renders loading placeholder when currentProjectId is non-null', () => {
+  it('renders loading state when currentProjectId is non-null but project not yet resolved', () => {
+    // useProjects returns empty list (loading or not yet fetched), so project
+    // cannot be found — component shows a loading indicator.
     render(<RightContextPanel currentProjectId="proj-123" latestMessageId="msg-1" />);
-    expect(screen.getByText(/Phase 4/i)).toBeDefined();
+    // Should NOT show the null-state placeholder
+    expect(screen.queryByText('프로젝트를 선택하세요')).toBeNull();
+    // Should show some loading or project info element (not null placeholder)
+    expect(screen.getByText(/로딩 중/i)).toBeDefined();
   });
 });
 
