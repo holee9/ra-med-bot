@@ -31,6 +31,7 @@ export default auth((req) => {
 // REQ-FND-053: matcher pattern is exact and load-bearing. Any change must be
 // reviewed against the public-route allow-list in handoff §16.
 export const config = {
+  runtime: 'nodejs',
   matcher: [
     '/((?!_next/static|_next/image|favicon.ico|login|sso/callback|api/auth|robots.txt|public).*)',
   ],

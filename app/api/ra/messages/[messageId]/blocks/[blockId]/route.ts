@@ -3,12 +3,12 @@
 // Phase 3 scope: checklist toggle only. writeAudit deferred to Phase 5.
 // @MX:SPEC SPEC-REGULA-STRUCTURED-001 (REQ-STRUCT-021, REQ-STRUCT-037)
 
+import { and, eq } from 'drizzle-orm';
 import type { NextRequest } from 'next/server';
+import { ChecklistBlockSchema } from '../../../../../../../lib/ai/structured-schema';
 import { auth } from '../../../../../../../lib/auth';
 import { db } from '../../../../../../../lib/db/client';
 import { conversations, messageBlocks, messages } from '../../../../../../../lib/db/schema';
-import { ChecklistBlockSchema } from '../../../../../../../lib/ai/structured-schema';
-import { eq, and } from 'drizzle-orm';
 
 interface RouteParams {
   params: Promise<{ messageId: string; blockId: string }>;
