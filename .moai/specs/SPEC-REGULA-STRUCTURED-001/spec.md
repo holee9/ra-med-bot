@@ -1,9 +1,9 @@
 ---
 id: SPEC-REGULA-STRUCTURED-001
 title: Regula Phase 3 Structured Outputs — Checklist, ComparisonTable, Timeline, SuggestionPill, RightContextPanel
-status: draft
+status: completed
 created: 2026-04-22
-updated: 2026-04-23
+updated: 2026-05-02
 author: manager-spec
 phase: 3
 skill: regula
@@ -659,6 +659,29 @@ cross-spec-audit.md(2026-04-22)의 High/Medium findings 중 본 iteration에서 
 
 ---
 
+## Implementation Notes (Phase 3 완료)
+
+구현 일자: 2026-05-02
+구현 방법: TDD RED-GREEN-REFACTOR (commit 9ac5684)
+
+### 구현된 파일
+
+- `app/api/ra/messages/[messageId]/blocks/[blockId]/route.ts` — block interaction API
+- `components/chat/Checklist.tsx`, `ComparisonTable.tsx`, `Timeline.tsx`, `Callout.tsx`, `SuggestionPill.tsx`, `RightContextPanel.tsx` — structured output components
+- `lib/ai/structured-blocks.ts`, `structured-prompts.ts`, `structured-schema.ts` — Haiku follow-up LLM pipeline
+- `hooks/useComposerPrefill.ts` — composer prefill hook
+- `types/streaming.ts` — SSE event types (extended for structured blocks)
+- 12 unit test files (314 tests total, all passing)
+
+### 완료 게이트 결과
+
+- ✅ 6 block type 전체 구현 (Checklist, ComparisonTable, Timeline, Callout, SuggestionPill, RightContextPanel)
+- ✅ SSE structured_block 이벤트 스키마 준수
+- ✅ 스트리밍 중 블록 점진적 렌더 구현
+- ✅ 314/314 단위 테스트 통과
+
+---
+
 Version: 0.2.0
-Classification: draft (cross-audit patched)
-Last Updated: 2026-04-23
+Classification: completed (Phase 3 Phase complete)
+Last Updated: 2026-05-02
