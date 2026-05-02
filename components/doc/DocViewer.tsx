@@ -47,7 +47,7 @@ export function DocViewer() {
   return (
     <div
       // biome-ignore lint/a11y/useSemanticElements: <dialog> open/close API conflicts with controlled state; div+role="dialog" is used intentionally
-      className="fixed inset-0 z-50 flex items-stretch bg-[#0a1628]/80 backdrop-blur-sm"
+      className="fixed inset-0 z-50 flex items-stretch bg-brand-900/80 backdrop-blur-sm"
       role="dialog"
       aria-modal="true"
       aria-label={sourceDetail?.title ?? '문서 보기'}
