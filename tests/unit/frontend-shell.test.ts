@@ -70,6 +70,10 @@ vi.mock('../../components/chat/Thinking', () => ({
   Thinking: () => null,
 }));
 
+vi.mock('../../components/chat/ChatShell', () => ({
+  ChatShell: () => null,
+}));
+
 const root = path.resolve(__dirname, '..', '..');
 const readText = (rel: string): string => fs.readFileSync(path.join(root, rel), 'utf8');
 
@@ -133,7 +137,6 @@ describe('app/(app)/page.tsx — REQ-FND-016', () => {
 describe('app/(app)/chat/page.tsx — REQ-FND-017', () => {
   it('renders Korean empty state text', async () => {
     const mod = await import('../../app/(app)/chat/page');
-    // Use React.createElement — mod.default is a hook-enabled client component now.
     render(React.createElement(mod.default));
     expect(screen.getByText('새로운 상담을 시작하세요')).toBeTruthy();
   });
