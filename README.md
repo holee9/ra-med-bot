@@ -228,6 +228,35 @@ graph TB
 
 ---
 
+## Phase 3 Structured Outputs 기능 (2026-05-02 완료)
+
+### 구조화 블록 파이프라인
+
+- **Follow-up block generation**: 답변 본문 완료 후 checklist, comparison, timeline, related 블록 생성
+- **SSE Phase C 확장**: confidence → sources → checklist → comparison → timeline → related → done 순서 유지
+- **Zod schema guard**: 6개 block type(`prose`, `sources`, `checklist`, `comparison`, `timeline`, `related`) 검증
+- **Persistence**: `message_blocks.block_json`에 구조화 블록 저장
+
+### Frontend 컴포넌트
+
+| 컴포넌트 | 기능 |
+|---------|------|
+| **Checklist** | 완료 상태 낙관적 업데이트 + 서버 persist |
+| **ComparisonTable** | 규제/관할권 비교표 렌더링 |
+| **Timeline** | 규제 일정과 현재 단계 표시 |
+| **Callout** | info/warn/expert 안내 박스 |
+| **SuggestionPill** | 후속 질문 Composer prefill |
+| **RightContextPanel** | Phase 4 실데이터 연결 전 스켈레톤 제공 |
+
+### 문서 출처
+
+- **SPEC 문서**: [`.moai/specs/SPEC-REGULA-STRUCTURED-001/spec.md`](.moai/specs/SPEC-REGULA-STRUCTURED-001/spec.md)
+- **진행 기록**: [`.moai/specs/SPEC-REGULA-STRUCTURED-001/progress.md`](.moai/specs/SPEC-REGULA-STRUCTURED-001/progress.md)
+- **GitHub Issue**: [#5 SPEC-REGULA-STRUCTURED-001](https://github.com/holee9/ra-med-bot/issues/5)
+- **PR Review**: [#15](https://github.com/holee9/ra-med-bot/pull/15)는 2026-05-03 기준 코드 리뷰 완료. 리뷰 코멘트 없음, CI 통과, 현재 `main`에 Phase 3/4 내용이 이미 반영되어 obsolete로 종료.
+
+---
+
 ## Phase 4 Breadth 기능 (2026-05-03 완료)
 
 ### 8 Views 확장
@@ -424,41 +453,29 @@ pnpm start
 
 ---
 
-### Phase 2: SPEC 작성 (진행 예정)
+### Phase 2: Chat Core ✅ (2026-05-02 완료)
 
-**목표**: 제품 요구사항 정의 (EARS 포맷)
+**목표**: SSE 스트리밍 RAG 상담 경로 구현
 
-- [ ] 코퍼스 Ingestion SPEC 작성 (MFDS, FDA, EU MDR)
-- [ ] 제품 요구사항 정의 (EARS)
-- [ ] 아키텍처 결정 (ADR-001: 기술 스택)
-- [ ] 데이터 모델 설계 (Drizzle Schema)
-- [ ] API 계약 정의 (Zod 스키마)
+- [x] `/api/ra/consult` SSE Route Handler
+- [x] FDA corpus 기반 hybrid retrieval
+- [x] Citation post-processing 및 source linking
+- [x] Composer, Thinking, AnswerBlock, Citation, DocViewer
+- [x] `llm.call`, `source.access`, `expert_review.flag` audit wiring
+- [x] Issue [#4](https://github.com/holee9/ra-med-bot/issues/4) 완료
 
 ---
 
-### Phase 3: MVP 구현 — Full MVP (계획)
+### Phase 3: Structured Outputs ✅ (2026-05-02 완료)
 
-**목표**: 3개 관할권(MFDS, FDA, EU MDR) RAG 파이프라인 + 전체 기능
+**목표**: 답변 이후 구조화 블록 생성/렌더링
 
-**백엔드 우선 구현**:
-- [ ] 코퍼스 ingestion (MFDS, FDA, EU MDR)
-- [ ] RAG 파이프라인 구현
-  - [ ] PDF 파싱 → chunking → embedding
-  - [ ] pgvector 임베딩 + FTS 인덱싱
-  - [ ] Hybrid retriever (vector + keyword)
-  - [ ] 멀티 LLM 오케스트레이션
-- [ ] API Route Handlers (/api/ra/*)
-- [ ] Expert review 게이팅 (신뢰도 < 0.70)
-- [ ] 21 CFR Part 11 감사 로깅
-
-**프론트엔드 구현**:
-- [ ] App Shell (Sidebar + Topbar)
-- [ ] Chat UI (Composer + AnswerBlock + SSE 스트리밍)
-- [ ] 구조화 출력 (체크리스트, 비교표, 타임라인)
-- [ ] DocViewer (인용 클릭 → 문서 뷰어)
-
-**MVP 비목표** (이후 Phase에서):
-- 다크 모드 (라이트 테마만 지원)
+- [x] `generateStructuredBlocks` follow-up pipeline
+- [x] Checklist, ComparisonTable, Timeline, Callout, SuggestionPill
+- [x] RightContextPanel Phase 3 스켈레톤
+- [x] `message_blocks` 저장 및 PATCH persist
+- [x] 구조화 block Zod schema
+- [x] Issue [#5](https://github.com/holee9/ra-med-bot/issues/5) 완료
 
 ---
 
@@ -656,4 +673,4 @@ MIT License - [LICENSE](LICENSE) 파일 참조
 
 **Built with ❤️ using [abyz-lab](https://abyz-lab.work)**
 
-_마지막 업데이트: 2026-04-30_
+_마지막 업데이트: 2026-05-03_

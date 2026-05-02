@@ -1,6 +1,6 @@
 # Codex Project Memory — Regula RA Med Bot
 
-Last reviewed: 2026-04-29
+Last reviewed: 2026-05-03
 
 ## Core Philosophy
 
@@ -37,18 +37,20 @@ Last reviewed: 2026-04-29
 
 ## Current Execution State
 
-- No production Next.js app is scaffolded yet; root has no `package.json` at review time.
+- Production Next.js app exists at repo root with `package.json`, App Router, Drizzle, Auth.js, Tailwind, Vitest, and Biome config.
+- Phase 1 Foundation is complete.
+- Phase 2 Chat Core is complete under Issue #4.
+- Phase 3 Structured Outputs is complete under Issue #5.
+- Phase 4 Breadth is complete on `main` as of 2026-05-03: 8 views, 10 APIs, 5 additional RAG retrievers, project switching, 47 test files / 472 tests.
+- PR #15 was reviewed and closed as obsolete on 2026-05-03. It had no review threads or comments, all checks passed, but it was conflicting because `main` already contained the Phase 3/4 work.
 - Wiki access is enabled and readable. Wiki currently has Home, Lessons Learned, and Architecture Decisions index.
 - Issues are enabled and readable; Issue #1 is the standing project philosophy / 4-Layer Memory System anchor.
-- Current worktree had user-owned changes/deletions in `.wiki-temp/`; do not restore or stage them unless explicitly asked.
 
 ## Known Roadmap Risks
 
-- Before Phase 2, verify harness remediation status. Critical blockers documented in `.moai/plans/harness-gap-audit.md` include:
-  - C3: corpus ingestion/write-side owner must exist before RAG can demo real retrieval.
-  - C4: regula agent `skills:` frontmatter must actually wire domain skills.
-  - C1: security and observability ownership must be separated from compliance QA before enterprise hardening.
-  - C2: onboarding needs an explicit frontend owner before Phase 4.
+- Phase 5 must add RBAC, expert review API, dark mode, i18n, Sentry/Langfuse, and project deletion.
+- Phase 6 must add Playwright E2E, LLM eval harness, corpus ingestion automation, and launch/security validation.
+- Phase 4 integration still depends on real corpus fixtures, template files, object-storage provisioning, and regulatory update seed data for end-to-end verification.
 - Treat `.moai/specs` as authoritative but verify against current files and GitHub state before acting; planning docs can drift.
 
 ## Implementation Defaults

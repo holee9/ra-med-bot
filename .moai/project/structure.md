@@ -1,6 +1,6 @@
 # 프로젝트 구조 — Regula
 
-> 최종 업데이트: 2026-04-30
+> 최종 업데이트: 2026-05-03
 > 출처: `RA-bot-design/design_handoff_regula/README.md`
 
 ---
@@ -160,28 +160,35 @@ regula/
 
 ## 현재 vs. 계획된 구현 상태
 
-### 현재 상태 (프로토타입/설계 단계)
-- **프로덕션 코드 없음**: 현재는 프로토타입과 설계 문서만 존재
-- **기술 결정 완료**: Next.js 15 + TypeScript + Tailwind v4 + Radix UI 스택 확정
-- **구조 설계 완료**: 폴더 구조와 컴포넌트 경계 완전 정의됨
-- **API 스펙 완성**: RAG 파이프라인과 엔드포인트 인터페이스 명확히 정의됨
+### 현재 상태 (구현 진행 단계)
 
-### 계획된 구현 (백엔드 우선)
-**백엔드 우선 전략**에 따라 다음 순서로 구현됩니다:
+- **프로덕션 앱 존재**: Next.js 15 App Router 기반 코드가 repo root에 구현됨.
+- **Foundation 완료**: DB schema, Auth.js skeleton, audit helper, shell, design tokens 구현.
+- **Chat Core 완료**: SSE consult route, FDA retrieval, citation enforcement, DocViewer, chat components 구현.
+- **Structured Outputs 완료**: checklist/comparison/timeline/related block generation, persistence, rendering 구현.
+- **Breadth 완료**: 8 views, 10 APIs, 5 additional retrievers, TanStack Query hooks, project switching 구현.
 
-1. **Phase 1 — Foundation** (DB, API, RAG 파이프라인)
+### 구현 순서
+**백엔드 우선 전략**에 따라 다음 순서로 진행 중입니다:
+
+1. **Phase 1 — Foundation** (완료)
    - PostgreSQL 16 + pgvector DB 스키마
    - `/api/ra/consult` 등 핵심 API 엔드포인트
    - RAG 파이프라인 코어 로직
 
-2. **Phase 2 — Chat Core** (프론트엔드 연동)
+2. **Phase 2 — Chat Core** (완료)
    - Next.js App Router 기반 UI
    - Composer, AnswerBlock, DocViewer 컴포넌트
    - SSE 스트리밍 훅 구현
 
-3. **Phase 3 — Structured Outputs** (고급 기능)
+3. **Phase 3 — Structured Outputs** (완료)
    - Checklist, ComparisonTable, Timeline 컴포넌트
    - Expert Review 자동 게이팅 시스템
+
+4. **Phase 4 — Breadth** (완료)
+   - History, Templates, Knowledge, Updates, Dashboard views
+   - Conversations, templates, updates, dashboard, projects APIs
+   - 5-corpus retriever expansion and project switching
 
 ### Prototype vs. Production 경계
 
