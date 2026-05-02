@@ -19,13 +19,14 @@ import { conversations, messageBlocks } from '../db/schema';
 import { enforceCitations } from './citation-enforce';
 import { calculateConfidence, getConfidenceLevel } from './confidence';
 import { classifyIntent } from './intent';
+import { parallelRetrieveAndMerge } from './merge';
 import { persistMessage } from './persistence';
 import { composePrompt } from './prompt-templates';
 import { rewriteQuery } from './query-rewrite';
-import { searchFDACorpus } from './retrievers/fda';
 import type { RetrievedChunk } from './retrievers/hybrid-search';
-import { OrderViolationError, generateStructuredBlocks } from './structured-blocks';
+import { classifyAndRoute } from './router';
 import { StreamOrderValidator } from './streaming';
+import { OrderViolationError, generateStructuredBlocks } from './structured-blocks';
 
 // Minimum delay between trace active → done transitions for perceptibility (REQ-CHAT-016).
 const TRACE_MIN_DELAY_MS = 500;
@@ -84,16 +85,33 @@ export async function* consult(
   if (signal?.aborted) return;
   const rewrittenQuery = rewriteQuery(input.question, input.locale, intent);
 
-  // ---- Stage 3: Hybrid search ----
-  yield* emit({ type: 'trace', step: '검색 중: FDA 코퍼스', status: 'active' });
+  // ---- Stage 3: Multi-corpus retrieval via router + merge (REQ-BREADTH-038/039) ----
+  yield* emit({ type: 'trace', step: '규정 코퍼스 검색 중', status: 'active' });
 
   if (signal?.aborted) return;
   const searchStart = Date.now();
-  const chunks = await searchFDACorpus(rewrittenQuery, 10, input.sourceFilter);
+  const { corpora } = await classifyAndRoute(rewrittenQuery, input.projectTargetMarkets ?? ['us']);
+  const mergedResults = await parallelRetrieveAndMerge(rewrittenQuery, corpora, { limit: 10 });
+  // Adapt RetrievalResult[] → RetrievedChunk[] shape expected by composePrompt.
+  const chunks: RetrievedChunk[] = mergedResults.map((r) => ({
+    sectionId: r.id,
+    sourceId: r.sourceId,
+    anchor: (r.metadata.anchor as string | undefined) ?? '',
+    text: r.content,
+    offset: (r.metadata.offset as number | undefined) ?? 0,
+    vec_score: r.score,
+    fts_score: r.score,
+    combined_score: r.score,
+    orgLabel: (r.metadata.orgLabel as string | undefined) ?? '',
+    title: (r.metadata.title as string | undefined) ?? '',
+    year: (r.metadata.year as number | null | undefined) ?? null,
+    type: (r.metadata.type as string | undefined) ?? '',
+    url: (r.metadata.url as string | null | undefined) ?? null,
+  }));
   const searchElapsed = Date.now() - searchStart;
   if (searchElapsed < TRACE_MIN_DELAY_MS) await sleep(TRACE_MIN_DELAY_MS - searchElapsed);
 
-  yield* emit({ type: 'trace', step: '검색 중: FDA 코퍼스', status: 'done' });
+  yield* emit({ type: 'trace', step: '규정 코퍼스 검색 중', status: 'done' });
 
   // Audit: source access — one row per unique sourceId in top-8 chunks.
   const topChunks = chunks.slice(0, 8);

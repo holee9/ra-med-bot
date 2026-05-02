@@ -31,6 +31,9 @@ export const ConsultRequestSchema = z.object({
 
   /** Response locale. Defaults to 'ko'. */
   locale: z.enum(['ko', 'en']).default('ko'),
+
+  /** Target market codes for RAG router corpus selection (REQ-BREADTH-038). */
+  projectTargetMarkets: z.array(z.string()).optional(),
 });
 
 export type ConsultRequest = z.infer<typeof ConsultRequestSchema>;
