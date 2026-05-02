@@ -13,12 +13,34 @@
 import { db } from './db/client';
 import { auditLogs } from './db/schema';
 
-// Phase 1 audit_action values. Extending this union requires:
+// Phase 1 + Breadth (SPEC-REGULA-BREADTH-001) audit_action values.
+// Extending this union requires:
 //   1. ALTER TYPE audit_action ADD VALUE ... (new migration)
 //   2. Update lib/db/schema.ts auditActionEnum
 //   3. Update this type
 // Keep them in lock-step or the runtime insert will fail.
-export type AuditAction = 'llm.call' | 'source.access' | 'expert_review.flag';
+//
+// Phase 1 original values (3):
+//   llm.call, source.access, expert_review.flag
+//
+// Phase 3 / Breadth values added via 0003_breadth_audit_actions.sql (10):
+//   conversations.list, conversation.view, message.feedback,
+//   template.list, template.download, updates.list, dashboard.view,
+//   projects.list, project.create, project.update
+export type AuditAction =
+  | 'llm.call'
+  | 'source.access'
+  | 'expert_review.flag'
+  | 'conversations.list'
+  | 'conversation.view'
+  | 'message.feedback'
+  | 'template.list'
+  | 'template.download'
+  | 'updates.list'
+  | 'dashboard.view'
+  | 'projects.list'
+  | 'project.create'
+  | 'project.update';
 
 export interface AuditEvent {
   /** User UUID, or null for system-initiated events. */

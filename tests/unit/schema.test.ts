@@ -69,13 +69,15 @@ describe('lib/audit.ts (REQ-FND-048, 049, 049a)', () => {
     expect(src).toMatch(/export async function writeAudit\(/);
   });
 
-  it('AuditAction type contains exactly the 3 Phase 1 values (literal source check)', () => {
+  it('AuditAction type contains all 3 Phase 1 values (REQ-FND-048)', () => {
     const src = readText('lib/audit.ts');
-    // Verify exact union — adding a value here without an ALTER TYPE migration
-    // would break the runtime insert.
-    expect(src).toMatch(
-      /export type AuditAction\s*=\s*'llm\.call'\s*\|\s*'source\.access'\s*\|\s*'expert_review\.flag'/,
-    );
+    // Verify Phase 1 values are present — the union is extended by
+    // 0003_breadth_audit_actions.sql (SPEC-REGULA-BREADTH-001 REQ-BREADTH-057).
+    // The exact literal count is tested in tests/unit/audit.test.ts.
+    expect(src).toMatch(/export type AuditAction/);
+    expect(src).toMatch(/'llm\.call'/);
+    expect(src).toMatch(/'source\.access'/);
+    expect(src).toMatch(/'expert_review\.flag'/);
   });
 });
 
