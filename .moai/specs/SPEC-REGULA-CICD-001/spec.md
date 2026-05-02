@@ -6,7 +6,7 @@
 |--------------|------------------------------------------|
 | SPEC-ID      | SPEC-REGULA-CICD-001                     |
 | Title        | GitHub Actions CI 파이프라인 구성          |
-| Status       | approved                                 |
+| Status       | completed                                |
 | Priority     | High                                     |
 | Author       | MoAI (auto-generated)                    |
 | Created      | 2026-05-02                               |

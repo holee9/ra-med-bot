@@ -36,6 +36,14 @@ export type Env = z.infer<typeof envSchema>;
  * the per-field issues array.
  */
 export function parseEnv(source: NodeJS.ProcessEnv = process.env): Env {
+  // During `next build`, Next.js collects route data before env vars are set.
+  // SKIP_ENV_VALIDATION=1 is injected by next.config.mjs only for that phase
+  // so the DB/auth modules can be imported without crashing. Runtime callers
+  // (next dev, next start, pnpm test) never have this set, so validation runs.
+  if (source.SKIP_ENV_VALIDATION === '1') {
+    return {} as Env;
+  }
+
   // Auth.js historically used several env-var names for the Microsoft Entra
   // provider. Accept any of them so contributors are not blocked by naming.
   const microsoftId =

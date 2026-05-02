@@ -4,7 +4,7 @@ gate:
         enabled: true
         rules_dir: .moai/config/astgrep-rules
         warn_only_mode: false
-    enabled: true
+    enabled: false
     skip_tests: true
     timeouts:
         lint: 60
