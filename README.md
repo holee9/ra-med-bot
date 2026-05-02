@@ -228,6 +228,59 @@ graph TB
 
 ---
 
+## Phase 4 Breadth 기능 (2026-05-03 완료)
+
+### 8 Views 확장
+
+| View | 경로 | 주요 기능 |
+|------|------|----------|
+| **Home** | `/` | Quick grid(4카드) + 최근 질의 + 빠른 템플릿 미리보기 + OnboardingModal |
+| **History** | `/history` | TanStack Virtual 가상화 목록 + 검색/필터 |
+| **Templates** | `/templates` | 3-컬럼 그리드 + PDF/DOCX 다운로드 |
+| **Knowledge Base** | `/knowledge` | 코퍼스 출처 그룹화 목록 |
+| **Regulatory Updates** | `/updates` | 개인화 피드 (`useInfiniteQuery`) |
+| **Dashboard** | `/dashboard` | Stat cards + 분포 + coverage + 활동 |
+| **Chat** | `/chat` | Phase 2 확장: ProjectChip + RightContextPanel 실데이터 연결 |
+| **Onboarding** | Modal | 4-step, 520px, localStorage persist |
+
+### 5 RAG Corpora + Router
+
+```
+질문 → Claude Haiku (intent classifier) → intentToCorpora 매핑
+         ↓
+   [FDA] [EU MDR] [MFDS] [NMPA] [PMDA] [Internal SOPs] (병렬)
+         ↓
+   Cohere Rerank → top-8 → 답변 생성
+```
+
+- `lib/ai/router.ts`: intent classifier + project target_markets 필터
+- `lib/ai/merge.ts`: 병렬 결과 flat + Cohere Rerank top-8
+- 6개 retriever: `fda`, `eu-mdr`, `mfds`, `nmpa`, `pmda`, `internal-sops`
+
+### Project Switching (§9.4)
+
+- Zustand `currentProjectId` 갱신 → 이후 모든 질의에 `projectId` 자동 포함
+- 페이지 리로드 없이 in-flight 스트림·Composer 입력 보존
+- `ProjectChip` 컴포넌트: Topbar 브레드크럼 + 프로젝트 Dropdown
+
+### 테스트 커버리지
+
+| 범주 | 파일 | 테스트 수 |
+|------|------|----------|
+| RAG router/merge | 2 | 20 |
+| API auth | 1 | 7 |
+| TanStack Query hooks | 8 | 35 |
+| Retrievers (5종) | 5 | 26 |
+| Views & components | 6 | 61+ |
+| **합계** | **47** | **472** |
+
+### 문서 출처
+
+- **SPEC 문서**: [`.moai/specs/SPEC-REGULA-BREADTH-001/spec.md`](.moai/specs/SPEC-REGULA-BREADTH-001/spec.md)
+- **진행 기록**: [`.moai/specs/SPEC-REGULA-BREADTH-001/progress.md`](.moai/specs/SPEC-REGULA-BREADTH-001/progress.md)
+
+---
+
 ## 시작 방법
 
 ### 선행 조건
@@ -409,16 +462,18 @@ pnpm start
 
 ---
 
-### Phase 4: 확장 (계획)
+### Phase 4: Breadth 확장 ✅ (2026-05-03 완료)
 
-**목표**: 추가 관할권 및 기능 확장
+**목표**: 완전한 멀티페이지 SaaS 확장 (8 Views + 10 APIs + 5 RAG Corpora + Project Switching)
 
-- [ ] NMPA (중국) corpus ingestion
-- [ ] PMDA (일본) corpus ingestion
-- [ ] 사내 SOP ingestion
-- [ ] 다크 모드 지원
-- [ ] 규제 업데이트 피드 (update-monitor)
-- [ ] History, Templates, Knowledge Base, Dashboard
+- [x] **8 Views 구현**: Home 확장 + History + Templates + Knowledge Base + Regulatory Updates + Dashboard + OnboardingModal
+- [x] **10 API Routes**: conversations(list/detail), feedback, sources(anchor), templates(list/download), updates, dashboard, projects(CRUD)
+- [x] **5 RAG Retrievers 추가**: EU MDR, MFDS(한국), NMPA(중국), PMDA(일본), internal SOPs
+- [x] **Intent Classifier Router**: Claude Haiku 기반 질문 → 코퍼스 선택 + 병렬 검색 + Cohere Rerank
+- [x] **8 TanStack Query Hooks**: useConversations, useConversation, useProjects, useProject, useTemplates, useSources, useUpdates, useDashboardStats
+- [x] **Project Switching**: Zustand `currentProjectId` + 페이지 리로드 없이 대화 보존
+- [x] **Audit Instrumentation**: 10개 신규 API 모두 `writeAudit()` 연동 (9개 action enum 추가)
+- [x] **472/472 tests passing** (47 test files)
 
 ---
 

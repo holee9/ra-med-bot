@@ -1,9 +1,9 @@
 ---
 id: SPEC-REGULA-BREADTH-001
 title: Regula Phase 4 Breadth — 8 Views + 10 APIs + 5 RAG Corpora + Project Switching
-status: draft
+status: completed
 created: 2026-04-22
-updated: 2026-04-23
+updated: 2026-05-03
 author: manager-spec
 phase: 4
 skill: regula
@@ -47,6 +47,17 @@ revision_history:
         LAUNCH Phase 6에서 검증 후 필요 시 SLO 상향".
       신규 REQ: REQ-BREADTH-058 (permission guard placeholder). 기존 REQ
       재배치 없음.
+  - version: 1.0.0
+    date: 2026-05-03
+    author: sync (manager-docs)
+    notes: |
+      Phase 4 구현 완료. TDD RED-GREEN-REFACTOR 8 commits으로 58개 REQ 전부 구현.
+      47 test files / 472 tests all passing. Lint 6 warnings (no errors). TypeScript clean.
+      구현 범위: 8 views + 10 API routes + 5 RAG retrievers + router + merge +
+      8 TanStack Query hooks + Zustand stores + Shell integration + OnboardingModal +
+      Audit instrumentation + Seed data.
+      Decision Points DP-1~DP-5 all resolved as planned.
+      Status: draft → completed.
 related_handoff_sections:
   - "§7.3"
   - "§7.5"

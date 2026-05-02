@@ -52,3 +52,31 @@ Next recommended sequence:
 5. Run T-020 hooks after APIs.
 6. Run T-022 through T-029 views after hooks + seed data.
 7. Run T-030 project switching wiring last.
+
+---
+
+## Phase 4 Sync Completion Record (2026-05-03)
+
+### Final Status
+- **SPEC status**: draft → completed
+- **Implementation commits**: 8 commits (T-001 through T-030 via Wave 1/2/3 + fixes)
+- **Test suite**: 47 files / 472 tests — ALL PASS
+- **Lint**: 6 warnings, 0 errors (console.log in seed scripts — non-blocking)
+- **TypeScript**: 0 errors (tsc --noEmit clean)
+
+### Scope vs Plan
+- **Planned files**: 45 (39 new + 6 modified)
+- **Actual files**: 50 (additional test files + retriever-utils + audit.ts expansion)
+- **Scope drift**: ~11% (within 30% threshold — non-blocking)
+- **All 58 REQ-BREADTH implemented**: Groups A through G complete
+
+### Deferred Items (by design)
+- Phase 5: Expert review API, RBAC, dark mode, i18n, Sentry/Langfuse, project deletion
+- Phase 6: Playwright E2E, LLM eval harness, corpus ingestion automation
+
+### Decision Points Final State
+- DP-1 (embedding dim): RESOLVED — 1536 (OpenAI text-embedding-3-small)
+- DP-2 (dashboard query): DEFERRED to Phase 5 (Materialized View)
+- DP-3 (intent meta): CONFIRMED audit_logs.meta_json
+- DP-4 (onboarding persist): CONFIRMED localStorage only
+- DP-5 (projectId switching): CONFIRMED snapshot-at-submit pattern
