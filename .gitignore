@@ -196,6 +196,7 @@ node_modules/
 *.tsbuildinfo
 .tscache/
 .next/
+next-env.d.ts
 out/
 
 # ===========================================

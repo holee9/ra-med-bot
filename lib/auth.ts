@@ -17,32 +17,36 @@ import MicrosoftEntraID from 'next-auth/providers/microsoft-entra-id';
 import { db } from './db/client';
 import { getEnv } from './env';
 
-const env = getEnv();
-
-export const { handlers, auth, signIn, signOut } = NextAuth({
-  adapter: DrizzleAdapter(db),
-  // REQ-FND-052: Database session strategy. JWT is rejected because we need
-  // server-side revocation for compliance (forced logout on RA personnel
-  // offboarding) and audit-trail joins by sessionId.
-  session: { strategy: 'database' },
-  providers: [
-    MicrosoftEntraID({
-      clientId: env.AUTH_MICROSOFT_ID,
-      clientSecret: env.AUTH_MICROSOFT_SECRET,
-    }),
-    Google({
-      clientId: env.AUTH_GOOGLE_ID,
-      clientSecret: env.AUTH_GOOGLE_SECRET,
-    }),
-  ],
-  pages: {
-    signIn: '/login',
-  },
-  callbacks: {
-    // Phase 5: wire writeAudit({ action: 'auth.login', actor_id: user.id }) here.
-    // The audit_action enum must be ALTER-TYPE'd to include 'auth.login' first;
-    // see migrations roadmap in DEVELOPMENT.md.
-    signIn: async () => true,
-  },
-  trustHost: true,
+// getEnv() is deferred inside the NextAuth callback to avoid ZodError during
+// `next build` — Next.js collects route data at build time before env vars are
+// present, so module-level validation must not run then.
+export const { handlers, auth, signIn, signOut } = NextAuth(() => {
+  const env = getEnv();
+  return {
+    adapter: DrizzleAdapter(db),
+    // REQ-FND-052: Database session strategy. JWT is rejected because we need
+    // server-side revocation for compliance (forced logout on RA personnel
+    // offboarding) and audit-trail joins by sessionId.
+    session: { strategy: 'database' },
+    providers: [
+      MicrosoftEntraID({
+        clientId: env.AUTH_MICROSOFT_ID,
+        clientSecret: env.AUTH_MICROSOFT_SECRET,
+      }),
+      Google({
+        clientId: env.AUTH_GOOGLE_ID,
+        clientSecret: env.AUTH_GOOGLE_SECRET,
+      }),
+    ],
+    pages: {
+      signIn: '/login',
+    },
+    callbacks: {
+      // Phase 5: wire writeAudit({ action: 'auth.login', actor_id: user.id }) here.
+      // The audit_action enum must be ALTER-TYPE'd to include 'auth.login' first;
+      // see migrations roadmap in DEVELOPMENT.md.
+      signIn: async () => true,
+    },
+    trustHost: true,
+  };
 });
