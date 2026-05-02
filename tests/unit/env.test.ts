@@ -13,6 +13,9 @@ const validEnv: NodeJS.ProcessEnv = {
   AUTH_MICROSOFT_SECRET: 'ms-secret',
   AUTH_GOOGLE_ID: 'g-id',
   AUTH_GOOGLE_SECRET: 'g-secret',
+  // Phase 2 LLM provider keys — required by lib/env.ts envSchema.
+  ANTHROPIC_API_KEY: 'sk-ant-test',
+  OPENAI_API_KEY: 'sk-test',
 };
 
 describe('parseEnv', () => {

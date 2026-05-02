@@ -24,6 +24,13 @@ const envSchema = z.object({
   AUTH_MICROSOFT_SECRET: z.string().min(1, 'AUTH_MICROSOFT_SECRET is required'),
   AUTH_GOOGLE_ID: z.string().min(1, 'AUTH_GOOGLE_ID is required'),
   AUTH_GOOGLE_SECRET: z.string().min(1, 'AUTH_GOOGLE_SECRET is required'),
+
+  // Phase 2 LLM providers.
+  ANTHROPIC_API_KEY: z.string().min(1, 'ANTHROPIC_API_KEY is required'),
+  OPENAI_API_KEY: z.string().min(1, 'OPENAI_API_KEY is required'),
+
+  // Optional: label shown in the UI for the LLM model.
+  NEXT_PUBLIC_LLM_MODEL_LABEL: z.string().optional(),
 });
 
 export type Env = z.infer<typeof envSchema>;
@@ -58,6 +65,9 @@ export function parseEnv(source: NodeJS.ProcessEnv = process.env): Env {
     AUTH_MICROSOFT_SECRET: microsoftSecret,
     AUTH_GOOGLE_ID: source.AUTH_GOOGLE_ID,
     AUTH_GOOGLE_SECRET: source.AUTH_GOOGLE_SECRET,
+    ANTHROPIC_API_KEY: source.ANTHROPIC_API_KEY,
+    OPENAI_API_KEY: source.OPENAI_API_KEY,
+    NEXT_PUBLIC_LLM_MODEL_LABEL: source.NEXT_PUBLIC_LLM_MODEL_LABEL,
   });
 }
 
