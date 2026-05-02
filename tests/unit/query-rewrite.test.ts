@@ -102,9 +102,9 @@ describe('rewriteQuery', () => {
       'SOP',
     ];
     // At least 20 distinct acronyms in the lookup table
-    acronyms.forEach((acronym) => {
+    for (const acronym of acronyms) {
       const result = rewriteQuery(`${acronym} requirements`, 'en', 'regulation-lookup');
       expect(typeof result).toBe('string');
-    });
+    }
   });
 });

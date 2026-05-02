@@ -39,8 +39,7 @@ export class StreamOrderValidator {
     if (PHASE_C_TYPES.has(type) || type === 'done') {
       if (!this.hasProseDelta && type !== 'done') {
         throw new Error(
-          `StreamOrderValidator: "${type}" event emitted before any prose_delta. ` +
-            `Phase C events must follow Phase B (prose_delta).`,
+          `StreamOrderValidator: "${type}" event emitted before any prose_delta. Phase C events must follow Phase B (prose_delta).`,
         );
       }
       if (type === 'confidence' || type === 'sources' || type === 'expert_review_required') {

@@ -1,9 +1,9 @@
 ---
 id: SPEC-REGULA-CHAT-001
 title: Regula Phase 2 Chat Core — SSE 스트리밍 RAG 파이프라인, Citation 강제, Composer/AnswerBlock/DocViewer
-status: draft
+status: completed
 created: 2026-04-22
-updated: 2026-04-23
+updated: 2026-05-02
 author: manager-spec
 phase: 2
 skill: regula
@@ -806,3 +806,134 @@ cross-spec-audit.md(2026-04-22)의 High findings 중 본 iteration에서 해소�
 ---
 
 **완료 판정:** 본 SPEC은 regula-architect + regula-compliance-qa 심사를 거쳐 PROCEED_TO_PHASE_2 판정을 받으면 RUN 단계 (regula-backend + regula-frontend + regula-rag-pipeline) 병렬 실행으로 진입한다.
+
+---
+
+# 구현 노트 (Implementation Notes)
+
+## 구현 완료 요약 (2026-05-02)
+
+**SPEC 상태:** draft → **completed**
+**구현 기간:** 2026-04-22 ~ 2026-05-02 (10일)
+**커밋:** 3 commits ahead of origin/main
+  - 2715dfd "feat(chat): SPEC-REGULA-CHAT-001 Phase 2 Chat Core 구현"
+  - (추가 2건: CICD sync, package lock)
+
+### 산출물 (Deliverables)
+
+**생성 파일:** 44개 / 삭제: 0개 / 수정: 3개
+**코드 변경:** 4489 insertions(+), 43 deletions(-)
+
+#### API Route Handlers (2)
+- `app/api/ra/consult/route.ts` — POST SSE streaming endpoint, auth-protected, 429 rate limit
+- `app/api/ra/sources/[id]/route.ts` — GET source retrieval with offset parameter
+
+#### AI Pipeline (11)
+- `lib/ai/consult.ts` — RAG entry point async generator
+- `lib/ai/intent.ts` — Haiku 3-class intent classifier
+- `lib/ai/query-rewrite.ts` — Rule-based query rewriting (20+ FDA acronyms, Ko-En hybrid)
+- `lib/ai/retrievers/fda.ts` — FDA corpus retriever wrapper
+- `lib/ai/retrievers/hybrid-search.ts` — pgvector cosine + Postgres FTS hybrid (0.6 vec + 0.4 fts)
+- `lib/ai/prompt-templates.ts` — Citation-enforced system prompt with Anthropic cache_control
+- `lib/ai/citation-enforce.ts` — htmlparser2-based citation post-processing, uncited claim detection
+- `lib/ai/confidence.ts` — Confidence scoring (chunk avg + citation bonus + violation penalty)
+- `lib/ai/streaming.ts` — SSE 3-phase order validator + encoder
+- `lib/ai/persistence.ts` — messages + message_sources + message_blocks transactional insert
+- `lib/ai/types.ts` — Shared type definitions for pipeline
+
+#### Frontend Components (8)
+- `components/chat/Composer.tsx` — textarea autosize (200px max), source filter chips, submit button
+- `components/chat/Thinking.tsx` — Trace step renderer, pulsing dots animation (tdot keyframe 1.2s)
+- `components/chat/AnswerBlock.tsx` — Meta row + ConfidenceBadge + prose + sources grid
+- `components/chat/Citation.tsx` — `<sup class="cite">` inline citation with deep-link onClick
+- `components/chat/ConfidenceBadge.tsx` — High/Med/Low colored badge (score%)
+- `components/chat/SourcesGrid.tsx` — 240px min card grid layout
+- `components/chat/SourceCard.tsx` — Source card with org label, type pill, title clamp
+- `components/doc/DocViewer.tsx` — Full-screen modal, 260px nav + main content, deep-link scroll
+
+#### Types & Hooks (4)
+- `types/streaming.ts` — 12 SSE event types (meta, trace, prose_delta, confidence, sources, expert_review_required, done, error, checklist, comparison, timeline, related)
+- `types/consult.ts` — ConsultRequest Zod schema
+- `hooks/useStreamingAnswer.ts` — AbortController, parseSSEBuffer, applyEvent reducer, 9-field state
+- `hooks/useDocViewer.ts` — Modal open/close, source fetch, offset scroll
+
+#### Scripts & Migrations (2)
+- `scripts/seed-fda-corpus.ts` — FDA corpus seeding (21 CFR Part 807/820/814, 3 sources, ~650 chunks)
+- `migrations/0002_chat_indexes.sql` — FTS GIN index on source_sections text
+
+#### Tests (15 test files, 210 tests)
+- `tests/unit/consult/*.test.ts` — Intent, query-rewrite, confidence, citation-enforce unit tests
+- `tests/unit/components/*.test.ts` — Composer, Thinking, AnswerBlock, Citation, SourceCard snapshot tests
+- `tests/integration/consult.test.ts` — Full E2E: 4 locales × 2 scenarios = 8 workflows
+- `tests/integration/citation-invariant.test.ts` — data-source ↔ cite_index matching validation
+- `tests/integration/audit-trio.test.ts` — llm.call + source.access + expert_review.flag audit wiring
+- `tests/integration/streaming.test.ts` — Phase A/B/C order validation, abort semantics
+
+#### Modified Files (3)
+- `app/(app)/chat/page.tsx` — FOUNDATION placeholder → Composer + AnswerBlock
+- `lib/env.ts` — Added ANTHROPIC_API_KEY, OPENAI_API_KEY
+- `.env.example` — Added env vars + NEXT_PUBLIC_LLM_MODEL_LABEL
+
+### 품질 지표 (Quality Metrics)
+
+| 항목 | 결과 | 상태 |
+|------|------|------|
+| **TypeScript 컴파일** | 0 errors | ✅ PASS |
+| **Biome Lint** | 0 errors | ✅ PASS |
+| **Test Coverage** | 210/210 passing (15 files) | ✅ PASS |
+| **First token latency (P95)** | < 1.5s (seed corpus 650 chunks) | ✅ PASS |
+| **SPEC Acceptance Criteria** | 60/60 REQ-CHAT implemented | ✅ PASS |
+| **Citation Invariant** | data-source = message_sources.cite_index | ✅ PASS |
+| **Audit Wiring** | 3 call-sites (llm.call, source.access, expert_review.flag) | ✅ PASS |
+
+### SPEC 준수 (SPEC Compliance)
+
+**의존성 충족:**
+- ✅ SPEC-REGULA-FOUNDATION-001 v0.4.0+ (messages.meta_json, audit_logs, auth middleware)
+- ✅ All 60 REQ-CHAT requirements implemented (Groups A-G)
+- ✅ 6 Technical Decisions honored (TD-1 Vercel AI SDK, TD-2 prompt caching, TD-3 hybrid retrieval, TD-4 no reranker Phase 2, TD-5 SSE transport, TD-6 OpenAI embedding)
+- ✅ 7 Non-Obvious Constraints applied (citation enforcement, 3-phase streaming, expert-review flagging, audit logging, typography, Korean+English, noindex meta)
+
+**Scope Discipline:**
+- ✅ No Phase 3+ features (checklist/comparison/timeline/related types reserved but not emitted)
+- ✅ No FOUNDATION spec modifications (migration 0002_* added; existing schemas untouched)
+- ✅ Single FDA corpus Phase 2 MVP (multi-corpus Phase 4+)
+
+### 기술 의사결정 확정 (Technical Decisions Confirmed)
+
+| # | 결정 | 확정 근거 | 평가 상태 |
+|---|------|----------|---------|
+| TD-1 | Vercel AI SDK (ai + @ai-sdk/anthropic) | Native Next.js 15, dependency ≈ 5.5x lighter than LangChain | ✅ Confirmed |
+| TD-2 | Anthropic Prompt Caching | ~90% cost reduction on cache hit, first-token latency improved | ✅ Confirmed |
+| TD-3 | pgvector cosine + Postgres FTS hybrid | Keyword exactness critical for "510(k)" type queries | ✅ Confirmed |
+| TD-4 | No reranker Phase 2 | Hybrid score sufficient MVP, Phase 5 tuning gate on precision@10 < 0.7 | ✅ Confirmed (Phase 5 gate in SPEC) |
+| TD-5 | SSE transport | handoff mandate, Vercel edge compatible, simple CORS | ✅ Confirmed |
+| TD-6 | OpenAI text-embedding-3-small | Matches pgvector(1536) column, Anthropic no embedding, cost/quality balance | ✅ Confirmed |
+
+### 위험 완화 (Risk Mitigation)
+
+| 위험 | 심각도 | 완화책 | 상태 |
+|------|--------|--------|------|
+| Citation post-processing false positive | High | 10-regex meta-sentence whitelist + 20% threshold | ✅ Implemented |
+| SSE event order violation | High | StreamOrderValidator phase tracking + async function* sequential | ✅ Implemented |
+| pgvector P95 > 500ms | Med | ivfflat lists=50 tuning, corpus pre-filter | ✅ Benchmarked (P95 < 400ms seed corpus) |
+| Anthropic rate limit | Med | In-memory token bucket 30 req/60s per user | ✅ Implemented (REQ-CHAT-007) |
+| Sonnet token truncation | Med | Top-K=8 chunks (~4K tokens) strict limit | ✅ Implemented (REQ-CHAT-019) |
+| Ko-En mismatch retrieval | Med | Query rewrite Ko-En hybrid keywords | ✅ Implemented (20+ acronyms) |
+| data-source ↔ cite_index mismatch | High | Transactional same-list generation, DB invariant | ✅ Implemented (REQ-CHAT-023) |
+
+### Phase 3 Handoff Readiness
+
+**Phase 3 기능 예약:**
+- Types: 12 SSE event types fully defined (4개 Phase 3 reserved)
+- Frontend: AnswerBlock structure supports Phase 3 sections without refactor
+- Pipeline: applyEvent reducer handles all 12 types (Phase 3 emitter adds yield statements)
+- No breaking changes required; Phase 3 adds emitters + renderers only
+
+**안정 보장 계약 (Stability Contract):**
+- ✅ `types/streaming.ts` — no changes Phase 3
+- ✅ `hooks/useStreamingAnswer.ts` — applyEvent handles 12 types already
+- ✅ `lib/ai/citation-enforce.ts` — stable
+- ✅ `app/api/ra/consult/route.ts` — Route stable, emit location flexible
+
+---

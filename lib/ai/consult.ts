@@ -97,8 +97,12 @@ export async function* consult(
   const topChunks = chunks.slice(0, 8);
   const uniqueSources = new Map<string, RetrievedChunk[]>();
   for (const c of topChunks) {
-    if (!uniqueSources.has(c.sourceId)) uniqueSources.set(c.sourceId, []);
-    uniqueSources.get(c.sourceId)!.push(c);
+    let chunks = uniqueSources.get(c.sourceId);
+    if (!chunks) {
+      chunks = [];
+      uniqueSources.set(c.sourceId, chunks);
+    }
+    chunks.push(c);
   }
 
   // ---- Stage 4: Extract relevant sections ----
@@ -330,10 +334,11 @@ function countCitedSentences(html: string): number {
 function extractDataSourceIndices(html: string): Set<number> {
   const cited = new Set<number>();
   const re = /data-source="(\d+)"/g;
-  let m: RegExpExecArray | null;
-  while ((m = re.exec(html)) !== null) {
+  let m = re.exec(html);
+  while (m !== null) {
     const captured = m[1];
     if (captured !== undefined) cited.add(Number.parseInt(captured, 10));
+    m = re.exec(html);
   }
   return cited;
 }

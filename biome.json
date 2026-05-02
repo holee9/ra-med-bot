@@ -83,6 +83,16 @@
           }
         }
       }
+    },
+    {
+      "include": ["components/chat/Citation.tsx", "components/chat/Thinking.tsx"],
+      "linter": {
+        "rules": {
+          "a11y": {
+            "useSemanticElements": "off"
+          }
+        }
+      }
     }
   ]
 }

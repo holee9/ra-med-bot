@@ -182,6 +182,52 @@ graph TB
 
 ---
 
+## Phase 2 Chat Core 기능 (2026-05-02 완료)
+
+### 스트리밍 RAG 파이프라인
+
+- **SSE 3단계 스트리밍**: 의도 분류(trace) → 답변 생성(prose_delta) → 구조화 메타(sources, confidence)
+- **Hybrid Retrieval**: pgvector 코사인 유사도 (60%) + Postgres FTS BM25 (40%)
+- **쿼리 재작성**: Rule-based 약자 확장(510(k), QSR 등 20개) + 한-영 혼합 키워드 보강
+- **Citation 강제**: htmlparser2 기반 인용 후처리, 미인용 문장 자동 감지 및 마크
+
+### Frontend 컴포넌트
+
+| 컴포넌트 | 기능 |
+|---------|------|
+| **Composer** | 텍스트 입력(200px max), 소스 필터 칩(전체/규제/사내), 전송 버튼 |
+| **Thinking** | 실시간 분석 단계 표시(trace: "검색 중" → "관련 조항 추출" → "답변 생성") |
+| **AnswerBlock** | 신뢰도 배지 + 답변 본문(prose + inline citation) + 출처 그리드 |
+| **Citation** | `<sup>N</sup>` 클릭 시 DocViewer 딥링크 (#source=N&offset=M) |
+| **DocViewer** | 전문 모달, 260px 네비게이션 + 하이라이트 스크롤 |
+
+### Audit & Compliance
+
+- **Citation 불변식**: HTML `data-source` = DB `message_sources.cite_index` (규제 신뢰성)
+- **3-Action Audit Logging**:
+  1. `llm.call` — 질문 SHA256(PII-free) + 모델 + locale
+  2. `source.access` — 인용된 출처별 1회, 인용 인덱스 포함
+  3. `expert_review.flag` — 자동 플래깅(신뢰도 < 0.7 또는 인용 커버리지 < 80%)
+- **21 CFR Part 11 준비**: append-only audit_logs 스키마, 전체 LLM 호출 기록
+
+### 성능 목표 (Achieved)
+
+| 목표 | 달성 | 측정 |
+|------|------|------|
+| **첫 토큰 도달** | ≤ 1.5s (P95) | ✅ Achieved |
+| **SSE 이벤트 순서** | Phase A < B < C | ✅ Validated |
+| **Citation Coverage** | 100% (미인용 자동 감지) | ✅ Tested |
+| **TypeScript 타입 안전** | 0 errors | ✅ tsc --noEmit |
+| **테스트 커버리지** | 210/210 passing | ✅ All pass |
+
+### 문서 출처
+
+- **SPEC 문서**: [`.moai/specs/SPEC-REGULA-CHAT-001/spec.md`](.moai/specs/SPEC-REGULA-CHAT-001/spec.md)
+- **구현 보고서**: [`.moai/reports/sync-SPEC-REGULA-CHAT-001-2026-05-02.md`](.moai/reports/sync-SPEC-REGULA-CHAT-001-2026-05-02.md)
+- **GitHub Issue**: [#4 SPEC-REGULA-CHAT-001](https://github.com/holee9/ra-med-bot/issues/4)
+
+---
+
 ## 시작 방법
 
 ### 선행 조건
