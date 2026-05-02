@@ -59,7 +59,7 @@ const KO_EN_KEYWORDS: Record<string, string> = {
 export function rewriteQuery(
   question: string,
   locale: 'ko' | 'en',
-  intent: 'regulation-lookup' | 'comparison' | 'general',
+  _intent: 'regulation-lookup' | 'comparison' | 'general',
 ): string {
   let rewritten = question;
   const addedTerms: string[] = [];

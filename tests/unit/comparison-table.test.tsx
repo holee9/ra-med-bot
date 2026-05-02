@@ -66,13 +66,7 @@ describe('ComparisonTable fallback (REQ-STRUCT-023)', () => {
   });
 
   it('does not render fallback when data is valid', () => {
-    render(
-      <ComparisonTable
-        title="Test"
-        cols={['A', 'B']}
-        rows={[['x', 'y']]}
-      />,
-    );
+    render(<ComparisonTable title="Test" cols={['A', 'B']} rows={[['x', 'y']]} />);
     expect(screen.queryByText('표 데이터 형식 오류')).toBeNull();
     expect(screen.getByRole('table')).toBeDefined();
   });

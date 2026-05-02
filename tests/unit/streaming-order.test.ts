@@ -56,6 +56,20 @@ describe('StreamOrderValidator', () => {
     expect(() => v.validate({ type: 'sources', items: [] })).not.toThrow();
   });
 
+  it('throws when structured event is emitted before any prose_delta', () => {
+    const v = new StreamOrderValidator();
+    v.validate({ type: 'meta', conversationId: 'c', messageId: 'm' });
+    expect(() => v.validate({ type: 'checklist', items: [] })).toThrow();
+  });
+
+  it('throws when Phase C events move backward', () => {
+    const v = new StreamOrderValidator();
+    v.validate({ type: 'meta', conversationId: 'c', messageId: 'm' });
+    v.validate({ type: 'prose_delta', delta: 'hello' });
+    v.validate({ type: 'sources', items: [] });
+    expect(() => v.validate({ type: 'confidence', level: 'high', score: 0.9 })).toThrow();
+  });
+
   it('accepts done as final event', () => {
     const v = new StreamOrderValidator();
     v.validate({ type: 'meta', conversationId: 'c', messageId: 'm' });
@@ -63,6 +77,14 @@ describe('StreamOrderValidator', () => {
     v.validate({ type: 'confidence', level: 'high', score: 0.9 });
     v.validate({ type: 'sources', items: [] });
     expect(() => v.validate({ type: 'done', duration_ms: 100 })).not.toThrow();
+  });
+
+  it('throws after a terminal done event', () => {
+    const v = new StreamOrderValidator();
+    v.validate({ type: 'meta', conversationId: 'c', messageId: 'm' });
+    v.validate({ type: 'prose_delta', delta: 'hello' });
+    v.validate({ type: 'done', duration_ms: 100 });
+    expect(() => v.validate({ type: 'done', duration_ms: 101 })).toThrow();
   });
 
   it('accepts error event at any phase', () => {

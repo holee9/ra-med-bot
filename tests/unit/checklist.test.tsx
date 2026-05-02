@@ -18,48 +18,24 @@ const baseItems = [
 
 describe('Checklist component (REQ-STRUCT-019)', () => {
   it('renders 3 checkboxes for 3 items', () => {
-    render(
-      <Checklist
-        blockId="block-1"
-        messageId="msg-1"
-        items={baseItems}
-      />,
-    );
+    render(<Checklist blockId="block-1" messageId="msg-1" items={baseItems} />);
     const checkboxes = screen.getAllByRole('checkbox');
     expect(checkboxes.length).toBe(3);
   });
 
   it('renders item titles', () => {
-    render(
-      <Checklist
-        blockId="block-1"
-        messageId="msg-1"
-        items={baseItems}
-      />,
-    );
+    render(<Checklist blockId="block-1" messageId="msg-1" items={baseItems} />);
     expect(screen.getByText('21 CFR §807.81(a) 요구사항 검토')).toBeDefined();
     expect(screen.getByText('기술 파일 준비')).toBeDefined();
   });
 
   it('renders ref badge for items with ref', () => {
-    render(
-      <Checklist
-        blockId="block-1"
-        messageId="msg-1"
-        items={baseItems}
-      />,
-    );
+    render(<Checklist blockId="block-1" messageId="msg-1" items={baseItems} />);
     expect(screen.getByText('21 CFR §807.81')).toBeDefined();
   });
 
   it('reflects completed state on checkbox', () => {
-    render(
-      <Checklist
-        blockId="block-1"
-        messageId="msg-1"
-        items={baseItems}
-      />,
-    );
+    render(<Checklist blockId="block-1" messageId="msg-1" items={baseItems} />);
     const checkboxes = screen.getAllByRole('checkbox');
     // item-2 is completed
     expect((checkboxes[1] as HTMLInputElement).checked).toBe(true);
@@ -68,14 +44,7 @@ describe('Checklist component (REQ-STRUCT-019)', () => {
   });
 
   it('does not render checkboxes when readOnly=true (or disables them)', () => {
-    render(
-      <Checklist
-        blockId="block-1"
-        messageId="msg-1"
-        items={baseItems}
-        readOnly
-      />,
-    );
+    render(<Checklist blockId="block-1" messageId="msg-1" items={baseItems} readOnly />);
     const checkboxes = screen.getAllByRole('checkbox');
     // In readOnly mode, checkboxes should be disabled
     for (const checkbox of checkboxes) {
@@ -92,13 +61,7 @@ describe('Checklist optimistic update (REQ-STRUCT-020)', () => {
       status: 204,
     } as Response);
 
-    render(
-      <Checklist
-        blockId="block-1"
-        messageId="msg-1"
-        items={baseItems}
-      />,
-    );
+    render(<Checklist blockId="block-1" messageId="msg-1" items={baseItems} />);
 
     const checkboxes = screen.getAllByRole('checkbox');
     const firstCheckbox = checkboxes[0] as HTMLInputElement;

@@ -86,8 +86,12 @@ export async function POST(req: NextRequest): Promise<Response> {
   const stream = new ReadableStream({
     async start(controller) {
       const encoder = new TextEncoder();
+      let terminalEventEmitted = false;
 
       function push(ev: StreamEvent): void {
+        if (ev.type === 'done' || ev.type === 'error') {
+          terminalEventEmitted = true;
+        }
         controller.enqueue(encoder.encode(encodeSSE(ev)));
       }
 
@@ -108,7 +112,7 @@ export async function POST(req: NextRequest): Promise<Response> {
         });
       } finally {
         // REQ-CHAT-009 — done event as last event.
-        if (!signal.aborted) {
+        if (!signal.aborted && !terminalEventEmitted) {
           push({ type: 'done', duration_ms: Date.now() - startTs });
         }
         controller.close();

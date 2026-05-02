@@ -22,8 +22,7 @@ const baseInput = {
   locale: 'ko' as const,
 };
 
-const REQUIRED_ENDING =
-  '응답은 오직 JSON 객체로만 출력하라. 코드 블록, 해설, 서문 금지.';
+const REQUIRED_ENDING = '응답은 오직 JSON 객체로만 출력하라. 코드 블록, 해설, 서문 금지.';
 
 describe('buildChecklistClassifier (REQ-STRUCT-017)', () => {
   it('returns a non-empty string', () => {

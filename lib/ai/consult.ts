@@ -24,8 +24,8 @@ import { composePrompt } from './prompt-templates';
 import { rewriteQuery } from './query-rewrite';
 import { searchFDACorpus } from './retrievers/fda';
 import type { RetrievedChunk } from './retrievers/hybrid-search';
-import { OrderViolationError, generateStructuredBlocks } from './structured-blocks';
 import { StreamOrderValidator } from './streaming';
+import { OrderViolationError, generateStructuredBlocks } from './structured-blocks';
 
 // Minimum delay between trace active → done transitions for perceptibility (REQ-CHAT-016).
 const TRACE_MIN_DELAY_MS = 500;
