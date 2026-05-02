@@ -13,7 +13,14 @@ import dynamic from 'next/dynamic';
 import ReactMarkdown from 'react-markdown';
 import rehypeRaw from 'rehype-raw';
 import rehypeSanitize, { defaultSchema } from 'rehype-sanitize';
-import type { ChecklistEvent, ChecklistItem, ComparisonEvent, ConfidenceEvent, SourceItem, TimelineEvent } from '../../types/streaming';
+import type {
+  ChecklistEvent,
+  ChecklistItem,
+  ComparisonEvent,
+  ConfidenceEvent,
+  SourceItem,
+  TimelineEvent,
+} from '../../types/streaming';
 import { Callout } from './Callout';
 import { Checklist } from './Checklist';
 import { ComparisonTable } from './ComparisonTable';
@@ -147,11 +154,7 @@ export function AnswerBlock({
           <p className="section-label mb-2 font-serif text-[10px] uppercase tracking-widest text-ink-400">
             주요 관할권별 비교
           </p>
-          <ComparisonTable
-            title={comparison.title}
-            cols={comparison.cols}
-            rows={comparison.rows}
-          />
+          <ComparisonTable title={comparison.title} cols={comparison.cols} rows={comparison.rows} />
         </section>
       )}
 
@@ -182,12 +185,8 @@ export function AnswerBlock({
             이어서 질문하기
           </p>
           <div className="flex flex-wrap gap-2">
-            {related.map((text, idx) => (
-              <SuggestionPill
-                key={idx}
-                text={text}
-                onClick={() => onSuggestionClick?.(text)}
-              />
+            {related.map((text) => (
+              <SuggestionPill key={text} text={text} onClick={() => onSuggestionClick?.(text)} />
             ))}
           </div>
         </section>

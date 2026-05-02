@@ -93,6 +93,20 @@
           }
         }
       }
+    },
+    {
+      "include": [
+        "components/chat/ComparisonTable.tsx",
+        "components/chat/Timeline.tsx",
+        "components/chat/RightContextPanel.tsx"
+      ],
+      "linter": {
+        "rules": {
+          "suspicious": {
+            "noArrayIndexKey": "off"
+          }
+        }
+      }
     }
   ]
 }

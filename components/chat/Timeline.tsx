@@ -21,9 +21,7 @@ export function Timeline({ items }: TimelineProps) {
           {/* Bullet */}
           <div
             className={`relative z-10 mt-1.5 h-[9px] w-[9px] flex-shrink-0 rounded-full border-2 ${
-              item.current
-                ? 'bg-accent-500 border-accent-500'
-                : 'bg-surface border-brand-400'
+              item.current ? 'bg-accent-500 border-accent-500' : 'bg-surface border-brand-400'
             }`}
             aria-hidden="true"
           />
@@ -36,12 +34,12 @@ export function Timeline({ items }: TimelineProps) {
             >
               {item.date}
             </span>
-            <span className={`text-sm font-medium ${item.current ? 'text-accent-700' : 'text-ink-800'}`}>
+            <span
+              className={`text-sm font-medium ${item.current ? 'text-accent-700' : 'text-ink-800'}`}
+            >
               {item.title}
             </span>
-            {item.description && (
-              <span className="text-xs text-ink-500">{item.description}</span>
-            )}
+            {item.description && <span className="text-xs text-ink-500">{item.description}</span>}
           </div>
         </div>
       ))}

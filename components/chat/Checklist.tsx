@@ -14,7 +14,12 @@ interface ChecklistProps {
   readOnly?: boolean;
 }
 
-export function Checklist({ blockId, messageId, items: initialItems, readOnly = false }: ChecklistProps) {
+export function Checklist({
+  blockId,
+  messageId,
+  items: initialItems,
+  readOnly = false,
+}: ChecklistProps) {
   const [items, setItems] = useState<ChecklistItem[]>(initialItems);
   const debounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const [toastMessage, setToastMessage] = useState<string | null>(null);
@@ -65,10 +70,7 @@ export function Checklist({ blockId, messageId, items: initialItems, readOnly = 
   return (
     <div className="flex flex-col gap-2">
       {toastMessage && (
-        <div
-          role="alert"
-          className="rounded bg-accent-100 px-3 py-2 text-sm text-accent-700"
-        >
+        <div role="alert" className="rounded bg-accent-100 px-3 py-2 text-sm text-accent-700">
           {toastMessage}
         </div>
       )}
@@ -77,12 +79,11 @@ export function Checklist({ blockId, messageId, items: initialItems, readOnly = 
         {completedCount}/{items.length} 완료
       </p>
 
-      <ul className="flex flex-col gap-1.5" role="list">
+      <ul className="flex flex-col gap-1.5">
         {items.map((item) => (
           <li key={item.id} className="flex items-start gap-2">
             <input
               type="checkbox"
-              role="checkbox"
               id={`checklist-${item.id}`}
               checked={item.completed}
               disabled={readOnly}

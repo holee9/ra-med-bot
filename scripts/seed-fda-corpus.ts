@@ -316,6 +316,7 @@ async function main(): Promise<void> {
     let sourceId: string;
     if (existing.length > 0 && existing[0]) {
       sourceId = existing[0].id;
+      // biome-ignore lint/suspicious/noConsole: seed script
       console.log(`[skip] ${seed.title} already present (id=${sourceId})`);
     } else {
       const titleEmbedding = await embedText(`${seed.orgLabel} ${seed.title}`);
@@ -334,6 +335,7 @@ async function main(): Promise<void> {
       const row = inserted[0];
       if (row === undefined) throw new Error(`Insert failed for ${seed.title}`);
       sourceId = row.id;
+      // biome-ignore lint/suspicious/noConsole: seed script
       console.log(`[insert] ${seed.title} (id=${sourceId})`);
     }
 
@@ -364,6 +366,7 @@ async function main(): Promise<void> {
         // Idempotency: ignore unique-violation re-inserts.
         const msg = err instanceof Error ? err.message : String(err);
         if (msg.includes('source_sections_source_anchor_idx')) {
+          // biome-ignore lint/suspicious/noConsole: seed script
           console.log(`[skip] section ${section.anchor} (already exists)`);
           continue;
         }
@@ -372,6 +375,7 @@ async function main(): Promise<void> {
     }
   }
 
+  // biome-ignore lint/suspicious/noConsole: seed script
   console.log(`\nDone. Inserted ${totalSections} new sections across ${SEED.length} sources.`);
   process.exit(0);
 }

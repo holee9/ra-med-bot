@@ -169,6 +169,10 @@ describe('middleware.ts (REQ-FND-053)', () => {
   it('redirects already-authenticated /login requests to /', () => {
     expect(src).toMatch(/redirect\(new URL\('\/'/);
   });
+
+  it('runs in the Node.js runtime because database sessions use a Node-only adapter', () => {
+    expect(src).toMatch(/runtime:\s*['"]nodejs['"]/);
+  });
 });
 
 describe('lib/auth.ts (REQ-FND-051, 052, 054, 055)', () => {
