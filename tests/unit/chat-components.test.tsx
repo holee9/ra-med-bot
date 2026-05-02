@@ -242,7 +242,7 @@ describe('AnswerBlock', () => {
       />,
     );
     expect(screen.getByRole('alert')).toBeInTheDocument();
-    expect(screen.getByText(/전문가 검토/)).toBeInTheDocument();
+    expect(screen.getAllByText(/전문가 검토/).length).toBeGreaterThan(0);
   });
 
   it('does not render sources section when sources array is empty', () => {

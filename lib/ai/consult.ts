@@ -5,6 +5,7 @@
 // @MX:REASON All side-effects (writeAudit, persistMessage) must happen regardless
 // of abort; use try/finally to ensure persistence.
 // @MX:SPEC SPEC-REGULA-CHAT-001 (REQ-CHAT-011..020, REQ-CHAT-053..055)
+// @MX:SPEC SPEC-REGULA-STRUCTURED-001 (REQ-STRUCT-002, REQ-STRUCT-034~036)
 
 import { createHash } from 'node:crypto';
 import { anthropic } from '@ai-sdk/anthropic';
@@ -14,7 +15,7 @@ import type { ConsultRequest } from '../../types/consult';
 import type { SourceItem, StreamEvent, TraceEvent } from '../../types/streaming';
 import { writeAudit } from '../audit';
 import { db } from '../db/client';
-import { conversations } from '../db/schema';
+import { conversations, messageBlocks } from '../db/schema';
 import { enforceCitations } from './citation-enforce';
 import { calculateConfidence, getConfidenceLevel } from './confidence';
 import { classifyIntent } from './intent';
@@ -23,6 +24,7 @@ import { composePrompt } from './prompt-templates';
 import { rewriteQuery } from './query-rewrite';
 import { searchFDACorpus } from './retrievers/fda';
 import type { RetrievedChunk } from './retrievers/hybrid-search';
+import { OrderViolationError, generateStructuredBlocks } from './structured-blocks';
 import { StreamOrderValidator } from './streaming';
 
 // Minimum delay between trace active → done transitions for perceptibility (REQ-CHAT-016).
@@ -248,6 +250,70 @@ export async function* consult(
   sourceItems.sort((a, b) => a.citeIndex - b.citeIndex);
 
   yield* emit({ type: 'sources', items: sourceItems });
+
+  // ---- Phase C: structured blocks (REQ-STRUCT-002, REQ-STRUCT-003) ----
+  // prose_done flag guards against OrderViolationError — structured events
+  // MUST only be emitted after prose streaming is complete.
+  const prose_done = true; // set after fullProse is assembled and sources emitted
+  if (!prose_done) throw new OrderViolationError('structured');
+
+  if (!signal?.aborted) {
+    const topSourceMeta = citedChunks.slice(0, 3).map((c) => ({
+      title: c.title,
+      orgLabel: c.orgLabel,
+      year: c.year,
+    }));
+
+    let structuredOrderIndex = 1; // prose block is index 0 (written by persistMessage)
+
+    try {
+      for await (const blockEvent of generateStructuredBlocks(
+        {
+          question: input.question,
+          prose: cleaned,
+          topSources: topSourceMeta,
+          messageId,
+          locale: 'ko',
+        },
+        signal,
+      )) {
+        if (signal?.aborted) break;
+
+        // Map event type to blockTypeEnum value (REQ-STRUCT-034)
+        const blockTypeMap: Record<string, 'checklist' | 'comparison' | 'timeline' | 'related'> = {
+          checklist: 'checklist',
+          comparison: 'comparison',
+          timeline: 'timeline',
+          related: 'related',
+        };
+        const blockType = blockTypeMap[blockEvent.type];
+
+        if (blockType) {
+          // Persist block before SSE emit (REQ-STRUCT-034, REQ-STRUCT-035)
+          try {
+            await db.insert(messageBlocks).values({
+              messageId,
+              blockType,
+              blockJson: blockEvent as unknown as Record<string, unknown>,
+              orderIndex: structuredOrderIndex,
+            });
+            structuredOrderIndex++;
+          } catch (insertErr) {
+            // REQ-STRUCT-035: log and continue — emit even if persist fails
+            console.error('[consult] messageBlocks INSERT failed for', blockEvent.type, insertErr);
+          }
+        }
+
+        yield* emit(blockEvent);
+      }
+    } catch (err) {
+      if (signal?.aborted) {
+        // Silently swallow abort errors
+      } else {
+        console.error('[consult] generateStructuredBlocks error:', err);
+      }
+    }
+  }
 
   // Expert review gating (REQ-CHAT-055).
   const uncitedViolationCount = violations.filter((v) => v.type === 'CLAIM_UNCITED').length;

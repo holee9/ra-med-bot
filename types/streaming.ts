@@ -52,10 +52,13 @@ export interface SourcesEvent {
   items: SourceItem[];
 }
 
-// Phase 3 reserve — types defined now, emitted in Phase 3.
+// Phase 3 — structured block item types.
 export interface ChecklistItem {
-  text: string;
-  checked?: boolean;
+  id: string;
+  title: string;
+  completed: boolean;
+  ref?: string;
+  refSourceIndex?: number;
 }
 
 export interface ChecklistEvent {
@@ -72,8 +75,9 @@ export interface ComparisonEvent {
 
 export interface TimelineItem {
   date: string;
-  label: string;
-  description?: string;
+  title: string;
+  description: string;
+  current?: boolean;
 }
 
 export interface TimelineEvent {
