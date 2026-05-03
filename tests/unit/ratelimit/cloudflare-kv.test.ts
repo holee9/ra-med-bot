@@ -1,7 +1,7 @@
 // Tests for lib/ratelimit/cloudflare-kv.ts
 // RED: sliding-window rate limiter backed by Workers KV
 
-import { describe, expect, it, vi, beforeEach } from 'vitest';
+import { beforeEach, describe, expect, it, vi } from 'vitest';
 
 function makeKVMock() {
   const store = new Map<string, string>();
@@ -10,7 +10,9 @@ function makeKVMock() {
       store.set(key, value);
     }),
     get: vi.fn(async (key: string) => store.get(key) ?? null),
-    delete: vi.fn(async (key: string) => { store.delete(key); }),
+    delete: vi.fn(async (key: string) => {
+      store.delete(key);
+    }),
     _store: store,
   } as unknown as KVNamespace;
 }
@@ -71,7 +73,7 @@ describe('createKVRateLimiter', () => {
     // Advance time past the window
     vi.advanceTimersByTime(61 * 1000);
     // KV mock: clear store to simulate TTL expiry
-    (kv as ReturnType<typeof makeKVMock>)._store.clear();
+    (kv as unknown as { _store: Map<string, string> })._store.clear();
 
     const afterExpiry = await limiter.limit('consult', 'user-4');
     expect(afterExpiry.success).toBe(true);

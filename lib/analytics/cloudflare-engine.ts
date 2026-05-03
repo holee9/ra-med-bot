@@ -42,26 +42,19 @@ export async function emitConsultMetric(
   metric: ConsultMetric,
 ): Promise<void> {
   // PII guard — fail-closed
-  const metricKeys = Object.keys(metric as Record<string, unknown>);
-  const piiFound = metricKeys.filter((k) =>
-    PII_FIELDS.includes(k as (typeof PII_FIELDS)[number]),
-  );
+  const metricKeys = Object.keys(metric as unknown as Record<string, unknown>);
+  const piiFound = metricKeys.filter((k) => PII_FIELDS.includes(k as (typeof PII_FIELDS)[number]));
 
   if (piiFound.length > 0) {
     throw new Error(
-      `PII field(s) detected in analytics metric: ${piiFound.join(', ')}. ` +
-        'Analytics Engine MUST NOT receive PII. (REQ-CF-077)',
+      `PII field(s) detected in analytics metric: ${piiFound.join(', ')}. Analytics Engine MUST NOT receive PII. (REQ-CF-077)`,
     );
   }
 
   // Write non-PII datapoint to Analytics Engine
   // Analytics Engine API: writeDataPoint({ blobs?, doubles?, indexes? })
   engine.writeDataPoint({
-    blobs: [
-      metric.region,
-      metric.corpus ?? '',
-      metric.retrieval_backend ?? '',
-    ],
+    blobs: [metric.region, metric.corpus ?? '', metric.retrieval_backend ?? ''],
     doubles: [
       metric.latency_ms,
       metric.cache_hit ? 1 : 0,

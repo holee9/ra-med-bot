@@ -133,7 +133,7 @@ describe('KV key pattern', () => {
       expires: new Date(Date.now() + 86400000),
     });
 
-    const callArg = vi.mocked(kv.put).mock.calls[0][0];
+    const callArg = vi.mocked(kv.put).mock.calls[0]![0];
     expect(callArg).toBe('session:my-token');
   });
 });
@@ -150,7 +150,7 @@ describe('TTL enforcement', () => {
       expires: new Date(Date.now() + 86400000),
     });
 
-    const opts = vi.mocked(kv.put).mock.calls[0][2];
+    const opts = vi.mocked(kv.put).mock.calls[0]![2];
     // 30 days = 2592000 seconds
     expect(opts?.expirationTtl).toBeGreaterThanOrEqual(2592000 - 60);
     expect(opts?.expirationTtl).toBeLessThanOrEqual(2592000 + 60);

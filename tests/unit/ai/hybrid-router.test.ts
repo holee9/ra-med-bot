@@ -4,6 +4,13 @@
 import { describe, expect, it, vi, beforeEach } from 'vitest';
 import type { RetrievalResult } from '../../../lib/ai/retrievers/types';
 
+// Mock internal-sops retriever to prevent hanging dynamic import in test env
+vi.mock('../../../lib/ai/retrievers/internal-sops', () => ({
+  InternalSopsRetriever: class {
+    async retrieve() { return []; }
+  },
+}));
+
 // ── Error type tests ──────────────────────────────────────────────────────────
 
 describe('BadScopeError', () => {

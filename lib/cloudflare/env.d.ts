@@ -1,68 +1,121 @@
-// @MX:ANCHOR [AUTO] CloudflareEnv — single source of truth for all Workers binding types.
-// @MX:REASON All Workers code that needs env bindings imports from here. fan_in will
-// reach 3+ once session store, rate limiter, and hybrid router all reference this type.
-// @MX:SPEC SPEC-REGULA-CLOUDFLARE-001 (REQ-CF-031, REQ-CF-041, REQ-CF-056)
+// Minimal Cloudflare Workers binding declarations used by the Cloudflare runtime
+// adapter files and their unit tests. Keep this local until the project adopts
+// the official Workers type package end-to-end.
 
-/**
- * TypeScript type declarations for Cloudflare Workers environment bindings.
- * Import this interface in Workers-compatible code only (not in Node.js code paths).
- *
- * All binding names must match exactly what is declared in wrangler.toml.
- */
-export interface CloudflareEnv {
-  // ── KV Namespaces ────────────────────────────────────────────────────────
-  /** Auth.js v5 session store */
-  SESSION_KV: KVNamespace;
-  /** Sliding-window rate limit counters */
-  RATELIMIT_KV: KVNamespace;
-  /** Feature flag overrides */
-  FLAGS_KV: KVNamespace;
-  /** Locale preference cache */
-  LOCALE_KV: KVNamespace;
+declare global {
+  interface KVNamespace {
+    get(key: string): Promise<string | null>;
+    put(key: string, value: string, options?: { expirationTtl?: number }): Promise<void>;
+    delete(key: string): Promise<void>;
+  }
 
-  // ── R2 Buckets ───────────────────────────────────────────────────────────
-  /** FDA/EU MDR/MFDS/NMPA/PMDA PDF originals */
-  CORPUS_PUBLIC: R2Bucket;
-  /** ISO 13485/14971 internal SOPs */
-  CORPUS_INTERNAL: R2Bucket;
-  /** audit_logs cold storage (Iceberg format, compliance mode object lock) */
-  AUDIT_COLD: R2Bucket;
-  /** Submission document previews (Phase 8 rail) */
-  ASSETS: R2Bucket;
-  /** OpenNext.js ISR/static cache */
-  OPENNEXT_CACHE: R2Bucket;
+  interface R2HTTPMetadata {
+    contentType?: string;
+    contentLanguage?: string;
+    contentDisposition?: string;
+    contentEncoding?: string;
+    cacheControl?: string;
+    cacheExpiry?: Date;
+  }
 
-  // ── Vectorize Indexes ────────────────────────────────────────────────────
-  FDA_PUBLIC: VectorizeIndex;
-  EU_MDR_PUBLIC: VectorizeIndex;
-  MFDS_PUBLIC: VectorizeIndex;
-  NMPA_PUBLIC: VectorizeIndex;
-  PMDA_PUBLIC: VectorizeIndex;
+  interface R2PutOptions {
+    httpMetadata?: R2HTTPMetadata;
+    customMetadata?: Record<string, string>;
+    md5?: string;
+  }
 
-  // ── Queues ───────────────────────────────────────────────────────────────
-  AUDIT_ARCHIVE_QUEUE: Queue;
-  CORPUS_UPDATE_QUEUE: Queue;
-  NOTIFICATION_QUEUE: Queue;
-  LANGFUSE_FLUSH_QUEUE: Queue;
+  interface R2ListOptions {
+    prefix?: string;
+    cursor?: string;
+    limit?: number;
+    delimiter?: string;
+  }
 
-  // ── Environment Variables ────────────────────────────────────────────────
-  /** Dual-write mode: write to KV first then Neon. "true" | "false" */
-  DUAL_WRITE_SESSIONS: string;
-  /** Session grace period in seconds for KV TTL extension */
-  KV_SESSION_GRACE_PERIOD_SECONDS: string;
-  /**
-   * HIPAA BAA scope flag. Workers AI paths MUST check this before routing
-   * to AutoRAG. Pending Item #1 — set to "true" only after BAA is confirmed.
-   */
-  HIPAA_BAA_CONFIRMED: string;
-  /** Vectorize EU GA flag. "true" once Vectorize EU region is GA. Pending Item #2. */
-  VECTORIZE_EU_GA: string;
+  interface R2Object {
+    key: string;
+    size?: number;
+    uploaded?: Date;
+    httpMetadata?: R2HTTPMetadata;
+    customMetadata?: Record<string, string>;
+  }
 
-  // ── Optional Vector Backend Overrides ───────────────────────────────────
-  /** Override Vectorize backend for FDA corpus (e.g. "pgvector" for canary) */
-  VECTOR_BACKEND_FDA?: string;
-  VECTOR_BACKEND_EU_MDR?: string;
-  VECTOR_BACKEND_MFDS?: string;
-  VECTOR_BACKEND_NMPA?: string;
-  VECTOR_BACKEND_PMDA?: string;
+  interface R2ObjectBody extends R2Object {
+    body?: ReadableStream;
+    text(): Promise<string>;
+    arrayBuffer(): Promise<ArrayBuffer>;
+  }
+
+  interface R2Objects {
+    objects: R2Object[];
+    truncated: boolean;
+    cursor?: string;
+  }
+
+  interface R2Bucket {
+    put(
+      key: string,
+      value: string | ArrayBuffer | ReadableStream,
+      options?: R2PutOptions,
+    ): Promise<R2Object>;
+    get(key: string): Promise<R2ObjectBody | null>;
+    delete(key: string): Promise<void>;
+    list(options?: R2ListOptions): Promise<R2Objects>;
+  }
+
+  interface VectorizeMatch {
+    id: string;
+    score: number;
+    metadata?: Record<string, unknown>;
+    values?: number[];
+  }
+
+  interface VectorizeQueryOptions {
+    topK?: number;
+    returnMetadata?: boolean | 'all';
+  }
+
+  interface VectorizeIndex {
+    query(
+      vector: number[],
+      options?: VectorizeQueryOptions,
+    ): Promise<{ matches: VectorizeMatch[] }>;
+  }
+
+  interface AnalyticsEngineDataset {
+    writeDataPoint(point: {
+      blobs?: string[];
+      doubles?: number[];
+      indexes?: string[];
+    }): void;
+  }
+
+  interface Queue {
+    send(message: unknown): Promise<void>;
+    sendBatch?(messages: Array<{ body: unknown }>): Promise<void>;
+  }
+
+  interface CloudflareEnv {
+    SESSION_KV: KVNamespace;
+    RATELIMIT_KV: KVNamespace;
+    FLAGS_KV: KVNamespace;
+    LOCALE_KV: KVNamespace;
+    CORPUS_PUBLIC: R2Bucket;
+    CORPUS_INTERNAL: R2Bucket;
+    AUDIT_COLD: R2Bucket;
+    ASSETS: R2Bucket;
+    OPENNEXT_CACHE: R2Bucket;
+    FDA_PUBLIC: VectorizeIndex;
+    EU_MDR_PUBLIC: VectorizeIndex;
+    MFDS_PUBLIC: VectorizeIndex;
+    NMPA_PUBLIC: VectorizeIndex;
+    PMDA_PUBLIC: VectorizeIndex;
+    AUDIT_ARCHIVE_QUEUE: Queue;
+    CORPUS_UPDATE_QUEUE: Queue;
+    NOTIFICATION_QUEUE: Queue;
+    LANGFUSE_FLUSH_QUEUE: Queue;
+    ANALYTICS: AnalyticsEngineDataset;
+    HIPAA_BAA_CONFIRMED: string;
+  }
 }
+
+export {};

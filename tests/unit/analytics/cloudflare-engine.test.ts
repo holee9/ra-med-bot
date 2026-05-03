@@ -105,7 +105,7 @@ describe('emitConsultMetric', () => {
       status_code: 200,
     });
 
-    const call = vi.mocked(engine.writeDataPoint).mock.calls[0][0];
+    const call = vi.mocked(engine.writeDataPoint).mock.calls[0]?.[0];
     const dataStr = JSON.stringify(call);
     expect(dataStr).not.toContain('question');
     expect(dataStr).not.toContain('answer');

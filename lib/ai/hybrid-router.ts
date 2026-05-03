@@ -116,9 +116,7 @@ async function retrievePublicWithFallback(
   timeoutMs: number,
 ): Promise<RetrievalResult[]> {
   const vectorizePromise = retrieveVectorize(query, filters, k);
-  const timeoutPromise = new Promise<null>((resolve) =>
-    setTimeout(() => resolve(null), timeoutMs),
-  );
+  const timeoutPromise = new Promise<null>((resolve) => setTimeout(() => resolve(null), timeoutMs));
 
   const result = await Promise.race([vectorizePromise, timeoutPromise]);
 
@@ -151,9 +149,10 @@ function emitFallbackBreadcrumbs(query: string, reason: string): void {
   // Non-blocking — failures here must not affect the retrieval result.
   try {
     // Sentry breadcrumb
-    if (typeof globalThis.Sentry !== 'undefined') {
-      // biome-ignore lint/suspicious/noExplicitAny: Sentry global
-      (globalThis as any).Sentry?.addBreadcrumb({
+    const sentry = (globalThis as { Sentry?: { addBreadcrumb?: (breadcrumb: unknown) => void } })
+      .Sentry;
+    if (sentry) {
+      sentry.addBreadcrumb?.({
         category: 'hybrid-router',
         message: `Vectorize fallback: ${reason}`,
         data: { queryLength: query.length },
