@@ -300,7 +300,7 @@
 ### T-013 완료 (2026-05-03) — GREEN ✅ SPEC 완료
 
 - **상태**: TDD RED-GREEN-REFACTOR 완료 — 전체 SPEC 구현 완료
-- **테스트**: 35개 신규 = 902 누적 통과
+- **테스트**: 35개 신규 = 903 누적 통과
   - `tests/unit/api/profile-route.test.ts` — 11개 (GET/PATCH 시나리오)
   - `tests/regression/foundation.test.ts` — 13개 (RBAC/PERMISSIONS/enum 회귀)
   - `tests/regression/traceability.test.ts` — 11개 (주요 모듈 export 추적성)
@@ -337,4 +337,10 @@
 | T-010 Accessibility | ✅ GREEN | 838 |
 | T-011 Observability | ✅ GREEN | 855 |
 | T-012 CI Pipeline | ✅ GREEN | 867 |
-| T-013 Profile API + 회귀 | ✅ GREEN | **902** |
+| T-013 Profile API + 회귀 | ✅ GREEN | **903** |
+
+### Issue #7 verification sync (2026-05-03)
+
+- GitHub Issue #7 comment `4365812726` records the final cross-check against `main`.
+- Verified pass history recorded there: typecheck, Biome, Vitest `81 files / 903 tests`, audit completeness, RBAC, token symmetry, i18n completeness, regulatory glossary, contrast, module boundaries, migrations, no-hex-colors, and diff whitespace.
+- Local `next build` is explicitly not counted as passing in that verification because it hung locally and was interrupted. Keep CI build registration separate from local pass evidence until a bounded build run completes.

@@ -164,6 +164,25 @@ describe('app/(app)/page.tsx — REQ-FND-016', () => {
   });
 });
 
+describe('app/(app) route coverage — Phase 4 navigation contract', () => {
+  it('has a page file for every Sidebar navigation route', () => {
+    const requiredPages = [
+      'app/(app)/page.tsx',
+      'app/(app)/chat/page.tsx',
+      'app/(app)/history/page.tsx',
+      'app/(app)/templates/page.tsx',
+      'app/(app)/knowledge/page.tsx',
+      'app/(app)/updates/page.tsx',
+      'app/(app)/dashboard/page.tsx',
+      'app/(app)/settings/page.tsx',
+    ];
+
+    for (const page of requiredPages) {
+      expect(fs.existsSync(path.join(root, page)), `${page} is missing`).toBe(true);
+    }
+  });
+});
+
 describe('app/(app)/chat/page.tsx — REQ-FND-017', () => {
   it('renders Korean empty state text', async () => {
     const mod = await import('../../app/(app)/chat/page');

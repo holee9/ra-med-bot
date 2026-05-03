@@ -507,11 +507,12 @@ pnpm start
 - [x] **관측성** (Sentry + PostHog + Langfuse + Vercel Analytics, audit_logs와 분리)
 
 **성과물**:
-- ✅ 13개 자동화 CI gate (TypeScript, Biome, Unit, Integration, Audit, RBAC, i18n, Token, Module, Contrast, A11y, Build)
+- ✅ 13개 자동화 CI gate 등록 (TypeScript, Biome, Format, Unit, Audit, RBAC, i18n, Glossary, Token, Module, Contrast, Migrations, Build)
 - ✅ 14개 수동 QA 체크리스트 (Expert review flow, RBAC matrix, Dark mode, Locale, a11y, Observability)
 - ✅ 74개 REQ-ENTERPRISE 전부 구현 (Group A~G + Profile API)
 - ✅ 903/903 tests passing (81 test files)
 - ✅ SPEC status: draft → completed
+- 주의(2026-05-03 Issue #7 검증 이력): 로컬 `next build`는 장시간 hang으로 PASS 산정에서 제외했습니다. CI build gate는 workflow에 등록되어 있으나, 로컬 검증 결과와 분리해서 추적합니다.
 
 **문서 출처**:
 - **SPEC 문서**: [`.moai/specs/SPEC-REGULA-ENTERPRISE-001/spec.md`](.moai/specs/SPEC-REGULA-ENTERPRISE-001/spec.md)

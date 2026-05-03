@@ -5,7 +5,9 @@ Total tasks: 13 (one per implementation step from SPEC §구현 지침)
 Note: SPEC has 13 implementation steps; one atomic task per step keeps the limit at 10 violated by design (SPEC scope is 8 domains × 74 REQ).
 Decision: Treat each step as a *task batch* and decompose internally during /moai run. Each batch has its own RED-GREEN-REFACTOR cycle.
 
-| Task ID | Description | Requirement | Dependencies | Planned Files | Status |
+Execution sync (2026-05-03): Issue #7 verification confirms all 13 task batches completed. The table below is preserved as the original planning baseline; its status cells are not the current execution state.
+
+| Task ID | Description | Requirement | Dependencies | Planned Files | Initial Status |
 |---------|-------------|-------------|--------------|---------------|--------|
 | T-001 | Migrations 선행: user_role pgEnum, audit_action +12 values, users.notification_pref, expert_reviews(status,assigned_to) index, system user seed, org_members/project_members tables (FOUNDATION 누락분 검증 후 보완) | REQ-ENTERPRISE-016, 027, 028; REQ-009 SYSTEM_USER_UUID seed | none | migrations/0004_rbac_role_enum.sql, migrations/0005_enterprise_audit_actions.sql, migrations/0006_users_notification_pref.sql, migrations/0007_expert_reviews_index.sql, migrations/0008_system_user_seed.sql, migrations/0009_membership_tables.sql (조건부), lib/db/schema.ts (userRoleEnum, users.role 변환, auditActionEnum 25 values, users.notificationPref, orgMembers/projectMembers 테이블) | pending |
 | T-002 | RBAC 인프라: rbac.ts (Role + hierarchy), acl.ts (isOrgMember/isProjectMember), permissions.ts (15+ action 매트릭스), with-permission.ts (HOF), 단위 테스트 매트릭스 | REQ-ENTERPRISE-017 ~ 020 | T-001 | lib/auth/rbac.ts, lib/auth/acl.ts, lib/auth/permissions.ts, lib/auth/with-permission.ts, tests/unit/auth/rbac.test.ts, tests/unit/auth/acl.test.ts, tests/unit/auth/permissions.test.ts, tests/unit/auth/with-permission.test.ts | pending |

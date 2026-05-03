@@ -4,12 +4,19 @@
 
 import { useQuery } from '@tanstack/react-query';
 
+function unwrapConversation(payload: unknown): unknown {
+  if (payload && typeof payload === 'object' && 'conversation' in payload) {
+    return (payload as { conversation: unknown }).conversation;
+  }
+  return payload;
+}
+
 async function fetchConversation(id: string): Promise<unknown> {
   const res = await fetch(`/api/ra/conversations/${id}`);
   if (!res.ok) {
     throw new Error(`Failed to fetch conversation ${id}: ${res.status} ${res.statusText}`);
   }
-  return res.json();
+  return unwrapConversation(await res.json());
 }
 
 export function useConversation(id: string | null) {

@@ -11,9 +11,34 @@ export interface ConversationsOpts {
   sortDir?: string;
 }
 
+export interface ConversationSummary {
+  id: string;
+  projectId?: string | null;
+  title?: string | null;
+  status?: string | null;
+  createdAt?: string | Date | null;
+}
+
 interface ConversationPage {
-  data: unknown[];
+  data: ConversationSummary[];
   nextCursor: string | null;
+}
+
+function unwrapConversations(payload: unknown): ConversationPage {
+  if (payload && typeof payload === 'object') {
+    const page = payload as { data?: unknown; conversations?: unknown; nextCursor?: unknown };
+    if (Array.isArray(page.data)) {
+      return {
+        data: page.data as ConversationSummary[],
+        nextCursor: typeof page.nextCursor === 'string' ? page.nextCursor : null,
+      };
+    }
+    if (Array.isArray(page.conversations)) {
+      return { data: page.conversations as ConversationSummary[], nextCursor: null };
+    }
+  }
+  if (Array.isArray(payload)) return { data: payload as ConversationSummary[], nextCursor: null };
+  return { data: [], nextCursor: null };
 }
 
 async function fetchConversations(
@@ -33,7 +58,7 @@ async function fetchConversations(
   if (!res.ok) {
     throw new Error(`Failed to fetch conversations: ${res.status} ${res.statusText}`);
   }
-  return res.json() as Promise<ConversationPage>;
+  return unwrapConversations(await res.json());
 }
 
 // @MX:ANCHOR: [AUTO] Infinite query entry point for conversation list — fan_in >= 3 expected.
