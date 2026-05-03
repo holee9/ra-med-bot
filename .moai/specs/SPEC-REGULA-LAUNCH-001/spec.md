@@ -1,9 +1,9 @@
 ---
 id: SPEC-REGULA-LAUNCH-001
 title: Regula Phase 6 Quality & Launch — LLM Eval, E2E, Load, Security, Deploy, Docs
-status: draft
+status: completed
 created: 2026-04-22
-updated: 2026-04-23
+updated: 2026-05-04
 author: manager-spec
 phase: 6
 skill: regula
