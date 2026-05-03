@@ -1,0 +1,48 @@
+# Internal SOP evaluation dataset
+# SPEC-REGULA-LAUNCH-001 — REQ-LAUNCH-003
+# 5 scenarios covering internal regulatory procedures and SOPs
+
+- description: "Internal SOP document control procedure"
+  vars:
+    query: "What is the document control procedure for creating, reviewing, and approving internal SOPs?"
+    expected_citation_count: 2
+    jurisdiction: "Internal"
+  assert:
+    - type: javascript
+      value: "output.toLowerCase().includes('document') && output.length > 100"
+
+- description: "Internal CAPA initiation and closure process"
+  vars:
+    query: "Describe the internal procedure for initiating, investigating, and closing a CAPA (Corrective and Preventive Action)."
+    expected_citation_count: 2
+    jurisdiction: "Internal"
+  assert:
+    - type: javascript
+      value: "output.toLowerCase().includes('capa') && output.length > 100"
+
+- description: "Internal regulatory submission review workflow"
+  vars:
+    query: "What is the internal review and approval workflow before submitting a regulatory dossier to a health authority?"
+    expected_citation_count: 2
+    jurisdiction: "Internal"
+  assert:
+    - type: javascript
+      value: "output.toLowerCase().includes('review') && output.length > 100"
+
+- description: "Internal change control procedure for design changes"
+  vars:
+    query: "What change control procedures must be followed for design changes to an approved medical device?"
+    expected_citation_count: 2
+    jurisdiction: "Internal"
+  assert:
+    - type: javascript
+      value: "output.toLowerCase().includes('change control') && output.length > 100"
+
+- description: "Internal training requirements for RA staff"
+  vars:
+    query: "What training requirements apply to regulatory affairs staff handling submissions for Class III medical devices?"
+    expected_citation_count: 2
+    jurisdiction: "Internal"
+  assert:
+    - type: javascript
+      value: "output.toLowerCase().includes('training') && output.length > 100"

@@ -1,0 +1,48 @@
+# PMDA (Japan) evaluation dataset
+# SPEC-REGULA-LAUNCH-001 — REQ-LAUNCH-003
+# 5 scenarios covering Japan PMDA medical device approval
+
+- description: "PMDA medical device approval process in Japan"
+  vars:
+    query: "What is the process for obtaining medical device approval from Japan PMDA?"
+    expected_citation_count: 2
+    jurisdiction: "PMDA"
+  assert:
+    - type: javascript
+      value: "output.toLowerCase().includes('pmda') && output.length > 100"
+
+- description: "PMDA SAKIGAKE designation for innovative devices"
+  vars:
+    query: "What is the SAKIGAKE designation program and how does it accelerate regulatory review for innovative medical devices in Japan?"
+    expected_citation_count: 2
+    jurisdiction: "PMDA"
+  assert:
+    - type: javascript
+      value: "output.toLowerCase().includes('sakigake') && output.length > 100"
+
+- description: "PMDA consultation process for medical devices"
+  vars:
+    query: "How can medical device manufacturers use the PMDA consultation process to prepare for regulatory submission in Japan?"
+    expected_citation_count: 2
+    jurisdiction: "PMDA"
+  assert:
+    - type: javascript
+      value: "output.toLowerCase().includes('pmda') && output.length > 100"
+
+- description: "PMDA clinical trial notification for medical devices"
+  vars:
+    query: "What clinical trial notification requirements apply to medical device clinical studies conducted in Japan?"
+    expected_citation_count: 2
+    jurisdiction: "PMDA"
+  assert:
+    - type: javascript
+      value: "output.toLowerCase().includes('clinical') && output.length > 100"
+
+- description: "PMDA QMS audit requirements for foreign manufacturers"
+  vars:
+    query: "What QMS (Quality Management System) audit requirements does PMDA impose on foreign medical device manufacturers?"
+    expected_citation_count: 2
+    jurisdiction: "PMDA"
+  assert:
+    - type: javascript
+      value: "output.toLowerCase().includes('qms') && output.length > 100"

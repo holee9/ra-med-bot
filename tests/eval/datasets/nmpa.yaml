@@ -1,0 +1,48 @@
+# NMPA (China) evaluation dataset
+# SPEC-REGULA-LAUNCH-001 — REQ-LAUNCH-003
+# 5 scenarios covering China NMPA medical device registration
+
+- description: "NMPA medical device registration classification"
+  vars:
+    query: "How are medical devices classified under China NMPA regulations and what registration pathway applies to each class?"
+    expected_citation_count: 2
+    jurisdiction: "NMPA"
+  assert:
+    - type: javascript
+      value: "output.toLowerCase().includes('nmpa') && output.length > 100"
+
+- description: "NMPA clinical trial requirements for Class III devices"
+  vars:
+    query: "What clinical trial requirements does China NMPA impose for Class III medical device registration?"
+    expected_citation_count: 2
+    jurisdiction: "NMPA"
+  assert:
+    - type: javascript
+      value: "output.toLowerCase().includes('clinical') && output.length > 100"
+
+- description: "NMPA imported medical device registration process"
+  vars:
+    query: "What is the process for registering an imported medical device with China NMPA?"
+    expected_citation_count: 2
+    jurisdiction: "NMPA"
+  assert:
+    - type: javascript
+      value: "output.toLowerCase().includes('nmpa') && output.length > 100"
+
+- description: "NMPA QMS certification requirements"
+  vars:
+    query: "What Quality Management System (QMS) certification is required by China NMPA for medical device manufacturers?"
+    expected_citation_count: 2
+    jurisdiction: "NMPA"
+  assert:
+    - type: javascript
+      value: "output.toLowerCase().includes('quality') && output.length > 100"
+
+- description: "NMPA post-market surveillance and adverse event reporting"
+  vars:
+    query: "What are the post-market surveillance and adverse event reporting obligations under China NMPA regulations?"
+    expected_citation_count: 2
+    jurisdiction: "NMPA"
+  assert:
+    - type: javascript
+      value: "output.length > 100"

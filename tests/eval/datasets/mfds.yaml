@@ -1,0 +1,93 @@
+# MFDS (식약처) evaluation dataset
+# SPEC-REGULA-LAUNCH-001 — REQ-LAUNCH-003
+# 10 scenarios covering Korean MFDS medical device regulations
+
+- description: "MFDS 의료기기법 허가 절차"
+  vars:
+    query: "한국 식약처(MFDS)에 의료기기 허가를 신청하는 절차는 어떻게 됩니까?"
+    expected_citation_count: 3
+    jurisdiction: "MFDS"
+  assert:
+    - type: javascript
+      value: "output.length > 100"
+
+- description: "MFDS medical device GMP certification requirements"
+  vars:
+    query: "What are the GMP (Good Manufacturing Practice) certification requirements for medical devices in Korea?"
+    expected_citation_count: 2
+    jurisdiction: "MFDS"
+  assert:
+    - type: javascript
+      value: "output.toLowerCase().includes('gmp') && output.length > 100"
+
+- description: "MFDS 의료기기 등급 분류"
+  vars:
+    query: "한국에서 의료기기 등급(1~4등급)은 어떤 기준으로 분류됩니까?"
+    expected_citation_count: 2
+    jurisdiction: "MFDS"
+  assert:
+    - type: javascript
+      value: "output.length > 100"
+
+- description: "MFDS clinical trial approval for medical devices"
+  vars:
+    query: "What approval is required from MFDS to conduct a clinical trial for a new medical device in Korea?"
+    expected_citation_count: 2
+    jurisdiction: "MFDS"
+  assert:
+    - type: javascript
+      value: "output.toLowerCase().includes('clinical') && output.length > 100"
+
+- description: "MFDS UDI requirements for Korean market"
+  vars:
+    query: "What are the UDI (Unique Device Identification) requirements for medical devices sold in Korea?"
+    expected_citation_count: 2
+    jurisdiction: "MFDS"
+  assert:
+    - type: javascript
+      value: "output.toLowerCase().includes('udi') && output.length > 100"
+
+- description: "MFDS post-market safety reporting obligations"
+  vars:
+    query: "What post-market safety reporting obligations do medical device manufacturers have under Korean MFDS regulations?"
+    expected_citation_count: 2
+    jurisdiction: "MFDS"
+  assert:
+    - type: javascript
+      value: "output.length > 100"
+
+- description: "MFDS 수입 의료기기 신고 절차"
+  vars:
+    query: "한국에 의료기기를 수입하기 위한 식약처 신고 및 허가 절차를 설명해 주십시오."
+    expected_citation_count: 2
+    jurisdiction: "MFDS"
+  assert:
+    - type: javascript
+      value: "output.length > 100"
+
+- description: "MFDS software medical device (SaMD) regulation"
+  vars:
+    query: "How does MFDS regulate software as a medical device (SaMD) in Korea?"
+    expected_citation_count: 2
+    jurisdiction: "MFDS"
+  assert:
+    - type: javascript
+      value: "output.toLowerCase().includes('software') && output.length > 100"
+
+- description: "MFDS labeling requirements for Korean market"
+  vars:
+    query: "What Korean language labeling requirements apply to medical devices marketed in Korea?"
+    expected_citation_count: 2
+    jurisdiction: "MFDS"
+  assert:
+    - type: javascript
+      value: "output.toLowerCase().includes('label') && output.length > 100"
+
+- description: "MFDS adverse event reporting requirements"
+  vars:
+    query: "What are the adverse event reporting requirements for medical device manufacturers under Korean MFDS regulations?"
+    expected_citation_count: 2
+    jurisdiction: "MFDS"
+  assert:
+    - type: javascript
+      value: "output.length > 100"

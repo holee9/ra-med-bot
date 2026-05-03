@@ -3,6 +3,9 @@
 // Handles RBAC via withPermission, rate-limit, Zod validation, SSE headers, and error wrapping.
 // @MX:SPEC SPEC-REGULA-CHAT-001 (REQ-CHAT-001..010, REQ-CHAT-053..055)
 
+// REQ-LAUNCH-038: nodejs runtime required for pgvector (pg driver not compatible with edge runtime)
+export const runtime = 'nodejs';
+
 import { randomUUID } from 'node:crypto';
 import type { Session } from 'next-auth';
 import type { NextRequest } from 'next/server';

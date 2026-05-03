@@ -11,6 +11,92 @@
 
 ---
 
+## [1.0.0] — 2026-05-03
+
+### Added
+
+#### Phase 6 Quality & Launch (SPEC-REGULA-LAUNCH-001)
+
+**LLM Evaluation Harness (Group A):**
+- `tests/eval/promptfoo.config.yaml` — promptfoo 평가 harness (6개 corpus, 55개 시나리오)
+- `tests/eval/datasets/` — 6개 dataset YAML: FDA (15), EU MDR (15), MFDS (10), NMPA (5), PMDA (5), 내부 SOP (5)
+- `tests/eval/scorers/` — citation-coverage, hallucination, confidence-calibration, expert-review-gating 4종 scorer
+- CI: `eval` job (PR 트리거, 30분 타임아웃, `ANTHROPIC_API_KEY_EVAL` secret)
+
+**E2E Testing (Group B):**
+- `playwright.config.ts` — chromium/firefox/webkit 3-browser matrix, CI retries:2
+- `tests/e2e/` — auth, consultation, citation-click, expert-review, project-switch, i18n, a11y, security-headers 8종 spec
+- CI: `e2e` matrix job (webkit `continue-on-error: true`)
+
+**Load Testing (Group C):**
+- `tests/load/k6.js` — steady 50VU + spike 100VU, first_token p95<1500ms / full p95<8000ms
+- `tests/load/lcp-check.js` — Core Web Vitals LCP p95<2500ms (k6 browser)
+- `scripts/run-load.sh` — staging/mock 모드, 타임스탬프 리포트
+
+**Security (Group D):**
+- `docs/security/` — OWASP Top 10, threat-model, pentest-plan 문서
+- `tests/integration/audit-immutability.test.ts` / `audit-retention.test.ts` — audit_logs 불변성 + 7년 보존 테스트
+- `.github/workflows/security.yml` — pnpm audit + gitleaks 비밀 스캔 CI
+- `lib/ai/anthropic-client.ts` — Anthropic ZDR (`anthropic-beta: zero-data-retention`)
+- `sentry.server.config.ts` — `beforeSend` PII 레덱션 (query, user_id, content, email)
+
+**Deploy (Group E):**
+- `vercel.json` — iad1 리전, consult 60s/API 30s maxDuration, X-Frame-Options + HSTS + nosniff
+- `app/api/ra/consult/route.ts` — `export const runtime = 'nodejs'` (pgvector Edge 비호환)
+- `docs/deployment/` — env-matrix + dns-setup 문서
+- `scripts/preflight.sh` — 17단계 통합 품질 게이트 (`--skip-eval`, `--skip-e2e`, `--skip-load`)
+- `scripts/post-deploy-smoke.sh` — 배포 후 HTTP/헤더 스모크 테스트
+
+**Documentation (Group F):**
+- `docs/architecture.md` — Mermaid 다이어그램 포함 시스템 아키텍처
+- `docs/compliance.md` — 21 CFR Part 11 컴플라이언스 (7개 섹션)
+- `docs/api-reference.md` — `/api/ra/*` 엔드포인트 레퍼런스 + Zod 스키마
+- `docs/runbook.md` — 운영 런북 (배포, 롤백, 인시던트 대응, 모니터링)
+- `DEVELOPMENT.md` — Quality Gates, Architecture Overview, Compliance Overview 섹션 추가
+
+### Technical Decisions (Phase 6)
+
+1. **Vercel + Neon** — SPEC 우선 (tech.md의 self-hosted 설정과 충돌 → SPEC 확정)
+2. **nodejs runtime for consult** — pgvector Edge runtime 비호환
+3. **Anthropic ZDR** — 의료 데이터 무보존 (`anthropic-beta: zero-data-retention`)
+4. **RA lead review async** — 데이터셋 초안 완성 후 별도 커밋으로 서명
+
+### Compliance (Phase 6)
+
+- ✅ 48/48 REQ-LAUNCH 구현 (Group A~F)
+- ✅ OWASP Top 10 2021 전체 매핑
+- ✅ 21 CFR Part 11 audit 불변성 + 7년 보존 테스트
+- ✅ Anthropic ZDR + Sentry PII 레덱션
+- ✅ Vercel 보안 헤더 (X-Frame-Options DENY, HSTS, nosniff)
+
+---
+
+## [0.4.0] — 2026-05-03
+
+### Added
+
+#### Phase 5 Enterprise (SPEC-REGULA-ENTERPRISE-001)
+
+- Multi-tenant 프로젝트 관리 + RBAC (Owner/Editor/Viewer)
+- 4-way observability: Sentry + PostHog + Langfuse + Vercel Analytics
+- Breadth: EU MDR, MFDS, NMPA, PMDA corpus retriever 확장
+- Structured outputs: comparison, checklist, timeline SSE 이벤트
+
+---
+
+## [0.3.0] — 2026-05-02
+
+### Added
+
+#### Phase 3–4 Structured Outputs + Breadth (SPEC-REGULA-CHAT-001 + SPEC-REGULA-BREADTH-001)
+
+- 구조화 답변: checklist, comparison, timeline, related SSE event types
+- 다규제권역 retriever: FDA + EU MDR + MFDS + NMPA + PMDA + 내부 SOP
+- i18n: ko/en/zh/ja (next-intl)
+- corpus update-monitor cron
+
+---
+
 ## [0.2.0] — 2026-05-02
 
 ### Added

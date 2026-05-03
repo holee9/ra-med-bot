@@ -1,0 +1,26 @@
+# promptfoo eval config for Regula LLM evaluation harness
+# SPEC-REGULA-LAUNCH-001 — REQ-LAUNCH-002
+description: Regula RAG citation accuracy evaluation
+
+providers:
+  - id: anthropic:messages:claude-sonnet-4-6
+    config:
+      max_tokens: 4096
+
+tests:
+  - path: ./datasets/fda.yaml
+  - path: ./datasets/eu-mdr.yaml
+  - path: ./datasets/mfds.yaml
+  - path: ./datasets/nmpa.yaml
+  - path: ./datasets/pmda.yaml
+  - path: ./datasets/internal-sop.yaml
+
+defaultTest:
+  options:
+    provider: anthropic:messages:claude-sonnet-4-6
+
+evaluators:
+  - path: ./scorers/citation-coverage.ts
+  - path: ./scorers/hallucination.ts
+  - path: ./scorers/confidence-calibration.ts
+  - path: ./scorers/expert-review-gating.ts

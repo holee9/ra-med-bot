@@ -1,0 +1,138 @@
+# FDA regulatory evaluation dataset
+# SPEC-REGULA-LAUNCH-001 — REQ-LAUNCH-003
+# 15 scenarios covering FDA 510(k), PMA, De Novo, and related regulations
+
+- description: "FDA 510(k) premarket notification key requirements"
+  vars:
+    query: "What are the key requirements for a 510(k) premarket notification submission?"
+    expected_citation_count: 3
+    jurisdiction: "FDA"
+  assert:
+    - type: javascript
+      value: "output.includes('510(k)') && output.length > 100"
+
+- description: "FDA 510(k) substantial equivalence determination"
+  vars:
+    query: "How is substantial equivalence determined for a 510(k) submission?"
+    expected_citation_count: 2
+    jurisdiction: "FDA"
+  assert:
+    - type: javascript
+      value: "output.toLowerCase().includes('substantial equivalence') && output.length > 100"
+
+- description: "FDA predicate device selection criteria"
+  vars:
+    query: "What criteria should be used to select a predicate device for 510(k) submission?"
+    expected_citation_count: 2
+    jurisdiction: "FDA"
+  assert:
+    - type: javascript
+      value: "output.toLowerCase().includes('predicate') && output.length > 100"
+
+- description: "FDA PMA premarket approval application requirements"
+  vars:
+    query: "What clinical data is required for a PMA premarket approval application?"
+    expected_citation_count: 3
+    jurisdiction: "FDA"
+  assert:
+    - type: javascript
+      value: "output.toLowerCase().includes('pma') && output.length > 100"
+
+- description: "FDA De Novo classification request process"
+  vars:
+    query: "How does the De Novo classification request process work for novel medical devices?"
+    expected_citation_count: 2
+    jurisdiction: "FDA"
+  assert:
+    - type: javascript
+      value: "output.toLowerCase().includes('de novo') && output.length > 100"
+
+- description: "FDA 21 CFR Part 820 Quality System Regulation"
+  vars:
+    query: "What are the key requirements under 21 CFR Part 820 for medical device manufacturers?"
+    expected_citation_count: 3
+    jurisdiction: "FDA"
+  assert:
+    - type: javascript
+      value: "output.includes('820') && output.length > 100"
+
+- description: "FDA device labeling requirements under 21 CFR Part 801"
+  vars:
+    query: "What are the mandatory labeling requirements for medical devices under 21 CFR Part 801?"
+    expected_citation_count: 2
+    jurisdiction: "FDA"
+  assert:
+    - type: javascript
+      value: "output.toLowerCase().includes('label') && output.length > 100"
+
+- description: "FDA design controls requirements"
+  vars:
+    query: "What design control requirements must medical device manufacturers follow under FDA regulations?"
+    expected_citation_count: 3
+    jurisdiction: "FDA"
+  assert:
+    - type: javascript
+      value: "output.toLowerCase().includes('design control') && output.length > 100"
+
+- description: "FDA complaint handling and MDR requirements"
+  vars:
+    query: "What are FDA requirements for medical device complaint handling and mandatory reporting (MDR)?"
+    expected_citation_count: 2
+    jurisdiction: "FDA"
+  assert:
+    - type: javascript
+      value: "output.toLowerCase().includes('complaint') && output.length > 100"
+
+- description: "FDA CAPA (Corrective and Preventive Action) requirements"
+  vars:
+    query: "Describe the FDA requirements for corrective and preventive action (CAPA) in medical device manufacturing."
+    expected_citation_count: 2
+    jurisdiction: "FDA"
+  assert:
+    - type: javascript
+      value: "output.toLowerCase().includes('capa') && output.length > 100"
+
+- description: "FDA IDE investigational device exemption requirements"
+  vars:
+    query: "What are the requirements for obtaining an Investigational Device Exemption (IDE) for clinical studies?"
+    expected_citation_count: 2
+    jurisdiction: "FDA"
+  assert:
+    - type: javascript
+      value: "output.toLowerCase().includes('ide') && output.length > 100"
+
+- description: "FDA device classification system"
+  vars:
+    query: "How does the FDA classify medical devices into Class I, II, and III?"
+    expected_citation_count: 3
+    jurisdiction: "FDA"
+  assert:
+    - type: javascript
+      value: "output.toLowerCase().includes('class') && output.length > 100"
+
+- description: "FDA special 510(k) and abbreviated 510(k) pathways"
+  vars:
+    query: "What is the difference between a Special 510(k) and an Abbreviated 510(k) submission?"
+    expected_citation_count: 2
+    jurisdiction: "FDA"
+  assert:
+    - type: javascript
+      value: "output.includes('510(k)') && output.length > 100"
+
+- description: "FDA software as a medical device (SaMD) requirements"
+  vars:
+    query: "What regulatory pathway applies to Software as a Medical Device (SaMD) under FDA regulations?"
+    expected_citation_count: 2
+    jurisdiction: "FDA"
+  assert:
+    - type: javascript
+      value: "output.toLowerCase().includes('software') && output.length > 100"
+
+- description: "FDA combination product regulatory classification"
+  vars:
+    query: "How does FDA regulate combination products that include both a drug and a device component?"
+    expected_citation_count: 2
+    jurisdiction: "FDA"
+  assert:
+    - type: javascript
+      value: "output.toLowerCase().includes('combination') && output.length > 100"

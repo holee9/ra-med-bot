@@ -1,0 +1,138 @@
+# EU MDR evaluation dataset
+# SPEC-REGULA-LAUNCH-001 — REQ-LAUNCH-003
+# 15 scenarios covering EU MDR 2017/745 requirements
+
+- description: "EU MDR Article 10 general obligations of manufacturers"
+  vars:
+    query: "What are the general obligations of manufacturers under EU MDR Article 10?"
+    expected_citation_count: 3
+    jurisdiction: "EU MDR"
+  assert:
+    - type: javascript
+      value: "output.toLowerCase().includes('mdr') && output.length > 100"
+
+- description: "EU MDR Unique Device Identification (UDI) requirements"
+  vars:
+    query: "What are the UDI (Unique Device Identification) requirements under EU MDR 2017/745?"
+    expected_citation_count: 3
+    jurisdiction: "EU MDR"
+  assert:
+    - type: javascript
+      value: "output.toLowerCase().includes('udi') && output.length > 100"
+
+- description: "EU MDR Technical Documentation requirements"
+  vars:
+    query: "What must be included in Technical Documentation under EU MDR 2017/745?"
+    expected_citation_count: 3
+    jurisdiction: "EU MDR"
+  assert:
+    - type: javascript
+      value: "output.toLowerCase().includes('technical documentation') && output.length > 100"
+
+- description: "EU MDR Notified Body conformity assessment"
+  vars:
+    query: "When is a Notified Body required for EU MDR conformity assessment of a medical device?"
+    expected_citation_count: 2
+    jurisdiction: "EU MDR"
+  assert:
+    - type: javascript
+      value: "output.toLowerCase().includes('notified body') && output.length > 100"
+
+- description: "EU MDR Clinical Evaluation requirements"
+  vars:
+    query: "What are the clinical evaluation requirements under EU MDR for a Class IIb implantable device?"
+    expected_citation_count: 3
+    jurisdiction: "EU MDR"
+  assert:
+    - type: javascript
+      value: "output.toLowerCase().includes('clinical evaluation') && output.length > 100"
+
+- description: "EU MDR Annex XIV clinical evaluation procedures"
+  vars:
+    query: "What clinical evaluation procedures are described in EU MDR Annex XIV?"
+    expected_citation_count: 2
+    jurisdiction: "EU MDR"
+  assert:
+    - type: javascript
+      value: "output.toLowerCase().includes('annex xiv') && output.length > 100"
+
+- description: "EU MDR Annex XV clinical investigations"
+  vars:
+    query: "What requirements apply to clinical investigations under EU MDR Annex XV?"
+    expected_citation_count: 2
+    jurisdiction: "EU MDR"
+  assert:
+    - type: javascript
+      value: "output.toLowerCase().includes('annex xv') && output.length > 100"
+
+- description: "EU MDR device classification rules"
+  vars:
+    query: "How are medical devices classified under EU MDR 2017/745 classification rules?"
+    expected_citation_count: 3
+    jurisdiction: "EU MDR"
+  assert:
+    - type: javascript
+      value: "output.toLowerCase().includes('class') && output.length > 100"
+
+- description: "EU MDR Post-Market Surveillance (PMS) requirements"
+  vars:
+    query: "What post-market surveillance obligations do manufacturers have under EU MDR?"
+    expected_citation_count: 2
+    jurisdiction: "EU MDR"
+  assert:
+    - type: javascript
+      value: "output.toLowerCase().includes('post-market') && output.length > 100"
+
+- description: "EU MDR Periodic Safety Update Report (PSUR)"
+  vars:
+    query: "What is the Periodic Safety Update Report (PSUR) and when is it required under EU MDR?"
+    expected_citation_count: 2
+    jurisdiction: "EU MDR"
+  assert:
+    - type: javascript
+      value: "output.toLowerCase().includes('psur') && output.length > 100"
+
+- description: "EU MDR Summary of Safety and Clinical Performance (SSCP)"
+  vars:
+    query: "What is the Summary of Safety and Clinical Performance (SSCP) required under EU MDR?"
+    expected_citation_count: 2
+    jurisdiction: "EU MDR"
+  assert:
+    - type: javascript
+      value: "output.toLowerCase().includes('sscp') && output.length > 100"
+
+- description: "EU MDR vigilance reporting obligations"
+  vars:
+    query: "What are the vigilance reporting obligations for manufacturers under EU MDR 2017/745?"
+    expected_citation_count: 2
+    jurisdiction: "EU MDR"
+  assert:
+    - type: javascript
+      value: "output.toLowerCase().includes('vigilance') && output.length > 100"
+
+- description: "EU MDR Authorized Representative requirements"
+  vars:
+    query: "When is an Authorized Representative required under EU MDR for non-EU manufacturers?"
+    expected_citation_count: 2
+    jurisdiction: "EU MDR"
+  assert:
+    - type: javascript
+      value: "output.toLowerCase().includes('authorized representative') && output.length > 100"
+
+- description: "EU MDR quality management system requirements"
+  vars:
+    query: "What quality management system requirements does EU MDR impose on medical device manufacturers?"
+    expected_citation_count: 2
+    jurisdiction: "EU MDR"
+  assert:
+    - type: javascript
+      value: "output.toLowerCase().includes('quality management') && output.length > 100"
+
+- description: "EU MDR transition from MDD to MDR"
+  vars:
+    query: "What are the key differences between EU MDD and EU MDR 2017/745 for existing certified devices?"
+    expected_citation_count: 2
+    jurisdiction: "EU MDR"
+  assert:
+    - type: javascript
+      value: "output.toLowerCase().includes('mdr') && output.length > 100"

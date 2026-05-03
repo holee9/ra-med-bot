@@ -1,0 +1,20 @@
+title = "Regula gitleaks config"
+
+[extend]
+useDefault = true
+
+[[allowlist.commits]]
+description = "Allow test fixtures with fake keys"
+commits = []
+
+[[allowlist.regexes]]
+description = "Allow .env.example files"
+regex = '''\.env\..*example'''
+
+[[allowlist.regexes]]
+description = "Allow test mock API keys"
+regex = '''sk-ant-test|test-key|fake-key|mock-key|PLACEHOLDER'''
+
+[[allowlist.paths]]
+description = "Allow example env files"
+paths = ['''.env\..+example$''', '''tests/.*\.ts$''']
