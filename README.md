@@ -513,7 +513,10 @@ pnpm start
 - ✅ 903/903 tests passing (81 test files)
 - ✅ SPEC status: draft → completed
 
-**문서 출처**: [`.moai/specs/SPEC-REGULA-ENTERPRISE-001/spec.md`](.moai/specs/SPEC-REGULA-ENTERPRISE-001/spec.md)
+**문서 출처**:
+- **SPEC 문서**: [`.moai/specs/SPEC-REGULA-ENTERPRISE-001/spec.md`](.moai/specs/SPEC-REGULA-ENTERPRISE-001/spec.md)
+- **진행 기록**: [`.moai/specs/SPEC-REGULA-ENTERPRISE-001/progress.md`](.moai/specs/SPEC-REGULA-ENTERPRISE-001/progress.md)
+- **GitHub Issue**: [#7 SPEC-REGULA-ENTERPRISE-001](https://github.com/holee9/ra-med-bot/issues/7)
 
 ---
 
