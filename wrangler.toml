@@ -1,0 +1,118 @@
+name = "regula"
+compatibility_date = "2026-04-22"
+compatibility_flags = ["nodejs_compat"]
+main = ".open-next/worker.js"
+
+[env.production]
+name = "regula-production"
+
+[env.preview]
+name = "regula-preview"
+
+# ── KV Namespaces ─────────────────────────────────────────────────────────────
+
+[[kv_namespaces]]
+binding = "SESSION_KV"
+id = "placeholder-session-kv-id"
+preview_id = "placeholder-session-kv-preview-id"
+
+[[kv_namespaces]]
+binding = "RATELIMIT_KV"
+id = "placeholder-ratelimit-kv-id"
+preview_id = "placeholder-ratelimit-kv-preview-id"
+
+[[kv_namespaces]]
+binding = "FLAGS_KV"
+id = "placeholder-flags-kv-id"
+preview_id = "placeholder-flags-kv-preview-id"
+
+[[kv_namespaces]]
+binding = "LOCALE_KV"
+id = "placeholder-locale-kv-id"
+preview_id = "placeholder-locale-kv-preview-id"
+
+# ── R2 Buckets ────────────────────────────────────────────────────────────────
+
+[[r2_buckets]]
+binding = "CORPUS_PUBLIC"
+bucket_name = "regula-corpus-public"
+
+[[r2_buckets]]
+binding = "CORPUS_INTERNAL"
+bucket_name = "regula-corpus-internal"
+
+[[r2_buckets]]
+binding = "AUDIT_COLD"
+bucket_name = "regula-audit-cold"
+
+[[r2_buckets]]
+binding = "ASSETS"
+bucket_name = "regula-assets"
+
+[[r2_buckets]]
+binding = "OPENNEXT_CACHE"
+bucket_name = "regula-opennext-cache"
+
+# ── Vectorize Indexes ─────────────────────────────────────────────────────────
+
+[vectorize.FDA_PUBLIC]
+index_name = "regula-fda-public"
+
+[vectorize.EU_MDR_PUBLIC]
+index_name = "regula-eu-mdr-public"
+
+[vectorize.MFDS_PUBLIC]
+index_name = "regula-mfds-public"
+
+[vectorize.NMPA_PUBLIC]
+index_name = "regula-nmpa-public"
+
+[vectorize.PMDA_PUBLIC]
+index_name = "regula-pmda-public"
+
+# ── Queues ────────────────────────────────────────────────────────────────────
+
+[[queues.producers]]
+binding = "AUDIT_ARCHIVE_QUEUE"
+queue = "audit-archive-queue"
+
+[[queues.producers]]
+binding = "CORPUS_UPDATE_QUEUE"
+queue = "corpus-update-queue"
+
+[[queues.producers]]
+binding = "NOTIFICATION_QUEUE"
+queue = "notification-queue"
+
+[[queues.producers]]
+binding = "LANGFUSE_FLUSH_QUEUE"
+queue = "langfuse-flush-queue"
+
+[[queues.consumers]]
+queue = "audit-archive-queue"
+max_batch_size = 100
+max_batch_timeout = 30
+
+[[queues.consumers]]
+queue = "corpus-update-queue"
+max_batch_size = 10
+max_batch_timeout = 60
+
+[[queues.consumers]]
+queue = "notification-queue"
+max_batch_size = 50
+max_batch_timeout = 10
+
+[[queues.consumers]]
+queue = "langfuse-flush-queue"
+max_batch_size = 100
+max_batch_timeout = 30
+
+# ── Cron Triggers ─────────────────────────────────────────────────────────────
+# daily at 02:00 UTC  — regulatory feed crawl
+# weekly Mon 03:00    — AutoRAG re-index
+# monthly 1st 04:00   — audit cold storage migration
+# quarterly 1st 00:00 — compliance report generation
+
+[triggers]
+crons = ["0 2 * * *", "0 3 * * 1", "0 4 1 * *", "0 0 1 */3 *"]
