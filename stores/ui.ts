@@ -3,9 +3,13 @@
 // sidebar, and chat panel. fan_in will reach 3+ once the shell layout, project
 // selector, and chat input all reference this store.
 // @MX:SPEC SPEC-REGULA-BREADTH-001 (REQ-BREADTH-049, REQ-BREADTH-050, REQ-BREADTH-051)
+// @MX:SPEC SPEC-REGULA-ENTERPRISE-001 (REQ-ENTERPRISE-031)
 
 import { create } from 'zustand';
 import { persist } from 'zustand/middleware';
+
+/** Light / dark theme selection. Persisted under 'regula-theme' key. */
+export type Theme = 'light' | 'dark';
 
 interface UIState {
   /** Currently selected project ID, or null if none selected. */
@@ -21,6 +25,8 @@ interface UIState {
   rightPanelCollapsed: boolean;
   /** Whether the user has completed the onboarding flow (REQ-BREADTH-007). */
   onboardingDone: boolean;
+  /** Active color theme. Persisted to localStorage (REQ-ENTERPRISE-031). */
+  theme: Theme;
 }
 
 interface UIActions {
@@ -29,6 +35,10 @@ interface UIActions {
   setPendingQuestion: (q: string | null) => void;
   setRightPanelCollapsed: (collapsed: boolean) => void;
   completeOnboarding: () => void;
+  /** Explicitly set the active theme (REQ-ENTERPRISE-031). */
+  setTheme: (theme: Theme) => void;
+  /** Toggle between light and dark themes (REQ-ENTERPRISE-031). */
+  toggleTheme: () => void;
 }
 
 type UIStore = UIState & UIActions;
@@ -42,6 +52,7 @@ export const useUIStore = create<UIStore>()(
       pendingQuestion: null,
       rightPanelCollapsed: false,
       onboardingDone: false,
+      theme: 'light',
 
       // Actions
       setCurrentProjectId: (id) => set({ currentProjectId: id }),
@@ -58,6 +69,10 @@ export const useUIStore = create<UIStore>()(
       setRightPanelCollapsed: (collapsed) => set({ rightPanelCollapsed: collapsed }),
 
       completeOnboarding: () => set({ onboardingDone: true }),
+
+      setTheme: (theme) => set({ theme }),
+
+      toggleTheme: () => set((state) => ({ theme: state.theme === 'light' ? 'dark' : 'light' })),
     }),
     {
       // Storage key for localStorage (REQ-BREADTH-049)
@@ -68,6 +83,7 @@ export const useUIStore = create<UIStore>()(
         recentProjects: state.recentProjects,
         rightPanelCollapsed: state.rightPanelCollapsed,
         onboardingDone: state.onboardingDone,
+        theme: state.theme,
         // pendingQuestion intentionally excluded
       }),
     },

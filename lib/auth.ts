@@ -3,17 +3,18 @@
 // fan_in will exceed 3 once chat/consult/conversations endpoints land in
 // Phase 2. Provider list and session strategy are load-bearing.
 // @MX:SPEC SPEC-REGULA-FOUNDATION-001 (REQ-FND-051, REQ-FND-052, REQ-FND-054, REQ-FND-055)
+//         SPEC-REGULA-ENTERPRISE-001 (REQ-ENTERPRISE-029)
 //
-// Phase 1 boots two OIDC providers (Microsoft Entra ID + Google) with the
-// Drizzle database session strategy. NO writeAudit calls live here yet —
-// Phase 5 is responsible for wiring auth.login / auth.logout once those
-// audit_action enum values are added (current enum has only the 3 Phase 1
-// values, so a write would fail at the DB).
+// Phase 5: writeAudit wired into signIn callback and signOut event.
+// auth.login / auth.logout enum values added in 0005_enterprise_audit_actions.sql.
+// REQ-ENTERPRISE-035: writeAudit failures MUST propagate — do NOT catch or swallow.
 
 import { DrizzleAdapter } from '@auth/drizzle-adapter';
 import NextAuth from 'next-auth';
 import Google from 'next-auth/providers/google';
 import MicrosoftEntraID from 'next-auth/providers/microsoft-entra-id';
+import { writeAudit } from './audit';
+import { buildLoginAuditEvent, buildLogoutAuditEvent } from './auth/audit-callbacks';
 import { db } from './db/client';
 import { getEnv } from './env';
 
@@ -42,10 +43,28 @@ export const { handlers, auth, signIn, signOut } = NextAuth(() => {
       signIn: '/login',
     },
     callbacks: {
-      // Phase 5: wire writeAudit({ action: 'auth.login', actor_id: user.id }) here.
-      // The audit_action enum must be ALTER-TYPE'd to include 'auth.login' first;
-      // see migrations roadmap in DEVELOPMENT.md.
-      signIn: async () => true,
+      // REQ-ENTERPRISE-029: Wire auth.login audit event.
+      // REQ-ENTERPRISE-035: writeAudit errors propagate — no try/catch here.
+      // If writeAudit throws, the error bubbles up and Auth.js will deny the sign-in,
+      // which is the correct fail-closed behavior for a regulated system.
+      signIn: async ({ user, account }) => {
+        await writeAudit(buildLoginAuditEvent(user.id, account?.provider));
+        return true;
+      },
+    },
+    events: {
+      // REQ-ENTERPRISE-029: Wire auth.logout audit event.
+      // Auth.js v5 signOut lifecycle is exposed via events.signOut.
+      // REQ-ENTERPRISE-035: writeAudit errors propagate naturally from async event handlers.
+      signOut: async (message) => {
+        // Auth.js v5 signOut event message shape differs by session strategy.
+        // Database strategy provides { session: { userId, sessionToken } }.
+        const session = 'session' in message ? message.session : null;
+        const userId = session && 'userId' in session ? (session.userId as string | null) : null;
+        const sessionToken =
+          session && 'sessionToken' in session ? (session.sessionToken as string) : '';
+        await writeAudit(buildLogoutAuditEvent(userId, sessionToken));
+      },
     },
     trustHost: true,
   };

@@ -10,14 +10,17 @@
 import { createHash } from 'node:crypto';
 import { anthropic } from '@ai-sdk/anthropic';
 import { type LanguageModel, streamText } from 'ai';
+import { eq } from 'drizzle-orm';
 import type { Session } from 'next-auth';
 import type { ConsultRequest } from '../../types/consult';
 import type { SourceItem, StreamEvent, TraceEvent } from '../../types/streaming';
 import { writeAudit } from '../audit';
 import { db } from '../db/client';
-import { conversations, messageBlocks } from '../db/schema';
+import { conversations, messageBlocks, messages } from '../db/schema';
 import { enforceCitations } from './citation-enforce';
 import { calculateConfidence, getConfidenceLevel } from './confidence';
+import { shouldAutoFlag } from './expert-review-gating';
+import { enqueueExpertReview } from './expert-review-queue';
 import { classifyIntent } from './intent';
 import { parallelRetrieveAndMerge } from './merge';
 import { persistMessage } from './persistence';
@@ -337,13 +340,14 @@ export async function* consult(
   const uncitedViolationCount = violations.filter((v) => v.type === 'CLAIM_UNCITED').length;
   const citationCoverageBelow80 =
     totalSentences > 0 && uncitedViolationCount / totalSentences > 0.2;
-  const requiresExpertReview = confidenceScore < 0.7 || citationCoverageBelow80;
+
+  // REQ-ENTERPRISE-008: use shouldAutoFlag for gating (adds policy keyword detection)
+  const autoFlagResult = shouldAutoFlag(confidenceScore, input.question, cleaned);
+  const requiresExpertReview = autoFlagResult.flag || citationCoverageBelow80;
 
   if (requiresExpertReview) {
     const reason =
-      confidenceScore < 0.7
-        ? `confidence score ${confidenceScore.toFixed(2)} < 0.7`
-        : 'citation coverage < 80%';
+      autoFlagResult.reason ?? (citationCoverageBelow80 ? 'citation coverage < 80%' : 'unknown');
 
     yield* emit({ type: 'expert_review_required', reason });
 
@@ -357,6 +361,30 @@ export async function* consult(
         reason,
         confidence_score: confidenceScore,
         trigger: 'auto',
+      },
+    });
+
+    // REQ-ENTERPRISE-009: enqueue for reviewer assignment (idempotent)
+    await enqueueExpertReview({
+      conversationId,
+      messageId,
+      reason,
+      requestedBy: '00000000-0000-0000-0000-000000000001', // SYSTEM_USER_UUID
+    });
+
+    // REQ-ENTERPRISE-010: mark message as requiring expert review
+    await db.update(messages).set({ expertReviewRequired: true }).where(eq(messages.id, messageId));
+
+    // REQ-ENTERPRISE-010: audit the auto-flag event
+    await writeAudit({
+      actor_id: '00000000-0000-0000-0000-000000000001',
+      action: 'consult.expert_review_auto_flag',
+      resource_type: 'message',
+      resource_id: messageId,
+      conversation_id: conversationId,
+      meta_json: {
+        reason,
+        confidence_score: confidenceScore,
       },
     });
   }

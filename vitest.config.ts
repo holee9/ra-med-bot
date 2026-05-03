@@ -11,7 +11,11 @@ export default defineConfig({
   test: {
     globals: true,
     environment: 'node',
-    include: ['tests/unit/**/*.test.{ts,tsx}', 'tests/integration/**/*.test.{ts,tsx}'],
+    include: [
+      'tests/unit/**/*.test.{ts,tsx}',
+      'tests/integration/**/*.test.{ts,tsx}',
+      'tests/regression/**/*.test.{ts,tsx}',
+    ],
     exclude: ['tests/e2e/**', 'node_modules', '.next'],
     coverage: {
       provider: 'v8',

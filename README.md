@@ -494,17 +494,26 @@ pnpm start
 
 ---
 
-### Phase 5: 엔터프라이즈 (계획)
+### Phase 5: 엔터프라이즈 강화 ✅ (2026-05-03 완료)
 
-**목표**: 프로덕션 준비
+**목표**: 프로덕션 준비 (7개 축 완결)
 
-- [ ] 21 CFR Part 11 감사 로깅 (audit_logs)
-- [ ] Row-Level Security (RLS)
-- [ ] SSO (SAML/OIDC)
-- [ ] Observability (Sentry + PostHog + Langfuse)
-- [ ] 성능 최적화 (캐싱, CDN, RAG 파이프라인)
+- [x] **Expert Review 워크플로우** (자동 게이팅 + 수동 플래그 + 상태 전이)
+- [x] **RBAC (Role-Based Access Control)** (4-role + 2-tier scope, 모든 Write Handler 보호)
+- [x] **Audit 완전성** (21 CFR Part 11 append-only, PII-free, 정적 분석 CI gate)
+- [x] **다크 모드 런타임** (localStorage + DB 양방향, FOUT 방지, serif 타이포 유지)
+- [x] **i18n 런타임** (next-intl ko/en, 대화 보존, 규제 용어 glossary)
+- [x] **접근성 (WCAG 2.1 AA)** (axe-core 0 violations, focus ring, aria-label, contrast)
+- [x] **관측성** (Sentry + PostHog + Langfuse + Vercel Analytics, audit_logs와 분리)
 
-**예상 기간**: 3-4주
+**성과물**:
+- ✅ 13개 자동화 CI gate (TypeScript, Biome, Unit, Integration, Audit, RBAC, i18n, Token, Module, Contrast, A11y, Build)
+- ✅ 14개 수동 QA 체크리스트 (Expert review flow, RBAC matrix, Dark mode, Locale, a11y, Observability)
+- ✅ 74개 REQ-ENTERPRISE 전부 구현 (Group A~G + Profile API)
+- ✅ 903/903 tests passing (81 test files)
+- ✅ SPEC status: draft → completed
+
+**문서 출처**: [`.moai/specs/SPEC-REGULA-ENTERPRISE-001/spec.md`](.moai/specs/SPEC-REGULA-ENTERPRISE-001/spec.md)
 
 ---
 

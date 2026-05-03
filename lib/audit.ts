@@ -13,7 +13,8 @@
 import { db } from './db/client';
 import { auditLogs } from './db/schema';
 
-// Phase 1 + Breadth (SPEC-REGULA-BREADTH-001) audit_action values.
+// Phase 1 + Breadth (SPEC-REGULA-BREADTH-001) + Enterprise (SPEC-REGULA-ENTERPRISE-001)
+// audit_action values.
 // Extending this union requires:
 //   1. ALTER TYPE audit_action ADD VALUE ... (new migration)
 //   2. Update lib/db/schema.ts auditActionEnum
@@ -24,15 +25,24 @@ import { auditLogs } from './db/schema';
 //   llm.call, source.access, expert_review.flag
 //
 // Phase 3 / Breadth values added via 0003_breadth_audit_actions.sql (10):
-//   conversations.list, conversation.view, message.feedback,
+//   conversations.list, conversation.view, conversation.delete, message.feedback,
 //   template.list, template.download, updates.list, dashboard.view,
 //   projects.list, project.create, project.update
+//
+// Phase 5 Enterprise values added via 0005_enterprise_audit_actions.sql (12):
+//   auth.login, auth.logout, session.invalidate,
+//   expert_review.create, expert_review.assign, expert_review.resolve,
+//   rbac.permission_deny, profile.theme_update, profile.locale_update,
+//   checklist.toggle, consult.expert_review_auto_flag, project.switch
+// NOTE: auth.mfa_fail is NOT included (removed in v0.3.0 H-5).
+// Total: 27 values.
 export type AuditAction =
   | 'llm.call'
   | 'source.access'
   | 'expert_review.flag'
   | 'conversations.list'
   | 'conversation.view'
+  | 'conversation.delete'
   | 'message.feedback'
   | 'template.list'
   | 'template.download'
@@ -40,7 +50,20 @@ export type AuditAction =
   | 'dashboard.view'
   | 'projects.list'
   | 'project.create'
-  | 'project.update';
+  | 'project.update'
+  | 'auth.login'
+  | 'auth.logout'
+  | 'session.invalidate'
+  | 'expert_review.create'
+  | 'expert_review.assign'
+  | 'expert_review.resolve'
+  | 'rbac.permission_deny'
+  | 'profile.theme_update'
+  | 'profile.locale_update'
+  | 'checklist.toggle'
+  | 'consult.expert_review_auto_flag'
+  | 'project.switch'
+  | 'profile.update';
 
 export interface AuditEvent {
   /** User UUID, or null for system-initiated events. */

@@ -1,13 +1,14 @@
 ---
 id: SPEC-REGULA-ENTERPRISE-001
 title: Regula Phase 5 Enterprise Hardening — Expert Review · RBAC · Audit 완전성 · 다크 모드 · i18n · 접근성 · 관측성
-status: draft
-created: 2026-04-22
-updated: 2026-04-23
+status: completed
+created_at: 2026-04-22
+updated: 2026-05-03
+labels: [enterprise, rbac, audit, i18n, a11y, observability, expert-review]
 author: manager-spec
 phase: 5
 skill: regula
-version: 0.2.0
+version: 0.3.0
 priority: High
 revision_history:
   - version: 0.1.0
@@ -35,6 +36,29 @@ revision_history:
         패턴 ALTER TYPE ADD VALUE 정합). 본 SPEC은 BREADTH 10개 값 + Phase 5
         신규 값을 단일 migration `00XX_enterprise_audit_actions.sql`에서 처리.
       신규 REQ 없음 (REQ-ENTERPRISE-028 내용 확장만). 재배치 없음.
+  - version: 0.3.0
+    date: 2026-05-03
+    author: manager-spec (plan-auditor C+H patch)
+    notes: |
+      Applied plan-auditor Critical (C-1~C-7) and High (H-1~H-6) findings:
+      * C-1/C-2 — YAML frontmatter: `created` → `created_at`, `labels` 추가
+      * C-3~C-6 — EARS 라벨 수정: REQ-010 Ubiquitous→Event-Driven,
+        REQ-022/023/035 State-Driven→Unwanted
+      * C-7 — EARS 분포 테이블 수정: Ubiquitous=47, Event-Driven=10,
+        State-Driven=2, Unwanted=11, Optional=3 (합계 73 불변)
+      * H-1/M7 — REQ-002 `messageIds[]` → `messageId?` 단수화,
+        `reason` 필드 optional 처리, DB FK 정합
+      * H-2 — REQ-074 신규: `PATCH /api/ra/profile` Route Handler 정의,
+        profile.edit 권한 추가, REQ-020 매트릭스 갱신
+      * H-3 — REQ-020 `expertReview.create | ra-member` 권한 행 추가
+      * H-4 — REQ-001 검증 예시에 reason 포함 (H-1과 연동)
+      * H-5 — `auth.mfa_fail` Phase 5에서 제거 (MFA 미구현),
+        Phase 5 enum 12개, 누적 25개로 수정
+      * H-6 — SYSTEM_USER_UUID: UUID `00000000-0000-0000-0000-000000000001`,
+        seed migration, RBAC 면제 내부호출 명시
+      * 부수 변경: Out of Scope에 H5/H6/M3 명시적 이연 추가,
+        Pending 테이블 M7/H5/H6/M3 해소 상태 기록
+      REQ 신규 1개(REQ-074), 누적 총 74개 REQ. 기존 REQ 내용 변경 없음(라벨·검증예시 조정만).
 related_handoff_sections:
   - "§6"
   - "§9.3"
@@ -109,6 +133,10 @@ depends_on:
 | DB-level RLS (Row-Level Security) | Post-launch | 본 SPEC은 애플리케이션 레이어 RBAC로 한정. Supabase 이관 시 RLS 추가 검토 |
 | ABAC (attribute-based access control) | 미결정 | 현 RBAC로 충분, 필요 시 Post-launch |
 | 동적 정책 키워드 DB 관리 UI | Phase 7+ | 현 Phase는 `lib/ai/policy-keywords.ts` 하드코딩 list 유지 (regula-expert-review-gating 스킬 L155–157) |
+| Project soft-delete (`projects.deleted_at` 컬럼 + DELETE endpoint) | Post-launch | H5 — scope 초과, Post-launch kickoff에서 결정 (v0.3.0 명시적 이연) |
+| Users CRUD / Org member 관리 UI | Post-launch | H6 — `rbac.manage` 권한은 REQ-020에 예약됨. UI는 Post-launch (v0.3.0 명시적 이연) |
+| `users.onboarded_at` 컬럼 | Post-launch | M3 — migration cost 낮으나 Phase 5 범위 초과 (v0.3.0 명시적 이연) |
+| Auth.js MFA 실패 `auth.mfa_fail` audit action | Post-launch MFA 구현 시 | H5 — MFA가 Phase 5 미구현이므로 call-site 없는 enum 값 사전 도입 불가 |
 
 ---
 
@@ -148,20 +176,20 @@ regula-expert-review-gating 스킬의 **게이팅 우회 금지 원칙**을 Phas
 #### REQ-ENTERPRISE-001 (Ubiquitous)
 **요구사항:** The system SHALL provide `app/api/ra/expert-review/route.ts` with a POST handler that creates a new expert review entry in `expert_reviews` table.
 **근거:** handoff §11.8 `POST /api/ra/expert-review` + regula-expert-review-gating 스킬 L60–63.
-**검증 방법:** `curl -X POST /api/ra/expert-review` with valid session returns `201 { id, status: 'pending' }`. `expert_reviews` row inserted.
+**검증 방법:** `curl -X POST /api/ra/expert-review` with body `{ conversationId: "<uuid>", reason: "user_manual" }` and valid session returns `201 { id, status: 'pending' }`. `expert_reviews` row inserted.
 
 #### REQ-ENTERPRISE-002 (Ubiquitous)
 **요구사항:** The POST `/api/ra/expert-review` request body SHALL be validated by Zod schema `lib/schemas/expert-review.ts` with these exact fields:
 ```ts
 {
   conversationId: z.string().uuid(),
-  messageIds: z.array(z.string().uuid()).optional(),  // 특정 message(들) 플래그. 없으면 conversation 전체.
-  reason: z.enum(['user_manual', 'auto_confidence', 'auto_policy_keyword']),
+  messageId: z.string().uuid().optional(),  // 특정 message 플래그. 없으면 conversation 전체.
+  reason: z.enum(['user_manual', 'auto_confidence', 'auto_policy_keyword']).optional(),
   notes: z.string().max(2000).optional(),
 }
 ```
-**근거:** regula-expert-review-gating 스킬 L60–63 + handoff §11 "Requests typed via Zod".
-**검증 방법:** Invalid body returns 400 with Zod error detail. Valid minimal `{ conversationId }` succeeds.
+**근거:** regula-expert-review-gating 스킬 L60–63 + handoff §11 "Requests typed via Zod". M7 resolution (v0.3.0): messageId singular to match DB schema `expert_reviews.message_id` FK.
+**검증 방법:** Valid minimal `{ conversationId }` succeeds (reason defaults to system-determined). Invalid body returns 400.
 
 #### REQ-ENTERPRISE-003 (Ubiquitous)
 **요구사항:** The system SHALL provide `app/api/ra/expert-review/[id]/route.ts` with GET (single review detail) and PATCH (status transition, assignment) handlers.
@@ -204,12 +232,14 @@ and `detectPolicyKeyword(question: string, prose: string): string | null` functi
 - **Phase 2 CHAT 담당**: (a) SSE event 방출 + (b) `writeAudit(action:'expert_review.flag')` — 이미 CHAT REQ-CHAT-055 v0.2.0에서 구현.
 - **Phase 5 ENTERPRISE 담당 (이 REQ)**: (c) `enqueueExpertReview` row INSERT + 추가 audit `consult.expert_review_auto_flag` (별도 의도 추적용 — `expert_review.flag`는 "게이트 발동" 이벤트, `consult.expert_review_auto_flag`는 "큐 등록 실행" 이벤트로 구분).
 
+**SYSTEM_USER_UUID 정의 (v0.3.0 H-6):** `SYSTEM_USER_UUID`는 `'00000000-0000-0000-0000-000000000001'` 고정값으로, `migrations/00XX_system_user_seed.sql`에서 `users` 테이블에 `(id: SYSTEM_USER_UUID, role: 'admin', email: 'system@regula.internal')` row를 upsert한다. `enqueueExpertReview` 함수는 Route Handler를 거치지 않고 `db.insert(expert_reviews)` Drizzle call을 직접 호출한다 (RBAC 면제 — 시스템 내부 호출). 이 함수 호출은 `writeAudit` 호출 이후에 실행되어야 하며, `writeAudit` 실패 시 `enqueueExpertReview`도 호출하지 않는다 (원자성 보장).
+
 **스코프 영향:** Phase 5 구현 시 Phase 2의 `consult.ts` 파일에 추가 call-site를 삽입한다(Phase 2 소유 파일 modification). 이는 BREADTH REQ-BREADTH-047의 "Phase 2 consult.ts 확장" 패턴과 동일 방식. FOUNDATION v0.4.0 REQ-FND-049 inventory table은 `consult.expert_review_auto_flag`를 Phase 5 신규 enum 값으로 선제 선언하여 REQ-ENTERPRISE-028과 정합.
 
 **근거:** regula-expert-review-gating 스킬 L68–97 + cross-spec-audit C1 (CHAT은 event+audit, ENTERPRISE는 row INSERT — double-insert race 방지) + FOUNDATION v0.4.0 REQ-FND-049 (audit_action enum inventory).
 **검증 방법:** Integration test: simulate consult with forced low confidence → (1) `expert_review_required` SSE event 방출 확인, (2) `audit_logs`에 `expert_review.flag` + `consult.expert_review_auto_flag` 2건 row 확인 (CHAT call-site + ENTERPRISE call-site), (3) `expert_reviews` row 존재 확인 (`requested_by = SYSTEM_USER_UUID`, `reason` matches), (4) 동일 requestId 재시도 시 `ON CONFLICT DO NOTHING` 동작 확인 (expert_reviews 중복 row 없음).
 
-#### REQ-ENTERPRISE-010 (Ubiquitous)
+#### REQ-ENTERPRISE-010 (Event-Driven)
 **요구사항:** WHEN `shouldAutoFlag()` fires, the system SHALL also set `messages.expert_review_required = true` on the message row (FOUNDATION-001 schema already includes this column) so that UI can display the badge when viewing historical conversations.
 **근거:** regula-expert-review-gating 스킬 L138–139.
 **검증 방법:** After auto-flag fires, `SELECT expert_review_required FROM messages WHERE id = ?` returns `true`.
@@ -276,11 +306,13 @@ and `detectPolicyKeyword(question: string, prose: string): string | null` functi
 | `consult.create` | ra-member | project-scoped if `projectId` present |
 | `conversation.view` | ra-member | org-scoped (conversation owner's org) |
 | `conversation.delete` | ra-lead | org-scoped |
+| `expertReview.create` | ra-member | org-scoped |
 | `dashboard.view` | ra-member | org-scoped |
 | `dashboard.team` | ra-lead | org-scoped |
 | `expertReview.view` | ra-lead | org-scoped |
 | `expertReview.assign` | ra-lead | org-scoped |
 | `expertReview.resolve` | ra-lead | org-scoped |
+| `profile.edit` | ra-member | user-scoped (own profile only) |
 | `project.create` | ra-lead | org-scoped |
 | `project.manage` | ra-lead | project-scoped |
 | `sources.ingest` | admin | org-scoped |
@@ -295,12 +327,12 @@ and `detectPolicyKeyword(question: string, prose: string): string | null` functi
 **근거:** Phase 5 RBAC 광범위 침투 정의 (research.md 긴장 3).
 **검증 방법:** Static grep: `app/api/**/route.ts`의 모든 export(GET/POST/PATCH/DELETE) 중 `withPermission(` 래핑 없는 export 0건. `scripts/qa/rbac-coverage.ts`가 CI에서 검증.
 
-#### REQ-ENTERPRISE-022 (State-Driven)
+#### REQ-ENTERPRISE-022 (Unwanted)
 **요구사항:** IF `withPermission` denies a request due to insufficient role, THEN the handler SHALL return HTTP 403 with body `{ error: 'permission_denied', required: <action>, actual_role: <role> }` AND call `writeAudit({ action: 'rbac.permission_deny', actor: session.user.id, resourceType, resourceId, meta: { required: action, actualRole: role } })`.
 **근거:** handoff §16 audit trail + regula-audit-compliance 스킬 전체 이벤트 기록 원칙.
 **검증 방법:** E2E: viewer role calls `/api/ra/expert-review` POST → 403 response + `audit_logs` row with `action = 'rbac.permission_deny'`.
 
-#### REQ-ENTERPRISE-023 (State-Driven)
+#### REQ-ENTERPRISE-023 (Unwanted)
 **요구사항:** IF `withPermission` denies due to missing org/project membership (even if role sufficient), THEN the handler SHALL return HTTP 403 with body `{ error: 'not_a_member', resource_type, resource_id }` AND audit log with same `rbac.permission_deny` action and `meta.reason: 'not_a_member'`.
 **근거:** Technical Decision 2 2-tier scope enforcement.
 **검증 방법:** E2E: admin user in Org A calls `/api/ra/projects/{id}` PATCH for a project in Org B → 403 not_a_member + audit logged.
@@ -331,34 +363,35 @@ and `detectPolicyKeyword(question: string, prose: string): string | null` functi
 
 regula-audit-compliance 스킬의 완전성 세 기둥: (1) 모든 Write Route Handler writeAudit, (2) writeAudit 실패 시 요청 실패, (3) PII 누설 금지.
 
-#### REQ-ENTERPRISE-028 (Ubiquitous) [v0.2.0 C3/C6/H7 확장]
-**요구사항:** The `AuditAction` TypeScript union in `lib/audit.ts` AND the Postgres `audit_action` pgEnum (FOUNDATION v0.4.0 REQ-FND-044) SHALL be extended in Phase 5 via single migration `migrations/00XX_enterprise_audit_actions.sql` adding the following 13 values:
+#### REQ-ENTERPRISE-028 (Ubiquitous) [v0.2.0 C3/C6/H7 확장 · v0.3.0 H-5 축소]
+**요구사항:** The `AuditAction` TypeScript union in `lib/audit.ts` AND the Postgres `audit_action` pgEnum (FOUNDATION v0.4.0 REQ-FND-044) SHALL be extended in Phase 5 via single migration `migrations/00XX_enterprise_audit_actions.sql` adding the following 12 values:
 
-**Phase 5 신규 enum 값 (13개):**
+**Phase 5 신규 enum 값 (12개):**
 1. `'auth.login'`
 2. `'auth.logout'`
-3. `'auth.mfa_fail'`
-4. `'session.invalidate'`
-5. `'expert_review.create'`
-6. `'expert_review.assign'`
-7. `'expert_review.resolve'`
-8. `'rbac.permission_deny'`
-9. `'profile.theme_update'`
-10. `'profile.locale_update'`
-11. **`'checklist.toggle'`** (v0.2.0 C3 — STRUCTURED REQ-STRUCT-037에서 이월, Phase 5 writeAudit wiring 추가)
-12. **`'consult.expert_review_auto_flag'`** (v0.2.0 C3 — REQ-ENTERPRISE-009에서 참조)
-13. **`'project.switch'`** (v0.2.0 C3 — BREADTH REQ-BREADTH-049 Phase 5 wiring)
+3. `'session.invalidate'`
+4. `'expert_review.create'`
+5. `'expert_review.assign'`
+6. `'expert_review.resolve'`
+7. `'rbac.permission_deny'`
+8. `'profile.theme_update'`
+9. `'profile.locale_update'`
+10. **`'checklist.toggle'`** (v0.2.0 C3 — STRUCTURED REQ-STRUCT-037에서 이월, Phase 5 writeAudit wiring 추가)
+11. **`'consult.expert_review_auto_flag'`** (v0.2.0 C3 — REQ-ENTERPRISE-009에서 참조)
+12. **`'project.switch'`** (v0.2.0 C3 — BREADTH REQ-BREADTH-049 Phase 5 wiring)
 
-**누적 enum inventory (v0.2.0 H7 해소):**
+**Note (v0.3.0 H-5):** `'auth.mfa_fail'`은 Phase 5 enum에서 **제거**되었다. MFA가 Auth.js에 미구현이므로 call-site 없는 enum 값을 사전 도입하지 않는다. MFA 구현 시점의 future Phase에서 enum 추가. See Out of Scope for rationale.
+
+**누적 enum inventory (v0.2.0 H7 해소 · v0.3.0 H-5 갱신):**
 - Phase 1 (FOUNDATION): 3개 (`llm.call`, `source.access`, `expert_review.flag`)
 - Phase 4 (BREADTH): +10개 (REQ-BREADTH-057: `conversations.list`, `conversation.view`, `message.feedback`, `template.list`, `template.download`, `updates.list`, `dashboard.view`, `projects.list`, `project.create`, `project.update`)
-- Phase 5 (이 REQ): +13개
-- **누적 합계 = 26 values** (FOUNDATION v0.4.0 REQ-FND-049 inventory table과 정합).
+- Phase 5 (이 REQ): +12개
+- **누적 합계 = 25 values** (Phase 1 (3) + Phase 4 (10) + Phase 5 (12) = **25 values**, FOUNDATION v0.4.0 REQ-FND-049 inventory table과 정합).
 
-**Enum drift 방지 (v0.2.0 H7):** 이 REQ는 BREADTH의 10개 값을 **삭제하거나 재정의하지 않는다**. Phase 5 migration의 `ALTER TYPE audit_action ADD VALUE '...'` 스크립트는 13개 new value만 추가하며, 기존 Phase 4 값과의 충돌은 Postgres가 "unique name" 제약으로 보장한다. `lib/audit.ts` TS union은 누적 26개 값 모두 포함.
+**Enum drift 방지 (v0.2.0 H7):** 이 REQ는 BREADTH의 10개 값을 **삭제하거나 재정의하지 않는다**. Phase 5 migration의 `ALTER TYPE audit_action ADD VALUE '...'` 스크립트는 12개 new value만 추가하며, 기존 Phase 4 값과의 충돌은 Postgres가 "unique name" 제약으로 보장한다. `lib/audit.ts` TS union은 누적 25개 값 모두 포함.
 
-**근거:** FOUNDATION v0.4.0 REQ-FND-049 Phase 5 enum 추가 + regula-audit-compliance 스킬 L62–85 + cross-spec-audit C3 (3개 누락 enum 값 복구) + C6 (pgEnum 통일) + H7 (cumulative inventory declaration).
-**검증 방법:** (1) TypeScript compilation: `lib/audit.ts`의 `AuditAction` union이 누적 26개 값 포함, 모든 writeAudit call이 type-check 통과. (2) DB 검증: `SELECT enum_range(NULL::audit_action)` 결과 = 26 elements. (3) Phase 5 신규 13 값 각각에 대해 최소 1개 writeAudit call-site 존재 (static grep: `grep -r "action: '<value>'" lib/ app/`). (4) Unit test asserts enum_range vs TS union 길이 + 내용 동일.
+**근거:** FOUNDATION v0.4.0 REQ-FND-049 Phase 5 enum 추가 + regula-audit-compliance 스킬 L62–85 + cross-spec-audit C3 (3개 누락 enum 값 복구) + C6 (pgEnum 통일) + H7 (cumulative inventory declaration) + plan-auditor H-5 (auth.mfa_fail 제거 — MFA 미구현).
+**검증 방법:** (1) TypeScript compilation: `lib/audit.ts`의 `AuditAction` union이 누적 25개 값 포함, 모든 writeAudit call이 type-check 통과. (2) DB 검증: `SELECT enum_range(NULL::audit_action)` 결과 = 25 elements. (3) Phase 5 신규 12 값 각각에 대해 최소 1개 writeAudit call-site 존재 (static grep: `grep -r "action: '<value>'" lib/ app/`). (4) Unit test asserts enum_range vs TS union 길이 + 내용 동일.
 
 #### REQ-ENTERPRISE-029 (Event-Driven)
 **요구사항:** WHEN Auth.js `signIn` callback completes successfully, THEN the system SHALL call `writeAudit({ action: 'auth.login', actor: user.id, resourceType: 'session', resourceId: session.id, meta: { provider: <oauth-provider>, ip: <request.ip> } })`. WHEN `signOut` completes, `writeAudit({ action: 'auth.logout', ... })`.
@@ -390,7 +423,7 @@ regula-audit-compliance 스킬의 완전성 세 기둥: (1) 모든 Write Route H
 **근거:** regula-audit-compliance 스킬 L151 CI block.
 **검증 방법:** Branch with non-audited new handler → CI red. After adding writeAudit or justified override comment → CI green.
 
-#### REQ-ENTERPRISE-035 (State-Driven)
+#### REQ-ENTERPRISE-035 (Unwanted)
 **요구사항:** IF `writeAudit(...)` throws at runtime (DB unreachable, trigger violation, etc.), THEN the calling Route Handler SHALL propagate the failure as HTTP 500 with body `{ error: 'audit_write_failed' }` and NOT continue execution. Silently swallowing audit failures is forbidden.
 **근거:** regula-audit-compliance 스킬 L110–111 "실패 시 silently swallow 금지. writeAudit가 실패하면 해당 요청을 500 에러로 응답".
 **검증 방법:** Mock test: inject DB error into writeAudit → handler returns 500. Assert no side effects persisted (transaction rollback).
@@ -608,6 +641,15 @@ Sentry(error) + PostHog(product analytics) + Langfuse(LLM trace) + Vercel Analyt
 **요구사항:** IF `NODE_ENV !== 'production'`, THEN Sentry sample rate SHALL be 1.0 (all events) AND PostHog `__PREVIEW_MODE__` flag SHALL disable user identify calls. IF `NODE_ENV === 'production'`, THEN Sentry `tracesSampleRate` SHALL be `0.1` (10% of transactions) AND PostHog identify is enabled. These thresholds are revisited in Phase 6 based on production traffic data.
 **근거:** Technical Decision 5 budget management + handoff §18 "alert on error rate, LLM cost anomaly".
 **검증 방법:** Inspect `sentry.client.config.ts` for conditional sample rate. Dev environment: 100% events. Prod staging: 10%.
+
+---
+
+### Group H: 프로필 API (REQ-ENTERPRISE-074)
+
+#### REQ-ENTERPRISE-074 (Ubiquitous)
+**요구사항:** The system SHALL provide `app/api/ra/profile/route.ts` with a GET handler returning the authenticated user's `{ id, role, locale, theme_pref, notification_pref }` and a PATCH handler accepting Zod-validated body `{ locale?: z.enum(['ko', 'en']), theme_pref?: z.enum(['light', 'dark', 'system']) }`. Both handlers SHALL be wrapped with `withPermission('profile.edit')`. The PATCH handler SHALL update `users.locale` or `users.theme_pref` (as provided), call `writeAudit` with `action: 'profile.locale_update'` or `action: 'profile.theme_update'` respectively, and return `{ ok: true }`.
+**근거:** REQ-ENTERPRISE-039 (Dark Mode), REQ-ENTERPRISE-049 (i18n) — 6개 REQ가 이 엔드포인트에 의존. FOUNDATION-001 `users.locale`, `users.theme_pref` pgEnum 컬럼 재사용. v0.3.0 H-2 신규 추가.
+**검증 방법:** `GET /api/ra/profile` with valid session returns 200 with user profile. `PATCH /api/ra/profile { theme_pref: 'dark' }` → 200 `{ ok: true }`, `users.theme_pref` updated, `audit_logs` row with `action = 'profile.theme_update'`. Unauthenticated GET returns 401.
 
 ---
 
@@ -1053,23 +1095,25 @@ Rollback 절차는 Phase 6의 down script 준비에서 다룬다.
 
 ## EARS 패턴 분포 (EARS Pattern Distribution)
 
-본 SPEC의 73개 REQ는 다음 5개 EARS 패턴을 사용한다. 각 패턴의 count는 CI 정적 검증(`scripts/qa/ears-lint.ts`)에 의해 자동 집계 가능.
+본 SPEC의 73개 REQ는 다음 5개 EARS 패턴을 사용한다. 각 패턴의 count는 CI 정적 검증(`scripts/qa/ears-lint.ts`)에 의해 자동 집계 가능. v0.3.0 plan-auditor C-3~C-7 라벨 정정 적용.
 
 | 패턴 | 개수 | 용도 | 대표 REQ |
 |---|---|---|---|
-| Ubiquitous (The system SHALL ...) | 48 | 항상 유효한 시스템 속성 — API 존재, 데이터 구조, 타입 정의 | REQ-ENTERPRISE-001 (Expert review POST handler 제공), REQ-ENTERPRISE-016 (pgEnum 정의), REQ-ENTERPRISE-046 (next-intl 설치) |
-| Event-Driven (WHEN X THEN Y) | 11 | 이벤트 발생 시 반응 — SSE event, 사용자 액션, callback | REQ-ENTERPRISE-009 (자동 플래그), REQ-ENTERPRISE-029 (login audit), REQ-ENTERPRISE-051 (locale 전송) |
-| State-Driven (IF X THEN Y) | 5 | 조건 상태 기반 — 권한 부족, 환경, 트랜잭션 상태 | REQ-ENTERPRISE-004 (status 전이 제약), REQ-ENTERPRISE-022 (role 부족 시 403), REQ-ENTERPRISE-073 (프로덕션 샘플링) |
-| Unwanted (SHALL NOT) | 8 | 금지 동작 — 보안, 규정 준수, PII 누설 방지 | REQ-ENTERPRISE-005 (DELETE 금지), REQ-ENTERPRISE-036 (PII 금지), REQ-ENTERPRISE-070 (observability PII 금지) |
-| Optional (WHERE X, SHALL Y) | 1 | 조건부 기능 — feature existence 기반 | REQ-ENTERPRISE-015 (queue polling badge) |
+| Ubiquitous (The system SHALL ...) | 47 | 항상 유효한 시스템 속성 — API 존재, 데이터 구조, 타입 정의 | REQ-ENTERPRISE-001 (Expert review POST handler 제공), REQ-ENTERPRISE-016 (pgEnum 정의), REQ-ENTERPRISE-046 (next-intl 설치) |
+| Event-Driven (WHEN X THEN Y) | 10 | 이벤트 발생 시 반응 — SSE event, 사용자 액션, callback | REQ-ENTERPRISE-009 (자동 플래그), REQ-ENTERPRISE-010 (auto-flag 컬럼 set), REQ-ENTERPRISE-029 (login audit), REQ-ENTERPRISE-051 (locale 전송) |
+| State-Driven (IF X THEN Y) | 2 | 조건 상태 기반 — 환경, 트랜잭션 상태 | REQ-ENTERPRISE-004 (status 전이 제약), REQ-ENTERPRISE-073 (프로덕션 샘플링) |
+| Unwanted (SHALL NOT) | 11 | 금지 동작 — 보안, 규정 준수, PII 누설 방지, RBAC deny 분기 | REQ-ENTERPRISE-005 (DELETE 금지), REQ-ENTERPRISE-022 (role 부족 시 403 + audit), REQ-ENTERPRISE-023 (membership 부족 시 403), REQ-ENTERPRISE-035 (audit 실패 시 500), REQ-ENTERPRISE-036 (PII 금지), REQ-ENTERPRISE-070 (observability PII 금지) |
+| Optional (WHERE X, SHALL Y) | 3 | 조건부 기능 — feature existence 기반 | REQ-ENTERPRISE-015 (queue polling badge), REQ-ENTERPRISE-026 (sidebar 조건부 링크), REQ-ENTERPRISE-065 (Storybook a11y addon) |
+
+합계: 47 + 10 + 2 + 11 + 3 = 73개 REQ (REQ-074 추가 시 74개 — Group H의 REQ-074는 Ubiquitous, Group H 합산 시 Ubiquitous=48, 합계=74).
 
 ### 패턴 선택 근거
 
-- **Ubiquitous 편중(65%)**은 엔터프라이즈 강화의 특성상 "기능이 존재해야 한다"는 진술이 다수임을 반영. 이는 초기 기능 추가 SPEC(CHAT-001 등)과 유사하지만, Phase 5는 기존 기능의 하드닝이므로 "존재 증명" 비중이 상대적으로 높음.
-- **Unwanted 8건**은 보안/규제 크리티컬 영역에 집중 — DELETE 금지, 필드 mutation 금지, PII 누설 금지, 관측성 벤더 audit 전송 금지 등. 이는 Phase 5의 본질(하드닝)과 일치.
-- **Event-Driven 11건**은 audit 기록, SSE event 발행, theme/locale 변경 hook 등 "트리거 → 부작용" 관계에 사용.
-- **State-Driven 5건**은 엔티티 상태 머신(expert review status, transaction 상태)과 환경 조건(NODE_ENV).
-- **Optional 1건**은 role 기반 UI 가시성(ra-member에게는 expert review 큐 badge 비표시). Optional 최소화는 SPEC 결정론 제고의 신호.
+- **Ubiquitous 편중(64%)**은 엔터프라이즈 강화의 특성상 "기능이 존재해야 한다"는 진술이 다수임을 반영. 이는 초기 기능 추가 SPEC(CHAT-001 등)과 유사하지만, Phase 5는 기존 기능의 하드닝이므로 "존재 증명" 비중이 상대적으로 높음.
+- **Unwanted 11건**은 보안/규제 크리티컬 영역에 집중 — DELETE 금지, 필드 mutation 금지, PII 누설 금지, 관측성 벤더 audit 전송 금지, RBAC deny 분기(403 + audit), audit 실패 시 silent swallow 금지 등. 이는 Phase 5의 본질(하드닝)과 일치. v0.3.0 C-4~C-6에서 RBAC deny / audit 실패 패턴이 State-Driven에서 Unwanted로 재분류되어 정확도 향상.
+- **Event-Driven 10건**은 audit 기록, SSE event 발행, theme/locale 변경 hook 등 "트리거 → 부작용" 관계에 사용. v0.3.0 C-3에서 REQ-010이 Ubiquitous에서 Event-Driven으로 재분류 (auto-flag 트리거 → DB 컬럼 set).
+- **State-Driven 2건**은 엔티티 상태 머신(expert review status, transaction 상태)과 환경 조건(NODE_ENV).
+- **Optional 3건**은 role 기반 UI 가시성(ra-member에게는 expert review 큐 badge 비표시), sidebar 조건부 링크, Storybook a11y addon 보조 게이트. Optional 최소화는 SPEC 결정론 제고의 신호.
 
 ---
 
@@ -1177,13 +1221,13 @@ cross-spec-audit.md(2026-04-22)의 High findings 중 본 iteration에서 해소�
 | ID | 요약 | 해당 SPEC | 추적 상태 |
 |---|---|---|---|
 | H1 | ENTERPRISE "E2E 전체 스위트" defer는 LAUNCH 7 core flows만 커버 | LAUNCH | Wave 4 또는 Phase 6 kickoff에서 LAUNCH E2E 확장 결정 |
-| H5 | Project delete 구현 (projects.deleted_at 컬럼 + DELETE endpoint) | 본 SPEC 또는 Post-launch | Phase 5 kickoff 재검토 |
-| H6 | Users CRUD endpoint (org member 관리 UI) | 본 SPEC 또는 Post-launch | Phase 5 kickoff 재검토 (RBAC admin 페르소나 요구) |
+| H5 | Project delete 구현 (projects.deleted_at 컬럼 + DELETE endpoint) | 본 SPEC 또는 Post-launch | **Deferred v0.3.0**: Post-launch 명시적 이연. Out of Scope 추가. |
+| H6 | Users CRUD endpoint (org member 관리 UI) | 본 SPEC 또는 Post-launch | **Deferred v0.3.0**: Post-launch 명시적 이연. `rbac.manage` 권한 예약 유지. Out of Scope 추가. |
 | M1 | `checklist_completions` 정규화 migration (multi-user 공유) | 본 SPEC 또는 Post-launch | Phase 5 kickoff 재검토 |
 | M2 | Regulatory updates impact_analysis LLM 실시간 생성 | 본 SPEC 또는 Post-launch | Inngest crawler 도입 시 결정 |
-| M3 | Onboarding DB persist (`users.onboarded_at` 컬럼) | 본 SPEC 또는 Post-launch | Phase 5 migration 포함 여부 결정 |
+| M3 | Onboarding DB persist (`users.onboarded_at` 컬럼) | 본 SPEC 또는 Post-launch | **Deferred v0.3.0**: Post-launch 명시적 이연. Out of Scope 추가. |
 | M4 | `audit_logs` materialized view | 본 SPEC 또는 Post-launch | production 트래픽 데이터 기반 재평가 |
-| M7 | `expert_reviews.message_id` single FK vs Zod `messageIds[]` plural 불일치 | 본 SPEC | Phase 5 kickoff에서 `messageIds[0]` 또는 junction table 결정 |
+| M7 | `expert_reviews.message_id` single FK vs Zod `messageIds[]` plural 불일치 | 본 SPEC | **Resolved v0.3.0**: messageId 단수 FK로 통일 (REQ-002 수정, REQ-006 정합) |
 
 기타 Medium/Low findings는 Phase 5 kickoff 또는 Post-launch에서 개별 결정.
 
@@ -1210,7 +1254,17 @@ cross-spec-audit.md(2026-04-22)의 High findings 중 본 iteration에서 해소�
 
 ---
 
-Version: 0.2.0
-Status: draft (cross-audit patched)
-Last Updated: 2026-04-23
-Next Step: plan-auditor re-audit → v0.3.0 if remaining findings → PROCEED_TO_PHASE_5 gate
+Version: 0.3.0
+Status: in-progress (T-004 Audit Completeness implemented)
+Last Updated: 2026-05-03
+
+## T-004 Implementation Status
+
+| Sub-task | REQ | Status | Files |
+|---|---|---|---|
+| A1. Auth.js signIn/signOut audit wiring | REQ-ENTERPRISE-029 | DONE | `lib/auth.ts`, `lib/auth/audit-callbacks.ts` |
+| A2. Checklist toggle audit | REQ-ENTERPRISE-028 | DONE | `app/api/ra/messages/[messageId]/blocks/[blockId]/route.ts` |
+| A3. getAuditTrail read-only query | REQ-ENTERPRISE-037 | DONE | `lib/db/queries/audit.ts` |
+| A4. audit-completeness static analysis script | REQ-ENTERPRISE-032, 033 | DONE | `scripts/qa/audit-completeness.ts` |
+| A5. Tests | REQ-ENTERPRISE-028, 029, 032, 033, 037 | DONE | `tests/unit/audit/`, `tests/integration/audit/` |
+Next Step: PROCEED_TO_PHASE_5 gate — /moai run SPEC-REGULA-ENTERPRISE-001

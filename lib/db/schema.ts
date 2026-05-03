@@ -1,16 +1,17 @@
 // @MX:ANCHOR Drizzle ORM schema — single source of truth for the Regula data model.
-// @MX:REASON 13 tables and 8 pgEnums are referenced by every Route Handler,
+// @MX:REASON 15 tables and 9 pgEnums are referenced by every Route Handler,
 // every migration, and every QA static analysis pass. fan_in is well above 3.
-// @MX:SPEC SPEC-REGULA-FOUNDATION-001 (REQ-FND-031..044b)
+// @MX:SPEC SPEC-REGULA-FOUNDATION-001 (REQ-FND-031..044b),
+//          SPEC-REGULA-ENTERPRISE-001 (REQ-ENTERPRISE-016, 027, 028)
 //
-// Table inventory (13):
+// Table inventory (15):
 //   users, organizations, projects, conversations, messages, message_sources,
 //   message_blocks, sources, source_sections, templates, regulatory_updates,
-//   expert_reviews, audit_logs
+//   expert_reviews, audit_logs, org_members, project_members
 //
-// pgEnum inventory (8):
+// pgEnum inventory (9):
 //   locale, theme_pref, message_role, confidence_level, block_type,
-//   source_type, expert_review_status, audit_action
+//   source_type, expert_review_status, audit_action, user_role
 //
 // Vector type: pgvector(1536) is exposed via customType because drizzle-orm
 // does not yet ship a native vector helper. See migrations/0000_init.sql for
@@ -70,15 +71,22 @@ export const expertReviewStatusEnum = pgEnum('expert_review_status', [
   'resolved',
 ]);
 
+// REQ-ENTERPRISE-016: user_role pgEnum replaces TEXT role column on users table.
+// Migration: 0004_user_role_enum.sql (creates type, migrates 'member' → 'ra-member').
+export const userRoleEnum = pgEnum('user_role', ['admin', 'ra-lead', 'ra-member', 'viewer']);
+
 // @MX:NOTE audit_action values mirror AuditAction type in lib/audit.ts.
 // Phase 1: 3 values. Phase 3 / Breadth: +10 via 0003_breadth_audit_actions.sql.
-// Adding values here requires a matching ALTER TYPE migration.
+// Phase 5 Enterprise: +12 via 0005_enterprise_audit_actions.sql.
+// Total: 25 values. Adding values here requires a matching ALTER TYPE migration.
+// NOTE: auth.mfa_fail is NOT included (removed in v0.3.0 H-5).
 export const auditActionEnum = pgEnum('audit_action', [
   'llm.call',
   'source.access',
   'expert_review.flag',
   'conversations.list',
   'conversation.view',
+  'conversation.delete',
   'message.feedback',
   'template.list',
   'template.download',
@@ -87,6 +95,19 @@ export const auditActionEnum = pgEnum('audit_action', [
   'projects.list',
   'project.create',
   'project.update',
+  'auth.login',
+  'auth.logout',
+  'session.invalidate',
+  'expert_review.create',
+  'expert_review.assign',
+  'expert_review.resolve',
+  'rbac.permission_deny',
+  'profile.theme_update',
+  'profile.locale_update',
+  'checklist.toggle',
+  'consult.expert_review_auto_flag',
+  'project.switch',
+  'profile.update',
 ]);
 
 // ---------------------------------------------------------------------------
@@ -101,14 +122,19 @@ export const organizations = pgTable('organizations', {
   createdAt: timestamp('created_at', { withTimezone: true, mode: 'date' }).notNull().defaultNow(),
 });
 
-// REQ-FND-032
+// REQ-FND-032, REQ-ENTERPRISE-016 (user_role enum), REQ-ENTERPRISE-027 (notification_pref)
 export const users = pgTable('users', {
   id: uuid('id').defaultRandom().primaryKey(),
   email: text('email').notNull().unique(),
   name: text('name').notNull(),
-  role: text('role').notNull().default('member'),
+  // REQ-ENTERPRISE-016: migrated from TEXT to user_role pgEnum via 0004_user_role_enum.sql.
+  // Default 'ra-member' replaces legacy default 'member'.
+  role: userRoleEnum('role').notNull().default('ra-member'),
   locale: localeEnum('locale').notNull().default('ko'),
   themePref: themePrefEnum('theme_pref').notNull().default('system'),
+  // REQ-ENTERPRISE-027: notification preferences placeholder (Phase 5 write-only).
+  // Phase 6 will read this column. Default '{}' is safe for existing rows.
+  notificationPref: jsonb('notification_pref').notNull().default({}),
   createdAt: timestamp('created_at', { withTimezone: true, mode: 'date' }).notNull().defaultNow(),
   updatedAt: timestamp('updated_at', { withTimezone: true, mode: 'date' }).notNull().defaultNow(),
 });
@@ -270,24 +296,31 @@ export const regulatoryUpdates = pgTable('regulatory_updates', {
   createdAt: timestamp('created_at', { withTimezone: true, mode: 'date' }).notNull().defaultNow(),
 });
 
-// REQ-FND-043
-export const expertReviews = pgTable('expert_reviews', {
-  id: uuid('id').defaultRandom().primaryKey(),
-  conversationId: uuid('conversation_id')
-    .notNull()
-    .references(() => conversations.id, { onDelete: 'restrict' }),
-  messageId: uuid('message_id')
-    .notNull()
-    .references(() => messages.id, { onDelete: 'cascade' }),
-  requestedBy: uuid('requested_by')
-    .notNull()
-    .references(() => users.id, { onDelete: 'restrict' }),
-  assignedTo: uuid('assigned_to').references(() => users.id, { onDelete: 'set null' }),
-  status: expertReviewStatusEnum('status').notNull().default('pending'),
-  notes: text('notes'),
-  createdAt: timestamp('created_at', { withTimezone: true, mode: 'date' }).notNull().defaultNow(),
-  resolvedAt: timestamp('resolved_at', { withTimezone: true, mode: 'date' }),
-});
+// REQ-FND-043; Risk R9 mitigation: composite index on (status, assigned_to)
+// added via 0007_expert_reviews_index.sql.
+export const expertReviews = pgTable(
+  'expert_reviews',
+  {
+    id: uuid('id').defaultRandom().primaryKey(),
+    conversationId: uuid('conversation_id')
+      .notNull()
+      .references(() => conversations.id, { onDelete: 'restrict' }),
+    messageId: uuid('message_id')
+      .notNull()
+      .references(() => messages.id, { onDelete: 'cascade' }),
+    requestedBy: uuid('requested_by')
+      .notNull()
+      .references(() => users.id, { onDelete: 'restrict' }),
+    assignedTo: uuid('assigned_to').references(() => users.id, { onDelete: 'set null' }),
+    status: expertReviewStatusEnum('status').notNull().default('pending'),
+    notes: text('notes'),
+    createdAt: timestamp('created_at', { withTimezone: true, mode: 'date' }).notNull().defaultNow(),
+    resolvedAt: timestamp('resolved_at', { withTimezone: true, mode: 'date' }),
+  },
+  (t) => ({
+    statusAssignedIdx: index('idx_expert_reviews_status_assigned').on(t.status, t.assignedTo),
+  }),
+);
 
 // REQ-FND-044 — append-only enforced by trigger in 0001_audit_append_only.sql.
 // @MX:WARN audit_logs is append-only. UPDATE/DELETE/TRUNCATE are blocked at
@@ -306,3 +339,43 @@ export const auditLogs = pgTable('audit_logs', {
   metaJson: jsonb('meta_json').notNull().default({}),
   createdAt: timestamp('created_at', { withTimezone: true, mode: 'date' }).notNull().defaultNow(),
 });
+
+// CF-2 fix: RBAC 2-tier membership tables — absent from FOUNDATION schema.
+// Discovered during Phase 5 Phase 1 analysis. Required for REQ-ENTERPRISE-016
+// RBAC enforcement. Migration: 0009_membership_tables.sql.
+
+// org_members: user ↔ organization membership.
+export const orgMembers = pgTable(
+  'org_members',
+  {
+    userId: uuid('user_id')
+      .notNull()
+      .references(() => users.id, { onDelete: 'cascade' }),
+    orgId: uuid('org_id')
+      .notNull()
+      .references(() => organizations.id, { onDelete: 'cascade' }),
+    createdAt: timestamp('created_at', { withTimezone: true, mode: 'date' }).notNull().defaultNow(),
+  },
+  (t) => ({
+    pk: { columns: [t.userId, t.orgId] },
+    orgIdIdx: index('idx_org_members_org_id').on(t.orgId),
+  }),
+);
+
+// project_members: user ↔ project membership.
+export const projectMembers = pgTable(
+  'project_members',
+  {
+    userId: uuid('user_id')
+      .notNull()
+      .references(() => users.id, { onDelete: 'cascade' }),
+    projectId: uuid('project_id')
+      .notNull()
+      .references(() => projects.id, { onDelete: 'cascade' }),
+    createdAt: timestamp('created_at', { withTimezone: true, mode: 'date' }).notNull().defaultNow(),
+  },
+  (t) => ({
+    pk: { columns: [t.userId, t.projectId] },
+    projectIdIdx: index('idx_project_members_project_id').on(t.projectId),
+  }),
+);

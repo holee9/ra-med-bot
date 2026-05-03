@@ -3,6 +3,8 @@
 // @MX:NOTE Sidebar — REQ-FND-019. Fixed 260px navigation with the eight
 // canonical destinations in handoff §7 order, plus a "새 상담" primary action.
 // REQ-BREADTH-044: real project list added below nav links.
+// T-007: showExpertReview prop added (REQ-ENTERPRISE-029). Passed from AppLayout
+// which calls auth() server-side.
 
 import { useProjects } from '@/lib/queries/useProjects';
 import { useUIStore } from '@/stores/ui';
@@ -24,7 +26,12 @@ const NAV_ITEMS: NavItem[] = [
   { label: '설정', href: '/settings' },
 ];
 
-export default function Sidebar() {
+interface SidebarProps {
+  showExpertReview?: boolean;
+}
+
+export default function Sidebar(props?: SidebarProps) {
+  const showExpertReview = props?.showExpertReview ?? false;
   const currentProjectId = useUIStore((s) => s.currentProjectId);
   const setCurrentProjectId = useUIStore((s) => s.setCurrentProjectId);
   const { data = [] } = useProjects();
@@ -43,7 +50,7 @@ export default function Sidebar() {
           새 상담
         </Link>
       </div>
-      <nav className="flex flex-col gap-1 px-2 py-2">
+      <nav aria-label="메인 내비게이션" className="flex flex-col gap-1 px-2 py-2">
         {NAV_ITEMS.map((item) => (
           <Link
             key={item.href}
@@ -54,6 +61,19 @@ export default function Sidebar() {
           </Link>
         ))}
       </nav>
+
+      {/* T-007: Expert Review conditional link (REQ-ENTERPRISE-029) */}
+      {showExpertReview && (
+        <nav className="px-2 py-1">
+          <Link
+            href="/expert-review"
+            data-testid="sidebar-expert-review-link"
+            className="rounded-md px-3 py-2 text-sm text-ink-700 hover:bg-ink-50 block"
+          >
+            전문가 검토
+          </Link>
+        </nav>
+      )}
 
       {/* REQ-BREADTH-044: Projects section */}
       {projects.length > 0 && (

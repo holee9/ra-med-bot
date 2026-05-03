@@ -1,0 +1,35 @@
+{
+  "common": {
+    "search": "Search",
+    "save": "Save",
+    "cancel": "Cancel",
+    "loading": "Loading...",
+    "error": "An error occurred",
+    "success": "Completed"
+  },
+  "nav": {
+    "dashboard": "Dashboard",
+    "expertReview": "Expert Review",
+    "profile": "Profile",
+    "settings": "Settings"
+  },
+  "expertReview": {
+    "title": "Expert Review Queue",
+    "empty": "No pending review items",
+    "startReview": "Start Review",
+    "complete": "Complete",
+    "pendingCount": "{count} pending"
+  },
+  "chat": {
+    "placeholder": "Ask about medical device regulations...",
+    "expertReviewRequired": "This answer requires expert review",
+    "flagForReview": "Request Expert Review"
+  },
+  "regulatory": {
+    "fda": "FDA",
+    "euMdr": "EU MDR",
+    "mfds": "MFDS (Ministry of Food and Drug Safety)",
+    "nmpa": "NMPA",
+    "pmda": "PMDA"
+  }
+}

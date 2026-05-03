@@ -1,13 +1,14 @@
-// @MX:ANCHOR SSE Route Handler — POST /api/ra/consult
+// @MX:ANCHOR [AUTO] SSE Route Handler — POST /api/ra/consult
 // @MX:REASON Only entry point for the consult streaming pipeline.
-// Handles auth, rate-limit, Zod validation, SSE headers, and error wrapping.
+// Handles RBAC via withPermission, rate-limit, Zod validation, SSE headers, and error wrapping.
 // @MX:SPEC SPEC-REGULA-CHAT-001 (REQ-CHAT-001..010, REQ-CHAT-053..055)
 
 import { randomUUID } from 'node:crypto';
+import type { Session } from 'next-auth';
 import type { NextRequest } from 'next/server';
 import { consult, ensureConversation } from '../../../../lib/ai/consult';
 import { encodeSSE } from '../../../../lib/ai/streaming';
-import { auth } from '../../../../lib/auth';
+import { withPermission } from '../../../../lib/auth/with-permission';
 import { ConsultRequestSchema } from '../../../../types/consult';
 import type { StreamEvent } from '../../../../types/streaming';
 
@@ -36,12 +37,9 @@ const SSE_HEADERS = {
   'X-Accel-Buffering': 'no',
 };
 
-export async function POST(req: NextRequest): Promise<Response> {
-  // REQ-CHAT-002 — auth guard.
-  const session = await auth();
-  if (!session?.user?.id) {
-    return new Response('Unauthorized', { status: 401 });
-  }
+/* audit-check-ignore: consult() writes llm.call, source.access, and expert review audit rows. */
+export const POST = withPermission('consult.create', async (req, _ctx, session) => {
+  const nextReq = req as NextRequest;
 
   // REQ-CHAT-007 — rate limit.
   if (!checkRateLimit(session.user.id)) {
@@ -51,7 +49,7 @@ export async function POST(req: NextRequest): Promise<Response> {
   // REQ-CHAT-003 — Zod body validation.
   let body: unknown;
   try {
-    body = await req.json();
+    body = await nextReq.json();
   } catch {
     return new Response(JSON.stringify({ error: 'Invalid JSON' }), {
       status: 400,
@@ -81,7 +79,12 @@ export async function POST(req: NextRequest): Promise<Response> {
   const startTs = Date.now();
 
   // REQ-CHAT-010 — abort on client disconnect.
-  const { signal } = req;
+  const { signal } = nextReq;
+
+  // consult() expects the Auth.js Session type. AuthSession is structurally
+  // compatible but missing the `expires` field. Cast via unknown to satisfy the
+  // type checker without altering runtime behavior.
+  const authJsSession = session as unknown as Session;
 
   const stream = new ReadableStream({
     async start(controller) {
@@ -92,7 +95,7 @@ export async function POST(req: NextRequest): Promise<Response> {
       }
 
       try {
-        for await (const ev of consult(input, session, messageId, conversationId, signal)) {
+        for await (const ev of consult(input, authJsSession, messageId, conversationId, signal)) {
           if (signal.aborted) break;
           push(ev);
         }
@@ -117,7 +120,7 @@ export async function POST(req: NextRequest): Promise<Response> {
   });
 
   return new Response(stream, { headers: SSE_HEADERS });
-}
+});
 
 // REQ-CHAT-001 — GET/PUT/DELETE return 405.
 export function GET(): Response {

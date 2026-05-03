@@ -203,21 +203,35 @@
   --color-amber-100: #3a2c0c;
   --color-amber-400: #f0c158;
   --color-amber-500: #f4cf6a;
+  --color-amber-600: #f7d986;
+  --color-amber-700: #fbe6a6;
 
   /* Semantic backgrounds */
+  --color-success: #5fd39a;
   --color-success-bg: #0f2a1e;
+  --color-warn: #f0b75a;
   --color-warn-bg: #2d1f08;
+  --color-danger: #f07183;
   --color-danger-bg: #2d0f15;
+  --color-info: #9fb6d4;
   --color-info-bg: #0f1a2d;
 
   /* Ink ladder dark inversion (high-contrast neutrals) */
   --color-ink-50: #0c1116;
   --color-ink-100: #141a22;
+  --color-ink-150: #1a2029;
   --color-ink-200: #1e252f;
   --color-ink-300: #2f3845;
+  --color-ink-400: #66717f;
+  --color-ink-500: #8a95a3;
+  --color-ink-600: #a8b3c4;
   --color-ink-700: #b4bcc7;
   --color-ink-800: #d4dae2;
   --color-ink-900: #e8edf4;
+  --color-ink-950: #f7f9fb;
+  --color-paper: #0f1621;
+
+  --ring-focus: color-mix(in oklch, var(--color-brand-500), transparent 45%);
 
   /* Shadows on dark backgrounds */
   --shadow-xs: 0 1px 2px rgba(0, 0, 0, 0.3);

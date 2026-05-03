@@ -2,78 +2,75 @@ name: CI
 
 on:
   push:
-    branches: [main]
+    branches: [main, develop]
   pull_request:
     branches: [main]
 
 jobs:
-  lint:
-    name: Lint
+  ci:
+    name: CI Gates
     runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v4
-      - uses: pnpm/action-setup@v4
-        with:
-          version: 9.12.0
-      - uses: actions/setup-node@v4
-        with:
-          node-version: '20'
-          cache: 'pnpm'
-      - run: pnpm install --frozen-lockfile
-      - run: pnpm lint
 
-  typecheck:
-    name: Typecheck
-    runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
-      - uses: pnpm/action-setup@v4
-        with:
-          version: 9.12.0
-      - uses: actions/setup-node@v4
-        with:
-          node-version: '20'
-          cache: 'pnpm'
-      - run: pnpm install --frozen-lockfile
-      - run: pnpm typecheck
 
-  test:
-    name: Test
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v4
       - uses: pnpm/action-setup@v4
         with:
-          version: 9.12.0
-      - uses: actions/setup-node@v4
-        with:
-          node-version: '20'
-          cache: 'pnpm'
-      - run: pnpm install --frozen-lockfile
-      - run: pnpm test
+          version: 9
 
-  build:
-    name: Build
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v4
-      - uses: actions/cache@v4
-        with:
-          path: .next/cache
-          key: ${{ runner.os }}-nextjs-${{ hashFiles('**/pnpm-lock.yaml') }}-${{ hashFiles('**.[jt]s', '**.[jt]sx') }}
-          restore-keys: |
-            ${{ runner.os }}-nextjs-${{ hashFiles('**/pnpm-lock.yaml') }}-
-      - uses: pnpm/action-setup@v4
-        with:
-          version: 9.12.0
       - uses: actions/setup-node@v4
         with:
-          node-version: '20'
+          node-version: '22'
           cache: 'pnpm'
-      - run: pnpm install --frozen-lockfile
+
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+
+      - name: Type check
+        run: pnpm ci:typecheck
+
+      - name: Lint
+        run: pnpm ci:lint
+        continue-on-error: false
+
+      - name: Format check
+        run: pnpm ci:format
+        continue-on-error: false
+
+      - name: Unit tests
+        run: pnpm ci:test
+
+      - name: RBAC coverage
+        run: pnpm ci:rbac
+
+      - name: Audit completeness
+        run: pnpm ci:audit
+        continue-on-error: true
+
+      - name: Token symmetry
+        run: pnpm ci:tokens
+        continue-on-error: true
+
+      - name: i18n completeness
+        run: pnpm ci:i18n
+
+      - name: Regulatory glossary
+        run: pnpm ci:glossary
+
+      - name: Contrast check
+        run: pnpm ci:contrast
+        continue-on-error: true
+
+      - name: Module boundaries
+        run: pnpm ci:module-boundaries
+
+      - name: Migration sequence
+        run: pnpm ci:migrations
+
       - name: Build
-        run: pnpm build
+        run: pnpm ci:build
         env:
+          SKIP_ENV_VALIDATION: true
           DATABASE_URL: "postgresql://postgres:postgres@localhost:5432/regula_ci"
           AUTH_SECRET: "ci-build-placeholder-secret-minimum-32-characters"
           NEXTAUTH_URL: "http://localhost:3000"

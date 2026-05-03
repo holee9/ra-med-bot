@@ -1,22 +1,17 @@
-// @MX:NOTE Sources GET API — returns source content with optional offset query param.
+// @MX:NOTE [AUTO] Sources GET API — returns source content with optional offset query param.
 // @MX:SPEC SPEC-REGULA-CHAT-001 (REQ-CHAT-044)
 
 import { eq } from 'drizzle-orm';
-import type { NextRequest } from 'next/server';
-import { auth } from '../../../../../lib/auth';
+import { withPermission } from '../../../../../lib/auth/with-permission';
 import { db } from '../../../../../lib/db/client';
 import { sourceSections, sources } from '../../../../../lib/db/schema';
 
-export async function GET(
-  _req: NextRequest,
-  { params }: { params: Promise<{ id: string }> },
-): Promise<Response> {
-  const session = await auth();
-  if (!session?.user?.id) {
-    return new Response('Unauthorized', { status: 401 });
-  }
+export const GET = withPermission('conversation.view', async (_req, ctx) => {
+  // Next.js 15 passes params as a Promise. Resolve it safely.
+  const rawParams = (ctx as { params: Promise<{ id: string }> | { id: string } }).params;
+  const params = rawParams instanceof Promise ? await rawParams : rawParams;
+  const id = (params as { id: string })?.id ?? '';
 
-  const { id } = await params;
   if (!id) {
     return new Response('Missing source id', { status: 400 });
   }
@@ -46,4 +41,4 @@ export async function GET(
     url: source.url,
     sections,
   });
-}
+});

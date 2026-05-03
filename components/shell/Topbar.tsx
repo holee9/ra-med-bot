@@ -1,6 +1,12 @@
 // @MX:NOTE Topbar — REQ-FND-020. 56px-tall bar with breadcrumb slot, theme
 // toggle, and "전문가 검토" entry point. All controls are placeholders pending
 // Phase 2 wiring.
+// T-007: ManualFlagButton (🚩) added (REQ-ENTERPRISE-028). The existing
+// "전문가 검토" button is preserved for backward compatibility with REQ-FND-020.
+
+// T-007 — [BEGIN T-007 addition REQ-ENTERPRISE-028]
+import TopbarClient from './TopbarClient';
+// T-007 — [END T-007 addition]
 
 export default function Topbar() {
   return (
@@ -19,12 +25,15 @@ export default function Topbar() {
         >
           ☾
         </button>
+        {/* REQ-FND-020: preserved placeholder button */}
         <button
           type="button"
           className="rounded-md border border-ink-200 px-3 py-1.5 text-sm font-medium text-ink-700 hover:bg-ink-50"
         >
           전문가 검토
         </button>
+        {/* T-007: Manual flag button for expert review (REQ-ENTERPRISE-028) */}
+        <TopbarClient />
       </div>
     </header>
   );

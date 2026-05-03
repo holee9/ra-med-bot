@@ -45,7 +45,7 @@ describe('lib/audit.ts (REQ-BREADTH-057) — extended AuditAction type', () => {
     expect(src).toMatch(new RegExp(`'${escaped}'`));
   });
 
-  it('AuditAction type contains exactly 13 values (3 original + 10 breadth)', () => {
+  it('AuditAction type contains exactly 27 values (3 original + 11 breadth/remediation + 12 enterprise + 1 T-013)', () => {
     const src = readText('lib/audit.ts');
     // Extract the AuditAction type block
     const typeMatch = src.match(/export type AuditAction\s*=\s*([\s\S]*?);/);
@@ -56,7 +56,13 @@ describe('lib/audit.ts (REQ-BREADTH-057) — extended AuditAction type', () => {
       .split('|')
       .map((s) => s.trim())
       .filter((s) => s.startsWith("'"));
-    expect(values).toHaveLength(13);
+    // T-013 adds profile.update; Issue #7 remediation adds conversation.delete.
+    expect(values).toHaveLength(27);
+  });
+
+  it('AuditAction type includes Issue #7 remediation action: conversation.delete', () => {
+    const src = readText('lib/audit.ts');
+    expect(src).toMatch(/'conversation\.delete'/);
   });
 });
 

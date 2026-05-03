@@ -1,0 +1,3 @@
+{
+  "exempt_patterns": ["app/api/auth/**", "app/api/health/**"]
+}

@@ -43,8 +43,12 @@ describe('lib/auth.ts module', () => {
     expect(src).toMatch(/export const \{ handlers, auth, signIn, signOut \}/);
   });
 
-  it('source-level: signIn callback stub returns true (Phase 1 contract)', () => {
+  it('source-level: signIn callback is wired with writeAudit (Phase 5 contract)', () => {
+    // Phase 5 replaces the stub `async () => true` with a real implementation
+    // that calls writeAudit and returns true. Verify both behaviors are present.
     const src = fs.readFileSync(path.join(root, 'lib/auth.ts'), 'utf8');
-    expect(src).toMatch(/signIn:\s*async\s*\(\)\s*=>\s*true/);
+    expect(src).toMatch(/signIn:\s*async\s*\(/);
+    expect(src).toMatch(/writeAudit\(/);
+    expect(src).toMatch(/return true/);
   });
 });

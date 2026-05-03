@@ -1,27 +1,27 @@
-// @MX:NOTE PATCH /api/ra/messages/:messageId/blocks/:blockId
+// @MX:NOTE [AUTO] PATCH /api/ra/messages/:messageId/blocks/:blockId
 // Updates block_json for a message block. Ownership verified before update.
-// Phase 3 scope: checklist toggle only. writeAudit deferred to Phase 5.
+// Phase 5: writeAudit('checklist.toggle') wired after successful update.
 // @MX:SPEC SPEC-REGULA-STRUCTURED-001 (REQ-STRUCT-021, REQ-STRUCT-037)
+//         SPEC-REGULA-ENTERPRISE-001 (REQ-ENTERPRISE-028)
 
 import { and, eq } from 'drizzle-orm';
-import type { NextRequest } from 'next/server';
 import { ChecklistBlockSchema } from '../../../../../../../lib/ai/structured-schema';
-import { auth } from '../../../../../../../lib/auth';
+import { writeAudit } from '../../../../../../../lib/audit';
+import { withPermission } from '../../../../../../../lib/auth/with-permission';
 import { db } from '../../../../../../../lib/db/client';
 import { conversations, messageBlocks, messages } from '../../../../../../../lib/db/schema';
 
-interface RouteParams {
-  params: Promise<{ messageId: string; blockId: string }>;
-}
-
-export async function PATCH(req: NextRequest, { params }: RouteParams): Promise<Response> {
-  // Auth guard
-  const session = await auth();
-  if (!session?.user?.id) {
-    return new Response('Unauthorized', { status: 401 });
-  }
-
-  const { messageId, blockId } = await params;
+export const PATCH = withPermission('consult.create', async (req, ctx, session) => {
+  // Next.js 15 passes params as a Promise. Resolve it safely.
+  const rawParams = (
+    ctx as {
+      params:
+        | Promise<{ messageId: string; blockId: string }>
+        | { messageId: string; blockId: string };
+    }
+  ).params;
+  const params = rawParams instanceof Promise ? await rawParams : rawParams;
+  const { messageId, blockId } = params as { messageId: string; blockId: string };
 
   // Parse body
   let body: unknown;
@@ -80,7 +80,16 @@ export async function PATCH(req: NextRequest, { params }: RouteParams): Promise<
     .set({ blockJson: parseResult.data })
     .where(eq(messageBlocks.id, blockId));
 
-  // REQ-STRUCT-037: writeAudit NOT called here (Phase 5 scope)
+  // REQ-ENTERPRISE-028: Audit the checklist toggle event.
+  // REQ-ENTERPRISE-035: writeAudit errors propagate — fail closed if audit write fails.
+  await writeAudit({
+    action: 'checklist.toggle',
+    actor_id: session.user.id,
+    resource_type: 'message_block',
+    resource_id: blockId,
+    conversation_id: blockRow.conversationId,
+    meta_json: { messageId, blockId },
+  });
 
   return new Response(null, { status: 204 });
-}
+});

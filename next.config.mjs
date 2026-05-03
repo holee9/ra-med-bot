@@ -1,10 +1,14 @@
+import createNextIntlPlugin from 'next-intl/plugin';
 // @MX:NOTE Next.js 15 App Router configuration.
 // REQ-FND-003: Next.js 15 pinned with React 18.
+// REQ-ENTERPRISE-037: next-intl without i18n routing (cookie-based locale).
 // Strict mode enabled across the app for early error surfacing.
 import { PHASE_PRODUCTION_BUILD } from 'next/constants.js';
 
+const withNextIntl = createNextIntlPlugin('./i18n/request.ts');
+
 /** @param {string} phase @returns {import('next').NextConfig} */
-export default function config(phase) {
+function config(phase) {
   // During `next build`, route modules are imported to collect page data before
   // any real env vars are available. Inject SKIP_ENV_VALIDATION so lib/env.ts
   // bypasses Zod validation for that phase only. Runtime modes (dev, start)
@@ -29,3 +33,5 @@ export default function config(phase) {
     // Images are not used in Phase 1 scaffolding; defaults are fine.
   };
 }
+
+export default withNextIntl(config);

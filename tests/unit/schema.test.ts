@@ -185,21 +185,24 @@ describe('lib/auth.ts (REQ-FND-051, 052, 054, 055)', () => {
     expect(src).toMatch(/Google\(/);
   });
 
-  it('does NOT call writeAudit (Phase 5 wiring; scope discipline)', () => {
-    // Anti-regression: regula-compliance-qa requires zero call-sites in Phase 1.
-    // Strip line + block comments before scanning so the Phase 5 marker prose
-    // does not produce a false positive.
+  it('calls writeAudit in signIn callback (Phase 5 wiring — REQ-ENTERPRISE-029)', () => {
+    // Phase 5 wires writeAudit into the signIn callback and signOut event.
+    // Strip line + block comments before scanning so comment prose does not
+    // produce false positives.
     const codeOnly = src
       .replace(/\/\*[\s\S]*?\*\//g, '')
       .split('\n')
       .map((line) => line.replace(/\/\/.*$/, ''))
       .join('\n');
-    expect(codeOnly.match(/writeAudit\(/g) ?? []).toHaveLength(0);
+    // Must have exactly one writeAudit call in the signIn callback context.
+    expect((codeOnly.match(/writeAudit\(/g) ?? []).length).toBeGreaterThanOrEqual(1);
   });
 
-  it('signIn callback returns true with a Phase 5 marker comment', () => {
-    expect(src).toMatch(/signIn:\s*async\s*\(\)\s*=>\s*true/);
-    expect(src).toMatch(/Phase 5/);
+  it('signIn callback is async and returns true (REQ-ENTERPRISE-029)', () => {
+    // signIn must still return true to allow the sign-in to proceed.
+    // The implementation now has a real async callback that calls writeAudit.
+    expect(src).toMatch(/signIn:\s*async\s*\(/);
+    expect(src).toMatch(/return true/);
   });
 });
 

@@ -46,13 +46,13 @@ export function Composer({
 
   // REQ-BREADTH-003: on mount, read and consume pendingQuestion from UIStore.
   // One-time effect (dep: []) — must not re-trigger on re-renders.
+  // biome-ignore lint/correctness/useExhaustiveDependencies: one-time pending question consumption on mount
   useEffect(() => {
     const pending = useUIStore.getState().pendingQuestion;
     if (pending) {
       onChange(pending);
       useUIStore.getState().setPendingQuestion(null);
     }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   // Autosize textarea: reset height then set to scrollHeight.

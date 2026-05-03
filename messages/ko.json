@@ -1,0 +1,35 @@
+{
+  "common": {
+    "search": "검색",
+    "save": "저장",
+    "cancel": "취소",
+    "loading": "로딩 중...",
+    "error": "오류가 발생했습니다",
+    "success": "완료되었습니다"
+  },
+  "nav": {
+    "dashboard": "대시보드",
+    "expertReview": "전문가 검토",
+    "profile": "프로필",
+    "settings": "설정"
+  },
+  "expertReview": {
+    "title": "전문가 검토 대기열",
+    "empty": "대기 중인 검토 항목이 없습니다",
+    "startReview": "검토 시작",
+    "complete": "완료",
+    "pendingCount": "{count}건 대기 중"
+  },
+  "chat": {
+    "placeholder": "의료기기 규정에 관해 질문하세요...",
+    "expertReviewRequired": "이 답변은 전문가 검토가 필요합니다",
+    "flagForReview": "전문가 검토 요청"
+  },
+  "regulatory": {
+    "fda": "FDA",
+    "euMdr": "EU MDR",
+    "mfds": "MFDS (식품의약품안전처)",
+    "nmpa": "NMPA",
+    "pmda": "PMDA"
+  }
+}
