@@ -240,7 +240,7 @@ describe('lib/db/schema.ts Phase 5 additions', () => {
     expect(src).toMatch(/export const projectMembers\s*=/);
   });
 
-  it('auditActionEnum has 27 total values (13 existing + 12 enterprise + profile.update + conversation.delete)', () => {
+  it('auditActionEnum has 37 total values (13 existing + 12 enterprise + profile.update + conversation.delete + 10 Phase 9 workflows)', () => {
     const src = readText('lib/db/schema.ts');
     // Match the full auditActionEnum declaration (multiline)
     const enumSection = src.match(/export const auditActionEnum\s*=[\s\S]*?(?=\n\/\/|\nexport|$)/);
@@ -250,7 +250,8 @@ describe('lib/db/schema.ts Phase 5 additions', () => {
     // First match is 'audit_action' (the type name), rest are values
     const values = valueMatches.slice(1);
     // T-013 adds profile.update; Issue #7 remediation adds conversation.delete.
-    expect(values).toHaveLength(27);
+    // Phase 9 adds 10 workflow.* actions via 0013_workflow_audit_actions.sql.
+    expect(values).toHaveLength(37);
   });
 });
 
@@ -264,7 +265,7 @@ describe('lib/audit.ts Phase 5 AuditAction type additions', () => {
     expect(src).toMatch(new RegExp(`'${escaped}'`));
   });
 
-  it('AuditAction type contains exactly 27 values (13 existing + 12 new + profile.update + conversation.delete)', () => {
+  it('AuditAction type contains exactly 37 values (13 existing + 12 new + profile.update + conversation.delete + 10 Phase 9 workflows)', () => {
     const src = readText('lib/audit.ts');
     const typeMatch = src.match(/export type AuditAction\s*=\s*([\s\S]*?);/);
     expect(typeMatch, 'AuditAction type not found').toBeTruthy();
@@ -274,7 +275,8 @@ describe('lib/audit.ts Phase 5 AuditAction type additions', () => {
       .map((s) => s.trim())
       .filter((s) => s.startsWith("'"));
     // T-013 adds profile.update; Issue #7 remediation adds conversation.delete.
-    expect(values).toHaveLength(27);
+    // Phase 9 adds 10 workflow.* actions via 0013_workflow_audit_actions.sql.
+    expect(values).toHaveLength(37);
   });
 
   it('does NOT include auth.mfa_fail as a union value (removed in v0.3.0 H-5)', () => {

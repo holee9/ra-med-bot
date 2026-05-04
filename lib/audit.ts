@@ -35,7 +35,12 @@ import { auditLogs } from './db/schema';
 //   rbac.permission_deny, profile.theme_update, profile.locale_update,
 //   checklist.toggle, consult.expert_review_auto_flag, project.switch
 // NOTE: auth.mfa_fail is NOT included (removed in v0.3.0 H-5).
-// Total: 27 values.
+//
+// Phase 9 Workflow values added via 0013_workflow_audit_actions.sql (10):
+//   workflow.start, workflow.step.complete, workflow.step.fail,
+//   workflow.pause, workflow.resume, workflow.pending_review,
+//   workflow.approve, workflow.reject, workflow.download, workflow.edit
+// Total: 37 values.
 export type AuditAction =
   | 'llm.call'
   | 'source.access'
@@ -63,7 +68,17 @@ export type AuditAction =
   | 'checklist.toggle'
   | 'consult.expert_review_auto_flag'
   | 'project.switch'
-  | 'profile.update';
+  | 'profile.update'
+  | 'workflow.start'
+  | 'workflow.step.complete'
+  | 'workflow.step.fail'
+  | 'workflow.pause'
+  | 'workflow.resume'
+  | 'workflow.pending_review'
+  | 'workflow.approve'
+  | 'workflow.reject'
+  | 'workflow.download'
+  | 'workflow.edit';
 
 export interface AuditEvent {
   /** User UUID, or null for system-initiated events. */

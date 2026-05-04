@@ -1,17 +1,19 @@
 // @MX:ANCHOR Drizzle ORM schema — single source of truth for the Regula data model.
-// @MX:REASON 15 tables and 9 pgEnums are referenced by every Route Handler,
+// @MX:REASON 16 tables and 11 pgEnums are referenced by every Route Handler,
 // every migration, and every QA static analysis pass. fan_in is well above 3.
 // @MX:SPEC SPEC-REGULA-FOUNDATION-001 (REQ-FND-031..044b),
-//          SPEC-REGULA-ENTERPRISE-001 (REQ-ENTERPRISE-016, 027, 028)
+//          SPEC-REGULA-ENTERPRISE-001 (REQ-ENTERPRISE-016, 027, 028),
+//          SPEC-REGULA-WORKFLOWS-001 (REQ-WF-049, REQ-WF-051)
 //
-// Table inventory (15):
+// Table inventory (16):
 //   users, organizations, projects, conversations, messages, message_sources,
 //   message_blocks, sources, source_sections, templates, regulatory_updates,
-//   expert_reviews, audit_logs, org_members, project_members
+//   expert_reviews, audit_logs, org_members, project_members, workflow_runs
 //
-// pgEnum inventory (9):
+// pgEnum inventory (11):
 //   locale, theme_pref, message_role, confidence_level, block_type,
-//   source_type, expert_review_status, audit_action, user_role
+//   source_type, expert_review_status, audit_action, user_role,
+//   workflow_type, workflow_status
 //
 // Vector type: pgvector(1536) is exposed via customType because drizzle-orm
 // does not yet ship a native vector helper. See migrations/0000_init.sql for
@@ -57,6 +59,7 @@ export const blockTypeEnum = pgEnum('block_type', [
   'timeline',
   'sources',
   'related',
+  'workflow_result',
 ]);
 export const sourceTypeEnum = pgEnum('source_type', [
   'Regulation',
@@ -78,7 +81,8 @@ export const userRoleEnum = pgEnum('user_role', ['admin', 'ra-lead', 'ra-member'
 // @MX:NOTE audit_action values mirror AuditAction type in lib/audit.ts.
 // Phase 1: 3 values. Phase 3 / Breadth: +10 via 0003_breadth_audit_actions.sql.
 // Phase 5 Enterprise: +12 via 0005_enterprise_audit_actions.sql.
-// Total: 25 values. Adding values here requires a matching ALTER TYPE migration.
+// Phase 9 Workflows: +10 via 0013_workflow_audit_actions.sql.
+// Total: 37 values. Adding values here requires a matching ALTER TYPE migration.
 // NOTE: auth.mfa_fail is NOT included (removed in v0.3.0 H-5).
 export const auditActionEnum = pgEnum('audit_action', [
   'llm.call',
@@ -108,6 +112,36 @@ export const auditActionEnum = pgEnum('audit_action', [
   'consult.expert_review_auto_flag',
   'project.switch',
   'profile.update',
+  'workflow.start',
+  'workflow.step.complete',
+  'workflow.step.fail',
+  'workflow.pause',
+  'workflow.resume',
+  'workflow.pending_review',
+  'workflow.approve',
+  'workflow.reject',
+  'workflow.download',
+  'workflow.edit',
+]);
+
+// REQ-WF-049: workflow_type pgEnum — three Phase 9 workflow kinds.
+// Migration: 0012_workflow_schema.sql
+export const workflowTypeEnum = pgEnum('workflow_type', [
+  'submission_drafter',
+  'audit_response',
+  'indication_impact',
+]);
+
+// REQ-WF-049: workflow_status pgEnum — lifecycle states for workflow_runs.
+// Migration: 0012_workflow_schema.sql
+export const workflowStatusEnum = pgEnum('workflow_status', [
+  'queued',
+  'running',
+  'paused',
+  'pending_review',
+  'approved',
+  'rejected',
+  'failed',
 ]);
 
 // ---------------------------------------------------------------------------
@@ -379,3 +413,27 @@ export const projectMembers = pgTable(
     projectIdIdx: index('idx_project_members_project_id').on(t.projectId),
   }),
 );
+
+// REQ-WF-049: workflow_runs — long-running regulatory workflow state persistence.
+// @MX:NOTE: [AUTO] review_required is enforced server-side; see lib/auth/with-workflow-review.ts
+// @MX:SPEC SPEC-REGULA-WORKFLOWS-001 (REQ-WF-049)
+export const workflowRuns = pgTable('workflow_runs', {
+  id: uuid('id').defaultRandom().primaryKey(),
+  userId: uuid('user_id').notNull().references(() => users.id),
+  organizationId: uuid('organization_id').notNull().references(() => organizations.id),
+  projectId: uuid('project_id').references(() => projects.id),
+  workflowType: workflowTypeEnum('workflow_type').notNull(),
+  status: workflowStatusEnum('status').notNull().default('queued'),
+  inputJson: jsonb('input_json').notNull(),
+  resultJson: jsonb('result_json'),
+  stepProgress: jsonb('step_progress'),
+  confidenceAggregate: numeric('confidence_aggregate', { precision: 3, scale: 2 }),
+  reviewRequired: boolean('review_required').notNull().default(true),
+  reviewerUserId: uuid('reviewer_user_id').references(() => users.id),
+  reviewedAt: timestamp('reviewed_at', { withTimezone: true, mode: 'date' }),
+  startedAt: timestamp('started_at', { withTimezone: true, mode: 'date' }).notNull().defaultNow(),
+  completedAt: timestamp('completed_at', { withTimezone: true, mode: 'date' }),
+  cloudflareWorkflowInstanceId: text('cloudflare_workflow_instance_id'),
+  createdAt: timestamp('created_at', { withTimezone: true, mode: 'date' }).notNull().defaultNow(),
+  updatedAt: timestamp('updated_at', { withTimezone: true, mode: 'date' }).notNull().defaultNow(),
+});
