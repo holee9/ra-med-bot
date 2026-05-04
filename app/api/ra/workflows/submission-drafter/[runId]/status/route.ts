@@ -2,14 +2,11 @@ import { withPermission } from '@/lib/auth/with-permission';
 
 const UUID_REGEX = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 
-async function resolveRunId(ctx: unknown): Promise<string> {
-  const raw = (ctx as { params?: unknown }).params;
-  const p = raw instanceof Promise ? await raw : raw;
-  return (p as { runId?: string })?.runId ?? '';
-}
-
-export const GET = withPermission('workflow.execute', async (_req, ctx) => {
-  const runId = await resolveRunId(ctx);
+async function getSubmissionDrafterStatus(
+  _request: Request,
+  { params }: { params: Promise<{ runId: string }> },
+): Promise<Response> {
+  const { runId } = await params;
 
   if (!UUID_REGEX.test(runId)) {
     return Response.json({ error: 'Invalid workflow run ID' }, { status: 400 });
@@ -26,4 +23,8 @@ export const GET = withPermission('workflow.execute', async (_req, ctx) => {
     },
     { status: 200 },
   );
-});
+}
+
+export const GET = withPermission('consult.create', async (request, ctx) =>
+  getSubmissionDrafterStatus(request, ctx as unknown as { params: Promise<{ runId: string }> }),
+);
