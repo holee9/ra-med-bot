@@ -1,6 +1,21 @@
 import { GET } from '@/app/api/ra/workflows/audit-response/[runId]/status/route';
 import { POST } from '@/app/api/ra/workflows/audit-response/route';
-import { describe, expect, it } from 'vitest';
+import { describe, expect, it, vi } from 'vitest';
+
+vi.mock('@/lib/auth', () => ({
+  auth: vi.fn(async () => ({
+    user: { id: 'test-user', role: 'ra-member', organizationId: 'test-org' },
+  })),
+}));
+
+vi.mock('@/lib/audit', () => ({
+  writeAudit: vi.fn(async () => undefined),
+}));
+
+vi.mock('@/lib/auth/acl', () => ({
+  isOrgMember: vi.fn(async () => true),
+  isProjectMember: vi.fn(async () => true),
+}));
 
 const VALID_UUID = '123e4567-e89b-12d3-a456-426614174000';
 const VALID_PROJECT_ID = '550e8400-e29b-41d4-a716-446655440000';

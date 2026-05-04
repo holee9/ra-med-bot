@@ -1,6 +1,7 @@
+import { withPermission } from '@/lib/auth/with-permission';
 import { IndicationImpactInputSchema } from '@/lib/workflows/types';
 
-export async function POST(request: Request): Promise<Response> {
+async function postIndicationImpact(request: Request): Promise<Response> {
   let body: unknown;
   try {
     body = await request.json();
@@ -32,3 +33,7 @@ export async function POST(request: Request): Promise<Response> {
     { status: 202 },
   );
 }
+
+export const POST = withPermission('consult.create', async (request) =>
+  postIndicationImpact(request),
+);

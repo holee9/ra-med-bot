@@ -24,7 +24,8 @@ export interface AuthSession {
 
 // Generic route context type — mirrors Next.js App Router route context.
 // Ctx carries params (e.g. { id: string }) from the dynamic segment.
-type Ctx = { params?: Record<string, string> };
+type RouteParams = Record<string, string> | Promise<Record<string, string>>;
+type Ctx = { params?: RouteParams };
 
 type InnerHandler = (req: Request, ctx: Ctx, session: AuthSession) => Promise<Response>;
 
@@ -38,7 +39,7 @@ type InnerHandler = (req: Request, ctx: Ctx, session: AuthSession) => Promise<Re
  *   4. Delegates to inner handler with (req, ctx, session)
  */
 export function withPermission(action: PermissionAction, handler: InnerHandler) {
-  return async (req: Request, ctx: Ctx): Promise<Response> => {
+  return async (req: Request, ctx: Ctx = {}): Promise<Response> => {
     // 1. Session guard
     const rawSession = await auth();
     if (!rawSession?.user) {
@@ -91,7 +92,9 @@ export function withPermission(action: PermissionAction, handler: InnerHandler) 
       }
     } else if (spec.scope === 'project') {
       // Project id comes from route params or request body.
-      const projectId = ctx.params?.id ?? '';
+      const rawParams = ctx.params;
+      const params = rawParams && 'then' in rawParams ? {} : rawParams;
+      const projectId = params?.id ?? '';
       const member = await isProjectMember(user.id, projectId);
       if (!member) {
         await writeAudit({

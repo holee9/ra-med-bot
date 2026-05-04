@@ -1,6 +1,8 @@
+import { withPermission } from '@/lib/auth/with-permission';
+
 const UUID_REGEX = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 
-export async function GET(
+async function getSubmissionDrafterStatus(
   _request: Request,
   { params }: { params: Promise<{ runId: string }> },
 ): Promise<Response> {
@@ -22,3 +24,7 @@ export async function GET(
     { status: 200 },
   );
 }
+
+export const GET = withPermission('consult.create', async (request, ctx) =>
+  getSubmissionDrafterStatus(request, ctx as unknown as { params: Promise<{ runId: string }> }),
+);
