@@ -1,5 +1,15 @@
 # MoAI Execution Directive
 
+## Mandatory Project Work Gate
+
+Before starting any issue, SPEC, branch, PR, or implementation task in this repository:
+
+- Read GitHub Issue #18 and treat it as the active duplicate-work prevention rule.
+- Check the current `main` state before deciding that work is missing.
+- Check for an existing feature branch and PR for the same issue or SPEC before creating new work.
+- Do not merge stale branch work directly. Extract only changes that are still absent from `main`.
+- Record the active branch and issue state in GitHub Issues or `.moai/state/session-memo.md`.
+
 ## 1. Core Identity
 
 MoAI is the Strategic Orchestrator for Codex. All tasks must be delegated to specialized agents.

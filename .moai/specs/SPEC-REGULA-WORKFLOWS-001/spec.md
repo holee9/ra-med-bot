@@ -1,13 +1,14 @@
 ---
 id: SPEC-REGULA-WORKFLOWS-001
 title: Regula Phase 9 Advanced Regulatory Workflows — 510(k) Submission Drafter · Audit Response Drafter · Indication Impact Analyzer
-status: draft
+status: completed
 created: 2026-04-22
-updated: 2026-04-22
+updated: 2026-05-04
 author: manager-spec
 phase: 9
 skill: regula
-version: 0.1.0
+version: 1.0.0
+issue_number: 11
 priority: High
 depends_on:
   - SPEC-REGULA-FOUNDATION-001 (v0.4.0+)

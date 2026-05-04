@@ -19,6 +19,8 @@
 - [기술 스택](#기술-스택)
 - [Phase 6 Quality & Launch 기능](#phase-6-quality--launch-기능-2026-05-04-완료)
 - [Phase 7 Cloudflare Hybrid 기능](#phase-7-cloudflare-hybrid-기능-2026-05-04-완료)
+- [Phase 8 DocIngest 기능](#phase-8-docingest-기능-2026-05-04-완료)
+- [Phase 9 Advanced Workflows 기능](#phase-9-advanced-workflows-기능-2026-05-04-완료)
 - [시작 방법](#시작-방법)
 - [프로젝트 문서](#프로젝트-문서)
 - [개발 로드맵](#개발-로드맵)
@@ -405,6 +407,79 @@ graph TB
 
 ---
 
+## Phase 8 DocIngest 기능 (2026-05-04 완료)
+
+### 조직 문서 수집 파이프라인 (SPEC-REGULA-DOCINGEST-001)
+
+- **텍스트 추출**: PDF / DOCX / XLSX / ZIP 멀티포맷 지원 (`lib/ingest/extract/`)
+- **문서 분류기**: ML 기반 DocClass 8종 자동 분류 (`lib/ingest/doc-classifier.ts`)
+- **문서 민감도**: 민감도 레벨 자동 감지 (`lib/ingest/doc-sensitivity.ts`)
+- **청킹 레지스트리**: DocClass별 전용 청커 (submission-510k, cer-meddev, certificate, sop-iso13485 등 8종)
+- **PII 가드**: SSN·이메일 패턴 감지 후 임베딩 전 차단 (`lib/ingest/embed.ts`)
+- **내부 문서 검색기**: 조직 전용 pgvector 검색 + ACL 필터링 (`lib/ai/retrievers/internal-docs.ts`)
+- **스키마 검증**: 8종 DocClass Zod 메타 스키마 (`lib/schemas/documents.ts`)
+- **Phase 8E 라우터 확장**: `past_submission_reuse`, `audit_response_drafting` 인텐트 추가
+
+| 모듈 | 역할 |
+|------|------|
+| `lib/ingest/extract/` | PDF/DOCX/XLSX/ZIP 텍스트 추출 |
+| `lib/ingest/chunkers/` | DocClass별 8종 청커 레지스트리 |
+| `lib/ingest/pii/` | Presidio·WorkersAI·Regex PII 감지 |
+| `lib/ingest/embed.ts` | OpenAI text-embedding-3-small, 배치 100, PII 가드 |
+| `lib/schemas/documents.ts` | Zod 메타 스키마 8종 |
+| `lib/ai/retrievers/internal-docs.ts` | 조직 문서 벡터 검색 + ACL |
+
+- **SPEC 문서**: [`.moai/specs/SPEC-REGULA-DOCINGEST-001/spec.md`](.moai/specs/SPEC-REGULA-DOCINGEST-001/spec.md)
+- **GitHub Issue**: [#10 SPEC-REGULA-DOCINGEST-001](https://github.com/holee9/ra-med-bot/issues/10)
+
+---
+
+## Phase 9 Advanced Workflows 기능 (2026-05-04 완료)
+
+### 고급 규제 워크플로우 (SPEC-REGULA-WORKFLOWS-001)
+
+- **510(k) Submission Drafter**: predicate 자동 매칭 (top-5), subject vs predicate 비교표, 섹션별 draft 생성
+- **Audit Response Drafter**: 규제기관 감사 대응 답변 초안 자동 생성
+- **Indication Impact Analyzer**: indication 변경 영향 분석 자동화
+- **Expert Review Gate**: `review_required=true` 강제 — 모든 draft expert review 우회 불가
+- **Workflow Runs 영속성**: `workflow_runs` 테이블 (14번째 테이블), workflow_type/workflow_status pgEnum
+
+```
+사용자 요청
+  ↓
+Workflow Executor (Cloudflare Workflows runtime)
+  ├─ Step 1: 입력 검증 + 코퍼스 쿼리
+  ├─ Step 2: LLM draft 생성 (Sonnet + Haiku)
+  ├─ Step 3: citation 100% 강제 검증
+  ├─ Step 4: confidence scoring
+  └─ Step 5: expert_review gate (항상 활성화)
+```
+
+| 워크플로우 | API 경로 | 상태 |
+|-----------|---------|------|
+| Submission Drafter | `/api/ra/workflows/submission-drafter` | ✅ |
+| Audit Response Drafter | `/api/ra/workflows/audit-response` | ✅ |
+| Indication Impact Analyzer | `/api/ra/workflows/indication-impact` | ✅ |
+
+### UI 컴포넌트
+
+- **WorkflowCard**: 워크플로우 진행 상태 카드
+- **WorkflowStatusBadge**: pending/running/completed/failed 상태 뱃지
+- **WorkflowStepProgress**: 단계별 진행 바
+- **Workflows 페이지**: `/workflows` 라우트
+
+### 테스트 커버리지
+
+- M1~M7 전 Milestone 완료
+- **1,499 → 1,616 테스트** (161 test files, 0 failed)
+- REQ-WF-049~052 모두 구현
+
+- **SPEC 문서**: [`.moai/specs/SPEC-REGULA-WORKFLOWS-001/spec.md`](.moai/specs/SPEC-REGULA-WORKFLOWS-001/spec.md)
+- **GitHub Issue**: [#11 SPEC-REGULA-WORKFLOWS-001](https://github.com/holee9/ra-med-bot/issues/11)
+
+
+---
+
 ## 시작 방법
 
 ### 선행 조건
@@ -649,6 +724,43 @@ pnpm start
 - ✅ 99개 신규 테스트 (전체 1,223 passed / 0 failed)
 - ✅ docs/compliance/ 3종 (part-11-extended, hipaa-baa-scope, vectorize-eu-region)
 - ✅ Issue [#9](https://github.com/holee9/ra-med-bot/issues/9) 완료
+
+---
+
+### Phase 8: DocIngest 조직 문서 수집 ✅ (2026-05-04 완료)
+
+**목표**: 조직 내부 문서 (SOP, 제출서류, 감사 응답 등) ingestion + 검색 파이프라인 구축
+
+- [x] **텍스트 추출**: PDF/DOCX/XLSX/ZIP 지원 (`lib/ingest/extract/`)
+- [x] **DocClass 분류기**: ML 기반 8종 문서 자동 분류
+- [x] **청킹 레지스트리**: DocClass별 전용 청커 8종
+- [x] **PII 가드**: SSN·이메일 임베딩 전 차단
+- [x] **내부 문서 검색기**: pgvector + ACL 필터링
+- [x] **Phase 8E 라우터 확장**: `past_submission_reuse`, `audit_response_drafting` 인텐트
+- [x] **스키마 검증**: 8종 Zod 메타 스키마
+
+**성과물**:
+- ✅ 도큐멘트 수집 파이프라인 완성 (SPEC-REGULA-DOCINGEST-001)
+- ✅ Issue [#10](https://github.com/holee9/ra-med-bot/issues/10) 완료
+
+---
+
+### Phase 9: Advanced Regulatory Workflows ✅ (2026-05-04 완료)
+
+**목표**: 510(k) Drafter + Audit Response + Indication Impact Analyzer (SPEC-REGULA-WORKFLOWS-001)
+
+- [x] **M1** DB Infrastructure — workflow_runs 테이블, pgEnum 2종, audit_action 10개 확장
+- [x] **M2** Common Infrastructure — template-engine, confidence-aggregator, human-handoff, review-queue
+- [x] **M3** 510(k) Submission Drafter — predicate 매칭, 섹션별 draft
+- [x] **M4** Audit Response Drafter — 감사 대응 답변 초안
+- [x] **M5** Indication Impact Analyzer — indication 변경 영향 분석
+- [x] **M6** UI 컴포넌트 — WorkflowCard, StatusBadge, StepProgress, `/workflows` 페이지
+- [x] **M7** Quality Gates — 통합 테스트 3개 파이프라인 + 시스템 테스트
+
+**성과물**:
+- ✅ 1,616 tests passed / 0 failed (161 test files)
+- ✅ REQ-WF-049~052 전체 구현
+- ✅ Issue [#11](https://github.com/holee9/ra-med-bot/issues/11) 완료
 
 ---
 

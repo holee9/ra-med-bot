@@ -14,6 +14,7 @@ Last reviewed: 2026-05-03
 - No issue, no implementation.
 - No ADR/wiki note, no durable architecture decision.
 - No citation/audit check, no RA feature completion.
+- Issue #18 is a mandatory work gate for every issue/SPEC task: read it first, verify `main`, check existing feature branches/PRs, and record the active branch state before implementation.
 - Use Issue #1 as the standing project-philosophy anchor and link new work back to it when the work changes process, architecture, memory, or regulatory safety posture.
 - Treat GitHub Issues as task memory and GitHub Wiki as long-term memory. README is the entry point; this file is the minimal Codex reminder.
 
@@ -61,4 +62,5 @@ Last reviewed: 2026-05-03
 - Use Next.js 15 App Router, TypeScript, Tailwind v4 tokens, Radix UI, lucide-react, Zustand, TanStack Query, Drizzle, Postgres 16 + pgvector, Auth.js v5, and pnpm unless a newer SPEC supersedes this.
 - For UI work, match prototype spacing, typography, colors, interactions, and screenshots closely.
 - For GitHub delivery, create or reuse the issue before edits, keep progress there when useful, preserve unrelated workspace changes, and use PR metadata for merge-time issue closure.
+- Before creating a branch or closing an issue, apply Issue #18: verify no stale or parallel branch already implements the same SPEC, and compare against `main` before judging work incomplete.
 - In this Windows Codex environment, PATH may omit `git`, `node`, and `pnpm`. Check command availability first, prefer absolute Node paths when needed, and run potentially long commands with explicit timeouts plus progress updates.
