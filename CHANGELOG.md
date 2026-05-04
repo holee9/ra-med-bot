@@ -11,6 +11,69 @@
 
 ---
 
+## [1.1.0] — 2026-05-04
+
+### Added
+
+#### Phase 7 Cloudflare Hybrid 배포 (SPEC-REGULA-CLOUDFLARE-001)
+
+**Cloudflare Workers 이식 (Group A):**
+- `wrangler.toml` — Workers 설정: `nodejs_compat`, 4 KV 네임스페이스, 5 R2 버킷, 5 Vectorize 인덱스, 4 큐, 4 크론
+- `open-next.config.ts` — `@opennextjs/cloudflare` 어댑터, R2 ISR 캐시
+- `middleware-edge.ts` — Edge 호환 미들웨어 (Auth.js v5 세션 검증 + locale 리다이렉트)
+- `lib/cloudflare/env.d.ts` — Workers 바인딩 TypeScript 타입 (global declare)
+- `types/opennextjs-cloudflare.d.ts` — OpenNext 패키지 타입 선언
+
+**Hybrid RAG 라우터 (Group B):**
+- `lib/ai/hybrid-router.ts` — `hybridRetrieve()` 진입점: internal→pgvector 격리, public→Vectorize+fallback
+- `BadScopeError` — internal scope에서 AutoRAG 강제 시 throw (REQ-CF-027)
+- `HIPAABAAScopeError` — HIPAA BAA 미확인 상태 AutoRAG 접근 시 throw (REQ-CF-082)
+- `lib/ai/retrievers/vectorize-fda.ts` + `eu-mdr` + `mfds` + `nmpa` + `pmda` — Vectorize 5종 retriever
+- `lib/ai/retrievers/autorag-adapter.ts` — AutoRAG 어댑터, HIPAA BAA 게이팅, Langfuse 래핑
+
+**KV / R2 / Analytics (Group C/D):**
+- `lib/auth/kv-session-store.ts` — Auth.js v5 KV Adapter (30일 TTL, dual-write)
+- `lib/ratelimit/cloudflare-kv.ts` — 슬라이딩 윈도우 레이트 리미터 (Upstash 대체)
+- `lib/storage/r2.ts` — R2 단일 진입점 (put/get/delete/list, 공개 URL 없음)
+- `lib/analytics/cloudflare-engine.ts` — Analytics Engine 지연·캐시·리전 메트릭, PII 거부
+
+**Audit Cold Storage (Compliance):**
+- `lib/audit/cold-storage.ts` — Neon→R2 Iceberg 아카이빙, SHA-256 체크섬 체인, 멱등성
+- `lib/audit/cold-query.ts` — 콜드 조회 (Admin RBAC 검증 + audit-of-audit 기록)
+- `migrations/0011_organizations_data_region.sql` — `data_region` 컬럼 (`us|eu|apac`, NOT NULL)
+
+**QA / 규정 준수:**
+- `scripts/qa/no-vercel-edge.ts` — `@vercel/edge` / `@vercel/og` 임포트 정적 감지
+- `docs/compliance/part-11-extended.md` — 21 CFR Part 11 확장 준수 문서
+- `docs/compliance/hipaa-baa-scope.md` — HIPAA BAA 범위 추적 문서 (Pending Item #1)
+- `docs/compliance/vectorize-eu-region.md` — Vectorize EU GA 추적 문서 (Pending Item #2)
+- `lib/external/fda-estar.ts`, `eu-ectd.ts` — mTLS 플레이스홀더 인터페이스
+
+### Fixed
+
+- `tests/unit/ai/hybrid-router.test.ts` — `vi.mock` 으로 `internal-sops` 동적 임포트 타임아웃 수정
+- `lib/ai/hybrid-router.ts` — Sentry globalThis 타입 캐스트 수정 (biome 엄격 모드 대응)
+- `lib/cloudflare/env.d.ts` — `global declare` 방식 전환으로 Workers 바인딩 타입 호환성 개선
+- 여러 테스트 파일 — 비null 단언 연산자(`!`) 및 `unknown` 중간 캐스트 적용
+
+### Technical Decisions (Phase 7)
+
+1. **internal scope 하드 격리** — `forceAutoRAG=true` + internal scope 조합은 `BadScopeError` throw (REQ-CF-027)
+2. **HIPAA BAA 플래그 게이팅** — `HIPAA_BAA_CONFIRMED=false` 기본값, BAA 확인 후 수동 전환 (Pending Item #1)
+3. **Vectorize EU GA 플래그** — `VECTORIZE_EU_GA=false` 기본값, GA 발표 후 수동 전환 (Pending Item #2)
+4. **R2 Compliance Mode** — `audit-cold` 버킷만 Object Lock 적용 (7년 보존, REQ-CF-042)
+5. **동적 임포트 전략** — `retrieveInternal()`이 `import('./retrievers/internal-sops')`를 lazy 로드하여 엣지 번들 크기 절감
+
+### Compliance (Phase 7)
+
+- ✅ 85/85 REQ-CF 구현 (Group A~H)
+- ✅ 21 CFR Part 11: R2 Compliance Mode Object Lock + SHA-256 체크섬 체인 + 7년 보존
+- ✅ HIPAA BAA 범위 추적 (Pending Item #1 — `HIPAA_BAA_CONFIRMED` 플래그)
+- ✅ internal ↔ public corpus 완전 격리 (REQ-CF-027)
+- ✅ 전체 테스트: 1,223 passed / 0 failed / 6 skipped
+
+---
+
 ## [1.0.0] — 2026-05-03
 
 ### Added

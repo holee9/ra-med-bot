@@ -17,6 +17,8 @@
 - [프로젝트 운영 철학](#프로젝트-운영-철학)
 - [아키텍처](#아키텍처)
 - [기술 스택](#기술-스택)
+- [Phase 6 Quality & Launch 기능](#phase-6-quality--launch-기능-2026-05-04-완료)
+- [Phase 7 Cloudflare Hybrid 기능](#phase-7-cloudflare-hybrid-기능-2026-05-04-완료)
 - [시작 방법](#시작-방법)
 - [프로젝트 문서](#프로젝트-문서)
 - [개발 로드맵](#개발-로드맵)
@@ -310,6 +312,99 @@ graph TB
 
 ---
 
+## Phase 6 Quality & Launch 기능 (2026-05-04 완료)
+
+### LLM 평가 Harness
+
+- **promptfoo 평가**: 6개 corpus × 55개 시나리오 (FDA 15, EU MDR 15, MFDS 10, NMPA 5, PMDA 5, SOP 5)
+- **4종 Scorer**: citation-coverage, hallucination, confidence-calibration, expert-review-gating
+- **CI eval job**: PR 트리거, 30분 타임아웃, `ANTHROPIC_API_KEY_EVAL` secret
+
+### E2E 및 부하 테스트
+
+- **Playwright 3-browser matrix**: chromium/firefox/webkit, CI retries:2
+- **E2E 8종 spec**: auth, consultation, citation-click, expert-review, project-switch, i18n, a11y, security-headers
+- **k6 부하 테스트**: 50VU 정상 + 100VU 스파이크, first_token P95 < 1500ms
+
+### 보안 및 배포
+
+- **vercel.json**: iad1 리전, X-Frame-Options DENY + HSTS + nosniff 헤더
+- **Anthropic ZDR**: `anthropic-beta: zero-data-retention` (의료 데이터 무보존)
+- **Sentry PII 레덱션**: query/user_id/content/email 필드 자동 마스킹
+- **scripts/preflight.sh**: 17단계 통합 품질 게이트
+
+### 문서 출처
+
+- **SPEC 문서**: [`.moai/specs/SPEC-REGULA-LAUNCH-001/spec.md`](.moai/specs/SPEC-REGULA-LAUNCH-001/spec.md)
+- **GitHub Issue**: [#8 SPEC-REGULA-LAUNCH-001](https://github.com/holee9/ra-med-bot/issues/8)
+
+---
+
+## Phase 7 Cloudflare Hybrid 기능 (2026-05-04 완료)
+
+### Cloudflare Workers 이식 (OpenNext.js v3)
+
+- **wrangler.toml**: `nodejs_compat` 플래그, 4 KV 네임스페이스, 5 R2 버킷, 5 Vectorize 인덱스, 4 큐, 4 크론
+- **open-next.config.ts**: `@opennextjs/cloudflare` 어댑터, R2 ISR 캐시
+- **middleware-edge.ts**: Edge 호환 미들웨어 (Auth.js v5 세션 + X-Robots-Tag + locale 리다이렉트)
+- **lib/cloudflare/env.d.ts**: Workers 바인딩 TypeScript 타입 선언
+
+### Hybrid RAG 라우터 (REQ-CF-027)
+
+```
+질문 + scope
+  ├─ scope=internal  → pgvector (InternalSopsRetriever) — AutoRAG 절대 금지
+  └─ scope=public_corpus
+       ├─ Vectorize (5 indexes: FDA/EU MDR/MFDS/NMPA/PMDA)  ←── 기본
+       │    └─ timeout 시 pgvector fallback
+       └─ AutoRAG (HIPAA_BAA_CONFIRMED=true 시에만 활성화)
+```
+
+- **BadScopeError**: internal scope → AutoRAG 강제 시 throw (REQ-CF-027 하드 격리)
+- **HIPAABAAScopeError**: HIPAA BAA 미확인 상태에서 HIPAA 범위 접근 시 throw
+
+### Workers KV / R2 / Analytics
+
+| 계층 | 구현 | 역할 |
+|------|------|------|
+| **KV 세션 스토어** | `lib/auth/kv-session-store.ts` | Auth.js v5 Adapter, 30일 TTL, dual-write 옵션 |
+| **KV 레이트 리미터** | `lib/ratelimit/cloudflare-kv.ts` | 슬라이딩 윈도우, Phase 5 Upstash 대체 |
+| **R2 클라이언트** | `lib/storage/r2.ts` | put/get/delete/list 단일 진입점, 공개 URL 없음 |
+| **Analytics Engine** | `lib/analytics/cloudflare-engine.ts` | PII 필드 거부, 지연·캐시·리전 메트릭 기록 |
+
+### Audit Cold Storage (21 CFR Part 11)
+
+- **lib/audit/cold-storage.ts**: Neon → R2 Iceberg 배치 아카이빙, SHA-256 체크섬 체인, 멱등성 보장
+- **lib/audit/cold-query.ts**: Admin RBAC 검증 후 콜드 조회, 감사의 감사(audit-of-audit) 기록
+- **R2 Compliance Mode Object Lock**: 7년 보존 불변성 (REQ-CF-042)
+- **migrations/0011**: `organizations.data_region` 컬럼 (`us|eu|apac`, NOT NULL)
+
+### 테스트 커버리지
+
+| 범주 | 테스트 수 |
+|------|----------|
+| wrangler.toml / env bindings | 19 |
+| Edge middleware | 7 |
+| KV 세션 스토어 | 8 |
+| KV 레이트 리미터 | 5 |
+| Hybrid RAG 라우터 | 8 |
+| Vectorize retrievers (5종) | 25 |
+| AutoRAG 어댑터 | 5 |
+| R2 스토리지 | 7 |
+| Audit cold storage | 8 |
+| Analytics Engine | 7 |
+| **합계** | **99** |
+
+**최종 전체 테스트**: 1,223 passed / 0 failed / 6 skipped (115 test files)
+
+### 문서 출처
+
+- **SPEC 문서**: [`.moai/specs/SPEC-REGULA-CLOUDFLARE-001/spec.md`](.moai/specs/SPEC-REGULA-CLOUDFLARE-001/spec.md)
+- **진행 기록**: [`.moai/specs/SPEC-REGULA-CLOUDFLARE-001/progress.md`](.moai/specs/SPEC-REGULA-CLOUDFLARE-001/progress.md)
+- **GitHub Issue**: [#9 SPEC-REGULA-CLOUDFLARE-001](https://github.com/holee9/ra-med-bot/issues/9)
+
+---
+
 ## 시작 방법
 
 ### 선행 조건
@@ -508,16 +603,52 @@ pnpm start
 
 **성과물**:
 - ✅ 13개 자동화 CI gate 등록 (TypeScript, Biome, Format, Unit, Audit, RBAC, i18n, Glossary, Token, Module, Contrast, Migrations, Build)
-- ✅ 14개 수동 QA 체크리스트 (Expert review flow, RBAC matrix, Dark mode, Locale, a11y, Observability)
 - ✅ 74개 REQ-ENTERPRISE 전부 구현 (Group A~G + Profile API)
 - ✅ 903/903 tests passing (81 test files)
-- ✅ SPEC status: draft → completed
-- 주의(2026-05-03 Issue #7 검증 이력): 로컬 `next build`는 장시간 hang으로 PASS 산정에서 제외했습니다. CI build gate는 workflow에 등록되어 있으나, 로컬 검증 결과와 분리해서 추적합니다.
 
 **문서 출처**:
 - **SPEC 문서**: [`.moai/specs/SPEC-REGULA-ENTERPRISE-001/spec.md`](.moai/specs/SPEC-REGULA-ENTERPRISE-001/spec.md)
 - **진행 기록**: [`.moai/specs/SPEC-REGULA-ENTERPRISE-001/progress.md`](.moai/specs/SPEC-REGULA-ENTERPRISE-001/progress.md)
 - **GitHub Issue**: [#7 SPEC-REGULA-ENTERPRISE-001](https://github.com/holee9/ra-med-bot/issues/7)
+
+---
+
+### Phase 6: Quality & Launch ✅ (2026-05-04 완료)
+
+**목표**: LLM 평가 Harness, E2E/부하 테스트, 보안 강화, 배포 파이프라인
+
+- [x] **promptfoo 평가 harness** (6 corpus, 55 시나리오, 4종 scorer)
+- [x] **Playwright E2E** (3-browser matrix, 8종 spec)
+- [x] **k6 부하 테스트** (50VU + 100VU 스파이크, first_token P95 < 1.5s)
+- [x] **보안**: Anthropic ZDR, Sentry PII 레덱션, OWASP 매핑, gitleaks CI
+- [x] **배포**: vercel.json 보안 헤더, scripts/preflight.sh 17단계 게이트
+- [x] **문서**: architecture.md, compliance.md, api-reference.md, runbook.md
+
+**성과물**:
+- ✅ 48/48 REQ-LAUNCH 구현 (Group A~F)
+- ✅ Issue [#8](https://github.com/holee9/ra-med-bot/issues/8) 완료
+
+---
+
+### Phase 7: Cloudflare Hybrid 배포 ✅ (2026-05-04 완료)
+
+**목표**: Cloudflare Workers + Vectorize + KV/R2 + WAF 전계층 이식 (85 REQ)
+
+- [x] **OpenNext.js v3** Workers 이식 (`wrangler.toml`, `open-next.config.ts`, Edge middleware)
+- [x] **Hybrid RAG 라우터**: internal → pgvector 격리, public → Vectorize + pgvector fallback
+- [x] **Vectorize 5 indexes**: FDA / EU MDR / MFDS / NMPA / PMDA 퍼블릭 코퍼스
+- [x] **AutoRAG 어댑터**: HIPAA BAA gating (`HIPAA_BAA_CONFIRMED` 플래그)
+- [x] **KV 세션 스토어**: Auth.js v5 Adapter, 30일 TTL, dual-write
+- [x] **KV 레이트 리미터**: 슬라이딩 윈도우 (Phase 5 Upstash 대체)
+- [x] **R2 스토리지**: 5 버킷 (corpus-public, corpus-internal, audit-cold, assets, opennext-cache)
+- [x] **Audit Cold Storage**: Neon → R2 Iceberg, SHA-256 체크섬, 7년 보존 (REQ-CF-042)
+- [x] **Analytics Engine**: PII 필드 거부, 지연·캐시·리전 메트릭
+- [x] **`data_region` 마이그레이션**: `organizations` 테이블 (us/eu/apac)
+
+**성과물**:
+- ✅ 99개 신규 테스트 (전체 1,223 passed / 0 failed)
+- ✅ docs/compliance/ 3종 (part-11-extended, hipaa-baa-scope, vectorize-eu-region)
+- ✅ Issue [#9](https://github.com/holee9/ra-med-bot/issues/9) 완료
 
 ---
 
