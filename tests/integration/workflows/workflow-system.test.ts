@@ -1,0 +1,58 @@
+import { describe, it, expect } from 'vitest';
+import { WORKFLOW_REGISTRY } from '../../../lib/workflows/registry';
+import { SUBMISSION_DRAFTER_STEPS } from '../../../lib/workflows/submission-drafter/steps';
+import { AUDIT_RESPONSE_STEPS } from '../../../lib/workflows/audit-response/steps';
+import { INDICATION_IMPACT_STEPS } from '../../../lib/workflows/indication-impact/steps';
+import { defaultReviewQueue } from '../../../lib/workflows/common/review-queue';
+
+describe('Workflow System — cross-workflow validation', () => {
+  it('WORKFLOW_REGISTRY entries match step counts from steps modules', () => {
+    const stepCountMap: Record<string, number> = {
+      'submission-drafter': SUBMISSION_DRAFTER_STEPS.length,
+      'audit-response': AUDIT_RESPONSE_STEPS.length,
+      'indication-impact': INDICATION_IMPACT_STEPS.length,
+    };
+
+    for (const entry of WORKFLOW_REGISTRY) {
+      const expected = stepCountMap[entry.id];
+      expect(
+        expected,
+        `No step count mapping found for registry id: ${entry.id}`,
+      ).toBeDefined();
+      expect(entry.stepCount).toBe(expected);
+    }
+  });
+
+  it('all workflows have exactly 6 steps', () => {
+    expect(SUBMISSION_DRAFTER_STEPS).toHaveLength(6);
+    expect(AUDIT_RESPONSE_STEPS).toHaveLength(6);
+    expect(INDICATION_IMPACT_STEPS).toHaveLength(6);
+  });
+
+  it('workflow type strings match registry ids', () => {
+    const registryIds = WORKFLOW_REGISTRY.map((e) => e.id);
+    expect(registryIds).toContain('submission-drafter');
+    expect(registryIds).toContain('audit-response');
+    expect(registryIds).toContain('indication-impact');
+  });
+
+  it('review-queue singleton is consistent', () => {
+    // Verify singleton behaviour: mutations on the imported reference persist
+    // across calls (same in-memory Map underneath).
+    const sizeBefore = defaultReviewQueue.size();
+
+    const added = defaultReviewQueue.enqueue({
+      workflowRunId: 'singleton-test-run',
+      workflowType: 'submission_drafter',
+      priority: 'normal',
+      requestedAt: new Date().toISOString(),
+    });
+
+    expect(defaultReviewQueue.size()).toBe(sizeBefore + 1);
+    expect(defaultReviewQueue.peek(added.id)).toBeDefined();
+
+    // Cleanup to avoid leaking state into other tests
+    defaultReviewQueue.dequeue(added.id);
+    expect(defaultReviewQueue.size()).toBe(sizeBefore);
+  });
+});
