@@ -29,6 +29,7 @@
 - [Wave 3 로드맵](#wave-3-로드맵-v1x--핵심-확장)
 - [Wave 4 로드맵](#wave-4-로드맵-v2x--엔터프라이즈-심화)
 - [Wave 5 로드맵](#wave-5-로드맵-v3x--제품-완성도-확장)
+- [QA 단계 게이트](#qa-단계-게이트)
 - [참여 방법](#참여-방법)
 
 ---
@@ -944,6 +945,23 @@ Wave 3/4까지 완료되면 Regula는 분류, 근거 수집, 전략, 문서 생�
 
 ---
 
+### QA 단계 게이트
+
+모든 구현 이슈는 시작 전, 구현 중, PR 수락, Wave 통합, 도메인 UAT, 운영 회귀의 QA 단계를 거칩니다. #73 QA Matrix가 전체 이슈와 증거를 추적하고, #80은 E2E 실행 인프라 선행 조건입니다.
+
+| 단계 | 이슈 | 목적 |
+|------|------|------|
+| Matrix | [#73](https://github.com/holee9/ra-med-bot/issues/73) | 전체 이슈-요구사항-테스트-증거 매트릭스 |
+| Gate 0 | [#74](https://github.com/holee9/ra-med-bot/issues/74) | 구현 시작 전 SPEC 준비도 QA |
+| Gate 1 | [#75](https://github.com/holee9/ra-med-bot/issues/75) | 구현 중 단위·계약·감사·citation 체크포인트 |
+| Gate 2 | [#76](https://github.com/holee9/ra-med-bot/issues/76) | PR 수락 전 변경범위·회귀·보안·접근성·증거 확인 |
+| Gate 3 | [#77](https://github.com/holee9/ra-med-bot/issues/77) | Wave 단위 cross-feature E2E 및 데이터 흐름 검증 |
+| Gate 4 | [#78](https://github.com/holee9/ra-med-bot/issues/78) | RA 도메인 UAT, citation 정확도, 출처 사용권 검수 |
+| Gate 5 | [#79](https://github.com/holee9/ra-med-bot/issues/79) | 운영 QA, synthetic checks, rollback drill, 품질 지표 추적 |
+| Infra | [#80](https://github.com/holee9/ra-med-bot/issues/80) | 로컬/CI E2E 실행 환경 구축 |
+
+---
+
 ## 참여 방법
 
 ### Issues 기반 워크플로우
@@ -1109,4 +1127,4 @@ MIT License - [LICENSE](LICENSE) 파일 참조
 
 **Built with ❤️ using [abyz-lab](https://abyz-lab.work)**
 
-_마지막 업데이트: 2026-05-04 (제품 완성도 기반 Wave 5 보완 이슈 추가 — #66~72: 라벨링·사이버보안·CAPA·임상조사·상환·모델 거버넌스·코퍼스 사용권)_
+_마지막 업데이트: 2026-05-04 (QA 단계 게이트 추가 — #73~79 및 E2E 인프라 #80 반영)_
