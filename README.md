@@ -28,6 +28,7 @@
 - [개발 로드맵](#개발-로드맵)
 - [Wave 3 로드맵](#wave-3-로드맵-v1x--핵심-확장)
 - [Wave 4 로드맵](#wave-4-로드맵-v2x--엔터프라이즈-심화)
+- [Wave 5 로드맵](#wave-5-로드맵-v3x--제품-완성도-확장)
 - [참여 방법](#참여-방법)
 
 ---
@@ -927,6 +928,22 @@ Phase 1-11 완료 후 사용자 경험·비즈니스 가치 확대를 위한 다
 
 ---
 
+### Wave 5 로드맵 (v3.x — 제품 완성도 확장)
+
+Wave 3/4까지 완료되면 Regula는 분류, 근거 수집, 전략, 문서 생성, 검토, 제출, 사후감시까지 연결된 RA 운영 시스템이 됩니다. Wave 5는 실제 제품 출시와 운영에서 추가로 필요한 라벨링, 기기 사이버보안, CAPA, 임상조사, 상환, 모델 변경통제, 코퍼스 사용권을 보강합니다.
+
+| # | SPEC | 설명 | 우선순위 |
+|---|------|------|---------|
+| [#66](https://github.com/holee9/ra-med-bot/issues/66) | SPEC-REGULA-LABELING-001 | 라벨링·IFU·클레임 검토 워크벤치 | High |
+| [#67](https://github.com/holee9/ra-med-bot/issues/67) | SPEC-REGULA-CYBERDEVICE-001 | 의료기기 사이버보안·SBOM 제출 증거 | High |
+| [#68](https://github.com/holee9/ra-med-bot/issues/68) | SPEC-REGULA-CAPA-001 | 불만·CAPA 폐루프 관리 | High |
+| [#69](https://github.com/holee9/ra-med-bot/issues/69) | SPEC-REGULA-CLINICAL-INVESTIGATION-001 | 임상시험·임상조사 계획기 | High |
+| [#70](https://github.com/holee9/ra-med-bot/issues/70) | SPEC-REGULA-REIMBURSEMENT-001 | 보험·상환 경로 분석기 | Medium |
+| [#71](https://github.com/holee9/ra-med-bot/issues/71) | SPEC-REGULA-MODEL-GOVERNANCE-001 | LLM·프롬프트·템플릿 변경통제 | High |
+| [#72](https://github.com/holee9/ra-med-bot/issues/72) | SPEC-REGULA-CORPUS-LICENSE-001 | 코퍼스 라이선스·사용권 관리 | High |
+
+---
+
 ## 참여 방법
 
 ### Issues 기반 워크플로우
@@ -1092,4 +1109,4 @@ MIT License - [LICENSE](LICENSE) 파일 참조
 
 **Built with ❤️ using [abyz-lab](https://abyz-lab.work)**
 
-_마지막 업데이트: 2026-05-04 (완성 비전 기반 보완 이슈 추가 — #59~65: 분류 마법사·임상 문헌·유해사례 보고·표준 추적기·SaMD·DHF·전자 제출)_
+_마지막 업데이트: 2026-05-04 (제품 완성도 기반 Wave 5 보완 이슈 추가 — #66~72: 라벨링·사이버보안·CAPA·임상조사·상환·모델 거버넌스·코퍼스 사용권)_
