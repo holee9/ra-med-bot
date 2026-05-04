@@ -13,10 +13,6 @@ export function middleware(req: NextRequest) {
   const isAuthed = SESSION_COOKIE_NAMES.some((name) => Boolean(req.cookies.get(name)?.value));
   const { pathname } = req.nextUrl;
 
-  if (process.env.E2E_AUTH_BYPASS === 'true' && pathname !== '/') {
-    return NextResponse.next();
-  }
-
   // Already-signed-in users hitting /login are redirected to the app root.
   // Without this, the SSO callback would loop back to /login on every visit.
   if (isAuthed && pathname.startsWith('/login')) {

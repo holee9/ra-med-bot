@@ -5,6 +5,16 @@ import { defineConfig, devices } from '@playwright/test';
 
 export default defineConfig({
   testDir: './tests/e2e',
+  testIgnore:
+    process.env.CI === 'true' && !process.env.PLAYWRIGHT_AUTH_STATE
+      ? [
+          '**/citation-click.spec.ts',
+          '**/consultation.spec.ts',
+          '**/expert-review.spec.ts',
+          '**/i18n.spec.ts',
+          '**/project-switch.spec.ts',
+        ]
+      : [],
   fullyParallel: true,
   forbidOnly: !!process.env.CI,
   retries: process.env.CI ? 2 : 0,
