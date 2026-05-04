@@ -14,7 +14,7 @@ const validBody = {
 };
 
 describe('POST /api/ra/workflows/audit-response', () => {
-  it('returns 202 with workflowRunId for valid input', async () => {
+  it('returns 202 with trigger contract for valid input', async () => {
     const req = new Request('http://localhost/api/ra/workflows/audit-response', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
@@ -27,10 +27,12 @@ describe('POST /api/ra/workflows/audit-response', () => {
     const json = await res.json();
     expect(json.workflowType).toBe('audit_response');
     expect(json.status).toBe('queued');
-    expect(typeof json.workflowRunId).toBe('string');
-    expect(json.workflowRunId).toMatch(
+    expect(typeof json.runId).toBe('string');
+    expect(json.runId).toMatch(
       /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i,
     );
+    expect(json.workflowRunId).toBe(json.runId);
+    expect(json.streamEventsUrl).toBe(`/api/ra/workflows/audit-response/${json.runId}/events`);
     expect(json.queuedAt).toBeDefined();
     expect(json.input).toMatchObject(validBody);
   });

@@ -17,9 +17,12 @@ export async function POST(request: Request): Promise<Response> {
   }
 
   const data = result.data;
+  const runId = crypto.randomUUID();
   return Response.json(
     {
-      workflowRunId: crypto.randomUUID(),
+      runId,
+      workflowRunId: runId,
+      streamEventsUrl: `/api/ra/workflows/indication-impact/${runId}/events`,
       workflowType: 'indication_impact',
       status: 'queued',
       message: 'Indication Impact Analyzer workflow queued',

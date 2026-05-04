@@ -16,19 +16,22 @@ ALTER TABLE organization_documents
 ALTER TABLE organization_documents
   RENAME COLUMN sha256_hash TO file_hash_sha256;
 
+ALTER TABLE organization_documents
+  RENAME COLUMN mime_type TO file_mime_type;
+
+ALTER TABLE organization_documents
+  RENAME COLUMN r2_redacted_key TO redacted_file_r2_key;
+
 -- ---------------------------------------------------------------------------
 -- 2. Add missing columns to organization_documents
 -- ---------------------------------------------------------------------------
 ALTER TABLE organization_documents
-  ADD COLUMN IF NOT EXISTS file_mime_type    text        NOT NULL DEFAULT 'application/pdf',
   ADD COLUMN IF NOT EXISTS language          text        NOT NULL DEFAULT 'en',
   ADD COLUMN IF NOT EXISTS source_meta_json  jsonb       NOT NULL DEFAULT '{}',
-  ADD COLUMN IF NOT EXISTS metadata_json     jsonb       NOT NULL DEFAULT '{}',
   ADD COLUMN IF NOT EXISTS version           integer     NOT NULL DEFAULT 1,
   ADD COLUMN IF NOT EXISTS supersedes_doc_id uuid        NULL,
   ADD COLUMN IF NOT EXISTS project_id        uuid        NULL,
   ADD COLUMN IF NOT EXISTS indexed_at        timestamptz NULL,
-  ADD COLUMN IF NOT EXISTS redacted_file_r2_key text     NULL,
   ADD COLUMN IF NOT EXISTS uploaded_at       timestamptz NOT NULL DEFAULT now(),
   ADD COLUMN IF NOT EXISTS archived_at       timestamptz NULL;
 
@@ -120,6 +123,8 @@ CREATE INDEX idx_org_docs_org_class_status
 -- Update unique constraint to reference renamed column
 ALTER TABLE organization_documents
   DROP CONSTRAINT IF EXISTS uq_org_docs_sha256;
+
+DROP INDEX IF EXISTS uq_org_docs_sha256;
 
 ALTER TABLE organization_documents
   ADD CONSTRAINT uq_org_docs_sha256 UNIQUE (org_id, file_hash_sha256);

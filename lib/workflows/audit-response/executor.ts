@@ -1,6 +1,5 @@
 import {
   aggregateScores,
-  requiresHumanReview,
   type ConfidenceScore,
 } from '../common/confidence-aggregator';
 
@@ -105,12 +104,11 @@ export function buildWorkflowSummary(results: StepResult[]): {
 
   const allScores = results.flatMap((r) => r.confidenceScores);
   const overallConfidence = aggregateScores(allScores);
-  const requiresReview = requiresHumanReview(allScores);
 
   return {
     totalSteps: results.length,
     completedSteps: results.length,
     overallConfidence,
-    requiresReview,
+    requiresReview: true,
   };
 }

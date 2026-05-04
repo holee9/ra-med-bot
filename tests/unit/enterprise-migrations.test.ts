@@ -240,7 +240,7 @@ describe('lib/db/schema.ts Phase 5 additions', () => {
     expect(src).toMatch(/export const projectMembers\s*=/);
   });
 
-  it('auditActionEnum has 37 total values (13 existing + 12 enterprise + profile.update + conversation.delete + 10 Phase 9 workflows)', () => {
+  it('auditActionEnum has 43 total values (37 existing + 6 Phase 8 DocIngest actions)', () => {
     const src = readText('lib/db/schema.ts');
     // Match the full auditActionEnum declaration (multiline)
     const enumSection = src.match(/export const auditActionEnum\s*=[\s\S]*?(?=\n\/\/|\nexport|$)/);
@@ -251,9 +251,8 @@ describe('lib/db/schema.ts Phase 5 additions', () => {
     const values = valueMatches.slice(1);
     // T-013 adds profile.update; Issue #7 remediation adds conversation.delete.
     // Phase 9 adds 10 workflow.* actions via 0013_workflow_audit_actions.sql.
-    // NOTE: Phase 8 DocIngest adds 6 more values to AuditAction type in audit.ts,
-    // but auditActionEnum in schema.ts (read-only) stays at 37 until DB migration 0016.
-    expect(values).toHaveLength(37);
+    // Phase 8 DocIngest adds 6 document.* / redaction_map.access actions via 0016.
+    expect(values).toHaveLength(43);
   });
 });
 

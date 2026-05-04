@@ -117,11 +117,7 @@ export interface AuditEvent {
 export async function writeAudit(params: AuditEvent): Promise<void> {
   await db.insert(auditLogs).values({
     actorId: params.actor_id,
-    // Phase 8 actions ('document.*', 'redaction_map.access') are in AuditAction but
-    // auditActionEnum in schema.ts (read-only) doesn't yet include them.
-    // DB migration 0016 adds the postgres enum values. This cast is intentional.
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    action: params.action as any,
+    action: params.action,
     resourceType: params.resource_type,
     resourceId: params.resource_id,
     conversationId: params.conversation_id ?? null,

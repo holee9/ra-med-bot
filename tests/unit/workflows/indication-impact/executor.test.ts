@@ -83,14 +83,14 @@ describe('indication-impact/executor', () => {
       expect(summary.overallConfidence).toBeCloseTo(expected, 5);
     });
 
-    it('returns requiresReview=false when overallConfidence >= 0.7', () => {
+    it('always requires human review even when overallConfidence >= 0.7', () => {
       const results: StepResult[] = [
         makeResult('indication_comparison', 0.9),
         makeResult('regulatory_pathway_assessment', 0.9),
       ];
 
       const summary = buildWorkflowSummary(results);
-      expect(summary.requiresReview).toBe(false);
+      expect(summary.requiresReview).toBe(true);
     });
 
     it('returns requiresReview=true when overallConfidence < 0.7', () => {

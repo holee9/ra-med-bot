@@ -138,14 +138,14 @@ describe('submission-drafter/executor', () => {
       expect(summary.overallConfidence).toBeCloseTo(expected, 5);
     });
 
-    it('returns requiresReview=false when overallConfidence >= 0.7', () => {
+    it('always requires human review even when overallConfidence >= 0.7', () => {
       const results: StepResult[] = [
         makeResult('device_classification', 0.9),
         makeResult('predicate_search', 0.9),
       ];
 
       const summary = buildWorkflowSummary(results);
-      expect(summary.requiresReview).toBe(false);
+      expect(summary.requiresReview).toBe(true);
     });
 
     it('returns requiresReview=true when overallConfidence < 0.7', () => {

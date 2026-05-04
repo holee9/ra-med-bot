@@ -17,9 +17,12 @@ export async function POST(request: Request): Promise<Response> {
   }
 
   const data = result.data;
+  const runId = crypto.randomUUID();
   return Response.json(
     {
-      workflowRunId: crypto.randomUUID(),
+      runId,
+      workflowRunId: runId,
+      streamEventsUrl: `/api/ra/workflows/submission-drafter/${runId}/events`,
       workflowType: 'submission_drafter',
       status: 'queued',
       message: 'Submission Drafter workflow queued',

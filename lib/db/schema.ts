@@ -82,7 +82,8 @@ export const userRoleEnum = pgEnum('user_role', ['admin', 'ra-lead', 'ra-member'
 // Phase 1: 3 values. Phase 3 / Breadth: +10 via 0003_breadth_audit_actions.sql.
 // Phase 5 Enterprise: +12 via 0005_enterprise_audit_actions.sql.
 // Phase 9 Workflows: +10 via 0013_workflow_audit_actions.sql.
-// Total: 37 values. Adding values here requires a matching ALTER TYPE migration.
+// Phase 8 DocIngest: +6 via 0016_docingest_audit_actions.sql.
+// Total: 43 values. Adding values here requires a matching ALTER TYPE migration.
 // NOTE: auth.mfa_fail is NOT included (removed in v0.3.0 H-5).
 export const auditActionEnum = pgEnum('audit_action', [
   'llm.call',
@@ -122,6 +123,12 @@ export const auditActionEnum = pgEnum('audit_action', [
   'workflow.reject',
   'workflow.download',
   'workflow.edit',
+  'document.upload',
+  'document.access',
+  'document.redact',
+  'document.chunk',
+  'document.search',
+  'redaction_map.access',
 ]);
 
 // REQ-WF-049: workflow_type pgEnum — three Phase 9 workflow kinds.
