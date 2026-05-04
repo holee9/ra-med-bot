@@ -13,7 +13,10 @@ function makeR2Mock() {
     get: vi.fn(async (key: string) => {
       const val = store.get(key);
       if (!val) return null;
-      return { text: async () => val, arrayBuffer: async () => new TextEncoder().encode(val).buffer };
+      return {
+        text: async () => val,
+        arrayBuffer: async () => new TextEncoder().encode(val).buffer,
+      };
     }),
     delete: vi.fn(),
     list: vi.fn().mockResolvedValue({ objects: [], truncated: false }),
@@ -36,12 +39,18 @@ describe('archiveAuditLogs', () => {
 
     // Mock neon client returning some rows
     const neonClient = {
-      execute: vi.fn().mockResolvedValue([
-        { id: 'log-1', action: 'llm.call', actor_id: 'user-1', created_at: new Date() },
-      ]),
+      execute: vi
+        .fn()
+        .mockResolvedValue([
+          { id: 'log-1', action: 'llm.call', actor_id: 'user-1', created_at: new Date() },
+        ]),
     };
 
-    await archiveAuditLogs(neonClient as unknown as Parameters<typeof archiveAuditLogs>[0], r2Client, 100);
+    await archiveAuditLogs(
+      neonClient as unknown as Parameters<typeof archiveAuditLogs>[0],
+      r2Client,
+      100,
+    );
     // R2 should have been written to
     expect(bucket.put).toHaveBeenCalled();
   });
@@ -54,12 +63,18 @@ describe('archiveAuditLogs', () => {
     const r2Client = new R2Client(bucket);
 
     const neonClient = {
-      execute: vi.fn().mockResolvedValue([
-        { id: 'log-2', action: 'source.access', actor_id: 'user-2', created_at: new Date() },
-      ]),
+      execute: vi
+        .fn()
+        .mockResolvedValue([
+          { id: 'log-2', action: 'source.access', actor_id: 'user-2', created_at: new Date() },
+        ]),
     };
 
-    await archiveAuditLogs(neonClient as unknown as Parameters<typeof archiveAuditLogs>[0], r2Client, 100);
+    await archiveAuditLogs(
+      neonClient as unknown as Parameters<typeof archiveAuditLogs>[0],
+      r2Client,
+      100,
+    );
 
     const putCall = vi.mocked(bucket.put).mock.calls[0];
     // Either key or body should contain checksum reference

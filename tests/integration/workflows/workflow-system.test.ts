@@ -1,9 +1,9 @@
-import { describe, it, expect } from 'vitest';
+import { describe, expect, it } from 'vitest';
+import { AUDIT_RESPONSE_STEPS } from '../../../lib/workflows/audit-response/steps';
+import { defaultReviewQueue } from '../../../lib/workflows/common/review-queue';
+import { INDICATION_IMPACT_STEPS } from '../../../lib/workflows/indication-impact/steps';
 import { WORKFLOW_REGISTRY } from '../../../lib/workflows/registry';
 import { SUBMISSION_DRAFTER_STEPS } from '../../../lib/workflows/submission-drafter/steps';
-import { AUDIT_RESPONSE_STEPS } from '../../../lib/workflows/audit-response/steps';
-import { INDICATION_IMPACT_STEPS } from '../../../lib/workflows/indication-impact/steps';
-import { defaultReviewQueue } from '../../../lib/workflows/common/review-queue';
 
 describe('Workflow System — cross-workflow validation', () => {
   it('WORKFLOW_REGISTRY entries match step counts from steps modules', () => {
@@ -15,10 +15,7 @@ describe('Workflow System — cross-workflow validation', () => {
 
     for (const entry of WORKFLOW_REGISTRY) {
       const expected = stepCountMap[entry.id];
-      expect(
-        expected,
-        `No step count mapping found for registry id: ${entry.id}`,
-      ).toBeDefined();
+      expect(expected, `No step count mapping found for registry id: ${entry.id}`).toBeDefined();
       expect(entry.stepCount).toBe(expected);
     }
   });

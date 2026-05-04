@@ -55,7 +55,9 @@ export async function detectPiiWorkersAi(text: string): Promise<PIISpan[]> {
     return [];
   }
 
-  let data: { result?: Array<{ entity: string; score: number; start: number; end: number; word: string }> };
+  let data: {
+    result?: Array<{ entity: string; score: number; start: number; end: number; word: string }>;
+  };
   try {
     data = (await response.json()) as typeof data;
   } catch {

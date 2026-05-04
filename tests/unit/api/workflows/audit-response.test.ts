@@ -1,6 +1,21 @@
-import { describe, it, expect } from 'vitest';
-import { POST } from '@/app/api/ra/workflows/audit-response/route';
 import { GET } from '@/app/api/ra/workflows/audit-response/[runId]/status/route';
+import { POST } from '@/app/api/ra/workflows/audit-response/route';
+import { describe, expect, it, vi } from 'vitest';
+
+vi.mock('@/lib/auth', () => ({
+  auth: vi.fn(async () => ({
+    user: { id: 'test-user', role: 'ra-member', organizationId: 'test-org' },
+  })),
+}));
+
+vi.mock('@/lib/audit', () => ({
+  writeAudit: vi.fn(async () => undefined),
+}));
+
+vi.mock('@/lib/auth/acl', () => ({
+  isOrgMember: vi.fn(async () => true),
+  isProjectMember: vi.fn(async () => true),
+}));
 
 const VALID_UUID = '123e4567-e89b-12d3-a456-426614174000';
 const VALID_PROJECT_ID = '550e8400-e29b-41d4-a716-446655440000';
@@ -14,7 +29,7 @@ const validBody = {
 };
 
 describe('POST /api/ra/workflows/audit-response', () => {
-  it('returns 202 with workflowRunId for valid input', async () => {
+  it('returns 202 with trigger contract for valid input', async () => {
     const req = new Request('http://localhost/api/ra/workflows/audit-response', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
@@ -27,18 +42,16 @@ describe('POST /api/ra/workflows/audit-response', () => {
     const json = await res.json();
     expect(json.workflowType).toBe('audit_response');
     expect(json.status).toBe('queued');
-    expect(typeof json.workflowRunId).toBe('string');
-    expect(json.workflowRunId).toMatch(
-      /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i,
-    );
+    expect(typeof json.runId).toBe('string');
+    expect(json.runId).toMatch(/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i);
+    expect(json.workflowRunId).toBe(json.runId);
+    expect(json.streamEventsUrl).toBe(`/api/ra/workflows/audit-response/${json.runId}/events`);
     expect(json.queuedAt).toBeDefined();
     expect(json.input).toMatchObject(validBody);
   });
 
   it('returns 400 for missing required field (input_content)', async () => {
-    const body = { ...validBody };
-    // @ts-expect-error: deliberately omit required field for test
-    delete body.input_content;
+    const { input_content: _inputContent, ...body } = validBody;
 
     const req = new Request('http://localhost/api/ra/workflows/audit-response', {
       method: 'POST',
@@ -87,9 +100,7 @@ describe('GET /api/ra/workflows/audit-response/[runId]/status', () => {
   });
 
   it('returns 400 for a non-UUID runId', async () => {
-    const req = new Request(
-      'http://localhost/api/ra/workflows/audit-response/not-a-uuid/status',
-    );
+    const req = new Request('http://localhost/api/ra/workflows/audit-response/not-a-uuid/status');
     const params = Promise.resolve({ runId: 'not-a-uuid' });
 
     const res = await GET(req, { params });
@@ -100,9 +111,7 @@ describe('GET /api/ra/workflows/audit-response/[runId]/status', () => {
   });
 
   it('returns 400 for runId with invalid format (too short)', async () => {
-    const req = new Request(
-      'http://localhost/api/ra/workflows/audit-response/12345/status',
-    );
+    const req = new Request('http://localhost/api/ra/workflows/audit-response/12345/status');
     const params = Promise.resolve({ runId: '12345' });
 
     const res = await GET(req, { params });

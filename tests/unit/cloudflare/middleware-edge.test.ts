@@ -3,7 +3,7 @@
 
 import { readFileSync } from 'node:fs';
 import { resolve } from 'node:path';
-import { describe, expect, it, vi, beforeEach } from 'vitest';
+import { beforeEach, describe, expect, it, vi } from 'vitest';
 
 const PROJECT_ROOT = resolve(__dirname, '../../../');
 
@@ -11,35 +11,24 @@ const PROJECT_ROOT = resolve(__dirname, '../../../');
 
 describe('middleware-edge.ts static shape', () => {
   it('should exist at project root', () => {
-    expect(() =>
-      readFileSync(resolve(PROJECT_ROOT, 'middleware-edge.ts'), 'utf-8'),
-    ).not.toThrow();
+    expect(() => readFileSync(resolve(PROJECT_ROOT, 'middleware-edge.ts'), 'utf-8')).not.toThrow();
   });
 
   it('should NOT import @vercel/edge (REQ-CF-009)', () => {
-    const content = readFileSync(
-      resolve(PROJECT_ROOT, 'middleware-edge.ts'),
-      'utf-8',
-    );
+    const content = readFileSync(resolve(PROJECT_ROOT, 'middleware-edge.ts'), 'utf-8');
     // Check that there is no actual import statement for @vercel/edge
     expect(content).not.toMatch(/from ['"]@vercel\/edge['"]/);
     expect(content).not.toMatch(/import\s+.*['"]@vercel\/edge['"]/);
   });
 
   it('should NOT import @vercel/og (REQ-CF-009)', () => {
-    const content = readFileSync(
-      resolve(PROJECT_ROOT, 'middleware-edge.ts'),
-      'utf-8',
-    );
+    const content = readFileSync(resolve(PROJECT_ROOT, 'middleware-edge.ts'), 'utf-8');
     expect(content).not.toMatch(/from ['"]@vercel\/og['"]/);
     expect(content).not.toMatch(/import\s+.*['"]@vercel\/og['"]/);
   });
 
   it('should export a default function and config object', () => {
-    const content = readFileSync(
-      resolve(PROJECT_ROOT, 'middleware-edge.ts'),
-      'utf-8',
-    );
+    const content = readFileSync(resolve(PROJECT_ROOT, 'middleware-edge.ts'), 'utf-8');
     expect(content).toContain('export default');
     expect(content).toContain('export const config');
   });

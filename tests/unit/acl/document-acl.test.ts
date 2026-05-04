@@ -1,9 +1,9 @@
 // RED Phase: Tests for lib/acl/document-acl.ts
 // SPEC-REGULA-DOCINGEST-001 REQ-DOC-8B-1
 
-import { describe, expect, it } from 'vitest';
-import { DocClass } from '@/lib/ingest/doc-class';
 import { checkDocumentPermission } from '@/lib/acl/document-acl';
+import { DocClass } from '@/lib/ingest/doc-class';
+import { describe, expect, it } from 'vitest';
 
 describe('checkDocumentPermission - admin role', () => {
   it('admin can read all DocClasses', () => {
@@ -48,23 +48,23 @@ describe('checkDocumentPermission - ra-lead role', () => {
   });
 
   it('ra-lead cannot admin DocClasses', () => {
-    expect(
-      checkDocumentPermission('ra-lead', DocClass.issued_certificate, null, [], 'admin'),
-    ).toBe(false);
+    expect(checkDocumentPermission('ra-lead', DocClass.issued_certificate, null, [], 'admin')).toBe(
+      false,
+    );
   });
 });
 
 describe('checkDocumentPermission - ra-member role', () => {
   it('ra-member can read issued_certificate', () => {
-    expect(checkDocumentPermission('ra-member', DocClass.issued_certificate, null, [], 'read')).toBe(
-      true,
-    );
+    expect(
+      checkDocumentPermission('ra-member', DocClass.issued_certificate, null, [], 'read'),
+    ).toBe(true);
   });
 
   it('ra-member can read submission_success', () => {
-    expect(checkDocumentPermission('ra-member', DocClass.submission_success, null, [], 'read')).toBe(
-      true,
-    );
+    expect(
+      checkDocumentPermission('ra-member', DocClass.submission_success, null, [], 'read'),
+    ).toBe(true);
   });
 
   it('ra-member cannot write audit_response', () => {

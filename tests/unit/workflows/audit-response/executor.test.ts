@@ -1,10 +1,10 @@
-import { describe, it, expect } from 'vitest';
 import {
-  executeStep,
-  buildWorkflowSummary,
-  UnknownStepError,
   type StepResult,
+  UnknownStepError,
+  buildWorkflowSummary,
+  executeStep,
 } from '@/lib/workflows/audit-response/executor';
+import { describe, expect, it } from 'vitest';
 
 describe('audit-response/executor', () => {
   describe('executeStep', () => {
@@ -85,7 +85,7 @@ describe('audit-response/executor', () => {
       expect(summary.completedSteps).toBe(2);
       expect(summary.overallConfidence).toBeGreaterThan(0);
       expect(summary.overallConfidence).toBeLessThanOrEqual(1);
-      expect(typeof summary.requiresReview).toBe('boolean');
+      expect(summary.requiresReview).toBe(true);
     });
 
     it('returns zero confidence for empty results', () => {

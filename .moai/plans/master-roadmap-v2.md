@@ -751,22 +751,22 @@ Wave 0 진입 시 모든 regula-* agent의 `skills:` YAML frontmatter 배열을 
 
 | SPEC ID | Phase | 상태 | v2.0 영향 |
 |---|---|---|---|
-| SPEC-REGULA-FOUNDATION-001 | 1 | v0.3.0 audit-002 PASS | -3 REQ (Auth provider 축소) |
-| SPEC-REGULA-CHAT-001 | 2 | v0.1.0 draft | 변경 없음 |
-| SPEC-REGULA-STRUCTURED-001 | 3 | v0.1.0 draft | 변경 없음 |
-| SPEC-REGULA-BREADTH-001 | 4 | v0.1.0 draft | -8 REQ (Tier 2 강등) |
-| SPEC-REGULA-ENTERPRISE-001 | 5 | v0.1.0 draft | -25 REQ + Phase 10 5 흡수 = 53 REQ |
-| SPEC-REGULA-LAUNCH-001 | 6 | v0.1.0 draft | -15 REQ (외부 감사 폐기) + LR-IN-001~010 신규 |
-| SPEC-REGULA-CLOUDFLARE-001 | 7 | v0.1.0 draft | -40 REQ (Hybrid 부분 적용) |
-| SPEC-REGULA-DOCINGEST-001 | 8 | v0.1.0 draft | +20 REQ (자사 + Trade Secret + External Enrichment) = 98 REQ |
-| SPEC-REGULA-WORKFLOWS-001 | 9 | v0.1.0 draft | +60 REQ (CER + PCCP + De Novo + PMA 흡수) = 128 REQ |
-| SPEC-REGULA-TENANT-001 | 10 | v0.1.0 draft | **archived** (5 REQ Phase 5 흡수) |
-| SPEC-REGULA-NETWORK-001 | 11 | v0.1.0 draft | **archived** (10 REQ Phase 8 흡수) |
-| SPEC-REGULA-RADAR-001 | 12 | v0.1.0 draft | -15 REQ (3-regulator 집중) = 40 REQ |
-| **SPEC-REGULA-PREDICATE-001** | Wave 3 | **신규 — Wave 0 후속 작성** | 30 REQ (Section 4.1 스켈레톤) |
-| **SPEC-REGULA-PCCP-001** | Wave 3 (Phase 9 흡수) | **신규 — Wave 0 후속 작성** | 25 REQ (Section 4.2 스켈레톤) |
-| **SPEC-REGULA-CER-001** | Wave 3 (Phase 9 흡수) | **신규 — Wave 0 후속 작성** | 40 REQ (Section 4.3 스켈레톤) |
-| **SPEC-REGULA-COEDIT-001** | Wave 4 | **신규 — Wave 0 후속 작성** | 20 REQ (Section 4.4 스켈레톤) |
+| SPEC-REGULA-FOUNDATION-001 | 1 | completed (v1.0.0) | -3 REQ (Auth provider 축소) |
+| SPEC-REGULA-CHAT-001 | 2 | completed (v1.0.0) | 변경 없음 |
+| SPEC-REGULA-STRUCTURED-001 | 3 | completed (v1.0.0) | 변경 없음 |
+| SPEC-REGULA-BREADTH-001 | 4 | completed (v1.0.0) | -8 REQ (Tier 2 강등) |
+| SPEC-REGULA-ENTERPRISE-001 | 5 | completed (v0.2.0) | -25 REQ + Phase 10 5 흡수 = 53 REQ |
+| SPEC-REGULA-LAUNCH-001 | 6 | completed (v0.2.0) | -15 REQ (외부 감사 폐기) + LR-IN-001~010 신규 |
+| SPEC-REGULA-CLOUDFLARE-001 | 7 | partial (v1.0.0) — cf-deploy.yml pending | -40 REQ (Hybrid 부분 적용) |
+| SPEC-REGULA-DOCINGEST-001 | 8 | completed (v1.0.0) | +20 REQ (자사 + Trade Secret + External Enrichment) = 98 REQ |
+| SPEC-REGULA-WORKFLOWS-001 | 9 | completed (v1.0.0) | +60 REQ (CER + PCCP + De Novo + PMA 흡수) = 128 REQ |
+| SPEC-REGULA-TENANT-001 | 10 | completed (v2.0.0) — Issue #14 done | **archived** (5 REQ Phase 5 흡수) |
+| SPEC-REGULA-NETWORK-001 | 11 | completed (v2.0.0) — External Enrichment | **archived** (10 REQ Phase 8 흡수) |
+| SPEC-REGULA-RADAR-001 | 12 | completed (v2.0.0) — Phase 10 done | -15 REQ (3-regulator 집중) = 40 REQ |
+| **SPEC-REGULA-PREDICATE-001** | Wave 3 | draft (v0.1.0) — Wave 3 신규 (2026-05-04 작성) | 30 REQ (Section 4.1 스켈레톤) |
+| **SPEC-REGULA-PCCP-001** | Wave 3 (Phase 9 흡수) | draft (v0.1.0) — Wave 3 신규 (2026-05-04 작성) | 25 REQ (Section 4.2 스켈레톤) |
+| **SPEC-REGULA-CER-001** | Wave 3 (Phase 9 흡수) | draft (v0.1.0) — Wave 3 신규 (2026-05-04 작성) | 40 REQ (Section 4.3 스켈레톤) |
+| **SPEC-REGULA-COEDIT-001** | Wave 4 | draft (v0.1.0) — Wave 4 신규 (2026-05-04 작성) | 20 REQ (Section 4.4 스켈레톤) |
 
 ### 12.3 Agent / Skill 문서
 
@@ -795,6 +795,73 @@ Wave 0 진입 시 모든 regula-* agent의 `skills:` YAML frontmatter 배열을 
 - `CLAUDE.md` — Non-Obvious Product Constraints 7항목 원본 (변경 없음)
 - `.moai/project/product.md` / `structure.md` / `tech.md` — 갱신 권고 (Wave 4 Hybrid 운영 모델 반영)
 - `.moai/config/sections/user.yaml` / `language.yaml` — 변경 없음
+
+---
+
+## Section 13. 2차 릴리즈 계획 (Wave 3-4 실행)
+
+### 13.1 1차 릴리즈 완료 상태 (2026-05-04 기준)
+
+**Wave 1 (Foundation Stack):** Phase 1-4 전체 완료
+**Wave 2 (Trust + Documents):** Phase 5 (ENTERPRISE), Phase 6 (LAUNCH), Phase 7 partial (CLOUDFLARE), Phase 8 (DOCINGEST) 완료
+**Wave 3 SPEC (Phase 9-12):** Phase 9 (WORKFLOWS), Phase 10 (TENANT-Lite), Phase 11 (NETWORK/External Enrichment), Phase 12 (RADAR) 전체 완료
+
+1차 릴리즈 완료 조건:
+- [ ] 현재 feature branch (RADAR + NETWORK) → main 머지
+- [ ] CLOUDFLARE cf-deploy.yml CI/CD 구현 (2차 릴리즈 필수 선행)
+
+### 13.2 2차 릴리즈 구성 (Wave 3-4 신규 SPEC 4건 + CLOUDFLARE 완전 배포)
+
+| SPEC | Wave | REQ | 의존성 | 우선순위 |
+|------|------|-----|--------|---------|
+| SPEC-REGULA-PREDICATE-001 | Wave 3 | 30 | DOCINGEST, BREADTH | High |
+| SPEC-REGULA-CER-001 | Wave 3 | 40 | BREADTH, DOCINGEST, WORKFLOWS | High |
+| SPEC-REGULA-PCCP-001 | Wave 3 | 25 | WORKFLOWS, RADAR | High |
+| SPEC-REGULA-COEDIT-001 | Wave 4 | 20 | CLOUDFLARE (DO), WORKFLOWS | Medium |
+| CLOUDFLARE cf-deploy.yml | Wave 4 | ~10 | CLOUDFLARE-001 amendment | High |
+
+**총 신규 REQ: ~125 REQ (PREDICATE 30 + CER 40 + PCCP 25 + COEDIT 20 + CLOUDFLARE 10)**
+
+### 13.3 2차 릴리즈 실행 순서
+
+**Block A (병렬 가능 — Wave 3):**
+- PREDICATE-001 구현 (DOCINGEST corpus 의존)
+- CER-001 구현 (BREADTH EU MDR retriever 의존)
+- PCCP-001 구현 (WORKFLOWS + RADAR 의존)
+- CLOUDFLARE cf-deploy.yml 구현 (병렬 가능)
+
+**Block B (Block A 완료 후 — Wave 4):**
+- COEDIT-001 구현 (Cloudflare Durable Objects 의존 — cf-deploy.yml 포함 CLOUDFLARE 완전 배포 후)
+
+### 13.4 2차 릴리즈 완료 조건
+
+- [ ] PREDICATE-001 AC 전체 통과 (30 REQ)
+- [ ] CER-001 AC 전체 통과 (40 REQ) + PubMed 통합 검증
+- [ ] PCCP-001 AC 전체 통과 (25 REQ) + FDA 2024-04 guidance 매핑 검증
+- [ ] COEDIT-001 AC 전체 통과 (20 REQ) + DO 5-user 동시 편집 검증
+- [ ] cf-deploy.yml CI/CD 파이프라인 자동 배포 검증
+- [ ] 전체 테스트 suite green (회귀 없음)
+
+### 13.5 신규 Agent 필요성
+
+| Agent | SPEC | 상태 |
+|-------|------|------|
+| regula-predicate | PREDICATE-001 | 신규 작성 필요 |
+| regula-cer | CER-001 | 신규 작성 필요 |
+| regula-pccp | PCCP-001 | 신규 작성 필요 |
+| regula-coedit | COEDIT-001 | 신규 작성 필요 |
+
+Agent 정의 파일 경로: `.claude/agents/regula/regula-{name}.md`
+
+### 13.6 Decision Log (2026-05-04)
+
+| 결정 사항 | 결정 내용 |
+|---------|----------|
+| PREDICATE 릴리즈 우선순위 | 2차 릴리즈 포함 (1차에서 "선택적" → 2차에서 "필수") |
+| CLOUDFLARE 완전 배포 | 2차 릴리즈 포함 — cf-deploy.yml + @opennextjs/cloudflare |
+| COEDIT Wave 4 | 2차 릴리즈 후반 (Durable Objects 배포 후) |
+| Issue #14 상태 | 완료 (sync + PR review 완료) — TENANT-001 v2.0 completed |
+| 1차 릴리즈 상태 | feature branch 머지 후 완료 |
 
 ---
 

@@ -1,9 +1,9 @@
+import { extractDocx } from './docx';
 // @MX:ANCHOR [AUTO] MIME dispatcher — routes buffers to correct extractor by MIME type.
 // @MX:REASON fan_in >= 3: ingest pipeline, upload handler, and tests all call this.
 // @MX:SPEC SPEC-REGULA-DOCINGEST-001 (REQ-DOC-020)
 import { ExtractError } from './pdf';
 import { extractPdf } from './pdf';
-import { extractDocx } from './docx';
 import { extractXlsx } from './xlsx';
 
 /** Supported MIME types for text extraction. */

@@ -26,7 +26,11 @@ const FILENAME_RULES: [RegExp, DocClass, number][] = [
 
 // First-page text keyword signals: [keywords[], docClass, confidenceBoost]
 const TEXT_SIGNALS: [string[], DocClass, number][] = [
-  [['510(k)', 'premarket notification', 'substantial equivalence'], DocClass.submission_success, 0.6],
+  [
+    ['510(k)', 'premarket notification', 'substantial equivalence'],
+    DocClass.submission_success,
+    0.6,
+  ],
   [['clinical evaluation', 'clinical investigation', 'MEDDEV'], DocClass.clinical_report, 0.55],
   [['standard operating procedure', 'work instruction'], DocClass.internal_sop, 0.55],
   [['ISO 13485', 'CE mark', 'certificate of conformity'], DocClass.issued_certificate, 0.5],

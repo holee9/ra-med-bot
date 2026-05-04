@@ -59,10 +59,7 @@ export function getSessionAdapter(kv: KVNamespace): MinimalSessionAdapter {
   return {
     async createSession(session: KVAdapterSession): Promise<KVAdapterSession> {
       const expiresMs = session.expires.getTime() - Date.now();
-      const ttl = Math.max(
-        Math.round(expiresMs / 1000),
-        SESSION_TTL_SECONDS,
-      );
+      const _ttl = Math.max(Math.round(expiresMs / 1000), SESSION_TTL_SECONDS);
 
       // Store session data. User is a stub — real user lookup is from Neon.
       // KV stores session+userId so getSessionAndUser can return a minimal user stub.

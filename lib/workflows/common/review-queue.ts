@@ -50,9 +50,7 @@ export class ReviewQueue {
 
   /** Returns all items belonging to the given workflowRunId. */
   listByWorkflowRun(workflowRunId: string): ReviewItem[] {
-    return Array.from(this.items.values()).filter(
-      (item) => item.workflowRunId === workflowRunId,
-    );
+    return Array.from(this.items.values()).filter((item) => item.workflowRunId === workflowRunId);
   }
 
   /** Returns the number of items currently in the queue. */

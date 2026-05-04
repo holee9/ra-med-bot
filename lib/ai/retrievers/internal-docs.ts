@@ -1,15 +1,16 @@
+import { withTenantScope } from '../../db/client';
+import { DocClass } from '../../ingest/doc-class';
 // @MX:ANCHOR [AUTO] Phase 8 org document retriever — hybrid search with ACL filter.
 // @MX:REASON fan_in >= 3: Phase 8E router, consult pipeline, and test suite all call this.
 // @MX:SPEC SPEC-REGULA-DOCINGEST-001 (REQ-DOC-066, REQ-DOC-067, REQ-DOC-071)
 import { embedChunks } from '../../ingest/embed';
-import { withTenantScope } from '../../db/client';
-import { DocClass } from '../../ingest/doc-class';
 
 // Sensitivity classes that require expert review flag (REQ-DOC-071)
-const EXPERT_REVIEW_CLASSES = new Set<string>([
-  DocClass.clinical_report,
-  DocClass.audit_response,
-]);
+const EXPERT_REVIEW_CLASSES = new Set<string>([DocClass.clinical_report, DocClass.audit_response]);
+
+type QueryExecutor = {
+  execute(query: string, params: unknown[]): Promise<unknown>;
+};
 
 export interface InternalDocsOptions {
   topK: number;
@@ -88,8 +89,7 @@ export async function internalDocsRetrieve(
 
     try {
       const embeddingParam = queryEmbedding.length > 0 ? `[${queryEmbedding.join(',')}]` : null;
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      const result = await (db as any).execute(sql, [embeddingParam, query, orgId, topK]);
+      const result = await (db as QueryExecutor).execute(sql, [embeddingParam, query, orgId, topK]);
       return result as Array<{
         id: string;
         content: string;
@@ -103,14 +103,16 @@ export async function internalDocsRetrieve(
     }
   });
 
-  const results: InternalDocsResult[] = (rawResults as Array<{
-    id: string;
-    content: string;
-    document_id: string;
-    metadata_json: Record<string, unknown>;
-    doc_class: string;
-    score: number;
-  }>).map((row) => ({
+  const results: InternalDocsResult[] = (
+    rawResults as Array<{
+      id: string;
+      content: string;
+      document_id: string;
+      metadata_json: Record<string, unknown>;
+      doc_class: string;
+      score: number;
+    }>
+  ).map((row) => ({
     id: row.id,
     content: row.content,
     score: row.score,
@@ -121,7 +123,9 @@ export async function internalDocsRetrieve(
 
   // Check if any result requires expert review (REQ-DOC-071)
   const expertReviewRequired = results.some(
-    (r) => EXPERT_REVIEW_CLASSES.has(r.docClass) || EXPERT_REVIEW_CLASSES.has(r.metadata?.docClass as string),
+    (r) =>
+      EXPERT_REVIEW_CLASSES.has(r.docClass) ||
+      EXPERT_REVIEW_CLASSES.has(r.metadata?.docClass as string),
   );
 
   void userId; // ACL check done via RLS in withTenantScope

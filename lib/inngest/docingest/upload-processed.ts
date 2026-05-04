@@ -3,16 +3,15 @@
 // Steps: extract → redact → chunk → embed → insert chunks → update status
 // Total timeout: 30min. Per step: 5min, 3 retries exponential backoff.
 
+import { chunk } from '../../ingest/chunkers/index';
 import type { DocClass } from '../../ingest/doc-class';
 import { docSensitivity } from '../../ingest/doc-sensitivity';
-import { extractText } from '../../ingest/extract/index';
-import { chunk } from '../../ingest/chunkers/index';
 import { embedChunks } from '../../ingest/embed';
+import { extractText } from '../../ingest/extract/index';
 import { notifyAdminQuarantine } from '../../notifications/admin-quarantine';
 
 // Inngest client placeholder — resolved at runtime when inngest is configured
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
-const _inngest: any = null;
+const _inngest: unknown = null;
 void _inngest; // Reserved for Inngest registration
 
 export interface DocCreatedEvent {
@@ -72,7 +71,10 @@ export const uploadProcessedFn = {
 
     // Step 5: Insert document_chunks into database
     // (Actual DB insertion is handled by the Inngest step runner with retry)
-    const chunkRecords = chunks.map((c) => ({ text: c.text, metadata: c.metadata as unknown as Record<string, unknown> }));
+    const chunkRecords = chunks.map((c) => ({
+      text: c.text,
+      metadata: c.metadata as unknown as Record<string, unknown>,
+    }));
     const chunkCount = await insertChunks(documentId, orgId, chunkRecords, embeddings);
 
     // Step 6: Update document status to indexed
@@ -91,10 +93,9 @@ async function fetchFromR2(r2Key: string): Promise<Buffer> {
   const bucket = process.env.CF_R2_BUCKET;
   if (!accountId || !bucket) throw new Error('R2 not configured');
 
-  const response = await fetch(
-    `https://${accountId}.r2.cloudflarestorage.com/${bucket}/${r2Key}`,
-    { headers: { Authorization: `Bearer ${process.env.CF_R2_TOKEN}` } },
-  );
+  const response = await fetch(`https://${accountId}.r2.cloudflarestorage.com/${bucket}/${r2Key}`, {
+    headers: { Authorization: `Bearer ${process.env.CF_R2_TOKEN}` },
+  });
   if (!response.ok) throw new Error(`R2 fetch failed: ${r2Key}`);
   return Buffer.from(await response.arrayBuffer());
 }
@@ -124,7 +125,10 @@ async function redactText(text: string, docClass: DocClass): Promise<string> {
   return redacted;
 }
 
-function applySpanRedaction(text: string, spans: Array<{ start: number; end: number; entity: string }>): string {
+function applySpanRedaction(
+  text: string,
+  spans: Array<{ start: number; end: number; entity: string }>,
+): string {
   // Sort spans in reverse order to preserve offsets during replacement
   const sorted = [...spans].sort((a, b) => b.start - a.start);
   let result = text;

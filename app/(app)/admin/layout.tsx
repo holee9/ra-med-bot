@@ -1,8 +1,8 @@
+import { auth } from '@/lib/auth';
+import type { Metadata } from 'next';
 // @MX:NOTE [AUTO] Admin section layout — robots noindex + admin/ra-lead role guard.
 // @MX:SPEC SPEC-REGULA-DOCINGEST-001 (REQ-DOC-077)
 import { redirect } from 'next/navigation';
-import { auth } from '@/lib/auth';
-import type { Metadata } from 'next';
 
 export const metadata: Metadata = {
   robots: {
@@ -16,7 +16,10 @@ export const metadata: Metadata = {
 export default async function AdminLayout({ children }: { children: React.ReactNode }) {
   const session = await auth();
 
-  if (!session?.user || !['admin', 'ra-lead'].includes((session.user as { role?: string }).role ?? '')) {
+  if (
+    !session?.user ||
+    !['admin', 'ra-lead'].includes((session.user as { role?: string }).role ?? '')
+  ) {
     redirect('/403');
   }
 

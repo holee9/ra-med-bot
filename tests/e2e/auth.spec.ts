@@ -20,9 +20,12 @@ test.describe('Authentication (REQ-LAUNCH-015)', () => {
   test('sign-in page renders an SSO provider button', async ({ page }) => {
     test.skip(!!NEEDS_SERVER, NEEDS_SERVER ?? '');
 
-    await page.goto('/api/auth/signin');
+    await page.goto('/login');
     // At minimum one sign-in button (Microsoft Entra ID or Google) must be visible.
-    const signinButtons = page.locator('button[type="submit"], a[role="button"]');
+    // Custom /login page uses type="button" with onClick handlers (not form submit).
+    const signinButtons = page.locator(
+      'button[type="button"], button[type="submit"], a[role="button"]',
+    );
     await expect(signinButtons.first()).toBeVisible();
   });
 

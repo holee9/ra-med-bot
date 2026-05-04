@@ -1,8 +1,8 @@
 // RED Phase: Tests for lib/ingest/pii/regex.ts
 // SPEC-REGULA-DOCINGEST-001 REQ-DOC-8B-4
 
-import { describe, expect, it } from 'vitest';
 import { detectPii, redactText } from '@/lib/ingest/pii/regex';
+import { describe, expect, it } from 'vitest';
 
 describe('detectPii - SSN', () => {
   it('should detect SSN pattern', () => {

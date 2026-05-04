@@ -1,5 +1,5 @@
 // TanStack Query hook for regulatory updates (infinite list).
-// REQ-BREADTH-027
+// REQ-BREADTH-027 + Phase 10 Radar filters.
 // Uses cursor-based infinite pagination.
 
 import { useInfiniteQuery } from '@tanstack/react-query';
@@ -12,11 +12,23 @@ export interface RegulatoryUpdateSummary {
   publishedAt?: string | Date | null;
   sourceUrl?: string | null;
   affectedProductTypes?: string[] | null;
+  // Phase 10 Radar fields
+  sourceCrawler?: string | null;
+  externalId?: string | null;
+  impactTypeHint?: string | null;
+  impactScore?: number | string | null;
+  tier1Relevant?: boolean | null;
 }
 
 export interface UpdatePage {
   data: RegulatoryUpdateSummary[];
   nextCursor: string | null;
+}
+
+export interface UpdateFilters {
+  impact_min?: string;
+  region?: string;
+  impact_type?: string;
 }
 
 function unwrapUpdates(payload: unknown): UpdatePage {
@@ -37,9 +49,12 @@ function unwrapUpdates(payload: unknown): UpdatePage {
   return { data: [], nextCursor: null };
 }
 
-async function fetchUpdates(cursor?: string): Promise<UpdatePage> {
+async function fetchUpdates(cursor?: string, filters?: UpdateFilters): Promise<UpdatePage> {
   const params = new URLSearchParams();
   if (cursor) params.set('cursor', cursor);
+  if (filters?.impact_min) params.set('impact_min', filters.impact_min);
+  if (filters?.region) params.set('region', filters.region);
+  if (filters?.impact_type) params.set('impact_type', filters.impact_type);
 
   const qs = params.toString();
   const url = `/api/ra/updates${qs ? `?${qs}` : ''}`;
@@ -50,10 +65,10 @@ async function fetchUpdates(cursor?: string): Promise<UpdatePage> {
   return unwrapUpdates(await res.json());
 }
 
-export function useUpdates() {
+export function useUpdates(filters?: UpdateFilters) {
   return useInfiniteQuery({
-    queryKey: ['updates'],
-    queryFn: ({ pageParam }) => fetchUpdates(pageParam as string | undefined),
+    queryKey: ['updates', filters],
+    queryFn: ({ pageParam }) => fetchUpdates(pageParam as string | undefined, filters),
     initialPageParam: undefined as string | undefined,
     getNextPageParam: (lastPage: UpdatePage) => lastPage.nextCursor ?? undefined,
   });

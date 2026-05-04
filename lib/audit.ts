@@ -45,7 +45,7 @@ import { auditLogs } from './db/schema';
 // Phase 8 DocIngest values added via 0016_docingest_audit_actions.sql (6):
 //   document.upload, document.access, document.redact,
 //   document.chunk, document.search, redaction_map.access
-// Total: 43 values.
+// Total: 46 values.
 export type AuditAction =
   | 'llm.call'
   | 'source.access'
@@ -90,7 +90,11 @@ export type AuditAction =
   | 'document.redact'
   | 'document.chunk'
   | 'document.search'
-  | 'redaction_map.access';
+  | 'redaction_map.access'
+  // Phase 10 Radar actions added via 0018_radar.sql (3):
+  | 'radar.crawler_run'
+  | 'radar.notification'
+  | 'radar.search';
 
 export interface AuditEvent {
   /** User UUID, or null for system-initiated events. */
@@ -117,11 +121,7 @@ export interface AuditEvent {
 export async function writeAudit(params: AuditEvent): Promise<void> {
   await db.insert(auditLogs).values({
     actorId: params.actor_id,
-    // Phase 8 actions ('document.*', 'redaction_map.access') are in AuditAction but
-    // auditActionEnum in schema.ts (read-only) doesn't yet include them.
-    // DB migration 0016 adds the postgres enum values. This cast is intentional.
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    action: params.action as any,
+    action: params.action,
     resourceType: params.resource_type,
     resourceId: params.resource_id,
     conversationId: params.conversation_id ?? null,

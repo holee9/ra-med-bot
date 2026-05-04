@@ -1,10 +1,10 @@
-import { describe, it, expect } from 'vitest';
 import {
   SUBMISSION_DRAFTER_STEPS,
+  getNextStep,
   getStepIndex,
   isValidStep,
-  getNextStep,
 } from '@/lib/workflows/submission-drafter/steps';
+import { describe, expect, it } from 'vitest';
 
 describe('submission-drafter/steps', () => {
   describe('SUBMISSION_DRAFTER_STEPS', () => {

@@ -96,18 +96,12 @@ describe('open-next.config.ts', () => {
 
 describe('lib/cloudflare/env.d.ts', () => {
   it('should exist and export CloudflareEnv interface', () => {
-    const content = readFileSync(
-      resolve(PROJECT_ROOT, 'lib/cloudflare/env.d.ts'),
-      'utf-8',
-    );
+    const content = readFileSync(resolve(PROJECT_ROOT, 'lib/cloudflare/env.d.ts'), 'utf-8');
     expect(content).toContain('CloudflareEnv');
   });
 
   it('should declare all KV namespace bindings', () => {
-    const content = readFileSync(
-      resolve(PROJECT_ROOT, 'lib/cloudflare/env.d.ts'),
-      'utf-8',
-    );
+    const content = readFileSync(resolve(PROJECT_ROOT, 'lib/cloudflare/env.d.ts'), 'utf-8');
     expect(content).toContain('SESSION_KV: KVNamespace');
     expect(content).toContain('RATELIMIT_KV: KVNamespace');
     expect(content).toContain('FLAGS_KV: KVNamespace');
@@ -115,10 +109,7 @@ describe('lib/cloudflare/env.d.ts', () => {
   });
 
   it('should declare all R2 bucket bindings', () => {
-    const content = readFileSync(
-      resolve(PROJECT_ROOT, 'lib/cloudflare/env.d.ts'),
-      'utf-8',
-    );
+    const content = readFileSync(resolve(PROJECT_ROOT, 'lib/cloudflare/env.d.ts'), 'utf-8');
     expect(content).toContain('CORPUS_PUBLIC: R2Bucket');
     expect(content).toContain('CORPUS_INTERNAL: R2Bucket');
     expect(content).toContain('AUDIT_COLD: R2Bucket');
@@ -127,19 +118,13 @@ describe('lib/cloudflare/env.d.ts', () => {
   });
 
   it('should declare Vectorize indexes', () => {
-    const content = readFileSync(
-      resolve(PROJECT_ROOT, 'lib/cloudflare/env.d.ts'),
-      'utf-8',
-    );
+    const content = readFileSync(resolve(PROJECT_ROOT, 'lib/cloudflare/env.d.ts'), 'utf-8');
     expect(content).toContain('FDA_PUBLIC: VectorizeIndex');
     expect(content).toContain('EU_MDR_PUBLIC: VectorizeIndex');
   });
 
   it('should declare all Queue bindings', () => {
-    const content = readFileSync(
-      resolve(PROJECT_ROOT, 'lib/cloudflare/env.d.ts'),
-      'utf-8',
-    );
+    const content = readFileSync(resolve(PROJECT_ROOT, 'lib/cloudflare/env.d.ts'), 'utf-8');
     expect(content).toContain('AUDIT_ARCHIVE_QUEUE: Queue');
     expect(content).toContain('CORPUS_UPDATE_QUEUE: Queue');
     expect(content).toContain('NOTIFICATION_QUEUE: Queue');
@@ -147,10 +132,7 @@ describe('lib/cloudflare/env.d.ts', () => {
   });
 
   it('should declare HIPAA BAA flag env var', () => {
-    const content = readFileSync(
-      resolve(PROJECT_ROOT, 'lib/cloudflare/env.d.ts'),
-      'utf-8',
-    );
+    const content = readFileSync(resolve(PROJECT_ROOT, 'lib/cloudflare/env.d.ts'), 'utf-8');
     expect(content).toContain('HIPAA_BAA_CONFIRMED');
   });
 });

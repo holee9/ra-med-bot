@@ -1,6 +1,6 @@
-import { describe, it, expect } from 'vitest';
+import { describe, expect, it } from 'vitest';
+import { chunk, chunkerRegistry } from '../../../../lib/ingest/chunkers/index';
 import { DocClass } from '../../../../lib/ingest/doc-class';
-import { chunkerRegistry, chunk } from '../../../../lib/ingest/chunkers/index';
 
 describe('chunkerRegistry', () => {
   it('has an entry for all 8 DocClass values', () => {
@@ -27,7 +27,7 @@ describe('chunk', () => {
     for (const cls of classes) {
       const chunks = chunk(cls, 'Sample text for testing.', {});
       if (chunks.length > 0) {
-        expect(chunks[0]!.metadata.docClass).toBe(cls);
+        expect(chunks[0]?.metadata.docClass).toBe(cls);
       }
     }
   });

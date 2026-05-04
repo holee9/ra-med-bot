@@ -4,11 +4,13 @@
 // requires a Phase-level review.
 // @MX:SPEC SPEC-REGULA-FOUNDATION-001 (REQ-FND-053)
 
-import { auth } from '@/lib/auth';
+import type { NextRequest } from 'next/server';
 import { NextResponse } from 'next/server';
 
-export default auth((req) => {
-  const isAuthed = Boolean(req.auth);
+const SESSION_COOKIE_NAMES = ['authjs.session-token', '__Secure-authjs.session-token'];
+
+export function middleware(req: NextRequest) {
+  const isAuthed = SESSION_COOKIE_NAMES.some((name) => Boolean(req.cookies.get(name)?.value));
   const { pathname } = req.nextUrl;
 
   // Already-signed-in users hitting /login are redirected to the app root.
@@ -26,7 +28,7 @@ export default auth((req) => {
   }
 
   return NextResponse.next();
-});
+}
 
 // REQ-FND-053: matcher pattern is exact and load-bearing. Any change must be
 // reviewed against the public-route allow-list in handoff §16.

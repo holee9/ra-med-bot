@@ -1,7 +1,7 @@
+import { auth } from '@/lib/auth';
 // @MX:NOTE [AUTO] Admin document detail page — metadata, chunks, redaction preview, audit log.
 // @MX:SPEC SPEC-REGULA-DOCINGEST-001 (REQ-DOC-074)
-import { redirect, notFound } from 'next/navigation';
-import { auth } from '@/lib/auth';
+import { notFound, redirect } from 'next/navigation';
 
 interface DocumentDetailPageProps {
   params: Promise<{ id: string }>;
@@ -10,7 +10,10 @@ interface DocumentDetailPageProps {
 export default async function DocumentDetailPage({ params }: DocumentDetailPageProps) {
   const session = await auth();
 
-  if (!session?.user || !['admin', 'ra-lead'].includes((session.user as { role?: string }).role ?? '')) {
+  if (
+    !session?.user ||
+    !['admin', 'ra-lead'].includes((session.user as { role?: string }).role ?? '')
+  ) {
     redirect('/403');
   }
 
@@ -24,7 +27,9 @@ export default async function DocumentDetailPage({ params }: DocumentDetailPageP
     <div className="mx-auto max-w-content px-6 py-8">
       <header className="mb-6">
         <nav className="text-sm text-muted-foreground">
-          <a href="/admin/documents" className="hover:underline">문서 목록</a>
+          <a href="/admin/documents" className="hover:underline">
+            문서 목록
+          </a>
           <span className="mx-2">/</span>
           <span>문서 상세</span>
         </nav>

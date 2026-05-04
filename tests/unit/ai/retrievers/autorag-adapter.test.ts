@@ -1,11 +1,11 @@
 // Tests for lib/ai/retrievers/autorag-adapter.ts
 // RED: HIPAA BAA guard, IRetriever compliance, normalization
 
-import { describe, expect, it, vi, beforeEach } from 'vitest';
+import { beforeEach, describe, expect, it, vi } from 'vitest';
 import type { IRetriever, RetrievalResult } from '../../../../lib/ai/retrievers/types';
 
 // Minimal AutoRAG env stub
-function makeAutoRAGEnv(hipaaConfirmed: string = 'false') {
+function makeAutoRAGEnv(hipaaConfirmed = 'false') {
   const mockSearch = vi.fn().mockResolvedValue({
     results: [
       {
@@ -37,7 +37,10 @@ describe('AutoRAGRetriever', () => {
   it('should implement IRetriever interface', async () => {
     const { AutoRAGRetriever } = await import('../../../../lib/ai/retrievers/autorag-adapter');
     const env = makeAutoRAGEnv('true');
-    const retriever: IRetriever = new AutoRAGRetriever(env as unknown as CloudflareEnv, 'fda-instance');
+    const retriever: IRetriever = new AutoRAGRetriever(
+      env as unknown as CloudflareEnv,
+      'fda-instance',
+    );
     expect(typeof retriever.retrieve).toBe('function');
     expect(retriever.corpus).toBeDefined();
   });

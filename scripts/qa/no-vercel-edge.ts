@@ -8,12 +8,9 @@
 import { readFileSync, readdirSync, statSync } from 'node:fs';
 import { join } from 'node:path';
 
-const FORBIDDEN_IMPORTS = ['@vercel/edge', '@vercel/og'];
+const _FORBIDDEN_IMPORTS = ['@vercel/edge', '@vercel/og'];
 
-const SCAN_TARGETS = [
-  join(process.cwd(), 'app'),
-  join(process.cwd(), 'middleware-edge.ts'),
-];
+const SCAN_TARGETS = [join(process.cwd(), 'app'), join(process.cwd(), 'middleware-edge.ts')];
 
 const IMPORT_PATTERN = /(?:import|from|require)\s*\(?['"](@vercel\/(?:edge|og))['"]/g;
 
@@ -78,14 +75,14 @@ function main(): void {
   }
 
   if (allViolations.length > 0) {
-    console.error('ERROR: @vercel/edge or @vercel/og imports detected in Workers code (REQ-CF-009):');
+    console.error(
+      'ERROR: @vercel/edge or @vercel/og imports detected in Workers code (REQ-CF-009):',
+    );
     for (const v of allViolations) {
       console.error(`  ${v}`);
     }
     process.exit(1);
   }
-
-  console.log('OK: No @vercel/edge or @vercel/og imports found in Workers code.');
   process.exit(0);
 }
 

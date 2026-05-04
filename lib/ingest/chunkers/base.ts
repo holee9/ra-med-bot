@@ -38,11 +38,7 @@ export function countTokens(text: string): number {
  * Split text into chunks by token count with overlap.
  * Returns array of text strings, each within maxTokens limit.
  */
-export function splitByTokens(
-  text: string,
-  maxTokens: number,
-  overlapTokens: number,
-): string[] {
+export function splitByTokens(text: string, maxTokens: number, overlapTokens: number): string[] {
   const words = text.trim().split(/\s+/).filter(Boolean);
   if (words.length === 0) return [];
 

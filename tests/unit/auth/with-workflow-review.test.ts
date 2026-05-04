@@ -1,5 +1,5 @@
-import { describe, it, expect } from 'vitest';
 import { withWorkflowReview } from '@/lib/auth/with-workflow-review';
+import { describe, expect, it } from 'vitest';
 
 describe('withWorkflowReview', () => {
   const makeRequest = (headers: Record<string, string> = {}): Request => {

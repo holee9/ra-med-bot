@@ -1,16 +1,16 @@
-import { describe, it, expect } from 'vitest';
+import { describe, expect, it } from 'vitest';
+import { DocClass } from '../../../lib/ingest/doc-class';
 import {
-  IssuedCertificateMetaSchema,
-  SubmissionSuccessMetaSchema,
-  SubmissionInprogressMetaSchema,
-  ClinicalReportMetaSchema,
-  ChecklistTemplateMetaSchema,
-  SurveillanceReportMetaSchema,
-  InternalSopMetaSchema,
   AuditResponseMetaSchema,
+  ChecklistTemplateMetaSchema,
+  ClinicalReportMetaSchema,
+  InternalSopMetaSchema,
+  IssuedCertificateMetaSchema,
+  SubmissionInprogressMetaSchema,
+  SubmissionSuccessMetaSchema,
+  SurveillanceReportMetaSchema,
   docClassMetaSchemas,
 } from '../../../lib/schemas/documents';
-import { DocClass } from '../../../lib/ingest/doc-class';
 
 describe('IssuedCertificateMetaSchema', () => {
   it('validates valid data', () => {
@@ -30,8 +30,12 @@ describe('IssuedCertificateMetaSchema', () => {
   });
 
   it('regulatoryClass accepts I, II, III only', () => {
-    expect(IssuedCertificateMetaSchema.safeParse({ deviceName: 'X', regulatoryClass: 'IV' }).success).toBe(false);
-    expect(IssuedCertificateMetaSchema.safeParse({ deviceName: 'X', regulatoryClass: 'II' }).success).toBe(true);
+    expect(
+      IssuedCertificateMetaSchema.safeParse({ deviceName: 'X', regulatoryClass: 'IV' }).success,
+    ).toBe(false);
+    expect(
+      IssuedCertificateMetaSchema.safeParse({ deviceName: 'X', regulatoryClass: 'II' }).success,
+    ).toBe(true);
   });
 });
 

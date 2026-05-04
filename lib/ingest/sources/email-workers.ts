@@ -24,7 +24,7 @@ export class EmailWorkersSource implements IngestionSource {
   constructor(allowlist?: string[]) {
     // Parse email allowlist from env or use provided list
     const envAllowlist = process.env.EMAIL_INGEST_ALLOWLIST;
-    this.allowlist = allowlist ?? (envAllowlist ? JSON.parse(envAllowlist) as string[] : []);
+    this.allowlist = allowlist ?? (envAllowlist ? (JSON.parse(envAllowlist) as string[]) : []);
   }
 
   /**

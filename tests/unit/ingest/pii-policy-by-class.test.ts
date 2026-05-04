@@ -1,9 +1,9 @@
 // RED Phase: Tests for lib/ingest/pii/policy-by-class.ts
 // SPEC-REGULA-DOCINGEST-001 REQ-DOC-8B-5
 
-import { describe, expect, it } from 'vitest';
 import { DocClass } from '@/lib/ingest/doc-class';
 import { PII_POLICY_BY_CLASS } from '@/lib/ingest/pii/policy-by-class';
+import { describe, expect, it } from 'vitest';
 
 describe('PII_POLICY_BY_CLASS', () => {
   it('should have a policy for every DocClass', () => {

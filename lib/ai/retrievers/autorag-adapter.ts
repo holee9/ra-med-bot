@@ -23,7 +23,10 @@ interface AutoRAGSearchResponse {
 interface AutoRAGEnv {
   AI: {
     autorag: (instanceName: string) => {
-      aiSearch: (opts: { query: string; max_num_results?: number }) => Promise<AutoRAGSearchResponse>;
+      aiSearch: (opts: {
+        query: string;
+        max_num_results?: number;
+      }) => Promise<AutoRAGSearchResponse>;
     };
   };
   HIPAA_BAA_CONFIRMED: string;

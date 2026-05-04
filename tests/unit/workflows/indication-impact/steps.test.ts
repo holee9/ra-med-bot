@@ -1,10 +1,10 @@
-import { describe, it, expect } from 'vitest';
 import {
   INDICATION_IMPACT_STEPS,
+  getNextStep,
   getStepIndex,
   isValidStep,
-  getNextStep,
 } from '@/lib/workflows/indication-impact/steps';
+import { describe, expect, it } from 'vitest';
 
 describe('indication-impact/steps', () => {
   describe('INDICATION_IMPACT_STEPS', () => {

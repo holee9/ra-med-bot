@@ -1,4 +1,4 @@
-import { describe, it, expect } from 'vitest';
+import { describe, expect, it } from 'vitest';
 import { chunkCertificate } from '../../../../lib/ingest/chunkers/certificate';
 import { DocClass } from '../../../../lib/ingest/doc-class';
 
@@ -33,23 +33,23 @@ describe('chunkCertificate', () => {
 
   it('chunk has docClass issued_certificate', () => {
     const chunks = chunkCertificate(SAMPLE_CERT, {});
-    expect(chunks[0]!.metadata.docClass).toBe(DocClass.issued_certificate);
+    expect(chunks[0]?.metadata.docClass).toBe(DocClass.issued_certificate);
   });
 
   it('extracts fda_k_number from metadata_json', () => {
     const chunks = chunkCertificate(SAMPLE_CERT, {});
-    const meta = chunks[0]!.metadata;
+    const meta = chunks[0]?.metadata;
     expect(meta).toBeDefined();
   });
 
   it('chunk text contains the full content', () => {
     const chunks = chunkCertificate(SAMPLE_CERT, {});
-    expect(chunks[0]!.text).toContain('VitalMonitor');
+    expect(chunks[0]?.text).toContain('VitalMonitor');
   });
 
   it('handles ISO certificate without FDA K number', () => {
     const chunks = chunkCertificate(SAMPLE_ISO_CERT, {});
     expect(chunks).toHaveLength(1);
-    expect(chunks[0]!.text).toContain('ISO');
+    expect(chunks[0]?.text).toContain('ISO');
   });
 });

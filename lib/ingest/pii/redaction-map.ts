@@ -2,7 +2,7 @@
 // @MX:REASON PII_MAP_KEY must be 32 bytes; wrong length causes decryption failure.
 // @MX:SPEC SPEC-REGULA-DOCINGEST-001 (REQ-DOC-8B-6)
 
-import { createCipheriv, createDecipheriv, randomBytes } from 'crypto';
+import { createCipheriv, createDecipheriv, randomBytes } from 'node:crypto';
 
 const KEY_LENGTH = 32; // 256 bits
 const IV_LENGTH = 12; // GCM requires 12-byte IV

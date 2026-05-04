@@ -5,8 +5,8 @@
 import { writeAudit } from '@/lib/audit';
 import { auth } from '@/lib/auth';
 import type { Role } from '@/lib/auth/rbac';
-import { DocClass } from '@/lib/ingest/doc-class';
-import { checkDocumentPermission, type DocumentAction } from './document-acl';
+import type { DocClass } from '@/lib/ingest/doc-class';
+import { type DocumentAction, checkDocumentPermission } from './document-acl';
 
 interface AuthUser {
   id: string;
@@ -43,13 +43,7 @@ export function withDocumentPermission(
       const projectIds = user.projectIds ?? [];
 
       // 2. ACL check
-      const allowed = checkDocumentPermission(
-        user.role,
-        docClass,
-        null,
-        projectIds,
-        action,
-      );
+      const allowed = checkDocumentPermission(user.role, docClass, null, projectIds, action);
 
       if (!allowed) {
         await writeAudit({

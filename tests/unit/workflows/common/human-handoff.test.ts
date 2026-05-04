@@ -1,11 +1,11 @@
-import { describe, it, expect } from 'vitest';
 import {
-  createHandoffRequest,
-  serializeHandoffRequest,
-  deserializeHandoffRequest,
-  HandoffValidationError,
   type HandoffRequest,
+  HandoffValidationError,
+  createHandoffRequest,
+  deserializeHandoffRequest,
+  serializeHandoffRequest,
 } from '@/lib/workflows/common/human-handoff';
+import { describe, expect, it } from 'vitest';
 
 describe('human-handoff', () => {
   const sampleRequest: HandoffRequest = {
@@ -63,16 +63,12 @@ describe('human-handoff', () => {
     });
 
     it('throws HandoffValidationError for invalid JSON', () => {
-      expect(() => deserializeHandoffRequest('not-json')).toThrow(
-        HandoffValidationError,
-      );
+      expect(() => deserializeHandoffRequest('not-json')).toThrow(HandoffValidationError);
     });
 
     it('throws HandoffValidationError for JSON missing required fields', () => {
       const invalid = JSON.stringify({ workflowRunId: '123' }); // missing stepName etc.
-      expect(() => deserializeHandoffRequest(invalid)).toThrow(
-        HandoffValidationError,
-      );
+      expect(() => deserializeHandoffRequest(invalid)).toThrow(HandoffValidationError);
     });
   });
 });

@@ -1,4 +1,4 @@
-import { describe, it, expect } from 'vitest';
+import { describe, expect, it } from 'vitest';
 import { DocClass } from '../../../lib/ingest/doc-class';
 import { docClassLabels } from '../../../lib/ingest/doc-class-labels';
 

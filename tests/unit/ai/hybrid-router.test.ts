@@ -1,13 +1,15 @@
 // Tests for lib/ai/hybrid-router.ts
 // RED: CRITICAL — internal scope must NEVER route to AutoRAG (REQ-CF-027)
 
-import { describe, expect, it, vi, beforeEach } from 'vitest';
+import { beforeEach, describe, expect, it, vi } from 'vitest';
 import type { RetrievalResult } from '../../../lib/ai/retrievers/types';
 
 // Mock internal-sops retriever to prevent hanging dynamic import in test env
 vi.mock('../../../lib/ai/retrievers/internal-sops', () => ({
   InternalSopsRetriever: class {
-    async retrieve() { return []; }
+    async retrieve() {
+      return [];
+    }
   },
 }));
 
@@ -52,9 +54,7 @@ describe('hybridRetrieve — internal scope isolation (REQ-CF-027)', () => {
     const { hybridRetrieve } = await import('../../../lib/ai/hybrid-router');
 
     // internal scope → pgvector path should succeed (may return empty array in test)
-    await expect(
-      hybridRetrieve('what is ISO 13485', 'internal', {}, 5),
-    ).resolves.toBeDefined();
+    await expect(hybridRetrieve('what is ISO 13485', 'internal', {}, 5)).resolves.toBeDefined();
   });
 });
 

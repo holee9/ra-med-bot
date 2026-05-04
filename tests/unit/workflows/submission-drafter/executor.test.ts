@@ -1,10 +1,10 @@
-import { describe, it, expect } from 'vitest';
 import {
-  executeStep,
-  buildWorkflowSummary,
-  UnknownStepError,
   type StepResult,
+  UnknownStepError,
+  buildWorkflowSummary,
+  executeStep,
 } from '@/lib/workflows/submission-drafter/executor';
+import { describe, expect, it } from 'vitest';
 
 describe('submission-drafter/executor', () => {
   describe('executeStep', () => {
@@ -54,9 +54,7 @@ describe('submission-drafter/executor', () => {
         equivalent: true,
         rationale: 'Same intended use',
       });
-      expect(result.confidenceScores).toContainEqual(
-        expect.objectContaining({ score: 0.78 }),
-      );
+      expect(result.confidenceScores).toContainEqual(expect.objectContaining({ score: 0.78 }));
     });
 
     it('returns StepResult for performance_summary', async () => {
@@ -67,9 +65,7 @@ describe('submission-drafter/executor', () => {
       expect(result.output).toMatchObject({
         testingRequired: ['biocompatibility', 'electrical safety'],
       });
-      expect(result.confidenceScores).toContainEqual(
-        expect.objectContaining({ score: 0.88 }),
-      );
+      expect(result.confidenceScores).toContainEqual(expect.objectContaining({ score: 0.88 }));
     });
 
     it('returns StepResult for labeling_review', async () => {
@@ -81,9 +77,7 @@ describe('submission-drafter/executor', () => {
         compliant: true,
         issues: [],
       });
-      expect(result.confidenceScores).toContainEqual(
-        expect.objectContaining({ score: 0.95 }),
-      );
+      expect(result.confidenceScores).toContainEqual(expect.objectContaining({ score: 0.95 }));
     });
 
     it('returns StepResult for submission_assembly', async () => {
@@ -95,9 +89,7 @@ describe('submission-drafter/executor', () => {
         sectionsGenerated: 6,
         totalPages: 42,
       });
-      expect(result.confidenceScores).toContainEqual(
-        expect.objectContaining({ score: 0.91 }),
-      );
+      expect(result.confidenceScores).toContainEqual(expect.objectContaining({ score: 0.91 }));
     });
 
     it('throws UnknownStepError for an unknown step name', async () => {
@@ -138,14 +130,14 @@ describe('submission-drafter/executor', () => {
       expect(summary.overallConfidence).toBeCloseTo(expected, 5);
     });
 
-    it('returns requiresReview=false when overallConfidence >= 0.7', () => {
+    it('always requires human review even when overallConfidence >= 0.7', () => {
       const results: StepResult[] = [
         makeResult('device_classification', 0.9),
         makeResult('predicate_search', 0.9),
       ];
 
       const summary = buildWorkflowSummary(results);
-      expect(summary.requiresReview).toBe(false);
+      expect(summary.requiresReview).toBe(true);
     });
 
     it('returns requiresReview=true when overallConfidence < 0.7', () => {

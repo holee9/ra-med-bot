@@ -7,13 +7,18 @@ import { describe, expect, it, vi } from 'vitest';
 function makeR2Mock() {
   const store = new Map<string, { body: ArrayBuffer; httpMetadata?: R2HTTPMetadata }>();
   return {
-    put: vi.fn(async (key: string, body: ReadableStream | ArrayBuffer | string, opts?: R2PutOptions) => {
-      const buf = typeof body === 'string'
-        ? new TextEncoder().encode(body).buffer
-        : body instanceof ArrayBuffer ? body : new ArrayBuffer(0);
-      store.set(key, { body: buf as ArrayBuffer, httpMetadata: opts?.httpMetadata });
-      return {} as R2Object;
-    }),
+    put: vi.fn(
+      async (key: string, body: ReadableStream | ArrayBuffer | string, opts?: R2PutOptions) => {
+        const buf =
+          typeof body === 'string'
+            ? new TextEncoder().encode(body).buffer
+            : body instanceof ArrayBuffer
+              ? body
+              : new ArrayBuffer(0);
+        store.set(key, { body: buf as ArrayBuffer, httpMetadata: opts?.httpMetadata });
+        return {} as R2Object;
+      },
+    ),
     get: vi.fn(async (key: string) => {
       const item = store.get(key);
       if (!item) return null;
@@ -30,8 +35,10 @@ function makeR2Mock() {
         httpMetadata: item.httpMetadata,
       } as unknown as R2ObjectBody;
     }),
-    delete: vi.fn(async (key: string) => { store.delete(key); }),
-    list: vi.fn(async (opts?: R2ListOptions) => ({
+    delete: vi.fn(async (key: string) => {
+      store.delete(key);
+    }),
+    list: vi.fn(async (_opts?: R2ListOptions) => ({
       objects: [...store.keys()].map((k) => ({ key: k })) as R2Object[],
       truncated: false,
     })),
@@ -62,7 +69,11 @@ describe('R2Client', () => {
       const client = new R2Client(bucket);
 
       await client.put('test/file.json', JSON.stringify({ foo: 'bar' }));
-      expect(bucket.put).toHaveBeenCalledWith('test/file.json', expect.anything(), expect.anything());
+      expect(bucket.put).toHaveBeenCalledWith(
+        'test/file.json',
+        expect.anything(),
+        expect.anything(),
+      );
     });
   });
 

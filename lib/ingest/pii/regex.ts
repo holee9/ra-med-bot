@@ -45,8 +45,7 @@ const PII_PATTERNS: PatternDef[] = [
   // 5. Date of Birth (MM/DD/YYYY or MM-DD-YYYY)
   {
     type: 'dob',
-    pattern:
-      /\b(0[1-9]|1[012])[\/\-](0[1-9]|[12][0-9]|3[01])[\/\-](19|20)\d\d\b/g,
+    pattern: /\b(0[1-9]|1[012])[\/\-](0[1-9]|[12][0-9]|3[01])[\/\-](19|20)\d\d\b/g,
     confidence: 0.75,
   },
 
@@ -91,8 +90,8 @@ export function detectPii(text: string): PiiMatch[] {
     // Reset lastIndex before each use of global regex
     def.pattern.lastIndex = 0;
 
-    let match: RegExpExecArray | null;
-    while ((match = def.pattern.exec(text)) !== null) {
+    let match = def.pattern.exec(text);
+    while (match !== null) {
       matches.push({
         type: def.type,
         start: match.index,
@@ -100,6 +99,7 @@ export function detectPii(text: string): PiiMatch[] {
         value: match[0],
         confidence: def.confidence,
       });
+      match = def.pattern.exec(text);
     }
   }
 

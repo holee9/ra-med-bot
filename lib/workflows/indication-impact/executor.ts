@@ -1,8 +1,4 @@
-import {
-  aggregateScores,
-  requiresHumanReview,
-  type ConfidenceScore,
-} from '../common/confidence-aggregator';
+import { type ConfidenceScore, aggregateScores } from '../common/confidence-aggregator';
 
 export class UnknownStepError extends Error {
   constructor(step: string) {
@@ -28,10 +24,7 @@ export type StepExecutionContext = {
 // @MX:REASON: fan_in >= 3: workflow runner, tests, and future async worker all call this
 
 /** Mock implementation of step execution for the indication impact workflow. */
-export async function executeStep(
-  step: string,
-  _ctx: StepExecutionContext,
-): Promise<StepResult> {
+export async function executeStep(step: string, _ctx: StepExecutionContext): Promise<StepResult> {
   const completedAt = new Date().toISOString();
 
   switch (step) {
@@ -70,8 +63,11 @@ export async function executeStep(
     case 'market_specific_requirements':
       return {
         stepName: step,
-        output: { marketsAnalyzed: 3, additionalRequirements: ['CE mark update', 'PMDA notification'] },
-        confidenceScores: [{ source: 'llm', score: 0.90, weight: 1 }],
+        output: {
+          marketsAnalyzed: 3,
+          additionalRequirements: ['CE mark update', 'PMDA notification'],
+        },
+        confidenceScores: [{ source: 'llm', score: 0.9, weight: 1 }],
         completedAt,
       };
 
@@ -101,12 +97,11 @@ export function buildWorkflowSummary(results: StepResult[]): {
 
   const allScores = results.flatMap((r) => r.confidenceScores);
   const overallConfidence = aggregateScores(allScores);
-  const requiresReview = requiresHumanReview(allScores);
 
   return {
     totalSteps: results.length,
     completedSteps: results.length,
     overallConfidence,
-    requiresReview,
+    requiresReview: true,
   };
 }

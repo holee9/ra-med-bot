@@ -24,7 +24,10 @@ export const SubmissionDrafterInputSchema = z.object({
   device_class: z.enum(['I', 'II', 'III']),
   indications_for_use: z.string().min(20).max(4000),
   target_jurisdiction: z.enum(['US_FDA', 'EU_MDR', 'KR_MFDS']),
-  predicate_k_numbers: z.array(z.string().regex(/^K\d{6}$/)).max(3).optional(),
+  predicate_k_numbers: z
+    .array(z.string().regex(/^K\d{6}$/))
+    .max(3)
+    .optional(),
   project_id: z.string().uuid(),
 });
 export type SubmissionDrafterInput = z.infer<typeof SubmissionDrafterInputSchema>;
@@ -44,7 +47,10 @@ export const IndicationImpactInputSchema = z.object({
   project_id: z.string().uuid(),
   current_indication: z.string().min(20).max(2000),
   proposed_indication: z.string().min(20).max(2000),
-  target_markets: z.array(z.enum(['US', 'EU', 'KR', 'JP', 'CN'])).min(1).max(5),
+  target_markets: z
+    .array(z.enum(['US', 'EU', 'KR', 'JP', 'CN']))
+    .min(1)
+    .max(5),
 });
 export type IndicationImpactInput = z.infer<typeof IndicationImpactInputSchema>;
 

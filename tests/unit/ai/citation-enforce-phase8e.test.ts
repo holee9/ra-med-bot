@@ -1,7 +1,7 @@
 // Phase 8E extension tests for citation-enforce.ts — [Org · Title] format recognition
 // @MX:SPEC SPEC-REGULA-DOCINGEST-001 (REQ-DOC-070)
 
-import { describe, it, expect } from 'vitest';
+import { describe, expect, it } from 'vitest';
 import { enforceCitations } from '../../../lib/ai/citation-enforce';
 
 describe('enforceCitations Phase 8E — [Org · Title] format (REQ-DOC-070)', () => {

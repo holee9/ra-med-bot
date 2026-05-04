@@ -50,7 +50,15 @@ export class SharePointSource implements IngestionSource {
     );
 
     if (!response.ok) return [];
-    const data = (await response.json()) as { value: Array<{ id: string; name: string; file?: { mimeType: string }; size: number; lastModifiedDateTime: string }> };
+    const data = (await response.json()) as {
+      value: Array<{
+        id: string;
+        name: string;
+        file?: { mimeType: string };
+        size: number;
+        lastModifiedDateTime: string;
+      }>;
+    };
 
     return (data.value ?? [])
       .filter((item) => item.file) // Only files, not folders
@@ -80,7 +88,13 @@ export class SharePointSource implements IngestionSource {
       { headers: { Authorization: `Bearer ${token}` } },
     );
     if (!response.ok) throw new Error(`Failed to get SharePoint metadata: ${externalId}`);
-    const item = (await response.json()) as { id: string; name: string; file?: { mimeType: string }; size: number; lastModifiedDateTime: string };
+    const item = (await response.json()) as {
+      id: string;
+      name: string;
+      file?: { mimeType: string };
+      size: number;
+      lastModifiedDateTime: string;
+    };
     return {
       externalId: item.id,
       name: item.name,

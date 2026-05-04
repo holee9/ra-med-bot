@@ -1,11 +1,13 @@
 // Tests for Vectorize-backed retrievers (all 5 corpora)
 // RED: verify IRetriever interface compliance and corpus identity
 
-import { describe, expect, it, vi, beforeEach } from 'vitest';
+import { beforeEach, describe, expect, it, vi } from 'vitest';
 import type { IRetriever, RetrievalResult } from '../../../../lib/ai/retrievers/types';
 
 // Minimal VectorizeIndex stub
-function makeVectorizeMock(results: Array<{ id: string; score: number; metadata?: Record<string, unknown> }>) {
+function makeVectorizeMock(
+  results: Array<{ id: string; score: number; metadata?: Record<string, unknown> }>,
+) {
   return {
     query: vi.fn().mockResolvedValue({
       matches: results.map((r) => ({
@@ -19,11 +21,31 @@ function makeVectorizeMock(results: Array<{ id: string; score: number; metadata?
 }
 
 const CORPORA = [
-  { name: 'VectorizeFdaRetriever', corpus: 'fda', path: '../../../../lib/ai/retrievers/vectorize-fda' },
-  { name: 'VectorizeEuMdrRetriever', corpus: 'eu-mdr', path: '../../../../lib/ai/retrievers/vectorize-eu-mdr' },
-  { name: 'VectorizeMfdsRetriever', corpus: 'mfds', path: '../../../../lib/ai/retrievers/vectorize-mfds' },
-  { name: 'VectorizeNmpaRetriever', corpus: 'nmpa', path: '../../../../lib/ai/retrievers/vectorize-nmpa' },
-  { name: 'VectorizePmdaRetriever', corpus: 'pmda', path: '../../../../lib/ai/retrievers/vectorize-pmda' },
+  {
+    name: 'VectorizeFdaRetriever',
+    corpus: 'fda',
+    path: '../../../../lib/ai/retrievers/vectorize-fda',
+  },
+  {
+    name: 'VectorizeEuMdrRetriever',
+    corpus: 'eu-mdr',
+    path: '../../../../lib/ai/retrievers/vectorize-eu-mdr',
+  },
+  {
+    name: 'VectorizeMfdsRetriever',
+    corpus: 'mfds',
+    path: '../../../../lib/ai/retrievers/vectorize-mfds',
+  },
+  {
+    name: 'VectorizeNmpaRetriever',
+    corpus: 'nmpa',
+    path: '../../../../lib/ai/retrievers/vectorize-nmpa',
+  },
+  {
+    name: 'VectorizePmdaRetriever',
+    corpus: 'pmda',
+    path: '../../../../lib/ai/retrievers/vectorize-pmda',
+  },
 ];
 
 for (const { name, corpus, path } of CORPORA) {

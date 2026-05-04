@@ -10,9 +10,7 @@ export class TemplateNotFoundError extends Error {
 
 export class TemplateMissingVariablesError extends Error {
   constructor(templateId: string, missing: string[]) {
-    super(
-      `Template "${templateId}" is missing required variables: ${missing.join(', ')}`,
-    );
+    super(`Template "${templateId}" is missing required variables: ${missing.join(', ')}`);
     this.name = 'TemplateMissingVariablesError';
   }
 }
@@ -28,11 +26,7 @@ const registry = new Map<string, TemplateEntry>();
  * Registers a template in the global registry.
  * Overwrites if a template with the same id already exists.
  */
-export function registerTemplate(
-  id: string,
-  content: string,
-  requiredVariables: string[],
-): void {
+export function registerTemplate(id: string, content: string, requiredVariables: string[]): void {
   registry.set(id, { content, requiredVariables });
 }
 
@@ -67,10 +61,7 @@ export function validateTemplateVariables(
  * Throws TemplateNotFoundError if templateId is not registered.
  * Throws TemplateMissingVariablesError if required variables are missing.
  */
-export function renderTemplate(
-  templateId: string,
-  variables: Record<string, unknown>,
-): string {
+export function renderTemplate(templateId: string, variables: Record<string, unknown>): string {
   // getEntry validates existence and throws TemplateNotFoundError if absent.
   const entry = registry.get(templateId);
   if (!entry) {

@@ -1,12 +1,12 @@
-import { describe, it, expect } from 'vitest';
 import {
+  type ConfidenceScore,
+  InvalidScoreError,
+  InvalidWeightError,
   aggregateScores,
   classifyConfidence,
   requiresHumanReview,
-  InvalidScoreError,
-  InvalidWeightError,
-  type ConfidenceScore,
 } from '@/lib/workflows/common/confidence-aggregator';
+import { describe, expect, it } from 'vitest';
 
 describe('confidence-aggregator', () => {
   describe('aggregateScores', () => {
@@ -25,9 +25,7 @@ describe('confidence-aggregator', () => {
     });
 
     it('handles single score correctly', () => {
-      const scores: ConfidenceScore[] = [
-        { source: 'llm-a', score: 0.75, weight: 1 },
-      ];
+      const scores: ConfidenceScore[] = [{ source: 'llm-a', score: 0.75, weight: 1 }];
       expect(aggregateScores(scores)).toBeCloseTo(0.75, 5);
     });
   });
@@ -52,23 +50,17 @@ describe('confidence-aggregator', () => {
 
   describe('requiresHumanReview', () => {
     it('returns true when aggregated score < default threshold 0.7', () => {
-      const scores: ConfidenceScore[] = [
-        { source: 'llm-a', score: 0.5, weight: 1 },
-      ];
+      const scores: ConfidenceScore[] = [{ source: 'llm-a', score: 0.5, weight: 1 }];
       expect(requiresHumanReview(scores)).toBe(true);
     });
 
     it('returns false when aggregated score >= default threshold 0.7', () => {
-      const scores: ConfidenceScore[] = [
-        { source: 'llm-a', score: 0.8, weight: 1 },
-      ];
+      const scores: ConfidenceScore[] = [{ source: 'llm-a', score: 0.8, weight: 1 }];
       expect(requiresHumanReview(scores)).toBe(false);
     });
 
     it('uses custom threshold when provided', () => {
-      const scores: ConfidenceScore[] = [
-        { source: 'llm-a', score: 0.75, weight: 1 },
-      ];
+      const scores: ConfidenceScore[] = [{ source: 'llm-a', score: 0.75, weight: 1 }];
       // 0.75 < 0.9 threshold → requires review
       expect(requiresHumanReview(scores, 0.9)).toBe(true);
       // 0.75 >= 0.5 threshold → no review needed
@@ -78,30 +70,22 @@ describe('confidence-aggregator', () => {
 
   describe('error cases', () => {
     it('throws InvalidScoreError for score > 1', () => {
-      const scores: ConfidenceScore[] = [
-        { source: 'bad', score: 1.1, weight: 1 },
-      ];
+      const scores: ConfidenceScore[] = [{ source: 'bad', score: 1.1, weight: 1 }];
       expect(() => aggregateScores(scores)).toThrow(InvalidScoreError);
     });
 
     it('throws InvalidScoreError for score < 0', () => {
-      const scores: ConfidenceScore[] = [
-        { source: 'bad', score: -0.1, weight: 1 },
-      ];
+      const scores: ConfidenceScore[] = [{ source: 'bad', score: -0.1, weight: 1 }];
       expect(() => aggregateScores(scores)).toThrow(InvalidScoreError);
     });
 
     it('throws InvalidWeightError for weight <= 0', () => {
-      const scores: ConfidenceScore[] = [
-        { source: 'bad', score: 0.5, weight: 0 },
-      ];
+      const scores: ConfidenceScore[] = [{ source: 'bad', score: 0.5, weight: 0 }];
       expect(() => aggregateScores(scores)).toThrow(InvalidWeightError);
     });
 
     it('throws InvalidWeightError for negative weight', () => {
-      const scores: ConfidenceScore[] = [
-        { source: 'bad', score: 0.5, weight: -1 },
-      ];
+      const scores: ConfidenceScore[] = [{ source: 'bad', score: 0.5, weight: -1 }];
       expect(() => aggregateScores(scores)).toThrow(InvalidWeightError);
     });
   });

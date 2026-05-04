@@ -15,6 +15,7 @@ export default defineConfig({
       'tests/unit/**/*.test.{ts,tsx}',
       'tests/integration/**/*.test.{ts,tsx}',
       'tests/regression/**/*.test.{ts,tsx}',
+      '__tests__/**/*.test.{ts,tsx}',
     ],
     exclude: ['tests/e2e/**', 'node_modules', '.next'],
     coverage: {

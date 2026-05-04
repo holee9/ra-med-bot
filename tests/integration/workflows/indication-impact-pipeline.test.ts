@@ -1,10 +1,10 @@
-import { describe, it, expect } from 'vitest';
-import { INDICATION_IMPACT_STEPS } from '../../../lib/workflows/indication-impact/steps';
+import { describe, expect, it } from 'vitest';
 import {
-  executeStep,
-  buildWorkflowSummary,
   type StepResult,
+  buildWorkflowSummary,
+  executeStep,
 } from '../../../lib/workflows/indication-impact/executor';
+import { INDICATION_IMPACT_STEPS } from '../../../lib/workflows/indication-impact/steps';
 import { IndicationImpactInputSchema } from '../../../lib/workflows/types';
 
 const BASE_CTX = {
@@ -13,8 +13,10 @@ const BASE_CTX = {
   previousResults: [] as StepResult[],
 };
 
-const VALID_INDICATION = 'For use in adult patients with Type 2 diabetes mellitus requiring glucose monitoring.';
-const VALID_PROPOSED = 'For use in adult and pediatric patients with diabetes mellitus requiring continuous glucose monitoring.';
+const VALID_INDICATION =
+  'For use in adult patients with Type 2 diabetes mellitus requiring glucose monitoring.';
+const VALID_PROPOSED =
+  'For use in adult and pediatric patients with diabetes mellitus requiring continuous glucose monitoring.';
 
 describe('Indication Impact — full pipeline integration', () => {
   it('executes all 6 steps in sequence', async () => {

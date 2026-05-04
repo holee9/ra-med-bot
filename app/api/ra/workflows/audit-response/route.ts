@@ -1,6 +1,9 @@
+import { writeAudit } from '@/lib/audit';
+import { withPermission } from '@/lib/auth/with-permission';
+import type { AuthSession } from '@/lib/auth/with-permission';
 import { AuditResponseInputSchema } from '@/lib/workflows/types';
 
-export async function POST(request: Request): Promise<Response> {
+async function postAuditResponse(request: Request, session: AuthSession): Promise<Response> {
   let body: unknown;
   try {
     body = await request.json();
@@ -17,9 +20,20 @@ export async function POST(request: Request): Promise<Response> {
   }
 
   const data = result.data;
+  const runId = crypto.randomUUID();
+  await writeAudit({
+    actor_id: session.user.id,
+    action: 'workflow.start',
+    resource_type: 'workflow',
+    resource_id: runId,
+    meta_json: { workflowType: 'audit_response' },
+  });
+
   return Response.json(
     {
-      workflowRunId: crypto.randomUUID(),
+      runId,
+      workflowRunId: runId,
+      streamEventsUrl: `/api/ra/workflows/audit-response/${runId}/events`,
       workflowType: 'audit_response',
       status: 'queued',
       message: 'Audit Response Drafter workflow queued',
@@ -29,3 +43,7 @@ export async function POST(request: Request): Promise<Response> {
     { status: 202 },
   );
 }
+
+export const POST = withPermission('consult.create', async (request, _ctx, session) =>
+  postAuditResponse(request, session),
+);

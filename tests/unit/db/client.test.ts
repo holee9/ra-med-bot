@@ -1,4 +1,4 @@
-import { describe, it, expect, vi, beforeEach } from 'vitest';
+import { beforeEach, describe, expect, it, vi } from 'vitest';
 
 // Mock the entire client module to avoid env parsing
 vi.mock('../../../lib/db/client', () => {
@@ -9,7 +9,7 @@ vi.mock('../../../lib/db/client', () => {
 
   const mockDb = {
     transaction: vi.fn().mockImplementation(async (fn: (tx: typeof mockTx) => Promise<unknown>) => {
-      await mockTx.execute('SET LOCAL app.current_org_id = \'test\'');
+      await mockTx.execute("SET LOCAL app.current_org_id = 'test'");
       return fn(mockTx);
     }),
   };

@@ -21,6 +21,7 @@ import { enforceCitations } from './citation-enforce';
 import { calculateConfidence, getConfidenceLevel } from './confidence';
 import { shouldAutoFlag } from './expert-review-gating';
 import { enqueueExpertReview } from './expert-review-queue';
+import { enrichWithExternalData } from './external-enrichment';
 import { classifyIntent } from './intent';
 import { parallelRetrieveAndMerge } from './merge';
 import { persistMessage } from './persistence';
@@ -83,6 +84,10 @@ export async function* consult(
   if (intentElapsed < TRACE_MIN_DELAY_MS) await sleep(TRACE_MIN_DELAY_MS - intentElapsed);
 
   yield* emit({ type: 'trace', step: '질의 유형 분류 중', status: 'done' });
+
+  // External enrichment: run in parallel with subsequent stages, graceful degrade.
+  // REQ-EXT-003, REQ-EXT-006, REQ-EXT-010
+  const externalCitationsPromise = enrichWithExternalData(intent, input.question);
 
   // ---- Stage 2: Query rewrite ----
   if (signal?.aborted) return;
@@ -270,7 +275,12 @@ export async function* consult(
   }));
   sourceItems.sort((a, b) => a.citeIndex - b.citeIndex);
 
-  yield* emit({ type: 'sources', items: sourceItems });
+  // Await external citations enrichment and append to source items (REQ-EXT-003, 006, 010).
+  // Errors already swallowed inside enrichWithExternalData — safe to await here.
+  const externalCitations = await externalCitationsPromise;
+  const allSourceItems = [...sourceItems, ...externalCitations];
+
+  yield* emit({ type: 'sources', items: allSourceItems });
 
   // ---- Phase C: structured blocks (REQ-STRUCT-002, REQ-STRUCT-003) ----
   // prose_done flag guards against OrderViolationError — structured events
