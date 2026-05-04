@@ -103,6 +103,6 @@ export function buildWorkflowSummary(results: StepResult[]): {
     totalSteps: results.length,
     completedSteps: results.length,
     overallConfidence,
-    requiresReview: overallConfidence < 0.7,
+    requiresReview: true,
   };
 }
