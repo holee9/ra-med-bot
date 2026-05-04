@@ -2,8 +2,8 @@
 // @MX:REASON fan_in >= 3: withDocumentPermission HOF, default-policies seeder, and ACL tests all call this.
 // @MX:SPEC SPEC-REGULA-DOCINGEST-001 (REQ-DOC-8B-1)
 
-import { DocClass } from '@/lib/ingest/doc-class';
 import type { Role } from '@/lib/auth/rbac';
+import { DocClass } from '@/lib/ingest/doc-class';
 
 export type DocumentAction = 'read' | 'write' | 'admin';
 

@@ -24,7 +24,14 @@ export const chunkCerMeddev: ChunkerFn = (text, _metadata): Chunk[] => {
   const flush = (section: string, content: string) => {
     if (!content.trim()) return;
     for (const sub of splitByTokens(content, MAX_CHUNK_TOKENS, OVERLAP_TOKENS)) {
-      chunks.push({ text: sub, metadata: { docClass: DocClass.clinical_report, sectionPath: section, tokenCount: countTokens(sub) } });
+      chunks.push({
+        text: sub,
+        metadata: {
+          docClass: DocClass.clinical_report,
+          sectionPath: section,
+          tokenCount: countTokens(sub),
+        },
+      });
     }
   };
 
@@ -41,7 +48,14 @@ export const chunkCerMeddev: ChunkerFn = (text, _metadata): Chunk[] => {
 
   if (chunks.length === 0) {
     for (const sub of splitByTokens(text, MAX_CHUNK_TOKENS, OVERLAP_TOKENS)) {
-      chunks.push({ text: sub, metadata: { docClass: DocClass.clinical_report, sectionPath: 'Generic', tokenCount: countTokens(sub) } });
+      chunks.push({
+        text: sub,
+        metadata: {
+          docClass: DocClass.clinical_report,
+          sectionPath: 'Generic',
+          tokenCount: countTokens(sub),
+        },
+      });
     }
   }
   return chunks;

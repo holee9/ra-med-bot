@@ -1,8 +1,8 @@
 // RED Phase: Tests for lib/audit.ts extension (document audit actions)
 // SPEC-REGULA-DOCINGEST-001 REQ-DOC-8A-7
 
-import { describe, expect, it } from 'vitest';
 import type { AuditAction } from '@/lib/audit';
+import { describe, expect, it } from 'vitest';
 
 describe('AuditAction type includes document actions', () => {
   // These tests verify that the AuditAction union type includes

@@ -1,6 +1,6 @@
-import { describe, it, expect } from 'vitest';
-import { POST } from '@/app/api/ra/workflows/indication-impact/route';
 import { GET } from '@/app/api/ra/workflows/indication-impact/[runId]/status/route';
+import { POST } from '@/app/api/ra/workflows/indication-impact/route';
+import { describe, expect, it } from 'vitest';
 
 const VALID_UUID = '123e4567-e89b-12d3-a456-426614174000';
 const VALID_PROJECT_ID = '550e8400-e29b-41d4-a716-446655440000';
@@ -29,9 +29,7 @@ describe('POST /api/ra/workflows/indication-impact', () => {
     expect(json.workflowType).toBe('indication_impact');
     expect(json.status).toBe('queued');
     expect(typeof json.runId).toBe('string');
-    expect(json.runId).toMatch(
-      /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i,
-    );
+    expect(json.runId).toMatch(/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i);
     expect(json.workflowRunId).toBe(json.runId);
     expect(json.streamEventsUrl).toBe(`/api/ra/workflows/indication-impact/${json.runId}/events`);
     expect(json.queuedAt).toBeDefined();
@@ -117,9 +115,7 @@ describe('GET /api/ra/workflows/indication-impact/[runId]/status', () => {
   });
 
   it('returns 400 for runId with invalid format (too short)', async () => {
-    const req = new Request(
-      'http://localhost/api/ra/workflows/indication-impact/12345/status',
-    );
+    const req = new Request('http://localhost/api/ra/workflows/indication-impact/12345/status');
     const params = Promise.resolve({ runId: '12345' });
 
     const res = await GET(req, { params });

@@ -1,11 +1,11 @@
-import { describe, it, expect } from 'vitest';
+import { describe, expect, it } from 'vitest';
 import {
   MAX_CHUNK_TOKENS,
-  OVERLAP_TOKENS,
   MIN_CHUNK_TOKENS,
+  OVERLAP_TOKENS,
   countTokens,
-  splitByTokens,
   generateChunkMetadata,
+  splitByTokens,
 } from '../../../../lib/ingest/chunkers/base';
 import { DocClass } from '../../../../lib/ingest/doc-class';
 
@@ -56,7 +56,10 @@ describe('splitByTokens', () => {
 
   it('long text is split into multiple chunks', () => {
     // Generate text that exceeds max tokens
-    const longText = Array.from({ length: 100 }, (_, i) => `Sentence number ${i} with some medical regulatory content.`).join(' ');
+    const longText = Array.from(
+      { length: 100 },
+      (_, i) => `Sentence number ${i} with some medical regulatory content.`,
+    ).join(' ');
     const result = splitByTokens(longText, 50, 10);
     expect(result.length).toBeGreaterThan(1);
   });

@@ -1,11 +1,17 @@
-import { describe, it, expect } from 'vitest';
-import { SUBMISSION_DRAFTER_STEPS, getNextStep } from '../../../lib/workflows/submission-drafter/steps';
+import { describe, expect, it } from 'vitest';
 import {
-  executeStep,
-  buildWorkflowSummary,
+  aggregateScores,
+  requiresHumanReview,
+} from '../../../lib/workflows/common/confidence-aggregator';
+import {
   type StepResult,
+  buildWorkflowSummary,
+  executeStep,
 } from '../../../lib/workflows/submission-drafter/executor';
-import { aggregateScores, requiresHumanReview } from '../../../lib/workflows/common/confidence-aggregator';
+import {
+  SUBMISSION_DRAFTER_STEPS,
+  getNextStep,
+} from '../../../lib/workflows/submission-drafter/steps';
 import { SubmissionDrafterInputSchema } from '../../../lib/workflows/types';
 
 const BASE_CTX = {

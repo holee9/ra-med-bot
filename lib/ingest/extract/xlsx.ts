@@ -2,17 +2,35 @@
 // @MX:SPEC SPEC-REGULA-DOCINGEST-001 (REQ-DOC-020)
 import { ExtractError } from './pdf';
 
+type ExcelModule = {
+  Workbook: new () => WorkbookLike;
+};
+
+type WorkbookLike = {
+  xlsx: {
+    load(buffer: Buffer): Promise<void>;
+  };
+  eachSheet(callback: (sheet: WorksheetLike) => void): void;
+};
+
+type WorksheetLike = {
+  eachRow(callback: (row: RowLike) => void): void;
+};
+
+type RowLike = {
+  eachCell(callback: (cell: { value: unknown }) => void): void;
+};
+
 /**
  * Extract text content from an XLSX buffer.
  * Joins all cell values with newlines.
  * Throws ExtractError for corrupted or unreadable files.
  */
 export async function extractXlsx(buffer: Buffer): Promise<string> {
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  let ExcelJS: any;
+  let ExcelJS: ExcelModule;
   try {
     // @ts-expect-error - exceljs is an optional runtime dependency
-    ExcelJS = await import('exceljs');
+    ExcelJS = (await import('exceljs')) as ExcelModule;
   } catch {
     throw new ExtractError('exceljs package not available');
   }
@@ -25,13 +43,10 @@ export async function extractXlsx(buffer: Buffer): Promise<string> {
   }
 
   const lines: string[] = [];
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  workbook.eachSheet((sheet: any) => {
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    sheet.eachRow((row: any) => {
+  workbook.eachSheet((sheet) => {
+    sheet.eachRow((row) => {
       const cells: string[] = [];
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      row.eachCell((cell: any) => {
+      row.eachCell((cell) => {
         const val = cell.value;
         if (val !== null && val !== undefined) {
           cells.push(String(val));

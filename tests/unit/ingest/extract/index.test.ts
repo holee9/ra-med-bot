@@ -1,4 +1,4 @@
-import { describe, it, expect, vi, beforeEach } from 'vitest';
+import { beforeEach, describe, expect, it, vi } from 'vitest';
 
 // Mock pdf-parse first to avoid import errors
 vi.mock('pdf-parse', () => ({
@@ -51,9 +51,7 @@ describe('extractText (MIME dispatcher)', () => {
   });
 
   it('throws for unsupported MIME type', async () => {
-    await expect(
-      extractText(Buffer.from('data'), 'text/html'),
-    ).rejects.toThrow();
+    await expect(extractText(Buffer.from('data'), 'text/html')).rejects.toThrow();
   });
 
   it('unsupported MIME error message contains unsupported or 415', async () => {
@@ -67,8 +65,6 @@ describe('extractText (MIME dispatcher)', () => {
   });
 
   it('throws for empty MIME type', async () => {
-    await expect(
-      extractText(Buffer.from('data'), ''),
-    ).rejects.toThrow();
+    await expect(extractText(Buffer.from('data'), '')).rejects.toThrow();
   });
 });

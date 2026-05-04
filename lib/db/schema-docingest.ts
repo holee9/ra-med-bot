@@ -26,7 +26,7 @@ import {
   uuid,
 } from 'drizzle-orm/pg-core';
 
-import { organizations, users, userRoleEnum } from './schema';
+import { organizations, userRoleEnum, users } from './schema';
 
 // ---------------------------------------------------------------------------
 // pgvector custom type — 1536-dim for OpenAI text-embedding-3-small
@@ -114,7 +114,9 @@ export const organizationDocuments = pgTable(
     supersedesDocId: uuid('supersedes_doc_id'),
     projectId: uuid('project_id'),
     uploadedBy: uuid('uploaded_by').references(() => users.id),
-    uploadedAt: timestamp('uploaded_at', { withTimezone: true, mode: 'date' }).notNull().defaultNow(),
+    uploadedAt: timestamp('uploaded_at', { withTimezone: true, mode: 'date' })
+      .notNull()
+      .defaultNow(),
     indexedAt: timestamp('indexed_at', { withTimezone: true, mode: 'date' }),
     createdAt: timestamp('created_at', { withTimezone: true, mode: 'date' }).notNull().defaultNow(),
     updatedAt: timestamp('updated_at', { withTimezone: true, mode: 'date' }).notNull().defaultNow(),

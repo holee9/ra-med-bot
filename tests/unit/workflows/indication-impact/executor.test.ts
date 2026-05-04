@@ -1,10 +1,10 @@
-import { describe, it, expect } from 'vitest';
 import {
-  executeStep,
-  buildWorkflowSummary,
-  UnknownStepError,
   type StepResult,
+  UnknownStepError,
+  buildWorkflowSummary,
+  executeStep,
 } from '@/lib/workflows/indication-impact/executor';
+import { describe, expect, it } from 'vitest';
 
 describe('indication-impact/executor', () => {
   describe('executeStep', () => {
@@ -71,7 +71,7 @@ describe('indication-impact/executor', () => {
         makeResult('regulatory_pathway_assessment', 0.84),
         makeResult('predicate_impact_analysis', 0.79),
         makeResult('clinical_data_gap_analysis', 0.83),
-        makeResult('market_specific_requirements', 0.90),
+        makeResult('market_specific_requirements', 0.9),
         makeResult('impact_report_generation', 0.93),
       ];
 
@@ -79,7 +79,7 @@ describe('indication-impact/executor', () => {
 
       expect(summary.totalSteps).toBe(6);
       expect(summary.completedSteps).toBe(6);
-      const expected = (0.88 + 0.84 + 0.79 + 0.83 + 0.90 + 0.93) / 6;
+      const expected = (0.88 + 0.84 + 0.79 + 0.83 + 0.9 + 0.93) / 6;
       expect(summary.overallConfidence).toBeCloseTo(expected, 5);
     });
 

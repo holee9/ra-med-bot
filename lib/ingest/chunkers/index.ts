@@ -3,16 +3,16 @@
 // @MX:SPEC SPEC-REGULA-DOCINGEST-001 (REQ-DOC-054)
 import { DocClass } from '../doc-class';
 import type { Chunk, ChunkerFn } from './base';
-import { chunk510k } from './submission-510k';
 import { chunkCerMeddev } from './cer-meddev';
-import { chunkSopIso13485 } from './sop-iso13485';
 import { chunkCertificate } from './certificate';
+import { chunkChecklistTemplate } from './checklist-template';
 import { chunkFda483Response } from './fda-483-response';
 import { makeGenericChunker } from './generic';
+import { chunkPmsPsur } from './pms-psur';
+import { chunkSopIso13485 } from './sop-iso13485';
+import { chunk510k } from './submission-510k';
 import { chunkSubmissionEuMdr } from './submission-eu-mdr';
 import { chunkSubmissionInprogress } from './submission-mfds';
-import { chunkChecklistTemplate } from './checklist-template';
-import { chunkPmsPsur } from './pms-psur';
 
 /** Registry mapping each DocClass to its specialized chunker function. */
 export const chunkerRegistry: Record<DocClass, ChunkerFn> = {

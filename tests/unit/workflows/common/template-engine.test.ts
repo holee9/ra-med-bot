@@ -1,21 +1,20 @@
-import { describe, it, expect, beforeEach } from 'vitest';
 import {
+  TemplateMissingVariablesError,
+  TemplateNotFoundError,
+  getRegisteredTemplates,
+  registerTemplate,
   renderTemplate,
   validateTemplateVariables,
-  registerTemplate,
-  getRegisteredTemplates,
-  TemplateNotFoundError,
-  TemplateMissingVariablesError,
 } from '@/lib/workflows/common/template-engine';
+import { beforeEach, describe, expect, it } from 'vitest';
 
 describe('template-engine', () => {
   beforeEach(() => {
     // Register a known template before each test
-    registerTemplate(
-      'test-template',
-      'Hello {{name}}, your device class is {{device_class}}.',
-      ['name', 'device_class'],
-    );
+    registerTemplate('test-template', 'Hello {{name}}, your device class is {{device_class}}.', [
+      'name',
+      'device_class',
+    ]);
   });
 
   describe('renderTemplate', () => {
@@ -35,9 +34,7 @@ describe('template-engine', () => {
     });
 
     it('throws TemplateNotFoundError for unknown template', () => {
-      expect(() => renderTemplate('nonexistent-template', {})).toThrow(
-        TemplateNotFoundError,
-      );
+      expect(() => renderTemplate('nonexistent-template', {})).toThrow(TemplateNotFoundError);
     });
   });
 

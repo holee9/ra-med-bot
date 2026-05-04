@@ -1,10 +1,10 @@
-import { describe, it, expect } from 'vitest';
 import {
   AUDIT_RESPONSE_STEPS,
+  getNextStep,
   getStepIndex,
   isValidStep,
-  getNextStep,
 } from '@/lib/workflows/audit-response/steps';
+import { describe, expect, it } from 'vitest';
 
 describe('audit-response/steps', () => {
   describe('AUDIT_RESPONSE_STEPS', () => {

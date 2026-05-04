@@ -1,18 +1,24 @@
+import { auth } from '@/lib/auth';
+import type { DocClass } from '@/lib/ingest/doc-class';
+import { docClassLabels } from '@/lib/ingest/doc-class-labels';
 // @MX:NOTE [AUTO] Admin document upload page — R2 presigned URL flow with DocClass selection.
 // @MX:SPEC SPEC-REGULA-DOCINGEST-001 (REQ-DOC-073)
 import { redirect } from 'next/navigation';
-import { auth } from '@/lib/auth';
-import { docClassLabels } from '@/lib/ingest/doc-class-labels';
-import type { DocClass } from '@/lib/ingest/doc-class';
 
 export default async function AdminDocumentUploadPage() {
   const session = await auth();
 
-  if (!session?.user || !['admin', 'ra-lead'].includes((session.user as { role?: string }).role ?? '')) {
+  if (
+    !session?.user ||
+    !['admin', 'ra-lead'].includes((session.user as { role?: string }).role ?? '')
+  ) {
     redirect('/403');
   }
 
-  const docClassOptions = Object.entries(docClassLabels) as [DocClass, { ko: string; en: string }][];
+  const docClassOptions = Object.entries(docClassLabels) as [
+    DocClass,
+    { ko: string; en: string },
+  ][];
 
   return (
     <div className="mx-auto max-w-2xl px-6 py-8">
@@ -57,7 +63,13 @@ export default async function AdminDocumentUploadPage() {
                   className="relative cursor-pointer rounded-md font-medium text-primary hover:text-primary/80"
                 >
                   <span>파일 선택</span>
-                  <input id="file" name="file" type="file" className="sr-only" accept=".pdf,.docx,.xlsx" />
+                  <input
+                    id="file"
+                    name="file"
+                    type="file"
+                    className="sr-only"
+                    accept=".pdf,.docx,.xlsx"
+                  />
                 </label>
                 <p className="pl-1">또는 드래그 앤 드롭</p>
               </div>

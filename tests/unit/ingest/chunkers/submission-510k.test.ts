@@ -1,5 +1,5 @@
-import { describe, it, expect } from 'vitest';
-import { chunk510k, FDA_510K_SECTIONS } from '../../../../lib/ingest/chunkers/submission-510k';
+import { describe, expect, it } from 'vitest';
+import { FDA_510K_SECTIONS, chunk510k } from '../../../../lib/ingest/chunkers/submission-510k';
 import { DocClass } from '../../../../lib/ingest/doc-class';
 
 const SAMPLE_510K = `
@@ -71,9 +71,7 @@ describe('chunk510k', () => {
     const chunks = chunk510k(SAMPLE_510K, {});
     const sectionPaths = chunks.map((c) => c.metadata.sectionPath);
     // Should detect at least some of the 13 known sections
-    const knownSections = sectionPaths.filter((p) =>
-      FDA_510K_SECTIONS.some((s) => p.includes(s)),
-    );
+    const knownSections = sectionPaths.filter((p) => FDA_510K_SECTIONS.some((s) => p.includes(s)));
     expect(knownSections.length).toBeGreaterThan(0);
   });
 

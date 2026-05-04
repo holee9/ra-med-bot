@@ -1,5 +1,5 @@
-import { describe, it, expect, beforeEach } from 'vitest';
-import { ReviewQueue, type ReviewItem } from '@/lib/workflows/common/review-queue';
+import { type ReviewItem, ReviewQueue } from '@/lib/workflows/common/review-queue';
+import { beforeEach, describe, expect, it } from 'vitest';
 
 describe('ReviewQueue', () => {
   let queue: ReviewQueue;
@@ -8,9 +8,7 @@ describe('ReviewQueue', () => {
     queue = new ReviewQueue();
   });
 
-  const makeItem = (
-    overrides: Partial<Omit<ReviewItem, 'id'>> = {},
-  ): Omit<ReviewItem, 'id'> => ({
+  const makeItem = (overrides: Partial<Omit<ReviewItem, 'id'>> = {}): Omit<ReviewItem, 'id'> => ({
     workflowRunId: '550e8400-e29b-41d4-a716-446655440000',
     workflowType: 'submission_drafter',
     priority: 'normal',
@@ -71,10 +69,10 @@ describe('ReviewQueue', () => {
       queue.enqueue(makeItem({ priority: 'high' }));
 
       const sorted = queue.listByPriority();
-      expect(sorted[0]!.priority).toBe('urgent');
-      expect(sorted[1]!.priority).toBe('high');
-      expect(sorted[2]!.priority).toBe('normal');
-      expect(sorted[3]!.priority).toBe('low');
+      expect(sorted[0]?.priority).toBe('urgent');
+      expect(sorted[1]?.priority).toBe('high');
+      expect(sorted[2]?.priority).toBe('normal');
+      expect(sorted[3]?.priority).toBe('low');
     });
   });
 
@@ -89,7 +87,9 @@ describe('ReviewQueue', () => {
 
       const result = queue.listByWorkflowRun(run1);
       expect(result).toHaveLength(2);
-      result.forEach((item) => expect(item.workflowRunId).toBe(run1));
+      for (const item of result) {
+        expect(item.workflowRunId).toBe(run1);
+      }
     });
 
     it('returns empty array when no items match', () => {

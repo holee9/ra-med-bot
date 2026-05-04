@@ -1,4 +1,4 @@
-import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
 describe('detectPiiPresidio', () => {
   beforeEach(() => {
@@ -6,11 +6,11 @@ describe('detectPiiPresidio', () => {
   });
 
   afterEach(() => {
-    delete process.env.PRESIDIO_URL;
+    Reflect.deleteProperty(process.env, 'PRESIDIO_URL');
   });
 
   it('returns empty array when PRESIDIO_URL is not set (CI safe)', async () => {
-    delete process.env.PRESIDIO_URL;
+    Reflect.deleteProperty(process.env, 'PRESIDIO_URL');
     const { detectPiiPresidio } = await import('../../../../lib/ingest/pii/presidio');
     const result = await detectPiiPresidio('Patient SSN 123-45-6789');
     expect(result).toEqual([]);
@@ -19,13 +19,17 @@ describe('detectPiiPresidio', () => {
   it('returns PIISpan array from Presidio response', async () => {
     process.env.PRESIDIO_URL = 'http://localhost:5002';
 
-    vi.stubGlobal('fetch', vi.fn().mockResolvedValue({
-      ok: true,
-      json: () => Promise.resolve([
-        { entity_type: 'PERSON', start: 0, end: 7, score: 0.85 },
-        { entity_type: 'US_SSN', start: 15, end: 26, score: 0.99 },
-      ]),
-    }));
+    vi.stubGlobal(
+      'fetch',
+      vi.fn().mockResolvedValue({
+        ok: true,
+        json: () =>
+          Promise.resolve([
+            { entity_type: 'PERSON', start: 0, end: 7, score: 0.85 },
+            { entity_type: 'US_SSN', start: 15, end: 26, score: 0.99 },
+          ]),
+      }),
+    );
 
     const { detectPiiPresidio } = await import('../../../../lib/ingest/pii/presidio');
     const result = await detectPiiPresidio('Patient with SSN 123-45-6789');
@@ -43,10 +47,13 @@ describe('detectPiiPresidio', () => {
   it('returns empty array on HTTP error (graceful degradation)', async () => {
     process.env.PRESIDIO_URL = 'http://localhost:5002';
 
-    vi.stubGlobal('fetch', vi.fn().mockResolvedValue({
-      ok: false,
-      status: 503,
-    }));
+    vi.stubGlobal(
+      'fetch',
+      vi.fn().mockResolvedValue({
+        ok: false,
+        status: 503,
+      }),
+    );
 
     const { detectPiiPresidio } = await import('../../../../lib/ingest/pii/presidio');
     const result = await detectPiiPresidio('Some text');

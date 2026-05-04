@@ -9,7 +9,9 @@ export class DropboxSource implements IngestionSource {
     const clientSecret = process.env.DROPBOX_CLIENT_SECRET;
 
     if (!refreshToken || !clientId || !clientSecret) {
-      throw new Error('DROPBOX_REFRESH_TOKEN, DROPBOX_CLIENT_ID, DROPBOX_CLIENT_SECRET must be set');
+      throw new Error(
+        'DROPBOX_REFRESH_TOKEN, DROPBOX_CLIENT_ID, DROPBOX_CLIENT_SECRET must be set',
+      );
     }
 
     const response = await fetch('https://api.dropboxapi.com/oauth2/token', {
@@ -41,7 +43,15 @@ export class DropboxSource implements IngestionSource {
     });
 
     if (!response.ok) return [];
-    const data = (await response.json()) as { entries: Array<{ '.tag': string; id: string; name: string; server_modified: string; size: number }> };
+    const data = (await response.json()) as {
+      entries: Array<{
+        '.tag': string;
+        id: string;
+        name: string;
+        server_modified: string;
+        size: number;
+      }>;
+    };
 
     return (data.entries ?? [])
       .filter((e) => e['.tag'] === 'file' && new Date(e.server_modified) >= since)
@@ -78,7 +88,12 @@ export class DropboxSource implements IngestionSource {
       body: JSON.stringify({ path: externalId }),
     });
     if (!response.ok) throw new Error(`Failed to get Dropbox metadata: ${externalId}`);
-    const item = (await response.json()) as { id: string; name: string; server_modified: string; size: number };
+    const item = (await response.json()) as {
+      id: string;
+      name: string;
+      server_modified: string;
+      size: number;
+    };
     return {
       externalId: item.id,
       name: item.name,

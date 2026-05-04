@@ -1,10 +1,10 @@
-import { describe, it, expect } from 'vitest';
 import {
-  executeStep,
-  buildWorkflowSummary,
-  UnknownStepError,
   type StepResult,
+  UnknownStepError,
+  buildWorkflowSummary,
+  executeStep,
 } from '@/lib/workflows/audit-response/executor';
+import { describe, expect, it } from 'vitest';
 
 describe('audit-response/executor', () => {
   describe('executeStep', () => {

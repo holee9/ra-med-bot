@@ -7,9 +7,7 @@ export default {
       wrapper: 'cloudflare-node',
       converter: 'edge',
       incrementalCache: async () => {
-        const { R2IncrementalCache } = await import(
-          '@opennextjs/cloudflare/kv-cache'
-        );
+        const { R2IncrementalCache } = await import('@opennextjs/cloudflare/kv-cache');
         return new R2IncrementalCache({ bucketBinding: 'OPENNEXT_CACHE' });
       },
     },

@@ -42,13 +42,21 @@ export class GoogleDriveSource implements IngestionSource {
     );
 
     if (!response.ok) return [];
-    const data = (await response.json()) as { files: Array<{ id: string; name: string; mimeType: string; size: string; modifiedTime: string }> };
+    const data = (await response.json()) as {
+      files: Array<{
+        id: string;
+        name: string;
+        mimeType: string;
+        size: string;
+        modifiedTime: string;
+      }>;
+    };
 
     return (data.files ?? []).map((f) => ({
       externalId: f.id,
       name: f.name,
       mimeType: f.mimeType,
-      size: parseInt(f.size ?? '0', 10),
+      size: Number.parseInt(f.size ?? '0', 10),
       modifiedAt: new Date(f.modifiedTime),
     }));
   }
@@ -70,12 +78,18 @@ export class GoogleDriveSource implements IngestionSource {
       { headers: { Authorization: `Bearer ${token}` } },
     );
     if (!response.ok) throw new Error(`Failed to get Drive metadata: ${externalId}`);
-    const f = (await response.json()) as { id: string; name: string; mimeType: string; size: string; modifiedTime: string };
+    const f = (await response.json()) as {
+      id: string;
+      name: string;
+      mimeType: string;
+      size: string;
+      modifiedTime: string;
+    };
     return {
       externalId: f.id,
       name: f.name,
       mimeType: f.mimeType,
-      size: parseInt(f.size ?? '0', 10),
+      size: Number.parseInt(f.size ?? '0', 10),
       modifiedAt: new Date(f.modifiedTime),
       source: 'google_drive',
     };

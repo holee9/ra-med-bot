@@ -1,9 +1,9 @@
 // RED Phase: Tests for lib/acl/default-policies.ts
 // SPEC-REGULA-DOCINGEST-001 REQ-DOC-8B-2
 
-import { describe, expect, it } from 'vitest';
-import { DocClass } from '@/lib/ingest/doc-class';
 import { DEFAULT_DOCUMENT_POLICIES } from '@/lib/acl/default-policies';
+import { DocClass } from '@/lib/ingest/doc-class';
+import { describe, expect, it } from 'vitest';
 
 describe('DEFAULT_DOCUMENT_POLICIES', () => {
   it('should be a non-empty array', () => {

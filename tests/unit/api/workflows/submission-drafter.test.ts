@@ -1,6 +1,6 @@
-import { describe, it, expect } from 'vitest';
-import { POST } from '@/app/api/ra/workflows/submission-drafter/route';
 import { GET } from '@/app/api/ra/workflows/submission-drafter/[runId]/status/route';
+import { POST } from '@/app/api/ra/workflows/submission-drafter/route';
+import { describe, expect, it } from 'vitest';
 
 const VALID_UUID = '123e4567-e89b-12d3-a456-426614174000';
 const VALID_PROJECT_ID = '550e8400-e29b-41d4-a716-446655440000';
@@ -29,9 +29,7 @@ describe('POST /api/ra/workflows/submission-drafter', () => {
     expect(json.workflowType).toBe('submission_drafter');
     expect(json.status).toBe('queued');
     expect(typeof json.runId).toBe('string');
-    expect(json.runId).toMatch(
-      /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i,
-    );
+    expect(json.runId).toMatch(/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i);
     expect(json.workflowRunId).toBe(json.runId);
     expect(json.streamEventsUrl).toBe(`/api/ra/workflows/submission-drafter/${json.runId}/events`);
     expect(json.queuedAt).toBeDefined();
@@ -39,9 +37,7 @@ describe('POST /api/ra/workflows/submission-drafter', () => {
   });
 
   it('returns 400 for missing required field (product_name)', async () => {
-    const body = { ...validBody };
-    // @ts-expect-error: deliberately omit required field for test
-    delete body.product_name;
+    const { product_name: _productName, ...body } = validBody;
 
     const req = new Request('http://localhost/api/ra/workflows/submission-drafter', {
       method: 'POST',
@@ -116,9 +112,7 @@ describe('GET /api/ra/workflows/submission-drafter/[runId]/status', () => {
   });
 
   it('returns 400 for runId with invalid format (too short)', async () => {
-    const req = new Request(
-      'http://localhost/api/ra/workflows/submission-drafter/12345/status',
-    );
+    const req = new Request('http://localhost/api/ra/workflows/submission-drafter/12345/status');
     const params = Promise.resolve({ runId: '12345' });
 
     const res = await GET(req, { params });

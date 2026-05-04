@@ -19,9 +19,7 @@ describe('DocIngest migration/schema alignment', () => {
     const sql = readText('migrations/0017_docingest_schema_fix.sql');
 
     expect(sql).toMatch(/DROP INDEX IF EXISTS uq_org_docs_sha256/i);
-    expect(sql).toMatch(
-      /ADD CONSTRAINT uq_org_docs_sha256 UNIQUE \(org_id, file_hash_sha256\)/i,
-    );
+    expect(sql).toMatch(/ADD CONSTRAINT uq_org_docs_sha256 UNIQUE \(org_id, file_hash_sha256\)/i);
   });
 
   it('schema.ts auditActionEnum includes the six DocIngest audit actions', () => {

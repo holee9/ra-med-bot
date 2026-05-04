@@ -42,12 +42,16 @@ export function withWorkflowReview<T>(
       }
     }
 
-    const ctx: WorkflowReviewContext = {
-      workflowRunId: req.headers.get('x-workflow-run-id')!,
-      userId: req.headers.get('x-user-id')!,
-      role: req.headers.get('x-user-role')!,
-      organizationId: req.headers.get('x-organization-id')!,
-    };
+    const workflowRunId = req.headers.get('x-workflow-run-id');
+    const userId = req.headers.get('x-user-id');
+    const role = req.headers.get('x-user-role');
+    const organizationId = req.headers.get('x-organization-id');
+
+    if (!workflowRunId || !userId || !role || !organizationId) {
+      return Response.json({ error: 'Missing required workflow context headers' }, { status: 400 });
+    }
+
+    const ctx: WorkflowReviewContext = { workflowRunId, userId, role, organizationId };
 
     const result = await handler(ctx, req);
     return Response.json(result);

@@ -1,4 +1,4 @@
-import { describe, it, expect, vi, beforeEach } from 'vitest';
+import { beforeEach, describe, expect, it, vi } from 'vitest';
 
 // Mock OpenAI — returns embeddings matching the input batch size
 vi.mock('openai', () => ({
@@ -28,9 +28,9 @@ describe('embedChunks', () => {
   });
 
   it('throws when text contains SSN pattern (PII guard)', async () => {
-    await expect(
-      embedChunks(['Patient SSN is 123-45-6789 for this record']),
-    ).rejects.toThrow(/PII|SSN/i);
+    await expect(embedChunks(['Patient SSN is 123-45-6789 for this record'])).rejects.toThrow(
+      /PII|SSN/i,
+    );
   });
 
   it('throws when text contains email-like PII pattern', async () => {
@@ -53,7 +53,7 @@ describe('embedChunks', () => {
   it('each embedding is an array of numbers', async () => {
     const result = await embedChunks(['Test regulatory content']);
     expect(Array.isArray(result[0])).toBe(true);
-    for (const val of result[0]!) {
+    for (const val of result[0] ?? []) {
       expect(typeof val).toBe('number');
     }
   });

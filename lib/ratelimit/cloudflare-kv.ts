@@ -29,10 +29,7 @@ export interface KVRateLimiter {
  * @param kv - The RATELIMIT_KV namespace binding from CloudflareEnv
  * @param opts - Rate limit options (limit + windowSeconds)
  */
-export function createKVRateLimiter(
-  kv: KVNamespace,
-  opts: KVRateLimiterOptions,
-): KVRateLimiter {
+export function createKVRateLimiter(kv: KVNamespace, opts: KVRateLimiterOptions): KVRateLimiter {
   const { limit, windowSeconds } = opts;
 
   return {

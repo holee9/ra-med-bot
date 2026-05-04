@@ -58,9 +58,6 @@ export function classifyConfidence(score: number): 'high' | 'medium' | 'low' {
  * indicating that human review is required.
  * Default threshold is 0.7 (21 CFR Part 11 compliance gate).
  */
-export function requiresHumanReview(
-  scores: ConfidenceScore[],
-  threshold = 0.7,
-): boolean {
+export function requiresHumanReview(scores: ConfidenceScore[], threshold = 0.7): boolean {
   return aggregateScores(scores) < threshold;
 }

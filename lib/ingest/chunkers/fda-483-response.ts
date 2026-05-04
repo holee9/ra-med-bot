@@ -68,7 +68,14 @@ export const chunkFda483Response: ChunkerFn = (text, _metadata): Chunk[] => {
 
   if (chunks.length === 0) {
     for (const sub of splitByTokens(text, MAX_CHUNK_TOKENS, OVERLAP_TOKENS)) {
-      chunks.push({ text: sub, metadata: { docClass: DocClass.audit_response, sectionPath: 'Generic', tokenCount: countTokens(sub) } });
+      chunks.push({
+        text: sub,
+        metadata: {
+          docClass: DocClass.audit_response,
+          sectionPath: 'Generic',
+          tokenCount: countTokens(sub),
+        },
+      });
     }
   }
   return chunks;

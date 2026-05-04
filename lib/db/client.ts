@@ -3,8 +3,8 @@
 // the pool. The singleton is module-scoped so Next.js Route Handlers reuse it.
 // @MX:SPEC SPEC-REGULA-FOUNDATION-001 (REQ-FND-031, supports REQ-FND-046+)
 
-import { drizzle } from 'drizzle-orm/postgres-js';
 import { sql } from 'drizzle-orm';
+import { drizzle } from 'drizzle-orm/postgres-js';
 import postgres from 'postgres';
 import { getEnv } from '../env';
 import * as schema from './schema';

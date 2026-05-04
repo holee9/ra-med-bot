@@ -1,13 +1,15 @@
-import { describe, it, expect, vi, beforeEach } from 'vitest';
+import { beforeEach, describe, expect, it, vi } from 'vitest';
 
 // Mock DB to avoid real connections
 vi.mock('../../../../lib/db/client', () => ({
-  withTenantScope: vi.fn().mockImplementation(async (_orgId: string, fn: (db: unknown) => Promise<unknown>) => {
-    const mockDb = {
-      execute: vi.fn().mockResolvedValue([]),
-    };
-    return fn(mockDb);
-  }),
+  withTenantScope: vi
+    .fn()
+    .mockImplementation(async (_orgId: string, fn: (db: unknown) => Promise<unknown>) => {
+      const mockDb = {
+        execute: vi.fn().mockResolvedValue([]),
+      };
+      return fn(mockDb);
+    }),
 }));
 
 vi.mock('../../../../lib/acl/document-acl', () => ({

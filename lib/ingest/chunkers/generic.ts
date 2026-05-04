@@ -2,7 +2,13 @@
 // @MX:SPEC SPEC-REGULA-DOCINGEST-001 (REQ-DOC-053)
 import { DocClass } from '../doc-class';
 import type { Chunk, ChunkerFn } from './base';
-import { MAX_CHUNK_TOKENS, OVERLAP_TOKENS, countTokens, splitByTokens, splitByHeadings } from './base';
+import {
+  MAX_CHUNK_TOKENS,
+  OVERLAP_TOKENS,
+  countTokens,
+  splitByHeadings,
+  splitByTokens,
+} from './base';
 
 export function makeGenericChunker(docClass: DocClass): ChunkerFn {
   return (text, _metadata): Chunk[] => {

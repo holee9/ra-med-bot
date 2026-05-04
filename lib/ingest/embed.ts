@@ -69,8 +69,7 @@ export async function embedChunks(texts: string[]): Promise<number[][]> {
     const { found, pattern } = detectPii(text);
     if (found) {
       throw new Error(
-        `PII guard triggered: ${pattern} pattern detected in embedding input. ` +
-          'Redact text before embedding.',
+        `PII guard triggered: ${pattern} pattern detected in embedding input. Redact text before embedding.`,
       );
     }
   }

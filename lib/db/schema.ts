@@ -426,8 +426,12 @@ export const projectMembers = pgTable(
 // @MX:SPEC SPEC-REGULA-WORKFLOWS-001 (REQ-WF-049)
 export const workflowRuns = pgTable('workflow_runs', {
   id: uuid('id').defaultRandom().primaryKey(),
-  userId: uuid('user_id').notNull().references(() => users.id),
-  organizationId: uuid('organization_id').notNull().references(() => organizations.id),
+  userId: uuid('user_id')
+    .notNull()
+    .references(() => users.id),
+  organizationId: uuid('organization_id')
+    .notNull()
+    .references(() => organizations.id),
   projectId: uuid('project_id').references(() => projects.id),
   workflowType: workflowTypeEnum('workflow_type').notNull(),
   status: workflowStatusEnum('status').notNull().default('queued'),

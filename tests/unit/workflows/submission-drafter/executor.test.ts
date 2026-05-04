@@ -1,10 +1,10 @@
-import { describe, it, expect } from 'vitest';
 import {
-  executeStep,
-  buildWorkflowSummary,
-  UnknownStepError,
   type StepResult,
+  UnknownStepError,
+  buildWorkflowSummary,
+  executeStep,
 } from '@/lib/workflows/submission-drafter/executor';
+import { describe, expect, it } from 'vitest';
 
 describe('submission-drafter/executor', () => {
   describe('executeStep', () => {
@@ -54,9 +54,7 @@ describe('submission-drafter/executor', () => {
         equivalent: true,
         rationale: 'Same intended use',
       });
-      expect(result.confidenceScores).toContainEqual(
-        expect.objectContaining({ score: 0.78 }),
-      );
+      expect(result.confidenceScores).toContainEqual(expect.objectContaining({ score: 0.78 }));
     });
 
     it('returns StepResult for performance_summary', async () => {
@@ -67,9 +65,7 @@ describe('submission-drafter/executor', () => {
       expect(result.output).toMatchObject({
         testingRequired: ['biocompatibility', 'electrical safety'],
       });
-      expect(result.confidenceScores).toContainEqual(
-        expect.objectContaining({ score: 0.88 }),
-      );
+      expect(result.confidenceScores).toContainEqual(expect.objectContaining({ score: 0.88 }));
     });
 
     it('returns StepResult for labeling_review', async () => {
@@ -81,9 +77,7 @@ describe('submission-drafter/executor', () => {
         compliant: true,
         issues: [],
       });
-      expect(result.confidenceScores).toContainEqual(
-        expect.objectContaining({ score: 0.95 }),
-      );
+      expect(result.confidenceScores).toContainEqual(expect.objectContaining({ score: 0.95 }));
     });
 
     it('returns StepResult for submission_assembly', async () => {
@@ -95,9 +89,7 @@ describe('submission-drafter/executor', () => {
         sectionsGenerated: 6,
         totalPages: 42,
       });
-      expect(result.confidenceScores).toContainEqual(
-        expect.objectContaining({ score: 0.91 }),
-      );
+      expect(result.confidenceScores).toContainEqual(expect.objectContaining({ score: 0.91 }));
     });
 
     it('throws UnknownStepError for an unknown step name', async () => {
