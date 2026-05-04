@@ -6,6 +6,9 @@ providers:
   - id: anthropic:messages:claude-sonnet-4-6
     config:
       max_tokens: 4096
+  - id: anthropic:messages:claude-haiku-4-5
+    config:
+      max_tokens: 4096
 
 tests:
   - path: ./datasets/fda.yaml
