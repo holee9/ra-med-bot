@@ -1,15 +1,26 @@
 ---
 id: SPEC-REGULA-DOCINGEST-001
 title: Regula Phase 8 Document Ingestion — 인증 문서·제출 자료 수집·분류·PII redact·Tenant 격리
-status: draft
+status: completed
 created: 2026-04-22
-updated: 2026-04-22
+updated: 2026-05-04
 author: manager-spec
 phase: 8
 skill: regula
-version: 0.1.0
+version: 1.0.0
 priority: High
+issue_number: 10
 revision_history:
+  - version: 1.0.0
+    date: 2026-05-04
+    author: manager-docs
+    notes: |
+      Implementation complete. 78/78 REQ-DOC implemented across 8 groups.
+      Commits: 5f8c9df (Phase 8A+8B), 4500868 (Phase 8C-8E).
+      Tests: 1622 total (1616 pass, 6 skip). tsc --noEmit: 0 errors.
+      Key deliverables: 3-layer PII redaction, DB-level tenant isolation (RLS),
+      8-class × 4-role ACL matrix, 14 class-specific chunkers, hybrid search
+      retriever P95 < 300ms, Admin Portal 3 pages, Inngest pipeline.
   - version: 0.1.0
     date: 2026-04-22
     author: manager-spec
@@ -1209,3 +1220,48 @@ Phase 8 SPEC v0.1.0이 PROCEED_TO_PHASE_8 준비 완료 판정 받기 위해 충
 ---
 
 *End of SPEC-REGULA-DOCINGEST-001 v0.1.0*
+
+---
+
+## Implementation Notes (v1.0.0 — 2026-05-04)
+
+Phase 8 전체 구현 완료. 78/78 REQ-DOC 충족.
+
+### 구현 커밋
+
+| 커밋 | 범위 | 내용 |
+|------|------|------|
+| `5f8c9df` | Phase 8A+8B | DocClass enum, DB 스키마, RLS, PII Layer 1, ACL 기반 |
+| `4500868` | Phase 8C-8E | 인제스트 파이프라인, 소스 핸들러, 청킹, Admin UI |
+
+### 주요 구현 파일
+
+- `lib/ingest/` — 분류기, 민감도 매핑, PII 3-layer, 추출기, 청커 14종
+- `lib/ingest/sources/` — manual-upload, google-drive, sharepoint, dropbox, email-workers
+- `lib/inngest/docingest/` — Inngest step-function pipeline
+- `lib/ai/retrievers/internal-docs.ts` — hybrid search + ACL + tenant 격리
+- `app/(app)/admin/documents/` — Admin Portal 3 pages
+- `migrations/0017_docingest_schema_fix.sql` — 스키마 수정
+
+### 검증 결과
+
+- Tests: 1622 total (1616 pass, 6 skip)
+- TypeScript: `tsc --noEmit` → 0 errors
+- 78/78 REQ-DOC 구현 완료
+- GitHub Issue #10 CLOSED
+
+### Definition of Done 최종 확인
+
+- [x] 78 REQ-DOC-001~078 전부 구현
+- [x] 3-layer PII redaction (Regex + Workers AI GLiNER + Presidio)
+- [x] DB-level tenant isolation (RLS + withTenantScope)
+- [x] 8-class × 4-role ACL 매트릭스 + 32 seed policies
+- [x] 14 class-specific chunkers + generic fallback
+- [x] hybrid search retriever P95 < 300ms
+- [x] expert_review_required=true for clinical_report/audit_response
+- [x] Admin Portal 3 pages + middleware RBAC
+- [x] Inngest step-function pipeline (extract→redact→chunk→embed→index)
+- [x] audit_logs wiring (6 document.* enum actions)
+- [x] Vitest 1622 tests (1616 pass)
+
+*End of SPEC-REGULA-DOCINGEST-001 v1.0.0*
