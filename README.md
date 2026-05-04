@@ -943,6 +943,14 @@ Wave 3/4까지 완료되면 Regula는 분류, 근거 수집, 전략, 문서 생�
 | [#71](https://github.com/holee9/ra-med-bot/issues/71) | SPEC-REGULA-MODEL-GOVERNANCE-001 | LLM·프롬프트·템플릿 변경통제 | High |
 | [#72](https://github.com/holee9/ra-med-bot/issues/72) | SPEC-REGULA-CORPUS-LICENSE-001 | 코퍼스 라이선스·사용권 관리 | High |
 | [#84](https://github.com/holee9/ra-med-bot/issues/84) | SPEC-REGULA-ANSWER-REFINE-001 | 답변 인라인 정제·부분 재생성·톤 조정 | High |
+| [#85](https://github.com/holee9/ra-med-bot/issues/85) | SPEC-REGULA-CONFIDENCE-EXPLAIN-001 | Confidence 점수 근거 표시·대안 답변 비교 | High |
+| [#86](https://github.com/holee9/ra-med-bot/issues/86) | SPEC-REGULA-PERSONAL-LIB-001 | 개인 RA 라이브러리·북마크·태깅·치트시트 | Medium |
+| [#87](https://github.com/holee9/ra-med-bot/issues/87) | SPEC-REGULA-EXPORT-HUB-001 | 답변 다중 포맷 Export·메일 포워드·외부 공유 허브 | High |
+| [#88](https://github.com/holee9/ra-med-bot/issues/88) | SPEC-REGULA-ESIG-001 | 21 CFR Part 11 전자서명·답변 잠금 | High |
+| [#89](https://github.com/holee9/ra-med-bot/issues/89) | SPEC-REGULA-DSAR-001 | GDPR/PIPA 데이터 주체 요청 자동화 워크플로우 | High |
+| [#90](https://github.com/holee9/ra-med-bot/issues/90) | SPEC-REGULA-DATA-RESIDENCY-001 | 데이터 거주성 기반 LLM/임베딩 라우팅 강제·증빙 | High |
+| [#91](https://github.com/holee9/ra-med-bot/issues/91) | SPEC-REGULA-DLP-001 | DLP·자동 redaction·외부 공유 sanitize | High |
+| [#92](https://github.com/holee9/ra-med-bot/issues/92) | SPEC-REGULA-AUDITOR-VIEW-001 | 외부 감사관 read-only 페르소나·1-click 감사 패키지 | High |
 
 ---
 
@@ -1131,4 +1139,4 @@ MIT License - [LICENSE](LICENSE) 파일 참조
 
 **Built with ❤️ using [abyz-lab](https://abyz-lab.work)**
 
-_마지막 업데이트: 2026-05-04 (QA 단계 게이트 추가 — #73~83 및 Wave 5 #84 반영)_
+_마지막 업데이트: 2026-05-04 (QA 단계 게이트 추가 — #73~83 및 Wave 5 #84~92 반영)_
