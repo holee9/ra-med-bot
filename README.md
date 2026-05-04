@@ -885,6 +885,10 @@ Phase 1-11 완료 후 사용자 경험·비즈니스 가치 확대를 위한 다
 | [#22](https://github.com/holee9/ra-med-bot/issues/22) | SPEC-REGULA-PREDICATE-001 | FDA 510(k) Predicate 검색 엔진 | High |
 | [#23](https://github.com/holee9/ra-med-bot/issues/23) | SPEC-REGULA-CER-001 | EU MDR 임상평가보고서(CER) 빌더 | High |
 | [#24](https://github.com/holee9/ra-med-bot/issues/24) | SPEC-REGULA-PCCP-001 | FDA PCCP 구조화 작성기 | High |
+| [#35](https://github.com/holee9/ra-med-bot/issues/35) | SPEC-REGULA-KNOWLEDGE-GAP-001 | 미답변 자동 이슈화 및 지식베이스 보강 루프 | High |
+| [#36](https://github.com/holee9/ra-med-bot/issues/36) | SPEC-REGULA-REVIEW-OPS-001 | 전문가 검토 SLA·승인 워크벤치·증거 패키지 | High |
+| [#37](https://github.com/holee9/ra-med-bot/issues/37) | SPEC-REGULA-SUBMISSION-LIFECYCLE-001 | 510(k)·CER·PCCP 산출물 패키징·검증·추적 | High |
+| [#38](https://github.com/holee9/ra-med-bot/issues/38) | SPEC-REGULA-ADOPTION-001 | 사용자 온보딩·성과 KPI·피드백 루프 | Medium |
 | [#39](https://github.com/holee9/ra-med-bot/issues/39) | SPEC-REGULA-WORKFLOWS-LLM-002 | 워크플로우 LLM 실제 실행 (510k·CER·PCCP executor) | High |
 | [#40](https://github.com/holee9/ra-med-bot/issues/40) | SPEC-REGULA-STRATEGY-001 | 멀티 관할권 규제 전략 생성기 (Killer Feature) | High |
 | [#41](https://github.com/holee9/ra-med-bot/issues/41) | SPEC-REGULA-IMPACT-001 | 규제 변경 영향 추적기 | High |
@@ -1081,4 +1085,4 @@ MIT License - [LICENSE](LICENSE) 파일 참조
 
 **Built with ❤️ using [abyz-lab](https://abyz-lab.work)**
 
-_마지막 업데이트: 2026-05-04 (Wave 3/4 로드맵 추가 — 이슈 #50~58)_
+_마지막 업데이트: 2026-05-04 (Wave 3/4 로드맵 보강 — 이슈 #35~58)_
