@@ -21,6 +21,8 @@
 - [Phase 7 Cloudflare Hybrid 기능](#phase-7-cloudflare-hybrid-기능-2026-05-04-완료)
 - [Phase 8 DocIngest 기능](#phase-8-docingest-기능-2026-05-04-완료)
 - [Phase 9 Advanced Workflows 기능](#phase-9-advanced-workflows-기능-2026-05-04-완료)
+- [Phase 10 Regulatory Radar 기능](#phase-10-regulatory-radar-기능-2026-05-04-완료)
+- [Phase 11 Department RBAC 기능](#phase-11-department-rbac-기능-2026-05-04-완료)
 - [시작 방법](#시작-방법)
 - [프로젝트 문서](#프로젝트-문서)
 - [개발 로드맵](#개발-로드맵)
@@ -480,6 +482,80 @@ Workflow Executor (Cloudflare Workflows runtime)
 
 ---
 
+## Phase 10 Regulatory Radar 기능 (2026-05-04 완료)
+
+### 규제 모니터링 인텔리전스 레이어 (SPEC-REGULA-RADAR-001)
+
+- **3개 크롤러**: FDA Federal Register, EU Official Journal (OJ), MFDS 공고 자동 수집
+- **3-tier 분류기**: Tier1 카테고리 분류 → Tier2 의료기기 관련성 판별 → Tier3 제품군 매칭
+- **임팩트 스코어링**: 포트폴리오 기반 0.0~1.0 영향도 점수 (≥0.7 amber / ≥0.9 danger)
+- **알림 파이프라인**: 이메일(SendGrid) + Slack webhook + toast 3채널 알림
+- **Admin Radar UI**: `/admin/radar` 크롤러 상태 모니터링, 수동 실행 트리거
+
+```
+Cron (workers/radar-cron.ts)
+  ↓
+CrawlerBase → FDAFederalRegister / EuOJ / MFDSNotice
+  ↓
+Classifier (3-tier) → relevance score
+  ↓
+PortfolioLoader → impact score per org
+  ↓
+Notifier → email / Slack / toast
+```
+
+| 컴포넌트 | 경로 | 상태 |
+|---------|-----|------|
+| FDA 크롤러 | `lib/radar/crawlers/fda-federal-register.ts` | ✅ |
+| EU OJ 크롤러 | `lib/radar/crawlers/eu-oj.ts` | ✅ |
+| MFDS 크롤러 | `lib/radar/crawlers/mfds-notice.ts` | ✅ |
+| 분류기 | `lib/radar/classifier.ts` | ✅ |
+| 알림 | `lib/radar/notifier.ts` | ✅ |
+| Admin UI | `app/(app)/admin/radar/page.tsx` | ✅ |
+| Radar Cron | `workers/radar-cron.ts` | ✅ |
+
+### 외부 공개 데이터 Enrichment (SPEC-REGULA-NETWORK-001)
+
+- **FDA 510(k) DB**: 510(k) 클리어런스 이력 자동 enrichment
+- **FDA MAUDE**: 의료기기 이상반응(MDR) 데이터 연동
+- **Eudamed**: EU 의료기기 공개 데이터베이스 enrichment
+
+### 테스트 커버리지
+
+- 40 REQ 구현 (REQ-RADAR-001~040)
+- 크롤러·분류기·알림 단위 테스트 전체 통과
+- **PR**: [#20](https://github.com/holee9/ra-med-bot/pull/20)
+- **SPEC 문서**: [`.moai/specs/SPEC-REGULA-RADAR-001/spec.md`](.moai/specs/SPEC-REGULA-RADAR-001/spec.md)
+
+---
+
+## Phase 11 Department RBAC 기능 (2026-05-04 완료)
+
+### 부서 Attribute 기반 RBAC (SPEC-REGULA-TENANT-001 v2.0)
+
+- **부서 컬럼**: `users.department` — RA / Dev / Exec / External 4개 부서
+- **ACL 매트릭스**: 부서별 보호 라우트 접근 권한 (Dev → `/admin/*`, External → `/updates` 읽기 전용)
+- **감사 로깅**: `audit_logs.metadata.department` 필드로 모든 감사 이벤트에 부서 기록
+- **마이그레이션**: `migrations/0019_user_department_enum.sql` — 기존 row backfill (`department = 'RA'`)
+- **Profile API**: `PATCH /api/ra/profile` department 편집 + 변경 감사 로깅
+
+| REQ | 설명 | 상태 |
+|-----|------|------|
+| REQ-TEN-001 | `users.department` 컬럼 정의 | ✅ |
+| REQ-TEN-002 | Drizzle 비파괴적 마이그레이션 | ✅ |
+| REQ-TEN-003 | 부서별 ACL 매트릭스 | ✅ |
+| REQ-TEN-004 | `audit_logs.metadata.department` 기록 | ✅ |
+| REQ-TEN-005 | Admin Users UI department 편집 + 감사 로깅 | ✅ |
+
+### 테스트 커버리지
+
+- 5 REQ 전체 구현 (Phase 10-Lite 스코프)
+- 부서 RBAC 단위 테스트, `workflow.execute` 권한 추가
+- **PR**: [#21](https://github.com/holee9/ra-med-bot/pull/21)
+- **SPEC 문서**: [`.moai/specs/SPEC-REGULA-TENANT-001/spec.md`](.moai/specs/SPEC-REGULA-TENANT-001/spec.md)
+
+---
+
 ## 시작 방법
 
 ### 선행 조건
@@ -764,6 +840,40 @@ pnpm start
 
 ---
 
+### Phase 10: Regulatory Radar ✅ (2026-05-04 완료)
+
+**목표**: 규제 변경 자동 모니터링 + 포트폴리오 임팩트 스코어링 (SPEC-REGULA-RADAR-001)
+
+- [x] **크롤러 3종** — FDA Federal Register, EU Official Journal, MFDS 공고 (cron 기반)
+- [x] **3-tier 분류기** — 카테고리 → 관련성 → 제품군 매칭
+- [x] **임팩트 스코어링** — 포트폴리오 기반 0.0~1.0 영향도
+- [x] **알림 파이프라인** — 이메일(SendGrid) + Slack webhook + toast
+- [x] **Admin Radar UI** — `/admin/radar` 크롤러 모니터링 + 수동 실행
+- [x] **외부 데이터 Enrichment** — FDA 510(k) DB, MAUDE, Eudamed (SPEC-REGULA-NETWORK-001)
+- [x] **신규 DB 테이블** — `crawler_runs`, `org_update_relevance`
+
+**성과물**:
+- ✅ 40 REQ 구현 (REQ-RADAR-001~040)
+- ✅ PR [#20](https://github.com/holee9/ra-med-bot/pull/20) 완료
+
+---
+
+### Phase 11: Department RBAC (Tenant-Lite) ✅ (2026-05-04 완료)
+
+**목표**: 부서 Attribute 기반 RBAC 5 REQ (SPEC-REGULA-TENANT-001 v2.0)
+
+- [x] **`users.department` 컬럼** — RA / Dev / Exec / External pgEnum
+- [x] **비파괴적 마이그레이션** — `0019_user_department_enum.sql`, 기존 row backfill
+- [x] **부서별 ACL 매트릭스** — `lib/auth/department.ts`
+- [x] **audit_logs 부서 기록** — `metadata.department` 필드
+- [x] **Profile API 편집** — `PATCH /api/ra/profile` department 업데이트 + 감사
+
+**성과물**:
+- ✅ 5 REQ 전체 구현 (REQ-TEN-001~005)
+- ✅ PR [#21](https://github.com/holee9/ra-med-bot/pull/21) 완료
+
+---
+
 ## 참여 방법
 
 ### Issues 기반 워크플로우
@@ -929,4 +1039,4 @@ MIT License - [LICENSE](LICENSE) 파일 참조
 
 **Built with ❤️ using [abyz-lab](https://abyz-lab.work)**
 
-_마지막 업데이트: 2026-05-03_
+_마지막 업데이트: 2026-05-04_
