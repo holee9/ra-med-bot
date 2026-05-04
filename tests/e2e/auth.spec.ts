@@ -23,7 +23,9 @@ test.describe('Authentication (REQ-LAUNCH-015)', () => {
     await page.goto('/login');
     // At minimum one sign-in button (Microsoft Entra ID or Google) must be visible.
     // Custom /login page uses type="button" with onClick handlers (not form submit).
-    const signinButtons = page.locator('button[type="button"], button[type="submit"], a[role="button"]');
+    const signinButtons = page.locator(
+      'button[type="button"], button[type="submit"], a[role="button"]',
+    );
     await expect(signinButtons.first()).toBeVisible();
   });
 
