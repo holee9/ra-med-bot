@@ -45,7 +45,7 @@ describe('lib/audit.ts (REQ-BREADTH-057) — extended AuditAction type', () => {
     expect(src).toMatch(new RegExp(`'${escaped}'`));
   });
 
-  it('AuditAction type contains exactly 37 values (3 original + 11 breadth/remediation + 12 enterprise + 1 T-013 + 10 Phase 9 workflows)', () => {
+  it('AuditAction type contains exactly 43 values (37 original + 6 Phase 8 DocIngest actions)', () => {
     const src = readText('lib/audit.ts');
     // Extract the AuditAction type block
     const typeMatch = src.match(/export type AuditAction\s*=\s*([\s\S]*?);/);
@@ -58,7 +58,8 @@ describe('lib/audit.ts (REQ-BREADTH-057) — extended AuditAction type', () => {
       .filter((s) => s.startsWith("'"));
     // T-013 adds profile.update; Issue #7 remediation adds conversation.delete.
     // Phase 9 adds 10 workflow.* actions via 0013_workflow_audit_actions.sql.
-    expect(values).toHaveLength(37);
+    // Phase 8 DocIngest adds 6 document.* / redaction_map.access actions via 0016.
+    expect(values).toHaveLength(43);
   });
 
   it('AuditAction type includes Issue #7 remediation action: conversation.delete', () => {
