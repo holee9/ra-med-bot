@@ -49,3 +49,7 @@ created_issues:
   - "#79 SPEC-REGULA-QA-OPERATIONS-001"
 observed_related_issue:
   - "#80 local/CI E2E execution environment prerequisite"
+  - "#81 Wave 1 E2E gate"
+  - "#82 Wave 2 E2E gate"
+  - "#83 CI E2E gate"
+  - "#84 Wave 5 answer refine feature; QA Matrix target"

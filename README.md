@@ -942,6 +942,7 @@ Wave 3/4까지 완료되면 Regula는 분류, 근거 수집, 전략, 문서 생�
 | [#70](https://github.com/holee9/ra-med-bot/issues/70) | SPEC-REGULA-REIMBURSEMENT-001 | 보험·상환 경로 분석기 | Medium |
 | [#71](https://github.com/holee9/ra-med-bot/issues/71) | SPEC-REGULA-MODEL-GOVERNANCE-001 | LLM·프롬프트·템플릿 변경통제 | High |
 | [#72](https://github.com/holee9/ra-med-bot/issues/72) | SPEC-REGULA-CORPUS-LICENSE-001 | 코퍼스 라이선스·사용권 관리 | High |
+| [#84](https://github.com/holee9/ra-med-bot/issues/84) | SPEC-REGULA-ANSWER-REFINE-001 | 답변 인라인 정제·부분 재생성·톤 조정 | High |
 
 ---
 
@@ -959,6 +960,9 @@ Wave 3/4까지 완료되면 Regula는 분류, 근거 수집, 전략, 문서 생�
 | Gate 4 | [#78](https://github.com/holee9/ra-med-bot/issues/78) | RA 도메인 UAT, citation 정확도, 출처 사용권 검수 |
 | Gate 5 | [#79](https://github.com/holee9/ra-med-bot/issues/79) | 운영 QA, synthetic checks, rollback drill, 품질 지표 추적 |
 | Infra | [#80](https://github.com/holee9/ra-med-bot/issues/80) | 로컬/CI E2E 실행 환경 구축 |
+| E2E | [#81](https://github.com/holee9/ra-med-bot/issues/81) | Wave 1 Foundation+Chat E2E 스모크 게이트 |
+| E2E | [#82](https://github.com/holee9/ra-med-bot/issues/82) | Wave 2 RAG+Expert Review+Enterprise E2E 게이트 |
+| E2E | [#83](https://github.com/holee9/ra-med-bot/issues/83) | PR 병합 전 Playwright CI E2E 게이트 |
 
 ---
 
@@ -1127,4 +1131,4 @@ MIT License - [LICENSE](LICENSE) 파일 참조
 
 **Built with ❤️ using [abyz-lab](https://abyz-lab.work)**
 
-_마지막 업데이트: 2026-05-04 (QA 단계 게이트 추가 — #73~79 및 E2E 인프라 #80 반영)_
+_마지막 업데이트: 2026-05-04 (QA 단계 게이트 추가 — #73~83 및 Wave 5 #84 반영)_
