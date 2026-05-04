@@ -1,72 +1,85 @@
-// @MX:ANCHOR StreamOrderValidator — enforces SSE 3-phase event ordering.
-// @MX:REASON Phase A (meta/trace) → Phase B (prose_delta) → Phase C (structured)
-// ordering is a HARD contract. Any violation must throw synchronously so the
-// async generator pipeline fails fast instead of emitting garbled streams.
+// @MX:ANCHOR StreamOrderValidator - enforces SSE 3-phase event ordering.
+// @MX:REASON Phase A (meta/trace), Phase B (prose_delta), and Phase C
+// (confidence/sources/structured blocks/terminal) ordering is a HARD contract.
 // @MX:SPEC SPEC-REGULA-CHAT-001 (REQ-CHAT-006, REQ-CHAT-011)
+// @MX:SPEC SPEC-REGULA-STRUCTURED-001 (REQ-STRUCT-002, REQ-STRUCT-007)
 
 import type { StreamEvent } from '../../types/streaming';
 
-// Internal phase tracker.
 type Phase = 'A' | 'B' | 'C' | 'done';
 
-// Phase C event types that must follow the last prose_delta.
-const PHASE_C_TYPES = new Set(['confidence', 'sources', 'expert_review_required']);
+const PHASE_C_ORDER = [
+  'confidence',
+  'sources',
+  'checklist',
+  'comparison',
+  'timeline',
+  'related',
+  'expert_review_required',
+  'done',
+] as const;
+
+const PHASE_C_INDEX = new Map<string, number>(
+  PHASE_C_ORDER.map((eventType, index) => [eventType, index]),
+);
 
 /**
- * Validates that StreamEvents are yielded in the required 3-phase order.
+ * Validates that StreamEvents are yielded in the required order.
  *
- * Phase A: meta → trace*(N)
- * Phase B: prose_delta*(M)  — must have at least one before Phase C starts
- * Phase C: confidence → sources → [expert_review_required?] → done
+ * Phase A: meta, trace*
+ * Phase B: prose_delta*
+ * Phase C: confidence, sources, checklist?, comparison?, timeline?, related?,
+ * optional expert_review_required, done.
  *
- * @throws Error if an event violates the phase contract.
+ * Phase C events may be skipped, but emitted events cannot move backward.
  */
 export class StreamOrderValidator {
   private phase: Phase = 'A';
   private hasProseDelta = false;
+  private phaseCIndex = -1;
 
-  /**
-   * Validate an event against the current phase. Mutates internal state.
-   * Call before yielding each event to the SSE stream.
-   */
   validate(event: StreamEvent): void {
     const { type } = event;
 
-    // Error events are always allowed — they terminate the stream.
-    if (type === 'error') return;
+    if (type === 'error') {
+      this.phase = 'done';
+      return;
+    }
 
-    // Phase C events require at least one prose_delta first.
-    if (PHASE_C_TYPES.has(type) || type === 'done') {
+    if (this.phase === 'done') {
+      throw new Error(`StreamOrderValidator: "${type}" event emitted after terminal event.`);
+    }
+
+    const nextPhaseCIndex = PHASE_C_INDEX.get(type);
+    if (nextPhaseCIndex !== undefined) {
       if (!this.hasProseDelta && type !== 'done') {
         throw new Error(
           `StreamOrderValidator: "${type}" event emitted before any prose_delta. Phase C events must follow Phase B (prose_delta).`,
         );
       }
-      if (type === 'confidence' || type === 'sources' || type === 'expert_review_required') {
-        this.phase = 'C';
+
+      if (nextPhaseCIndex <= this.phaseCIndex) {
+        throw new Error(`StreamOrderValidator: "${type}" event emitted out of Phase C order.`);
       }
-      if (type === 'done') {
-        this.phase = 'done';
-      }
+
+      this.phaseCIndex = nextPhaseCIndex;
+      this.phase = type === 'done' ? 'done' : 'C';
       return;
     }
 
     if (type === 'prose_delta') {
+      if (this.phase === 'C') {
+        throw new Error('StreamOrderValidator: "prose_delta" event emitted after Phase C started.');
+      }
       this.hasProseDelta = true;
       this.phase = 'B';
       return;
     }
 
-    // meta and trace are Phase A events.
-    // They are allowed in Phase A only.
     if (type === 'meta' || type === 'trace') {
-      // Allow trace events even in Phase B (edge case: very long traces)
-      return;
-    }
-
-    // Phase 3 reserve events — pass through without validation in Phase 2.
-    if (['checklist', 'comparison', 'timeline', 'related'].includes(type)) {
-      return;
+      if (this.phase === 'C') {
+        throw new Error(`StreamOrderValidator: "${type}" event emitted after Phase C started.`);
+      }
     }
   }
 }
