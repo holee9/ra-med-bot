@@ -1,12 +1,12 @@
-// @MX:ANCHOR [AUTO] DocIngest schema — 4 new tables for Phase 8 document ingest.
+// @MX:ANCHOR [AUTO] DocIngest schema — corrected tables for Phase 8 document ingest.
 // @MX:REASON fan_in >= 3: ingest pipeline, ACL layer, and search API all reference these tables.
 // @MX:SPEC SPEC-REGULA-DOCINGEST-001 (REQ-DOC-036~045)
 //
-// Table inventory (4):
-//   organization_documents, document_chunks, document_access_policies, ingest_jobs
+// Table inventory (3 after 0017 fix — ingest_jobs removed):
+//   organization_documents, document_chunks, document_access_policies
 //
-// pgEnum inventory (2):
-//   doc_class_enum, doc_status_enum
+// pgEnum inventory (3):
+//   doc_class_enum, doc_status_enum (8-value), doc_source
 //
 // DO NOT modify lib/db/schema.ts — all new tables live here.
 // organizations and users tables are referenced via FK from schema.ts exports.
@@ -29,7 +29,7 @@ import {
 import { organizations, users, userRoleEnum } from './schema';
 
 // ---------------------------------------------------------------------------
-// pgvector custom type — 1536-dim for OpenAI ada-002 / text-embedding-3-small
+// pgvector custom type — 1536-dim for OpenAI text-embedding-3-small
 // ---------------------------------------------------------------------------
 const vector = customType<{ data: number[]; driverData: string }>({
   dataType() {
@@ -38,7 +38,7 @@ const vector = customType<{ data: number[]; driverData: string }>({
 });
 
 // ---------------------------------------------------------------------------
-// pgEnums — must match migration 0014_docingest_schema.sql exactly
+// pgEnums — must match migration 0014 + 0017 exactly
 // ---------------------------------------------------------------------------
 
 // REQ-DOC-001: 8-class document taxonomy
@@ -53,12 +53,26 @@ export const docClassEnum = pgEnum('doc_class_enum', [
   'audit_response',
 ]);
 
-// REQ-DOC-036: document lifecycle states
+// REQ-DOC-036: document lifecycle states (8-value corrected in 0017)
 export const docStatusEnum = pgEnum('doc_status_enum', [
-  'processing',
+  'pending',
+  'extracting',
+  'redacting',
+  'chunking',
   'indexed',
+  'failed',
   'quarantine',
   'archived',
+]);
+
+// REQ-DOC-011: document source channels (created in 0017)
+export const docSourceEnum = pgEnum('doc_source', [
+  'google_drive',
+  'sharepoint',
+  'dropbox',
+  'email_workers',
+  'manual_upload',
+  'regulatory_portal',
 ]);
 
 // ---------------------------------------------------------------------------
@@ -67,27 +81,41 @@ export const docStatusEnum = pgEnum('doc_status_enum', [
 
 /**
  * REQ-DOC-036: Core document registry.
- * Hard delete is prohibited — use archived_at for soft delete.
+ * Hard delete is prohibited — use archived_at for soft delete (21 CFR Part 11).
+ * Column names corrected in migration 0017.
  */
 export const organizationDocuments = pgTable(
   'organization_documents',
   {
     id: uuid('id').defaultRandom().primaryKey(),
-    organizationId: uuid('organization_id')
+    // Renamed from organization_id in 0017
+    orgId: uuid('org_id')
       .notNull()
       .references(() => organizations.id, { onDelete: 'cascade' }),
     docClass: docClassEnum('doc_class').notNull(),
     title: text('title').notNull(),
-    status: docStatusEnum('status').notNull().default('processing'),
-    // Cloudflare R2 object keys
-    r2ObjectKey: text('r2_object_key').notNull(),
-    r2RedactedKey: text('r2_redacted_key'), // optional redacted version
-    // SHA-256 hash for deduplication
-    sha256Hash: text('sha256_hash').notNull(),
+    status: docStatusEnum('status').notNull().default('pending'),
+    source: docSourceEnum('source').notNull().default('manual_upload'),
+    // Renamed from r2_object_key in 0017
+    originalFileR2Key: text('original_file_r2_key').notNull(),
+    // Renamed from sha256_hash in 0017
+    fileHashSha256: text('file_hash_sha256').notNull(),
     fileSizeBytes: bigint('file_size_bytes', { mode: 'number' }),
-    mimeType: text('mime_type').notNull(),
-    metadataJson: jsonb('metadata_json').default({}),
+    // Added in 0017 — finer-grained than mimeType
+    fileMimeType: text('file_mime_type').notNull().default('application/pdf'),
+    language: text('language').notNull().default('en'),
+    // Redacted file stored separately in R2
+    redactedFileR2Key: text('redacted_file_r2_key'),
+    // Source-specific metadata (drive ID, sharepoint URL, etc.)
+    sourceMetaJson: jsonb('source_meta_json').$type<Record<string, unknown>>().default({}),
+    // Class-specific metadata (fda_k_number, etc.)
+    metadataJson: jsonb('metadata_json').$type<Record<string, unknown>>().default({}),
+    version: integer('version').notNull().default(1),
+    supersedesDocId: uuid('supersedes_doc_id'),
+    projectId: uuid('project_id'),
     uploadedBy: uuid('uploaded_by').references(() => users.id),
+    uploadedAt: timestamp('uploaded_at', { withTimezone: true, mode: 'date' }).notNull().defaultNow(),
+    indexedAt: timestamp('indexed_at', { withTimezone: true, mode: 'date' }),
     createdAt: timestamp('created_at', { withTimezone: true, mode: 'date' }).notNull().defaultNow(),
     updatedAt: timestamp('updated_at', { withTimezone: true, mode: 'date' }).notNull().defaultNow(),
     // Soft delete — hard delete is prohibited (21 CFR Part 11)
@@ -96,12 +124,12 @@ export const organizationDocuments = pgTable(
   (table) => ({
     // Composite index for filtering by org + class + status
     orgClassStatusIdx: index('idx_org_docs_org_class_status').on(
-      table.organizationId,
+      table.orgId,
       table.docClass,
       table.status,
     ),
     // Unique constraint for deduplication within an org
-    sha256Unique: unique('uq_org_docs_sha256').on(table.organizationId, table.sha256Hash),
+    sha256Unique: unique('uq_org_docs_sha256').on(table.orgId, table.fileHashSha256),
   }),
 );
 
@@ -116,17 +144,17 @@ export const documentChunks = pgTable(
     documentId: uuid('document_id')
       .notNull()
       .references(() => organizationDocuments.id, { onDelete: 'cascade' }),
-    // Denormalized for RLS — must match organizationDocuments.organizationId
+    // Denormalized for RLS — must match organizationDocuments.orgId
     organizationId: uuid('organization_id').notNull(),
     chunkIndex: integer('chunk_index').notNull(),
     content: text('content').notNull(),
     embedding: vector('embedding'),
     tokenCount: integer('token_count'),
-    metadataJson: jsonb('metadata_json').default({}),
+    metadataJson: jsonb('metadata_json').$type<Record<string, unknown>>().default({}),
     createdAt: timestamp('created_at', { withTimezone: true, mode: 'date' }).notNull().defaultNow(),
   },
   (table) => ({
-    // Secondary index for org-scoped queries (HNSW index created in migration)
+    // Secondary index for org-scoped queries (HNSW index created in migration 0014)
     orgIdx: index('idx_doc_chunks_org').on(table.organizationId),
   }),
 );
@@ -158,19 +186,12 @@ export const documentAccessPolicies = pgTable(
   }),
 );
 
-/**
- * REQ-DOC-039: Ingest job tracking.
- * Tracks async processing jobs from upload to indexed state.
- */
-export const ingestJobs = pgTable('ingest_jobs', {
-  id: uuid('id').defaultRandom().primaryKey(),
-  organizationId: uuid('organization_id').notNull(),
-  documentId: uuid('document_id').references(() => organizationDocuments.id),
-  inngestRunId: text('inngest_run_id'),
-  source: text('source').notNull(), // 'manual' | 'google_drive' | 'sharepoint' | 'dropbox' | 'email'
-  status: text('status').notNull().default('pending'), // 'pending' | 'running' | 'completed' | 'failed'
-  errorMessage: text('error_message'),
-  startedAt: timestamp('started_at', { withTimezone: true, mode: 'date' }),
-  completedAt: timestamp('completed_at', { withTimezone: true, mode: 'date' }),
-  createdAt: timestamp('created_at', { withTimezone: true, mode: 'date' }).notNull().defaultNow(),
-});
+// ---------------------------------------------------------------------------
+// Type helpers
+// ---------------------------------------------------------------------------
+
+export type OrganizationDocument = typeof organizationDocuments.$inferSelect;
+export type NewOrganizationDocument = typeof organizationDocuments.$inferInsert;
+export type DocumentChunk = typeof documentChunks.$inferSelect;
+export type NewDocumentChunk = typeof documentChunks.$inferInsert;
+export type DocumentAccessPolicy = typeof documentAccessPolicies.$inferSelect;

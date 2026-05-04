@@ -4,6 +4,7 @@
 // @MX:SPEC SPEC-REGULA-FOUNDATION-001 (REQ-FND-031, supports REQ-FND-046+)
 
 import { drizzle } from 'drizzle-orm/postgres-js';
+import { sql } from 'drizzle-orm';
 import postgres from 'postgres';
 import { getEnv } from '../env';
 import * as schema from './schema';
@@ -20,3 +21,22 @@ const queryClient = postgres(env.DATABASE_URL, {
 
 export const db = drizzle(queryClient, { schema });
 export type Database = typeof db;
+
+// Drizzle client type inferred from the db instance
+type DrizzleClient = typeof db;
+
+/**
+ * Execute a function within a tenant-scoped transaction.
+ * Sets `app.current_org_id` GUC so RLS policies can enforce org isolation.
+ * REQ-DOC-042: all org document queries MUST use this wrapper.
+ */
+export async function withTenantScope<T>(
+  orgId: string,
+  fn: (db: DrizzleClient) => Promise<T>,
+): Promise<T> {
+  return db.transaction(async (tx) => {
+    // Set the GUC for RLS policy enforcement
+    await tx.execute(sql.raw(`SET LOCAL app.current_org_id = '${orgId}'`));
+    return fn(tx as unknown as DrizzleClient);
+  });
+}

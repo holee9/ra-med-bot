@@ -11,8 +11,19 @@ import { NmpaRetriever } from './retrievers/nmpa';
 import { PmdaRetriever } from './retrievers/pmda';
 import type { IRetriever, RetrievalResult, RetrieverOptions } from './retrievers/types';
 
+/** Indicates whether a result came from public regulatory corpora or org-internal documents. */
+export type CorpusType = 'public' | 'org';
+
+/** RetrievalResult extended with corpus type for Phase 8E (REQ-DOC-069). */
+export interface MergedRetrievalResult extends RetrievalResult {
+  corpusType: CorpusType;
+}
+
 /** Maximum number of results to return after merging and reranking. */
 const TOP_K = 8;
+
+/** Corpus names that are org-internal (Phase 8E). Public corpora are everything else. */
+const ORG_CORPUS_PREFIX = 'org_';
 
 /** Registry mapping corpus names to their IRetriever factory functions. */
 const RETRIEVER_REGISTRY: Record<string, () => IRetriever> = {
@@ -98,9 +109,18 @@ export async function parallelRetrieveAndMerge(
   // Fire all retrievers in parallel.
   const resultSets = await Promise.all(retrievers.map((r) => r.retrieve(query, opts)));
 
-  // Flatten all results into a single list.
-  const flat = resultSets.flat();
+  // Flatten all results into a single list with corpus type annotation.
+  const flat: MergedRetrievalResult[] = resultSets.flatMap((results, idx) => {
+    const corpusName = corpora[idx] ?? '';
+    const corpusType: CorpusType = corpusName.startsWith(ORG_CORPUS_PREFIX) ? 'org' : 'public';
+    return results.map((r) => ({ ...r, corpusType }));
+  });
 
   // Rerank or sort, then cap at TOP_K.
-  return rerankOrSort(query, flat);
+  const sorted = await rerankOrSort(query, flat);
+  // Preserve corpusType after reranking
+  return sorted.map((r) => ({
+    ...r,
+    corpusType: (r as MergedRetrievalResult).corpusType ?? 'public',
+  })) as MergedRetrievalResult[];
 }

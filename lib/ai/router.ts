@@ -10,8 +10,18 @@ import { type LanguageModel, generateText } from 'ai';
 // Same pattern as intent.ts — runtime is compatible.
 const MODEL = anthropic('claude-haiku-4-5') as unknown as LanguageModel;
 
-/** Five intent categories the router classifies user queries into. */
-export type RouterIntent = 'regulation-lookup' | 'strategy' | 'comparison' | 'timeline' | 'general';
+/**
+ * Seven intent categories the router classifies user queries into.
+ * Phase 8E adds past_submission_reuse and audit_response_drafting (REQ-DOC-068).
+ */
+export type RouterIntent =
+  | 'regulation-lookup'
+  | 'strategy'
+  | 'comparison'
+  | 'timeline'
+  | 'general'
+  | 'past_submission_reuse'
+  | 'audit_response_drafting';
 
 const ROUTER_INTENTS: readonly RouterIntent[] = [
   'regulation-lookup',
@@ -19,11 +29,14 @@ const ROUTER_INTENTS: readonly RouterIntent[] = [
   'comparison',
   'timeline',
   'general',
+  'past_submission_reuse',
+  'audit_response_drafting',
 ] as const;
 
 /**
  * Maps each intent to the set of corpora that are most relevant.
  * `internal-sops` is always appended regardless of intent.
+ * Phase 8E adds org-document corpora (REQ-DOC-068).
  */
 export const intentToCorpora: Record<RouterIntent, string[]> = {
   'regulation-lookup': ['fda', 'eu-mdr', 'mfds', 'nmpa', 'pmda'],
@@ -31,6 +44,9 @@ export const intentToCorpora: Record<RouterIntent, string[]> = {
   comparison: ['fda', 'eu-mdr', 'mfds', 'nmpa', 'pmda'],
   timeline: ['fda', 'eu-mdr'],
   general: ['fda', 'internal-sops'],
+  // Phase 8E: org-internal submission and audit document retrieval
+  past_submission_reuse: ['org_fda_submissions', 'org_eu_cer', 'org_mfds_submissions'],
+  audit_response_drafting: ['org_audit_responses'],
 };
 
 /** Market codes to corpus name map for filtering by target_markets. */

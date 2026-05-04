@@ -1,0 +1,60 @@
+import { describe, it, expect, vi, beforeEach } from 'vitest';
+
+// Mock OpenAI — returns embeddings matching the input batch size
+vi.mock('openai', () => ({
+  default: vi.fn().mockImplementation(() => ({
+    embeddings: {
+      create: vi.fn().mockImplementation(({ input }: { input: string[] }) => {
+        return Promise.resolve({
+          data: input.map(() => ({ embedding: new Array(1536).fill(0.1) })),
+        });
+      }),
+    },
+  })),
+}));
+
+import { embedChunks } from '../../../lib/ingest/embed';
+
+describe('embedChunks', () => {
+  beforeEach(() => {
+    vi.clearAllMocks();
+  });
+
+  it('returns array of embedding vectors', async () => {
+    const result = await embedChunks(['Hello world', 'Medical device']);
+    expect(Array.isArray(result)).toBe(true);
+    expect(result).toHaveLength(2);
+    expect(result[0]).toHaveLength(1536);
+  });
+
+  it('throws when text contains SSN pattern (PII guard)', async () => {
+    await expect(
+      embedChunks(['Patient SSN is 123-45-6789 for this record']),
+    ).rejects.toThrow(/PII|SSN/i);
+  });
+
+  it('throws when text contains email-like PII pattern', async () => {
+    await expect(
+      embedChunks(['Contact john.doe@hospital.org for patient records']),
+    ).rejects.toThrow(/PII|email/i);
+  });
+
+  it('processes 150 texts correctly (batching)', async () => {
+    const texts = Array.from({ length: 150 }, (_, i) => `Document chunk ${i}`);
+    const result = await embedChunks(texts);
+    expect(result).toHaveLength(150);
+  });
+
+  it('returns empty array for empty input', async () => {
+    const result = await embedChunks([]);
+    expect(result).toEqual([]);
+  });
+
+  it('each embedding is an array of numbers', async () => {
+    const result = await embedChunks(['Test regulatory content']);
+    expect(Array.isArray(result[0])).toBe(true);
+    for (const val of result[0]!) {
+      expect(typeof val).toBe('number');
+    }
+  });
+});

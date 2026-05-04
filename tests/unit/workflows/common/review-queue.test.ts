@@ -71,10 +71,10 @@ describe('ReviewQueue', () => {
       queue.enqueue(makeItem({ priority: 'high' }));
 
       const sorted = queue.listByPriority();
-      expect(sorted[0].priority).toBe('urgent');
-      expect(sorted[1].priority).toBe('high');
-      expect(sorted[2].priority).toBe('normal');
-      expect(sorted[3].priority).toBe('low');
+      expect(sorted[0]!.priority).toBe('urgent');
+      expect(sorted[1]!.priority).toBe('high');
+      expect(sorted[2]!.priority).toBe('normal');
+      expect(sorted[3]!.priority).toBe('low');
     });
   });
 
