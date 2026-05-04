@@ -43,6 +43,7 @@ Last reviewed: 2026-05-03
 - Phase 3 Structured Outputs is complete under Issue #5.
 - Phase 4 Breadth is complete on `main` as of 2026-05-03: 8 views, 10 APIs, 5 additional RAG retrievers, project switching, 47 test files / 472 tests.
 - Phase 5 Enterprise Hardening is complete under Issue #7 as of 2026-05-03: expert review queue, RBAC, audit completeness, dark mode, i18n, accessibility, observability, profile API, 74 REQ-ENTERPRISE, and 903/903 Vitest tests recorded in the issue verification history.
+- Phase 6 Quality & Launch is complete as of 2026-05-04 per SPEC-REGULA-LAUNCH-001 and CHANGELOG 1.0.0. Review/fix record: `.moai/specs/SPEC-REGULA-LAUNCH-001/review-2026-05-04.md`.
 - Local verification caveat: do not count `next build` as passed from the 2026-05-03 local run; it hung and was interrupted. CI build is registered in `.github/workflows/ci.yml`, but local build pass evidence still needs a bounded run.
 - PR #15 was reviewed and closed as obsolete on 2026-05-03. It had no review threads or comments, all checks passed, but it was conflicting because `main` already contained the Phase 3/4 work.
 - Wiki access is enabled and readable. Wiki currently has Home, Lessons Learned, and Architecture Decisions index.
@@ -51,7 +52,7 @@ Last reviewed: 2026-05-03
 ## Known Roadmap Risks
 
 - Phase 5 residual risk is verification evidence, not feature scope: local `next build` still needs a bounded pass record because the 2026-05-03 run hung.
-- Phase 6 must add Playwright E2E, LLM eval harness, corpus ingestion automation, and launch/security validation.
+- Phase 6 residual risk is external evidence: RA lead dataset sign-off, staging load credentials, Neon production branch, local Vitest execution blocked by esbuild `spawn EPERM`, and local `bash` unavailable for shell syntax checks.
 - Phase 4 integration still depends on real corpus fixtures, template files, object-storage provisioning, and regulatory update seed data for end-to-end verification.
 - Treat `.moai/specs` as authoritative but verify against current files and GitHub state before acting; planning docs can drift.
 

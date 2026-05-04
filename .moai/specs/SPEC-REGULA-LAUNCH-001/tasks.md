@@ -1,7 +1,9 @@
 ## Task Decomposition
 SPEC: SPEC-REGULA-LAUNCH-001
 
-| Task ID | Group | Description | REQ | Dependencies | Planned Files | Status |
+Execution sync (2026-05-04): SPEC and CHANGELOG mark Phase 6 complete. This table is preserved as the original planning baseline; do not read the `pending` values below as current execution state. See `review-2026-05-04.md` for the latest review and verification record.
+
+| Task ID | Group | Description | REQ | Dependencies | Planned Files | Initial Status |
 |---------|-------|-------------|-----|--------------|---------------|--------|
 | TASK-001 | A | promptfoo 설치 + config skeleton | REQ-001,002 | - | package.json, tests/eval/promptfoo.config.yaml | pending |
 | TASK-002 | A | 6 dataset YAML + schema 검증 테스트 | REQ-003~005 | TASK-001 | tests/eval/datasets/{fda,eu-mdr,mfds,nmpa,pmda,internal-sop}.yaml, REVIEWED.md, tests/unit/eval-dataset-schema.test.ts | pending |

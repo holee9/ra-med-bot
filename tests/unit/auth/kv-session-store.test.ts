@@ -1,7 +1,7 @@
 // Tests for lib/auth/kv-session-store.ts
 // RED: test KV session adapter methods
 
-import { describe, expect, it, vi, beforeEach } from 'vitest';
+import { beforeEach, describe, expect, it, vi } from 'vitest';
 
 // Mock KVNamespace
 function makeKVMock() {
@@ -27,14 +27,6 @@ interface AdapterSession {
   expires: Date;
 }
 
-interface AdapterUser {
-  id: string;
-  email: string;
-  name?: string | null;
-  image?: string | null;
-  emailVerified?: Date | null;
-}
-
 describe('getSessionAdapter', () => {
   let kv: KVNamespace;
   let adapter: ReturnType<typeof import('../../../lib/auth/kv-session-store').getSessionAdapter>;
@@ -52,7 +44,7 @@ describe('getSessionAdapter', () => {
         userId: 'user-1',
         expires: new Date(Date.now() + 1000 * 60 * 60),
       };
-      await adapter.createSession!(session);
+      await adapter.createSession?.(session);
       expect(kv.put).toHaveBeenCalledWith(
         'session:tok-abc',
         expect.any(String),
@@ -66,14 +58,14 @@ describe('getSessionAdapter', () => {
         userId: 'user-2',
         expires: new Date(Date.now() + 1000 * 60 * 60),
       };
-      const result = await adapter.createSession!(session);
+      const result = await adapter.createSession?.(session);
       expect(result).toMatchObject({ sessionToken: 'tok-xyz', userId: 'user-2' });
     });
   });
 
   describe('getSessionAndUser', () => {
     it('should return null when session not found in KV', async () => {
-      const result = await adapter.getSessionAndUser!('nonexistent-token');
+      const result = await adapter.getSessionAndUser?.('nonexistent-token');
       expect(result).toBeNull();
     });
 
@@ -83,8 +75,8 @@ describe('getSessionAdapter', () => {
         userId: 'user-get',
         expires: new Date(Date.now() + 1000 * 60 * 60),
       };
-      await adapter.createSession!(session);
-      const result = await adapter.getSessionAndUser!('tok-get');
+      await adapter.createSession?.(session);
+      const result = await adapter.getSessionAndUser?.('tok-get');
       expect(result).not.toBeNull();
       expect(result?.session.sessionToken).toBe('tok-get');
     });
@@ -97,10 +89,10 @@ describe('getSessionAdapter', () => {
         userId: 'user-upd',
         expires: new Date(Date.now() + 1000),
       };
-      await adapter.createSession!(session);
+      await adapter.createSession?.(session);
 
       const newExpiry = new Date(Date.now() + 1000 * 60 * 60 * 24 * 30);
-      await adapter.updateSession!({ sessionToken: 'tok-upd', expires: newExpiry });
+      await adapter.updateSession?.({ sessionToken: 'tok-upd', expires: newExpiry });
 
       expect(kv.put).toHaveBeenCalledTimes(2);
     });
@@ -113,8 +105,8 @@ describe('getSessionAdapter', () => {
         userId: 'user-del',
         expires: new Date(Date.now() + 1000 * 60 * 60),
       };
-      await adapter.createSession!(session);
-      await adapter.deleteSession!('tok-del');
+      await adapter.createSession?.(session);
+      await adapter.deleteSession?.('tok-del');
 
       expect(kv.delete).toHaveBeenCalledWith('session:tok-del');
     });
@@ -127,13 +119,13 @@ describe('KV key pattern', () => {
     const { getSessionAdapter } = await import('../../../lib/auth/kv-session-store');
     const adapter = getSessionAdapter(kv);
 
-    await adapter.createSession!({
+    await adapter.createSession?.({
       sessionToken: 'my-token',
       userId: 'u1',
       expires: new Date(Date.now() + 86400000),
     });
 
-    const callArg = vi.mocked(kv.put).mock.calls[0]![0];
+    const callArg = vi.mocked(kv.put).mock.calls[0]?.[0];
     expect(callArg).toBe('session:my-token');
   });
 });
@@ -144,13 +136,13 @@ describe('TTL enforcement', () => {
     const { getSessionAdapter } = await import('../../../lib/auth/kv-session-store');
     const adapter = getSessionAdapter(kv);
 
-    await adapter.createSession!({
+    await adapter.createSession?.({
       sessionToken: 'ttl-token',
       userId: 'u1',
       expires: new Date(Date.now() + 86400000),
     });
 
-    const opts = vi.mocked(kv.put).mock.calls[0]![2];
+    const opts = vi.mocked(kv.put).mock.calls[0]?.[2];
     // 30 days = 2592000 seconds
     expect(opts?.expirationTtl).toBeGreaterThanOrEqual(2592000 - 60);
     expect(opts?.expirationTtl).toBeLessThanOrEqual(2592000 + 60);
