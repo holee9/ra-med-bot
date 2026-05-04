@@ -129,6 +129,10 @@ export const auditActionEnum = pgEnum('audit_action', [
   'document.chunk',
   'document.search',
   'redaction_map.access',
+  // Phase 10 Radar values added via 0018_radar.sql (3):
+  'radar.crawler_run',
+  'radar.notification',
+  'radar.search',
 ]);
 
 // REQ-WF-049: workflow_type pgEnum — three Phase 9 workflow kinds.
@@ -321,7 +325,8 @@ export const templates = pgTable('templates', {
   createdAt: timestamp('created_at', { withTimezone: true, mode: 'date' }).notNull().defaultNow(),
 });
 
-// REQ-FND-042
+// REQ-FND-042 + REQ-RADAR: Extends with Phase 10 crawler/classification columns.
+// New columns added via 0018_radar.sql — do NOT modify existing columns.
 export const regulatoryUpdates = pgTable('regulatory_updates', {
   id: uuid('id').defaultRandom().primaryKey(),
   title: text('title').notNull(),
@@ -335,7 +340,59 @@ export const regulatoryUpdates = pgTable('regulatory_updates', {
     .$default(() => []),
   impactAnalysisText: text('impact_analysis_text'),
   createdAt: timestamp('created_at', { withTimezone: true, mode: 'date' }).notNull().defaultNow(),
+  // Phase 10 Radar columns (0018_radar.sql)
+  sourceCrawler: text('source_crawler'),
+  externalId: text('external_id'),
+  rawContentEn: text('raw_content_en'),
+  rawContentKo: text('raw_content_ko'),
+  impactTypeHint: text('impact_type_hint'),
+  tier1Relevant: boolean('tier1_relevant'),
+  impactScore: numeric('impact_score', { precision: 3, scale: 2 }),
 });
+
+// Phase 10 Radar: crawler_runs — tracks each crawler execution lifecycle.
+// @MX:SPEC SPEC-REGULA-RADAR-001
+export const crawlerRuns = pgTable(
+  'crawler_runs',
+  {
+    id: uuid('id').defaultRandom().primaryKey(),
+    crawlerName: text('crawler_name').notNull(),
+    startedAt: timestamp('started_at', { withTimezone: true, mode: 'date' }).notNull().defaultNow(),
+    completedAt: timestamp('completed_at', { withTimezone: true, mode: 'date' }),
+    status: text('status').notNull().default('running'),
+    recordsAdded: integer('records_added').default(0),
+    errorsJson: jsonb('errors_json').notNull().default([]),
+    orgId: uuid('org_id').references(() => organizations.id, { onDelete: 'cascade' }),
+  },
+  (t) => ({
+    crawlerNameIdx: index('idx_crawler_runs_crawler_name').on(t.crawlerName, t.startedAt),
+    startedAtIdx: index('idx_crawler_runs_started_at').on(t.startedAt),
+  }),
+);
+
+// Phase 10 Radar: org_update_relevance — per-org impact scoring for regulatory updates.
+// @MX:SPEC SPEC-REGULA-RADAR-001
+export const orgUpdateRelevance = pgTable(
+  'org_update_relevance',
+  {
+    id: uuid('id').defaultRandom().primaryKey(),
+    orgId: uuid('org_id')
+      .notNull()
+      .references(() => organizations.id, { onDelete: 'cascade' }),
+    updateId: uuid('update_id')
+      .notNull()
+      .references(() => regulatoryUpdates.id, { onDelete: 'cascade' }),
+    impactScore: numeric('impact_score', { precision: 3, scale: 2 }).notNull(),
+    matchedProductCategories: text('matched_product_categories').array().notNull().default([]),
+    feedback: text('feedback'),
+    createdAt: timestamp('created_at', { withTimezone: true, mode: 'date' }).notNull().defaultNow(),
+  },
+  (t) => ({
+    orgUpdateUnique: unique('org_update_relevance_org_update_key').on(t.orgId, t.updateId),
+    orgImpactIdx: index('idx_org_update_relevance_org_impact').on(t.orgId, t.impactScore),
+    updateIdx: index('idx_org_update_relevance_update').on(t.updateId),
+  }),
+);
 
 // REQ-FND-043; Risk R9 mitigation: composite index on (status, assigned_to)
 // added via 0007_expert_reviews_index.sql.

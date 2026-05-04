@@ -1,0 +1,34 @@
+{
+  "count": 2,
+  "description": "Federal Register documents from FDA",
+  "results": [
+    {
+      "document_number": "2024-01234",
+      "title": "Medical Devices; Guidance for Industry — Software as a Medical Device",
+      "publication_date": "2024-01-15",
+      "html_url": "https://www.federalregister.gov/documents/2024/01/15/2024-01234/medical-devices-guidance",
+      "abstract": "FDA is issuing guidance on software as a medical device (SaMD). This guidance discusses the regulatory framework for SaMD, including premarket notification requirements.",
+      "agencies": [
+        {
+          "name": "Food and Drug Administration",
+          "url": "https://www.federalregister.gov/agencies/food-and-drug-administration"
+        }
+      ],
+      "type": "Rule"
+    },
+    {
+      "document_number": "2024-05678",
+      "title": "510(k) Premarket Notification Submissions for Device Software Functions",
+      "publication_date": "2024-01-20",
+      "html_url": "https://www.federalregister.gov/documents/2024/01/20/2024-05678/510k-premarket-notification",
+      "abstract": "Final guidance document describing the information needed in a 510(k) submission for device software functions.",
+      "agencies": [
+        {
+          "name": "Food and Drug Administration",
+          "url": "https://www.federalregister.gov/agencies/food-and-drug-administration"
+        }
+      ],
+      "type": "Proposed Rule"
+    }
+  ]
+}

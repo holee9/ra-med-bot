@@ -1,0 +1,20 @@
+{
+  "results": {
+    "result": [
+      {
+        "id": "32024R0001",
+        "title": "Commission Implementing Regulation (EU) 2024/001 on medical devices MDR Article 97 compliance",
+        "date": "2024-01-10",
+        "url": "https://eur-lex.europa.eu/legal-content/EN/TXT/?uri=CELEX:32024R0001",
+        "content": "This Regulation establishes additional technical requirements for medical devices under MDR (EU) 2017/745."
+      },
+      {
+        "id": "32024R0002",
+        "title": "Commission Decision (EU) 2024/002 on IVDR transition provisions for legacy in vitro diagnostic devices",
+        "date": "2024-01-18",
+        "url": "https://eur-lex.europa.eu/legal-content/EN/TXT/?uri=CELEX:32024R0002",
+        "content": "This Decision extends the transition period for certain in vitro diagnostic devices under IVDR (EU) 2017/746."
+      }
+    ]
+  }
+}

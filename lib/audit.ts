@@ -90,7 +90,11 @@ export type AuditAction =
   | 'document.redact'
   | 'document.chunk'
   | 'document.search'
-  | 'redaction_map.access';
+  | 'redaction_map.access'
+  // Phase 10 Radar actions added via 0018_radar.sql (3):
+  | 'radar.crawler_run'
+  | 'radar.notification'
+  | 'radar.search';
 
 export interface AuditEvent {
   /** User UUID, or null for system-initiated events. */

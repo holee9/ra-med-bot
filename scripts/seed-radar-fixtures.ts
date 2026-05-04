@@ -1,0 +1,312 @@
+#!/usr/bin/env tsx
+// Seed script: inserts 20 mock radar records into regulatory_updates for dev environment.
+// Usage: npx tsx scripts/seed-radar-fixtures.ts
+// @MX:SPEC SPEC-REGULA-RADAR-001
+
+import { db } from '../lib/db/client';
+import { regulatoryUpdates } from '../lib/db/schema';
+
+const MOCK_UPDATES = [
+  {
+    title: 'FDA Guidance: Cybersecurity in Medical Devices',
+    region: 'US',
+    severity: 'info',
+    publishedAt: new Date('2024-09-01'),
+    sourceUrl: 'https://www.fda.gov/medical-devices/guidance-documents',
+    affectedProductTypes: ['software', 'network-connected'],
+    sourceCrawler: 'fda-federal-register',
+    externalId: 'FDA-2024-D-001',
+    impactTypeHint: 'guidance',
+    impactScore: '0.82',
+    tier1Relevant: true,
+  },
+  {
+    title: 'Class I Recall: Infusion Pump Software Defect',
+    region: 'US',
+    severity: 'critical',
+    publishedAt: new Date('2024-09-05'),
+    sourceUrl: 'https://www.fda.gov/medical-devices/recalls',
+    affectedProductTypes: ['infusion_pump'],
+    sourceCrawler: 'fda-federal-register',
+    externalId: 'FDA-2024-R-001',
+    impactTypeHint: 'recall',
+    impactScore: '0.95',
+    tier1Relevant: true,
+  },
+  {
+    title: 'EU MDR Article 120 Transition Period Extension',
+    region: 'EU',
+    severity: 'high',
+    publishedAt: new Date('2024-08-15'),
+    sourceUrl: 'https://eur-lex.europa.eu/legal-content/EN/TXT/?uri=OJ',
+    affectedProductTypes: ['general'],
+    sourceCrawler: 'eu-oj',
+    externalId: 'EU-2024-MDR-001',
+    impactTypeHint: 'legislation',
+    impactScore: '0.91',
+    tier1Relevant: true,
+  },
+  {
+    title: 'MFDS 의료기기 허가·신고·심사 등에 관한 규정 개정',
+    region: 'KR',
+    severity: 'info',
+    publishedAt: new Date('2024-08-20'),
+    sourceUrl: 'https://www.mfds.go.kr/brd/m_74/view.do',
+    affectedProductTypes: ['general'],
+    sourceCrawler: 'mfds-notice',
+    externalId: 'MFDS-2024-N-001',
+    impactTypeHint: 'legislation',
+    impactScore: '0.75',
+    tier1Relevant: true,
+  },
+  {
+    title: 'FDA 510(k) Requirements Update for AI/ML Devices',
+    region: 'US',
+    severity: 'high',
+    publishedAt: new Date('2024-09-10'),
+    sourceUrl: 'https://www.fda.gov/medical-devices/510k-clearances',
+    affectedProductTypes: ['ai_ml', 'software'],
+    sourceCrawler: 'fda-federal-register',
+    externalId: 'FDA-2024-D-002',
+    impactTypeHint: 'guidance',
+    impactScore: '0.88',
+    tier1Relevant: true,
+  },
+  {
+    title: 'EU IVDR In Vitro Diagnostic Regulation Update',
+    region: 'EU',
+    severity: 'info',
+    publishedAt: new Date('2024-07-01'),
+    sourceUrl: 'https://eur-lex.europa.eu',
+    affectedProductTypes: ['ivd'],
+    sourceCrawler: 'eu-oj',
+    externalId: 'EU-2024-IVDR-001',
+    impactTypeHint: 'legislation',
+    impactScore: '0.71',
+    tier1Relevant: true,
+  },
+  {
+    title: 'FDA Warning Letter: Quality System Violations',
+    region: 'US',
+    severity: 'critical',
+    publishedAt: new Date('2024-09-15'),
+    sourceUrl: 'https://www.fda.gov/inspections-compliance-enforcement',
+    affectedProductTypes: ['general'],
+    sourceCrawler: 'fda-federal-register',
+    externalId: 'FDA-2024-WL-001',
+    impactTypeHint: 'enforcement_action',
+    impactScore: '0.93',
+    tier1Relevant: true,
+  },
+  {
+    title: '식약처 리콜 대상 의료기기 목록 업데이트',
+    region: 'KR',
+    severity: 'critical',
+    publishedAt: new Date('2024-09-03'),
+    sourceUrl: 'https://www.mfds.go.kr',
+    affectedProductTypes: ['general'],
+    sourceCrawler: 'mfds-notice',
+    externalId: 'MFDS-2024-R-001',
+    impactTypeHint: 'recall',
+    impactScore: '0.96',
+    tier1Relevant: true,
+  },
+  {
+    title: 'FDA PMA Supplement Requirements Update',
+    region: 'US',
+    severity: 'info',
+    publishedAt: new Date('2024-08-01'),
+    sourceUrl: 'https://www.fda.gov/medical-devices/premarket-approval-pma',
+    affectedProductTypes: ['class_iii'],
+    sourceCrawler: 'fda-federal-register',
+    externalId: 'FDA-2024-PMA-001',
+    impactTypeHint: 'guidance',
+    impactScore: '0.78',
+    tier1Relevant: true,
+  },
+  {
+    title: 'EU CE Marking Notified Body Requirements',
+    region: 'EU',
+    severity: 'info',
+    publishedAt: new Date('2024-07-15'),
+    sourceUrl: 'https://eur-lex.europa.eu',
+    affectedProductTypes: ['general'],
+    sourceCrawler: 'eu-oj',
+    externalId: 'EU-2024-CE-001',
+    impactTypeHint: 'guidance',
+    impactScore: '0.65',
+    tier1Relevant: true,
+  },
+  {
+    title: 'MFDS 체외진단기기 허가 기준 개정 고시',
+    region: 'KR',
+    severity: 'info',
+    publishedAt: new Date('2024-08-10'),
+    sourceUrl: 'https://www.mfds.go.kr',
+    affectedProductTypes: ['ivd'],
+    sourceCrawler: 'mfds-notice',
+    externalId: 'MFDS-2024-N-002',
+    impactTypeHint: 'legislation',
+    impactScore: '0.72',
+    tier1Relevant: true,
+  },
+  {
+    title: 'FDA Medical Device Reporting Requirements Modernization',
+    region: 'US',
+    severity: 'info',
+    publishedAt: new Date('2024-09-20'),
+    sourceUrl: 'https://www.fda.gov/medical-devices/mandatory-reporting-requirements',
+    affectedProductTypes: ['general'],
+    sourceCrawler: 'fda-federal-register',
+    externalId: 'FDA-2024-MDR-001',
+    impactTypeHint: 'legislation',
+    impactScore: '0.83',
+    tier1Relevant: true,
+  },
+  {
+    title: 'EU Novel Food Regulation — Non-Device (filtered)',
+    region: 'EU',
+    severity: 'info',
+    publishedAt: new Date('2024-06-01'),
+    sourceUrl: 'https://eur-lex.europa.eu',
+    affectedProductTypes: [],
+    sourceCrawler: 'eu-oj',
+    externalId: 'EU-2024-FOOD-001',
+    impactTypeHint: 'legislation',
+    impactScore: '0.05',
+    tier1Relevant: false,
+  },
+  {
+    title: 'FDA Software as Medical Device (SaMD) Guidance v2',
+    region: 'US',
+    severity: 'high',
+    publishedAt: new Date('2024-09-25'),
+    sourceUrl: 'https://www.fda.gov/medical-devices/digital-health-center-excellence',
+    affectedProductTypes: ['software', 'ai_ml'],
+    sourceCrawler: 'fda-federal-register',
+    externalId: 'FDA-2024-SAMD-001',
+    impactTypeHint: 'guidance',
+    impactScore: '0.89',
+    tier1Relevant: true,
+  },
+  {
+    title: '식약처 의료기기 광고 심의 기준 개정',
+    region: 'KR',
+    severity: 'info',
+    publishedAt: new Date('2024-08-25'),
+    sourceUrl: 'https://www.mfds.go.kr',
+    affectedProductTypes: ['general'],
+    sourceCrawler: 'mfds-notice',
+    externalId: 'MFDS-2024-N-003',
+    impactTypeHint: 'legislation',
+    impactScore: '0.61',
+    tier1Relevant: true,
+  },
+  {
+    title: 'EU MDR Article 59 Temporary Authorization Procedure',
+    region: 'EU',
+    severity: 'info',
+    publishedAt: new Date('2024-07-20'),
+    sourceUrl: 'https://eur-lex.europa.eu',
+    affectedProductTypes: ['general'],
+    sourceCrawler: 'eu-oj',
+    externalId: 'EU-2024-ART59-001',
+    impactTypeHint: 'guidance',
+    impactScore: '0.77',
+    tier1Relevant: true,
+  },
+  {
+    title: 'FDA Postmarket Surveillance Study Requirements',
+    region: 'US',
+    severity: 'info',
+    publishedAt: new Date('2024-08-05'),
+    sourceUrl: 'https://www.fda.gov/medical-devices/postmarket-requirements',
+    affectedProductTypes: ['class_ii', 'class_iii'],
+    sourceCrawler: 'fda-federal-register',
+    externalId: 'FDA-2024-PS-001',
+    impactTypeHint: 'guidance',
+    impactScore: '0.74',
+    tier1Relevant: true,
+  },
+  {
+    title: 'MFDS 품질관리기준 적용 지침 개정',
+    region: 'KR',
+    severity: 'info',
+    publishedAt: new Date('2024-09-01'),
+    sourceUrl: 'https://www.mfds.go.kr',
+    affectedProductTypes: ['general'],
+    sourceCrawler: 'mfds-notice',
+    externalId: 'MFDS-2024-QMS-001',
+    impactTypeHint: 'guidance',
+    impactScore: '0.68',
+    tier1Relevant: true,
+  },
+  {
+    title: 'EU Regulation on Single-Use Plastics — Non-Device',
+    region: 'EU',
+    severity: 'info',
+    publishedAt: new Date('2024-05-01'),
+    sourceUrl: 'https://eur-lex.europa.eu',
+    affectedProductTypes: [],
+    sourceCrawler: 'eu-oj',
+    externalId: 'EU-2024-PLASTIC-001',
+    impactTypeHint: 'legislation',
+    impactScore: '0.04',
+    tier1Relevant: false,
+  },
+  {
+    title: 'FDA Class II Recall: Blood Glucose Monitor Software',
+    region: 'US',
+    severity: 'high',
+    publishedAt: new Date('2024-09-28'),
+    sourceUrl: 'https://www.fda.gov/medical-devices/recalls',
+    affectedProductTypes: ['diagnostic_imaging', 'software'],
+    sourceCrawler: 'fda-federal-register',
+    externalId: 'FDA-2024-R-002',
+    impactTypeHint: 'recall',
+    impactScore: '0.92',
+    tier1Relevant: true,
+  },
+] as const;
+
+async function main() {
+  console.log('[seed-radar] Starting seed of 20 mock radar fixtures...');
+
+  let inserted = 0;
+  let skipped = 0;
+
+  for (const update of MOCK_UPDATES) {
+    try {
+      await db
+        .insert(regulatoryUpdates)
+        .values({
+          title: update.title,
+          region: update.region,
+          severity: update.severity,
+          publishedAt: update.publishedAt,
+          sourceUrl: update.sourceUrl,
+          affectedProductTypes: Array.from(update.affectedProductTypes) as string[],
+          sourceCrawler: update.sourceCrawler,
+          externalId: update.externalId,
+          impactTypeHint: update.impactTypeHint,
+          impactScore: update.impactScore,
+          tier1Relevant: update.tier1Relevant,
+        })
+        .onConflictDoNothing();
+
+      inserted++;
+      console.log(`  [+] ${update.externalId}: ${update.title.slice(0, 50)}`);
+    } catch (err) {
+      skipped++;
+      console.warn(`  [!] Skipped ${update.externalId}: ${String(err).slice(0, 80)}`);
+    }
+  }
+
+  console.log(`\n[seed-radar] Done. Inserted: ${inserted}, Skipped: ${skipped}`);
+  process.exit(0);
+}
+
+main().catch((err) => {
+  console.error('[seed-radar] Fatal error:', err);
+  process.exit(1);
+});

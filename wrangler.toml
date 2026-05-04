@@ -108,11 +108,44 @@ queue = "langfuse-flush-queue"
 max_batch_size = 100
 max_batch_timeout = 30
 
+# ── Radar Queues (Phase 10) ───────────────────────────────────────────────────
+
+[[queues.producers]]
+binding = "RADAR_CLASSIFY_QUEUE"
+queue = "radar-classify-queue"
+
+[[queues.producers]]
+binding = "RADAR_SCORE_QUEUE"
+queue = "radar-score-queue"
+
+[[queues.producers]]
+binding = "RADAR_NOTIFY_QUEUE"
+queue = "radar-notify-queue"
+
+[[queues.consumers]]
+queue = "radar-classify-queue"
+max_batch_size = 50
+max_batch_timeout = 30
+
+[[queues.consumers]]
+queue = "radar-score-queue"
+max_batch_size = 50
+max_batch_timeout = 30
+
+[[queues.consumers]]
+queue = "radar-notify-queue"
+max_batch_size = 100
+max_batch_timeout = 10
+
 # ── Cron Triggers ─────────────────────────────────────────────────────────────
-# daily at 02:00 UTC  — regulatory feed crawl
-# weekly Mon 03:00    — AutoRAG re-index
-# monthly 1st 04:00   — audit cold storage migration
-# quarterly 1st 00:00 — compliance report generation
+# daily at 02:00 UTC     — regulatory feed crawl (legacy)
+# weekly Mon 03:00       — AutoRAG re-index
+# monthly 1st 04:00      — audit cold storage migration
+# quarterly 1st 00:00    — compliance report generation
+# 18:15 UTC daily        — FDA Federal Register crawler (Phase 10)
+# 18:45 UTC daily        — EU OJ crawler (Phase 10)
+# 19:15 UTC daily        — MFDS 고시 crawler (Phase 10)
+# 21:00 UTC daily        — Radar post-processing pipeline (Phase 10)
 
 [triggers]
-crons = ["0 2 * * *", "0 3 * * 1", "0 4 1 * *", "0 0 1 */3 *"]
+crons = ["0 2 * * *", "0 3 * * 1", "0 4 1 * *", "0 0 1 */3 *", "15 18 * * *", "45 18 * * *", "15 19 * * *", "0 21 * * *"]
