@@ -3,6 +3,7 @@ import { POST } from '@/app/api/ra/workflows/submission-drafter/route';
 import { describe, expect, it, vi } from 'vitest';
 
 // Mock withPermission: pass-through with fixed session
+vi.mock('@/lib/audit', () => ({ writeAudit: vi.fn().mockResolvedValue(undefined) }));
 vi.mock('@/lib/auth/with-permission', () => ({
   withPermission: vi.fn(
     (
