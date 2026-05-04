@@ -20,6 +20,7 @@ export type PermissionAction =
   | 'project.manage'
   | 'sources.ingest'
   | 'templates.edit'
+  | 'workflow.execute'
   | 'rbac.manage';
 
 export interface PermissionSpec {
@@ -66,5 +67,8 @@ export const PERMISSIONS: Record<PermissionAction, PermissionSpec> = {
   // admin-only actions
   'sources.ingest': { minRole: 'admin', scope: 'org', resourceType: 'sources' },
   'templates.edit': { minRole: 'ra-lead', scope: 'org', resourceType: 'templates' },
+  // workflow actions
+  'workflow.execute': { minRole: 'ra-member', scope: 'none', resourceType: 'workflow' },
+
   'rbac.manage': { minRole: 'admin', scope: 'org', resourceType: 'rbac' },
 };

@@ -12,11 +12,13 @@ import { z } from 'zod';
 
 // REQ-ENTERPRISE-058: Zod schema for PATCH body — all fields optional.
 // theme and locale are accepted but not persisted to DB (client-side storage).
+// REQ-TENANT-001: department field added for secondary RBAC axis.
 const PatchSchema = z
   .object({
     notificationPref: z.record(z.unknown()).optional(),
     theme: z.enum(['light', 'dark']).optional(),
     locale: z.enum(['ko', 'en']).optional(),
+    department: z.enum(['RA', 'Dev', 'Exec', 'External']).optional(),
   })
   .strip();
 
@@ -60,7 +62,7 @@ export const PATCH = withPermission('profile.edit', async (req, _ctx, session) =
     );
   }
 
-  const { notificationPref, theme, locale } = parsed.data;
+  const { notificationPref, theme, locale, department } = parsed.data;
 
   // Only update DB columns that are actually stored in the users table.
   // theme and locale are client-side preferences — accepted but not persisted.
@@ -70,13 +72,19 @@ export const PATCH = withPermission('profile.edit', async (req, _ctx, session) =
     name: string;
     role: string;
     notificationPref: unknown;
+    department: string | null;
   } | null = null;
 
-  if (notificationPref !== undefined) {
-    // Update notificationPref in DB
+  const dbUpdates: { notificationPref?: unknown; department?: 'RA' | 'Dev' | 'Exec' | 'External' } =
+    {};
+  if (notificationPref !== undefined) dbUpdates.notificationPref = notificationPref;
+  if (department !== undefined) dbUpdates.department = department;
+
+  if (Object.keys(dbUpdates).length > 0) {
+    // Update DB columns that changed
     const rows = await db
       .update(users)
-      .set({ notificationPref })
+      .set(dbUpdates)
       .where(eq(users.id, session.user.id))
       .returning({
         id: users.id,
@@ -84,6 +92,7 @@ export const PATCH = withPermission('profile.edit', async (req, _ctx, session) =
         name: users.name,
         role: users.role,
         notificationPref: users.notificationPref,
+        department: users.department,
       });
 
     profileRow = rows[0] ?? null;
@@ -96,6 +105,7 @@ export const PATCH = withPermission('profile.edit', async (req, _ctx, session) =
         name: users.name,
         role: users.role,
         notificationPref: users.notificationPref,
+        department: users.department,
       })
       .from(users)
       .where(eq(users.id, session.user.id))
@@ -117,6 +127,7 @@ export const PATCH = withPermission('profile.edit', async (req, _ctx, session) =
       ...(notificationPref !== undefined && { notificationPref: true }),
       ...(theme !== undefined && { theme }),
       ...(locale !== undefined && { locale }),
+      ...(department !== undefined && { department }),
     },
   });
 
