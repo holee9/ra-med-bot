@@ -58,8 +58,9 @@ async function fetchWithRetry(url: string, maxAttempts = 3): Promise<Response> {
 
 async function fetchEudamedDevices(params: LookupDeviceParams): Promise<EudamedDevice[]> {
   const { basicUdiDi, deviceName, limit = 10 } = params;
+  const resolvedDeviceName = deviceName ?? '';
 
-  if (!basicUdiDi && !deviceName) return [];
+  if (!basicUdiDi && !resolvedDeviceName) return [];
 
   let url: string;
 
@@ -67,7 +68,7 @@ async function fetchEudamedDevices(params: LookupDeviceParams): Promise<EudamedD
   if (basicUdiDi) {
     url = `${EUDAMED_BASE}udi/devices?basicUdiDi=${encodeURIComponent(basicUdiDi)}&size=${limit}`;
   } else {
-    const encodedDeviceName = encodeURIComponent(deviceName);
+    const encodedDeviceName = encodeURIComponent(resolvedDeviceName);
     url = `${EUDAMED_BASE}udi/devices?deviceName=${encodedDeviceName}&size=${limit}`;
   }
 
