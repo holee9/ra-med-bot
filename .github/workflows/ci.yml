@@ -99,7 +99,12 @@ jobs:
         run: pnpm install --frozen-lockfile
 
       - name: Run promptfoo eval
-        run: pnpm eval:ci
+        run: |
+          if [ -z "$ANTHROPIC_API_KEY_EVAL" ]; then
+            echo "Skipping LLM eval: ANTHROPIC_API_KEY_EVAL secret is not configured."
+            exit 0
+          fi
+          ANTHROPIC_API_KEY="$ANTHROPIC_API_KEY_EVAL" pnpm eval:ci
         env:
           ANTHROPIC_API_KEY_EVAL: ${{ secrets.ANTHROPIC_API_KEY_EVAL }}
           LANGFUSE_PUBLIC_KEY: ${{ secrets.LANGFUSE_PUBLIC_KEY }}
@@ -142,6 +147,16 @@ jobs:
         env:
           PLAYWRIGHT_BASE_URL: ${{ secrets.STAGING_URL || 'http://localhost:3000' }}
           CI: 'true'
+          SKIP_ENV_VALIDATION: true
+          DATABASE_URL: "postgresql://postgres:postgres@localhost:5432/regula_ci"
+          AUTH_SECRET: "ci-e2e-placeholder-secret-minimum-32-characters"
+          NEXTAUTH_URL: "http://localhost:3000"
+          AUTH_MICROSOFT_ID: "ci-placeholder-microsoft-id"
+          AUTH_MICROSOFT_SECRET: "ci-placeholder-microsoft-secret"
+          AUTH_GOOGLE_ID: "ci-placeholder-google-id"
+          AUTH_GOOGLE_SECRET: "ci-placeholder-google-secret"
+          ANTHROPIC_API_KEY: "ci-placeholder-anthropic-key"
+          OPENAI_API_KEY: "ci-placeholder-openai-key"
 
       - name: Upload test results
         uses: actions/upload-artifact@v4
