@@ -66,8 +66,9 @@ async function fetchEudamedDevices(params: LookupDeviceParams): Promise<EudamedD
   // basicUdiDi takes precedence over deviceName (REQ-EXT-007).
   if (basicUdiDi) {
     url = `${EUDAMED_BASE}udi/devices?basicUdiDi=${encodeURIComponent(basicUdiDi)}&size=${limit}`;
-  } else if (deviceName) {
-    url = `${EUDAMED_BASE}udi/devices?deviceName=${encodeURIComponent(deviceName)}&size=${limit}`;
+  } else {
+    const encodedDeviceName = encodeURIComponent(deviceName);
+    url = `${EUDAMED_BASE}udi/devices?deviceName=${encodedDeviceName}&size=${limit}`;
   }
 
   try {
