@@ -32,7 +32,7 @@ export interface HandoffResult {
  * Creates a new pending handoff request.
  * Returns a unique handoffId (UUID v4), status 'pending', and ISO timestamp.
  */
-export function createHandoffRequest(req: HandoffRequest): {
+export function createHandoffRequest(_req: HandoffRequest): {
   handoffId: string;
   status: 'pending';
   createdAt: string;

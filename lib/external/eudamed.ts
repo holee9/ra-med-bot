@@ -38,7 +38,7 @@ async function fetchWithRetry(url: string, maxAttempts = 3): Promise<Response> {
 
   for (let attempt = 0; attempt < maxAttempts; attempt++) {
     if (attempt > 0) {
-      const baseDelay = 250 * Math.pow(2, attempt - 1);
+      const baseDelay = 250 * 2 ** (attempt - 1);
       const jitter = Math.floor(Math.random() * 100);
       await new Promise((resolve) => setTimeout(resolve, baseDelay + jitter));
     }
@@ -66,8 +66,8 @@ async function fetchEudamedDevices(params: LookupDeviceParams): Promise<EudamedD
   // basicUdiDi takes precedence over deviceName (REQ-EXT-007).
   if (basicUdiDi) {
     url = `${EUDAMED_BASE}udi/devices?basicUdiDi=${encodeURIComponent(basicUdiDi)}&size=${limit}`;
-  } else {
-    url = `${EUDAMED_BASE}udi/devices?deviceName=${encodeURIComponent(deviceName!)}&size=${limit}`;
+  } else if (deviceName) {
+    url = `${EUDAMED_BASE}udi/devices?deviceName=${encodeURIComponent(deviceName)}&size=${limit}`;
   }
 
   try {
@@ -95,9 +95,5 @@ async function fetchEudamedDevices(params: LookupDeviceParams): Promise<EudamedD
 export async function lookupDevice(params: LookupDeviceParams): Promise<EudamedDevice[]> {
   if (!params.basicUdiDi && !params.deviceName) return [];
 
-  return withCache(
-    () => fetchEudamedDevices(params),
-    params,
-    'eudamed',
-  );
+  return withCache(() => fetchEudamedDevices(params), params, 'eudamed');
 }

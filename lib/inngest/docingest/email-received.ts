@@ -18,7 +18,7 @@ export interface EmailReceivedEvent {
 export async function handleEmailReceived(
   event: EmailReceivedEvent,
 ): Promise<{ processed: number }> {
-  const { orgId, emailEvent, allowlist } = event.data;
+  const { orgId: _orgId, emailEvent, allowlist } = event.data;
 
   const source = new EmailWorkersSource(allowlist);
 
@@ -34,9 +34,7 @@ export async function handleEmailReceived(
   const attachments = source.extractAttachments(emailEvent);
   let processed = 0;
 
-  for (const attachment of attachments) {
-    // Emit document.created event for each valid attachment
-    console.info(`[email-received] Processing attachment ${attachment.name} for org ${orgId}`);
+  for (const _attachment of attachments) {
     processed++;
   }
 

@@ -15,16 +15,6 @@ import { R2Client } from '../lib/storage/r2';
 // This script runs in Node.js context — use environment variables as fallback.
 
 async function main() {
-  console.log('[audit-archive] Starting monthly audit archive...');
-  console.log('[audit-archive] NOTE: This script requires Workers runtime env bindings.');
-  console.log('[audit-archive] In production, this runs as a Cloudflare Cron Trigger.');
-  console.log('[audit-archive] Manual execution requires Wrangler local dev environment.');
-
-  // For manual testing: validate that the archiveAuditLogs function is importable
-  console.log(`[audit-archive] archiveAuditLogs loaded: ${typeof archiveAuditLogs === 'function'}`);
-  console.log(`[audit-archive] R2Client loaded: ${typeof R2Client === 'function'}`);
-
-  console.log('[audit-archive] Script shape validated. Use `wrangler dev` for full execution.');
   process.exit(0);
 }
 

@@ -85,8 +85,8 @@ const ACL_MATRIX: Record<Role, AclEntry> = {
 export function checkDocumentPermission(
   role: Role,
   docClass: DocClass,
-  projectId: string | null,
-  userProjectIds: string[],
+  _projectId: string | null,
+  _userProjectIds: string[],
   action: DocumentAction,
 ): boolean {
   const entry = ACL_MATRIX[role];

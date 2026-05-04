@@ -38,7 +38,7 @@ function makeR2Mock() {
     delete: vi.fn(async (key: string) => {
       store.delete(key);
     }),
-    list: vi.fn(async (opts?: R2ListOptions) => ({
+    list: vi.fn(async (_opts?: R2ListOptions) => ({
       objects: [...store.keys()].map((k) => ({ key: k })) as R2Object[],
       truncated: false,
     })),

@@ -118,9 +118,7 @@ describe('lookupDevice', () => {
   });
 
   it('returns empty array on 404 response', async () => {
-    mockFetch.mockResolvedValueOnce(
-      new Response('Not Found', { status: 404 }),
-    );
+    mockFetch.mockResolvedValueOnce(new Response('Not Found', { status: 404 }));
 
     vi.resetModules();
     vi.mock('../../lib/external/cache', () => ({

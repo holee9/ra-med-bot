@@ -41,7 +41,7 @@ async function fetchWithRetry(url: string, maxAttempts = 3): Promise<Response> {
   for (let attempt = 0; attempt < maxAttempts; attempt++) {
     if (attempt > 0) {
       // Exponential backoff: 250ms, 500ms (plus jitter)
-      const baseDelay = 250 * Math.pow(2, attempt - 1);
+      const baseDelay = 250 * 2 ** (attempt - 1);
       const jitter = Math.floor(Math.random() * 100);
       await new Promise((resolve) => setTimeout(resolve, baseDelay + jitter));
     }
@@ -95,9 +95,5 @@ async function fetchFda510k(params: Lookup510kParams): Promise<Fda510kResult[]> 
 export async function lookup510k(params: Lookup510kParams): Promise<Fda510kResult[]> {
   if (!params.deviceName && !params.productCode) return [];
 
-  return withCache(
-    () => fetchFda510k(params),
-    params,
-    'fda-510k',
-  );
+  return withCache(() => fetchFda510k(params), params, 'fda-510k');
 }

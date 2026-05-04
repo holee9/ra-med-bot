@@ -24,11 +24,10 @@ export async function withCache<T>(
   }
 
   const cacheKey = `${fnName}:${JSON.stringify(params)}`;
-  const cached = unstable_cache(
-    () => fn(params),
-    [cacheKey],
-    { revalidate: CACHE_TTL_SECONDS, tags: [`external:${fnName}`] },
-  );
+  const cached = unstable_cache(() => fn(params), [cacheKey], {
+    revalidate: CACHE_TTL_SECONDS,
+    tags: [`external:${fnName}`],
+  });
 
   return cached();
 }

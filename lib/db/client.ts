@@ -22,8 +22,8 @@ const queryClient = postgres(env.DATABASE_URL, {
 export const db = drizzle(queryClient, { schema });
 export type Database = typeof db;
 
-// Drizzle client type inferred from the db instance
-type DrizzleClient = typeof db;
+// Drizzle client type inferred from the db instance — exported for radar crawlers
+export type DrizzleClient = typeof db;
 
 /**
  * Execute a function within a tenant-scoped transaction.

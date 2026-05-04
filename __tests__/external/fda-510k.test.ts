@@ -62,9 +62,7 @@ describe('lookup510k', () => {
     mockFetch
       .mockResolvedValueOnce(new Response('Too Many Requests', { status: 429 }))
       .mockResolvedValueOnce(new Response('Too Many Requests', { status: 429 }))
-      .mockResolvedValueOnce(
-        new Response(JSON.stringify(FDA_510K_RESPONSE), { status: 200 }),
-      );
+      .mockResolvedValueOnce(new Response(JSON.stringify(FDA_510K_RESPONSE), { status: 200 }));
 
     vi.resetModules();
     vi.mock('../../lib/external/cache', () => ({
@@ -81,9 +79,7 @@ describe('lookup510k', () => {
   it('retries on 5xx response', async () => {
     mockFetch
       .mockResolvedValueOnce(new Response('Internal Server Error', { status: 500 }))
-      .mockResolvedValueOnce(
-        new Response(JSON.stringify(FDA_510K_RESPONSE), { status: 200 }),
-      );
+      .mockResolvedValueOnce(new Response(JSON.stringify(FDA_510K_RESPONSE), { status: 200 }));
 
     vi.resetModules();
     vi.mock('../../lib/external/cache', () => ({
@@ -121,9 +117,7 @@ describe('lookup510k', () => {
   });
 
   it('returns empty array when API returns no results', async () => {
-    mockFetch.mockResolvedValueOnce(
-      new Response(JSON.stringify({ results: [] }), { status: 200 }),
-    );
+    mockFetch.mockResolvedValueOnce(new Response(JSON.stringify({ results: [] }), { status: 200 }));
 
     vi.resetModules();
     vi.mock('../../lib/external/cache', () => ({

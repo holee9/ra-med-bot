@@ -10,14 +10,18 @@ export interface SharePointSyncConfig {
 }
 
 export async function syncSharePoint(config: SharePointSyncConfig): Promise<{ synced: number }> {
-  const { orgId, tenantId, siteId, lastSyncAt = new Date(Date.now() - 15 * 60 * 1000) } = config;
+  const {
+    orgId: _orgId,
+    tenantId,
+    siteId,
+    lastSyncAt = new Date(Date.now() - 15 * 60 * 1000),
+  } = config;
 
   const source = new SharePointSource(tenantId, siteId);
   const changedFiles = await source.listChanged(lastSyncAt);
 
   let synced = 0;
-  for (const file of changedFiles) {
-    console.info(`[sharepoint-sync] Emitting event for ${file.name} in org ${orgId}`);
+  for (const _file of changedFiles) {
     synced++;
   }
 

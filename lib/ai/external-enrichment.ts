@@ -2,11 +2,11 @@
 // @MX:REASON: Central fan_in point for all external API enrichment; consult.ts, tests, and future scheduled jobs all call this.
 // @MX:SPEC: SPEC-REGULA-NETWORK-001 (REQ-EXT-003, REQ-EXT-006, REQ-EXT-010)
 
-import type { Intent } from './intent';
+import type { SourceItem } from '../../types/streaming';
+import { lookupDevice } from '../external/eudamed';
 import { lookup510k } from '../external/fda-510k';
 import { searchAdverseEvents } from '../external/fda-maude';
-import { lookupDevice } from '../external/eudamed';
-import type { SourceItem } from '../../types/streaming';
+import type { Intent } from './intent';
 
 // Regex patterns for query classification (REQ-EXT-003, 006, 010).
 const REGEX_510K = /510\(k\)|predicate|device name|product code/i;
@@ -65,7 +65,7 @@ async function enrich510k(question: string): Promise<SourceItem[]> {
       citeIndex: 0, // Will be overwritten by caller.
       orgLabel: 'FDA 510(k) Database',
       title: `${r.device_name} — ${r.k_number}`,
-      year: r.decision_date ? parseInt(r.decision_date.slice(0, 4), 10) : null,
+      year: r.decision_date ? Number.parseInt(r.decision_date.slice(0, 4), 10) : null,
       type: 'Guidance' as const,
       url: `https://www.accessdata.fda.gov/scripts/cdrh/cfdocs/cfpmn/pmn.cfm?ID=${r.k_number}`,
       anchor: r.k_number,
@@ -81,9 +81,7 @@ async function enrichMaude(question: string): Promise<SourceItem[]> {
 
   try {
     const productCodeMatch = question.match(/\b([A-Z]{2,3})\b/);
-    const params = productCodeMatch
-      ? { productCode: productCodeMatch[1], limit: 3 }
-      : { limit: 3 };
+    const params = productCodeMatch ? { productCode: productCodeMatch[1], limit: 3 } : { limit: 3 };
 
     const results = await searchAdverseEvents(params);
     return results.slice(0, 3).map((r) => ({
@@ -91,7 +89,7 @@ async function enrichMaude(question: string): Promise<SourceItem[]> {
       citeIndex: 0,
       orgLabel: 'FDA MAUDE Database',
       title: `${r.device_name || 'Device'} — ${r.event_type} (${r.report_number})`,
-      year: r.date_received ? parseInt(r.date_received.slice(0, 4), 10) : null,
+      year: r.date_received ? Number.parseInt(r.date_received.slice(0, 4), 10) : null,
       type: 'Industry' as const,
       url: `https://www.accessdata.fda.gov/scripts/cdrh/cfdocs/cfmaude/detail.cfm?mdrfoi__id=${r.report_number}`,
       anchor: r.report_number,

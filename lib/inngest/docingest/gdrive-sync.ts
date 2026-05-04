@@ -34,14 +34,10 @@ export async function syncGoogleDrive(config: GDriveSyncConfig): Promise<{ synce
   return { synced };
 }
 
-async function emitDocumentCreatedEvent(params: {
+async function emitDocumentCreatedEvent(_params: {
   orgId: string;
   externalId: string;
   name: string;
   mimeType: string;
   source: string;
-}): Promise<void> {
-  // In production: call inngest.send() with docingest.document.created event
-  // This is a stub — actual event emission is done via the Inngest client
-  console.info(`[gdrive-sync] Emitting event for ${params.name} in org ${params.orgId}`);
-}
+}): Promise<void> {}

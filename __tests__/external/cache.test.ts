@@ -19,7 +19,7 @@ describe('withCache', () => {
   });
 
   afterEach(() => {
-    delete process.env.DISABLE_EXTERNAL_CACHE;
+    process.env.DISABLE_EXTERNAL_CACHE = undefined;
   });
 
   it('calls unstable_cache with correct tags and revalidate when cache is enabled', async () => {

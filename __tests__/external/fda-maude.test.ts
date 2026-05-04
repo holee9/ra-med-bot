@@ -57,9 +57,7 @@ describe('searchAdverseEvents', () => {
   });
 
   it('returns typed MaudeEvent array on successful fetch', async () => {
-    mockFetch.mockResolvedValueOnce(
-      new Response(JSON.stringify(MAUDE_RESPONSE), { status: 200 }),
-    );
+    mockFetch.mockResolvedValueOnce(new Response(JSON.stringify(MAUDE_RESPONSE), { status: 200 }));
 
     const { searchAdverseEvents } = await import('../../lib/external/fda-maude');
     const results = await searchAdverseEvents({ productCode: 'FPA' });
@@ -74,9 +72,7 @@ describe('searchAdverseEvents', () => {
   });
 
   it('limits mdr_text to first 2 entries', async () => {
-    mockFetch.mockResolvedValueOnce(
-      new Response(JSON.stringify(MAUDE_RESPONSE), { status: 200 }),
-    );
+    mockFetch.mockResolvedValueOnce(new Response(JSON.stringify(MAUDE_RESPONSE), { status: 200 }));
 
     const { searchAdverseEvents } = await import('../../lib/external/fda-maude');
     const results = await searchAdverseEvents({ productCode: 'FPA' });
@@ -87,9 +83,7 @@ describe('searchAdverseEvents', () => {
 
   it('defaults to limit 5', async () => {
     const bigResponse = buildMaudeResponse(10);
-    mockFetch.mockResolvedValueOnce(
-      new Response(JSON.stringify(bigResponse), { status: 200 }),
-    );
+    mockFetch.mockResolvedValueOnce(new Response(JSON.stringify(bigResponse), { status: 200 }));
 
     vi.resetModules();
     vi.mock('../../lib/external/cache', () => ({
@@ -104,9 +98,7 @@ describe('searchAdverseEvents', () => {
   it('retries on 429', async () => {
     mockFetch
       .mockResolvedValueOnce(new Response('Rate limit', { status: 429 }))
-      .mockResolvedValueOnce(
-        new Response(JSON.stringify(MAUDE_RESPONSE), { status: 200 }),
-      );
+      .mockResolvedValueOnce(new Response(JSON.stringify(MAUDE_RESPONSE), { status: 200 }));
 
     vi.resetModules();
     vi.mock('../../lib/external/cache', () => ({
@@ -120,9 +112,7 @@ describe('searchAdverseEvents', () => {
   });
 
   it('returns empty array for unknown product code (no results)', async () => {
-    mockFetch.mockResolvedValueOnce(
-      new Response(JSON.stringify({ results: [] }), { status: 200 }),
-    );
+    mockFetch.mockResolvedValueOnce(new Response(JSON.stringify({ results: [] }), { status: 200 }));
 
     vi.resetModules();
     vi.mock('../../lib/external/cache', () => ({
