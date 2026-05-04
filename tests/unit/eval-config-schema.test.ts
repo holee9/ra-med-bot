@@ -13,7 +13,7 @@ import { describe, expect, it } from 'vitest';
 const ROOT = path.resolve(__dirname, '../..');
 
 // ---------------------------------------------------------------------------
-// REQ-LAUNCH-001: promptfoo ^0.90.0 in devDependencies
+// REQ-LAUNCH-001: promptfoo secure baseline in devDependencies
 // ---------------------------------------------------------------------------
 describe('REQ-LAUNCH-001: promptfoo devDependency', () => {
   it('lists promptfoo in package.json devDependencies', () => {
@@ -25,14 +25,15 @@ describe('REQ-LAUNCH-001: promptfoo devDependency', () => {
     expect(Object.keys(pkg.devDependencies ?? {})).toContain('promptfoo');
   });
 
-  it('promptfoo version satisfies ^0.90.0', () => {
+  it('promptfoo version satisfies current security baseline', () => {
     const pkgPath = path.join(ROOT, 'package.json');
     const pkg = JSON.parse(fs.readFileSync(pkgPath, 'utf-8')) as {
       devDependencies?: Record<string, string>;
     };
     const version = pkg.devDependencies?.promptfoo ?? '';
-    // Range should start with ^ and have a 0.90.x base
-    expect(version).toMatch(/^\^0\.9[0-9]/);
+    const match = /^\^0\.(\d+)\.(\d+)$/.exec(version);
+    expect(match).not.toBeNull();
+    expect(Number(match?.[1] ?? 0)).toBeGreaterThanOrEqual(121);
   });
 
   it('package.json includes eval:ci script', () => {
