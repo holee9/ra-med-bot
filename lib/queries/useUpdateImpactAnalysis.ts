@@ -10,7 +10,7 @@ interface ImpactAnalysisResult {
 async function fetchImpactAnalysis(id: string): Promise<ImpactAnalysisResult> {
   const res = await fetch(`/api/ra/updates/${id}?analyze=true`);
   if (!res.ok) throw new Error(`Failed to fetch impact analysis for ${id}`);
-  const data = await res.json() as { update: { impactAnalysisText: string | null } };
+  const data = (await res.json()) as { update: { impactAnalysisText: string | null } };
   return { impactAnalysisText: data.update.impactAnalysisText };
 }
 

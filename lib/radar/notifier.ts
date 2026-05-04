@@ -3,7 +3,7 @@
 // @MX:SPEC SPEC-REGULA-RADAR-001
 
 import { setBadge } from './notifier-channels/badge';
-import { sendDigestEmail, type RelevantUpdate } from './notifier-channels/email';
+import { type RelevantUpdate, sendDigestEmail } from './notifier-channels/email';
 import { sendSlackAlert } from './notifier-channels/slack';
 import { queueToast } from './notifier-channels/toast';
 

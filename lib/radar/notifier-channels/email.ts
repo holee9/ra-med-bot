@@ -17,10 +17,7 @@ export interface RelevantUpdate {
  *
  * Only sends if org has email_digest_enabled = true (checked by notifier.ts caller).
  */
-export async function sendDigestEmail(
-  orgId: string,
-  updates: RelevantUpdate[],
-): Promise<void> {
+export async function sendDigestEmail(orgId: string, updates: RelevantUpdate[]): Promise<void> {
   const apiKey = process.env.SENDGRID_API_KEY;
   const fromEmail = process.env.SENDGRID_FROM_EMAIL ?? 'noreply@regula.ai';
 

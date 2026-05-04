@@ -3,7 +3,7 @@
 // _base.ts runCrawler() framework. fan_in >= 3.
 // @MX:SPEC SPEC-REGULA-RADAR-001 (REQ-RADAR-004, REQ-RADAR-007, REQ-RADAR-009)
 
-import type { DrizzleClient } from '../../../lib/db/client';
+import type { DrizzleClient as DbDrizzleClient } from '../../../lib/db/client';
 
 /**
  * Raw update record produced by a crawler before classification.
@@ -61,4 +61,4 @@ interface KVNamespace {
  * DrizzleClient type alias — imported from db/client but re-exported here
  * to avoid circular dependency issues in tests.
  */
-type DrizzleClient = unknown;
+type DrizzleClient = DbDrizzleClient;

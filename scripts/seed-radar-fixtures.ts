@@ -270,7 +270,7 @@ const MOCK_UPDATES = [
 ] as const;
 
 async function main() {
-  console.log('[seed-radar] Starting seed of 20 mock radar fixtures...');
+  process.stdout.write('[seed-radar] Starting seed of 20 mock radar fixtures...\n');
 
   let inserted = 0;
   let skipped = 0;
@@ -295,14 +295,14 @@ async function main() {
         .onConflictDoNothing();
 
       inserted++;
-      console.log(`  [+] ${update.externalId}: ${update.title.slice(0, 50)}`);
+      process.stdout.write(`  [+] ${update.externalId}: ${update.title.slice(0, 50)}\n`);
     } catch (err) {
       skipped++;
       console.warn(`  [!] Skipped ${update.externalId}: ${String(err).slice(0, 80)}`);
     }
   }
 
-  console.log(`\n[seed-radar] Done. Inserted: ${inserted}, Skipped: ${skipped}`);
+  process.stdout.write(`\n[seed-radar] Done. Inserted: ${inserted}, Skipped: ${skipped}\n`);
   process.exit(0);
 }
 

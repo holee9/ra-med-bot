@@ -1,7 +1,7 @@
 // REQ-RADAR-004: FDA Federal Register crawler
 // @MX:SPEC SPEC-REGULA-RADAR-001 (REQ-RADAR-004)
 
-import { runCrawler, RADAR_USER_AGENT, fetchWithRetry } from './_base';
+import { RADAR_USER_AGENT, fetchWithRetry, runCrawler } from './_base';
 import type { CrawlerContext, CrawlerResult, RawUpdate } from './_types';
 
 const FEDERAL_REGISTER_BASE = 'https://www.federalregister.gov/api/v1/documents.json';
@@ -24,8 +24,8 @@ interface FRApiResponse {
  * Filters by FDA agency and uses lastRun date as publication_date[gte] filter.
  */
 export async function crawlFdaFederalRegister(ctx: CrawlerContext): Promise<CrawlerResult> {
-  return runCrawler('fda-federal-register', ctx, async (ctx) => {
-    const lastRunDate = ctx.lastRun.toISOString().split('T')[0]; // YYYY-MM-DD
+  return runCrawler('fda-federal-register', ctx, async () => {
+    const lastRunDate = ctx.lastRun.toISOString().slice(0, 10); // YYYY-MM-DD
 
     const params = new URLSearchParams({
       'conditions[agencies][]': 'food-and-drug-administration',
@@ -61,22 +61,24 @@ export async function crawlFdaFederalRegister(ctx: CrawlerContext): Promise<Craw
     let data: FRApiResponse;
     try {
       data = (await resp.json()) as FRApiResponse;
-    } catch (err) {
+    } catch {
       return {
         records: [],
         errors: [new Error('Failed to parse FDA Federal Register API response')],
       };
     }
 
-    const records: RawUpdate[] = (data.results ?? []).map((doc): RawUpdate => ({
-      external_id: doc.document_number,
-      title: doc.title,
-      published_at: new Date(doc.publication_date),
-      source_url: doc.html_url,
-      raw_content: doc.abstract ?? doc.title,
-      region: 'US',
-      source_crawler: 'fda-federal-register',
-    }));
+    const records: RawUpdate[] = (data.results ?? []).map(
+      (doc): RawUpdate => ({
+        external_id: doc.document_number,
+        title: doc.title,
+        published_at: new Date(doc.publication_date),
+        source_url: doc.html_url,
+        raw_content: doc.abstract ?? doc.title,
+        region: 'US',
+        source_crawler: 'fda-federal-register',
+      }),
+    );
 
     return { records, errors: [] };
   });

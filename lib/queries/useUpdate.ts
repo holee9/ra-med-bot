@@ -18,7 +18,10 @@ export interface RegulatoryUpdateDetail {
   tier1Relevant: boolean | null;
 }
 
-async function fetchUpdate(id: string, analyze?: boolean): Promise<{ update: RegulatoryUpdateDetail }> {
+async function fetchUpdate(
+  id: string,
+  analyze?: boolean,
+): Promise<{ update: RegulatoryUpdateDetail }> {
   const params = new URLSearchParams();
   if (analyze) params.set('analyze', 'true');
   const qs = params.toString();

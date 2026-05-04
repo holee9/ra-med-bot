@@ -2,7 +2,7 @@
  * Tests for 3-tier classifier (REQ-RADAR-004 through REQ-RADAR-009)
  * TDD: RED phase — tests written before implementation
  */
-import { describe, it, expect, vi, beforeEach } from 'vitest';
+import { beforeEach, describe, expect, it, vi } from 'vitest';
 
 // Mock Anthropic client
 vi.mock('../../lib/ai/anthropic-client', () => ({
@@ -22,7 +22,7 @@ describe('Classifier — Tier 1 (Medical Device Relevance)', () => {
     const { sharedAnthropicClient } = await import('../../lib/ai/anthropic-client');
     vi.mocked(sharedAnthropicClient.messages.create).mockResolvedValue({
       content: [{ type: 'text', text: JSON.stringify({ relevant: true, confidence: 0.97 }) }],
-    } as unknown as ReturnType<typeof sharedAnthropicClient.messages.create>);
+    } as unknown as Awaited<ReturnType<typeof sharedAnthropicClient.messages.create>>);
 
     const { classifyTier1 } = await import('../../lib/radar/classifier');
 
@@ -38,7 +38,7 @@ describe('Classifier — Tier 1 (Medical Device Relevance)', () => {
     const { sharedAnthropicClient } = await import('../../lib/ai/anthropic-client');
     vi.mocked(sharedAnthropicClient.messages.create).mockResolvedValue({
       content: [{ type: 'text', text: JSON.stringify({ relevant: false, confidence: 0.98 }) }],
-    } as unknown as ReturnType<typeof sharedAnthropicClient.messages.create>);
+    } as unknown as Awaited<ReturnType<typeof sharedAnthropicClient.messages.create>>);
 
     const { classifyTier1 } = await import('../../lib/radar/classifier');
 
@@ -55,7 +55,7 @@ describe('Classifier — Tier 1 (Medical Device Relevance)', () => {
     // LLM says NOT relevant, but keyword check should override
     vi.mocked(sharedAnthropicClient.messages.create).mockResolvedValue({
       content: [{ type: 'text', text: JSON.stringify({ relevant: false, confidence: 0.7 }) }],
-    } as unknown as ReturnType<typeof sharedAnthropicClient.messages.create>);
+    } as unknown as Awaited<ReturnType<typeof sharedAnthropicClient.messages.create>>);
 
     const { classifyTier1 } = await import('../../lib/radar/classifier');
 
@@ -72,7 +72,7 @@ describe('Classifier — Tier 1 (Medical Device Relevance)', () => {
     const { sharedAnthropicClient } = await import('../../lib/ai/anthropic-client');
     vi.mocked(sharedAnthropicClient.messages.create).mockResolvedValue({
       content: [{ type: 'text', text: JSON.stringify({ relevant: false, confidence: 0.6 }) }],
-    } as unknown as ReturnType<typeof sharedAnthropicClient.messages.create>);
+    } as unknown as Awaited<ReturnType<typeof sharedAnthropicClient.messages.create>>);
 
     const { classifyTier1 } = await import('../../lib/radar/classifier');
 
@@ -94,15 +94,17 @@ describe('Classifier — Tier 2 (Device Class & Product Category)', () => {
   it('should classify device class from relevant regulatory document', async () => {
     const { sharedAnthropicClient } = await import('../../lib/ai/anthropic-client');
     vi.mocked(sharedAnthropicClient.messages.create).mockResolvedValue({
-      content: [{
-        type: 'text',
-        text: JSON.stringify({
-          device_class: 'II',
-          product_categories: ['diagnostic_imaging', 'software'],
-          confidence: 0.88,
-        }),
-      }],
-    } as unknown as ReturnType<typeof sharedAnthropicClient.messages.create>);
+      content: [
+        {
+          type: 'text',
+          text: JSON.stringify({
+            device_class: 'II',
+            product_categories: ['diagnostic_imaging', 'software'],
+            confidence: 0.88,
+          }),
+        },
+      ],
+    } as unknown as Awaited<ReturnType<typeof sharedAnthropicClient.messages.create>>);
 
     const { classifyTier2 } = await import('../../lib/radar/classifier');
 
@@ -124,14 +126,16 @@ describe('Classifier — Tier 3 (Impact Type)', () => {
   it('should classify impact type as recall for recall documents', async () => {
     const { sharedAnthropicClient } = await import('../../lib/ai/anthropic-client');
     vi.mocked(sharedAnthropicClient.messages.create).mockResolvedValue({
-      content: [{
-        type: 'text',
-        text: JSON.stringify({
-          impact_type: 'recall',
-          confidence: 0.96,
-        }),
-      }],
-    } as unknown as ReturnType<typeof sharedAnthropicClient.messages.create>);
+      content: [
+        {
+          type: 'text',
+          text: JSON.stringify({
+            impact_type: 'recall',
+            confidence: 0.96,
+          }),
+        },
+      ],
+    } as unknown as Awaited<ReturnType<typeof sharedAnthropicClient.messages.create>>);
 
     const { classifyTier3 } = await import('../../lib/radar/classifier');
 
@@ -146,14 +150,16 @@ describe('Classifier — Tier 3 (Impact Type)', () => {
   it('should classify impact type as legislation for regulatory rules', async () => {
     const { sharedAnthropicClient } = await import('../../lib/ai/anthropic-client');
     vi.mocked(sharedAnthropicClient.messages.create).mockResolvedValue({
-      content: [{
-        type: 'text',
-        text: JSON.stringify({
-          impact_type: 'legislation',
-          confidence: 0.93,
-        }),
-      }],
-    } as unknown as ReturnType<typeof sharedAnthropicClient.messages.create>);
+      content: [
+        {
+          type: 'text',
+          text: JSON.stringify({
+            impact_type: 'legislation',
+            confidence: 0.93,
+          }),
+        },
+      ],
+    } as unknown as Awaited<ReturnType<typeof sharedAnthropicClient.messages.create>>);
 
     const { classifyTier3 } = await import('../../lib/radar/classifier');
 

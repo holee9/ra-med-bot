@@ -10,10 +10,7 @@ import type { RelevantUpdate } from './email';
  * @param webhookUrl - Org's configured Slack incoming webhook URL
  * @param update - The relevant update to alert on
  */
-export async function sendSlackAlert(
-  webhookUrl: string,
-  update: RelevantUpdate,
-): Promise<void> {
+export async function sendSlackAlert(webhookUrl: string, update: RelevantUpdate): Promise<void> {
   const impactPct = (update.impact_score * 100).toFixed(0);
   const appUrl = process.env.NEXT_PUBLIC_APP_URL ?? 'https://app.regula.ai';
 

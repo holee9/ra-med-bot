@@ -1,9 +1,9 @@
 'use client';
 
-import { use } from 'react';
+import { ImpactChip } from '@/components/radar/ImpactChip';
 import { useUpdateDetail } from '@/lib/queries/useUpdate';
 import { useUpdateImpactAnalysis } from '@/lib/queries/useUpdateImpactAnalysis';
-import { ImpactChip } from '@/components/radar/ImpactChip';
+import { use } from 'react';
 
 export default function UpdateDetailPage({ params }: { params: Promise<{ id: string }> }) {
   const { id } = use(params);
@@ -29,7 +29,7 @@ export default function UpdateDetailPage({ params }: { params: Promise<{ id: str
   const update = data.update;
   const score =
     update.impactScore !== null && update.impactScore !== undefined
-      ? parseFloat(String(update.impactScore))
+      ? Number.parseFloat(String(update.impactScore))
       : null;
   const date = update.publishedAt
     ? new Date(update.publishedAt).toLocaleDateString('ko-KR', {
@@ -43,7 +43,7 @@ export default function UpdateDetailPage({ params }: { params: Promise<{ id: str
     <section className="mx-auto max-w-3xl px-6 py-8">
       <div className="flex items-start justify-between gap-4">
         <h1 className="font-serif text-2xl text-ink-900">{update.title}</h1>
-        {score !== null && !isNaN(score) && <ImpactChip score={score} />}
+        {score !== null && !Number.isNaN(score) && <ImpactChip score={score} />}
       </div>
 
       <div className="mt-3 flex flex-wrap gap-3 text-sm text-ink-500">
@@ -69,13 +69,11 @@ export default function UpdateDetailPage({ params }: { params: Promise<{ id: str
 
       <div className="mt-6 rounded-lg border border-ink-150 bg-surface p-5">
         <h2 className="font-medium text-ink-800">영향 분석</h2>
-        {analysisLoading && (
-          <p className="mt-2 text-sm text-ink-500">분석 중...</p>
-        )}
+        {analysisLoading && <p className="mt-2 text-sm text-ink-500">분석 중...</p>}
         {analysis?.impactAnalysisText ? (
           <p className="mt-2 text-sm text-ink-700 leading-relaxed">{analysis.impactAnalysisText}</p>
-        ) : !analysisLoading && (
-          <p className="mt-2 text-sm text-ink-400">분석 내용이 없습니다.</p>
+        ) : (
+          !analysisLoading && <p className="mt-2 text-sm text-ink-400">분석 내용이 없습니다.</p>
         )}
       </div>
 

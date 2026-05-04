@@ -1,10 +1,10 @@
+import { readFileSync } from 'node:fs';
+import { join } from 'node:path';
 /**
  * Tests for FDA Federal Register crawler (REQ-RADAR-004)
  * TDD: RED phase — tests written before implementation
  */
-import { describe, it, expect, vi, beforeEach } from 'vitest';
-import { readFileSync } from 'node:fs';
-import { join } from 'node:path';
+import { beforeEach, describe, expect, it, vi } from 'vitest';
 import type { CrawlerContext, CrawlerResult } from '../../../lib/radar/crawlers/_types';
 
 // Load fixture
@@ -16,9 +16,14 @@ const fdaFixture = JSON.parse(
 const mockFetch = vi.fn();
 
 vi.mock('../../../lib/radar/crawlers/_base', () => ({
-  runCrawler: vi.fn(async (_name: string, ctx: CrawlerContext, fn: () => Promise<CrawlerResult>) => {
-    return fn();
-  }),
+  RADAR_USER_AGENT:
+    'Regula-Radar/1.0 (+https://regula.app/crawlers; contact=compliance@regula.app)',
+  fetchWithRetry: vi.fn((url: string, options?: RequestInit) => fetch(url, options)),
+  runCrawler: vi.fn(
+    async (_name: string, _ctx: CrawlerContext, fn: () => Promise<CrawlerResult>) => {
+      return fn();
+    },
+  ),
 }));
 
 describe('FDA Federal Register Crawler', () => {
@@ -38,7 +43,9 @@ describe('FDA Federal Register Crawler', () => {
     );
 
     const ctx: CrawlerContext = {
-      env: { ROBOTS_KV: { get: vi.fn().mockResolvedValue(null), put: vi.fn() } } as unknown as CrawlerContext['env'],
+      env: {
+        ROBOTS_KV: { get: vi.fn().mockResolvedValue(null), put: vi.fn() },
+      } as unknown as CrawlerContext['env'],
       db: {} as CrawlerContext['db'],
       lastRun: new Date('2024-01-01'),
     };
@@ -47,14 +54,18 @@ describe('FDA Federal Register Crawler', () => {
 
     expect(result.errors).toHaveLength(0);
     expect(result.records).toHaveLength(2);
-    expect(result.records[0]).toMatchObject({
+    const firstRecord = result.records[0];
+    expect(firstRecord).toBeDefined();
+    if (!firstRecord) throw new Error('Expected first FDA Federal Register record');
+
+    expect(firstRecord).toMatchObject({
       external_id: '2024-01234',
       title: expect.stringContaining('Software as a Medical Device'),
       region: 'US',
       source_crawler: 'fda-federal-register',
       source_url: expect.stringContaining('federalregister.gov'),
     });
-    expect(result.records[0].published_at).toBeInstanceOf(Date);
+    expect(firstRecord.published_at).toBeInstanceOf(Date);
   });
 
   it('should include correct User-Agent header in requests', async () => {
@@ -68,7 +79,9 @@ describe('FDA Federal Register Crawler', () => {
     );
 
     const ctx: CrawlerContext = {
-      env: { ROBOTS_KV: { get: vi.fn().mockResolvedValue(null), put: vi.fn() } } as unknown as CrawlerContext['env'],
+      env: {
+        ROBOTS_KV: { get: vi.fn().mockResolvedValue(null), put: vi.fn() },
+      } as unknown as CrawlerContext['env'],
       db: {} as CrawlerContext['db'],
       lastRun: new Date('2024-01-01'),
     };
@@ -79,7 +92,8 @@ describe('FDA Federal Register Crawler', () => {
       expect.stringContaining('federalregister.gov'),
       expect.objectContaining({
         headers: expect.objectContaining({
-          'User-Agent': 'Regula-Radar/1.0 (+https://regula.app/crawlers; contact=compliance@regula.app)',
+          'User-Agent':
+            'Regula-Radar/1.0 (+https://regula.app/crawlers; contact=compliance@regula.app)',
         }),
       }),
     );
@@ -97,7 +111,9 @@ describe('FDA Federal Register Crawler', () => {
 
     const lastRun = new Date('2024-01-10');
     const ctx: CrawlerContext = {
-      env: { ROBOTS_KV: { get: vi.fn().mockResolvedValue(null), put: vi.fn() } } as unknown as CrawlerContext['env'],
+      env: {
+        ROBOTS_KV: { get: vi.fn().mockResolvedValue(null), put: vi.fn() },
+      } as unknown as CrawlerContext['env'],
       db: {} as CrawlerContext['db'],
       lastRun,
     };
@@ -119,7 +135,9 @@ describe('FDA Federal Register Crawler', () => {
     );
 
     const ctx: CrawlerContext = {
-      env: { ROBOTS_KV: { get: vi.fn().mockResolvedValue(null), put: vi.fn() } } as unknown as CrawlerContext['env'],
+      env: {
+        ROBOTS_KV: { get: vi.fn().mockResolvedValue(null), put: vi.fn() },
+      } as unknown as CrawlerContext['env'],
       db: {} as CrawlerContext['db'],
       lastRun: new Date('2024-01-01'),
     };

@@ -10,12 +10,12 @@ import {
   TIER3_SYSTEM_PROMPT,
 } from './classifier-prompts';
 import {
-  Tier1Schema,
-  Tier2Schema,
-  Tier3Schema,
   type Tier1Result,
+  Tier1Schema,
   type Tier2Result,
+  Tier2Schema,
   type Tier3Result,
+  Tier3Schema,
 } from './classifier-schemas';
 
 // Recall keywords that force tier1.relevant = true regardless of LLM output.

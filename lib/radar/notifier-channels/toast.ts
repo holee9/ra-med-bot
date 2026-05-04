@@ -5,11 +5,15 @@
 // In-memory fallback for dev/test environments
 const toastStore = new Map<string, string[]>();
 
-let kvNamespace: { get(key: string): Promise<string | null>; put(key: string, value: string): Promise<void> } | null = null;
+let kvNamespace: {
+  get(key: string): Promise<string | null>;
+  put(key: string, value: string): Promise<void>;
+} | null = null;
 
-export function setToastKV(
-  kv: { get(key: string): Promise<string | null>; put(key: string, value: string): Promise<void> },
-): void {
+export function setToastKV(kv: {
+  get(key: string): Promise<string | null>;
+  put(key: string, value: string): Promise<void>;
+}): void {
   kvNamespace = kv;
 }
 

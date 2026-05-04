@@ -27,8 +27,7 @@ export const useRadarStore = create<RadarState>()(
   persist(
     (set) => ({
       filters: {},
-      setFilters: (partial) =>
-        set((state) => ({ filters: { ...state.filters, ...partial } })),
+      setFilters: (partial) => set((state) => ({ filters: { ...state.filters, ...partial } })),
       resetFilters: () => set({ filters: {} }),
 
       dismissedUpdates: [],

@@ -25,7 +25,10 @@ export function UpdateCard({
   impactTypeHint,
   sourceUrl,
 }: UpdateCardProps) {
-  const score = impactScore !== null && impactScore !== undefined ? parseFloat(String(impactScore)) : null;
+  const score =
+    impactScore !== null && impactScore !== undefined
+      ? Number.parseFloat(String(impactScore))
+      : null;
   const date = publishedAt ? new Date(publishedAt).toLocaleDateString('ko-KR') : '—';
 
   return (
@@ -51,7 +54,7 @@ export function UpdateCard({
             )}
           </div>
         </div>
-        {score !== null && !isNaN(score) && <ImpactChip score={score} />}
+        {score !== null && !Number.isNaN(score) && <ImpactChip score={score} />}
       </div>
       {sourceUrl && (
         <a

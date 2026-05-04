@@ -86,6 +86,7 @@ export default function UpdatesPage() {
 
         {(impactMin || region || impactType) && (
           <button
+            type="button"
             onClick={() => {
               setImpactMin('');
               setRegion('');

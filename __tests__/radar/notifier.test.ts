@@ -2,7 +2,7 @@
  * Tests for notifier threshold gating
  * TDD: RED phase — tests written before implementation
  */
-import { describe, it, expect, vi, beforeEach } from 'vitest';
+import { beforeEach, describe, expect, it, vi } from 'vitest';
 
 describe('Notifier — Threshold Gating', () => {
   beforeEach(() => {

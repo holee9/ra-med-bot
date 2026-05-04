@@ -3,8 +3,8 @@
 // Handles: crawler_runs tracking, audit logging, robots.txt cache, retry logic.
 // @MX:SPEC SPEC-REGULA-RADAR-001 (REQ-RADAR-004, REQ-RADAR-007, REQ-RADAR-009)
 
-import type { CrawlerContext, CrawlerResult, RawUpdate } from './_types';
 import { writeAudit } from '../../audit';
+import type { CrawlerContext, CrawlerResult, RawUpdate } from './_types';
 
 /** robots.txt cache TTL: 24 hours */
 const ROBOTS_CACHE_TTL_SEC = 86_400;
@@ -17,18 +17,15 @@ export const RADAR_USER_AGENT =
  * Exponential backoff delays for HTTP 429/503 retry (5min → 15min → 45min).
  * In test environments these are overridden to 0ms.
  */
-const RETRY_DELAYS_MS = [
-  5 * 60 * 1000,
-  15 * 60 * 1000,
-  45 * 60 * 1000,
-];
+const RETRY_DELAYS_MS = [5 * 60 * 1000, 15 * 60 * 1000, 45 * 60 * 1000];
 
 /** Override for tests — set to 0 to skip sleep */
-export let _retryDelayOverride: number | null = null;
+export const _retryDelayOverride: number | null = null;
 
 function retryDelay(attempt: number): number {
   if (_retryDelayOverride !== null) return _retryDelayOverride;
-  return RETRY_DELAYS_MS[attempt] ?? RETRY_DELAYS_MS[RETRY_DELAYS_MS.length - 1];
+  const fallbackDelay = RETRY_DELAYS_MS[RETRY_DELAYS_MS.length - 1] ?? 0;
+  return RETRY_DELAYS_MS[attempt] ?? fallbackDelay;
 }
 
 /**
@@ -109,7 +106,7 @@ export async function fetchWithRetry(
 
       if (resp.status === 429 || resp.status === 503) {
         const delay = retryDelay(attempt);
-        await new Promise(r => setTimeout(r, delay));
+        await new Promise((r) => setTimeout(r, delay));
         lastError = new Error(`HTTP ${resp.status} from ${url}`);
         continue;
       }
@@ -119,7 +116,7 @@ export async function fetchWithRetry(
       lastError = err instanceof Error ? err : new Error(String(err));
       if (attempt < maxRetries - 1) {
         const delay = retryDelay(attempt);
-        await new Promise(r => setTimeout(r, delay));
+        await new Promise((r) => setTimeout(r, delay));
       }
     }
   }

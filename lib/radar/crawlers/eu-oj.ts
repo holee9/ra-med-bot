@@ -1,7 +1,7 @@
 // REQ-RADAR-007: EU Official Journal / EUR-Lex crawler
 // @MX:SPEC SPEC-REGULA-RADAR-001 (REQ-RADAR-007)
 
-import { runCrawler, RADAR_USER_AGENT, fetchWithRetry } from './_base';
+import { RADAR_USER_AGENT, fetchWithRetry, runCrawler } from './_base';
 import type { CrawlerContext, CrawlerResult, RawUpdate } from './_types';
 
 // EUR-Lex REST API endpoint
@@ -35,7 +35,7 @@ interface EurLexApiResponse {
 
 function isMdrIvdrRelevant(doc: EurLexDocument): boolean {
   const text = `${doc.title} ${doc.content ?? ''}`.toLowerCase();
-  return MDR_IVDR_KEYWORDS.some(kw => text.toLowerCase().includes(kw.toLowerCase()));
+  return MDR_IVDR_KEYWORDS.some((kw) => text.toLowerCase().includes(kw.toLowerCase()));
 }
 
 /**
@@ -43,8 +43,8 @@ function isMdrIvdrRelevant(doc: EurLexDocument): boolean {
  * Uses sector=3 (legislation) filter and MDR/IVDR keyword filtering.
  */
 export async function crawlEuOj(ctx: CrawlerContext): Promise<CrawlerResult> {
-  return runCrawler('eu-oj', ctx, async (ctx) => {
-    const lastRunDate = ctx.lastRun.toISOString().split('T')[0];
+  return runCrawler('eu-oj', ctx, async () => {
+    const lastRunDate = ctx.lastRun.toISOString().slice(0, 10);
 
     const params = new URLSearchParams({
       sector: '3', // legislation sector
@@ -81,7 +81,7 @@ export async function crawlEuOj(ctx: CrawlerContext): Promise<CrawlerResult> {
     let data: EurLexApiResponse;
     try {
       data = (await resp.json()) as EurLexApiResponse;
-    } catch (err) {
+    } catch {
       return {
         records: [],
         errors: [new Error('Failed to parse EUR-Lex API response')],
@@ -93,15 +93,17 @@ export async function crawlEuOj(ctx: CrawlerContext): Promise<CrawlerResult> {
     // Filter for MDR/IVDR relevance
     const relevantDocs = allDocs.filter(isMdrIvdrRelevant);
 
-    const records: RawUpdate[] = relevantDocs.map((doc): RawUpdate => ({
-      external_id: doc.id,
-      title: doc.title,
-      published_at: new Date(doc.date),
-      source_url: doc.url,
-      raw_content: doc.content ?? doc.title,
-      region: 'EU',
-      source_crawler: 'eu-oj',
-    }));
+    const records: RawUpdate[] = relevantDocs.map(
+      (doc): RawUpdate => ({
+        external_id: doc.id,
+        title: doc.title,
+        published_at: new Date(doc.date),
+        source_url: doc.url,
+        raw_content: doc.content ?? doc.title,
+        region: 'EU',
+        source_crawler: 'eu-oj',
+      }),
+    );
 
     return { records, errors: [] };
   });

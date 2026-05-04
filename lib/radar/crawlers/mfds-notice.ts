@@ -1,7 +1,7 @@
 // REQ-RADAR-009: MFDS 식약처 고시 crawler (Browser Rendering API)
 // @MX:SPEC SPEC-REGULA-RADAR-001 (REQ-RADAR-009)
 
-import { runCrawler, RADAR_USER_AGENT } from './_base';
+import { RADAR_USER_AGENT, runCrawler } from './_base';
 import type { CrawlerContext, CrawlerResult, RawUpdate } from './_types';
 
 const MFDS_BASE_URL = 'https://www.mfds.go.kr/brd/m_99';
@@ -11,7 +11,7 @@ const RECALL_KEYWORDS = ['리콜', '회수', '回收', 'リコール', 'recall']
 
 function detectImpactTypeHint(text: string): string | undefined {
   const lower = text.toLowerCase();
-  if (RECALL_KEYWORDS.some(kw => text.includes(kw) || lower.includes(kw.toLowerCase()))) {
+  if (RECALL_KEYWORDS.some((kw) => text.includes(kw) || lower.includes(kw.toLowerCase()))) {
     return 'recall';
   }
   return undefined;
@@ -21,30 +21,40 @@ function detectImpactTypeHint(text: string): string | undefined {
  * Simple HTML parser to extract notice list items.
  * Uses regex since we don't have DOM access in Workers.
  */
-function parseNoticeListFromHtml(html: string): Array<{ title: string; href: string; date: string }> {
+function parseNoticeListFromHtml(
+  html: string,
+): Array<{ title: string; href: string; date: string }> {
   const notices: Array<{ title: string; href: string; date: string }> = [];
 
   // Match table rows in the notice list
   const rowPattern = /<tr[^>]*>([\s\S]*?)<\/tr>/gi;
-  const tdPattern = /<td[^>]*class="subject"[^>]*>[\s\S]*?<a[^>]*href="([^"]*)"[^>]*>\s*([\s\S]*?)\s*<\/a>/i;
+  const tdPattern =
+    /<td[^>]*class="subject"[^>]*>[\s\S]*?<a[^>]*href="([^"]*)"[^>]*>\s*([\s\S]*?)\s*<\/a>/i;
   const datePattern = /<td[^>]*class="date"[^>]*>([^<]*)<\/td>/i;
 
-  let rowMatch: RegExpExecArray | null;
-  while ((rowMatch = rowPattern.exec(html)) !== null) {
+  let rowMatch = rowPattern.exec(html);
+  while (rowMatch !== null) {
     const rowHtml = rowMatch[1];
+    if (!rowHtml) {
+      rowMatch = rowPattern.exec(html);
+      continue;
+    }
+
     const subjectMatch = tdPattern.exec(rowHtml);
     const dateMatch = datePattern.exec(rowHtml);
 
-    if (subjectMatch) {
+    if (subjectMatch?.[1] && subjectMatch[2]) {
       const href = subjectMatch[1];
       // Strip HTML tags from title
       const titleRaw = subjectMatch[2].replace(/<[^>]+>/g, '').trim();
-      const date = dateMatch ? dateMatch[1].trim() : new Date().toISOString().split('T')[0];
+      const date = dateMatch?.[1]?.trim() ?? new Date().toISOString().slice(0, 10);
 
       if (titleRaw.length > 0) {
         notices.push({ title: titleRaw, href, date });
       }
     }
+
+    rowMatch = rowPattern.exec(html);
   }
 
   return notices;
@@ -55,7 +65,7 @@ function parseNoticeListFromHtml(html: string): Array<{ title: string; href: str
  * Uses env.BROWSER.fetch() to load the JavaScript-rendered page.
  */
 export async function crawlMfdsNotice(ctx: CrawlerContext): Promise<CrawlerResult> {
-  return runCrawler('mfds-notice', ctx, async (ctx) => {
+  return runCrawler('mfds-notice', ctx, async () => {
     const browser = ctx.env.BROWSER;
     if (!browser) {
       return {
@@ -89,7 +99,7 @@ export async function crawlMfdsNotice(ctx: CrawlerContext): Promise<CrawlerResul
     let html: string;
     try {
       html = await resp.text();
-    } catch (err) {
+    } catch {
       return {
         records: [],
         errors: [new Error('Failed to read MFDS page content')],
@@ -100,15 +110,13 @@ export async function crawlMfdsNotice(ctx: CrawlerContext): Promise<CrawlerResul
     const lastRun = ctx.lastRun;
 
     const records: RawUpdate[] = notices
-      .filter(n => {
+      .filter((n) => {
         // Filter notices published after lastRun
         const noticeDate = new Date(n.date);
         return noticeDate >= lastRun;
       })
       .map((n): RawUpdate => {
-        const sourceUrl = n.href.startsWith('http')
-          ? n.href
-          : `https://www.mfds.go.kr${n.href}`;
+        const sourceUrl = n.href.startsWith('http') ? n.href : `https://www.mfds.go.kr${n.href}`;
 
         const impactHint = detectImpactTypeHint(n.title);
 

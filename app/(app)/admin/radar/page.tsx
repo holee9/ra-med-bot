@@ -1,14 +1,18 @@
 'use client';
 
-import { useState } from 'react';
 import { useCrawlerRuns } from '@/lib/queries/useCrawlerRuns';
+import { useState } from 'react';
 
 type CrawlerName = 'fda-federal-register' | 'eu-oj' | 'mfds-notice';
 
 export default function AdminRadarPage() {
   const { data, isLoading, refetch } = useCrawlerRuns();
   const [running, setRunning] = useState<string | null>(null);
-  const [runResult, setRunResult] = useState<{ crawler: string; records_added: number; errors: string[] } | null>(null);
+  const [runResult, setRunResult] = useState<{
+    crawler: string;
+    records_added: number;
+    errors: string[];
+  } | null>(null);
 
   const runs = data?.runs ?? [];
 
@@ -21,7 +25,11 @@ export default function AdminRadarPage() {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ crawler }),
       });
-      const result = await res.json() as { crawler: string; records_added: number; errors: string[] };
+      const result = (await res.json()) as {
+        crawler: string;
+        records_added: number;
+        errors: string[];
+      };
       setRunResult(result);
       void refetch();
     } catch (err) {
@@ -42,6 +50,7 @@ export default function AdminRadarPage() {
         <div className="mt-3 flex flex-wrap gap-3">
           {(['fda-federal-register', 'eu-oj', 'mfds-notice'] as CrawlerName[]).map((crawler) => (
             <button
+              type="button"
               key={crawler}
               onClick={() => void triggerCrawler(crawler)}
               disabled={running !== null}
@@ -57,7 +66,9 @@ export default function AdminRadarPage() {
             <strong>{runResult.crawler}</strong> — {runResult.records_added}건 추가
             {runResult.errors.length > 0 && (
               <ul className="mt-1 list-disc pl-4 text-red-600">
-                {runResult.errors.map((e, i) => <li key={i}>{e}</li>)}
+                {runResult.errors.map((e) => (
+                  <li key={e}>{e}</li>
+                ))}
               </ul>
             )}
           </div>
@@ -82,7 +93,9 @@ export default function AdminRadarPage() {
                   <th className="px-4 py-2 text-left text-xs font-medium text-ink-500">크롤러</th>
                   <th className="px-4 py-2 text-left text-xs font-medium text-ink-500">시작</th>
                   <th className="px-4 py-2 text-left text-xs font-medium text-ink-500">상태</th>
-                  <th className="px-4 py-2 text-left text-xs font-medium text-ink-500">추가 건수</th>
+                  <th className="px-4 py-2 text-left text-xs font-medium text-ink-500">
+                    추가 건수
+                  </th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-ink-100 bg-white">
@@ -90,9 +103,7 @@ export default function AdminRadarPage() {
                   <tr key={run.id}>
                     <td className="px-4 py-2 font-mono text-xs">{run.crawlerName}</td>
                     <td className="px-4 py-2 text-xs text-ink-500">
-                      {run.startedAt
-                        ? new Date(run.startedAt).toLocaleString('ko-KR')
-                        : '—'}
+                      {run.startedAt ? new Date(run.startedAt).toLocaleString('ko-KR') : '—'}
                     </td>
                     <td className="px-4 py-2">
                       <span

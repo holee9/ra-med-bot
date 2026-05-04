@@ -45,7 +45,7 @@ import { auditLogs } from './db/schema';
 // Phase 8 DocIngest values added via 0016_docingest_audit_actions.sql (6):
 //   document.upload, document.access, document.redact,
 //   document.chunk, document.search, redaction_map.access
-// Total: 43 values.
+// Total: 46 values.
 export type AuditAction =
   | 'llm.call'
   | 'source.access'

@@ -8,10 +8,10 @@
 //   21:00 UTC → Post-processing pipeline
 
 import { runCrawler } from '../lib/radar/crawlers/_base';
-import { crawlFdaFederalRegister } from '../lib/radar/crawlers/fda-federal-register';
-import { crawlEuOj } from '../lib/radar/crawlers/eu-oj';
-import { crawlMfdsNotice } from '../lib/radar/crawlers/mfds-notice';
 import type { CrawlerContext } from '../lib/radar/crawlers/_types';
+import { crawlEuOj } from '../lib/radar/crawlers/eu-oj';
+import { crawlFdaFederalRegister } from '../lib/radar/crawlers/fda-federal-register';
+import { crawlMfdsNotice } from '../lib/radar/crawlers/mfds-notice';
 
 interface RadarEnv {
   ROBOTS_KV: KVNamespace;
@@ -33,11 +33,7 @@ interface KVNamespace {
 }
 
 export default {
-  async scheduled(
-    event: { scheduledTime: number },
-    env: RadarEnv,
-    _ctx: unknown,
-  ): Promise<void> {
+  async scheduled(event: { scheduledTime: number }, env: RadarEnv, _ctx: unknown): Promise<void> {
     const scheduledDate = new Date(event.scheduledTime);
     const hour = scheduledDate.getUTCHours();
     const minute = scheduledDate.getUTCMinutes();
@@ -48,7 +44,18 @@ export default {
       lastRun: new Date(Date.now() - 24 * 60 * 60 * 1000), // last 24h
     };
 
-    let result: { records: { external_id: string; title: string; raw_content: string; region: string; source_crawler: string }[]; errors: Error[] } | undefined;
+    let result:
+      | {
+          records: {
+            external_id: string;
+            title: string;
+            raw_content: string;
+            region: string;
+            source_crawler: string;
+          }[];
+          errors: Error[];
+        }
+      | undefined;
 
     // Route by cron time
     if (hour === 18 && minute === 15) {
@@ -58,10 +65,8 @@ export default {
     } else if (hour === 19 && minute === 15) {
       result = await runCrawler('mfds-notice', baseCtx, crawlMfdsNotice);
     } else if (hour === 21 && minute === 0) {
-      console.log('[radar-cron] Post-processing pipeline triggered at 21:00 UTC');
       return;
     } else {
-      console.warn(`[radar-cron] Unexpected schedule time ${hour}:${minute} UTC`);
       return;
     }
 
@@ -83,9 +88,5 @@ export default {
         ),
       );
     }
-
-    console.log(
-      `[radar-cron] Dispatched ${result.records.length} records to RADAR_CLASSIFY_QUEUE`,
-    );
   },
 };

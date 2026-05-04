@@ -1,10 +1,10 @@
+import { readFileSync } from 'node:fs';
+import { join } from 'node:path';
 /**
  * Tests for MFDS 식약처 고시 crawler (REQ-RADAR-009)
  * TDD: RED phase — tests written before implementation
  */
-import { describe, it, expect, vi, beforeEach } from 'vitest';
-import { readFileSync } from 'node:fs';
-import { join } from 'node:path';
+import { beforeEach, describe, expect, it, vi } from 'vitest';
 import type { CrawlerContext } from '../../../lib/radar/crawlers/_types';
 
 const mfdsFixtureHtml = readFileSync(
@@ -13,7 +13,9 @@ const mfdsFixtureHtml = readFileSync(
 );
 
 vi.mock('../../../lib/radar/crawlers/_base', () => ({
-  runCrawler: vi.fn(async (_name: string, ctx: CrawlerContext, fn: () => Promise<unknown>) => {
+  RADAR_USER_AGENT:
+    'Regula-Radar/1.0 (+https://regula.app/crawlers; contact=compliance@regula.app)',
+  runCrawler: vi.fn(async (_name: string, _ctx: CrawlerContext, fn: () => Promise<unknown>) => {
     return fn();
   }),
 }));
@@ -70,8 +72,8 @@ describe('MFDS 식약처 고시 Crawler', () => {
     const result = await crawlMfdsNotice(ctx);
 
     // Korean titles should be present
-    const titles = result.records.map(r => r.title);
-    expect(titles.some(t => t.includes('의료기기') || t.includes('고시'))).toBe(true);
+    const titles = result.records.map((r) => r.title);
+    expect(titles.some((t) => t.includes('의료기기') || t.includes('고시'))).toBe(true);
   });
 
   it('should detect recall keywords and set impact_type_hint', async () => {
@@ -94,7 +96,9 @@ describe('MFDS 식약처 고시 Crawler', () => {
     const result = await crawlMfdsNotice(ctx);
 
     // The fixture contains "리콜" — recall record should have hint
-    const recallRecord = result.records.find(r => r.title.includes('리콜') || r.title.includes('회수'));
+    const recallRecord = result.records.find(
+      (r) => r.title.includes('리콜') || r.title.includes('회수'),
+    );
     if (recallRecord) {
       expect(recallRecord.impact_type_hint).toBe('recall');
     }

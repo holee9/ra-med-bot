@@ -3,10 +3,11 @@
 // This endpoint is intentionally unauthenticated for uptime monitoring.
 
 import { desc, gte, sql } from 'drizzle-orm';
+import { withPermission } from '../../../../../lib/auth/with-permission';
 import { db } from '../../../../../lib/db/client';
 import { crawlerRuns, regulatoryUpdates } from '../../../../../lib/db/schema';
 
-export async function GET(): Promise<Response> {
+export const GET = withPermission('rbac.manage', async (): Promise<Response> => {
   try {
     const [lastRun] = await db
       .select({
@@ -34,4 +35,4 @@ export async function GET(): Promise<Response> {
   } catch (err) {
     return Response.json({ status: 'error', error: String(err) }, { status: 500 });
   }
-}
+});

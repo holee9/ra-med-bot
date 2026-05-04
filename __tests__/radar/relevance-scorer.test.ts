@@ -2,7 +2,7 @@
  * Tests for relevance/impact scorer
  * TDD: RED phase — tests written before implementation
  */
-import { describe, it, expect, vi, beforeEach } from 'vitest';
+import { beforeEach, describe, expect, it, vi } from 'vitest';
 
 vi.mock('../../lib/ai/anthropic-client', () => ({
   sharedAnthropicClient: {
@@ -44,7 +44,7 @@ describe('Relevance Scorer', () => {
     const { sharedAnthropicClient } = await import('../../lib/ai/anthropic-client');
     vi.mocked(sharedAnthropicClient.messages.create).mockResolvedValue({
       content: [{ type: 'text', text: JSON.stringify({ score: 0.92, reasoning: 'Direct match' }) }],
-    } as unknown as ReturnType<typeof sharedAnthropicClient.messages.create>);
+    } as unknown as Awaited<ReturnType<typeof sharedAnthropicClient.messages.create>>);
 
     const { scoreRelevance } = await import('../../lib/radar/relevance-scorer');
 
@@ -66,9 +66,21 @@ describe('Relevance Scorer', () => {
 
     // Same source + category appearing 3+ times in 7 days should be bundled
     const recentAlerts = [
-      { source_crawler: 'fda-federal-register', product_category: 'software', created_at: new Date('2024-01-20') },
-      { source_crawler: 'fda-federal-register', product_category: 'software', created_at: new Date('2024-01-21') },
-      { source_crawler: 'fda-federal-register', product_category: 'software', created_at: new Date('2024-01-22') },
+      {
+        source_crawler: 'fda-federal-register',
+        product_category: 'software',
+        created_at: new Date('2024-01-20'),
+      },
+      {
+        source_crawler: 'fda-federal-register',
+        product_category: 'software',
+        created_at: new Date('2024-01-21'),
+      },
+      {
+        source_crawler: 'fda-federal-register',
+        product_category: 'software',
+        created_at: new Date('2024-01-22'),
+      },
     ];
 
     const result = shouldBundleAsDigest({
@@ -84,8 +96,16 @@ describe('Relevance Scorer', () => {
     const { shouldBundleAsDigest } = await import('../../lib/radar/relevance-scorer');
 
     const recentAlerts = [
-      { source_crawler: 'fda-federal-register', product_category: 'software', created_at: new Date('2024-01-20') },
-      { source_crawler: 'fda-federal-register', product_category: 'software', created_at: new Date('2024-01-21') },
+      {
+        source_crawler: 'fda-federal-register',
+        product_category: 'software',
+        created_at: new Date('2024-01-20'),
+      },
+      {
+        source_crawler: 'fda-federal-register',
+        product_category: 'software',
+        created_at: new Date('2024-01-21'),
+      },
     ];
 
     const result = shouldBundleAsDigest({

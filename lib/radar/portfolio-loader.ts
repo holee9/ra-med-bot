@@ -1,9 +1,9 @@
 // Portfolio loader — loads org product portfolio for relevance scoring.
 // @MX:SPEC SPEC-REGULA-RADAR-001
 
-import { eq } from 'drizzle-orm';
 import type { Database } from '@/lib/db/client';
 import { projects } from '@/lib/db/schema';
+import { eq } from 'drizzle-orm';
 
 export interface OrgPortfolio {
   device_classes: string[];
