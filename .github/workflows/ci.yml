@@ -78,7 +78,6 @@ jobs:
           AUTH_GOOGLE_SECRET: "ci-placeholder-google-secret"
           ANTHROPIC_API_KEY: "ci-placeholder-anthropic-key"
           OPENAI_API_KEY: "ci-placeholder-openai-key"
-          E2E_AUTH_BYPASS: "true"
 
   eval:
     name: LLM Eval Harness
@@ -158,6 +157,7 @@ jobs:
           AUTH_GOOGLE_SECRET: "ci-placeholder-google-secret"
           ANTHROPIC_API_KEY: "ci-placeholder-anthropic-key"
           OPENAI_API_KEY: "ci-placeholder-openai-key"
+          E2E_AUTH_BYPASS: "true"
 
       - name: Upload test results
         uses: actions/upload-artifact@v4
