@@ -46,7 +46,7 @@ const vector = customType<{ data: number[]; driverData: string }>({
 });
 
 // ---------------------------------------------------------------------------
-// pgEnums (8) — declared in dependency order so the generated SQL is valid.
+// pgEnums (9) — declared in dependency order so the generated SQL is valid.
 // ---------------------------------------------------------------------------
 export const localeEnum = pgEnum('locale', ['ko', 'en']);
 export const themePrefEnum = pgEnum('theme_pref', ['light', 'dark', 'system']);
@@ -77,6 +77,8 @@ export const expertReviewStatusEnum = pgEnum('expert_review_status', [
 // REQ-ENTERPRISE-016: user_role pgEnum replaces TEXT role column on users table.
 // Migration: 0004_user_role_enum.sql (creates type, migrates 'member' → 'ra-member').
 export const userRoleEnum = pgEnum('user_role', ['admin', 'ra-lead', 'ra-member', 'viewer']);
+// REQ-TENANT-001: department pgEnum for secondary RBAC axis (SPEC-REGULA-TENANT-001 Tenant-Lite).
+export const userDepartmentEnum = pgEnum('user_department', ['RA', 'Dev', 'Exec', 'External']);
 
 // @MX:NOTE audit_action values mirror AuditAction type in lib/audit.ts.
 // Phase 1: 3 values. Phase 3 / Breadth: +10 via 0003_breadth_audit_actions.sql.
@@ -182,6 +184,8 @@ export const users = pgTable('users', {
   notificationPref: jsonb('notification_pref').notNull().default({}),
   createdAt: timestamp('created_at', { withTimezone: true, mode: 'date' }).notNull().defaultNow(),
   updatedAt: timestamp('updated_at', { withTimezone: true, mode: 'date' }).notNull().defaultNow(),
+  // REQ-TENANT-001: nullable department for secondary RBAC axis. null = unrestricted.
+  department: userDepartmentEnum('department'),
 });
 
 // REQ-FND-034

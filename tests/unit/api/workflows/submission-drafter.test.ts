@@ -2,19 +2,19 @@ import { GET } from '@/app/api/ra/workflows/submission-drafter/[runId]/status/ro
 import { POST } from '@/app/api/ra/workflows/submission-drafter/route';
 import { describe, expect, it, vi } from 'vitest';
 
-vi.mock('@/lib/auth', () => ({
-  auth: vi.fn(async () => ({
-    user: { id: 'test-user', role: 'ra-member', organizationId: 'test-org' },
-  })),
-}));
-
-vi.mock('@/lib/audit', () => ({
-  writeAudit: vi.fn(async () => undefined),
-}));
-
-vi.mock('@/lib/auth/acl', () => ({
-  isOrgMember: vi.fn(async () => true),
-  isProjectMember: vi.fn(async () => true),
+// Mock withPermission: pass-through with fixed session
+vi.mock('@/lib/audit', () => ({ writeAudit: vi.fn().mockResolvedValue(undefined) }));
+vi.mock('@/lib/auth/with-permission', () => ({
+  withPermission: vi.fn(
+    (
+      _action: string,
+      handler: (req: Request, ctx: unknown, session: unknown) => Promise<Response>,
+    ) =>
+      (req: Request, ctx: unknown) =>
+        handler(req, ctx, {
+          user: { id: 'user-001', role: 'ra-member', organizationId: 'org-001' },
+        }),
+  ),
 }));
 
 const VALID_UUID = '123e4567-e89b-12d3-a456-426614174000';

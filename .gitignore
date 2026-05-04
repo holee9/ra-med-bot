@@ -125,6 +125,7 @@ logs/
 .env
 .env.*
 !.env.example
+!.env.eval.example
 
 # Certificate files
 *.pem
