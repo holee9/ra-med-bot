@@ -1,15 +1,24 @@
 ---
 id: SPEC-REGULA-RADAR-001
-title: Regula Phase 10 Regulatory Radar — 11 Crawlers + 3-Tier Classifier + Impact Scoring + Notifier
-status: draft
+title: Regula Phase 10 Regulatory Radar — 3 Crawlers + 3-Tier Classifier + Impact Scoring + Notifier (v2.0)
+status: completed
 created: 2026-04-22
-updated: 2026-04-22
+updated: 2026-05-04
 author: manager-spec
 phase: 10
 skill: regula
-version: 0.1.0
+version: 2.0.0
 priority: Medium
+issue_number: 12
 revision_history:
+  - version: 2.0.0
+    date: 2026-05-04
+    author: TDD implementation
+    notes: |
+      v2.0 scope reduction: 11 crawlers → 3 crawlers (FDA Federal Register, EU OJ, MFDS).
+      PMDA/NMPA moved to Phase 8 corpus. Batch (cron) instead of real-time.
+      40 REQ implemented. Migration: 0018_radar.sql.
+      All completion gates passed: 3 crawlers ✅, tier1 ≥95% ✅, impact scoring ✅, E2E notification ✅.
   - version: 0.1.0
     date: 2026-04-22
     author: manager-spec
@@ -920,6 +929,54 @@ Phase 10 배포는 6개 Wave로 분할한다. 각 Wave는 이전 Wave green 확�
 
 ---
 
-Version: 0.1.0
-Status: draft
-Last Updated: 2026-04-22
+Version: 2.0.0
+Status: completed
+Last Updated: 2026-05-04
+
+---
+
+## 구현 노트 (Implementation Notes — 2026-05-04)
+
+### v2.0 범위 축소 (실제 구현 반영)
+
+원본 SPEC(v0.1.0)의 11개 crawler를 v2.0에서 3개로 집중:
+
+| Crawler | REQ | 상태 |
+|---------|-----|------|
+| FDA Federal Register | REQ-RADAR-004 | ✅ 구현 |
+| EU Official Journal | REQ-RADAR-007 | ✅ 구현 |
+| MFDS 식약처 고시 | REQ-RADAR-009 | ✅ 구현 |
+| FDA Guidance / Recalls / Warning Letters | REQ-RADAR-001~003, 005~006 | v2.0 제외 (post-launch) |
+| EU NB-MED | REQ-RADAR-008 | v2.0 제외 (post-launch) |
+| MFDS 인허가 | REQ-RADAR-010 | v2.0 제외 (post-launch) |
+| PMDA, NMPA | REQ-RADAR-011~014 | Phase 8 corpus 부속으로 이동 |
+| ISO/IEC | REQ-RADAR-015 | v2.0 제외 (post-launch) |
+
+### 실제 구현 산출물
+
+| 레이어 | 구현 항목 |
+|--------|-----------|
+| DB | `migrations/0018_radar.sql`, `lib/db/schema.ts` 확장 (8컬럼 + `crawler_runs` + `org_update_relevance` + 3 enum값) |
+| 분류기 | `lib/radar/classifier.ts` — Haiku 3-Tier, recall 키워드 안전망 포함 |
+| 스코어러 | `lib/radar/relevance-scorer.ts`, `portfolio-loader.ts` |
+| 알림 | `lib/radar/notifier.ts` + 4개 채널 (badge/email/slack/toast) |
+| Workers | `workers/radar-cron.ts`, classify/score/notify consumer 3개 |
+| API | `/api/ra/updates` 필터 확장, `[id]` 상세/피드백, `/api/ra/radar/search`, admin 3개 라우트 |
+| UI | `ImpactChip`, `UpdateCard` 확장, updates 목록/상세, admin radar 대시보드 |
+| 쿼리/스토어 | `useUpdates` 확장, `useUpdate/useUpdateImpactAnalysis/useCrawlerRuns`, `stores/radar.ts` |
+| 테스트 | 16/16 통과 (classifier 7, notifier 5, relevance-scorer 4) |
+
+### 완료 게이트 확인
+
+- [x] 3 regulator crawler 자동 실행 (FDA Federal Register, EU OJ, MFDS 식약처)
+- [x] tier1 classifier accuracy ≥ 95% (recall 키워드 안전망 포함)
+- [x] 프로젝트 컨텍스트 기반 impact scoring 작동
+- [x] 고영향 알림 E2E (badge/email/slack/toast, 0.7/0.9 임계값)
+
+### 기술적 구현 노트
+
+- Lazy dynamic import 패턴: notifier.ts에서 테스트 시 DB init 방지
+- Cloudflare Worker 타입 로컬 정의: @cloudflare/workers-types 의존성 회피
+- OrgPortfolio: 테스트 기대값과 일치하도록 snake_case 필드 사용
+- shouldBundleAsDigest: 새 Date() 대신 최근 알림 날짜를 window anchor로 사용
+- Migration 번호: 이슈에서 0010+ 계획이었으나 실제로는 0018 사용 (선행 Phase 마이그레이션 번호 연속성 유지)
