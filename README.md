@@ -26,6 +26,8 @@
 - [시작 방법](#시작-방법)
 - [프로젝트 문서](#프로젝트-문서)
 - [개발 로드맵](#개발-로드맵)
+- [Wave 3 로드맵](#wave-3-로드맵-v1x--핵심-확장)
+- [Wave 4 로드맵](#wave-4-로드맵-v2x--엔터프라이즈-심화)
 - [참여 방법](#참여-방법)
 
 ---
@@ -874,6 +876,46 @@ pnpm start
 
 ---
 
+### Wave 3 로드맵 (v1.x — 핵심 확장)
+
+Phase 1-11 완료 후 사용자 경험·비즈니스 가치 확대를 위한 다음 단계입니다.
+
+| # | SPEC | 설명 | 우선순위 |
+|---|------|------|---------|
+| [#22](https://github.com/holee9/ra-med-bot/issues/22) | SPEC-REGULA-PREDICATE-001 | FDA 510(k) Predicate 검색 엔진 | High |
+| [#23](https://github.com/holee9/ra-med-bot/issues/23) | SPEC-REGULA-CER-001 | EU MDR 임상평가보고서(CER) 빌더 | High |
+| [#24](https://github.com/holee9/ra-med-bot/issues/24) | SPEC-REGULA-PCCP-001 | FDA PCCP 구조화 작성기 | High |
+| [#39](https://github.com/holee9/ra-med-bot/issues/39) | SPEC-REGULA-WORKFLOWS-LLM-002 | 워크플로우 LLM 실제 실행 (510k·CER·PCCP executor) | High |
+| [#40](https://github.com/holee9/ra-med-bot/issues/40) | SPEC-REGULA-STRATEGY-001 | 멀티 관할권 규제 전략 생성기 (Killer Feature) | High |
+| [#41](https://github.com/holee9/ra-med-bot/issues/41) | SPEC-REGULA-IMPACT-001 | 규제 변경 영향 추적기 | High |
+| [#42](https://github.com/holee9/ra-med-bot/issues/42) | SPEC-REGULA-CROSSMARKET-001 | 멀티 관할권 갭 분석기 | High |
+| [#43](https://github.com/holee9/ra-med-bot/issues/43) | SPEC-REGULA-BATCH-001 | 배치 질의 모드 | High |
+| [#47](https://github.com/holee9/ra-med-bot/issues/47) | SPEC-REGULA-TRACEABILITY-001 | 규제 근거·요구사항 추적 매트릭스 | High |
+| [#48](https://github.com/holee9/ra-med-bot/issues/48) | SPEC-REGULA-SOURCE-GOVERNANCE-001 | 출처 권위도·버전·유효일 관리 | High |
+| [#50](https://github.com/holee9/ra-med-bot/issues/50) | SPEC-REGULA-KNOWLEDGE-PROMO-001 | 대화 시맨틱 검색 & 우수 답변 팀 지식 승격 | High |
+| [#51](https://github.com/holee9/ra-med-bot/issues/51) | SPEC-REGULA-PROJECT-MEMORY-001 | 프로젝트 지속 컨텍스트 메모리 | High |
+| [#52](https://github.com/holee9/ra-med-bot/issues/52) | SPEC-REGULA-NOTIFICATIONS-001 | 알림 허브 — 이메일·Slack·Teams | High |
+| [#55](https://github.com/holee9/ra-med-bot/issues/55) | SPEC-REGULA-ROI-001 | 비즈니스 가치 ROI 대시보드 | Medium |
+| [#58](https://github.com/holee9/ra-med-bot/issues/58) | SPEC-REGULA-DIGEST-001 | 포트폴리오 맞춤 주간 규제 다이제스트 | High |
+
+---
+
+### Wave 4 로드맵 (v2.x — 엔터프라이즈 심화)
+
+| # | SPEC | 설명 | 우선순위 |
+|---|------|------|---------|
+| [#25](https://github.com/holee9/ra-med-bot/issues/25) | SPEC-REGULA-COEDIT-001 | 실시간 공동편집 (Yjs CRDT + Cloudflare DO) | Medium |
+| [#44](https://github.com/holee9/ra-med-bot/issues/44) | SPEC-REGULA-CALENDAR-001 | 규제 캘린더 & 데드라인 관리 | Medium |
+| [#45](https://github.com/holee9/ra-med-bot/issues/45) | SPEC-REGULA-DELTA-SYNC-001 | 코퍼스 증분 동기화 | Medium |
+| [#46](https://github.com/holee9/ra-med-bot/issues/46) | SPEC-REGULA-RISK-001 | ISO 14971 위험관리 통합 | Medium |
+| [#49](https://github.com/holee9/ra-med-bot/issues/49) | SPEC-REGULA-VALIDATION-001 | 시스템 검증 패키지 (IQ/OQ/PQ) | High |
+| [#53](https://github.com/holee9/ra-med-bot/issues/53) | SPEC-REGULA-PMS-001 | EU MDR PMS 보고서 & PMCF 계획 생성기 | High |
+| [#54](https://github.com/holee9/ra-med-bot/issues/54) | SPEC-REGULA-CHANGE-CONTROL-001 | 설계 변경 규제 영향 자동 평가기 | Medium |
+| [#56](https://github.com/holee9/ra-med-bot/issues/56) | SPEC-REGULA-RLHF-001 | 사용자 피드백 기반 RAG 품질 개선 루프 | Medium |
+| [#57](https://github.com/holee9/ra-med-bot/issues/57) | SPEC-REGULA-QMS-INTEGRATION-001 | Veeva·MasterControl·SharePoint QMS 통합 API | Medium |
+
+---
+
 ## 참여 방법
 
 ### Issues 기반 워크플로우
@@ -1039,4 +1081,4 @@ MIT License - [LICENSE](LICENSE) 파일 참조
 
 **Built with ❤️ using [abyz-lab](https://abyz-lab.work)**
 
-_마지막 업데이트: 2026-05-04_
+_마지막 업데이트: 2026-05-04 (Wave 3/4 로드맵 추가 — 이슈 #50~58)_
