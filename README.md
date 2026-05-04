@@ -901,6 +901,10 @@ Phase 1-11 완료 후 사용자 경험·비즈니스 가치 확대를 위한 다
 | [#52](https://github.com/holee9/ra-med-bot/issues/52) | SPEC-REGULA-NOTIFICATIONS-001 | 알림 허브 — 이메일·Slack·Teams | High |
 | [#55](https://github.com/holee9/ra-med-bot/issues/55) | SPEC-REGULA-ROI-001 | 비즈니스 가치 ROI 대시보드 | Medium |
 | [#58](https://github.com/holee9/ra-med-bot/issues/58) | SPEC-REGULA-DIGEST-001 | 포트폴리오 맞춤 주간 규제 다이제스트 | High |
+| [#59](https://github.com/holee9/ra-med-bot/issues/59) | SPEC-REGULA-CLASSIFY-001 | **의료기기 분류 자동화 마법사** — FDA/EU/MFDS/NMPA/PMDA 5개 관할권 통합 분류 (모든 제출의 진입점) | High |
+| [#60](https://github.com/holee9/ra-med-bot/issues/60) | SPEC-REGULA-CLINICAL-LIT-001 | **임상 문헌 검색 & 근거 합성기** — PubMed/Embase 자동 탐색·PRISMA 흐름도·GRADE 평가·CER 섹션 자동 생성 | High |
+| [#61](https://github.com/holee9/ra-med-bot/issues/61) | SPEC-REGULA-VIGILANCE-001 | **유해사례 보고서 자동 초안기** — FDA MDR·EU MDV·FSCA 포스트마켓 감시 보고 (기한 관리 포함) | High |
+| [#62](https://github.com/holee9/ra-med-bot/issues/62) | SPEC-REGULA-STANDARDS-001 | **조화 표준 적용성 & 개정 추적기** — ISO/IEC/EN/ASTM 의무 표준 매핑·전환 기간 관리 | High |
 
 ---
 
@@ -917,6 +921,9 @@ Phase 1-11 완료 후 사용자 경험·비즈니스 가치 확대를 위한 다
 | [#54](https://github.com/holee9/ra-med-bot/issues/54) | SPEC-REGULA-CHANGE-CONTROL-001 | 설계 변경 규제 영향 자동 평가기 | Medium |
 | [#56](https://github.com/holee9/ra-med-bot/issues/56) | SPEC-REGULA-RLHF-001 | 사용자 피드백 기반 RAG 품질 개선 루프 | Medium |
 | [#57](https://github.com/holee9/ra-med-bot/issues/57) | SPEC-REGULA-QMS-INTEGRATION-001 | Veeva·MasterControl·SharePoint QMS 통합 API | Medium |
+| [#63](https://github.com/holee9/ra-med-bot/issues/63) | SPEC-REGULA-SAMD-001 | **AI/ML SaMD 전용 규제 경로** — FDA AI/ML Guidance·EU AI Act·IMDRF SaMD 프레임워크 준수 | High |
+| [#64](https://github.com/holee9/ra-med-bot/issues/64) | SPEC-REGULA-DHF-001 | **설계 이력 파일(DHF) 통합 관리** — 규제 요구사항·V&V·설계 검토·변경 이력 연결 (FDA QSR/QMSR) | High |
+| [#65](https://github.com/holee9/ra-med-bot/issues/65) | SPEC-REGULA-ESUBMIT-001 | **전자 제출 패키지 빌더** — FDA eSTAR XML·EU EUDAMED·MFDS 의약품안전나라 자동 포맷 생성 | High |
 
 ---
 
@@ -1085,4 +1092,4 @@ MIT License - [LICENSE](LICENSE) 파일 참조
 
 **Built with ❤️ using [abyz-lab](https://abyz-lab.work)**
 
-_마지막 업데이트: 2026-05-04 (Wave 3/4 로드맵 보강 — 이슈 #35~58)_
+_마지막 업데이트: 2026-05-04 (완성 비전 기반 보완 이슈 추가 — #59~65: 분류 마법사·임상 문헌·유해사례 보고·표준 추적기·SaMD·DHF·전자 제출)_
