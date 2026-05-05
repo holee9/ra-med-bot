@@ -930,7 +930,7 @@ pnpm start
 
 ## 🚀 1차 RC v1.0.0-rc 실행 가이드 (진행 중)
 
-Regula 1차 RC 마무리 작업이 진행 중입니다. 3개 터미널에서 병렬로 4건(E2EFIX, DEPLOY, QUALITY-AMEND, OBS-AMEND)을 처리하며, 자동화된 Runbook + 메타 Issue로 진행 상황을 추적합니다.
+Regula 1차 RC 마무리 4건을 **순차 싱글 터미널**로 처리합니다. 이슈 순서: **#99 → #97 → #98 → #100 → RC 태깅**.
 
 ### 핵심 문서
 
@@ -939,77 +939,63 @@ Regula 1차 RC 마무리 작업이 진행 중입니다. 3개 터미널에서 병
 - 📦 갭 분석 보고: [`.moai/plans/review-gaps-2026-05-05.md`](.moai/plans/review-gaps-2026-05-05.md)
 - 🔧 Amendment 권고: [`.moai/plans/amendments-2026-05-05.md`](.moai/plans/amendments-2026-05-05.md)
 
-### 진입 절차 (싱글 → 3-터미널 병렬 → 싱글)
+### 진입 절차 (순차 싱글 터미널)
 
-#### Stage 1 — 메인 repo에서 1회 (싱글)
+#### 사전 작업 (1회)
 
 ```bash
 cd D:/workspace-github/ra-med-bot
-
-# worktree 3개 생성 (T1, T2, T3)
-moai worktree new SPEC-REGULA-QUALITY-001
-moai worktree new SPEC-REGULA-DEPLOY-001
-moai worktree new SPEC-REGULA-E2EFIX-001
-
-# 공통 자원 1회 (idempotent)
-docker compose up -d db
+cp .env.example .env.local   # 이미 있으면 skip
+# DATABASE_URL, ANTHROPIC_API_KEY 등 실제 값 입력 후:
 pnpm db:migrate
-pnpm db:seed:corpus
 pnpm exec playwright install chromium firefox
 ```
 
-#### Stage 2 — 3개 터미널 개별 병렬 작업
+#### Step 1 — #99 QUALITY-AMEND (P0)
 
 ```bash
-# 터미널 1 — T1 QUALITY-AMEND (P0, solo)
-cd ~/.moai/worktrees/ra-med-bot/SPEC-REGULA-QUALITY-001
-pnpm install
+git checkout -b work/issue-99-quality-bootstrap
 claude
-# Claude 안: /moai run SPEC-REGULA-QUALITY-001 --resume
+# Claude 안: /moai run SPEC-REGULA-QUALITY-001
+# PR 생성 후 → main 머지
+```
 
-# 터미널 2 — T2 DEPLOY-001 (P1, solo)
-cd ~/.moai/worktrees/ra-med-bot/SPEC-REGULA-DEPLOY-001
-pnpm install
+#### Step 2 — #97 E2EFIX-001 (P0, #99 머지 후)
+
+```bash
+git checkout main && git pull origin main
+git checkout -b work/issue-97-e2efix
+claude
+# Claude 안: /moai run SPEC-REGULA-E2EFIX-001
+# PR 생성 후 → main 머지
+```
+
+#### Step 3 — #98 DEPLOY-001 (P1, #97 머지 후)
+
+```bash
+git checkout main && git pull origin main
+git checkout -b work/issue-98-deploy
 claude
 # Claude 안: /moai run SPEC-REGULA-DEPLOY-001
-
-# 터미널 3 — T3 E2EFIX-001 (P0, team)
-cd ~/.moai/worktrees/ra-med-bot/SPEC-REGULA-E2EFIX-001
-pnpm install
-claude --team
-# Claude 안: /moai run SPEC-REGULA-E2EFIX-001 --team
+# PR 생성 후 → main 머지
 ```
 
-#### Stage 3 — PR 머지 (사용자, 싱글)
-
-T1 → main 머지 → T3는 worktree에서 `git pull --rebase origin main` → T2/T3 머지.
-
-#### Stage 4 — Wave B (T4 OBS-AMEND, 싱글)
-
-T1+T2+T3 머지 완료 시 Issue #101에 T4 명령이 자동 코멘트됩니다.
+#### Step 4 — #100 OBS-AMEND (P1, #97+#98 머지 후)
 
 ```bash
-# 메인 repo
-moai worktree new SPEC-REGULA-ENTERPRISE-001
-
-# 4번째 터미널
-cd ~/.moai/worktrees/ra-med-bot/SPEC-REGULA-ENTERPRISE-001
-pnpm install
+git checkout main && git pull origin main
+git checkout -b work/issue-100-observability
 claude --team
-# Claude 안: /moai run SPEC-REGULA-ENTERPRISE-001 --team
+# Claude 안: /moai run SPEC-REGULA-ENTERPRISE-001
+# PR 생성 후 → main 머지
 ```
 
-#### Stage 5 — RC 태깅 (싱글)
+#### Step 5 — RC 태깅
 
 ```bash
-gh release create v1.0.0-rc
+gh release create v1.0.0-rc --title "Regula v1.0.0-rc" --notes-file CHANGELOG.md --prerelease
+gh issue close 101
 ```
-
-### 자동화
-
-- `runbook-sync.yml` — PR 머지 시 Runbook 체크박스 자동 갱신
-- `wave-progress-tracker.yml` — 머지 진행 Issue #101 실시간 알림
-- `wave-b-trigger.yml` — Wave A 완료 시 T4 명령 자동 안내
 
 자세한 단계별 명령·검증·트러블슈팅은 Runbook 문서를 참조하세요.
 
