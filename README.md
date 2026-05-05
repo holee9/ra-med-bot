@@ -11,8 +11,56 @@
 
 ---
 
+## 구현 현황 대시보드 (2026-05-05 기준)
+
+### 종합 점수: 7.1 / 10
+
+| 카테고리 | 점수 | 측정 근거 |
+|---------|------|---------|
+| TypeScript 타입 안전성 | ✅ 10/10 | `pnpm typecheck` — 0 에러 (474 파일) |
+| 코드 품질 (Lint) | ✅ 10/10 | Biome 0 위반, hex-color 0 위반 |
+| 단위/통합 테스트 | ✅ 9/10 | 1,686 통과 / 6 스킵 (174 파일) |
+| CI 품질 게이트 | ✅ 10/10 | tokens·i18n·rbac·contrast·audit·modules 6/6 PASS |
+| 구현 완성도 | ✅ 9/10 | 12 페이지 + 30+ API 엔드포인트 구현 |
+| E2E 실행 가능성 | ⛔ 2/10 | 8개 spec 파일 존재, `.env`·DB 없어 실행 불가 |
+| 런타임 검증 | ⛔ 2/10 | `.env` 없음 → 앱 로컬 시작 불가 |
+| 배포 준비도 | 🟡 5/10 | `wrangler.toml`·`vercel.json` 존재, 실제 배포 미완 |
+
+### CI 실행 결과
+
+```
+pnpm typecheck        ✅ PASS  (0 errors, 474 files)
+pnpm lint             ✅ PASS  (0 violations)
+pnpm test             ✅ PASS  (1,686 / 1,692 tests, 174 files)
+pnpm ci:tokens        ✅ PASS
+pnpm ci:i18n          ✅ PASS
+pnpm ci:module-boundaries ✅ PASS
+pnpm ci:rbac          ✅ PASS
+pnpm ci:contrast      ✅ PASS
+pnpm ci:audit         ✅ PASS
+pnpm test:e2e         ⛔ 실행 불가 (E2E 환경 미비 — 이슈 #80)
+```
+
+### E2E 현황 (8개 spec 파일 존재 / 0개 실행 가능)
+
+| Spec 파일 | 검증 내용 | 실행 가능 여부 |
+|-----------|-----------|--------------|
+| `auth.spec.ts` | 로그인·세션·로그아웃 | ⛔ DB 필요 |
+| `consultation.spec.ts` | 채팅·SSE 스트리밍 | ⛔ DB 필요 |
+| `citation-click.spec.ts` | 인용 클릭 | ⛔ DB 필요 |
+| `expert-review.spec.ts` | 전문가 검토 플로우 | ⛔ DB 필요 |
+| `i18n.spec.ts` | 언어 전환 | ⛔ 서버 필요 |
+| `project-switch.spec.ts` | 프로젝트 전환 | ⛔ DB 필요 |
+| `a11y.spec.ts` | WCAG 2.1 AA 접근성 | ⛔ 서버 필요 |
+| `security-headers.spec.ts` | CSP·HSTS 헤더 | ⛔ 프로덕션 URL 필요 |
+
+**E2E 해결 경로**: [#80](https://github.com/holee9/ra-med-bot/issues/80) 환경 구축 → [#81](https://github.com/holee9/ra-med-bot/issues/81) Wave 1 게이트 → [#82](https://github.com/holee9/ra-med-bot/issues/82) Wave 2 게이트 → [#83](https://github.com/holee9/ra-med-bot/issues/83) CI 통합
+
+---
+
 ## 📋 목차
 
+- [구현 현황 대시보드](#구현-현황-대시보드-2026-05-05-기준)
 - [개요](#개요)
 - [프로젝트 운영 철학](#프로젝트-운영-철학)
 - [아키텍처](#아키텍처)
@@ -26,6 +74,7 @@
 - [시작 방법](#시작-방법)
 - [프로젝트 문서](#프로젝트-문서)
 - [개발 로드맵](#개발-로드맵)
+- [1차 릴리즈 준비 로드맵](#1차-릴리즈-준비-로드맵-v100-rc)
 - [Wave 3 로드맵](#wave-3-로드맵-v1x--핵심-확장)
 - [Wave 4 로드맵](#wave-4-로드맵-v2x--엔터프라이즈-심화)
 - [Wave 5 로드맵](#wave-5-로드맵-v3x--제품-완성도-확장)
@@ -875,6 +924,40 @@ pnpm start
 **성과물**:
 - ✅ 5 REQ 전체 구현 (REQ-TEN-001~005)
 - ✅ PR [#21](https://github.com/holee9/ra-med-bot/pull/21) 완료
+
+---
+
+### 1차 릴리즈 준비 로드맵 (v1.0.0 RC)
+
+Phase 1-11 완료 후 **v1.0.0 RC** 선언을 위한 품질 게이트 통과 작업입니다. 현재 상태는 내부 검증 beta 수준(7.1/10)이며, 아래 4개 SPEC 완료 시 RC 선언이 가능합니다.
+
+| # | SPEC | 설명 | 우선순위 |
+|---|------|------|---------|
+| [#32](https://github.com/holee9/ra-med-bot/issues/32) | SPEC-REGULA-RELEASE-GATE-001 | PR/CI/Branch 정합성 확보 — v1.0.0 RC 전제 조건 (P0) | Critical |
+| [#33](https://github.com/holee9/ra-med-bot/issues/33) | SPEC-REGULA-RELEASE-HARDENING-001 | Dashboard·Knowledge·Console·TODO·E2E·Workflow Beta (P1) | High |
+| [#34](https://github.com/holee9/ra-med-bot/issues/34) | SPEC-REGULA-QUALITY-001 | Corpus Seed · Eval Pipeline · Cloudflare · DocIngest · Security (P2) | High |
+| [#31](https://github.com/holee9/ra-med-bot/issues/31) | SPEC-REGULA-RELEASE-001 | 1차 릴리즈 완성도 고도화 우산 SPEC — #32, #33, #34 의존 | Critical |
+
+#### 릴리즈 차단 블로커 (현재 확인)
+
+| 블로커 | 관련 이슈 | SPEC |
+|--------|----------|------|
+| PR #20 Playwright E2E 미완 (3-browser PENDING) | [#20](https://github.com/holee9/ra-med-bot/pull/20) | RELEASE-GATE-001 |
+| PR #21 CI 실패 — biome format / lint 4개 파일 | [#21](https://github.com/holee9/ra-med-bot/pull/21), [#30](https://github.com/holee9/ra-med-bot/issues/30) | RELEASE-GATE-001 |
+| 이슈 #12, #13 미종결 (구현 완료 상태) | [#12](https://github.com/holee9/ra-med-bot/issues/12), [#13](https://github.com/holee9/ra-med-bot/issues/13) | RELEASE-GATE-001 |
+| `feature/SPEC-REGULA-NETWORK-001` branch 미병합 | — | RELEASE-GATE-001 |
+| Dashboard Stats `stats: {}` stub 반환 | [#27](https://github.com/holee9/ra-med-bot/issues/27) | RELEASE-HARDENING-001 |
+| Knowledge Base `sourceGroups` 하드코딩 | [#27](https://github.com/holee9/ra-med-bot/issues/27) | RELEASE-HARDENING-001 |
+| Production `console.*` 15개 파일 27건 잔존 | [#29](https://github.com/holee9/ra-med-bot/issues/29) | RELEASE-HARDENING-001 |
+| Corpus seed 데이터 없음 → 실제 답변 불가 | [#34](https://github.com/holee9/ra-med-bot/issues/34) | QUALITY-001 |
+| Cloudflare Vectorize `TODO` 미해결 (`hybrid-router.ts:142`) | [#34](https://github.com/holee9/ra-med-bot/issues/34) | QUALITY-001 |
+
+#### SPEC 문서
+
+- [`SPEC-REGULA-RELEASE-GATE-001`](.moai/specs/SPEC-REGULA-RELEASE-GATE-001/) — 5개 축 P0 gate (PR CI, E2E, Issue, Branch, Session)
+- [`SPEC-REGULA-RELEASE-HARDENING-001`](.moai/specs/SPEC-REGULA-RELEASE-HARDENING-001/) — 6개 결함 28 REQ
+- [`SPEC-REGULA-QUALITY-001`](.moai/specs/SPEC-REGULA-QUALITY-001/) — 5개 품질 격차 25 REQ
+- [`SPEC-REGULA-RELEASE-001`](.moai/specs/SPEC-REGULA-RELEASE-001/) — 우산 SPEC (전체 릴리즈 추적)
 
 ---
 
