@@ -63,12 +63,12 @@ moai worktree new SPEC-REGULA-QUALITY-001
 moai worktree new SPEC-REGULA-DEPLOY-001
 moai worktree new SPEC-REGULA-E2EFIX-001
 
-# 2) DB 기동 (이미 실행 중이면 skip)
-docker compose up -d db
+# 2) .env.local 준비 (없을 경우)
+cp .env.example .env.local
+# .env.local 에 DATABASE_URL, ANTHROPIC_API_KEY 등 실제 값 입력
 
-# 3) DB 스키마 마이그레이션 + corpus seed (idempotent)
+# 3) DB 스키마 마이그레이션 (DATABASE_URL이 .env.local에 설정된 후)
 pnpm db:migrate
-pnpm db:seed:corpus
 
 # 4) Playwright 브라우저 설치 (1회만 필요)
 pnpm exec playwright install chromium firefox
@@ -78,7 +78,7 @@ pnpm exec playwright install chromium firefox
 
 ```bash
 moai worktree list                # 3개 worktree 노출 확인
-psql $DATABASE_URL -c "select count(*) from corpus_items;"  # seed 결과 확인
+pnpm typecheck                    # 타입 에러 없음 확인
 ```
 
 worktree 표준 경로:
@@ -384,7 +384,7 @@ gh issue close 101 --comment "v1.0.0-rc 릴리즈 완료. RELEASE-RC1 Runbook �
 | `moai worktree new` 실패 | moai CLI 미설치 또는 PATH 누락 | `which moai`로 점검, 미설치 시 `npm i -g @moai/cli` |
 | `pnpm install` 실패 | lock 파일 충돌 | worktree 내부에서 `rm pnpm-lock.yaml && pnpm install` (단 T1/T2/T3 동시 실행 시는 main 기준 lock 사용) |
 | T3 rebase 충돌 (`tests/fixtures/auth.ts`) | T1과 T3가 동일 파일 수정 | T3 worktree에서 수동 해결 후 `git rebase --continue` |
-| `pnpm db:seed:corpus` 중복 실행 오류 | seed 비-idempotent 의심 | seed 스크립트는 idempotent 설계됨 (`ON CONFLICT DO NOTHING`). 중복 실행해도 안전 |
+| `pnpm db:migrate` 실패 | `.env.local` 미설정 또는 DATABASE_URL 오류 | `.env.local`에 실제 DB 연결 문자열 입력 후 재실행 |
 | Wave B 자동 알림 누락 | `wave-b-trigger.yml` 워크플로우 실패 | 수동 트리거: `gh workflow run wave-b-trigger.yml` |
 | Playwright 브라우저 누락 | `pnpm exec playwright install` 미실행 | Stage 1의 `pnpm exec playwright install chromium firefox` 재실행 |
 | `claude --team` 시작 실패 | 환경변수 `CLAUDE_CODE_EXPERIMENTAL_AGENT_TEAMS=1` 누락 | `.env` 또는 셸 rc에 추가 후 재기동 |
@@ -415,9 +415,9 @@ moai worktree new SPEC-REGULA-QUALITY-001
 moai worktree new SPEC-REGULA-DEPLOY-001
 moai worktree new SPEC-REGULA-E2EFIX-001
 
-docker compose up -d db
+cp .env.example .env.local   # 이미 있으면 skip
+# .env.local에 DATABASE_URL 등 실제 값 입력 후:
 pnpm db:migrate
-pnpm db:seed:corpus
 pnpm exec playwright install chromium firefox
 ```
 
