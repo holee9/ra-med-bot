@@ -1,17 +1,15 @@
 // @MX:NOTE: [AUTO] E2E spec: low-confidence gating → expert review queue → resolve
-// @MX:SPEC: REQ-LAUNCH-017
+// @MX:SPEC: REQ-LAUNCH-017, SPEC-REGULA-E2EFIX-001 (REQ-E2EFIX-002)
 
 import { expect, test } from '@playwright/test';
-
-const NEEDS_SERVER =
-  process.env.CI !== 'true' && !process.env.PLAYWRIGHT_BASE_URL
-    ? 'Requires running Next.js server (set PLAYWRIGHT_BASE_URL or run in CI)'
-    : undefined;
+import { requiresAuthState, requiresLiveServer } from './fixtures/env-guard';
 
 test.describe('Expert review flow (REQ-LAUNCH-017)', () => {
   test('low-confidence AI response shows expert-review callout', async ({ page }) => {
-    test.skip(!!NEEDS_SERVER, NEEDS_SERVER ?? '');
-    test.skip(true, 'Requires authenticated session — run with PLAYWRIGHT_AUTH_STATE set');
+    const s = requiresLiveServer();
+    test.skip(s.skip, s.reason);
+    const a = requiresAuthState();
+    test.skip(a.skip, a.reason);
 
     await page.goto('/chat');
 
@@ -28,8 +26,10 @@ test.describe('Expert review flow (REQ-LAUNCH-017)', () => {
   });
 
   test('clicking "Send for expert review" enqueues the item', async ({ page }) => {
-    test.skip(!!NEEDS_SERVER, NEEDS_SERVER ?? '');
-    test.skip(true, 'Requires authenticated session — run with PLAYWRIGHT_AUTH_STATE set');
+    const s = requiresLiveServer();
+    test.skip(s.skip, s.reason);
+    const a = requiresAuthState();
+    test.skip(a.skip, a.reason);
 
     await page.goto('/chat');
 
@@ -50,7 +50,8 @@ test.describe('Expert review flow (REQ-LAUNCH-017)', () => {
   });
 
   test('/expert-review queue lists pending items for RA experts', async ({ page }) => {
-    test.skip(true, 'Requires authenticated RA expert session');
+    const a = requiresAuthState();
+    test.skip(a.skip, a.reason);
 
     await page.goto('/expert-review');
     await expect(page).toHaveURL('/expert-review');
@@ -60,7 +61,8 @@ test.describe('Expert review flow (REQ-LAUNCH-017)', () => {
   });
 
   test('expert can resolve a queued item', async ({ page }) => {
-    test.skip(true, 'Requires authenticated RA expert session with seeded review item');
+    const a = requiresAuthState();
+    test.skip(a.skip, a.reason);
 
     await page.goto('/expert-review');
 

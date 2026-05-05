@@ -1,13 +1,9 @@
 // @MX:NOTE: [AUTO] E2E spec: axe-core accessibility scan for 6 core routes
-// @MX:SPEC: REQ-LAUNCH-021
+// @MX:SPEC: REQ-LAUNCH-021, SPEC-REGULA-E2EFIX-001 (REQ-E2EFIX-002)
 
 import AxeBuilder from '@axe-core/playwright';
 import { expect, test } from '@playwright/test';
-
-const NEEDS_SERVER =
-  process.env.CI !== 'true' && !process.env.PLAYWRIGHT_BASE_URL
-    ? 'Requires running Next.js server (set PLAYWRIGHT_BASE_URL or run in CI)'
-    : undefined;
+import { requiresLiveServer } from './fixtures/env-guard';
 
 const ROUTES_TO_CHECK = [
   '/',
@@ -21,7 +17,8 @@ const ROUTES_TO_CHECK = [
 test.describe('Accessibility — WCAG 2.1 AA (REQ-LAUNCH-021)', () => {
   for (const route of ROUTES_TO_CHECK) {
     test(`${route} has no critical accessibility violations`, async ({ page }) => {
-      test.skip(!!NEEDS_SERVER, NEEDS_SERVER ?? '');
+      const s = requiresLiveServer();
+      test.skip(s.skip, s.reason);
 
       await page.goto(route);
 
@@ -46,7 +43,8 @@ test.describe('Accessibility — WCAG 2.1 AA (REQ-LAUNCH-021)', () => {
   }
 
   test('/ has no serious or critical violations', async ({ page }) => {
-    test.skip(!!NEEDS_SERVER, NEEDS_SERVER ?? '');
+    const s = requiresLiveServer();
+    test.skip(s.skip, s.reason);
 
     await page.goto('/');
     await page.waitForLoadState('networkidle');

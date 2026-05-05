@@ -1,17 +1,15 @@
 // @MX:NOTE: [AUTO] E2E spec: project switch with conversation preservation
-// @MX:SPEC: REQ-LAUNCH-018
+// @MX:SPEC: REQ-LAUNCH-018, SPEC-REGULA-E2EFIX-001 (REQ-E2EFIX-002)
 
 import { expect, test } from '@playwright/test';
-
-const NEEDS_SERVER =
-  process.env.CI !== 'true' && !process.env.PLAYWRIGHT_BASE_URL
-    ? 'Requires running Next.js server (set PLAYWRIGHT_BASE_URL or run in CI)'
-    : undefined;
+import { requiresAuthState, requiresLiveServer } from './fixtures/env-guard';
 
 test.describe('Project switch (REQ-LAUNCH-018)', () => {
   test('project switcher is visible in the sidebar', async ({ page }) => {
-    test.skip(!!NEEDS_SERVER, NEEDS_SERVER ?? '');
-    test.skip(true, 'Requires authenticated session — run with PLAYWRIGHT_AUTH_STATE set');
+    const s = requiresLiveServer();
+    test.skip(s.skip, s.reason);
+    const a = requiresAuthState();
+    test.skip(a.skip, a.reason);
 
     await page.goto('/chat');
 
@@ -20,8 +18,10 @@ test.describe('Project switch (REQ-LAUNCH-018)', () => {
   });
 
   test('switching projects navigates to the new project chat', async ({ page }) => {
-    test.skip(!!NEEDS_SERVER, NEEDS_SERVER ?? '');
-    test.skip(true, 'Requires authenticated session — run with PLAYWRIGHT_AUTH_STATE set');
+    const s = requiresLiveServer();
+    test.skip(s.skip, s.reason);
+    const a = requiresAuthState();
+    test.skip(a.skip, a.reason);
 
     await page.goto('/chat');
 
@@ -48,7 +48,8 @@ test.describe('Project switch (REQ-LAUNCH-018)', () => {
   });
 
   test('conversation history is preserved after project switch', async ({ page }) => {
-    test.skip(true, 'Requires authenticated session with seeded conversation data');
+    const a = requiresAuthState();
+    test.skip(a.skip, a.reason);
 
     await page.goto('/chat');
 
@@ -71,8 +72,10 @@ test.describe('Project switch (REQ-LAUNCH-018)', () => {
   });
 
   test('unsaved draft is cleared when switching projects', async ({ page }) => {
-    test.skip(!!NEEDS_SERVER, NEEDS_SERVER ?? '');
-    test.skip(true, 'Requires authenticated session — run with PLAYWRIGHT_AUTH_STATE set');
+    const s = requiresLiveServer();
+    test.skip(s.skip, s.reason);
+    const a = requiresAuthState();
+    test.skip(a.skip, a.reason);
 
     await page.goto('/chat');
 

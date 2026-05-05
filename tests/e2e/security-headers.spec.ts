@@ -3,22 +3,15 @@
 // nonce, X-Frame-Options, HSTS, X-Content-Type-Options) on every response
 // produced by the app, including /api/ra/* routes. Run via:
 //   pnpm test:e2e --grep @security-headers
-// @MX:SPEC: SPEC-REGULA-QUALITY-001 (REQ-QUAL-020~023), SPEC-REGULA-LAUNCH-001 (REQ-LAUNCH-034)
+// @MX:SPEC: SPEC-REGULA-QUALITY-001 (REQ-QUAL-020~023), SPEC-REGULA-LAUNCH-001 (REQ-LAUNCH-034), SPEC-REGULA-E2EFIX-001 (REQ-E2EFIX-002)
 
 import { expect, test } from '@playwright/test';
+import { requiresLiveServer } from './fixtures/env-guard';
 
 // REQ-QUAL-020: this test must pass in CI on chromium against a build
 // representative of production. Locally `pnpm dev` is sufficient because
 // middleware.ts (not Vercel's static headers config) is the source of
 // truth for these headers — the same middleware runs in dev and prod.
-//
-// We still expose `test.skip` so the meta-test in tests/unit/security-e2e-shape.test.ts
-// continues to recognize the production-skip guard pattern. The guard only
-// triggers when no base URL is wired (e.g., promptfoo-style smoke runs).
-const SKIP_REASON =
-  !process.env.PLAYWRIGHT_BASE_URL && process.env.CI === 'true'
-    ? 'No PLAYWRIGHT_BASE_URL configured in CI environment'
-    : '';
 
 // `/api/ra/sources` is one of the protected /api/ra/* routes. Unauthenticated
 // requests are 307-redirected to /login by middleware.ts, but the security
@@ -28,7 +21,13 @@ const API_RA_ROUTE = '/api/ra/sources';
 
 test.describe('@security-headers Security Headers (REQ-QUAL-020~023)', () => {
   test.beforeEach(() => {
-    test.skip(Boolean(SKIP_REASON), SKIP_REASON);
+    const server = requiresLiveServer();
+    // In CI without PLAYWRIGHT_BASE_URL, also skip (no server target).
+    const noUrlInCi = process.env.CI === 'true' && !process.env.PLAYWRIGHT_BASE_URL;
+    test.skip(
+      server.skip || noUrlInCi,
+      noUrlInCi ? 'No PLAYWRIGHT_BASE_URL configured in CI environment' : server.reason,
+    );
   });
 
   test('@security-headers /api/ra/* response includes X-Frame-Options: DENY', async ({

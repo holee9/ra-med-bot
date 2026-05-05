@@ -1,12 +1,8 @@
 // @MX:NOTE: [AUTO] E2E spec: Korean / English language toggle
-// @MX:SPEC: REQ-LAUNCH-020
+// @MX:SPEC: REQ-LAUNCH-020, SPEC-REGULA-E2EFIX-001 (REQ-E2EFIX-002)
 
 import { expect, test } from '@playwright/test';
-
-const NEEDS_SERVER =
-  process.env.CI !== 'true' && !process.env.PLAYWRIGHT_BASE_URL
-    ? 'Requires running Next.js server (set PLAYWRIGHT_BASE_URL or run in CI)'
-    : undefined;
+import { requiresAuthState, requiresLiveServer } from './fixtures/env-guard';
 
 const STRINGS = {
   en: { chat: 'Chat', projects: 'Projects' },
@@ -15,8 +11,10 @@ const STRINGS = {
 
 test.describe('i18n language toggle (REQ-LAUNCH-020)', () => {
   test('locale toggle button is visible in settings or navbar', async ({ page }) => {
-    test.skip(!!NEEDS_SERVER, NEEDS_SERVER ?? '');
-    test.skip(true, 'Requires authenticated session — run with PLAYWRIGHT_AUTH_STATE set');
+    const s = requiresLiveServer();
+    test.skip(s.skip, s.reason);
+    const a = requiresAuthState();
+    test.skip(a.skip, a.reason);
 
     await page.goto('/');
     const toggle = page.locator('[data-testid="locale-toggle"]');
@@ -24,8 +22,10 @@ test.describe('i18n language toggle (REQ-LAUNCH-020)', () => {
   });
 
   test('switching to Korean changes UI labels', async ({ page }) => {
-    test.skip(!!NEEDS_SERVER, NEEDS_SERVER ?? '');
-    test.skip(true, 'Requires authenticated session — run with PLAYWRIGHT_AUTH_STATE set');
+    const s = requiresLiveServer();
+    test.skip(s.skip, s.reason);
+    const a = requiresAuthState();
+    test.skip(a.skip, a.reason);
 
     await page.goto('/');
 
@@ -39,8 +39,10 @@ test.describe('i18n language toggle (REQ-LAUNCH-020)', () => {
   });
 
   test('switching back to English restores English labels', async ({ page }) => {
-    test.skip(!!NEEDS_SERVER, NEEDS_SERVER ?? '');
-    test.skip(true, 'Requires authenticated session — run with PLAYWRIGHT_AUTH_STATE set');
+    const s = requiresLiveServer();
+    test.skip(s.skip, s.reason);
+    const a = requiresAuthState();
+    test.skip(a.skip, a.reason);
 
     await page.goto('/');
 
@@ -58,8 +60,10 @@ test.describe('i18n language toggle (REQ-LAUNCH-020)', () => {
   });
 
   test('selected locale persists across page reload', async ({ page }) => {
-    test.skip(!!NEEDS_SERVER, NEEDS_SERVER ?? '');
-    test.skip(true, 'Requires authenticated session — run with PLAYWRIGHT_AUTH_STATE set');
+    const s = requiresLiveServer();
+    test.skip(s.skip, s.reason);
+    const a = requiresAuthState();
+    test.skip(a.skip, a.reason);
 
     await page.goto('/');
 
@@ -76,8 +80,10 @@ test.describe('i18n language toggle (REQ-LAUNCH-020)', () => {
   });
 
   test('i18n toggle is keyboard accessible', async ({ page }) => {
-    test.skip(!!NEEDS_SERVER, NEEDS_SERVER ?? '');
-    test.skip(true, 'Requires authenticated session — run with PLAYWRIGHT_AUTH_STATE set');
+    const s = requiresLiveServer();
+    test.skip(s.skip, s.reason);
+    const a = requiresAuthState();
+    test.skip(a.skip, a.reason);
 
     await page.goto('/');
 
