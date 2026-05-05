@@ -1,6 +1,7 @@
 // GET /api/ra/updates/[id] — regulatory update detail with on-demand impact analysis.
 // @MX:SPEC SPEC-REGULA-RADAR-001
 
+import { logger } from '@/lib/observability/logger';
 import { eq } from 'drizzle-orm';
 import { sharedAnthropicClient } from '../../../../../lib/ai/anthropic-client';
 import { withPermission } from '../../../../../lib/auth/with-permission';
@@ -62,7 +63,7 @@ Provide a concise 3-5 sentence impact analysis covering: what changed, who is af
           .where(eq(regulatoryUpdates.id, id));
       }
     } catch (err) {
-      console.error('[updates/[id]] Impact analysis failed:', err);
+      logger.error('[updates/[id]] Impact analysis failed:', err);
     }
   }
 

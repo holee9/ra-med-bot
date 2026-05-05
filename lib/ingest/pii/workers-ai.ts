@@ -1,6 +1,7 @@
 // @MX:NOTE [AUTO] Layer 2 PII detection — Cloudflare Workers AI GLiNER model.
 // @MX:SPEC SPEC-REGULA-DOCINGEST-001 (REQ-DOC-027)
 // Returns empty array if CF_WORKERS_AI_TOKEN is not set (CI safe mode).
+import { logger } from '@/lib/observability/logger';
 
 /** A detected PII span in the input text. */
 export interface PIISpan {
@@ -51,7 +52,7 @@ export async function detectPiiWorkersAi(text: string): Promise<PIISpan[]> {
   }
 
   if (!response.ok) {
-    console.warn('[workers-ai] PII detection failed:', response.status);
+    logger.warn('[workers-ai] PII detection failed:', { status: response.status });
     return [];
   }
 

@@ -11,6 +11,7 @@ import type { Session } from 'next-auth';
 import type { NextRequest } from 'next/server';
 import { consult, ensureConversation } from '../../../../lib/ai/consult';
 import { encodeSSE } from '../../../../lib/ai/streaming';
+import { logger } from '@/lib/observability/logger';
 import { withPermission } from '../../../../lib/auth/with-permission';
 import { ConsultRequestSchema } from '../../../../types/consult';
 import type { StreamEvent } from '../../../../types/streaming';
@@ -104,7 +105,7 @@ export const POST = withPermission('consult.create', async (req, _ctx, session) 
         }
       } catch (err) {
         // REQ-CHAT-008 — safe error event.
-        console.error('[consult] pipeline error:', err);
+        logger.error('[consult] pipeline error:', err);
         const code =
           err instanceof Error && err.message.includes('rate') ? 'rate_limit' : 'llm_failure';
         push({
