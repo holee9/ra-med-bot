@@ -115,6 +115,14 @@ async function retrievePublicWithFallback(
   k: number,
   timeoutMs: number,
 ): Promise<RetrievalResult[]> {
+  // REQ-QUAL-012/013: When the Workers binding is unavailable (local dev,
+  // vitest, missing env var), skip the Vectorize race and fall straight
+  // through to pgvector. This is the documented default behaviour.
+  if (!isVectorizeAvailable()) {
+    emitFallbackBreadcrumbs(query, 'vectorize_unavailable');
+    return retrieveInternal(query, filters, k);
+  }
+
   const vectorizePromise = retrieveVectorize(query, filters, k);
   const timeoutPromise = new Promise<null>((resolve) => setTimeout(() => resolve(null), timeoutMs));
 
@@ -130,18 +138,52 @@ async function retrievePublicWithFallback(
 }
 
 /**
+ * Detects whether the current process is running inside a Cloudflare Workers
+ * runtime with a configured Vectorize index binding.
+ *
+ * Two signals must agree:
+ *   1. `caches` global is present — only Workers / browser runtimes expose it.
+ *      Node.js (where vitest + next dev run) does NOT define this global, so
+ *      this guard reliably keeps tests + local dev on the pgvector path.
+ *   2. `CLOUDFLARE_VECTORIZE_INDEX_NAME` env var is set and non-empty —
+ *      operators must explicitly opt-in per environment (REQ-QUAL-012).
+ *
+ * @MX:NOTE [AUTO] pgvector fallback active when CLOUDFLARE_VECTORIZE_INDEX_NAME
+ * is unset OR when running outside the Cloudflare Workers runtime. This is the
+ * default for local dev, vitest, and Next.js Node server modes — operators
+ * must explicitly set the env var inside Workers to enable Vectorize dispatch
+ * (REQ-QUAL-012, REQ-QUAL-013).
+ */
+export function isVectorizeAvailable(): boolean {
+  const hasCachesGlobal = typeof (globalThis as { caches?: unknown }).caches !== 'undefined';
+  const indexName = process.env.CLOUDFLARE_VECTORIZE_INDEX_NAME;
+  return hasCachesGlobal && !!indexName && indexName.length > 0;
+}
+
+/**
  * Calls the Vectorize-backed retriever for the public corpus.
- * In Workers runtime this would call the Vectorize binding directly.
- * Stubbed for test/Node environments.
+ *
+ * Routes by environment:
+ *   - Cloudflare Workers runtime + env var set → Vectorize binding dispatch
+ *     (binding wiring tracked under SPEC-REGULA-VECTORIZE-001 and intentionally
+ *     left as a stub here per EXC-3 — only the routing/fallback logic is in
+ *     scope for SPEC-REGULA-QUALITY-001).
+ *   - Otherwise → empty array, signalling the caller to fall back to pgvector.
  */
 async function retrieveVectorize(
   _query: string,
   _filters: HybridRetrieveFilters,
   _k: number,
 ): Promise<RetrievalResult[]> {
-  // @MX:TODO: [AUTO] VectorizeIndex binding not yet wired in Workers runtime.
+  if (!isVectorizeAvailable()) {
+    // No Workers binding available — caller falls through to pgvector.
+    return [];
+  }
+
+  // @MX:NOTE [AUTO] Vectorize binding dispatch is intentionally stubbed here.
   // @MX:SPEC SPEC-REGULA-VECTORIZE-001
-  // Returns empty array until Vectorize runtime is available in this environment.
+  // Actual VectorizeIndex.query() wiring is out-of-scope for SPEC-REGULA-QUALITY-001
+  // (EXC-3). This branch will be replaced when the binding is wired in Workers.
   return [];
 }
 

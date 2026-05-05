@@ -1,0 +1,11 @@
+{
+  "version": "baseline-2026-05-05",
+  "results": {
+    "stats": {
+      "successes": 44,
+      "failures": 11,
+      "totalTests": 55
+    }
+  },
+  "passRate": 0.8
+}

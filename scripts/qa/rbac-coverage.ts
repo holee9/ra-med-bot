@@ -8,7 +8,7 @@
 
 import { readFileSync, readdirSync, statSync } from 'node:fs';
 import path from 'node:path';
-import { logger } from '../../lib/observability/logger';
+import { logger } from '../../lib/observability/logger.ts';
 
 // HTTP method exports that could appear in route.ts files.
 const HTTP_METHODS = ['GET', 'POST', 'PUT', 'PATCH', 'DELETE', 'HEAD', 'OPTIONS'] as const;
