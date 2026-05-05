@@ -1043,6 +1043,41 @@ Wave 3/4까지 완료되면 Regula는 분류, 근거 수집, 전략, 문서 생�
 
 모든 구현 이슈는 시작 전, 구현 중, PR 수락, Wave 통합, 도메인 UAT, 운영 회귀의 QA 단계를 거칩니다. #73 QA Matrix가 전체 이슈와 증거를 추적하고, #80은 E2E 실행 인프라 선행 조건입니다.
 
+#### 2026-05-05 QA 본문 반영 결과
+
+QA 메타 이슈만 별도로 두는 방식은 실제 구현 흐름에서 놓칠 수 있으므로, 각 구현/기능/E2E 이슈 본문에 `## QA 단계`를 직접 삽입했습니다.
+
+| 항목 | 결과 |
+|------|------|
+| 직접 삽입 대상 | #22~#72, #80~#92 총 64개 이슈 |
+| 제외 대상 | #73~#79 QA 메타 이슈. 중복 삽입하지 않고 Matrix/Gate 추적 이슈로 유지 |
+| 공통 추적 기준 | 모든 대상 이슈가 #73 QA Matrix에 연결 |
+| 작업 게이트 기록 | #18에 활성 브랜치, 기준 커밋, 중복 PR 없음, 반영 범위 기록 |
+| QA Matrix 기록 | #73에 대상 범위, 제외 범위, Gate 구조, 검증 결과 기록 |
+| 검증 결과 | 64/64 이슈에서 `## QA 단계` 확인. 샘플 #22, #66, #92 확인 |
+
+#### 이슈 본문에 삽입된 QA 구조
+
+| 단계 | 체크 목적 | 필수 증거 |
+|------|----------|----------|
+| Gate 0: 구현 전 QA | 이슈 본문, SPEC, 완료 조건이 서로 맞는지 확인하고 테스트 가능한 AC를 정의 | 같은 이슈 댓글 또는 PR 본문에 SPEC/AC 정합성, fixture/mock/API 조건 기록 |
+| Gate 1: 구현 중 QA Checkpoint | shared schema/API/DB contract 변경 직후 targeted test 또는 contract check 수행 | 실패 케이스, 권한 없는 접근, 외부 API 실패/timeout/rate limit 경로 확인 |
+| Gate 2: PR 수락 QA | PR 병합 전 변경 범위에 맞는 unit/integration/E2E/eval 최소 검증 수행 | PR `QA evidence` 섹션에 실행 명령, 결과, artifact 또는 수동 검수 근거 기록 |
+| Gate 3~4: 통합·도메인 QA | Wave 단위 cross-feature flow와 RA 도메인 판단 정확도 검수 | #77 통합 시나리오, #78 RA 도메인 UAT 또는 expert signoff 연결 |
+| Gate 5: 운영 QA | 운영 중 추적할 품질 지표, synthetic check, rollback 조건 정의 | 회귀 발생 시 follow-up issue 생성 기준과 rollback 또는 차단 조건 기록 |
+
+#### 도메인별 Gate 1 추가 초점
+
+| 이슈 유형 | 추가 QA 초점 |
+|----------|-------------|
+| Predicate, 510(k), eSTAR, 전자 제출 | 공식 포맷/API contract 일치, 자동 판단 방지를 위한 명시적 선택 또는 expert review gate |
+| CER, 임상, PubMed, PMS/PMCF, Vigilance, CAPA | claim을 지지하는 citation 샘플링, 기한·심각도·reportability·follow-up audit trail |
+| PCCP, SaMD, AI/ML, Model Governance, 답변 품질 | model/prompt/template version metadata, confidence/citation/expert-review 조건 유지 |
+| Risk, DHF, Change Control, Labeling, E-Signature, Auditor View | traceability link, e-signature lock, reviewer role, audit evidence의 우회 불가성 |
+| Source, Corpus License, Standards, DSAR, DLP, Data Residency | source entitlement, privacy, redaction, region routing, export/search/LLM 제한 반영 |
+| Co-edit, E2E, CI, Playwright | 로컬/CI 동일 fixture 또는 mock 재현성, 동시성·실패 복구·artifact/trace 저장 |
+| QMS, Export, Share, Personal Library, ROI, Notification | 사용자 여정, 접근성, 권한별 표시/수정 상태, 생성·공유·알림 audit 및 취소 경로 |
+
 | 단계 | 이슈 | 목적 |
 |------|------|------|
 | Matrix | [#73](https://github.com/holee9/ra-med-bot/issues/73) | 전체 이슈-요구사항-테스트-증거 매트릭스 |
@@ -1224,4 +1259,4 @@ MIT License - [LICENSE](LICENSE) 파일 참조
 
 **Built with ❤️ using [abyz-lab](https://abyz-lab.work)**
 
-_마지막 업데이트: 2026-05-04 (Wave 5 #84~92 gap 분석 결과 반영 — RA UX + 규제 준수 두 관점 보강 SPEC 추가)_
+_마지막 업데이트: 2026-05-05 (QA 단계 본문 삽입 결과 반영 — #22~#72, #80~#92 총 64개 이슈에 Gate 0~5 QA 체크포인트 직접 추가)_
