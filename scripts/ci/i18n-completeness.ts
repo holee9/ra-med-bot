@@ -11,7 +11,7 @@
 
 import * as fs from 'node:fs';
 import * as path from 'node:path';
-import { logger } from '../../lib/observability/logger';
+import { logger } from '../../lib/observability/logger.ts';
 
 const KO_FILE = path.join(process.cwd(), 'messages', 'ko.json');
 const EN_FILE = path.join(process.cwd(), 'messages', 'en.json');
