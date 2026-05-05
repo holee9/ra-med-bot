@@ -10,7 +10,7 @@ status_legend: "pending | in-progress | verified"
 
 # Traceability Matrix — SPEC-REGULA-QUALITY-001
 
-본 매트릭스는 QUALITY-001의 25개 EARS REQ를 acceptance scenario, 검증 명령, GitHub issue로 1:1 연결한다.
+본 매트릭스는 QUALITY-001의 28개 EARS REQ(Group A~G)를 acceptance scenario, 검증 명령, 구현 파일, GitHub issue로 1:1 연결한다.
 
 | REQ ID | EARS Pattern | Acceptance Criteria ID | Test/Script | GitHub Issue | Status |
 |---|---|---|---|---|---|
@@ -39,6 +39,9 @@ status_legend: "pending | in-progress | verified"
 | REQ-QUAL-023 | UB | acceptance Scenario E2 | Hypothetical missing header build → CI fails | #34 | pending |
 | REQ-QUAL-024 | U | acceptance Scenario F1 | `pnpm ci:rbac` exit 0 with admin doc routes (4 routes) | #34 | pending |
 | REQ-QUAL-025 | UB | acceptance Scenario F1 | RBAC matrix missing route → `pnpm ci:rbac` fails with route name | #34 | pending |
+| REQ-QUAL-026 | U | acceptance Scenario G1 | Fresh checkout + `pnpm dev:bootstrap` → `.env.local` 생성 + 후속 `pnpm db:seed:corpus` 통과. Idempotent 재실행 검증. SPEC §2 Group G. plan.md M7. Files: `scripts/dev-bootstrap.ts` (new), `package.json` (script) | #99 | pending |
+| REQ-QUAL-027 | UB | acceptance Scenario G2 | `NODE_ENV=production ANTHROPIC_API_KEY=dev-placeholder-anthropic pnpm build` → fail-fast, exit code ≠ 0. SPEC §2 Group G. plan.md M7 / §3.7. Files: `lib/env.ts` (patch — zod refinement) | #99 | pending |
+| REQ-QUAL-028 | U | acceptance Scenario G3 | `DEVELOPMENT.md` Section 2 에 5단계 sequence (git clone → pnpm install → pnpm dev:bootstrap → db:up/migrate/seed → pnpm dev) 존재 확인. SPEC §2 Group G. plan.md M7. Files: `DEVELOPMENT.md` (Section 2 update) | #99 | pending |
 
 ---
 
@@ -53,9 +56,10 @@ status_legend: "pending | in-progress | verified"
 ## Status 갱신 정책
 
 - RUN 단계 진입 전 모든 row는 `pending`
-- Group별 마일스톤(M1~M6) 시작 시 해당 row를 `in-progress`로 갱신
+- Group별 마일스톤(M1~M7) 시작 시 해당 row를 `in-progress`로 갱신
 - acceptance scenario PASS 시 `verified`
-- 25개 row 모두 `verified`일 때 RELEASE-001 traceability-matrix.md의 위임 row (REQ-REL-030 hybrid-router 부분, REQ-REL-050)도 `verified`로 전이
+- 28개 row 모두 `verified`일 때 RELEASE-001 traceability-matrix.md의 위임 row (REQ-REL-030 hybrid-router 부분, REQ-REL-050)도 `verified`로 전이
+- Group G (REQ-QUAL-026~028)는 #99 closure에 직접 연동 — 3 rows 모두 `verified` 시 #99 자동 close 가능
 
 ---
 

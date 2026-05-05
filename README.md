@@ -939,26 +939,71 @@ Regula 1차 RC 마무리 작업이 진행 중입니다. 3개 터미널에서 병
 - 📦 갭 분석 보고: [`.moai/plans/review-gaps-2026-05-05.md`](.moai/plans/review-gaps-2026-05-05.md)
 - 🔧 Amendment 권고: [`.moai/plans/amendments-2026-05-05.md`](.moai/plans/amendments-2026-05-05.md)
 
-### 진입 절차 (3개 터미널 개별 실행)
+### 진입 절차 (싱글 → 3-터미널 병렬 → 싱글)
 
-각 터미널에서 한 줄씩 실행하면 됩니다. 메인 세션 사전 작업 불필요.
+#### Stage 1 — 메인 repo에서 1회 (싱글)
 
 ```bash
-# 터미널 1
-./scripts/release-rc1/start.sh T1
+cd D:/workspace-github/ra-med-bot
 
-# 터미널 2
-./scripts/release-rc1/start.sh T2
+# worktree 3개 생성 (T1, T2, T3)
+moai worktree new SPEC-REGULA-QUALITY-001
+moai worktree new SPEC-REGULA-DEPLOY-001
+moai worktree new SPEC-REGULA-E2EFIX-001
 
-# 터미널 3
-./scripts/release-rc1/start.sh T3
+# 공통 자원 1회 (idempotent)
+docker compose up -d db
+pnpm db:migrate
+pnpm db:seed:corpus
+pnpm exec playwright install chromium firefox
 ```
 
-`start.sh`가 자동으로: main pull → worktree 생성 → 해당 터미널 필요 사전 준비(pnpm install / DB seed / Playwright 등) → Issue #101 코멘트 → claude 실행 명령 출력. 이후 출력된 `claude` + `/moai run` 명령을 같은 터미널에 입력하면 작업 시작.
+#### Stage 2 — 3개 터미널 개별 병렬 작업
 
-Wave A (T1+T2+T3) 모두 머지되면 Issue #101에 자동으로 T4 명령이 코멘트됩니다 → 별도 터미널에서 `./scripts/release-rc1/start.sh T4` 실행.
+```bash
+# 터미널 1 — T1 QUALITY-AMEND (P0, solo)
+cd ~/.moai/worktrees/ra-med-bot/SPEC-REGULA-QUALITY-001
+pnpm install
+claude
+# Claude 안: /moai run SPEC-REGULA-QUALITY-001 --resume
 
-최종 RC 태깅: `gh release create v1.0.0-rc`
+# 터미널 2 — T2 DEPLOY-001 (P1, solo)
+cd ~/.moai/worktrees/ra-med-bot/SPEC-REGULA-DEPLOY-001
+pnpm install
+claude
+# Claude 안: /moai run SPEC-REGULA-DEPLOY-001
+
+# 터미널 3 — T3 E2EFIX-001 (P0, team)
+cd ~/.moai/worktrees/ra-med-bot/SPEC-REGULA-E2EFIX-001
+pnpm install
+claude --team
+# Claude 안: /moai run SPEC-REGULA-E2EFIX-001 --team
+```
+
+#### Stage 3 — PR 머지 (사용자, 싱글)
+
+T1 → main 머지 → T3는 worktree에서 `git pull --rebase origin main` → T2/T3 머지.
+
+#### Stage 4 — Wave B (T4 OBS-AMEND, 싱글)
+
+T1+T2+T3 머지 완료 시 Issue #101에 T4 명령이 자동 코멘트됩니다.
+
+```bash
+# 메인 repo
+moai worktree new SPEC-REGULA-ENTERPRISE-001
+
+# 4번째 터미널
+cd ~/.moai/worktrees/ra-med-bot/SPEC-REGULA-ENTERPRISE-001
+pnpm install
+claude --team
+# Claude 안: /moai run SPEC-REGULA-ENTERPRISE-001 --team
+```
+
+#### Stage 5 — RC 태깅 (싱글)
+
+```bash
+gh release create v1.0.0-rc
+```
 
 ### 자동화
 

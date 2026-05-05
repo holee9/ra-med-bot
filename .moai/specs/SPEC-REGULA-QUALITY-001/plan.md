@@ -2,11 +2,12 @@
 
 ## 1. Implementation Strategy
 
-품질 향상 작업을 6개 그룹(A~F)으로 분리하고, 그룹 내부는 의존성 순서대로, 그룹 간은 가능한 병렬로 진행한다. Group A(코퍼스 시드)가 Group B(평가 파이프라인)의 전제이므로 A→B 순서는 고정이며, 나머지는 독립 트랙이다.
+품질 향상 작업을 7개 그룹(A~G)으로 분리하고, 그룹 내부는 의존성 순서대로, 그룹 간은 가능한 병렬로 진행한다. Group A(코퍼스 시드)가 Group B(평가 파이프라인)의 전제이므로 A→B 순서는 고정이며, 나머지는 독립 트랙이다. Group G(Local Bootstrap)는 Group A 실행을 가능하게 하는 선행 인프라이지만, 코드 변경이 독립적이므로 다른 그룹과 병렬로 진행 가능하다.
 
 ### Dependency Graph
 
 ```
+Group G (Local Bootstrap) ──► (Group A 실행 가능 조건; 코드는 독립)
 Group A (Corpus Seed) ──► Group B (Eval Pipeline)
 Group C (Cloudflare Fallback) ── independent
 Group D (DocIngest E2E) ──► (uses A's seeded schema)
@@ -129,6 +130,39 @@ M4 이후. RBAC 매트릭스에 admin 문서 라우트 포함 확인.
 
 검증: REQ-QUAL-024 ~ 025
 
+### Milestone M7 — Local Bootstrap (Priority: High, Group G)
+
+다른 그룹과 병렬로 진행 가능한 독립 작업. 의존성 없음. 신규 개발자 온보딩 + CI fresh runner 재현성 확보가 목표.
+
+작업:
+- `scripts/dev-bootstrap.ts` 신규 작성:
+  - `.env.example` → `.env.local` 매핑 로직
+  - `DATABASE_URL`을 로컬 pgvector docker 연결 문자열로 치환
+  - AI 키(ANTHROPIC/OPENAI/COHERE) → `dev-placeholder-{provider}` 문자열로 치환
+  - Auth 키(AUTH_SECRET / AUTH_MICROSOFT_* / AUTH_GOOGLE_*) → `dev-placeholder-{key}` 치환
+  - Observability 키(SENTRY_DSN / NEXT_PUBLIC_POSTHOG_KEY / LANGFUSE_*) → 빈값/disabled 치환
+  - 기존 `.env.local` 존재 시 idempotent (덮어쓰지 않음, exit 0 + 경고 메시지)
+- `lib/env.ts` patch: zod schema에 `dev-placeholder-` prefix detection 로직 추가:
+  - `NODE_ENV === 'production'` 일 때 prefix 검출 시 fail-fast
+  - 메시지: `"dev-placeholder values are forbidden in non-development environments"`
+- `package.json` scripts에 `"dev:bootstrap": "tsx scripts/dev-bootstrap.ts"` 추가
+- `DEVELOPMENT.md` Section 2 갱신 — 5단계 canonical sequence 명시:
+  1. `git clone`
+  2. `pnpm install`
+  3. `pnpm dev:bootstrap`
+  4. `pnpm db:up && pnpm db:migrate && pnpm db:seed:corpus`
+  5. `pnpm dev`
+
+산출물:
+- `scripts/dev-bootstrap.ts` (신규)
+- `lib/env.ts` (patch — production placeholder fail-fast)
+- `package.json` (script 등록)
+- `DEVELOPMENT.md` (Section 2 갱신)
+
+의존성: 없음 (독립 작업; 다른 그룹과 병렬 가능)
+
+검증: REQ-QUAL-026 / 027 / 028 acceptance 충족
+
 ---
 
 ## 3. Technical Approach
@@ -171,6 +205,16 @@ M4 이후. RBAC 매트릭스에 admin 문서 라우트 포함 확인.
 - App Router 디렉토리 스캔 → whitelist 누락 라우트 자동 식별
 - 신규 admin 라우트 추가 시 `rbac-whitelist.json` 갱신을 강제하는 lint 규칙 추가 검토
 
+### 3.7 Local Bootstrap (Group G)
+
+- `scripts/dev-bootstrap.ts`: tsx로 실행 가능한 단일 스크립트. `.env.example` 파싱 → 카테고리별 placeholder 치환 → `.env.local` 작성
+- 카테고리 결정 로직: 환경변수명 prefix 매칭 (예: `ANTHROPIC_/OPENAI_/COHERE_` → AI; `AUTH_*` → auth; `SENTRY_/POSTHOG_/LANGFUSE_*` → observability)
+- placeholder 값 형식: `dev-placeholder-{normalized-key}` (예: `dev-placeholder-anthropic`, `dev-placeholder-auth-secret`)
+- idempotent 동작: `fs.existsSync('.env.local')` 검사 → 이미 존재 시 console.warn + exit 0 (덮어쓰기 금지)
+- `lib/env.ts` integration: zod refinement에서 `NODE_ENV === 'production'` AND value가 `^dev-placeholder-` 매칭 시 `.refine()` 거부
+- 보안 격리: 본 스크립트는 `dev` 전용으로 production build 산출물에 포함되지 않도록 `scripts/` 디렉토리에 위치 (Next.js 빌드 외부)
+- @MX 태그: `// [AUTO] @MX:NOTE: dev-only bootstrap; production placeholders fail-fast in lib/env.ts`
+
 ---
 
 ## 4. Risks and Mitigations
@@ -183,6 +227,8 @@ M4 이후. RBAC 매트릭스에 admin 문서 라우트 포함 확인.
 | Cloudflare 환경에서 fallback 의도치 않은 활성화            | Low        | Medium | 통합 테스트에서 env 분기 명시 검증; 운영 모니터링 알림 추가는 별도 SPEC                      |
 | E2E 보안 헤더 테스트가 `next dev` 와 production build에서 다름 | Medium     | Medium | CI에서 production build 사용; dev 모드 테스트는 분리                                          |
 | 업로드 E2E 테스트의 비결정성 (PII/임베딩 비동기)            | Medium     | Medium | 테스트에 명시적 polling/await 적용; 결정적 픽스처 사용                                       |
+| `dev-placeholder-` 값이 production 빌드에 누출            | Low        | High   | `lib/env.ts` 의 zod refinement (REQ-QUAL-027)이 NODE_ENV=production에서 fail-fast |
+| `pnpm dev:bootstrap` 이 기존 `.env.local` 덮어쓰기 우려     | Low        | High   | idempotent 동작 명시 (존재 시 warn + exit 0); 통합 테스트로 회귀 방지                       |
 
 ---
 

@@ -1,6 +1,6 @@
 # Acceptance Criteria — SPEC-REGULA-QUALITY-001
 
-본 문서는 SPEC-REGULA-QUALITY-001 의 25개 EARS 요구사항이 만족되었는지 검증할 수 있는 Given–When–Then 시나리오, 엣지 케이스, 품질 게이트, Definition of Done 을 정의한다.
+본 문서는 SPEC-REGULA-QUALITY-001 의 28개 EARS 요구사항(Group A~G)이 만족되었는지 검증할 수 있는 Given–When–Then 시나리오, 엣지 케이스, 품질 게이트, Definition of Done 을 정의한다.
 
 ---
 
@@ -118,6 +118,44 @@
 - The RBAC matrix output explicitly lists each of the four admin routes with their allowed roles
 - If a developer later adds an admin route without updating the whitelist, `pnpm ci:rbac` fails and names the missing route
 
+### Scenario G1 — Bootstrap Generates .env.local From Fresh Checkout (REQ-QUAL-026)
+
+**Given** a fresh checkout of the repository where `.env.local` does NOT exist (verified via `test ! -f .env.local`),  
+**When** the developer runs `pnpm dev:bootstrap`,  
+**Then**
+- The script exits with code 0
+- `.env.local` is created in the repository root
+- `.env.local` contains `DATABASE_URL` set to a local pgvector docker connection string
+- `.env.local` contains `ANTHROPIC_API_KEY=dev-placeholder-anthropic`, `OPENAI_API_KEY=dev-placeholder-openai`, `COHERE_API_KEY=dev-placeholder-cohere`
+- `.env.local` contains `AUTH_SECRET=dev-placeholder-auth-secret` and other `AUTH_*` keys with `dev-placeholder-` prefix
+- `.env.local` contains observability keys (`SENTRY_DSN`, `NEXT_PUBLIC_POSTHOG_KEY`, `LANGFUSE_*`) with disabled-in-dev placeholder values
+- A subsequent `pnpm db:seed:corpus` execution does not fail with `lib/env.ts` zod fail-fast (i.e., generated env values pass schema validation in `NODE_ENV=development`)
+- Re-running `pnpm dev:bootstrap` when `.env.local` already exists exits 0 with a warning message and does NOT overwrite the existing file (idempotency guarantee)
+
+### Scenario G2 — dev-placeholder Blocked in Production (REQ-QUAL-027)
+
+**Given** an environment with `NODE_ENV=production` and `ANTHROPIC_API_KEY=dev-placeholder-anthropic`,  
+**When** the application is built or started (e.g., `pnpm build` or any code path that imports `lib/env.ts`),  
+**Then**
+- The process exits with a non-zero exit code (fail-fast)
+- The error output contains the message `"dev-placeholder values are forbidden in non-development environments"`
+- No partial build artifacts are produced
+- **Inverse check (Given** `NODE_ENV=development` with the same env vars**, When** the same operation runs**, Then** the process succeeds without raising the placeholder-rejection error
+
+### Scenario G3 — DEVELOPMENT.md Section 2 Documents 5-Step Sequence (REQ-QUAL-028)
+
+**Given** the repository contains `DEVELOPMENT.md`,  
+**When** the developer reads Section 2 (Setup) of `DEVELOPMENT.md`,  
+**Then**
+- Section 2 documents the canonical first-run sequence in this exact order:
+  1. `git clone`
+  2. `pnpm install`
+  3. `pnpm dev:bootstrap`
+  4. `pnpm db:up && pnpm db:migrate && pnpm db:seed:corpus`
+  5. `pnpm dev`
+- A parser test (`grep` or markdown structural assertion) confirms all 5 steps are present in Section 2
+- The section explains that step 3 (`pnpm dev:bootstrap`) is required only on first checkout (idempotent thereafter)
+
 ---
 
 ## 2. Edge Cases
@@ -134,6 +172,9 @@
 | CSP nonce regenerated per response but cached at CDN                                   | Test must use cache-busting; CDN caching of HTML with nonces is out of scope here |
 | RBAC whitelist contains a route that no longer exists in the router                    | `pnpm ci:rbac` warns (not fail) about stale entries; cleanup is recommended       |
 | Eval baseline JSON conflicts with another PR's baseline                               | Latest merged commit wins; rerun on the target branch updates baseline           |
+| `pnpm dev:bootstrap` 실행 시 `.env.example`이 누락된 경우                               | Script fails fast with explicit error; `.env.local` not created                  |
+| 기존 `.env.local`에 사용자 정의 값이 있는 상태에서 `pnpm dev:bootstrap` 재실행            | Idempotent: 사용자 값 보존, 덮어쓰지 않고 warn + exit 0                            |
+| `NODE_ENV=test`에서 `dev-placeholder-` 값 사용                                         | `lib/env.ts`는 `NODE_ENV !== 'development'` 만 차단하므로 test 환경도 fail-fast 처리 |
 
 ---
 
@@ -152,8 +193,8 @@
 ## 4. Definition of Done
 
 - [ ] `spec.md`, `plan.md`, `acceptance.md` 모두 작성/검토 완료
-- [ ] GitHub Issue 생성 및 SPEC frontmatter `issue_number` 갱신
-- [ ] REQ-QUAL-001 ~ 025 전 항목에 대응하는 테스트/스크립트 존재
+- [ ] GitHub Issue 생성 및 SPEC frontmatter `issue_number` 갱신; #99 도 `related_issues`에 포함
+- [ ] REQ-QUAL-001 ~ 028 전 항목에 대응하는 테스트/스크립트 존재
 - [ ] `pnpm db:seed:corpus` 가 결정적으로 ≥ 100 행 적재
 - [ ] `pnpm eval:ci` ≥ 80% 통과율로 CI 통과
 - [ ] `lib/ai/hybrid-router.ts` 의 Vectorize 관련 TODO 0건
@@ -162,6 +203,10 @@
 - [ ] 보안 헤더 E2E (`tests/e2e/security-headers.spec.ts`) chromium 통과
 - [ ] `pnpm ci:rbac` 통과 (admin 문서 라우트 4종 포함)
 - [ ] CI 워크플로우에 eval 잡 추가 및 30분 timeout 적용
+- [ ] `scripts/dev-bootstrap.ts` 신규 작성 + `package.json` `dev:bootstrap` 스크립트 등록 (REQ-QUAL-026)
+- [ ] Fresh checkout에서 `pnpm dev:bootstrap` 실행 → `.env.local` 자동 생성 + 후속 `pnpm db:seed:corpus` 통과 (Scenario G1)
+- [ ] `lib/env.ts` 에 `dev-placeholder-` prefix production 차단 로직 적용 (REQ-QUAL-027 / Scenario G2)
+- [ ] `DEVELOPMENT.md` Section 2 에 5단계 canonical sequence 명시 (REQ-QUAL-028 / Scenario G3)
 - [ ] PR 본문에 SPEC ID, 검증 명령어, 예상 결과 명시
 - [ ] manager-quality 또는 evaluator-active 의 TRUST 5 검증 통과
 - [ ] 의존 SPEC(`SPEC-REGULA-RELEASE-GATE-001`, `SPEC-REGULA-RELEASE-HARDENING-001`) 의 status 가 `completed` 인지 확인 (현재 미완 시 plan-auditor 또는 사용자에게 차단 보고)

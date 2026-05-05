@@ -4,7 +4,7 @@ title: "Regula Quality Elevation — Corpus Seed · Eval Pipeline · Cloudflare 
 status: draft
 phase: "quality-elevation"
 priority: High
-version: 0.2.0
+version: 0.3.0
 created: 2026-05-04
 updated: 2026-05-05
 author: drake.lee
@@ -19,13 +19,19 @@ related_specs:
   - SPEC-REGULA-FOUNDATION-001
 related_issues:
   - "#34"
+  - "#99"
 labels:
   - quality
   - rag
   - eval
   - security
   - infra
+  - bootstrap
 revision_history:
+  - version: 0.3.0
+    date: 2026-05-05
+    author: manager-spec (release-gap remediation)
+    notes: "1차 RC 갭 리포트(2026-05-05) §2.1 권고에 따라 Group G — Local Bootstrap (REQ-QUAL-026~028) 추가."
   - version: 0.2.0
     date: 2026-05-05
     author: manager-spec (plan-auditor remediation)
@@ -40,9 +46,11 @@ revision_history:
 
 ## HISTORY
 
-| Version | Date       | Author     | Change                                                     |
-| ------- | ---------- | ---------- | ---------------------------------------------------------- |
-| 0.1.0   | 2026-05-04 | drake.lee  | 초기 초안 작성 — P2 품질 향상 6개 그룹 정의 (REQ-QUAL-001~025) |
+| Version | Date       | Author                              | Change                                                                                                              |
+| ------- | ---------- | ----------------------------------- | ------------------------------------------------------------------------------------------------------------------- |
+| 0.3.0   | 2026-05-05 | manager-spec (release-gap remediation) | 1차 RC 갭 리포트(2026-05-05) §2.1 권고에 따라 Group G — Local Bootstrap (REQ-QUAL-026~028) 추가. closes #99            |
+| 0.2.0   | 2026-05-05 | manager-spec (plan-auditor remediation) | Plan-auditor 보강 — frontmatter 표준화, REQ-QUAL-011 sole-owner 노트, traceability-matrix.md 신규 작성                |
+| 0.1.0   | 2026-05-04 | drake.lee                           | 초기 초안 작성 — P2 품질 향상 6개 그룹 정의 (REQ-QUAL-001~025)                                                          |
 
 ---
 
@@ -131,6 +139,16 @@ EARS 패턴: Ubiquitous(U) / Event-Driven(ED) / State-Driven(SD) / Optional(O) /
 - **REQ-QUAL-024 (U)**: `pnpm ci:rbac` **shall** include `/admin/documents`, `/admin/documents/upload`, `/admin/documents/[id]`, and `/admin/radar` in its coverage matrix and exit successfully.
 - **REQ-QUAL-025 (UB)**: **If** the RBAC matrix lacks an entry for any admin route exposed in the application router, **then** `pnpm ci:rbac` **shall** fail with a clear identification of the missing route.
 
+### Group G — Local Bootstrap (REQ-QUAL-026 ~ 028)
+
+신규 개발자 온보딩 + CI fresh runner 재현성 확보를 위한 `.env.local` 부트스트랩 메커니즘. FOUNDATION REQ-FND-010a `lib/env.ts` zod fail-fast이 빈 `.env.local`에서 abort하는 문제와, Group A seed 메커니즘이 환경변수 부재 시 실행 불가한 갭을 해소한다. closes #99.
+
+- **REQ-QUAL-026 (U)**: The system **shall** provide a script `pnpm dev:bootstrap` that, when executed in a clean checkout without `.env.local`, generates `.env.local` from `.env.example` with placeholder-to-development value mapping for these key categories: (a) `DATABASE_URL` to a local pgvector docker connection string, (b) AI provider keys (`ANTHROPIC_API_KEY`, `OPENAI_API_KEY`, `COHERE_API_KEY`) to documented placeholder strings prefixed with `dev-placeholder-` that fail-fast in non-development NODE_ENV, (c) Auth provider keys (`AUTH_SECRET`, `AUTH_MICROSOFT_*`, `AUTH_GOOGLE_*`) to documented placeholders, (d) observability keys (`SENTRY_DSN`, `NEXT_PUBLIC_POSTHOG_KEY`, `LANGFUSE_*`) to disabled-in-dev placeholders. The script **shall** be idempotent: when `.env.local` already exists, the script **shall not** overwrite it and **shall** exit 0 with a warning.
+
+- **REQ-QUAL-027 (UB)**: The bootstrap-generated placeholders **shall not** be accepted in any environment where `NODE_ENV !== 'development'`. **If** any value matching the regex `/^dev-placeholder-/` is detected in production env, **then** `lib/env.ts` zod schema **shall** raise a fail-fast error with message `"dev-placeholder values are forbidden in non-development environments"`.
+
+- **REQ-QUAL-028 (U)**: The `DEVELOPMENT.md` Section 2 (Setup) **shall** document the `pnpm dev:bootstrap` workflow as the canonical first-run sequence: (1) `git clone`, (2) `pnpm install`, (3) `pnpm dev:bootstrap`, (4) `pnpm db:up && pnpm db:migrate && pnpm db:seed:corpus`, (5) `pnpm dev`.
+
 ---
 
 ## 3. Acceptance Criteria (Machine-Verifiable)
@@ -145,6 +163,9 @@ EARS 패턴: Ubiquitous(U) / Event-Driven(ED) / State-Driven(SD) / Optional(O) /
 | 6 | DocIngest end-to-end                                            | Upload test fixture → search returns it within same suite                           |
 | 7 | Security headers E2E passes                                     | `pnpm test:e2e --grep @security-headers` exits 0 on chromium                        |
 | 8 | RBAC coverage clean                                             | `pnpm ci:rbac` exits 0 with admin doc routes included                               |
+| 9 | Bootstrap script generates .env.local                           | Fresh checkout + `pnpm dev:bootstrap` → `.env.local` 생성, 후속 `pnpm db:seed:corpus` 통과 |
+| 10 | dev-placeholder blocked in production                           | `NODE_ENV=production ANTHROPIC_API_KEY=dev-placeholder-anthropic pnpm build` exits ≠ 0 |
+| 11 | DEVELOPMENT.md 5-step sequence                                  | `DEVELOPMENT.md` Section 2 contains 5단계 sequence (git clone → pnpm install → pnpm dev:bootstrap → db:up/migrate/seed → pnpm dev) |
 
 ---
 
