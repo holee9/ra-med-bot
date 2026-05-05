@@ -82,14 +82,25 @@ export async function executeStep(step: string, _ctx: StepExecutionContext): Pro
 }
 
 /** Aggregates all step results into a summary. */
+// @MX:NOTE [AUTO] _mock flag — TASK-003: every workflow summary is currently
+// produced by mock executeStep implementations. The flag makes downstream
+// consumers (UI, audit log, API responses) able to mark/disclose simulated
+// output until a real executor lands.
 export function buildWorkflowSummary(results: StepResult[]): {
   totalSteps: number;
   completedSteps: number;
   overallConfidence: number;
   requiresReview: boolean;
+  _mock: true;
 } {
   if (results.length === 0) {
-    return { totalSteps: 0, completedSteps: 0, overallConfidence: 0, requiresReview: false };
+    return {
+      totalSteps: 0,
+      completedSteps: 0,
+      overallConfidence: 0,
+      requiresReview: false,
+      _mock: true,
+    };
   }
 
   const allScores = results.flatMap((r) => r.confidenceScores);
@@ -100,5 +111,6 @@ export function buildWorkflowSummary(results: StepResult[]): {
     completedSteps: results.length,
     overallConfidence,
     requiresReview: true,
+    _mock: true,
   };
 }

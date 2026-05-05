@@ -1,6 +1,7 @@
 // Slack webhook channel — sends high-impact radar alerts to org Slack.
 // @MX:SPEC SPEC-REGULA-RADAR-001
 
+import { logger } from '@/lib/observability/logger';
 import type { RelevantUpdate } from './email';
 
 /**
@@ -58,9 +59,9 @@ export async function sendSlackAlert(webhookUrl: string, update: RelevantUpdate)
     });
 
     if (!res.ok) {
-      console.error(`[radar/slack] Webhook error ${res.status}`);
+      logger.error(`[radar/slack] Webhook error ${res.status}`);
     }
   } catch (err) {
-    console.error('[radar/slack] Failed to send Slack alert:', err);
+    logger.error('[radar/slack] Failed to send Slack alert:', err);
   }
 }

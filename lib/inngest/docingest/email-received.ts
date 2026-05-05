@@ -1,5 +1,6 @@
 // @MX:NOTE [AUTO] Email ingest handler — validates sender and extracts attachments (REQ-DOC-016, 017).
 // @MX:SPEC SPEC-REGULA-DOCINGEST-001 (REQ-DOC-016, REQ-DOC-017)
+import { logger } from '@/lib/observability/logger';
 import { type EmailEvent, EmailWorkersSource } from '../../ingest/sources/email-workers';
 
 export interface EmailReceivedEvent {
@@ -24,9 +25,10 @@ export async function handleEmailReceived(
 
   // Validate sender security
   if (!source.validateEmail(emailEvent)) {
-    console.warn(
-      `[email-received] Rejected email from ${emailEvent.from} — failed SPF/DKIM/DMARC or not on allowlist`,
-    );
+    // @MX:WARN [PII] scrubbed — emailEvent.from contains sender address; logger PII scrubber handles 'email' key
+    logger.warn('[email-received] Rejected email — failed SPF/DKIM/DMARC or not on allowlist', {
+      email: emailEvent.from,
+    });
     return { processed: 0 };
   }
 

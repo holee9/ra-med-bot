@@ -1,5 +1,6 @@
 // SendGrid daily digest email channel for high-impact radar updates.
 // @MX:SPEC SPEC-REGULA-RADAR-001
+import { logger } from '@/lib/observability/logger';
 
 export interface RelevantUpdate {
   id: string;
@@ -22,7 +23,7 @@ export async function sendDigestEmail(orgId: string, updates: RelevantUpdate[]):
   const fromEmail = process.env.SENDGRID_FROM_EMAIL ?? 'noreply@regula.ai';
 
   if (!apiKey) {
-    console.warn('[radar/email] SENDGRID_API_KEY not set — skipping digest email');
+    logger.warn('[radar/email] SENDGRID_API_KEY not set — skipping digest email');
     return;
   }
 
@@ -67,9 +68,9 @@ export async function sendDigestEmail(orgId: string, updates: RelevantUpdate[]):
     });
 
     if (!res.ok) {
-      console.error(`[radar/email] SendGrid error ${res.status} for org ${orgId}`);
+      logger.error(`[radar/email] SendGrid error ${res.status} for org ${orgId}`);
     }
   } catch (err) {
-    console.error('[radar/email] Failed to send digest email:', err);
+    logger.error('[radar/email] Failed to send digest email:', err);
   }
 }

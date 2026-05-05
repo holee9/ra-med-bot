@@ -3,6 +3,7 @@
 // consult.ts, tests, future batch analysis jobs.
 // @MX:SPEC SPEC-REGULA-BREADTH-001 (REQ-BREADTH-039, REQ-BREADTH-042)
 
+import { logger } from '@/lib/observability/logger';
 import { EuMdrRetriever } from './retrievers/eu-mdr';
 import { FdaRetriever } from './retrievers/fda';
 import { InternalSopsRetriever } from './retrievers/internal-sops';
@@ -63,7 +64,7 @@ async function rerankOrSort(query: string, results: RetrievalResult[]): Promise<
 
     if (!response.ok) {
       // Graceful degradation on Cohere API errors.
-      console.warn('[merge] Cohere rerank failed, falling back to score sort');
+      logger.warn('[merge] Cohere rerank failed, falling back to score sort');
       return [...results].sort((a, b) => b.score - a.score).slice(0, TOP_K);
     }
 
@@ -78,7 +79,7 @@ async function rerankOrSort(query: string, results: RetrievalResult[]): Promise<
         score: r.relevance_score,
       }));
   } catch {
-    console.warn('[merge] Cohere rerank error, falling back to score sort');
+    logger.warn('[merge] Cohere rerank error, falling back to score sort');
     return [...results].sort((a, b) => b.score - a.score).slice(0, TOP_K);
   }
 }

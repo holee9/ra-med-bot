@@ -17,6 +17,7 @@ import type { SourceItem, StreamEvent, TraceEvent } from '../../types/streaming'
 import { writeAudit } from '../audit';
 import { db } from '../db/client';
 import { conversations, messageBlocks, messages } from '../db/schema';
+import { logger } from '@/lib/observability/logger';
 import { enforceCitations } from './citation-enforce';
 import { calculateConfidence, getConfidenceLevel } from './confidence';
 import { shouldAutoFlag } from './expert-review-gating';
@@ -331,7 +332,7 @@ export async function* consult(
             structuredOrderIndex++;
           } catch (insertErr) {
             // REQ-STRUCT-035: log and continue — emit even if persist fails
-            console.error('[consult] messageBlocks INSERT failed for', blockEvent.type, insertErr);
+            logger.error('[consult] messageBlocks INSERT failed for ' + blockEvent.type, insertErr);
           }
         }
 
@@ -341,7 +342,7 @@ export async function* consult(
       if (signal?.aborted) {
         // Silently swallow abort errors
       } else {
-        console.error('[consult] generateStructuredBlocks error:', err);
+        logger.error('[consult] generateStructuredBlocks error:', err);
       }
     }
   }
