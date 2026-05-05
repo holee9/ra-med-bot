@@ -8,32 +8,46 @@ const NEEDS_SERVER =
     ? 'Requires running Next.js server (set PLAYWRIGHT_BASE_URL or run in CI)'
     : undefined;
 
+// TODO: SPEC-REGULA-RELEASE-HARDENING-001
+// All four tests below require:
+//   1. A valid authenticated session injected via storageState or cookie.
+//   2. A test-mode API route that intercepts '__test:citation_response__' and
+//      returns a seeded streaming response with citation blocks.
+//
+// data-testid attributes (REQ-QUALITY-E2E-001 through REQ-QUALITY-E2E-004) have
+// been added to Citation, DocViewer, Composer, and ChatShell (TASK-006b).
+// Remaining blockers: authenticated session fixture + test API route.
+// Tests remain as test.fail() until those are implemented.
+
 test.describe('Citation click → DocViewer (REQ-LAUNCH-019)', () => {
   test('clicking a citation block opens the DocViewer panel', async ({ page }) => {
     test.skip(!!NEEDS_SERVER, NEEDS_SERVER ?? '');
-    test.skip(true, 'Requires authenticated session — run with PLAYWRIGHT_AUTH_STATE set');
+    // TODO: SPEC-REGULA-RELEASE-HARDENING-001 REQ-QUALITY-E2E-001
+    // data-testid attrs are now present (TASK-006b).
+    // Remaining blockers: authenticated session fixture + '__test:citation_response__' API route.
+    test.fail(true, 'Blocked: no auth session fixture and no test API route for citation response');
 
     await page.goto('/chat');
 
-    // Trigger a response that includes citations.
     const composer = page.locator('[data-testid="chat-composer"]');
     await composer.fill('__test:citation_response__');
     await page.keyboard.press('Enter');
 
-    // Wait for citation block to appear.
     const citationBlock = page.locator('[data-testid="citation-block"]').first();
     await expect(citationBlock).toBeVisible({ timeout: 30_000 });
 
     await citationBlock.click();
 
-    // The DocViewer panel / drawer should open.
     const docViewer = page.locator('[data-testid="doc-viewer"]');
     await expect(docViewer).toBeVisible({ timeout: 5_000 });
   });
 
   test('DocViewer displays the cited document title', async ({ page }) => {
     test.skip(!!NEEDS_SERVER, NEEDS_SERVER ?? '');
-    test.skip(true, 'Requires authenticated session — run with PLAYWRIGHT_AUTH_STATE set');
+    // TODO: SPEC-REGULA-RELEASE-HARDENING-001 REQ-QUALITY-E2E-002
+    // data-testid attrs are now present (TASK-006b).
+    // Remaining blockers: authenticated session fixture + test API route.
+    test.fail(true, 'Blocked: no auth session fixture and no test API route for citation response');
 
     await page.goto('/chat');
 
@@ -44,25 +58,25 @@ test.describe('Citation click → DocViewer (REQ-LAUNCH-019)', () => {
     const citationBlock = page.locator('[data-testid="citation-block"]').first();
     await expect(citationBlock).toBeVisible({ timeout: 30_000 });
 
-    // Capture the citation reference text before clicking.
     const citationText = await citationBlock.textContent();
     await citationBlock.click();
 
     const docViewer = page.locator('[data-testid="doc-viewer"]');
     await expect(docViewer).toBeVisible({ timeout: 5_000 });
 
-    // The document title in the viewer should relate to the citation.
     const docTitle = page.locator('[data-testid="doc-viewer-title"]');
     await expect(docTitle).toBeVisible();
     if (citationText) {
-      // The title or source name should be non-empty.
       await expect(docTitle).not.toBeEmpty();
     }
   });
 
   test('DocViewer deep links to the correct page/section', async ({ page }) => {
     test.skip(!!NEEDS_SERVER, NEEDS_SERVER ?? '');
-    test.skip(true, 'Requires authenticated session — run with PLAYWRIGHT_AUTH_STATE set');
+    // TODO: SPEC-REGULA-RELEASE-HARDENING-001 REQ-QUALITY-E2E-003
+    // data-testid attrs are now present (TASK-006b).
+    // Remaining blockers: authenticated session fixture + test API route.
+    test.fail(true, 'Blocked: no auth session fixture and no test API route for citation response');
 
     await page.goto('/chat');
 
@@ -73,7 +87,6 @@ test.describe('Citation click → DocViewer (REQ-LAUNCH-019)', () => {
     const citationBlock = page.locator('[data-testid="citation-block"]').first();
     await expect(citationBlock).toBeVisible({ timeout: 30_000 });
 
-    // Extract the page/section hint from the citation block.
     const pageRef = await citationBlock.getAttribute('data-page');
     await citationBlock.click();
 
@@ -81,7 +94,6 @@ test.describe('Citation click → DocViewer (REQ-LAUNCH-019)', () => {
     await expect(docViewer).toBeVisible({ timeout: 5_000 });
 
     if (pageRef) {
-      // The viewer should scroll to / highlight the referenced page.
       const highlightedSection = page.locator('[data-testid="doc-viewer-highlight"]');
       await expect(highlightedSection).toBeVisible();
     }
@@ -89,7 +101,10 @@ test.describe('Citation click → DocViewer (REQ-LAUNCH-019)', () => {
 
   test('DocViewer can be closed and chat remains intact', async ({ page }) => {
     test.skip(!!NEEDS_SERVER, NEEDS_SERVER ?? '');
-    test.skip(true, 'Requires authenticated session — run with PLAYWRIGHT_AUTH_STATE set');
+    // TODO: SPEC-REGULA-RELEASE-HARDENING-001 REQ-QUALITY-E2E-004
+    // data-testid attrs are now present (TASK-006b).
+    // Remaining blockers: authenticated session fixture + test API route.
+    test.fail(true, 'Blocked: no auth session fixture and no test API route for citation response');
 
     await page.goto('/chat');
 
@@ -104,12 +119,10 @@ test.describe('Citation click → DocViewer (REQ-LAUNCH-019)', () => {
     const docViewer = page.locator('[data-testid="doc-viewer"]');
     await expect(docViewer).toBeVisible({ timeout: 5_000 });
 
-    // Close the DocViewer.
     const closeBtn = docViewer.locator('[data-testid="doc-viewer-close"]');
     await closeBtn.click();
     await expect(docViewer).not.toBeVisible();
 
-    // Chat messages should still be visible.
     await expect(page.locator('[data-testid="chat-message-assistant"]').first()).toBeVisible();
   });
 });

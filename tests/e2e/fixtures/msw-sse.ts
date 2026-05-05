@@ -17,8 +17,8 @@ export const test = base.extend<{ mswSse: null }>({
       (window as Window & { __MSW_READY__?: boolean }).__MSW_READY__ = false;
     });
 
-    // TODO: register MSW service worker and /api/ra/consult SSE handler
-    // when MSW browser integration is wired up for E2E tests.
+    // @MX:TODO: [AUTO] MSW service worker registration deferred.
+    // @MX:SPEC SPEC-REGULA-RELEASE-HARDENING-001 (REQ-HARDEN-021)
 
     await use(null);
 

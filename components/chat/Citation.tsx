@@ -37,6 +37,7 @@ export function Citation({ sourceIndex, offset, sourceId = '' }: CitationProps) 
   return (
     <sup
       className="cite bg-brand-100 text-brand-700 font-mono text-[10px] font-semibold rounded-[3px] cursor-pointer hover:bg-brand-600 hover:text-white transition-colors px-0.5"
+      data-testid="citation-block"
       data-source={sourceIndex}
       data-offset={offset}
       role="button"

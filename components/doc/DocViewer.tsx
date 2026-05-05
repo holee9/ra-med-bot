@@ -46,8 +46,9 @@ export function DocViewer() {
 
   return (
     <div
-      // biome-ignore lint/a11y/useSemanticElements: <dialog> open/close API conflicts with controlled state; div+role="dialog" is used intentionally
+      data-testid="doc-viewer"
       className="fixed inset-0 z-50 flex items-stretch bg-brand-900/80 backdrop-blur-sm"
+      // biome-ignore lint/a11y/useSemanticElements: <dialog> open/close API conflicts with controlled state; div+role="dialog" is used intentionally
       role="dialog"
       aria-modal="true"
       aria-label={sourceDetail?.title ?? '문서 보기'}
@@ -106,7 +107,10 @@ export function DocViewer() {
           {/* Top bar */}
           <div className="flex items-center gap-3 border-b border-border-weak px-6 py-3">
             <div className="flex-1 min-w-0">
-              <p className="truncate text-sm font-semibold text-ink-800">
+              <p
+                className="truncate text-sm font-semibold text-ink-800"
+                data-testid="doc-viewer-title"
+              >
                 {isLoading ? '불러오는 중...' : (sourceDetail?.title ?? '문서')}
               </p>
               {sourceDetail?.year && (
@@ -131,6 +135,7 @@ export function DocViewer() {
             <button
               type="button"
               className="shrink-0 rounded p-1.5 text-ink-400 hover:bg-ink-100 hover:text-ink-700 transition-colors"
+              data-testid="doc-viewer-close"
               aria-label="Close"
               onClick={close}
             >

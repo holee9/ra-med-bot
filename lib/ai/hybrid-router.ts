@@ -139,8 +139,9 @@ async function retrieveVectorize(
   _filters: HybridRetrieveFilters,
   _k: number,
 ): Promise<RetrievalResult[]> {
-  // TODO: implement with VectorizeIndex binding in Workers runtime
-  // For now returns empty array — real implementation added in Task 6
+  // @MX:TODO: [AUTO] VectorizeIndex binding not yet wired in Workers runtime.
+  // @MX:SPEC SPEC-REGULA-VECTORIZE-001
+  // Returns empty array until Vectorize runtime is available in this environment.
   return [];
 }
 

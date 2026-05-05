@@ -23,7 +23,9 @@ export type StepExecutionContext = {
 // @MX:ANCHOR: [AUTO] executeStep — public API boundary for step execution in indication impact workflow
 // @MX:REASON: fan_in >= 3: workflow runner, tests, and future async worker all call this
 
-/** Mock implementation of step execution for the indication impact workflow. */
+// @MX:TODO: [AUTO] Beta scaffold — step returns synthetic outputs. Replace with real LLM calls.
+// @MX:SPEC SPEC-REGULA-QUALITY-001 (REQ-QUAL-011)
+/** Step execution for the indication impact workflow (Beta scaffold). */
 export async function executeStep(step: string, _ctx: StepExecutionContext): Promise<StepResult> {
   const completedAt = new Date().toISOString();
 

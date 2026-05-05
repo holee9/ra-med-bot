@@ -68,7 +68,7 @@ export function ChatShell() {
 
       {/* Answer block */}
       {showAnswer && (
-        <div className="mb-6">
+        <div className="mb-6" data-testid="chat-message-assistant">
           <AnswerBlock
             confidence={structured.confidence}
             sources={structured.sources}

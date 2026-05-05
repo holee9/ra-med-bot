@@ -48,8 +48,8 @@ export async function sendDigestEmail(orgId: string, updates: RelevantUpdate[]):
     <p><a href="${process.env.NEXT_PUBLIC_APP_URL ?? 'https://app.regula.ai'}/updates">View all updates in Regula</a></p>
   `;
 
-  // In production: fetch SendGrid API with org's primary contact email
-  // For now: log the payload (org contact email lookup would require DB query)
+  // @MX:TODO: [AUTO] Resolve recipient email from org contact lookup (requires DB query).
+  // @MX:SPEC SPEC-REGULA-RADAR-001
   const payload = {
     personalizations: [{ to: [{ email: `org-${orgId}@digest.placeholder` }] }],
     from: { email: fromEmail },

@@ -126,6 +126,7 @@ export function Composer({
         <textarea
           ref={textareaRef}
           className="flex-1 resize-none bg-transparent text-sm leading-relaxed text-ink-800 placeholder:text-ink-400 focus:outline-none"
+          data-testid="chat-composer"
           rows={1}
           value={value}
           onChange={handleChange}

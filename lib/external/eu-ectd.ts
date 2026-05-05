@@ -1,8 +1,10 @@
-// @MX:TODO [AUTO] EU eCTD mTLS integration — placeholder only. Implementation deferred.
-// @MX:SPEC SPEC-REGULA-CLOUDFLARE-001 (REQ-CF-073)
+// @MX:TODO [AUTO] EU eCTD mTLS integration — feature-flagged placeholder. Implementation deferred.
+// @MX:SPEC SPEC-REGULA-CLOUDFLARE-001 (REQ-CF-073), SPEC-REGULA-RELEASE-HARDENING-001 (REQ-HARDEN-018)
 //
 // mTLS rail preparation only. No implementation in Phase 7.
 // Full implementation target: Phase 8 (document ingestion pipeline).
+
+import { FeatureNotAvailableError, isFeatureEnabled } from '@/lib/feature-flags';
 
 /**
  * EU eCTD submission endpoint base URL.
@@ -33,6 +35,17 @@ export interface IEuEctdClient {
   submitDossier(dossierData: unknown): Promise<{ applicationId: string }>;
   /** Retrieve submission receipt (Phase 8) */
   getReceipt(applicationId: string): Promise<{ status: string; receiptUrl?: string }>;
+}
+
+/**
+ * Guards all EU eCTD integration entry points.
+ * Throws FeatureNotAvailableError when EU_ECTD_CORPUS flag is disabled.
+ * REQ-HARDEN-018: gated by feature flag; REQ-HARDEN-019: no mock data returned.
+ */
+export function assertEuEctdEnabled(): void {
+  if (!isFeatureEnabled('EU_ECTD_CORPUS')) {
+    throw new FeatureNotAvailableError('EU_ECTD_CORPUS');
+  }
 }
 
 // No implementation — mTLS rail only. TypeScript must compile. (REQ-CF-073)
