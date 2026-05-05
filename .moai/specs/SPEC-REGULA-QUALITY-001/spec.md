@@ -19,7 +19,6 @@ related_specs:
   - SPEC-REGULA-FOUNDATION-001
 related_issues:
   - "#34"
-  - "#99"
 labels:
   - quality
   - rag
@@ -48,7 +47,7 @@ revision_history:
 
 | Version | Date       | Author                              | Change                                                                                                              |
 | ------- | ---------- | ----------------------------------- | ------------------------------------------------------------------------------------------------------------------- |
-| 0.3.0   | 2026-05-05 | manager-spec (release-gap remediation) | 1차 RC 갭 리포트(2026-05-05) §2.1 권고에 따라 Group G — Local Bootstrap (REQ-QUAL-026~028) 추가. closes #99            |
+| 0.3.0   | 2026-05-05 | manager-spec (release-gap remediation) | 1차 RC 갭 리포트(2026-05-05) §2.1 권고에 따라 Group G — Local Bootstrap (REQ-QUAL-026~028) 추가. (#99 SPEC amendment 이슈, closed; 구현 추적은 #34) |
 | 0.2.0   | 2026-05-05 | manager-spec (plan-auditor remediation) | Plan-auditor 보강 — frontmatter 표준화, REQ-QUAL-011 sole-owner 노트, traceability-matrix.md 신규 작성                |
 | 0.1.0   | 2026-05-04 | drake.lee                           | 초기 초안 작성 — P2 품질 향상 6개 그룹 정의 (REQ-QUAL-001~025)                                                          |
 
@@ -141,7 +140,7 @@ EARS 패턴: Ubiquitous(U) / Event-Driven(ED) / State-Driven(SD) / Optional(O) /
 
 ### Group G — Local Bootstrap (REQ-QUAL-026 ~ 028)
 
-신규 개발자 온보딩 + CI fresh runner 재현성 확보를 위한 `.env.local` 부트스트랩 메커니즘. FOUNDATION REQ-FND-010a `lib/env.ts` zod fail-fast이 빈 `.env.local`에서 abort하는 문제와, Group A seed 메커니즘이 환경변수 부재 시 실행 불가한 갭을 해소한다. closes #99.
+신규 개발자 온보딩 + CI fresh runner 재현성 확보를 위한 `.env.local` 부트스트랩 메커니즘. FOUNDATION REQ-FND-010a `lib/env.ts` zod fail-fast이 빈 `.env.local`에서 abort하는 문제와, Group A seed 메커니즘이 환경변수 부재 시 실행 불가한 갭을 해소한다. (구현 추적: #34)
 
 - **REQ-QUAL-026 (U)**: The system **shall** provide a script `pnpm dev:bootstrap` that, when executed in a clean checkout without `.env.local`, generates `.env.local` from `.env.example` with placeholder-to-development value mapping for these key categories: (a) `DATABASE_URL` to a local pgvector docker connection string, (b) AI provider keys (`ANTHROPIC_API_KEY`, `OPENAI_API_KEY`, `COHERE_API_KEY`) to documented placeholder strings prefixed with `dev-placeholder-` that fail-fast in non-development NODE_ENV, (c) Auth provider keys (`AUTH_SECRET`, `AUTH_MICROSOFT_*`, `AUTH_GOOGLE_*`) to documented placeholders, (d) observability keys (`SENTRY_DSN`, `NEXT_PUBLIC_POSTHOG_KEY`, `LANGFUSE_*`) to disabled-in-dev placeholders. The script **shall** be idempotent: when `.env.local` already exists, the script **shall not** overwrite it and **shall** exit 0 with a warning.
 

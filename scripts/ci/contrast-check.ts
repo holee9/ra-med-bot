@@ -12,6 +12,7 @@
 
 import * as fs from 'node:fs';
 import * as path from 'node:path';
+import { logger } from '../../lib/observability/logger';
 
 const TOKENS_FILE = path.join(process.cwd(), 'styles', 'tokens.css');
 
@@ -76,7 +77,7 @@ const COLOR_PAIRS: ColorPair[] = [
 
 function main(): void {
   if (!fs.existsSync(TOKENS_FILE)) {
-    console.warn(`WARNING: token file not found at ${TOKENS_FILE}, skipping contrast check`);
+    logger.warn(`WARNING: token file not found at ${TOKENS_FILE}, skipping contrast check`);
     process.exit(0);
   }
 
@@ -90,7 +91,7 @@ function main(): void {
     const bgHex = extractHexValue(css, pair.bgToken);
 
     if (!textHex || !bgHex) {
-      console.warn(
+      logger.warn(
         `WARNING: color tokens not found for "${pair.name}" (${pair.textToken}, ${pair.bgToken}), manual contrast check required`,
       );
       _skippedCount++;
@@ -101,7 +102,7 @@ function main(): void {
     const ratioStr = ratio.toFixed(2);
 
     if (ratio < pair.minRatio) {
-      console.error(
+      logger.error(
         `FAIL: "${pair.name}" — contrast ratio ${ratioStr}:1 < ${pair.minRatio}:1 (WCAG AA) [${pair.textToken}=${textHex} on ${pair.bgToken}=${bgHex}]`,
       );
       hasFailure = true;

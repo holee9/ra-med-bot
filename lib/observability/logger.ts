@@ -5,15 +5,7 @@
 // @MX:SPEC: SPEC-REGULA-RELEASE-HARDENING-001 (TASK-004)
 
 /** Fields in log meta that must be redacted before output. */
-const PII_FIELDS = new Set([
-  'email',
-  'password',
-  'token',
-  'apiKey',
-  'api_key',
-  'secret',
-  'userId',
-]);
+const PII_FIELDS = new Set(['email', 'password', 'token', 'apiKey', 'api_key', 'secret', 'userId']);
 
 /**
  * Recursively scrub PII fields from a metadata object.
@@ -46,19 +38,25 @@ function serializeError(err: Error | unknown): Record<string, unknown> {
 
 const isProduction = process.env.NODE_ENV === 'production';
 
-function emit(level: 'info' | 'warn' | 'error' | 'debug', message: string, meta?: Record<string, unknown>): void {
+function emit(
+  level: 'info' | 'warn' | 'error' | 'debug',
+  message: string,
+  meta?: Record<string, unknown>,
+): void {
   const scrubbed = meta ? scrubPii(meta) : undefined;
 
   if (isProduction) {
     const entry: Record<string, unknown> = { level, message, ts: new Date().toISOString() };
-    if (scrubbed) entry['meta'] = scrubbed;
+    if (scrubbed) entry.meta = scrubbed;
     // stdout output — consumed by log aggregators (Datadog, CloudWatch, etc.)
-    process.stdout.write(JSON.stringify(entry) + '\n');
+    process.stdout.write(`${JSON.stringify(entry)}\n`);
   } else {
     // Development: delegate to console for readable output
     if (scrubbed) {
+      // biome-ignore lint/suspicious/noConsole: intentional dev passthrough
       console[level](message, scrubbed);
     } else {
+      // biome-ignore lint/suspicious/noConsole: intentional dev passthrough
       console[level](message);
     }
   }

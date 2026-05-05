@@ -12,6 +12,7 @@
 
 import * as fs from 'node:fs';
 import * as path from 'node:path';
+import { logger } from '../../lib/observability/logger';
 
 const OBS_DIR = path.join(process.cwd(), 'lib', 'observability');
 const FORBIDDEN_PATTERNS = ['writeAudit', 'lib/audit'];
@@ -41,9 +42,9 @@ function main(): void {
 
   const count = files.length;
   if (violations.length > 0) {
-    console.error(`Module boundaries check: ${count} files checked. VIOLATION:`);
+    logger.error(`Module boundaries check: ${count} files checked. VIOLATION:`);
     for (const v of violations) {
-      console.error(`  - ${v}`);
+      logger.error(`  - ${v}`);
     }
     process.exit(1);
   } else {

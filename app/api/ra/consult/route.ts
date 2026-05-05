@@ -7,11 +7,11 @@
 export const runtime = 'nodejs';
 
 import { randomUUID } from 'node:crypto';
+import { logger } from '@/lib/observability/logger';
 import type { Session } from 'next-auth';
 import type { NextRequest } from 'next/server';
 import { consult, ensureConversation } from '../../../../lib/ai/consult';
 import { encodeSSE } from '../../../../lib/ai/streaming';
-import { logger } from '@/lib/observability/logger';
 import { withPermission } from '../../../../lib/auth/with-permission';
 import { ConsultRequestSchema } from '../../../../types/consult';
 import type { StreamEvent } from '../../../../types/streaming';

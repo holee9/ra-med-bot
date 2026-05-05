@@ -12,6 +12,7 @@
 
 import * as fs from 'node:fs';
 import * as path from 'node:path';
+import { logger } from '../../lib/observability/logger';
 
 const REQUIRED_KEYS = ['fda', 'euMdr', 'mfds', 'nmpa', 'pmda'] as const;
 
@@ -37,14 +38,14 @@ function main(): void {
     ['en.json', EN_FILE],
   ] as const) {
     if (!fs.existsSync(filePath)) {
-      console.error(`Missing file: ${filePath}`);
+      logger.error(`Missing file: ${filePath}`);
       hasError = true;
       continue;
     }
 
     const missing = checkGlossary(filePath);
     if (missing.length > 0) {
-      console.error(
+      logger.error(
         `Regulatory glossary check FAILED for ${label}: missing keys: ${missing.join(', ')}`,
       );
       hasError = true;

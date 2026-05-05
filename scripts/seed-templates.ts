@@ -4,6 +4,7 @@
 // Usage:  npx tsx scripts/seed-templates.ts
 // Run against a local or staging database only — never production without a backup.
 
+import { logger } from '../lib/observability/logger';
 import { type QuickCard, homeQuickCards } from '../lib/seeds/homeQuickCards';
 
 /**
@@ -16,6 +17,6 @@ async function seedTemplates(cards: QuickCard[]): Promise<void> {
 }
 
 seedTemplates(homeQuickCards).catch((err) => {
-  console.error('Seed failed:', err);
+  logger.error('Seed failed:', err);
   process.exit(1);
 });

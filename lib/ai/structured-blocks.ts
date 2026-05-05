@@ -7,7 +7,7 @@
 // @MX:SPEC SPEC-REGULA-STRUCTURED-001 (REQ-STRUCT-001~010)
 
 import Anthropic from '@anthropic-ai/sdk';
-import { logger } from '@/lib/observability/logger';
+import { logger } from '../../lib/observability/logger';
 import type {
   ChecklistEvent,
   ComparisonEvent,
@@ -129,13 +129,13 @@ async function generate<T>(
   try {
     parsed = JSON.parse(cleaned);
   } catch {
-    logger.error('[structured-blocks] JSON parse error. Raw snippet: ' + raw.slice(0, 500));
+    logger.error(`[structured-blocks] JSON parse error. Raw snippet: ${raw.slice(0, 500)}`);
     return null;
   }
 
   const result = schema.safeParse(parsed);
   if (!result.success) {
-    logger.error('[structured-blocks] Zod parse error. Raw snippet: ' + raw.slice(0, 500));
+    logger.error(`[structured-blocks] Zod parse error. Raw snippet: ${raw.slice(0, 500)}`);
     return null;
   }
 

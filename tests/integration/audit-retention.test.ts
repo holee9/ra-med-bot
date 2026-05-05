@@ -6,6 +6,7 @@
 
 import { existsSync, readFileSync } from 'node:fs';
 import path from 'node:path';
+import { logger } from '@/lib/observability/logger';
 import { sql } from 'drizzle-orm';
 import { beforeAll, describe, expect, it } from 'vitest';
 
@@ -25,7 +26,7 @@ async function getDb() {
 describe('audit_logs retention policy (REQ-LAUNCH-031)', () => {
   beforeAll(() => {
     if (!process.env.DATABASE_URL) {
-      console.warn(`Skipping live-DB assertions: ${SKIP_REASON}`);
+      logger.warn(`Skipping live-DB assertions: ${SKIP_REASON}`);
     }
   });
 
@@ -80,7 +81,7 @@ describe('audit_logs retention policy (REQ-LAUNCH-031)', () => {
 
     // If no static documentation exists yet, this is a known TODO — warn and pass.
     // The live-DB test below (when DATABASE_URL is set) is the authoritative check.
-    console.warn(
+    logger.warn(
       'REQ-LAUNCH-031: No static retention documentation found. ' +
         'Add docs/security/audit-retention.md or annotate migrations.',
     );

@@ -12,6 +12,7 @@
 
 import * as fs from 'node:fs';
 import * as path from 'node:path';
+import { logger } from '../../lib/observability/logger';
 
 const CSS_FILE = path.join(process.cwd(), 'styles', 'tokens.css');
 const DARK_SELECTOR = '[data-theme="dark"]';
@@ -52,7 +53,7 @@ function extractTokens(css: string, blockSelector: string): string[] {
 
 function main(): void {
   if (!fs.existsSync(CSS_FILE)) {
-    console.error(`Token file not found: ${CSS_FILE}`);
+    logger.error(`Token file not found: ${CSS_FILE}`);
     process.exit(1);
   }
 

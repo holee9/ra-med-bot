@@ -8,6 +8,7 @@
 
 import { readFileSync, readdirSync, statSync } from 'node:fs';
 import path from 'node:path';
+import { logger } from '../../lib/observability/logger';
 
 // HTTP method exports that could appear in route.ts files.
 const HTTP_METHODS = ['GET', 'POST', 'PUT', 'PATCH', 'DELETE', 'HEAD', 'OPTIONS'] as const;
@@ -106,7 +107,7 @@ if (isMainModule) {
     const raw = readFileSync(whitelistPath, 'utf-8');
     exemptPatterns = parseExemptPatterns(JSON.parse(raw));
   } catch {
-    console.warn('[rbac-coverage] Could not read whitelist, using defaults.');
+    logger.warn('[rbac-coverage] Could not read whitelist, using defaults.');
     exemptPatterns = ['app/api/auth/**', 'app/api/health/**'];
   }
 
@@ -128,9 +129,9 @@ if (isMainModule) {
   if (violations.length === 0) {
     process.exit(0);
   } else {
-    console.error('[rbac-coverage] RBAC violations found:');
+    logger.error('[rbac-coverage] RBAC violations found:');
     for (const v of violations) {
-      console.error(`  - ${v}`);
+      logger.error(`  - ${v}`);
     }
     process.exit(1);
   }

@@ -11,6 +11,7 @@
 
 import * as fs from 'node:fs';
 import * as path from 'node:path';
+import { logger } from '../../lib/observability/logger';
 
 const KO_FILE = path.join(process.cwd(), 'messages', 'ko.json');
 const EN_FILE = path.join(process.cwd(), 'messages', 'en.json');
@@ -30,11 +31,11 @@ function extractKeys(obj: Record<string, unknown>, prefix = ''): string[] {
 
 function main(): void {
   if (!fs.existsSync(KO_FILE)) {
-    console.error(`Missing: ${KO_FILE}`);
+    logger.error(`Missing: ${KO_FILE}`);
     process.exit(1);
   }
   if (!fs.existsSync(EN_FILE)) {
-    console.error(`Missing: ${EN_FILE}`);
+    logger.error(`Missing: ${EN_FILE}`);
     process.exit(1);
   }
 
@@ -49,10 +50,10 @@ function main(): void {
 
   if (missingInEn.length > 0 || missingInKo.length > 0) {
     if (missingInEn.length > 0) {
-      console.error(`Missing in en.json (${missingInEn.length}): ${missingInEn.join(', ')}`);
+      logger.error(`Missing in en.json (${missingInEn.length}): ${missingInEn.join(', ')}`);
     }
     if (missingInKo.length > 0) {
-      console.error(`Missing in ko.json (${missingInKo.length}): ${missingInKo.join(', ')}`);
+      logger.error(`Missing in ko.json (${missingInKo.length}): ${missingInKo.join(', ')}`);
     }
     process.exit(1);
   }
