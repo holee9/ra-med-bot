@@ -15,7 +15,7 @@ Optional but recommended:
 - **Biome VS Code extension** for in-editor lint/format feedback
 - **Drizzle Studio** (`pnpm db:studio`) for browsing the schema
 
-## 2. Setup
+## Setup
 
 1. `git clone https://github.com/holee9/ra-med-bot.git && cd ra-med-bot`
 2. `pnpm install`
