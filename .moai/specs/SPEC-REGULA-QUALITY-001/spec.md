@@ -1,10 +1,10 @@
 ---
 id: SPEC-REGULA-QUALITY-001
 title: "Regula Quality Elevation — Corpus Seed · Eval Pipeline · Cloudflare Fallback · DocIngest · Security"
-status: draft
+status: completed
 phase: "quality-elevation"
 priority: High
-version: 0.3.0
+version: 0.4.0
 created: 2026-05-04
 updated: 2026-05-05
 author: drake.lee
