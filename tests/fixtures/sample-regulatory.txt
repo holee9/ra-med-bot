@@ -1,0 +1,4 @@
+Sample Regulatory Document
+21 CFR Part 820 — Quality System Regulation
+Section 820.30 Design Controls
+Each manufacturer shall establish and maintain procedures to control the design of the device in order to ensure that specified design requirements are met.

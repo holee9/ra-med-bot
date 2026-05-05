@@ -10,7 +10,8 @@ import { embedChunks } from '../../ingest/embed';
 import { extractText } from '../../ingest/extract/index';
 import { notifyAdminQuarantine } from '../../notifications/admin-quarantine';
 
-// Inngest client placeholder — resolved at runtime when inngest is configured
+// @MX:TODO: [AUTO] Inngest client not yet wired — reserved for SPEC-REGULA-DOCINGEST-001 Phase 2.
+// @MX:SPEC SPEC-REGULA-DOCINGEST-001
 const _inngest: unknown = null;
 void _inngest; // Reserved for Inngest registration
 

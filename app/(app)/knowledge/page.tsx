@@ -1,17 +1,116 @@
-const sourceGroups = [
-  {
-    title: '공식 규제 기관',
-    sources: ['FDA', 'EU MDR', 'MFDS', 'NMPA', 'PMDA'],
-  },
-  {
-    title: '국제 표준',
-    sources: ['ISO 13485', 'IEC 62304', 'ISO 14971'],
-  },
-  {
-    title: '사내 지식',
-    sources: ['Internal SOPs', 'MD-process', 'ra-project'],
-  },
-];
+// @MX:NOTE [AUTO] Knowledge base page — switched from hard-coded corpus list to dynamic API-backed view.
+// @MX:SPEC SPEC-REGULA-RELEASE-HARDENING-001 (TASK-002)
+
+import { headers } from 'next/headers';
+import { Suspense } from 'react';
+
+export const dynamic = 'force-dynamic';
+
+interface CorpusRow {
+  corpus: string;
+  documentCount: number;
+  sectionCount: number;
+  lastUpdated: string | null;
+}
+
+// Mapping of corpus labels (from sources.org_label) to a display group used by the UI.
+// Corpora not listed here fall through to "기타".
+const CORPUS_GROUPS: Record<string, string> = {
+  FDA: '공식 규제 기관',
+  'EU MDR': '공식 규제 기관',
+  MFDS: '공식 규제 기관',
+  NMPA: '공식 규제 기관',
+  PMDA: '공식 규제 기관',
+  'ISO 13485': '국제 표준',
+  'IEC 62304': '국제 표준',
+  'ISO 14971': '국제 표준',
+  'Internal SOPs': '사내 지식',
+  'MD-process': '사내 지식',
+  'ra-project': '사내 지식',
+};
+
+async function fetchCorpora(): Promise<CorpusRow[]> {
+  // Same-origin server-side fetch — forward auth/cookies via inbound headers.
+  const h = await headers();
+  const host = h.get('host') ?? 'localhost:3000';
+  const proto = h.get('x-forwarded-proto') ?? (host.startsWith('localhost') ? 'http' : 'https');
+  const cookie = h.get('cookie') ?? '';
+
+  const res = await fetch(`${proto}://${host}/api/ra/sources`, {
+    headers: { cookie },
+    cache: 'no-store',
+  });
+
+  if (!res.ok) {
+    return [];
+  }
+  const body = (await res.json()) as { corpora?: CorpusRow[] };
+  return body.corpora ?? [];
+}
+
+function groupCorpora(rows: CorpusRow[]): Array<{ title: string; sources: CorpusRow[] }> {
+  const buckets = new Map<string, CorpusRow[]>();
+  for (const row of rows) {
+    const group = CORPUS_GROUPS[row.corpus] ?? '기타';
+    if (!buckets.has(group)) buckets.set(group, []);
+    buckets.get(group)?.push(row);
+  }
+  // Stable display order with known groups first.
+  const order = ['공식 규제 기관', '국제 표준', '사내 지식', '기타'];
+  return order
+    .filter((title) => buckets.has(title))
+    .map((title) => ({ title, sources: buckets.get(title) ?? [] }));
+}
+
+async function CorpusGrid() {
+  const rows = await fetchCorpora();
+  const groups = groupCorpora(rows);
+
+  if (groups.length === 0) {
+    return (
+      <div className="rounded-lg border border-ink-150 bg-surface p-6 text-sm text-ink-600">
+        등록된 지식 베이스 출처가 없습니다.
+      </div>
+    );
+  }
+
+  return (
+    <div className="grid gap-3 md:grid-cols-3">
+      {groups.map((group) => (
+        <section key={group.title} className="rounded-lg border border-ink-150 bg-surface p-4">
+          <h2 className="font-serif text-lg text-ink-900">{group.title}</h2>
+          <ul className="mt-3 flex flex-col gap-2">
+            {group.sources.map((source) => (
+              <li
+                key={source.corpus}
+                className="flex flex-col gap-0.5 rounded-md bg-ink-50 px-3 py-2 text-sm text-ink-700"
+              >
+                <span className="font-medium">{source.corpus}</span>
+                <span className="text-xs text-ink-500">
+                  문서 {source.documentCount} · 섹션 {source.sectionCount}
+                </span>
+              </li>
+            ))}
+          </ul>
+        </section>
+      ))}
+    </div>
+  );
+}
+
+function CorpusGridFallback() {
+  return (
+    <div className="grid gap-3 md:grid-cols-3" aria-busy="true">
+      {[0, 1, 2].map((i) => (
+        <div
+          key={i}
+          className="h-32 rounded-lg border border-ink-150 bg-surface p-4"
+          aria-hidden="true"
+        />
+      ))}
+    </div>
+  );
+}
 
 export default function KnowledgePage() {
   return (
@@ -23,20 +122,9 @@ export default function KnowledgePage() {
         </p>
       </header>
 
-      <div className="grid gap-3 md:grid-cols-3">
-        {sourceGroups.map((group) => (
-          <section key={group.title} className="rounded-lg border border-ink-150 bg-surface p-4">
-            <h2 className="font-serif text-lg text-ink-900">{group.title}</h2>
-            <ul className="mt-3 flex flex-col gap-2">
-              {group.sources.map((source) => (
-                <li key={source} className="rounded-md bg-ink-50 px-3 py-2 text-sm text-ink-700">
-                  {source}
-                </li>
-              ))}
-            </ul>
-          </section>
-        ))}
-      </div>
+      <Suspense fallback={<CorpusGridFallback />}>
+        <CorpusGrid />
+      </Suspense>
     </section>
   );
 }

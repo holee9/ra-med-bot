@@ -27,3 +27,12 @@ evaluators:
   - path: ./scorers/hallucination.ts
   - path: ./scorers/confidence-calibration.ts
   - path: ./scorers/expert-review-gating.ts
+
+# REQ-QUAL-006~010: results persistence + threshold gate
+outputPath: tests/eval/results/latest.json
+
+# Pass threshold: ≥ 80% of scenarios must pass to accept the run
+sharing: false
+commandLineOptions:
+  passRateThreshold: 0.8
+threshold: 0.8

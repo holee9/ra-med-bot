@@ -10,12 +10,13 @@
 
 import * as fs from 'node:fs';
 import * as path from 'node:path';
+import { logger } from '../../lib/observability/logger.ts';
 
 const MIGRATIONS_DIR = path.resolve(process.cwd(), 'migrations');
 
 function getMigrationFiles(): string[] {
   if (!fs.existsSync(MIGRATIONS_DIR)) {
-    console.error(`migrations/ directory not found at ${MIGRATIONS_DIR}`);
+    logger.error(`migrations/ directory not found at ${MIGRATIONS_DIR}`);
     process.exit(1);
   }
   return fs.readdirSync(MIGRATIONS_DIR);
@@ -74,7 +75,7 @@ function main(): void {
   const result = checkSequential(numbers);
 
   if (!result.ok) {
-    console.error(`Migration sequence error: ${result.error}`);
+    logger.error(`Migration sequence error: ${result.error}`);
     process.exit(1);
   }
 

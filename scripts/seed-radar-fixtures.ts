@@ -5,6 +5,7 @@
 
 import { db } from '../lib/db/client';
 import { regulatoryUpdates } from '../lib/db/schema';
+import { logger } from '../lib/observability/logger';
 
 const MOCK_UPDATES = [
   {
@@ -298,7 +299,7 @@ async function main() {
       process.stdout.write(`  [+] ${update.externalId}: ${update.title.slice(0, 50)}\n`);
     } catch (err) {
       skipped++;
-      console.warn(`  [!] Skipped ${update.externalId}: ${String(err).slice(0, 80)}`);
+      logger.warn(`[seed-radar] Skipped ${update.externalId}: ${String(err).slice(0, 80)}`);
     }
   }
 
@@ -307,6 +308,6 @@ async function main() {
 }
 
 main().catch((err) => {
-  console.error('[seed-radar] Fatal error:', err);
+  logger.error('[seed-radar] Fatal error:', err);
   process.exit(1);
 });

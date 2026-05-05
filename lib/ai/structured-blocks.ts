@@ -7,6 +7,7 @@
 // @MX:SPEC SPEC-REGULA-STRUCTURED-001 (REQ-STRUCT-001~010)
 
 import Anthropic from '@anthropic-ai/sdk';
+import { logger } from '../../lib/observability/logger';
 import type {
   ChecklistEvent,
   ComparisonEvent,
@@ -128,13 +129,13 @@ async function generate<T>(
   try {
     parsed = JSON.parse(cleaned);
   } catch {
-    console.error('[structured-blocks] JSON parse error. Raw snippet:', raw.slice(0, 500));
+    logger.error(`[structured-blocks] JSON parse error. Raw snippet: ${raw.slice(0, 500)}`);
     return null;
   }
 
   const result = schema.safeParse(parsed);
   if (!result.success) {
-    console.error('[structured-blocks] Zod parse error. Raw snippet:', raw.slice(0, 500));
+    logger.error(`[structured-blocks] Zod parse error. Raw snippet: ${raw.slice(0, 500)}`);
     return null;
   }
 
@@ -176,7 +177,7 @@ export async function* generateStructuredBlocks(
       }
     } catch (err) {
       if (signal?.aborted) return;
-      console.error('[structured-blocks] checklist error:', err);
+      logger.error('[structured-blocks] checklist error:', err);
     }
   }
 
@@ -204,7 +205,7 @@ export async function* generateStructuredBlocks(
       }
     } catch (err) {
       if (signal?.aborted) return;
-      console.error('[structured-blocks] comparison error:', err);
+      logger.error('[structured-blocks] comparison error:', err);
     }
   }
 
@@ -227,7 +228,7 @@ export async function* generateStructuredBlocks(
       }
     } catch (err) {
       if (signal?.aborted) return;
-      console.error('[structured-blocks] timeline error:', err);
+      logger.error('[structured-blocks] timeline error:', err);
     }
   }
 
@@ -252,7 +253,7 @@ export async function* generateStructuredBlocks(
       }
     } catch (err) {
       if (signal?.aborted) return;
-      console.error('[structured-blocks] related error:', err);
+      logger.error('[structured-blocks] related error:', err);
     }
   }
 }

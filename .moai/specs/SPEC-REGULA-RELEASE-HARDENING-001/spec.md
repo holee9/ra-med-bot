@@ -1,10 +1,10 @@
 ---
 id: SPEC-REGULA-RELEASE-HARDENING-001
 title: "Regula Release Hardening — Dashboard·Knowledge·Console·TODO·E2E·Workflow Beta"
-status: draft
+status: completed
 phase: "release-hardening"
 priority: High
-version: 0.2.0
+version: 0.3.0
 created: 2026-05-04
 updated: 2026-05-05
 author: manager-spec

@@ -2,6 +2,7 @@
 // @MX:REASON Called by radar-notify-consumer worker. fan_in >= 3 (worker, tests, admin APIs).
 // @MX:SPEC SPEC-REGULA-RADAR-001
 
+import { logger } from '@/lib/observability/logger';
 import { setBadge } from './notifier-channels/badge';
 import { type RelevantUpdate, sendDigestEmail } from './notifier-channels/email';
 import { sendSlackAlert } from './notifier-channels/slack';
@@ -96,7 +97,7 @@ export async function notifyUpdate(
           break;
       }
     } catch (err) {
-      console.error(`[radar/notifier] Channel ${channel} failed for org ${orgId}:`, err);
+      logger.error(`[radar/notifier] Channel ${channel} failed for org ${orgId}:`, err);
     }
   }
 
@@ -117,6 +118,6 @@ export async function notifyUpdate(
     });
   } catch {
     // Audit write failure must not block notifications in test/dev
-    console.warn('[radar/notifier] Audit write skipped (likely test environment)');
+    logger.warn('[radar/notifier] Audit write skipped (likely test environment)');
   }
 }

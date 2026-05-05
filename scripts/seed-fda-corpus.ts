@@ -12,6 +12,7 @@ import { type EmbeddingModel, embed } from 'ai';
 import { eq } from 'drizzle-orm';
 import { db } from '../lib/db/client';
 import { sourceSections, sources } from '../lib/db/schema';
+import { logger } from '../lib/observability/logger';
 
 interface SeedSection {
   anchor: string;
@@ -372,6 +373,6 @@ async function main(): Promise<void> {
 }
 
 main().catch((err) => {
-  console.error('Seed failed:', err);
+  logger.error('Seed failed:', err);
   process.exit(1);
 });

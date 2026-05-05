@@ -1,6 +1,7 @@
 // @MX:NOTE [AUTO] Layer 3 PII detection — Microsoft Presidio external service.
 // @MX:SPEC SPEC-REGULA-DOCINGEST-001 (REQ-DOC-028)
 // Returns empty array if PRESIDIO_URL is not set (CI safe mode).
+import { logger } from '@/lib/observability/logger';
 import type { PIISpan } from './workers-ai';
 
 /**
@@ -40,7 +41,7 @@ export async function detectPiiPresidio(text: string): Promise<PIISpan[]> {
   }
 
   if (!response.ok) {
-    console.warn('[presidio] PII detection failed:', response.status);
+    logger.warn('[presidio] PII detection failed:', { status: response.status });
     return [];
   }
 

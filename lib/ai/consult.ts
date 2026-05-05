@@ -8,6 +8,7 @@
 // @MX:SPEC SPEC-REGULA-STRUCTURED-001 (REQ-STRUCT-002, REQ-STRUCT-034~036)
 
 import { createHash } from 'node:crypto';
+import { logger } from '@/lib/observability/logger';
 import { anthropic } from '@ai-sdk/anthropic';
 import { type LanguageModel, streamText } from 'ai';
 import { eq } from 'drizzle-orm';
@@ -331,7 +332,7 @@ export async function* consult(
             structuredOrderIndex++;
           } catch (insertErr) {
             // REQ-STRUCT-035: log and continue — emit even if persist fails
-            console.error('[consult] messageBlocks INSERT failed for', blockEvent.type, insertErr);
+            logger.error(`[consult] messageBlocks INSERT failed for ${blockEvent.type}`, insertErr);
           }
         }
 
@@ -341,7 +342,7 @@ export async function* consult(
       if (signal?.aborted) {
         // Silently swallow abort errors
       } else {
-        console.error('[consult] generateStructuredBlocks error:', err);
+        logger.error('[consult] generateStructuredBlocks error:', err);
       }
     }
   }

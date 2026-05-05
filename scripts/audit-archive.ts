@@ -9,6 +9,7 @@
 // REQ-CF-048: Neon rows are NOT deleted until R2 write confirmed.
 
 import { archiveAuditLogs } from '../lib/audit/cold-storage';
+import { logger } from '../lib/observability/logger';
 import { R2Client } from '../lib/storage/r2';
 
 // In Workers cron context, env bindings are injected by the Workers runtime.
@@ -19,6 +20,6 @@ async function main() {
 }
 
 main().catch((err) => {
-  console.error('[audit-archive] Fatal error:', err);
+  logger.error('[audit-archive] Fatal error:', err);
   process.exit(1);
 });

@@ -179,8 +179,8 @@ export const users = pgTable('users', {
   role: userRoleEnum('role').notNull().default('ra-member'),
   locale: localeEnum('locale').notNull().default('ko'),
   themePref: themePrefEnum('theme_pref').notNull().default('system'),
-  // REQ-ENTERPRISE-027: notification preferences placeholder (Phase 5 write-only).
-  // Phase 6 will read this column. Default '{}' is safe for existing rows.
+  // @MX:NOTE: [AUTO] REQ-ENTERPRISE-027: notification_pref column — write-only in Phase 5.
+  // Phase 6 will add read/update paths. Default '{}' is safe for existing rows.
   notificationPref: jsonb('notification_pref').notNull().default({}),
   createdAt: timestamp('created_at', { withTimezone: true, mode: 'date' }).notNull().defaultNow(),
   updatedAt: timestamp('updated_at', { withTimezone: true, mode: 'date' }).notNull().defaultNow(),

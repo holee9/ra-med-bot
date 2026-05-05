@@ -7,6 +7,7 @@
 
 import { readFileSync, readdirSync, statSync } from 'node:fs';
 import { join } from 'node:path';
+import { logger } from '../../lib/observability/logger.ts';
 
 const _FORBIDDEN_IMPORTS = ['@vercel/edge', '@vercel/og'];
 
@@ -75,11 +76,11 @@ function main(): void {
   }
 
   if (allViolations.length > 0) {
-    console.error(
+    logger.error(
       'ERROR: @vercel/edge or @vercel/og imports detected in Workers code (REQ-CF-009):',
     );
     for (const v of allViolations) {
-      console.error(`  ${v}`);
+      logger.error(`  ${v}`);
     }
     process.exit(1);
   }

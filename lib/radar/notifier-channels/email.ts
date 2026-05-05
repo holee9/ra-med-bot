@@ -1,5 +1,6 @@
 // SendGrid daily digest email channel for high-impact radar updates.
 // @MX:SPEC SPEC-REGULA-RADAR-001
+import { logger } from '@/lib/observability/logger';
 
 export interface RelevantUpdate {
   id: string;
@@ -22,7 +23,7 @@ export async function sendDigestEmail(orgId: string, updates: RelevantUpdate[]):
   const fromEmail = process.env.SENDGRID_FROM_EMAIL ?? 'noreply@regula.ai';
 
   if (!apiKey) {
-    console.warn('[radar/email] SENDGRID_API_KEY not set — skipping digest email');
+    logger.warn('[radar/email] SENDGRID_API_KEY not set — skipping digest email');
     return;
   }
 
@@ -47,8 +48,8 @@ export async function sendDigestEmail(orgId: string, updates: RelevantUpdate[]):
     <p><a href="${process.env.NEXT_PUBLIC_APP_URL ?? 'https://app.regula.ai'}/updates">View all updates in Regula</a></p>
   `;
 
-  // In production: fetch SendGrid API with org's primary contact email
-  // For now: log the payload (org contact email lookup would require DB query)
+  // @MX:TODO: [AUTO] Resolve recipient email from org contact lookup (requires DB query).
+  // @MX:SPEC SPEC-REGULA-RADAR-001
   const payload = {
     personalizations: [{ to: [{ email: `org-${orgId}@digest.placeholder` }] }],
     from: { email: fromEmail },
@@ -67,9 +68,9 @@ export async function sendDigestEmail(orgId: string, updates: RelevantUpdate[]):
     });
 
     if (!res.ok) {
-      console.error(`[radar/email] SendGrid error ${res.status} for org ${orgId}`);
+      logger.error(`[radar/email] SendGrid error ${res.status} for org ${orgId}`);
     }
   } catch (err) {
-    console.error('[radar/email] Failed to send digest email:', err);
+    logger.error('[radar/email] Failed to send digest email:', err);
   }
 }

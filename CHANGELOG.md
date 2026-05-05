@@ -11,6 +11,77 @@
 
 ---
 
+## [1.2.0] — 2026-05-06
+
+### Added
+
+#### Phase 8 Quality & Evaluation (SPEC-REGULA-QUALITY-001)
+
+**Group A — Corpus Seed (테스트 데이터 기반):**
+- `scripts/seed-corpus.ts` — 범용 코퍼스 시드 스크립트 (5개 카테고리 × 21개 청크 = 101행)
+- `scripts/seed-fda-corpus.ts` — FDA 특화 시드 (테스트 fixture)
+- `pnpm db:seed:corpus` — 데이터베이스 초기화 커맨드
+- `tests/unit/scripts/seed-corpus.test.ts` — 시드 스크립트 단위 테스트
+
+**Group B — Eval Pipeline (평가 체계):**
+- `tests/eval/promptfoo.config.yaml` — promptfoo 평가 설정 (threshold 80%, outputPath 구성)
+- `tests/unit/eval/promptfoo-config.test.ts` — 평가 config 검증 테스트
+- `tests/integration/hybrid-router-fallback.test.ts` — Vectorize fallback 통합 테스트
+
+**Group C — Vectorize Fallback (하이브리드 레트리버):**
+- `lib/ai/hybrid-router.ts` — `isVectorizeAvailable()` 함수 + pgvector fallback 로직
+- `lib/env.ts` — Vectorize 환경 변수 설정
+- Fallback strategy: Vectorize 불가 시 pgvector 사용
+
+**Group D — DocIngest E2E (문서 수집 파이프라인):**
+- `app/api/ra/admin/documents/upload/route.ts` — Extract→Chunk→Embed→Insert 파이프라인
+- RBAC 검증: Admin 역할 확인
+- PII 검증: 민감한 정보 필터링
+- `tests/integration/docingest-e2e.test.ts` — E2E 통합 테스트
+
+**Group E — Security Headers (보안 헤더):**
+- `middleware.ts` — CSP nonce + HSTS + X-Frame-Options:DENY + X-Content-Type-Options
+- `tests/e2e/security-headers.spec.ts` — Playwright E2E 검증
+- XSS/clickjacking/MIME-sniffing 완화
+
+**Group F — Admin RBAC (관리자 접근 제어):**
+- `scripts/qa/check-rbac.mjs` — Admin 4 라우트 RBAC 검증 + gap detection 로직
+- `scripts/qa/rbac-coverage.ts` — RBAC 커버리지 분석
+- Admin 전용 경로: `/api/ra/admin/*`
+
+**Group G — Local Bootstrap (로컬 개발 초기화):**
+- `scripts/dev-bootstrap.ts` — 개발 환경 자동 초기화 스크립트
+- `lib/env.ts` — 개발 placeholder guard (안전한 기본값)
+- `DEVELOPMENT.md` — 5-step 로컬 설정 가이드
+- `tests/unit/scripts/dev-bootstrap.test.ts` — Bootstrap 테스트
+- `tests/unit/env.test.ts` — 환경 변수 검증 테스트
+
+**Supporting Tests & QA:**
+- `tests/unit/lib/feature-flags.test.ts` — Feature flag 단위 테스트
+- `tests/unit/lib/observability/logger.test.ts` — 로깅 검증
+- `tests/integration/audit-immutability.test.ts` — 감사 로그 불변성
+- `tests/integration/audit-retention.test.ts` — 7년 보존 정책
+- `tests/e2e/citation-click.spec.ts` — Citation 클릭 E2E
+- Citation workflow 검증
+
+### Technical Decisions (Phase 8)
+
+1. **Vectorize Fallback 전략** — Vectorize 불가 시 pgvector로 graceful fallback
+2. **CSP Nonce 접근법** — Runtime nonce 생성 + 미들웨어 주입으로 XSS 방어
+3. **Bootstrap Guard** — 개발 환경에서 placeholder 사용 + 프로덕션에서 실제 값 강제
+4. **Admin RBAC 자동화** — 스크립트 기반 gap detection으로 수동 검증 제거
+5. **E2E 중심 평가** — Playwright + promptfoo 조합으로 사용자 시나리오 검증
+
+### Compliance (Phase 8)
+
+- ✅ 7/7 Group 전체 구현 (Corpus Seed, Eval, Vectorize, DocIngest, Security, RBAC, Bootstrap)
+- ✅ 15개 신규 테스트 파일 (단위 15, 통합 2, E2E 2)
+- ✅ OWASP Top 10: CSP nonce, X-Frame-Options, X-Content-Type-Options
+- ✅ RBAC 완전 자동화 (Admin 4 라우트 검증)
+- ✅ Local Bootstrap: 5-step 가이드 + 환경 guard
+
+---
+
 ## [1.1.0] — 2026-05-04
 
 ### Added

@@ -23,7 +23,9 @@ export type StepExecutionContext = {
 // @MX:ANCHOR: [AUTO] executeStep — public API boundary for step execution in 510(k) workflow
 // @MX:REASON: fan_in >= 3: workflow runner, tests, and future async worker all call this
 
-/** Mock implementation of step execution for the submission drafter workflow. */
+// @MX:TODO: [AUTO] Beta scaffold — step returns synthetic outputs. Replace with real LLM calls.
+// @MX:SPEC SPEC-REGULA-QUALITY-001 (REQ-QUAL-011)
+/** Step execution for the submission drafter workflow (Beta scaffold). */
 export async function executeStep(step: string, _ctx: StepExecutionContext): Promise<StepResult> {
   const completedAt = new Date().toISOString();
 
@@ -82,14 +84,25 @@ export async function executeStep(step: string, _ctx: StepExecutionContext): Pro
 }
 
 /** Aggregates all step results into a summary. */
+// @MX:NOTE [AUTO] _mock flag — TASK-003: every workflow summary is currently
+// produced by mock executeStep implementations. The flag makes downstream
+// consumers (UI, audit log, API responses) able to mark/disclose simulated
+// output until a real executor lands.
 export function buildWorkflowSummary(results: StepResult[]): {
   totalSteps: number;
   completedSteps: number;
   overallConfidence: number;
   requiresReview: boolean;
+  _mock: true;
 } {
   if (results.length === 0) {
-    return { totalSteps: 0, completedSteps: 0, overallConfidence: 0, requiresReview: false };
+    return {
+      totalSteps: 0,
+      completedSteps: 0,
+      overallConfidence: 0,
+      requiresReview: false,
+      _mock: true,
+    };
   }
 
   const allScores = results.flatMap((r) => r.confidenceScores);
@@ -100,5 +113,6 @@ export function buildWorkflowSummary(results: StepResult[]): {
     completedSteps: results.length,
     overallConfidence,
     requiresReview: true,
+    _mock: true,
   };
 }

@@ -1,6 +1,7 @@
 // Radar Notify Consumer — dispatches notifications based on impact score thresholds.
 // @MX:SPEC SPEC-REGULA-RADAR-001
 
+import { logger } from '../lib/observability/logger';
 import { notifyUpdate } from '../lib/radar/notifier';
 
 interface ScoredMessage {
@@ -67,7 +68,7 @@ export default {
 
         msg.ack();
       } catch (err) {
-        console.error('[radar-notify] Failed to notify for message:', err);
+        logger.error('[radar-notify] Failed to notify for message:', err);
         msg.retry();
       }
     }

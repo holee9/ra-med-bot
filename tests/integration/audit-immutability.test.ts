@@ -4,6 +4,7 @@
 // database-level immutability trigger (SPEC-REGULA-FOUNDATION-001 REQ-FND-044).
 // Requires a live DATABASE_URL; all cases are skipped otherwise.
 
+import { logger } from '@/lib/observability/logger';
 import { sql } from 'drizzle-orm';
 import { beforeAll, describe, expect, it } from 'vitest';
 
@@ -18,7 +19,7 @@ async function getDb() {
 describe('audit_logs immutability (REQ-LAUNCH-030)', () => {
   beforeAll(() => {
     if (!process.env.DATABASE_URL) {
-      console.warn(`Skipping: ${SKIP_REASON}`);
+      logger.warn(`Skipping: ${SKIP_REASON}`);
     }
   });
 

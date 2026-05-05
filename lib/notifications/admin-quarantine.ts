@@ -1,6 +1,7 @@
 // @MX:NOTE [AUTO] Admin quarantine notification — sets flag readable by admin dashboard badge.
 // @MX:SPEC SPEC-REGULA-DOCINGEST-001 (REQ-DOC-025)
 // In-memory store for notification flags (in production: Redis or Postgres-backed)
+import { logger } from '@/lib/observability/logger';
 
 interface QuarantineNotification {
   documentId: string;
@@ -17,7 +18,7 @@ const notifications: QuarantineNotification[] = [];
  */
 export async function notifyAdminQuarantine(documentId: string, reason: string): Promise<void> {
   notifications.push({ documentId, reason, notifiedAt: new Date() });
-  console.warn(`[quarantine] Document ${documentId} quarantined: ${reason}`);
+  logger.warn(`[quarantine] Document ${documentId} quarantined: ${reason}`);
 
   // In production: store in database + optionally send email/Slack alert
   // UPDATE organization_documents SET status = 'quarantine' WHERE id = documentId

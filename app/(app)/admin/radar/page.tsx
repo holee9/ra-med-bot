@@ -1,5 +1,6 @@
 'use client';
 
+import { logger } from '@/lib/observability/logger';
 import { useCrawlerRuns } from '@/lib/queries/useCrawlerRuns';
 import { useState } from 'react';
 
@@ -33,7 +34,7 @@ export default function AdminRadarPage() {
       setRunResult(result);
       void refetch();
     } catch (err) {
-      console.error(err);
+      logger.error('[admin/radar] Crawler run failed:', err);
     } finally {
       setRunning(null);
     }

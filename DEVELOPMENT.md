@@ -17,25 +17,18 @@ Optional but recommended:
 
 ## Setup
 
-```bash
-# 1. Install dependencies
-pnpm install
-
-# 2. Copy the env template and fill in values
-cp .env.example .env.local
-
-# 3. (Once schema lands in Phase 1) push the schema to your local Postgres
-pnpm db:migrate
-
-# 4. Verify the toolchain
-pnpm typecheck
-pnpm lint
-pnpm test
-```
+1. `git clone https://github.com/holee9/ra-med-bot.git && cd ra-med-bot`
+2. `pnpm install`
+3. `pnpm dev:bootstrap` — generates `.env.local` with dev placeholders
+4. `pnpm db:up && pnpm db:migrate && pnpm db:seed:corpus`
+5. `pnpm dev`
 
 `lib/env.ts` validates required variables on first import and throws a
-`ZodError` listing every missing/invalid field — fix them in `.env.local`
-before running any other command.
+`ZodError` listing every missing/invalid field. The bootstrap script writes
+`dev-placeholder-*` markers for secret values; replace them with real
+credentials before the application talks to live LLM, SSO, or telemetry
+providers. In production, `lib/env.ts` rejects any `dev-placeholder-*`
+value so these markers cannot leak past local development.
 
 ## Development Commands
 
