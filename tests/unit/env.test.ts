@@ -1,6 +1,8 @@
 // @MX:NOTE Env validation tests — REQ-FND-010a fail-fast guarantee.
+// Also covers REQ-QUAL-027: dev-placeholder-* values must not survive into
+// a production NODE_ENV.
 
-import { describe, expect, it } from 'vitest';
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { ZodError } from 'zod';
 import { parseEnv } from '../../lib/env';
 
@@ -53,6 +55,52 @@ describe('parseEnv', () => {
     const { AUTH_MICROSOFT_ID: _omit, ...rest } = validEnv;
     const env = parseEnv({ ...rest, AZURE_AD_CLIENT_ID: 'azure-id' });
     expect(env.AUTH_MICROSOFT_ID).toBe('azure-id');
+  });
+
+  describe('dev-placeholder guard (REQ-QUAL-027)', () => {
+    beforeEach(() => {
+      // The refine closure inspects process.env.NODE_ENV directly.
+      // vi.stubEnv handles the read-only descriptor that Vitest installs.
+      vi.stubEnv('NODE_ENV', 'production');
+    });
+
+    afterEach(() => {
+      vi.unstubAllEnvs();
+    });
+
+    it('rejects ANTHROPIC_API_KEY=dev-placeholder-anthropic in production', () => {
+      expect(() =>
+        parseEnv({ ...validEnv, ANTHROPIC_API_KEY: 'dev-placeholder-anthropic' }),
+      ).toThrow(ZodError);
+    });
+
+    it('rejects OPENAI_API_KEY dev-placeholder in production', () => {
+      expect(() => parseEnv({ ...validEnv, OPENAI_API_KEY: 'dev-placeholder-openai' })).toThrow(
+        ZodError,
+      );
+    });
+
+    it('rejects AUTH_SECRET dev-placeholder in production', () => {
+      expect(() =>
+        parseEnv({ ...validEnv, AUTH_SECRET: 'dev-placeholder-auth-secret-padded-to-32-chars' }),
+      ).toThrow(ZodError);
+    });
+
+    it('rejects AUTH_GOOGLE_ID dev-placeholder in production', () => {
+      expect(() => parseEnv({ ...validEnv, AUTH_GOOGLE_ID: 'dev-placeholder-google' })).toThrow(
+        ZodError,
+      );
+    });
+
+    it('accepts dev-placeholder values when NODE_ENV is not production', () => {
+      vi.stubEnv('NODE_ENV', 'development');
+      const env = parseEnv({
+        ...validEnv,
+        ANTHROPIC_API_KEY: 'dev-placeholder-anthropic',
+        OPENAI_API_KEY: 'dev-placeholder-openai',
+      });
+      expect(env.ANTHROPIC_API_KEY).toBe('dev-placeholder-anthropic');
+    });
   });
 
   it('reports every missing field at once (Zod aggregate errors)', () => {

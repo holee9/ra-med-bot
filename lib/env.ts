@@ -5,6 +5,17 @@
 
 import { z } from 'zod';
 
+// @MX:ANCHOR Dev-placeholder guard — REQ-QUAL-027.
+// @MX:REASON Bootstrap (scripts/dev-bootstrap.ts) writes `dev-placeholder-*`
+// markers into `.env.local` so contributors can boot without real secrets.
+// In production those values must never be accepted, otherwise the app
+// would silently call LLM/auth APIs with garbage credentials.
+const isDevPlaceholderForbidden = (v: string): boolean =>
+  process.env.NODE_ENV !== 'production' || !v.startsWith('dev-placeholder-');
+
+const devPlaceholderMessage = (label: string): string =>
+  `${label} cannot be a dev-placeholder value in production`;
+
 // Phase 1 only validates the variables required to boot the auth + db layer.
 // LLM, S3, and observability vars are added incrementally in later phases
 // and stay optional in `.env.example` until then.
@@ -15,19 +26,38 @@ const envSchema = z.object({
   // Auth.js v5 — AUTH_SECRET replaces the legacy NEXTAUTH_SECRET name.
   AUTH_SECRET: z
     .string()
-    .min(32, 'AUTH_SECRET must be at least 32 characters (openssl rand -base64 32)'),
+    .min(32, 'AUTH_SECRET must be at least 32 characters (openssl rand -base64 32)')
+    .refine(isDevPlaceholderForbidden, devPlaceholderMessage('AUTH_SECRET')),
   NEXTAUTH_URL: z.string().url('NEXTAUTH_URL must be a valid URL'),
 
   // SSO providers — both Microsoft and Google are required in Phase 1
   // because the login screen renders both buttons.
-  AUTH_MICROSOFT_ID: z.string().min(1, 'AUTH_MICROSOFT_ID is required'),
-  AUTH_MICROSOFT_SECRET: z.string().min(1, 'AUTH_MICROSOFT_SECRET is required'),
-  AUTH_GOOGLE_ID: z.string().min(1, 'AUTH_GOOGLE_ID is required'),
-  AUTH_GOOGLE_SECRET: z.string().min(1, 'AUTH_GOOGLE_SECRET is required'),
+  AUTH_MICROSOFT_ID: z
+    .string()
+    .min(1, 'AUTH_MICROSOFT_ID is required')
+    .refine(isDevPlaceholderForbidden, devPlaceholderMessage('AUTH_MICROSOFT_ID')),
+  AUTH_MICROSOFT_SECRET: z
+    .string()
+    .min(1, 'AUTH_MICROSOFT_SECRET is required')
+    .refine(isDevPlaceholderForbidden, devPlaceholderMessage('AUTH_MICROSOFT_SECRET')),
+  AUTH_GOOGLE_ID: z
+    .string()
+    .min(1, 'AUTH_GOOGLE_ID is required')
+    .refine(isDevPlaceholderForbidden, devPlaceholderMessage('AUTH_GOOGLE_ID')),
+  AUTH_GOOGLE_SECRET: z
+    .string()
+    .min(1, 'AUTH_GOOGLE_SECRET is required')
+    .refine(isDevPlaceholderForbidden, devPlaceholderMessage('AUTH_GOOGLE_SECRET')),
 
   // Phase 2 LLM providers.
-  ANTHROPIC_API_KEY: z.string().min(1, 'ANTHROPIC_API_KEY is required'),
-  OPENAI_API_KEY: z.string().min(1, 'OPENAI_API_KEY is required'),
+  ANTHROPIC_API_KEY: z
+    .string()
+    .min(1, 'ANTHROPIC_API_KEY is required')
+    .refine(isDevPlaceholderForbidden, devPlaceholderMessage('ANTHROPIC_API_KEY')),
+  OPENAI_API_KEY: z
+    .string()
+    .min(1, 'OPENAI_API_KEY is required')
+    .refine(isDevPlaceholderForbidden, devPlaceholderMessage('OPENAI_API_KEY')),
 
   // Optional: label shown in the UI for the LLM model.
   NEXT_PUBLIC_LLM_MODEL_LABEL: z.string().optional(),
