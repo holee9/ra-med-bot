@@ -10,7 +10,7 @@
 
 import * as fs from 'node:fs';
 import * as path from 'node:path';
-import { logger } from '../../lib/observability/logger';
+import { logger } from '../../lib/observability/logger.ts';
 
 const MIGRATIONS_DIR = path.resolve(process.cwd(), 'migrations');
 
