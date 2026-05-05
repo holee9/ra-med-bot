@@ -166,6 +166,7 @@ secret-*.*
 .claude/plans/
 .claude/agent-memory/
 .claude/worktrees/
+.claude/scheduled_tasks.lock
 
 # Skill-specific credentials
 .claude/skills/*/.env*

@@ -1,40 +1,26 @@
 # Session Memo
 
-## P1: Session Context
+## 현황 (2026-05-05)
 
-session_id: current
-cwd: D:\workspace-github\ra-med-bot
-event: SPEC-REGULA-RELEASE-GATE-001 completion
+### SPEC-REGULA-RELEASE-GATE-001 완료
 
-## SPEC-REGULA-RELEASE-GATE-001 — Release Gate Completed
+| 항목 | 상태 |
+|------|------|
+| PR #20 (E2E) | MERGED (`6826d66`) — chromium/firefox/webkit PASS |
+| PR #21 (CI fix) | MERGED (`08c0673`) — biome/lint 4개 파일 수정 |
+| Issue #12 | CLOSED (commit `9b7adda`) |
+| Issue #13 | CLOSED (commit `11bd6fa`) |
+| Issue #18 | OPEN (의도적 — post-mortem ADR) |
+| feature/SPEC-REGULA-NETWORK-001 | 삭제 완료 |
+| `.worktrees/` | 정리 완료 |
 
-완료 일시: 2026-05-05
+### Git 상태
 
-### 완료 항목 체크리스트
+- Branch: `main`
+- Upstream: origin/main (up-to-date)
+- Working tree: clean (이 커밋 기준)
 
-#### 4.1 PR / CI
-- [x] biome ci — 474 files, zero violations
-- [x] PR #21 (biome format/lint 4 files) — merged
-- [x] PR #20 (Playwright 3-browser E2E) — merged
+### 잔여 항목
 
-#### 4.2 Issue
-- [x] Issue #12 CLOSED — Regulatory Radar (commit: 9b7adda)
-- [x] Issue #13 CLOSED — External Public Data Enrichment (commit: 11bd6fa)
-- [x] Issue #18 OPEN 유지 — post-mortem ADR (의도적)
-
-#### 4.3 Branch
-- [x] feature/SPEC-REGULA-NETWORK-001 — merged & deleted
-- [x] .worktrees/ → .gitignore 추가
-- [x] main 브랜치 clean working tree (after this commit)
-
-#### 4.4 Session State
-- [x] session-memo.md GATE-001 완료 상태 기록 (본 파일)
-
-#### 4.5 RC Readiness
-- [x] 4개 영역 (PR/CI/Issue/Branch/Session) PASS
-- [x] SPEC-REGULA-RELEASE-GATE-001 status: completed
-
-### 다음 단계
-
-1. SPEC-REGULA-RELEASE-HARDENING-001 실행
-2. SPEC-REGULA-QUALITY-001 실행
+- LLM Eval Harness FAILURE (PR #21 check rollup) → #34에서 별도 증거 필요
+- Release 다음 단계: RELEASE-HARDENING-001(#33) → QUALITY-001(#34) → RELEASE-001(#31)
