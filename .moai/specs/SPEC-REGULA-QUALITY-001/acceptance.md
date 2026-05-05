@@ -193,7 +193,7 @@
 ## 4. Definition of Done
 
 - [ ] `spec.md`, `plan.md`, `acceptance.md` 모두 작성/검토 완료
-- [ ] GitHub Issue 생성 및 SPEC frontmatter `issue_number` 갱신; #99 도 `related_issues`에 포함
+- [ ] GitHub Issue 생성 및 SPEC frontmatter `issue_number` 갱신; #34가 구현 추적 이슈 (#99는 SPEC amendment 이슈, 이미 CLOSED)
 - [ ] REQ-QUAL-001 ~ 028 전 항목에 대응하는 테스트/스크립트 존재
 - [ ] `pnpm db:seed:corpus` 가 결정적으로 ≥ 100 행 적재
 - [ ] `pnpm eval:ci` ≥ 80% 통과율로 CI 통과
