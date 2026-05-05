@@ -939,12 +939,26 @@ Regula 1차 RC 마무리 작업이 진행 중입니다. 3개 터미널에서 병
 - 📦 갭 분석 보고: [`.moai/plans/review-gaps-2026-05-05.md`](.moai/plans/review-gaps-2026-05-05.md)
 - 🔧 Amendment 권고: [`.moai/plans/amendments-2026-05-05.md`](.moai/plans/amendments-2026-05-05.md)
 
-### 진입 절차
+### 진입 절차 (3개 터미널 개별 실행)
 
-1. Pre-flight 8단계 자동 실행: `./scripts/release-rc1/preflight.sh`
-2. 통과 시 출력되는 3-터미널 명령을 별도 터미널 3개에 복붙
-3. Wave A (T1+T2+T3) 머지 → Wave B (T4) 자동 트리거
-4. RC 태깅: `gh release create v1.0.0-rc`
+각 터미널에서 한 줄씩 실행하면 됩니다. 메인 세션 사전 작업 불필요.
+
+```bash
+# 터미널 1
+./scripts/release-rc1/start.sh T1
+
+# 터미널 2
+./scripts/release-rc1/start.sh T2
+
+# 터미널 3
+./scripts/release-rc1/start.sh T3
+```
+
+`start.sh`가 자동으로: main pull → worktree 생성 → 해당 터미널 필요 사전 준비(pnpm install / DB seed / Playwright 등) → Issue #101 코멘트 → claude 실행 명령 출력. 이후 출력된 `claude` + `/moai run` 명령을 같은 터미널에 입력하면 작업 시작.
+
+Wave A (T1+T2+T3) 모두 머지되면 Issue #101에 자동으로 T4 명령이 코멘트됩니다 → 별도 터미널에서 `./scripts/release-rc1/start.sh T4` 실행.
+
+최종 RC 태깅: `gh release create v1.0.0-rc`
 
 ### 자동화
 
