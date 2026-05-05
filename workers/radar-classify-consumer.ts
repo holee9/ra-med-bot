@@ -1,6 +1,7 @@
 // Radar Classify Consumer — processes raw updates through 3-tier LLM classifier.
 // @MX:SPEC SPEC-REGULA-RADAR-001
 
+import { logger } from '../lib/observability/logger';
 import { classifyUpdate } from '../lib/radar/classifier';
 
 interface RawUpdateMessage {
@@ -69,7 +70,7 @@ export default {
         await env.RADAR_SCORE_QUEUE.send(classified);
         msg.ack();
       } catch (err) {
-        console.error('[radar-classify] Failed to classify message:', err);
+        logger.error('[radar-classify] Failed to classify message:', err);
         msg.retry();
       }
     }

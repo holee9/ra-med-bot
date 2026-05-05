@@ -1,6 +1,7 @@
 // Radar Score Consumer — scores classified updates per org and stores in org_update_relevance.
 // @MX:SPEC SPEC-REGULA-RADAR-001
 
+import { logger } from '../lib/observability/logger';
 import { scoreRelevance } from '../lib/radar/relevance-scorer';
 
 interface ClassifiedMessage {
@@ -90,13 +91,13 @@ export default {
 
             await env.RADAR_NOTIFY_QUEUE.send(scored);
           } catch (orgErr) {
-            console.error(`[radar-score] Scoring failed for org ${orgId}:`, orgErr);
+            logger.error(`[radar-score] Scoring failed for org ${orgId}:`, orgErr);
           }
         }
 
         msg.ack();
       } catch (err) {
-        console.error('[radar-score] Failed to process message:', err);
+        logger.error('[radar-score] Failed to process message:', err);
         msg.retry();
       }
     }
