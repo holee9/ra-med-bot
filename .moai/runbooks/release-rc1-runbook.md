@@ -46,12 +46,12 @@ status: active
 
 **현재 상태**: worktree 3개 이미 생성됨, Playwright 설치 완료.
 
-worktree 경로 (`.moai/worktrees/`는 `.gitignore` 포함):
+worktree 경로 (프로젝트 루트 `worktrees/`에서 직접 보임):
 
 ```
-D:\workspace-github\ra-med-bot\.moai\worktrees\issue-99-quality-bootstrap  [work/issue-99-quality-bootstrap]
-D:\workspace-github\ra-med-bot\.moai\worktrees\issue-97-e2efix             [work/issue-97-e2efix]
-D:\workspace-github\ra-med-bot\.moai\worktrees\issue-98-deploy             [work/issue-98-deploy]
+D:\workspace-github\ra-med-bot\worktrees\issue-99  [work/issue-99-quality-bootstrap]
+D:\workspace-github\ra-med-bot\worktrees\issue-97  [work/issue-97-e2efix]
+D:\workspace-github\ra-med-bot\worktrees\issue-98  [work/issue-98-deploy]
 ```
 
 남은 사전 작업 (`.env.local` 준비 후):
@@ -79,7 +79,7 @@ git worktree list    # 4개 (main + 3개) 확인
 
 | 필드 | 값 |
 |---|---|
-| **worktree** | `.moai/worktrees/issue-99-quality-bootstrap` |
+| **worktree** | `worktrees/issue-99` |
 | **branch** | `work/issue-99-quality-bootstrap` |
 | **GitHub Issue** | [#99](https://github.com/drake-lee/ra-med-bot/issues/99) |
 | **모드** | solo |
@@ -93,7 +93,7 @@ git worktree list    # 4개 (main + 3개) 확인
 명령 박스 (터미널 1):
 
 ```bash
-cd D:/workspace-github/ra-med-bot/.moai/worktrees/issue-99-quality-bootstrap
+cd D:/workspace-github/ra-med-bot/worktrees/issue-99
 pnpm install
 claude
 # Claude 세션 안에서:
@@ -126,7 +126,7 @@ agent 행동 규약:
 
 | 필드 | 값 |
 |---|---|
-| **worktree** | `.moai/worktrees/issue-97-e2efix` |
+| **worktree** | `worktrees/issue-97` |
 | **branch** | `work/issue-97-e2efix` |
 | **GitHub Issue** | [#97](https://github.com/drake-lee/ra-med-bot/issues/97) |
 | **모드** | solo |
@@ -140,7 +140,7 @@ agent 행동 규약:
 명령 박스 (터미널 2):
 
 ```bash
-cd D:/workspace-github/ra-med-bot/.moai/worktrees/issue-97-e2efix
+cd D:/workspace-github/ra-med-bot/worktrees/issue-97
 pnpm install
 claude
 # Claude 세션 안에서:
@@ -172,7 +172,7 @@ agent 행동 규약:
 
 | 필드 | 값 |
 |---|---|
-| **worktree (#98)** | `.moai/worktrees/issue-98-deploy` |
+| **worktree (#98)** | `worktrees/issue-98` |
 | **branch (#98)** | `work/issue-98-deploy` |
 | **GitHub Issue** | [#98](https://github.com/drake-lee/ra-med-bot/issues/98) → [#100](https://github.com/drake-lee/ra-med-bot/issues/100) |
 | **모드** | solo |
@@ -185,7 +185,7 @@ agent 행동 규약:
 명령 박스 (터미널 3, #98 선):
 
 ```bash
-cd D:/workspace-github/ra-med-bot/.moai/worktrees/issue-98-deploy
+cd D:/workspace-github/ra-med-bot/worktrees/issue-98
 pnpm install
 claude
 # Claude 세션 안에서:
@@ -196,11 +196,11 @@ claude
 
 ```bash
 # 메인 repo 루트에서 (새 터미널 또는 메인 세션):
-git worktree remove D:/workspace-github/ra-med-bot/.moai/worktrees/issue-98-deploy
-git worktree add D:/workspace-github/ra-med-bot/.moai/worktrees/issue-100-observability -b work/issue-100-observability origin/main
+git worktree remove D:/workspace-github/ra-med-bot/worktrees/issue-98
+git worktree add D:/workspace-github/ra-med-bot/worktrees/issue-100 -b work/issue-100-observability origin/main
 
 # 터미널 3에서:
-cd D:/workspace-github/ra-med-bot/.moai/worktrees/issue-100-observability
+cd D:/workspace-github/ra-med-bot/worktrees/issue-100
 pnpm install
 claude
 # Claude 세션 안에서:
@@ -348,7 +348,7 @@ pnpm db:migrate
 ### Stage 2 — T1 박스 (터미널 1)
 
 ```bash
-cd D:/workspace-github/ra-med-bot/.moai/worktrees/issue-99-quality-bootstrap
+cd D:/workspace-github/ra-med-bot/worktrees/issue-99
 pnpm install
 claude
 # /moai run SPEC-REGULA-QUALITY-001
@@ -357,7 +357,7 @@ claude
 ### Stage 2 — T2 박스 (터미널 2, #99 완료 후)
 
 ```bash
-cd D:/workspace-github/ra-med-bot/.moai/worktrees/issue-97-e2efix
+cd D:/workspace-github/ra-med-bot/worktrees/issue-97
 pnpm install
 claude
 # /moai run SPEC-REGULA-E2EFIX-001
@@ -366,7 +366,7 @@ claude
 ### Stage 2 — T3 박스 (터미널 3, #98)
 
 ```bash
-cd D:/workspace-github/ra-med-bot/.moai/worktrees/issue-98-deploy
+cd D:/workspace-github/ra-med-bot/worktrees/issue-98
 pnpm install
 claude
 # /moai run SPEC-REGULA-DEPLOY-001
@@ -376,11 +376,11 @@ claude
 
 ```bash
 # 메인 repo에서:
-git worktree remove D:/workspace-github/ra-med-bot/.moai/worktrees/issue-98-deploy
-git worktree add D:/workspace-github/ra-med-bot/.moai/worktrees/issue-100-observability -b work/issue-100-observability origin/main
+git worktree remove D:/workspace-github/ra-med-bot/worktrees/issue-98
+git worktree add D:/workspace-github/ra-med-bot/worktrees/issue-100 -b work/issue-100-observability origin/main
 
 # 터미널 3에서:
-cd D:/workspace-github/ra-med-bot/.moai/worktrees/issue-100-observability
+cd D:/workspace-github/ra-med-bot/worktrees/issue-100
 pnpm install
 claude
 # /moai run SPEC-REGULA-ENTERPRISE-001
