@@ -44,10 +44,9 @@ function captureStdout(fn: () => void): Array<Record<string, unknown>> {
 async function importLoggerWithEnv(nodeEnv: string) {
   // Reset the module registry so the new import picks up the env change.
   vi.resetModules();
-  const original = process.env.NODE_ENV;
-  process.env.NODE_ENV = nodeEnv;
+  vi.stubEnv('NODE_ENV', nodeEnv);
   const mod = await import('@/lib/observability/logger');
-  process.env.NODE_ENV = original;
+  vi.unstubAllEnvs();
   return mod.logger;
 }
 
