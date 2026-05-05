@@ -84,6 +84,10 @@ jobs:
     if: github.event_name == 'pull_request'
     timeout-minutes: 30
     needs: [ci]
+    env:
+      ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY_EVAL }}
+      LANGFUSE_PUBLIC_KEY: ${{ secrets.LANGFUSE_PUBLIC_KEY }}
+      LANGFUSE_SECRET_KEY: ${{ secrets.LANGFUSE_SECRET_KEY }}
     steps:
       - uses: actions/checkout@v4
 
@@ -97,12 +101,13 @@ jobs:
       - name: Install dependencies
         run: pnpm install --frozen-lockfile
 
+      - name: Skip promptfoo eval when eval secret is missing
+        if: env.ANTHROPIC_API_KEY == ''
+        run: echo "::notice::Skipping LLM eval because ANTHROPIC_API_KEY_EVAL is not configured."
+
       - name: Run promptfoo eval
+        if: env.ANTHROPIC_API_KEY != ''
         run: pnpm eval:ci
-        env:
-          ANTHROPIC_API_KEY_EVAL: ${{ secrets.ANTHROPIC_API_KEY_EVAL }}
-          LANGFUSE_PUBLIC_KEY: ${{ secrets.LANGFUSE_PUBLIC_KEY }}
-          LANGFUSE_SECRET_KEY: ${{ secrets.LANGFUSE_SECRET_KEY }}
 
       - name: Upload eval results
         uses: actions/upload-artifact@v4
