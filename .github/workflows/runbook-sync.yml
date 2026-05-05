@@ -1,0 +1,169 @@
+name: Runbook Sync
+
+# Trigger: PR merged to main that closes one of the RC1 issues (#97~#100)
+on:
+  pull_request:
+    types: [closed]
+    branches: [main]
+
+jobs:
+  runbook-sync:
+    # Only run when PR is actually merged (not just closed)
+    if: github.event.pull_request.merged == true
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+      issues: write
+      pull-requests: read
+
+    steps:
+      - name: Checkout main
+        uses: actions/checkout@v4
+        with:
+          ref: main
+          token: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Determine which Tn was merged
+        id: detect_tn
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const META_ISSUE = 101;
+            const issueSpecMap = {
+              97: { tn: 'T1', spec: 'SPEC-REGULA-QUALITY-AMEND' },
+              98: { tn: 'T2', spec: 'SPEC-REGULA-DEPLOY-001' },
+              99: { tn: 'T3', spec: 'SPEC-REGULA-E2EFIX-001' },
+              100: { tn: 'T4', spec: 'SPEC-REGULA-OBS-AMEND' },
+            };
+
+            const prBody = context.payload.pull_request.body || '';
+            const prNumber = context.payload.pull_request.number;
+
+            // Parse "Closes #N" from PR body
+            const closesMatches = [...prBody.matchAll(/[Cc]loses\s+#(\d+)/g)];
+            const closedIssues = closesMatches.map(m => parseInt(m[1]));
+
+            // Also check PR labels
+            const labels = (context.payload.pull_request.labels || []).map(l => l.name);
+
+            let detectedTn = null;
+            let detectedSpec = null;
+            let detectedIssue = null;
+
+            for (const issueNum of closedIssues) {
+              if (issueSpecMap[issueNum]) {
+                detectedTn = issueSpecMap[issueNum].tn;
+                detectedSpec = issueSpecMap[issueNum].spec;
+                detectedIssue = issueNum;
+                break;
+              }
+            }
+
+            // Fallback: check labels for t1/t2/t3/t4
+            if (!detectedTn) {
+              for (const label of labels) {
+                const match = label.match(/^t([1-4])/i);
+                if (match) {
+                  const num = parseInt(match[1]);
+                  const issueNum = 96 + num; // 97=T1, 98=T2, 99=T3, 100=T4
+                  if (issueSpecMap[issueNum]) {
+                    detectedTn = issueSpecMap[issueNum].tn;
+                    detectedSpec = issueSpecMap[issueNum].spec;
+                    detectedIssue = issueNum;
+                    break;
+                  }
+                }
+              }
+            }
+
+            if (!detectedTn) {
+              console.log(`PR #${prNumber} does not close any RC1 issue — skipping runbook sync`);
+              core.setOutput('tn', '');
+              core.setOutput('spec', '');
+              core.setOutput('issue', '');
+              core.setOutput('skip', 'true');
+              return;
+            }
+
+            console.log(`Detected: PR #${prNumber} closes Issue #${detectedIssue} → ${detectedTn} (${detectedSpec})`);
+            core.setOutput('tn', detectedTn);
+            core.setOutput('spec', detectedSpec);
+            core.setOutput('issue', String(detectedIssue));
+            core.setOutput('pr_number', String(prNumber));
+            core.setOutput('skip', 'false');
+
+      - name: Tick runbook checkboxes
+        if: steps.detect_tn.outputs.skip == 'false'
+        uses: actions/github-script@v7
+        env:
+          TN: ${{ steps.detect_tn.outputs.tn }}
+          SPEC: ${{ steps.detect_tn.outputs.spec }}
+          ISSUE: ${{ steps.detect_tn.outputs.issue }}
+          PR_NUMBER: ${{ steps.detect_tn.outputs.pr_number }}
+        with:
+          script: |
+            const fs = require('fs');
+            const path = require('path');
+            const tn = process.env.TN;
+            const spec = process.env.SPEC;
+            const issue = process.env.ISSUE;
+            const prNumber = process.env.PR_NUMBER;
+
+            const runbookPath = path.join(process.env.GITHUB_WORKSPACE,
+              '.moai/runbooks/release-rc1-runbook.md');
+
+            if (!fs.existsSync(runbookPath)) {
+              console.log(`Runbook not found at ${runbookPath} — skipping tick`);
+              return;
+            }
+
+            let content = fs.readFileSync(runbookPath, 'utf8');
+
+            // Tick checkboxes for this Tn
+            // Matches: - [ ] ... Tn ... or - [ ] ... SPEC_ID ...
+            const patterns = [
+              new RegExp(`(- \\[ \\]) (.*${tn}.*)`, 'g'),
+              new RegExp(`(- \\[ \\]) (.*${spec}.*)`, 'g'),
+            ];
+
+            let changed = false;
+            for (const pattern of patterns) {
+              const newContent = content.replace(pattern, `- [x] $2`);
+              if (newContent !== content) {
+                content = newContent;
+                changed = true;
+              }
+            }
+
+            if (changed) {
+              fs.writeFileSync(runbookPath, content, 'utf8');
+              console.log(`Ticked ${tn} checkboxes in runbook`);
+            } else {
+              console.log(`No checkboxes matched for ${tn} in runbook`);
+            }
+
+      - name: Commit runbook update
+        if: steps.detect_tn.outputs.skip == 'false'
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+
+          if git diff --quiet; then
+            echo "No runbook changes to commit"
+            exit 0
+          fi
+
+          git add .moai/runbooks/release-rc1-runbook.md
+          git commit -m "chore(runbook): auto-tick ${{ steps.detect_tn.outputs.tn }} after PR #${{ steps.detect_tn.outputs.pr_number }} merge [skip ci]"
+          git push origin main
+
+      - name: Comment on Issue #101
+        if: steps.detect_tn.outputs.skip == 'false'
+        uses: peter-evans/create-or-update-comment@v4
+        with:
+          token: ${{ secrets.GITHUB_TOKEN }}
+          issue-number: 101
+          body: |
+            **[Runbook Sync]** ${{ steps.detect_tn.outputs.tn }} (${{ steps.detect_tn.outputs.spec }}) merged via PR #${{ steps.detect_tn.outputs.pr_number }}.
+
+            Closes Issue #${{ steps.detect_tn.outputs.issue }}. Runbook checkboxes ticked automatically.

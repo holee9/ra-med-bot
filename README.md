@@ -74,6 +74,7 @@ pnpm test:e2e         ⛔ 실행 불가 (E2E 환경 미비 — 이슈 #80)
 - [시작 방법](#시작-방법)
 - [프로젝트 문서](#프로젝트-문서)
 - [개발 로드맵](#개발-로드맵)
+- [1차 RC v1.0.0-rc 실행 가이드](#-1차-rc-v100-rc-실행-가이드-진행-중)
 - [1차 릴리즈 준비 로드맵](#1차-릴리즈-준비-로드맵-v100-rc)
 - [Wave 3 로드맵](#wave-3-로드맵-v1x--핵심-확장)
 - [Wave 4 로드맵](#wave-4-로드맵-v2x--엔터프라이즈-심화)
@@ -924,6 +925,34 @@ pnpm start
 **성과물**:
 - ✅ 5 REQ 전체 구현 (REQ-TEN-001~005)
 - ✅ PR [#21](https://github.com/holee9/ra-med-bot/pull/21) 완료
+
+---
+
+## 🚀 1차 RC v1.0.0-rc 실행 가이드 (진행 중)
+
+Regula 1차 RC 마무리 작업이 진행 중입니다. 3개 터미널에서 병렬로 4건(E2EFIX, DEPLOY, QUALITY-AMEND, OBS-AMEND)을 처리하며, 자동화된 Runbook + 메타 Issue로 진행 상황을 추적합니다.
+
+### 핵심 문서
+
+- 📋 실행 콘티 (Runbook): [`.moai/runbooks/release-rc1-runbook.md`](.moai/runbooks/release-rc1-runbook.md)
+- 🎫 메타 트래커 Issue: [#101 — Release RC1 트래커](https://github.com/holee9/ra-med-bot/issues/101)
+- 📦 갭 분석 보고: [`.moai/plans/review-gaps-2026-05-05.md`](.moai/plans/review-gaps-2026-05-05.md)
+- 🔧 Amendment 권고: [`.moai/plans/amendments-2026-05-05.md`](.moai/plans/amendments-2026-05-05.md)
+
+### 진입 절차
+
+1. Pre-flight 8단계 자동 실행: `./scripts/release-rc1/preflight.sh`
+2. 통과 시 출력되는 3-터미널 명령을 별도 터미널 3개에 복붙
+3. Wave A (T1+T2+T3) 머지 → Wave B (T4) 자동 트리거
+4. RC 태깅: `gh release create v1.0.0-rc`
+
+### 자동화
+
+- `runbook-sync.yml` — PR 머지 시 Runbook 체크박스 자동 갱신
+- `wave-progress-tracker.yml` — 머지 진행 Issue #101 실시간 알림
+- `wave-b-trigger.yml` — Wave A 완료 시 T4 명령 자동 안내
+
+자세한 단계별 명령·검증·트러블슈팅은 Runbook 문서를 참조하세요.
 
 ---
 

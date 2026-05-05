@@ -1,0 +1,179 @@
+name: Wave B Trigger
+
+# Trigger: workflow_dispatch from wave-progress-tracker or manual
+on:
+  workflow_dispatch:
+    inputs:
+      triggered_by:
+        description: "Who triggered this workflow"
+        required: false
+        default: "manual"
+      pr_number:
+        description: "PR number that triggered Wave A completion"
+        required: false
+        default: ""
+
+jobs:
+  wave-b-launch:
+    runs-on: ubuntu-latest
+    permissions:
+      issues: write
+      contents: write
+
+    steps:
+      - name: Checkout main
+        uses: actions/checkout@v4
+        with:
+          ref: main
+          token: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Verify Wave A is complete
+        id: verify_wave_a
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const waveAIssues = [
+              { num: 97, tn: 'T1', spec: 'SPEC-REGULA-QUALITY-AMEND' },
+              { num: 98, tn: 'T2', spec: 'SPEC-REGULA-DEPLOY-001' },
+              { num: 99, tn: 'T3', spec: 'SPEC-REGULA-E2EFIX-001' },
+            ];
+
+            const statuses = [];
+            for (const { num, tn, spec } of waveAIssues) {
+              const issue = await github.rest.issues.get({
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                issue_number: num
+              }).catch(() => ({ data: { state: 'unknown', title: 'not found' } }));
+
+              statuses.push({
+                tn, num, spec,
+                state: issue.data.state,
+                done: issue.data.state === 'closed'
+              });
+            }
+
+            const allDone = statuses.every(s => s.done);
+            const statusLines = statuses.map(s =>
+              `| ${s.tn} | #${s.num} | ${s.spec} | ${s.done ? '✅ Closed' : '⏳ Open'} |`
+            ).join('\n');
+
+            core.setOutput('all_done', String(allDone));
+            core.setOutput('status_table', statusLines);
+
+            if (!allDone) {
+              const pending = statuses.filter(s => !s.done).map(s => s.tn).join(', ');
+              core.warning(`Wave A not complete. Pending: ${pending}`);
+            } else {
+              console.log('Wave A verified complete. Proceeding to Wave B.');
+            }
+
+      - name: Tick Wave A complete in Runbook
+        if: steps.verify_wave_a.outputs.all_done == 'true'
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const fs = require('fs');
+            const path = require('path');
+
+            const runbookPath = path.join(
+              process.env.GITHUB_WORKSPACE,
+              '.moai/runbooks/release-rc1-runbook.md'
+            );
+
+            if (!fs.existsSync(runbookPath)) {
+              console.log('Runbook not found — skipping Wave A tick');
+              return;
+            }
+
+            let content = fs.readFileSync(runbookPath, 'utf8');
+
+            // Tick "Wave A" checkbox
+            const waveAPattern = /(- \[ \]) (.*Wave A.*)/g;
+            const newContent = content.replace(waveAPattern, '- [x] $2');
+
+            if (newContent !== content) {
+              fs.writeFileSync(runbookPath, newContent, 'utf8');
+              console.log('Ticked Wave A complete in runbook');
+            } else {
+              console.log('Wave A checkbox not found in runbook (may not exist yet)');
+            }
+
+      - name: Commit runbook update
+        if: steps.verify_wave_a.outputs.all_done == 'true'
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+
+          if git diff --quiet; then
+            echo "No runbook changes to commit"
+            exit 0
+          fi
+
+          git add .moai/runbooks/release-rc1-runbook.md
+          git commit -m "chore(runbook): auto-tick Wave A complete [skip ci]"
+          git push origin main
+
+      - name: Post Wave A complete + Wave B launch card to Issue #101
+        if: steps.verify_wave_a.outputs.all_done == 'true'
+        uses: peter-evans/create-or-update-comment@v4
+        with:
+          token: ${{ secrets.GITHUB_TOKEN }}
+          issue-number: 101
+          body: |
+            ## Wave A Complete
+
+            All T1 + T2 + T3 PRs have merged. Triggered by: ${{ inputs.triggered_by }}
+
+            | Terminal | Issue | SPEC | Status |
+            |----------|-------|------|--------|
+            ${{ steps.verify_wave_a.outputs.status_table }}
+
+            ---
+
+            ## Wave B: T4 Launch Instructions
+
+            @drake.lee — Wave A is complete. Please start T4 in a new terminal:
+
+            ```
+            ╔══════════════════════════════════════════════════════╗
+            ║  T4 | SPEC-REGULA-OBS-AMEND                         ║
+            ╠══════════════════════════════════════════════════════╣
+            ║  Issue: #100                                         ║
+            ║  Port:  3004                                         ║
+            ╠══════════════════════════════════════════════════════╣
+            ║  Step 1: Create worktree                             ║
+            ║  moai worktree new SPEC-REGULA-OBS-AMEND             ║
+            ╠══════════════════════════════════════════════════════╣
+            ║  Step 2: Enter worktree                              ║
+            ║  cd ~/.moai/worktrees/ra-med-bot/SPEC-REGULA-OBS-... ║
+            ╠══════════════════════════════════════════════════════╣
+            ║  Step 3: Launch Claude                               ║
+            ║  claude                                              ║
+            ╠══════════════════════════════════════════════════════╣
+            ║  Step 4: Run SPEC                                    ║
+            ║  /moai run SPEC-REGULA-OBS-AMEND                     ║
+            ╚══════════════════════════════════════════════════════╝
+            ```
+
+            After T4 merges, run:
+            ```bash
+            git tag v1.0.0-rc
+            git push origin v1.0.0-rc
+            ```
+
+      - name: Warn if Wave A not complete
+        if: steps.verify_wave_a.outputs.all_done == 'false'
+        uses: peter-evans/create-or-update-comment@v4
+        with:
+          token: ${{ secrets.GITHUB_TOKEN }}
+          issue-number: 101
+          body: |
+            **[Wave B Trigger]** Wave A is NOT complete yet.
+
+            | Terminal | Issue | SPEC | Status |
+            |----------|-------|------|--------|
+            ${{ steps.verify_wave_a.outputs.status_table }}
+
+            Wave B will auto-trigger when all T1+T2+T3 issues are closed.
+            Triggered by: ${{ inputs.triggered_by }}
