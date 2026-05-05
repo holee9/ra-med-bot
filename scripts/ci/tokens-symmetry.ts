@@ -12,7 +12,7 @@
 
 import * as fs from 'node:fs';
 import * as path from 'node:path';
-import { logger } from '../../lib/observability/logger';
+import { logger } from '../../lib/observability/logger.ts';
 
 const CSS_FILE = path.join(process.cwd(), 'styles', 'tokens.css');
 const DARK_SELECTOR = '[data-theme="dark"]';

@@ -12,7 +12,7 @@
 
 import * as fs from 'node:fs';
 import * as path from 'node:path';
-import { logger } from '../../lib/observability/logger';
+import { logger } from '../../lib/observability/logger.ts';
 
 const REQUIRED_KEYS = ['fda', 'euMdr', 'mfds', 'nmpa', 'pmda'] as const;
 

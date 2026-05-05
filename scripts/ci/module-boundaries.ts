@@ -12,7 +12,7 @@
 
 import * as fs from 'node:fs';
 import * as path from 'node:path';
-import { logger } from '../../lib/observability/logger';
+import { logger } from '../../lib/observability/logger.ts';
 
 const OBS_DIR = path.join(process.cwd(), 'lib', 'observability');
 const FORBIDDEN_PATTERNS = ['writeAudit', 'lib/audit'];

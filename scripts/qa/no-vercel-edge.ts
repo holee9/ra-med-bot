@@ -7,7 +7,7 @@
 
 import { readFileSync, readdirSync, statSync } from 'node:fs';
 import { join } from 'node:path';
-import { logger } from '../../lib/observability/logger';
+import { logger } from '../../lib/observability/logger.ts';
 
 const _FORBIDDEN_IMPORTS = ['@vercel/edge', '@vercel/og'];
 
