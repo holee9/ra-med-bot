@@ -1,10 +1,10 @@
 ---
 id: SPEC-REGULA-RELEASE-GATE-001
 title: "Regula Release Gate — PR/CI/Branch 정합성 확보"
-status: draft
+status: completed
 phase: "release-gate"
 priority: Critical
-version: 0.2.0
+version: 0.3.0
 created: 2026-05-04
 updated: 2026-05-05
 author: manager-spec

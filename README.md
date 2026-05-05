@@ -655,7 +655,7 @@ cp .env.example .env.local
 docker compose up -d
 
 # 마이그레이션 실행
-pnpm drizzle-kit push
+pnpm db:migrate
 ```
 
 ### 5단계: 개발 서버 시작
@@ -928,76 +928,37 @@ pnpm start
 
 ---
 
-## 🚀 1차 RC v1.0.0-rc 실행 가이드 (진행 중)
+## 🚀 1차 RC v1.0.0-rc — 현황 및 실행 계획
 
-Regula 1차 RC 마무리 4건을 **순차 싱글 터미널**로 처리합니다. 이슈 순서: **#99 → #97 → #98 → #100 → RC 태깅**.
+> **현재 상태**: RC 구현 작업 미착수 (마지막 기능 커밋: Phase 11 RBAC, 2026-05-04)
+>
+> **이전 트래커 (#101)**: 워크트리 병렬 모델 폐기로 인해 CLOSED 처리됨. RC 구현 자체는 아직 진행되지 않음.
 
-### 핵심 문서
+RC 선언을 위해 아래 4개 이슈를 **순차** 완료해야 합니다.
 
-- 📋 실행 콘티 (Runbook): [`.moai/runbooks/release-rc1-runbook.md`](.moai/runbooks/release-rc1-runbook.md)
-- 🎫 메타 트래커 Issue: [#101 — Release RC1 트래커](https://github.com/holee9/ra-med-bot/issues/101)
-- 📦 갭 분석 보고: [`.moai/plans/review-gaps-2026-05-05.md`](.moai/plans/review-gaps-2026-05-05.md)
+### RC 진행 순서
+
+| 순서 | 이슈 | 내용 | 상태 |
+|---|---|---|---|
+| 1 | [#32](https://github.com/holee9/ra-med-bot/issues/32) | RELEASE-GATE-001 — `.env.local` bootstrap + CI/Branch 정합성 | ⏸️ 미착수 |
+| 2 | [#33](https://github.com/holee9/ra-med-bot/issues/33) | RELEASE-HARDENING-001 — E2E 활성화 + deploy.yml + Dashboard 실데이터 | ⏸️ 미착수 |
+| 3 | [#34](https://github.com/holee9/ra-med-bot/issues/34) | QUALITY-001 — Corpus seed + Eval Pipeline + Cloudflare TODO | ⏸️ 미착수 |
+| 4 | [#31](https://github.com/holee9/ra-med-bot/issues/31) | RELEASE-001 — 우산 SPEC: Sentry ErrorBoundary + Langfuse trace | ⏸️ 미착수 |
+
+### 각 이슈 착수 방법
+
+```bash
+# 이슈별 브랜치 생성 후 /moai run 진입
+git checkout -b work/issue-32-release-gate
+claude
+# Claude 안: /moai run SPEC-REGULA-RELEASE-GATE-001
+```
+
+### 관련 문서
+
+- 📋 실행 콘티: [`.moai/runbooks/release-rc1-runbook.md`](.moai/runbooks/release-rc1-runbook.md)
+- 📦 갭 분석: [`.moai/plans/review-gaps-2026-05-05.md`](.moai/plans/review-gaps-2026-05-05.md)
 - 🔧 Amendment 권고: [`.moai/plans/amendments-2026-05-05.md`](.moai/plans/amendments-2026-05-05.md)
-
-### 진입 절차 (순차 싱글 터미널)
-
-#### 사전 작업 (1회)
-
-```bash
-cd D:/workspace-github/ra-med-bot
-cp .env.example .env.local   # 이미 있으면 skip
-# DATABASE_URL, ANTHROPIC_API_KEY 등 실제 값 입력 후:
-pnpm db:migrate
-pnpm exec playwright install chromium firefox
-```
-
-#### Step 1 — #99 QUALITY-AMEND (P0)
-
-```bash
-git checkout -b work/issue-99-quality-bootstrap
-claude
-# Claude 안: /moai run SPEC-REGULA-QUALITY-001
-# PR 생성 후 → main 머지
-```
-
-#### Step 2 — #97 E2EFIX-001 (P0, #99 머지 후)
-
-```bash
-git checkout main && git pull origin main
-git checkout -b work/issue-97-e2efix
-claude
-# Claude 안: /moai run SPEC-REGULA-E2EFIX-001
-# PR 생성 후 → main 머지
-```
-
-#### Step 3 — #98 DEPLOY-001 (P1, #97 머지 후)
-
-```bash
-git checkout main && git pull origin main
-git checkout -b work/issue-98-deploy
-claude
-# Claude 안: /moai run SPEC-REGULA-DEPLOY-001
-# PR 생성 후 → main 머지
-```
-
-#### Step 4 — #100 OBS-AMEND (P1, #97+#98 머지 후)
-
-```bash
-git checkout main && git pull origin main
-git checkout -b work/issue-100-observability
-claude --team
-# Claude 안: /moai run SPEC-REGULA-ENTERPRISE-001
-# PR 생성 후 → main 머지
-```
-
-#### Step 5 — RC 태깅
-
-```bash
-gh release create v1.0.0-rc --title "Regula v1.0.0-rc" --notes-file CHANGELOG.md --prerelease
-gh issue close 101
-```
-
-자세한 단계별 명령·검증·트러블슈팅은 Runbook 문서를 참조하세요.
 
 ---
 
@@ -1012,19 +973,21 @@ Phase 1-11 완료 후 **v1.0.0 RC** 선언을 위한 품질 게이트 통과 작
 | [#34](https://github.com/holee9/ra-med-bot/issues/34) | SPEC-REGULA-QUALITY-001 | Corpus Seed · Eval Pipeline · Cloudflare · DocIngest · Security (P2) | High |
 | [#31](https://github.com/holee9/ra-med-bot/issues/31) | SPEC-REGULA-RELEASE-001 | 1차 릴리즈 완성도 고도화 우산 SPEC — #32, #33, #34 의존 | Critical |
 
-#### 릴리즈 차단 블로커 (현재 확인)
+#### 릴리즈 차단 블로커 (2026-05-05 기준)
+
+> ✅ 해소됨: PR #20 (MERGED), PR #21 (MERGED), 이슈 #12 (CLOSED), 이슈 #13 (CLOSED)
 
 | 블로커 | 관련 이슈 | SPEC |
 |--------|----------|------|
-| PR #20 Playwright E2E 미완 (3-browser PENDING) | [#20](https://github.com/holee9/ra-med-bot/pull/20) | RELEASE-GATE-001 |
-| PR #21 CI 실패 — biome format / lint 4개 파일 | [#21](https://github.com/holee9/ra-med-bot/pull/21), [#30](https://github.com/holee9/ra-med-bot/issues/30) | RELEASE-GATE-001 |
-| 이슈 #12, #13 미종결 (구현 완료 상태) | [#12](https://github.com/holee9/ra-med-bot/issues/12), [#13](https://github.com/holee9/ra-med-bot/issues/13) | RELEASE-GATE-001 |
-| `feature/SPEC-REGULA-NETWORK-001` branch 미병합 | — | RELEASE-GATE-001 |
-| Dashboard Stats `stats: {}` stub 반환 | [#27](https://github.com/holee9/ra-med-bot/issues/27) | RELEASE-HARDENING-001 |
-| Knowledge Base `sourceGroups` 하드코딩 | [#27](https://github.com/holee9/ra-med-bot/issues/27) | RELEASE-HARDENING-001 |
-| Production `console.*` 15개 파일 27건 잔존 | [#29](https://github.com/holee9/ra-med-bot/issues/29) | RELEASE-HARDENING-001 |
-| Corpus seed 데이터 없음 → 실제 답변 불가 | [#34](https://github.com/holee9/ra-med-bot/issues/34) | QUALITY-001 |
-| Cloudflare Vectorize `TODO` 미해결 (`hybrid-router.ts:142`) | [#34](https://github.com/holee9/ra-med-bot/issues/34) | QUALITY-001 |
+| `.env.local` 자동 생성기 미구현 → 신규 개발자 온보딩 불가 | [#32](https://github.com/holee9/ra-med-bot/issues/32) | RELEASE-GATE-001 |
+| E2E 8개 spec 모두 `test.skip(true)` 상태 → `pnpm test:e2e` 실행 불가 | [#33](https://github.com/holee9/ra-med-bot/issues/33) | RELEASE-HARDENING-001 |
+| `.github/workflows/deploy.yml` 미존재 → 자동 배포 파이프라인 없음 | [#33](https://github.com/holee9/ra-med-bot/issues/33) | RELEASE-HARDENING-001 |
+| Dashboard Stats `stats: {}` stub 반환 | [#33](https://github.com/holee9/ra-med-bot/issues/33) | RELEASE-HARDENING-001 |
+| Knowledge Base `sourceGroups` 하드코딩 | [#33](https://github.com/holee9/ra-med-bot/issues/33) | RELEASE-HARDENING-001 |
+| Production `console.*` 다수 파일 잔존 | [#33](https://github.com/holee9/ra-med-bot/issues/33) | RELEASE-HARDENING-001 |
+| Corpus seed 데이터 없음 → 실제 규제 질의 답변 불가 | [#34](https://github.com/holee9/ra-med-bot/issues/34) | QUALITY-001 |
+| Sentry RootLayout ErrorBoundary 미적용 | [#31](https://github.com/holee9/ra-med-bot/issues/31) | RELEASE-001 |
+| Langfuse `/api/ra/consult` 자동 trace 미들웨어 미구현 | [#31](https://github.com/holee9/ra-med-bot/issues/31) | RELEASE-001 |
 
 #### SPEC 문서
 
@@ -1333,4 +1296,4 @@ MIT License - [LICENSE](LICENSE) 파일 참조
 
 **Built with ❤️ using [abyz-lab](https://abyz-lab.work)**
 
-_마지막 업데이트: 2026-05-05 (QA 단계 본문 삽입 결과 반영 — #22~#72, #80~#92 총 64개 이슈에 Gate 0~5 QA 체크포인트 직접 추가)_
+_마지막 업데이트: 2026-05-05 (교차검증 반영 — 릴리즈 블로커 현행화, RC1 실행 계획 재정의, #12/#13 closed 반영, PR #20/#21 merged 반영)_
