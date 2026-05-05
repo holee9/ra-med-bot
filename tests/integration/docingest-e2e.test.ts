@@ -34,8 +34,12 @@ vi.mock('@/lib/db/client', () => {
   // We extend a Promise instance with a `returning` method so both shapes work
   // without exposing a literal `then` property on a plain object (biome
   // noThenProperty).
-  const client = {
-    transaction: async <T>(fn: (tx: typeof client) => Promise<T>): Promise<T> => fn(client),
+  type MockDbClient = {
+    transaction: <T>(fn: (tx: MockDbClient) => Promise<T>) => Promise<T>;
+    insert: (_table: unknown) => { values: (rows: unknown) => Promise<undefined> & { returning: () => Promise<Array<{ id: string }>> } };
+  };
+  const client: MockDbClient = {
+    transaction: async <T>(fn: (tx: MockDbClient) => Promise<T>): Promise<T> => fn(client),
     insert: (_table: unknown) => ({
       values(rows: unknown) {
         const promise = Promise.resolve().then(() => {

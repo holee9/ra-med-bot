@@ -50,8 +50,8 @@ export function transformLine(line: string): string {
   const match = line.match(/^([A-Z0-9_]+)\s*=(.*)$/);
   if (!match) return line;
 
-  const [, key] = match;
-  if (key in PLACEHOLDERS) {
+  const key = match[1];
+  if (key && key in PLACEHOLDERS) {
     return `${key}=${PLACEHOLDERS[key]}`;
   }
   return line;
