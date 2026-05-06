@@ -33,6 +33,17 @@ jobs:
 
       - name: Build
         run: pnpm build
+        env:
+          SKIP_ENV_VALIDATION: 1
+          DATABASE_URL: "postgresql://postgres:postgres@localhost:5432/regula_ci"
+          AUTH_SECRET: "ci-build-placeholder-secret-minimum-32-characters"
+          NEXTAUTH_URL: "http://localhost:3000"
+          AUTH_MICROSOFT_ID: "ci-placeholder-microsoft-id"
+          AUTH_MICROSOFT_SECRET: "ci-placeholder-microsoft-secret"
+          AUTH_GOOGLE_ID: "ci-placeholder-google-id"
+          AUTH_GOOGLE_SECRET: "ci-placeholder-google-secret"
+          ANTHROPIC_API_KEY: "ci-placeholder-anthropic-key"
+          OPENAI_API_KEY: "ci-placeholder-openai-key"
 
       - name: Install Vercel CLI
         run: pnpm add -g vercel
@@ -80,6 +91,17 @@ jobs:
 
       - name: Build
         run: pnpm build
+        env:
+          SKIP_ENV_VALIDATION: 1
+          DATABASE_URL: "postgresql://postgres:postgres@localhost:5432/regula_ci"
+          AUTH_SECRET: "ci-build-placeholder-secret-minimum-32-characters"
+          NEXTAUTH_URL: "http://localhost:3000"
+          AUTH_MICROSOFT_ID: "ci-placeholder-microsoft-id"
+          AUTH_MICROSOFT_SECRET: "ci-placeholder-microsoft-secret"
+          AUTH_GOOGLE_ID: "ci-placeholder-google-id"
+          AUTH_GOOGLE_SECRET: "ci-placeholder-google-secret"
+          ANTHROPIC_API_KEY: "ci-placeholder-anthropic-key"
+          OPENAI_API_KEY: "ci-placeholder-openai-key"
 
       - name: Deploy to Cloudflare (staging)
         run: pnpm wrangler deploy --env staging
@@ -110,6 +132,17 @@ jobs:
 
       - name: Build
         run: pnpm build
+        env:
+          SKIP_ENV_VALIDATION: 1
+          DATABASE_URL: "postgresql://postgres:postgres@localhost:5432/regula_ci"
+          AUTH_SECRET: "ci-build-placeholder-secret-minimum-32-characters"
+          NEXTAUTH_URL: "http://localhost:3000"
+          AUTH_MICROSOFT_ID: "ci-placeholder-microsoft-id"
+          AUTH_MICROSOFT_SECRET: "ci-placeholder-microsoft-secret"
+          AUTH_GOOGLE_ID: "ci-placeholder-google-id"
+          AUTH_GOOGLE_SECRET: "ci-placeholder-google-secret"
+          ANTHROPIC_API_KEY: "ci-placeholder-anthropic-key"
+          OPENAI_API_KEY: "ci-placeholder-openai-key"
 
       - name: Install Vercel CLI
         run: pnpm add -g vercel
