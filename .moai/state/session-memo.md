@@ -15,10 +15,10 @@ Current verified state:
 
 | Item | State |
 |---|---|
-| `HEAD` | `61137cd` |
-| `origin/main` | `61137cd` |
+| verified implementation commit | `471ffa1` |
+| final docs sync | this session |
 | active branch | `main` |
-| local dirty files | DEPLOY-001 Node 22 / staging secret gate follow-up in progress |
+| local dirty files | final status docs sync in progress |
 | existing open PRs | none open at preflight |
 | deploy branches checked | none matching `*deploy*`, `*107*`, `*release*`, `*hardening*` |
 
@@ -30,11 +30,21 @@ Current verified state:
 | 2 | #33 HARDENING-001 / PR #102 | MERGED | none |
 | 3 | #34 QUALITY-001 / PR #103 | MERGED | none |
 | 4 | #97 + #104 E2EFIX-001 / PR #106 | MERGED | none |
-| 5 | #105 DEPLOY-001 | FOLLOW-UP IN PROGRESS | Deploy workflow Node.js 22 + staging secret gate correction |
-| 6 | #26 build reproducibility | OPEN / IN SCOPE | bounded build and process cleanup procedure added to runbook |
-| 7 | #30 PR/CI closure integrity | OPEN / IN SCOPE | PR #20/#21 and #12/#13/#14 evidence refresh in progress |
+| 5 | #105 DEPLOY-001 | CLOSED / FOLLOW-UP COMPLETED | Deploy workflow Node.js 22 + staging secret gate correction pushed in `471ffa1` |
+| 6 | #26 build reproducibility | CLOSED | CI build evidence + bounded build/proc cleanup procedure recorded |
+| 7 | #30 PR/CI closure integrity | CLOSED | PR #20/#21 and #12/#13/#14 closure evidence recorded |
 | 8 | #31 RELEASE-001 | CLOSED | `v1.0.0-rc` prerelease published |
 | 9 | `v1.0.0-rc` | PUBLISHED | GitHub Release target `main` |
+
+## P3.1 Current Session Closure
+
+| Item | Result |
+|---|---|
+| P0 Deploy follow-up | `471ffa1`; CI / Deploy / Security Scan all SUCCESS |
+| #108 quality audit | CLOSED |
+| #26 build reproducibility | CLOSED |
+| #30 PR/CI closure integrity | CLOSED |
+| #22 Wave 3 work | explicitly deferred |
 
 ## P4: Issue Audit Result
 

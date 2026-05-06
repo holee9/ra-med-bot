@@ -30,8 +30,8 @@ status: active
 | 항목 | 값 |
 |---|---|
 | active branch | `main` |
-| `HEAD` / `origin/main` | `61137cd` |
-| dirty files | DEPLOY-001 Node 22 / staging secret gate follow-up in progress |
+| verified implementation commit | `471ffa1` |
+| dirty files | final status docs sync in progress |
 
 ---
 
@@ -45,9 +45,9 @@ status: active
 | 2 | #33 RELEASE-HARDENING-001 / PR #102 | MERGED | 완료. Dashboard, Knowledge, logger, Citation E2E 일부 반영 |
 | 3 | #34 QUALITY-001 / PR #103 | MERGED | 완료. Corpus, Eval, Vectorize, DocIngest, Security/RBAC 반영 |
 | 4 | #97 SPEC E2EFIX + #104 Impl / PR #106 | MERGED | 완료. E2E 7-spec 활성화 및 `global-setup` 반영 |
-| 5 | #105 DEPLOY-001 | CLOSED / FOLLOW-UP IN PROGRESS | `.github/workflows/deploy.yml` Node 22 + staging secret gate 보정 |
-| 6 | #26 build reproducibility | OPEN / IN SCOPE | build timeout/프로세스 정리 절차 문서화 및 증거 댓글 필요 |
-| 7 | #30 PR/CI closure integrity | OPEN / IN SCOPE | PR #20/#21/#12/#13/#14 최신 증거 댓글 필요 |
+| 5 | #105 DEPLOY-001 | CLOSED / FOLLOW-UP COMPLETED | `.github/workflows/deploy.yml` Node 22 + staging secret gate 보정 |
+| 6 | #26 build reproducibility | CLOSED | CI build evidence + timeout/프로세스 정리 절차 댓글 완료 |
+| 7 | #30 PR/CI closure integrity | CLOSED | PR #20/#21/#12/#13/#14 최신 증거 댓글 완료 |
 | 8 | #31 RELEASE-001 | CLOSED | `v1.0.0-rc` prerelease published |
 | 9 | `v1.0.0-rc` tag | PUBLISHED | GitHub Release target `main` |
 
@@ -136,18 +136,18 @@ status: active
 
 | 이슈 | 상태 | 처리 |
 |---|---|---|
-| #26 | OPEN / post-RC follow-up | bounded build 절차 및 증거 댓글 필요 |
+| #26 | CLOSED / COMPLETED | bounded build 절차 및 CI build 증거 댓글 완료 |
 | #27 | CLOSED / COMPLETED | 완료 |
 | #28 | CLOSED / COMPLETED | 완료 |
 | #29 | CLOSED / COMPLETED | 완료 |
-| #30 | OPEN / post-RC follow-up | PR/issue closure evidence 최신화 필요 |
+| #30 | CLOSED / COMPLETED | PR/issue closure evidence 최신화 댓글 완료 |
 | #31 | CLOSED / COMPLETED | `v1.0.0-rc` prerelease published |
 | #32 | CLOSED / COMPLETED | 완료 |
 | #33 | CLOSED / COMPLETED | PR #102 완료 |
 | #34 | CLOSED / COMPLETED | PR #103 완료 |
 | #97 | CLOSED / COMPLETED | PR #106 closing reference |
 | #104 | CLOSED / COMPLETED | E2EFIX 구현 추적 완료 |
-| #105 | CLOSED / COMPLETED | DEPLOY-001 구현 완료, Node 22/staging gate 후속 보정 중 |
+| #105 | CLOSED / COMPLETED | DEPLOY-001 구현 완료, Node 22/staging gate 후속 보정 완료 |
 
 ### 3.2 Post-RC Wave 3 backlog
 

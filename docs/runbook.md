@@ -28,6 +28,7 @@ Bounded local build procedure:
 - If the process exceeds the timeout or stays silent for more than 5 minutes, stop it and record the result as inconclusive.
 - Check for orphan `node`, `next`, or `esbuild` processes before starting a second build attempt.
 - Use the latest green GitHub Actions `CI` run on `main` as the authoritative build gate when local execution is inconclusive.
+- Log locations: GitHub Actions run page > `CI Gates` > `Build` step, local terminal transcript, and the orphan-process command output below.
 
 PowerShell cleanup check:
 
