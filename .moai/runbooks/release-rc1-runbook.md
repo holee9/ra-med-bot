@@ -1,234 +1,299 @@
 ---
 runbook_id: RELEASE-RC1
-version: 5.0.0
+version: 7.0.0
 created: 2026-05-05
-updated: 2026-05-05
+updated: 2026-05-06
 owner: drake.lee
 status: active
 ---
 
-# Regula 1차 RC v1.0.0-rc 실행 콘티 (Runbook v5.0)
+# Regula 1차 RC v1.0.0-rc 실행 콘티 (Runbook v7.0)
 
-> **순차 싱글 터미널** — 이슈 순서: #32 → #33 → #34 → #31 → RC 태깅
+> 기준: 2026-05-06 KST GitHub Issues/PR 전수 재점검.
 >
-> **이전 히스토리**: v4.0(#97-#100 기반)은 해당 이슈들이 워크트리 트래커 폐기와 함께 CLOSED 처리되어 폐기. v5.0은 여전히 OPEN 상태인 원본 릴리즈 이슈를 기준으로 재정의.
+> 목적: #22 이후 등록 이슈 누락으로 작업 순서가 흔들리는 문제를 차단하고, RC 직전 작업과 RC 이후 Wave backlog를 분리한다.
 
 ---
 
-## 0. 현재 상태
+## 0. 작업 게이트
 
-| 항목 | 상태 |
+모든 작업 시작 전 #18 Work Gate를 먼저 적용한다.
+
+1. `origin/main` 최신화 및 현재 브랜치 확인
+2. 동일 issue/SPEC의 기존 branch/PR 확인
+3. stale branch 직접 merge 금지
+4. `main`에 없는 유효 변경만 추출
+5. 활성 branch와 handoff 상태를 GitHub Issue 또는 `.moai/state/session-memo.md`에 기록
+
+현재 로컬 기준:
+
+| 항목 | 값 |
 |---|---|
-| 마지막 기능 커밋 | Phase 11 RBAC (PR #21, 2026-05-04) |
-| RC 태그 v1.0.0-rc | 미생성 |
-| 대시보드 종합 점수 | 7.1/10 |
-| E2E 실행성 | 2/10 (skip 미해제) |
-| 배포 자동화 | deploy.yml 미존재 |
+| active branch | `work/deploy-001` |
+| `HEAD` / `origin/main` | `7701493` |
+| dirty files | `.moai/runbooks/release-rc1-runbook.md`, `.moai/state/session-memo.md`, `README.md` |
 
 ---
 
-## 1. 이슈 순서 매트릭스
+## 1. RC 즉시 실행 순서
 
-| 순서 | 이슈 | 내용 | 우선순위 |
+아래 순서만 v1.0.0-rc 직전 실행 큐다. #22~#25 및 #35~#92는 RC 이후 backlog로 분리한다.
+
+| 순서 | 이슈/PR | 상태 | 작업 판단 |
 |---|---|---|---|
-| 1 | [#32](https://github.com/holee9/ra-med-bot/issues/32) | RELEASE-GATE-001 — `.env.local` bootstrap, CI/Branch 정합성 | P0 |
-| 2 | [#33](https://github.com/holee9/ra-med-bot/issues/33) | RELEASE-HARDENING-001 — E2E 활성화, deploy.yml, Dashboard 실데이터, console.* 제거 | P0 |
-| 3 | [#34](https://github.com/holee9/ra-med-bot/issues/34) | QUALITY-001 — Corpus seed, Eval Pipeline, Cloudflare TODO 해소 | P1 |
-| 4 | [#31](https://github.com/holee9/ra-med-bot/issues/31) | RELEASE-001 — 우산 SPEC (Sentry ErrorBoundary, Langfuse trace, 4-way 통합 게이트) | P1 |
+| 1 | #32 RELEASE-GATE-001 | CLOSED / COMPLETED | 완료. PR/CI/branch 정합성 gate 반영 |
+| 2 | #33 RELEASE-HARDENING-001 / PR #102 | MERGED | 완료. Dashboard, Knowledge, logger, Citation E2E 일부 반영 |
+| 3 | #34 QUALITY-001 / PR #103 | MERGED | 완료. Corpus, Eval, Vectorize, DocIngest, Security/RBAC 반영 |
+| 4 | #97 SPEC E2EFIX + #104 Impl / PR #106 | MERGED | 완료. E2E 7-spec 활성화 및 `global-setup` 반영 |
+| 5 | #105 DEPLOY-001 | OPEN | 다음 작업. `.github/workflows/deploy.yml` 신설 |
+| 6 | #26 build reproducibility | OPEN | #31 전 release blocker. build timeout/프로세스 정리 증거 필요 |
+| 7 | #30 PR/CI closure integrity | OPEN | #31 전 release blocker. PR #20/#21/#12/#13/#14 정합성 최종 댓글 필요 |
+| 8 | #31 RELEASE-001 | OPEN | #105/#26/#30 완료 후 최종 release umbrella gate |
+| 9 | `v1.0.0-rc` tag | 미생성 | #31 PASS 후 release notes 작성 및 prerelease tag |
+
+주의:
+
+- #102, #103, #106은 PR 번호다. GitHub Issue 목록에는 나타나지 않는다.
+- #104는 구현 추적 이슈이고 PR #106의 closing reference는 #97이다. #104에는 완료 댓글이 남아 있다.
+- #98/#99/#100은 과거 canonical SPEC 이슈였지만 현재 `NOT_PLANNED`로 폐기되어 실행 대상이 아니다.
+- #101은 폐기된 병렬 worktree tracker다.
 
 ---
 
-## 2. 사전 작업 (1회)
+## 2. RC 실행 절차
 
-```bash
-cd D:/workspace-github/ra-med-bot
+### Step 5 - #105 DEPLOY-001
 
-# .env.local 없으면 생성
-cp .env.example .env.local
-# DATABASE_URL, ANTHROPIC_API_KEY 등 실제 값 입력 후:
-pnpm db:migrate
+목적: `deploy.yml` 신설. Vercel preview-per-PR, Cloudflare staging, production manual gate, post-deploy smoke를 분리한다.
 
-# Playwright 브라우저 (미설치 시)
-pnpm exec playwright install chromium firefox
-```
+기준:
 
----
+- Issue: #105
+- SPEC: `.moai/specs/SPEC-REGULA-DEPLOY-001/spec.md`
+- Branch: `work/deploy-001`
+- Primary file: `.github/workflows/deploy.yml`
 
-## 3. 이슈별 실행 절차
+완료 기준:
 
-### Step 1 — #32 RELEASE-GATE-001 (P0)
+- `deploy.yml` syntax/dry-run PASS
+- PR 환경 `production-vercel` / `production-cloudflare` 분리
+- preview, staging, production manual gate 경로 명시
+- post-deploy smoke gate 명시
+- PR 본문에 `QA evidence` 기록
 
-**목적**: `.env.local` bootstrap 스크립트 구현, CI/Branch 정합성 확보.
+### Step 6 - #26 Build Reproducibility
 
-동반 자료:
-- `.moai/specs/SPEC-REGULA-RELEASE-GATE-001/spec.md`
-- `.moai/plans/amendments-2026-05-05.md` §1 (REQ-QUAL-026~028 포함)
+목적: release build 검증이 장시간 무출력으로 멈추는 문제를 재현 가능하게 통제한다.
 
-```bash
-git checkout -b work/issue-32-release-gate
-claude
-# Claude 안: /moai run SPEC-REGULA-RELEASE-GATE-001
-# PR 생성 후 → main 머지
-```
+완료 기준:
 
-**주요 파일**:
-- `scripts/dev-bootstrap.ts` (신규)
-- `package.json` — `dev:bootstrap` script 추가
-- `lib/env.ts` — `dev-placeholder-` fail-fast 로직
-- `DEVELOPMENT.md` — Section 2 갱신
+- CI 환경과 동일한 env placeholder로 `pnpm ci:build` 통과 또는 bounded failure 근거 확보
+- timeout/프로세스 정리 기준 문서화
+- orphan Node/Next/esbuild 점검 절차 문서화
+- 결과를 #26 댓글과 #31 release evidence에 연결
 
-**완료 기준**:
-- `pnpm dev:bootstrap` → `.env.local` 생성
-- `NODE_ENV=production` + placeholder → fail-fast exit ≠ 0
-- PR: `Closes #32`
+### Step 7 - #30 PR/CI Closure Integrity
 
----
+목적: 과거 release blocker 상태였던 PR #20/#21 및 이슈 #12/#13/#14 정합성을 최신 상태로 닫을 수 있는지 확인한다.
 
-### Step 2 — #33 RELEASE-HARDENING-001 (P0, #32 완료 후)
+현재 확인:
 
-**목적**: E2E skip 해제 7개, deploy.yml 신설, Dashboard/Knowledge 실데이터, console.* 제거.
+- PR #20: MERGED
+- PR #21: MERGED
+- #12/#13/#14: CLOSED
+- 과거 PR #21 LLM Eval 실패 흔적은 #34/PR #103 이후 상태로 재판단 필요
 
-동반 자료:
-- `.moai/specs/SPEC-REGULA-RELEASE-HARDENING-001/spec.md`
+완료 기준:
 
-```bash
-git checkout main && git pull origin main
-git checkout -b work/issue-33-hardening
-claude
-# Claude 안: /moai run SPEC-REGULA-RELEASE-HARDENING-001
-# PR 생성 후 → main 머지
-```
+- `gh pr view 20`, `gh pr view 21`, `gh issue view 12/13/14` 증거 댓글
+- release blocker 잔여 여부 판단
+- 필요 시 #30 close 또는 #31로 evidence 이관
 
-**주요 파일**:
-- `tests/e2e/**` (7개 spec의 `test.skip(true)` 제거, `citation-click.spec.ts` 제외)
-- `playwright/globalSetup.ts` (신규)
-- `.github/workflows/deploy.yml` (신규)
-- Dashboard/Knowledge 실데이터 연결
+### Step 8 - #31 RELEASE-001
 
-**완료 기준**:
-- `pnpm test:e2e` PASS (chromium + firefox, skip 0개)
-- deploy.yml dry-run PASS
-- PR: `Closes #33`
+목적: RC 선언 전 최종 우산 gate.
+
+완료 기준:
+
+- #105/#26/#30 완료 또는 명시적 waiver
+- Sentry ErrorBoundary, Langfuse trace, 4-way observability E2E 판단
+- #73 QA Matrix와 release checklist PASS/WAIVED 상태 일치
+- release notes 준비
 
 ---
 
-### Step 3 — #34 QUALITY-001 (P1, #33 완료 후)
+## 3. #22 이후 이슈 전수 감사 결과
 
-**목적**: Corpus seed 데이터 적재, Eval Pipeline 가동, Cloudflare TODO 해소.
+### 3.1 RC in-scope / release blockers
 
-동반 자료:
-- `.moai/specs/SPEC-REGULA-QUALITY-001/spec.md`
-
-```bash
-git checkout main && git pull origin main
-git checkout -b work/issue-34-quality
-claude
-# Claude 안: /moai run SPEC-REGULA-QUALITY-001
-# PR 생성 후 → main 머지
-```
-
-**완료 기준**:
-- `pnpm db:seed:corpus` 실행 → DB에 규제 청크 100+ 적재
-- `/api/ra/consult` 실제 규제 답변 반환 확인
-- PR: `Closes #34`
-
----
-
-### Step 4 — #31 RELEASE-001 (P1, #33+#34 완료 후)
-
-**목적**: 우산 SPEC — Sentry ErrorBoundary, Langfuse trace 미들웨어, 4-way 통합 E2E.
-
-동반 자료:
-- `.moai/specs/SPEC-REGULA-RELEASE-001/spec.md`
-- `.moai/plans/amendments-2026-05-05.md` §2 (REQ-ENTERPRISE-074~076)
-
-```bash
-git checkout main && git pull origin main
-git checkout -b work/issue-31-release
-claude --team
-# Claude 안: /moai run SPEC-REGULA-RELEASE-001
-# PR 생성 후 → main 머지
-```
-
-**주요 파일**:
-- `app/layout.tsx` — Sentry ErrorBoundary
-- `lib/observability/langfuse-handler.ts`
-- `app/api/ra/consult/route.ts` — `withLangfuseTrace` 래핑
-- `tests/e2e/observability-integration.spec.ts`
-
-**완료 기준**:
-- 4-way observability E2E PASS
-- PR: `Closes #31`
-
----
-
-## 4. PR 머지 게이트 (사용자)
-
-머지 순서: #32 → #33 → #34 → #31
-
----
-
-## 5. RC 태깅
-
-모든 PR 머지 + main CI green 후:
-
-```bash
-git checkout main && git pull origin main
-$EDITOR CHANGELOG.md
-git add CHANGELOG.md && git commit -m "docs: v1.0.0-rc 릴리즈 노트 갱신" && git push origin main
-
-gh release create v1.0.0-rc \
-  --title "Regula v1.0.0-rc — 1차 Release Candidate" \
-  --notes-file CHANGELOG.md \
-  --prerelease
-```
-
----
-
-## 6. 파일 소유권 매트릭스
-
-| 이슈 | 소유 파일 |
-|---|---|
-| #32 | `scripts/dev-bootstrap.*`, `lib/env.ts` (placeholder 차단), `DEVELOPMENT.md`, `package.json` (dev:bootstrap) |
-| #33 | `tests/e2e/**` (obs 제외), `playwright/globalSetup.ts`, `.github/workflows/deploy.yml`, Dashboard/Knowledge 컴포넌트 |
-| #34 | `scripts/seed-corpus.*`, corpus seed 데이터, `lib/cloudflare/hybrid-router.ts` TODO 해소 |
-| #31 | `app/layout.tsx`, `lib/observability/**`, `app/api/ra/consult/route.ts`, `tests/e2e/observability-integration.spec.ts` |
-
----
-
-## 7. 트러블슈팅
-
-| 증상 | 원인 | 해결 |
+| 이슈 | 상태 | 처리 |
 |---|---|---|
-| `pnpm db:migrate` 실패 | `.env.local` 미설정 | `.env.local`에 `DATABASE_URL` 입력 후 재실행 |
-| Playwright 브라우저 누락 | 재설치 필요 | `pnpm exec playwright install chromium firefox` |
-| merge conflict | 이전 브랜치 잔재 | `git status` 확인 후 충돌 해결 |
+| #26 | OPEN | #31 전 처리 필요 |
+| #27 | CLOSED / COMPLETED | 완료 |
+| #28 | CLOSED / COMPLETED | 완료 |
+| #29 | CLOSED / COMPLETED | 완료 |
+| #30 | OPEN | #31 전 처리 필요 |
+| #31 | OPEN | 최종 release umbrella |
+| #32 | CLOSED / COMPLETED | 완료 |
+| #33 | CLOSED / COMPLETED | PR #102 완료 |
+| #34 | CLOSED / COMPLETED | PR #103 완료 |
+| #97 | CLOSED / COMPLETED | PR #106 closing reference |
+| #104 | CLOSED / COMPLETED | E2EFIX 구현 추적 완료 |
+| #105 | OPEN | 다음 구현 작업 |
+
+### 3.2 Post-RC Wave 3 backlog
+
+Wave 3는 RC 태그 이후 착수한다. 시작점은 #22다.
+
+| 이슈 | SPEC | 상태 |
+|---|---|---|
+| #22 | PREDICATE-001 | OPEN |
+| #23 | CER-001 | OPEN |
+| #24 | PCCP-001 | OPEN |
+| #35 | KNOWLEDGE-GAP-001 | OPEN |
+| #36 | REVIEW-OPS-001 | OPEN |
+| #37 | SUBMISSION-LIFECYCLE-001 | OPEN |
+| #38 | ADOPTION-001 | OPEN |
+| #39 | WORKFLOWS-LLM-002 | OPEN |
+| #40 | STRATEGY-001 | OPEN |
+| #41 | IMPACT-001 | OPEN |
+| #42 | CROSSMARKET-001 | OPEN |
+| #43 | BATCH-001 | OPEN |
+| #47 | TRACEABILITY-001 | OPEN |
+| #48 | SOURCE-GOVERNANCE-001 | OPEN |
+| #50 | KNOWLEDGE-PROMO-001 | OPEN |
+| #51 | PROJECT-MEMORY-001 | OPEN |
+| #52 | NOTIFICATIONS-001 | OPEN |
+| #55 | ROI-001 | OPEN |
+| #58 | DIGEST-001 | OPEN |
+| #59 | CLASSIFY-001 | OPEN |
+| #60 | CLINICAL-LIT-001 | OPEN |
+| #61 | VIGILANCE-001 | OPEN |
+| #62 | STANDARDS-001 | OPEN |
+
+### 3.3 Post-RC Wave 4 backlog
+
+| 이슈 | SPEC | 상태 |
+|---|---|---|
+| #25 | COEDIT-001 | OPEN |
+| #44 | CALENDAR-001 | OPEN |
+| #45 | DELTA-SYNC-001 | OPEN |
+| #46 | RISK-001 | OPEN |
+| #49 | VALIDATION-001 | OPEN |
+| #53 | PMS-001 | OPEN |
+| #54 | CHANGE-CONTROL-001 | OPEN |
+| #56 | RLHF-001 | OPEN |
+| #57 | QMS-INTEGRATION-001 | OPEN |
+| #63 | SAMD-001 | OPEN |
+| #64 | DHF-001 | OPEN |
+| #65 | ESUBMIT-001 | OPEN |
+
+### 3.4 Post-RC Wave 5 backlog
+
+| 이슈 | SPEC | 상태 |
+|---|---|---|
+| #66 | LABELING-001 | OPEN |
+| #67 | CYBERDEVICE-001 | OPEN |
+| #68 | CAPA-001 | OPEN |
+| #69 | CLINICAL-INVESTIGATION-001 | OPEN |
+| #70 | REIMBURSEMENT-001 | OPEN |
+| #71 | MODEL-GOVERNANCE-001 | OPEN |
+| #72 | CORPUS-LICENSE-001 | OPEN |
+| #84 | ANSWER-REFINE-001 | OPEN |
+| #85 | CONFIDENCE-EXPLAIN-001 | OPEN |
+| #86 | PERSONAL-LIB-001 | OPEN |
+| #87 | EXPORT-HUB-001 | OPEN |
+| #88 | ESIG-001 | OPEN |
+| #89 | DSAR-001 | OPEN |
+| #90 | DATA-RESIDENCY-001 | OPEN |
+| #91 | DLP-001 | OPEN |
+| #92 | AUDITOR-VIEW-001 | OPEN |
+
+### 3.5 QA / E2E cross-cutting lane
+
+이슈별 구현과 별도 lane으로 유지하되, 모든 구현 이슈의 Gate로 적용한다.
+
+| 이슈 | 역할 | 상태 |
+|---|---|---|
+| #73 | QA Matrix | OPEN |
+| #74 | Gate 0 SPEC readiness | OPEN |
+| #75 | Gate 1 implementation checkpoint | OPEN |
+| #76 | Gate 2 PR acceptance | OPEN |
+| #77 | Gate 3 wave integration | OPEN |
+| #78 | Gate 4 domain UAT | OPEN |
+| #79 | Gate 5 operations QA | OPEN |
+| #80 | Local E2E infra | OPEN |
+| #81 | Wave 1 E2E gate | OPEN |
+| #82 | Wave 2 E2E gate | OPEN |
+| #83 | CI E2E gate | OPEN |
+
+### 3.6 폐기 / 중복 / 비실행 대상
+
+| 이슈 | 상태 | 판단 |
+|---|---|---|
+| #93 | CLOSED / NOT_PLANNED | #97로 superseded |
+| #94 | CLOSED / NOT_PLANNED | #98/#105로 superseded |
+| #95 | CLOSED / NOT_PLANNED | #99/#32/#34로 superseded |
+| #96 | CLOSED / NOT_PLANNED | #100/#31로 superseded |
+| #98 | CLOSED / NOT_PLANNED | SPEC-only 폐기. 실행은 #105 |
+| #99 | CLOSED / NOT_PLANNED | #32/#34에 흡수 |
+| #100 | CLOSED / NOT_PLANNED | #31로 흡수 |
+| #101 | CLOSED / NOT_PLANNED | 병렬 worktree tracker 폐기 |
+
+### 3.7 영구 오픈 정책 이슈
+
+| 이슈 | 역할 | 처리 |
+|---|---|---|
+| #1 | 4-Layer Memory / Wiki ADR | 계속 OPEN |
+| #18 | Work Gate / duplicate-work prevention | 계속 OPEN |
 
 ---
 
-## 8. 명령 Cheatsheet
+## 4. 운영 규칙
+
+- RC 작업자는 #105 -> #26 -> #30 -> #31 순서로만 착수한다.
+- Wave 3+ 작업자는 RC 태그 전에는 착수하지 않는다.
+- Wave 3+ 시작 시 첫 구현 후보는 #22다.
+- #73~#83은 구현 대상이 아니라 QA/E2E gate다. 각 구현 이슈의 PR 본문에 QA evidence로 연결한다.
+- #93~#101은 실행 큐에서 제외한다.
+- 새 이슈가 생성되면 이 runbook의 해당 lane에 즉시 추가한다.
+
+---
+
+## 5. 명령 Cheatsheet
 
 ```bash
-# Step 1 — #32
-git checkout -b work/issue-32-release-gate
-claude  # /moai run SPEC-REGULA-RELEASE-GATE-001
+# 항상 먼저:
+git fetch --prune origin
+git status --short --branch
+gh issue view 18
 
-# Step 2 — #33 (#32 PR 머지 후)
-git checkout main && git pull
-git checkout -b work/issue-33-hardening
-claude  # /moai run SPEC-REGULA-RELEASE-HARDENING-001
+# 현재 다음 작업:
+git checkout main
+git pull origin main
+git checkout -b work/deploy-001
+claude  # /moai run SPEC-REGULA-DEPLOY-001
 
-# Step 3 — #34 (#33 PR 머지 후)
-git checkout main && git pull
-git checkout -b work/issue-34-quality
-claude  # /moai run SPEC-REGULA-QUALITY-001
-
-# Step 4 — #31 (#33+#34 PR 머지 후)
-git checkout main && git pull
-git checkout -b work/issue-31-release
-claude --team  # /moai run SPEC-REGULA-RELEASE-001
+# #105 완료 후:
+gh issue view 26
+gh issue view 30
+gh issue view 31
 ```
 
 ---
 
-**Runbook 종료**. 4개 PR 모두 머지 + RC 태깅 완료 시 v1.0.0-rc 릴리즈.
+## 6. 감사 기록
+
+2026-05-06 감사에서 확인한 문제:
+
+- 기존 runbook v6은 #104가 이미 MERGED된 뒤에도 일부 cheatsheet가 `PR #106 OPEN`으로 남아 있었다.
+- README는 #32/#33/#34를 미착수로 표시하고 있었다.
+- #22 이후 이슈가 최신 업데이트순 조회 제한에 밀려 누락될 수 있었다.
+- #105는 #22~#92 QA 본문 일괄 삽입 이후 생성되어 QA 단계 보강이 필요했다.
+- #31/#73 댓글은 #104/#105 최신 상태를 반영해야 했다.
+
+조치:
+
+- runbook을 v7.0으로 승격하고 #22 이후 이슈를 lane별로 전수 재정렬했다.
+- README/session memo를 최신 상태로 맞춘다.
+- #18/#31/#73/#105에 감사 결과와 다음 작업 기준을 댓글로 남긴다.

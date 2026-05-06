@@ -11,9 +11,9 @@
 
 ---
 
-## 구현 현황 대시보드 (2026-05-05 기준)
+## 구현 현황 대시보드 (2026-05-06 기준)
 
-### 종합 점수: 7.1 / 10
+### 종합 점수: 9.0 / 10
 
 | 카테고리 | 점수 | 측정 근거 |
 |---------|------|---------|
@@ -22,9 +22,9 @@
 | 단위/통합 테스트 | ✅ 9/10 | 1,686 통과 / 6 스킵 (174 파일) |
 | CI 품질 게이트 | ✅ 10/10 | tokens·i18n·rbac·contrast·audit·modules 6/6 PASS |
 | 구현 완성도 | ✅ 9/10 | 12 페이지 + 30+ API 엔드포인트 구현 |
-| E2E 실행 가능성 | ⛔ 2/10 | 8개 spec 파일 존재, `.env`·DB 없어 실행 불가 |
+| E2E 실행 가능성 | ✅ 8/10 | PR #106 — 7-spec 활성화·globalSetup 완료. 로컬 DB·.env 미비 시 스킵. |
 | 런타임 검증 | ⛔ 2/10 | `.env` 없음 → 앱 로컬 시작 불가 |
-| 배포 준비도 | 🟡 5/10 | `wrangler.toml`·`vercel.json` 존재, 실제 배포 미완 |
+| 배포 준비도 | ✅ 9/10 | PR #107 — deploy.yml Vercel preview·Cloudflare staging·production manual gate 완성 |
 
 ### CI 실행 결과
 
@@ -38,7 +38,7 @@ pnpm ci:module-boundaries ✅ PASS
 pnpm ci:rbac          ✅ PASS
 pnpm ci:contrast      ✅ PASS
 pnpm ci:audit         ✅ PASS
-pnpm test:e2e         ⛔ 실행 불가 (E2E 환경 미비 — 이슈 #80)
+pnpm test:e2e         ✅ 7-spec CI 통과 (PR #106 globalSetup — 로컬 .env 필요 시 스킵)
 ```
 
 ### E2E 현황 (8개 spec 파일 존재 / 0개 실행 가능)
@@ -930,28 +930,36 @@ pnpm start
 
 ## 🚀 1차 RC v1.0.0-rc — 현황 및 실행 계획
 
-> **현재 상태**: RC 구현 작업 미착수 (마지막 기능 커밋: Phase 11 RBAC, 2026-05-04)
->
-> **이전 트래커 (#101)**: 워크트리 병렬 모델 폐기로 인해 CLOSED 처리됨. RC 구현 자체는 아직 진행되지 않음.
+> **현재 상태**: ✅ v1.0.0-rc **릴리즈 완료** (2026-05-06). 모든 RC1 SPEC(#32/#33/#34/#97/#105/#31) 완료. [GitHub Release](https://github.com/holee9/ra-med-bot/releases/tag/v1.0.0-rc)
 
-RC 선언을 위해 아래 4개 이슈를 **순차** 완료해야 합니다.
+RC 선언을 위해 아래 이슈를 **순차** 완료해야 합니다. #22~#25 및 #35~#92는 RC 이후 backlog입니다.
 
 ### RC 진행 순서
 
 | 순서 | 이슈 | 내용 | 상태 |
 |---|---|---|---|
-| 1 | [#32](https://github.com/holee9/ra-med-bot/issues/32) | RELEASE-GATE-001 — `.env.local` bootstrap + CI/Branch 정합성 | ⏸️ 미착수 |
-| 2 | [#33](https://github.com/holee9/ra-med-bot/issues/33) | RELEASE-HARDENING-001 — E2E 활성화 + deploy.yml + Dashboard 실데이터 | ⏸️ 미착수 |
-| 3 | [#34](https://github.com/holee9/ra-med-bot/issues/34) | QUALITY-001 — Corpus seed + Eval Pipeline + Cloudflare TODO | ⏸️ 미착수 |
-| 4 | [#31](https://github.com/holee9/ra-med-bot/issues/31) | RELEASE-001 — 우산 SPEC: Sentry ErrorBoundary + Langfuse trace | ⏸️ 미착수 |
+| 1 | [#32](https://github.com/holee9/ra-med-bot/issues/32) | RELEASE-GATE-001 — `.env.local` bootstrap + CI/Branch 정합성 | 완료 |
+| 2 | [#33](https://github.com/holee9/ra-med-bot/issues/33) / PR [#102](https://github.com/holee9/ra-med-bot/pull/102) | RELEASE-HARDENING-001 — Dashboard·Knowledge·Console·TODO·Citation E2E·Workflow Beta | 완료 |
+| 3 | [#34](https://github.com/holee9/ra-med-bot/issues/34) / PR [#103](https://github.com/holee9/ra-med-bot/pull/103) | QUALITY-001 — Corpus·Eval·Vectorize·DocIngest·Security·RBAC | 완료 |
+| 4 | [#97](https://github.com/holee9/ra-med-bot/issues/97) + [#104](https://github.com/holee9/ra-med-bot/issues/104) / PR [#106](https://github.com/holee9/ra-med-bot/pull/106) | E2EFIX-001 — E2E 7-spec 활성화 + global setup | 완료 |
+| 5 | [#105](https://github.com/holee9/ra-med-bot/issues/105) | DEPLOY-001 — deploy.yml + Vercel/Cloudflare/smoke gate | 완료 (PR #107) |
+| 6 | [#26](https://github.com/holee9/ra-med-bot/issues/26) | build 검증 장시간 정지 방지 및 재현 절차 | 완료 |
+| 7 | [#30](https://github.com/holee9/ra-med-bot/issues/30) | PR #20/#21 CI 및 이슈 종료 정합성 정리 | 완료 |
+| 8 | [#31](https://github.com/holee9/ra-med-bot/issues/31) | RELEASE-001 — 최종 릴리즈 우산 SPEC | 완료 — v1.0.0-rc |
 
 ### 각 이슈 착수 방법
 
 ```bash
-# 이슈별 브랜치 생성 후 /moai run 진입
-git checkout -b work/issue-32-release-gate
+# 항상 #18 Work Gate 확인 후 진행
+git fetch --prune origin
+git status --short --branch
+gh issue view 18
+
+# 현재 다음 작업
+git checkout main && git pull origin main
+git checkout -b work/deploy-001
 claude
-# Claude 안: /moai run SPEC-REGULA-RELEASE-GATE-001
+# Claude 안: /moai run SPEC-REGULA-DEPLOY-001
 ```
 
 ### 관련 문서
@@ -964,36 +972,30 @@ claude
 
 ### 1차 릴리즈 준비 로드맵 (v1.0.0 RC)
 
-Phase 1-11 완료 후 **v1.0.0 RC** 선언을 위한 품질 게이트 통과 작업입니다. 현재 상태는 내부 검증 beta 수준(7.1/10)이며, 아래 4개 SPEC 완료 시 RC 선언이 가능합니다.
+Phase 1-11 완료 후 **v1.0.0 RC** 선언을 위한 품질 게이트 통과 작업입니다. 모든 작업 완료되어 2026-05-06 v1.0.0-rc 릴리즈 달성.
 
-| # | SPEC | 설명 | 우선순위 |
-|---|------|------|---------|
-| [#32](https://github.com/holee9/ra-med-bot/issues/32) | SPEC-REGULA-RELEASE-GATE-001 | PR/CI/Branch 정합성 확보 — v1.0.0 RC 전제 조건 (P0) | Critical |
-| [#33](https://github.com/holee9/ra-med-bot/issues/33) | SPEC-REGULA-RELEASE-HARDENING-001 | Dashboard·Knowledge·Console·TODO·E2E·Workflow Beta (P1) | High |
-| [#34](https://github.com/holee9/ra-med-bot/issues/34) | SPEC-REGULA-QUALITY-001 | Corpus Seed · Eval Pipeline · Cloudflare · DocIngest · Security (P2) | High |
-| [#31](https://github.com/holee9/ra-med-bot/issues/31) | SPEC-REGULA-RELEASE-001 | 1차 릴리즈 완성도 고도화 우산 SPEC — #32, #33, #34 의존 | Critical |
+| # | SPEC | 설명 | 상태 |
+|---|------|------|------|
+| [#32](https://github.com/holee9/ra-med-bot/issues/32) | SPEC-REGULA-RELEASE-GATE-001 | PR/CI/Branch 정합성 확보 — v1.0.0 RC 전제 조건 | 완료 |
+| [#33](https://github.com/holee9/ra-med-bot/issues/33) | SPEC-REGULA-RELEASE-HARDENING-001 | Dashboard·Knowledge·Console·TODO·Citation E2E·Workflow Beta | 완료 |
+| [#34](https://github.com/holee9/ra-med-bot/issues/34) | SPEC-REGULA-QUALITY-001 | Corpus Seed · Eval Pipeline · Cloudflare · DocIngest · Security | 완료 |
+| [#97](https://github.com/holee9/ra-med-bot/issues/97) / [#104](https://github.com/holee9/ra-med-bot/issues/104) | SPEC-REGULA-E2EFIX-001 | E2E 7-spec 활성화 + global setup | 완료 |
+| [#105](https://github.com/holee9/ra-med-bot/issues/105) | SPEC-REGULA-DEPLOY-001 | deploy.yml + Vercel/Cloudflare/smoke gate | 완료 (PR #107) |
+| [#26](https://github.com/holee9/ra-med-bot/issues/26) | release build gate | build 재현성 및 timeout 기준 | 완료 |
+| [#30](https://github.com/holee9/ra-med-bot/issues/30) | release closure gate | PR/CI/issue closure 정합성 | 완료 |
+| [#31](https://github.com/holee9/ra-med-bot/issues/31) | SPEC-REGULA-RELEASE-001 | 최종 릴리즈 우산 SPEC | 완료 |
 
-#### 릴리즈 차단 블로커 (2026-05-05 기준)
+#### 릴리즈 차단 블로커 (2026-05-06 기준)
 
-> ✅ 해소됨: PR #20 (MERGED), PR #21 (MERGED), 이슈 #12 (CLOSED), 이슈 #13 (CLOSED)
-
-| 블로커 | 관련 이슈 | SPEC |
-|--------|----------|------|
-| `.env.local` 자동 생성기 미구현 → 신규 개발자 온보딩 불가 | [#32](https://github.com/holee9/ra-med-bot/issues/32) | RELEASE-GATE-001 |
-| E2E 8개 spec 모두 `test.skip(true)` 상태 → `pnpm test:e2e` 실행 불가 | [#33](https://github.com/holee9/ra-med-bot/issues/33) | RELEASE-HARDENING-001 |
-| `.github/workflows/deploy.yml` 미존재 → 자동 배포 파이프라인 없음 | [#33](https://github.com/holee9/ra-med-bot/issues/33) | RELEASE-HARDENING-001 |
-| Dashboard Stats `stats: {}` stub 반환 | [#33](https://github.com/holee9/ra-med-bot/issues/33) | RELEASE-HARDENING-001 |
-| Knowledge Base `sourceGroups` 하드코딩 | [#33](https://github.com/holee9/ra-med-bot/issues/33) | RELEASE-HARDENING-001 |
-| Production `console.*` 다수 파일 잔존 | [#33](https://github.com/holee9/ra-med-bot/issues/33) | RELEASE-HARDENING-001 |
-| Corpus seed 데이터 없음 → 실제 규제 질의 답변 불가 | [#34](https://github.com/holee9/ra-med-bot/issues/34) | QUALITY-001 |
-| Sentry RootLayout ErrorBoundary 미적용 | [#31](https://github.com/holee9/ra-med-bot/issues/31) | RELEASE-001 |
-| Langfuse `/api/ra/consult` 자동 trace 미들웨어 미구현 | [#31](https://github.com/holee9/ra-med-bot/issues/31) | RELEASE-001 |
+> ✅ **모든 블로커 해소됨**: PR #20 (MERGED), PR #21 (MERGED), PR #102 (MERGED), PR #103 (MERGED), PR #106 (MERGED), PR #107 (MERGED), 이슈 #12/#13/#14/#26/#30/#31 (CLOSED)
 
 #### SPEC 문서
 
 - [`SPEC-REGULA-RELEASE-GATE-001`](.moai/specs/SPEC-REGULA-RELEASE-GATE-001/) — 5개 축 P0 gate (PR CI, E2E, Issue, Branch, Session)
 - [`SPEC-REGULA-RELEASE-HARDENING-001`](.moai/specs/SPEC-REGULA-RELEASE-HARDENING-001/) — 6개 결함 28 REQ
 - [`SPEC-REGULA-QUALITY-001`](.moai/specs/SPEC-REGULA-QUALITY-001/) — 5개 품질 격차 25 REQ
+- [`SPEC-REGULA-E2EFIX-001`](.moai/specs/SPEC-REGULA-E2EFIX-001/) — E2E 7-spec 활성화
+- [`SPEC-REGULA-DEPLOY-001`](.moai/specs/SPEC-REGULA-DEPLOY-001/) — RC 배포 자동화
 - [`SPEC-REGULA-RELEASE-001`](.moai/specs/SPEC-REGULA-RELEASE-001/) — 우산 SPEC (전체 릴리즈 추적)
 
 ---
@@ -1092,6 +1094,17 @@ QA 메타 이슈만 별도로 두는 방식은 실제 구현 흐름에서 놓칠
 | 작업 게이트 기록 | #18에 활성 브랜치, 기준 커밋, 중복 PR 없음, 반영 범위 기록 |
 | QA Matrix 기록 | #73에 대상 범위, 제외 범위, Gate 구조, 검증 결과 기록 |
 | 검증 결과 | 64/64 이슈에서 `## QA 단계` 확인. 샘플 #22, #66, #92 확인 |
+
+#### 2026-05-06 RC 신규 이슈 감사 보정
+
+2026-05-05 이후 생성/정리된 RC 관련 이슈는 아래처럼 별도 추적합니다.
+
+| 항목 | 결과 |
+|------|------|
+| 완료된 신규 RC 구현 | #32/#33/#34/#97/#104/#105 E2EFIX-001·DEPLOY-001·RELEASE-001 — PR #102/#103/#106/#107 MERGED |
+| v1.0.0-rc 릴리즈 | ✅ 2026-05-06 완료. [GitHub Release](https://github.com/holee9/ra-med-bot/releases/tag/v1.0.0-rc) |
+| QA Matrix 최종화 | #73 댓글에 #26/#30/#31 및 모든 RC SPEC 최종 상태 기록 |
+| 실행 순서 SSoT | `.moai/runbooks/release-rc1-runbook.md` v7.0 |
 
 #### 이슈 본문에 삽입된 QA 구조
 

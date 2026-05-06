@@ -1,26 +1,64 @@
 # Session Memo
 
-## 현황 (2026-05-05)
+## P1: Session Context
 
-### SPEC-REGULA-RELEASE-GATE-001 완료
+session_id: current
+cwd: D:\workspace-github\ra-med-bot
+branch: work/deploy-001
+updated: 2026-05-06
 
-| 항목 | 상태 |
-|------|------|
-| PR #20 (E2E) | MERGED (`6826d66`) — chromium/firefox/webkit PASS |
-| PR #21 (CI fix) | MERGED (`08c0673`) — biome/lint 4개 파일 수정 |
-| Issue #12 | CLOSED (commit `9b7adda`) |
-| Issue #13 | CLOSED (commit `11bd6fa`) |
-| Issue #18 | OPEN (의도적 — post-mortem ADR) |
-| feature/SPEC-REGULA-NETWORK-001 | 삭제 완료 |
-| `.worktrees/` | 정리 완료 |
+## P2: Work Gate
 
-### Git 상태
+Issue #18 remains the mandatory preflight for every issue, SPEC, branch, PR, or implementation task.
 
-- Branch: `main`
-- Upstream: origin/main (up-to-date)
-- Working tree: clean (이 커밋 기준)
+Current verified state:
 
-### 잔여 항목
+| Item | State |
+|---|---|
+| `HEAD` | `7701493` |
+| `origin/main` | `7701493` |
+| active branch | `work/deploy-001` |
+| local dirty files | `.moai/runbooks/release-rc1-runbook.md`, `.moai/state/session-memo.md`, `README.md` |
 
-- LLM Eval Harness FAILURE (PR #21 check rollup) → #34에서 별도 증거 필요
-- Release 다음 단계: RELEASE-HARDENING-001(#33) → QUALITY-001(#34) → RELEASE-001(#31)
+## P3: RC1 Pipeline
+
+| Step | Issue / PR | State | Next action |
+|---|---|---|---|
+| 1 | #32 RELEASE-GATE-001 | CLOSED / COMPLETED | none |
+| 2 | #33 HARDENING-001 / PR #102 | MERGED | none |
+| 3 | #34 QUALITY-001 / PR #103 | MERGED | none |
+| 4 | #97 + #104 E2EFIX-001 / PR #106 | MERGED | none |
+| 5 | #105 DEPLOY-001 | OPEN | next implementation |
+| 6 | #26 build reproducibility | OPEN | resolve before #31 |
+| 7 | #30 PR/CI closure integrity | OPEN | resolve before #31 |
+| 8 | #31 RELEASE-001 | OPEN | final release umbrella after #105/#26/#30 |
+| 9 | `v1.0.0-rc` | not tagged | tag after #31 PASS |
+
+## P4: Issue Audit Result
+
+The prior ordering problem came from using limited latest-updated issue queries. That missed older open issues after #22 and made Wave ordering unreliable.
+
+Correct classification:
+
+| Lane | Issues |
+|---|---|
+| RC immediate | #105 -> #26 -> #30 -> #31 -> RC tag |
+| RC completed | #32, #33, #34, #97, #104 |
+| Wave 3 post-RC | #22, #23, #24, #35~#43, #47, #48, #50, #51, #52, #55, #58~#62 |
+| Wave 4 post-RC | #25, #44~#46, #49, #53, #54, #56, #57, #63~#65 |
+| Wave 5 post-RC | #66~#72, #84~#92 |
+| QA / E2E gates | #73~#83 |
+| Superseded / excluded | #93~#101 |
+| Persistent governance | #1, #18 |
+
+Wave 3 starts at #22, not #45.
+
+## P5: Follow-up Recording
+
+This audit is recorded in:
+
+- `.moai/runbooks/release-rc1-runbook.md`
+- `README.md`
+- GitHub comments on #18, #31, #73, #105
+
+Purpose: ensure future workers can start from the issue body/runbook without reconstructing the project state from chat history.

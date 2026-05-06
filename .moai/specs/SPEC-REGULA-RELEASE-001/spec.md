@@ -1,12 +1,12 @@
 ---
 id: SPEC-REGULA-RELEASE-001
 title: "Regula First Release Readiness — 우산 SPEC"
-status: draft
+status: completed
 phase: "release-orchestration"
 priority: Critical
 version: 0.2.0
 created: 2026-05-04
-updated: 2026-05-05
+updated: 2026-05-06
 author: release-orchestrator
 issue_number: 31
 depends_on:

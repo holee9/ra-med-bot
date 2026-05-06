@@ -1,12 +1,12 @@
 ---
 id: SPEC-REGULA-E2EFIX-001
 title: "Regula E2E Activation — test.skip(true) 일괄 해제 및 인증 세션 자동화"
-status: draft
+status: completed
 phase: "release-hardening"
 priority: High
 version: 0.1.1
 created: 2026-05-05
-updated: 2026-05-05
+updated: 2026-05-06
 author: manager-spec
 issue_number: 97
 depends_on:

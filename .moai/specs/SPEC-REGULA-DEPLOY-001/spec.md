@@ -1,12 +1,12 @@
 ---
 id: SPEC-REGULA-DEPLOY-001
 title: "Regula 1차 RC 배포 자동화 — Vercel Preview · Cloudflare Staging · Post-deploy Smoke"
-status: draft
+status: completed
 phase: "release-deploy"
 priority: High
 version: 0.1.1
 created: 2026-05-05
-updated: 2026-05-05
+updated: 2026-05-06
 author: manager-spec
 issue_number: 98
 depends_on:
