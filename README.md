@@ -694,6 +694,7 @@ pnpm start
 | 코드 세팅 | git clone → pnpm install → .env.local 구성 |
 | DB + 코퍼스 | PostgreSQL 16 + pgvector → 마이그레이션 → corpus seed |
 | 앱 실행 | `pnpm build && pnpm start` → 사내 IP로 팀 접근 |
+| AI 전략 | Gemini Flash 무료($0) → 사용량 증가 시 유료 전환 → 필요 시 Pro/Claude |
 
 **전체 단계별 가이드**: [docs/setup/ubuntu-onpremise-guide.md](docs/setup/ubuntu-onpremise-guide.md)
 

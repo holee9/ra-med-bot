@@ -18,7 +18,8 @@
 8. [앱 실행](#8-앱-실행)
 9. [사내망 접근 설정](#9-사내망-접근-설정)
 10. [부팅 시 자동 시작 (선택)](#10-부팅-시-자동-시작-선택)
-11. [문제 해결](#11-문제-해결)
+11. [AI 전략 — LLM 단계별 확장](#11-ai-전략--llm-단계별-확장)
+12. [문제 해결](#12-문제-해결)
 
 ---
 
@@ -200,16 +201,20 @@ pnpm dev:bootstrap
 
 | 변수 | 설명 | 획득 방법 |
 |------|------|----------|
-| `ANTHROPIC_API_KEY` | Claude API 키 | [console.anthropic.com](https://console.anthropic.com) |
-| `OPENAI_API_KEY` | 임베딩 생성용 | [platform.openai.com](https://platform.openai.com) |
+| `GOOGLE_GENERATIVE_AI_API_KEY` | Gemini API 키 (채팅 추론) | [aistudio.google.com](https://aistudio.google.com/app/apikey) — 무료 |
+| `OPENAI_API_KEY` | 임베딩 생성용 (소량 사용) | [platform.openai.com](https://platform.openai.com) |
 | `AUTH_SECRET` | 세션 암호화 (32자 이상 임의 문자열) | `openssl rand -base64 32` |
 | `NEXTAUTH_URL` | 앱 접근 URL | `http://localhost:3000` 또는 `http://192.168.x.x:3000` |
-| `AUTH_GOOGLE_ID` | Google OAuth 클라이언트 ID | [Google Cloud Console](#google-oauth-설정) |
-| `AUTH_GOOGLE_SECRET` | Google OAuth 시크릿 | [Google Cloud Console](#google-oauth-설정) |
+| `AUTH_GOOGLE_ID` | Google OAuth 클라이언트 ID | [Google Cloud Console](#6-3-google-oauth-설정) |
+| `AUTH_GOOGLE_SECRET` | Google OAuth 시크릿 | [Google Cloud Console](#6-3-google-oauth-설정) |
 
 `DATABASE_URL`은 bootstrap이 `postgresql://postgres:postgres@localhost:5432/regula_dev`로 자동 설정합니다.
 
+> **임베딩 비용**: OpenAI text-embedding-3-small은 월 수천 토큰 수준으로 거의 무료($0.01 미만)입니다.
+
 ### 6-3. Google OAuth 설정
+
+> Gemini API 키와 Google OAuth는 **같은 Google 계정**으로 발급 가능합니다.
 
 1. [Google Cloud Console](https://console.cloud.google.com) 접속
 2. 새 프로젝트 생성 (또는 기존 프로젝트 사용)
@@ -301,7 +306,7 @@ npm install -g pm2
 # 앱 등록 (빌드 후)
 cd ~/ra-med-bot
 pnpm build
-pm2 start "pnpm start" --name regula
+pm2 start "pnpm start" --name regula --cwd ~/ra-med-bot
 
 # 부팅 시 자동 시작 등록
 pm2 startup
@@ -313,27 +318,58 @@ pm2 status
 pm2 logs regula
 ```
 
-DB 컨테이너도 자동 시작되도록 설정:
+DB 컨테이너 부팅 시 자동 시작:
 
 ```bash
-# docker-compose.yml의 서비스에 restart 정책 추가됨 (unless-stopped)
-# Docker 자체는 부팅 시 자동 시작되도록 설정
 sudo systemctl enable docker
 ```
 
 ---
 
-## 11. 문제 해결
+## 11. AI 전략 — LLM 단계별 확장
+
+Regula는 LLM 추론을 외부 API에 위임합니다. T3610 하드웨어 성능과 무관하게 API 품질과 비용만으로 운영 수준을 결정합니다.
+
+### 단계별 확장 경로
+
+| 단계 | 모델 | 비용 | 전환 조건 |
+|------|------|------|----------|
+| **Stage 1** (초기) | Gemini 2.0 Flash | **$0** (1,500건/일 무료) | 지금 |
+| **Stage 2** (성장) | Gemini 2.0 Flash 유료 | $0.075/M 입력 토큰 | 일 1,500건 초과 시 |
+| **Stage 3** (품질) | Gemini 1.5 Pro 또는 Claude API | $3.5~15/M 입력 토큰 | 답변 품질이 부족할 때 |
+
+> 단계 전환 시 **모델명 한 줄만 교체**하면 됩니다. Vercel AI SDK가 공급자 교체를 추상화합니다.
+
+### Gemini API 키 발급
+
+1. [Google AI Studio](https://aistudio.google.com/app/apikey) 접속
+2. **Create API Key** 클릭
+3. 생성된 키를 `.env.local`의 `GOOGLE_GENERATIVE_AI_API_KEY`에 입력
+
+무료 한도: **1,500건/일, 15건/분, 100만 토큰/일** — 사내 소규모 팀에 충분합니다.
+
+### 비용 예측 (사내 10~20명 기준)
+
+| 단계 | 예상 월 비용 |
+|------|------------|
+| Stage 1 (Gemini Flash 무료) | **$0** |
+| Stage 2 (Gemini Flash 유료) | $5~15 |
+| Stage 3 (Gemini Pro) | $20~60 |
+
+---
+
+## 12. 문제 해결
 
 | 증상 | 원인 | 해결 |
 |------|------|------|
 | `docker: permission denied` | 그룹 미적용 | `newgrp docker` 또는 재로그인 |
-| `ZodError: ANTHROPIC_API_KEY` | `.env.local` 미설정 | 6-2 단계 재확인 |
+| `ZodError: GOOGLE_GENERATIVE_AI_API_KEY` | `.env.local` 미설정 | 6-2 단계 재확인 |
 | `vector extension not found` | pgvector 미설치 | `pnpm db:up` 으로 컨테이너 재시작 |
 | `ECONNREFUSED 5432` | DB 컨테이너 미실행 | `docker ps` 확인 후 `pnpm db:up` |
 | Google 로그인 실패 `redirect_uri_mismatch` | OAuth 리디렉션 URI 불일치 | Google Console에서 현재 IP/URL 추가 |
 | 사내망에서 접속 안 됨 | 방화벽 차단 | `sudo ufw allow 3000/tcp` |
 | PM2 재시작 시 환경변수 없음 | .env.local 경로 문제 | `pm2 start` 시 `--cwd ~/ra-med-bot` 옵션 추가 |
+| Gemini 429 Too Many Requests | 무료 한도 초과 | Stage 2 유료 전환 (결제 정보 등록) |
 
 ---
 
