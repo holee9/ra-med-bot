@@ -41,8 +41,8 @@
 
 **Given** RUN M1 완료
 **When** `grep -nE "wrangler deploy" .github/workflows/deploy.yml` (REQ-DEPLOY-001a positive 단언 + REQ-DEPLOY-002 negative grep 결합)
-**Then** 매치된 모든 `wrangler deploy` 호출이 `pnpm wrangler deploy --env staging` 형태이며, `--env production` / `--env preview` / no-env 변형은 0 매치 (production은 cf-deploy.yml ownership)
-**And** `cloudflare-staging` job에서 `pnpm wrangler deploy --env staging` 호출 1회 이상 확인
+**Then** 매치된 모든 `wrangler deploy` 호출이 `wrangler deploy --env staging` 형태이며, `--env production` / `--env preview` / no-env 변형은 0 매치 (production은 cf-deploy.yml ownership)
+**And** `cloudflare-staging` job에서 Wrangler CLI 설치 후 `wrangler deploy --env staging` 호출 1회 이상 확인
 
 ### 2.2 Group B — Preview per PR (REQ-DEPLOY-004~006)
 
@@ -108,7 +108,7 @@
 
 **Given** PR 생성 + `vercel-preview` job 성공
 **When** `vercel-preview` 완료
-**Then** `post-deploy-smoke` job이 자동 트리거되고, BASE_URL env에 preview URL 주입
+**Then** `post-deploy-smoke` job이 자동 트리거되고, `needs.vercel-preview.outputs.preview_url` 값이 BASE_URL env에 주입
 **And** `scripts/post-deploy-smoke.sh` 실행
 **And** 결과가 PR comment에 추가 게시 (`Smoke check: passed` 또는 `Smoke check: failed: <reason>`)
 

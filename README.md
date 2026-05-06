@@ -24,7 +24,7 @@
 | 구현 완성도 | ✅ 9/10 | 12 페이지 + 30+ API 엔드포인트 구현 |
 | E2E 실행 가능성 | ✅ 8/10 | PR #106 — 7-spec 활성화·globalSetup 완료. 로컬 DB·.env 미비 시 스킵. |
 | 런타임 검증 | ⛔ 2/10 | `.env` 없음 → 앱 로컬 시작 불가 |
-| 배포 준비도 | ✅ 9/10 | PR #107 — deploy.yml Vercel preview·Cloudflare staging·production manual gate 완성 |
+| 배포 준비도 | ✅ 9/10 | PR #107 + 후속 리뷰 수정 — preview URL smoke 전달, Wrangler 설치, post-deploy smoke 파싱 보정 |
 
 ### CI 실행 결과
 
@@ -977,14 +977,18 @@ gh issue view 18
 
 # 현재 다음 작업
 git checkout main && git pull origin main
-git checkout -b work/deploy-001
-claude
-# Claude 안: /moai run SPEC-REGULA-DEPLOY-001
+# DEPLOY-001 review follow-up is now on main.
+# Review fixes cover: Wrangler install, PR preview URL handoff, and post-deploy smoke parsing.
+git status --short --branch
+git diff --check
+bash -n scripts/post-deploy-smoke.sh
 ```
 
 ### 관련 문서
 
 - 📋 실행 콘티: [`.moai/runbooks/release-rc1-runbook.md`](.moai/runbooks/release-rc1-runbook.md)
+- 🧭 운영 런북: [`docs/runbook.md`](docs/runbook.md)
+- 📝 변경 이력: [`CHANGELOG.md`](CHANGELOG.md)
 - 📦 갭 분석: [`.moai/plans/review-gaps-2026-05-05.md`](.moai/plans/review-gaps-2026-05-05.md)
 - 🔧 Amendment 권고: [`.moai/plans/amendments-2026-05-05.md`](.moai/plans/amendments-2026-05-05.md)
 
@@ -1329,4 +1333,4 @@ MIT License - [LICENSE](LICENSE) 파일 참조
 
 **Built with ❤️ using [abyz-lab](https://abyz-lab.work)**
 
-_마지막 업데이트: 2026-05-05 (교차검증 반영 — 릴리즈 블로커 현행화, RC1 실행 계획 재정의, #12/#13 closed 반영, PR #20/#21 merged 반영)_
+_마지막 업데이트: 2026-05-06 (DEPLOY-001 리뷰 후속 수정 — Wrangler 설치, preview URL smoke 전달, post-deploy smoke 파싱 보정)_

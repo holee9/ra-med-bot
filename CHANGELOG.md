@@ -9,6 +9,12 @@
 
 ## [Unreleased]
 
+### Fixed
+
+- DEPLOY-001 review follow-up: install Wrangler before Cloudflare staging deploy.
+- Pass the Vercel preview deployment URL into post-deploy smoke instead of falling back to localhost.
+- Fix `scripts/post-deploy-smoke.sh` parsing and require explicit `BASE_URL`.
+
 ---
 
 ## [1.0.0-rc] — 2026-05-06

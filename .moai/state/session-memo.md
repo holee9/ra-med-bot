@@ -4,7 +4,7 @@
 
 session_id: current
 cwd: D:\workspace-github\ra-med-bot
-branch: work/deploy-001
+branch: main
 updated: 2026-05-06
 
 ## P2: Work Gate
@@ -15,10 +15,12 @@ Current verified state:
 
 | Item | State |
 |---|---|
-| `HEAD` | `7701493` |
-| `origin/main` | `7701493` |
-| active branch | `work/deploy-001` |
-| local dirty files | `.moai/runbooks/release-rc1-runbook.md`, `.moai/state/session-memo.md`, `README.md` |
+| `HEAD` | `8b06349` |
+| `origin/main` | `8b06349` |
+| active branch | `main` |
+| local dirty files | none before deploy review fix |
+| existing deploy PRs | none open at preflight |
+| deploy branches checked | none matching `*deploy*`, `*107*`, `*release*`, `*hardening*` |
 
 ## P3: RC1 Pipeline
 
@@ -28,7 +30,7 @@ Current verified state:
 | 2 | #33 HARDENING-001 / PR #102 | MERGED | none |
 | 3 | #34 QUALITY-001 / PR #103 | MERGED | none |
 | 4 | #97 + #104 E2EFIX-001 / PR #106 | MERGED | none |
-| 5 | #105 DEPLOY-001 | OPEN | next implementation |
+| 5 | #105 DEPLOY-001 | REVIEW FOLLOW-UP READY | deploy workflow + docs updated on `main`; commit/push requested |
 | 6 | #26 build reproducibility | OPEN | resolve before #31 |
 | 7 | #30 PR/CI closure integrity | OPEN | resolve before #31 |
 | 8 | #31 RELEASE-001 | OPEN | final release umbrella after #105/#26/#30 |

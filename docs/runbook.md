@@ -22,9 +22,17 @@ All 17 steps must pass. If any step fails, do not proceed to deployment.
 
 If a local preflight/build command hangs, treat the local result as inconclusive, stop the runaway process, and use the GitHub Actions build result as the deployment gate. Do not mark `next build` as passing unless a bounded run completed.
 
-### 1.2 Production Deployment
+### 1.2 Deployment Automation
 
-Regula deploys to Vercel via GitHub Actions on push to `main`.
+Regula deploys through `.github/workflows/deploy.yml`:
+
+| Trigger | Target | Gate |
+|---------|--------|------|
+| Pull request to `main` | Vercel preview | `vercel-preview` output is passed to post-deploy smoke |
+| Push to `main` | Cloudflare staging | Wrangler CLI is installed before `wrangler deploy --env staging` |
+| `release/v*` publication | Vercel production | `production-vercel` environment approval |
+
+Post-deploy smoke must receive a non-empty `BASE_URL`; the script fails fast instead of falling back to localhost.
 
 **Manual deploy (emergency):**
 ```bash
@@ -45,13 +53,13 @@ vercel --prod
 
 ### 1.3 Post-Deployment Smoke Test
 
-After every production deploy, run the smoke test:
+After every deploy, run the smoke test against the deployed URL:
 
 ```bash
 BASE_URL=https://regula.app bash scripts/post-deploy-smoke.sh
 ```
 
-Expected output: all checks passing with HTTP 200 responses and health indicators.
+Expected output: all checks passing with expected HTTP status codes, required security headers, and unauthenticated API checks returning 401.
 
 ---
 

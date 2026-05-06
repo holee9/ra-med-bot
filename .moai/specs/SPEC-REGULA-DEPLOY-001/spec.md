@@ -4,7 +4,7 @@ title: "Regula 1차 RC 배포 자동화 — Vercel Preview · Cloudflare Staging
 status: completed
 phase: "release-deploy"
 priority: High
-version: 0.1.1
+version: 0.1.2
 created: 2026-05-05
 updated: 2026-05-06
 author: manager-spec
@@ -44,6 +44,13 @@ revision_history:
       [H2] REQ-DEPLOY-001a 신규 추가 — cloudflare-staging job의 staging-only EARS 단언.
       [H5] REQ-DEPLOY-006 EARS 패턴 (WHILE) → (ED) 정정.
       §6 Dependencies에 production-vercel/production-cloudflare Environment 분리 명시.
+  - version: 0.1.2
+    date: 2026-05-06
+    author: Codex
+    notes: |
+      DEPLOY-001 review follow-up — Wrangler CLI 설치 후 `wrangler deploy --env staging` 실행,
+      `vercel-preview` job output으로 preview URL을 post-deploy smoke에 전달,
+      `scripts/post-deploy-smoke.sh` 파싱 오류 수정 및 `BASE_URL` 필수화.
 ---
 
 # SPEC-REGULA-DEPLOY-001 — Regula 1차 RC 배포 자동화
@@ -120,10 +127,10 @@ Acceptance:
 
 #### REQ-DEPLOY-001a (ED) — cloudflare-staging job staging-only 단언
 
-**WHEN** the `cloudflare-staging` job executes, **THE** workflow **shall** invoke `pnpm wrangler deploy --env staging` (and only that wrangler deploy variant) **AND shall not** execute any other `wrangler deploy` command (e.g., `--env production`, no-env default, `--env preview`). 본 단언은 REQ-DEPLOY-002 grep 검증과 짝을 이룬다 — REQ-DEPLOY-002가 negative grep(`--env production` 0 매치)을 검증하고, 본 REQ-DEPLOY-001a가 positive 단언(`--env staging`만 호출)을 추가한다.
+**WHEN** the `cloudflare-staging` job executes, **THE** workflow **shall** install Wrangler CLI and invoke `wrangler deploy --env staging` (and only that wrangler deploy variant) **AND shall not** execute any other `wrangler deploy` command (e.g., `--env production`, no-env default, `--env preview`). 본 단언은 REQ-DEPLOY-002 grep 검증과 짝을 이룬다 — REQ-DEPLOY-002가 negative grep(`--env production` 0 매치)을 검증하고, 본 REQ-DEPLOY-001a가 positive 단언(`--env staging`만 호출)을 추가한다.
 
 Acceptance:
-- `cloudflare-staging` job step에서 `pnpm wrangler deploy --env staging` 명령 1회 호출
+- `cloudflare-staging` job step에서 Wrangler CLI 설치 후 `wrangler deploy --env staging` 명령 1회 호출
 - 동일 job 또는 다른 job에서 `wrangler deploy` 명령이 `--env staging` 외 인자로 호출되지 않음 (`grep -nE "wrangler deploy" .github/workflows/deploy.yml` 결과가 모두 `--env staging`만 포함)
 - REQ-DEPLOY-002 negative grep과 짝을 이룸
 
@@ -205,7 +212,7 @@ Acceptance:
 
 #### REQ-DEPLOY-010 (ED) — 모든 deploy 후 smoke 자동 실행
 
-**WHEN** any of the three deploy jobs (`vercel-preview`, `cloudflare-staging`, `vercel-production`) completes successfully, **THE** `post-deploy-smoke` job **shall** execute automatically with the deployed URL injected as `BASE_URL` env, running `scripts/post-deploy-smoke.sh` (LAUNCH REQ-LAUNCH-043 계승). Smoke 실패 시 deploy 자체는 유지되나 PR/commit/release에 failure status 게시.
+**WHEN** any of the three deploy jobs (`vercel-preview`, `cloudflare-staging`, `vercel-production`) completes successfully, **THE** `post-deploy-smoke` job **shall** execute automatically with the deployed URL injected as `BASE_URL` env, running `scripts/post-deploy-smoke.sh` (LAUNCH REQ-LAUNCH-043 계승). For PR runs, the URL comes from `needs.vercel-preview.outputs.preview_url`. Smoke 실패 시 deploy 자체는 유지되나 PR/commit/release에 failure status 게시.
 
 Acceptance:
 - 3 deploy job 각각의 `needs:` 또는 `on.workflow_run`로 smoke job 연결

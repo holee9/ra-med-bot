@@ -1,9 +1,14 @@
 #!/usr/bin/env bash
-# Post-deployment smoke test for Regula production environment.
+# Post-deployment smoke test for Regula deployments.
 # Usage: BASE_URL=https://regula.app bash scripts/post-deploy-smoke.sh
 set -euo pipefail
 
-BASE_URL="${BASE_URL:-http://localhost:3000}"
+BASE_URL="${BASE_URL:-}"
+if [ -z "$BASE_URL" ]; then
+  echo "BASE_URL is required."
+  exit 1
+fi
+
 PASS=0
 FAIL=0
 FAILED=()
@@ -15,10 +20,10 @@ check() {
   local status
   status=$(curl -s -o /dev/null -w "%{http_code}" --max-time 15 "$url")
   if [ "$status" = "$expected" ]; then
-    echo "  ✓ $label ($status)"
+    echo "  PASS $label ($status)"
     PASS=$((PASS + 1))
   else
-    echo "  ✗ $label — expected $expected, got $status"
+    echo "  FAIL $label - expected $expected, got $status"
     FAIL=$((FAIL + 1))
     FAILED+=("$label")
   fi
@@ -32,49 +37,49 @@ check_header() {
   local value
   value=$(curl -s -I --max-time 10 "$url" | grep -i "^$header:" | tr -d '\r' | cut -d' ' -f2-)
   if echo "$value" | grep -qi "$expected"; then
-    echo "  ✓ $label"
+    echo "  PASS $label"
     PASS=$((PASS + 1))
   else
-    echo "  ✗ $label — expected '$expected', got '$value'"
+    echo "  FAIL $label - expected '$expected', got '$value'"
     FAIL=$((FAIL + 1))
     FAILED+=("$label")
   fi
 }
 
-echo "╔══════════════════════════════════════════════════════╗"
-echo "║         Regula Post-Deploy Smoke Test                ║"
-echo "╚══════════════════════════════════════════════════════╝"
+echo "============================================================"
+echo "Regula Post-Deploy Smoke Test"
+echo "============================================================"
 echo "Target: $BASE_URL"
 echo ""
 
-echo "── HTTP Endpoints"
+echo "HTTP Endpoints"
 check "Home page"                  "$BASE_URL/"
 check "Health check"               "$BASE_URL/api/health"
 check "Auth endpoint"              "$BASE_URL/api/auth/providers"
 check "Robots.txt"                 "$BASE_URL/robots.txt"
 
 echo ""
-echo "── Security Headers"
+echo "Security Headers"
 check_header "X-Frame-Options DENY"           "$BASE_URL/" "X-Frame-Options" "DENY"
 check_header "X-Content-Type-Options nosniff" "$BASE_URL/" "X-Content-Type-Options" "nosniff"
 check_header "HSTS header present"            "$BASE_URL/" "Strict-Transport-Security" "max-age"
 
 echo ""
-echo "── API Availability (unauthenticated — expect 401)"
+echo "API Availability (unauthenticated, expect 401)"
 check "RA consult API (unauthed)"  "$BASE_URL/api/ra/consult" "401"
 check "RA projects API (unauthed)" "$BASE_URL/api/ra/projects" "401"
 
 echo ""
-echo "╔══════════════════════════════════════════════════════╗"
-echo "║  Smoke Test Summary"
-echo "║  Passed: $PASS  Failed: $FAIL"
-echo "╚══════════════════════════════════════════════════════╝"
+echo "============================================================"
+echo "Smoke Test Summary"
+echo "Passed: $PASS  Failed: $FAIL"
+echo "============================================================"
 
 if [ $FAIL -gt 0 ]; then
   echo ""
   echo "Failed checks:"
   for f in "${FAILED[@]}"; do
-    echo "  • $f"
+    echo "  $f"
   done
   echo ""
   exit 1

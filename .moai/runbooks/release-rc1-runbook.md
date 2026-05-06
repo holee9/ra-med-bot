@@ -1,13 +1,13 @@
 ---
 runbook_id: RELEASE-RC1
-version: 7.0.0
+version: 7.1.0
 created: 2026-05-05
 updated: 2026-05-06
 owner: drake.lee
 status: active
 ---
 
-# Regula 1차 RC v1.0.0-rc 실행 콘티 (Runbook v7.0)
+# Regula 1차 RC v1.0.0-rc 실행 콘티 (Runbook v7.1)
 
 > 기준: 2026-05-06 KST GitHub Issues/PR 전수 재점검.
 >
@@ -29,9 +29,9 @@ status: active
 
 | 항목 | 값 |
 |---|---|
-| active branch | `work/deploy-001` |
-| `HEAD` / `origin/main` | `7701493` |
-| dirty files | `.moai/runbooks/release-rc1-runbook.md`, `.moai/state/session-memo.md`, `README.md` |
+| active branch | `main` |
+| `HEAD` / `origin/main` | `8b06349` |
+| dirty files | deploy review follow-up files before commit |
 
 ---
 
@@ -45,7 +45,7 @@ status: active
 | 2 | #33 RELEASE-HARDENING-001 / PR #102 | MERGED | 완료. Dashboard, Knowledge, logger, Citation E2E 일부 반영 |
 | 3 | #34 QUALITY-001 / PR #103 | MERGED | 완료. Corpus, Eval, Vectorize, DocIngest, Security/RBAC 반영 |
 | 4 | #97 SPEC E2EFIX + #104 Impl / PR #106 | MERGED | 완료. E2E 7-spec 활성화 및 `global-setup` 반영 |
-| 5 | #105 DEPLOY-001 | OPEN | 다음 작업. `.github/workflows/deploy.yml` 신설 |
+| 5 | #105 DEPLOY-001 | COMPLETED / REVIEW FOLLOW-UP | `.github/workflows/deploy.yml` 후속 리뷰 수정 반영 |
 | 6 | #26 build reproducibility | OPEN | #31 전 release blocker. build timeout/프로세스 정리 증거 필요 |
 | 7 | #30 PR/CI closure integrity | OPEN | #31 전 release blocker. PR #20/#21/#12/#13/#14 정합성 최종 댓글 필요 |
 | 8 | #31 RELEASE-001 | OPEN | #105/#26/#30 완료 후 최종 release umbrella gate |
@@ -70,8 +70,14 @@ status: active
 
 - Issue: #105
 - SPEC: `.moai/specs/SPEC-REGULA-DEPLOY-001/spec.md`
-- Branch: `work/deploy-001`
+- Branch: `main`
 - Primary file: `.github/workflows/deploy.yml`
+
+후속 리뷰 수정:
+
+- Cloudflare staging deploy 전에 Wrangler CLI를 설치한다.
+- `vercel-preview` job output의 preview URL을 post-deploy smoke에 전달한다.
+- `scripts/post-deploy-smoke.sh`는 파싱 가능해야 하며, `BASE_URL` 없이는 localhost로 fallback하지 않는다.
 
 완료 기준:
 
