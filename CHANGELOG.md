@@ -11,6 +11,39 @@
 
 ---
 
+## [1.0.0-rc] — 2026-05-06
+
+RC1 릴리즈 후보 — 내부 RA 운영체계 범위 전체 포함.
+
+### RC1 트랙 완료 항목
+
+**SPEC-REGULA-RELEASE-HARDENING-001 (PR #102 — Issue #33)**
+- Dashboard·Knowledge·Console·TODO 페이지 Beta 라벨 및 production hardening
+- runtime `console.*` → structured logger 교체 (전체 경로)
+- Playwright E2E globalSetup 인증 + 7-spec 활성화
+- Feature flags 통합 + citation E2E 준비
+
+**SPEC-REGULA-QUALITY-001 (PR #103 — Issue #34)**
+- Corpus 시드 스크립트 + FDA 특화 픽스처 (101행 샘플 데이터)
+- promptfoo eval 파이프라인 (threshold 80%, YAML config)
+- Vectorize → pgvector hybrid fallback (`isVectorizeAvailable()`)
+- DocIngest E2E 파이프라인 (Extract → Chunk → Embed → Insert + PII filter)
+- CSP nonce + HSTS + X-Frame-Options:DENY 보안 헤더 미들웨어
+- Admin RBAC 커버리지 검증 스크립트 + gap detection
+- 로컬 Bootstrap 자동화 스크립트 + DEVELOPMENT.md 5-step 가이드
+
+**SPEC-REGULA-E2EFIX-001 (PR #106 — Issue #97)**
+- E2E 7-spec 전체 활성화 (auth.setup.ts globalSetup 패턴)
+- env-guard: CI staging 조건부 실행 + 로컬/CI 환경 분리
+
+**SPEC-REGULA-DEPLOY-001 (PR #107 — Issue #105)**
+- `.github/workflows/deploy.yml` 신설 (4 jobs)
+- Vercel preview-per-PR + Cloudflare staging (`--env staging` only)
+- `production-vercel` 환경 수동 승인 게이트
+- post-deploy smoke test 자동 실행
+
+---
+
 ## [1.2.0] — 2026-05-06
 
 ### Added
