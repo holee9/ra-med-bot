@@ -1,24 +1,20 @@
 // @MX:NOTE: [AUTO] E2E spec: chat consultation — query → stream → citation
-// @MX:SPEC: REQ-LAUNCH-016
+// @MX:SPEC: REQ-LAUNCH-016, SPEC-REGULA-E2EFIX-001 (REQ-E2EFIX-002)
 
 import { expect, test } from '@playwright/test';
-
-const NEEDS_SERVER =
-  process.env.CI !== 'true' && !process.env.PLAYWRIGHT_BASE_URL
-    ? 'Requires running Next.js server (set PLAYWRIGHT_BASE_URL or run in CI)'
-    : undefined;
+import { requiresAuthState, requiresLiveServer } from './fixtures/env-guard';
 
 test.describe('Consultation flow (REQ-LAUNCH-016)', () => {
   test.beforeEach(async ({ page }) => {
-    test.skip(!!NEEDS_SERVER, NEEDS_SERVER ?? '');
-    test.skip(true, 'Requires authenticated session — run with PLAYWRIGHT_AUTH_STATE set');
+    const server = requiresLiveServer();
+    const auth = requiresAuthState();
+    test.skip(server.skip, server.reason);
+    test.skip(auth.skip, auth.reason);
     // Navigate to chat — assumes auth fixture or bypassed auth in CI
     await page.goto('/chat');
   });
 
   test('user can submit a regulatory query', async ({ page }) => {
-    test.skip(!!NEEDS_SERVER, NEEDS_SERVER ?? '');
-
     const composer = page.locator('[data-testid="chat-composer"]');
     await expect(composer).toBeVisible();
     await composer.fill('What are the MDR Article 10 requirements for Class IIa devices?');
@@ -31,8 +27,6 @@ test.describe('Consultation flow (REQ-LAUNCH-016)', () => {
   });
 
   test('streaming response renders incremental tokens', async ({ page }) => {
-    test.skip(!!NEEDS_SERVER, NEEDS_SERVER ?? '');
-
     const composer = page.locator('[data-testid="chat-composer"]');
     await composer.fill('List the key requirements for CE marking under EU MDR.');
     await page.keyboard.press('Enter');
@@ -46,8 +40,6 @@ test.describe('Consultation flow (REQ-LAUNCH-016)', () => {
   });
 
   test('response includes citation blocks after streaming completes', async ({ page }) => {
-    test.skip(!!NEEDS_SERVER, NEEDS_SERVER ?? '');
-
     const composer = page.locator('[data-testid="chat-composer"]');
     await composer.fill('Summarise Annex XIV of EU MDR.');
     await page.keyboard.press('Enter');
@@ -58,8 +50,6 @@ test.describe('Consultation flow (REQ-LAUNCH-016)', () => {
   });
 
   test('submit button is disabled while response is streaming', async ({ page }) => {
-    test.skip(!!NEEDS_SERVER, NEEDS_SERVER ?? '');
-
     const composer = page.locator('[data-testid="chat-composer"]');
     const submitBtn = page.locator('[data-testid="chat-submit"]');
 

@@ -1,16 +1,13 @@
 // @MX:NOTE: [AUTO] E2E spec: SSO authentication flow
-// @MX:SPEC: REQ-LAUNCH-015
+// @MX:SPEC: REQ-LAUNCH-015, SPEC-REGULA-E2EFIX-001 (REQ-E2EFIX-002)
 
 import { expect, test } from '@playwright/test';
-
-const NEEDS_SERVER =
-  process.env.CI !== 'true' && !process.env.PLAYWRIGHT_BASE_URL
-    ? 'Requires running Next.js server (set PLAYWRIGHT_BASE_URL or run in CI)'
-    : undefined;
+import { requiresAuthState, requiresLiveServer } from './fixtures/env-guard';
 
 test.describe('Authentication (REQ-LAUNCH-015)', () => {
   test('unauthenticated user is redirected to login / SSO page', async ({ page }) => {
-    test.skip(!!NEEDS_SERVER, NEEDS_SERVER ?? '');
+    const s = requiresLiveServer();
+    test.skip(s.skip, s.reason);
 
     await page.goto('/');
     // The app should redirect to the Next-Auth sign-in page or a custom /login route.
@@ -18,7 +15,8 @@ test.describe('Authentication (REQ-LAUNCH-015)', () => {
   });
 
   test('sign-in page renders an SSO provider button', async ({ page }) => {
-    test.skip(!!NEEDS_SERVER, NEEDS_SERVER ?? '');
+    const s = requiresLiveServer();
+    test.skip(s.skip, s.reason);
 
     await page.goto('/login');
     // At minimum one sign-in button (Microsoft Entra ID or Google) must be visible.
@@ -30,7 +28,8 @@ test.describe('Authentication (REQ-LAUNCH-015)', () => {
   });
 
   test('authenticated user can access /chat', async ({ page }) => {
-    test.skip(true, 'Requires authenticated session — run with PLAYWRIGHT_AUTH_STATE set');
+    const a = requiresAuthState();
+    test.skip(a.skip, a.reason);
 
     await page.goto('/chat');
     await expect(page).toHaveURL('/chat');
@@ -39,7 +38,8 @@ test.describe('Authentication (REQ-LAUNCH-015)', () => {
   });
 
   test('authenticated user profile is visible in the navbar', async ({ page }) => {
-    test.skip(true, 'Requires authenticated session — run with PLAYWRIGHT_AUTH_STATE set');
+    const a = requiresAuthState();
+    test.skip(a.skip, a.reason);
 
     await page.goto('/');
     await expect(page.locator('[data-testid="user-avatar"]')).toBeVisible();
