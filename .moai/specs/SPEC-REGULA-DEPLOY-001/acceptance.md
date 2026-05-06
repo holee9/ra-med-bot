@@ -7,7 +7,7 @@
 1. **G1**: `.github/workflows/deploy.yml` 존재 + 4 job (vercel-preview, cloudflare-staging, vercel-production, post-deploy-smoke) + 5 secret 참조
 2. **G2**: PR open 시 Vercel preview URL이 PR comment에 자동 게시 (24시간 이내)
 3. **G3**: `release/v*` tag push → `vercel-production` job pending 진입 + GitHub Environments `production-vercel` reviewer approve 후 deploy 성공 (Environment 자원은 CLOUDFLARE-001 Phase 7의 `production-cloudflare`와 분리)
-4. **G4**: 모든 deploy 후 `post-deploy-smoke` 자동 실행 + 결과 게시
+4. **G4**: deployed URL이 있는 모든 deploy 후 `post-deploy-smoke` 자동 실행 + 결과 게시
 5. **G5**: Smoke 실패 시 `vercel rollback` 호출 0건 + unhealthy 라벨 + Sentry P1 alert 게시
 6. **G6**: deploy.yml에 `wrangler deploy --env production` 명령어 0회 등장 (CLOUDFLARE-001 ownership 분리)
 
@@ -36,6 +36,9 @@
 - `${{ secrets.VERCEL_PROJECT_ID }}`
 - `${{ secrets.CLOUDFLARE_API_TOKEN }}`
 - `${{ secrets.CLOUDFLARE_ACCOUNT_ID }}`
+
+**And** Cloudflare staging secrets가 비어 있으면 `cloudflare-staging`은 explicit notice를 출력하고 deploy/smoke를 skip
+**And** Vercel deploy secrets가 비어 있으면 해당 Vercel deploy path가 provider error로 fail
 
 #### 시나리오 A3 — production wrangler 명령 차단 + staging-only 단언 (REQ-DEPLOY-001a + 002)
 
@@ -140,6 +143,7 @@
 | Edge Case | 처리 방식 | 검증 |
 | --- | --- | --- |
 | Vercel token 만료 | deploy job fail with 401 | 의도적 만료 token 주입 후 명확한 error 메시지 |
+| Cloudflare staging secrets 미등록 | staging deploy와 staging smoke skip, workflow notice 출력 | `CLOUDFLARE_API_TOKEN`/`CLOUDFLARE_ACCOUNT_ID` 미등록 상태에서 `staging_url` empty 확인 |
 | Cloudflare staging env 미정의 | `cloudflare-staging` job fail with config error | `wrangler.toml [env.staging]` 제거 후 fail 확인 |
 | `release/v*` 태그 외 tag (예: `v1.0.0`) push | `vercel-production` 미트리거 | 태그 push 후 workflow 미실행 확인 |
 | Production approval 24시간 이내 미접수 | workflow timeout | GitHub Actions 기본 6h timeout (또는 custom) |
@@ -153,7 +157,8 @@
 - [ ] G1~G6 6 핵심 게이트 모두 통과
 - [ ] 11 REQ 모두 acceptance 시나리오 통과 (REQ-DEPLOY-001a 포함, 총 12 REQ로 카운트 가능)
 - [ ] GitHub Environments 3종 운영 (preview / staging / production-vercel) — `production-cloudflare`는 CLOUDFLARE-001 Phase 7 ownership으로 본 SPEC 범위 외
-- [ ] 5 GitHub Secrets 등록 완료 + 시범 PR로 preview 게시 확인
+- [ ] Vercel deploy secrets 등록 완료 + 시범 PR로 preview 게시 확인
+- [ ] Cloudflare staging secrets 미등록 시 explicit skip notice + staging smoke 미실행 확인
 - [ ] 시범 release tag (`release/v0.0.1-test`) 시뮬레이션 완료 후 reviewer approve flow 검증
 - [ ] 의도적 smoke fail 주입 후 auto-rollback 0건 + unhealthy 라벨 확인
 - [ ] CLOUDFLARE-001 cf-deploy.yml 미존재 또는 file ownership 분리 검증

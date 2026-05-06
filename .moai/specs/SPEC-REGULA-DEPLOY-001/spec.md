@@ -4,7 +4,7 @@ title: "Regula 1차 RC 배포 자동화 — Vercel Preview · Cloudflare Staging
 status: completed
 phase: "release-deploy"
 priority: High
-version: 0.1.2
+version: 0.1.3
 created: 2026-05-05
 updated: 2026-05-06
 author: manager-spec
@@ -51,6 +51,13 @@ revision_history:
       DEPLOY-001 review follow-up — Wrangler CLI 설치 후 `wrangler deploy --env staging` 실행,
       `vercel-preview` job output으로 preview URL을 post-deploy smoke에 전달,
       `scripts/post-deploy-smoke.sh` 파싱 오류 수정 및 `BASE_URL` 필수화.
+  - version: 0.1.3
+    date: 2026-05-06
+    author: Codex
+    notes: |
+      Deploy workflow runtime을 Node.js 22로 정렬해 Wrangler current requirement를 충족.
+      Cloudflare staging secrets 미설정 시 staging deploy를 명시적 notice와 함께 skip하고,
+      staging URL이 없으면 post-deploy smoke가 실행되지 않도록 gate를 보정.
 ---
 
 # SPEC-REGULA-DEPLOY-001 — Regula 1차 RC 배포 자동화
@@ -91,13 +98,13 @@ Regula 1차 릴리즈 v1.0.0-rc 배포 시점에 다음 결함이 존재한다:
 
 - `.github/workflows/deploy.yml` 신규 작성
   - **Job 1 — Vercel preview**: `pull_request` 트리거, PR마다 preview URL 발급, PR comment에 URL 자동 게시
-  - **Job 2 — Cloudflare staging**: `push` to `main` 트리거, OpenNext.js build → `wrangler deploy --env staging` (Phase 7 production 진입 전 임시 staging 환경)
+  - **Job 2 — Cloudflare staging**: `push` to `main` 트리거, Node.js 22 OpenNext.js build → Cloudflare staging secrets 확인 → `wrangler deploy --env staging` (Phase 7 production 진입 전 임시 staging 환경)
   - **Job 3 — Vercel production**: `release/v*` tag 트리거, GitHub Environments `production-vercel` manual approval 후 배포 (CLOUDFLARE-001 Phase 7의 `production-cloudflare`와 자원 분리)
   - **Job 4 — Post-deploy smoke**: 위 3개 job 직후 자동 호출, `scripts/post-deploy-smoke.sh` 실행, 실패 시 PR/release comment에 보고
 - GitHub Environments `preview` / `staging` / `production-vercel` 3종 정의 — `production-vercel`만 manual approval 활성. `production-cloudflare`는 Phase 7 CLOUDFLARE-001 ownership.
 - `scripts/post-deploy-smoke.sh` 호출 인터페이스 표준화 (기존 LAUNCH REQ-LAUNCH-043 계승, 본 SPEC은 자동 호출 트리거만 추가)
 - Vercel `Vercel Action` (`vercel/action@v3`) 또는 `amondnet/vercel-action` 사용
-- Cloudflare `wrangler-action` (`cloudflare/wrangler-action@v3`) 사용
+- Wrangler CLI는 Node.js 22 환경에서 설치/실행
 - Secrets 관리 — `VERCEL_TOKEN`, `VERCEL_ORG_ID`, `VERCEL_PROJECT_ID`, `CLOUDFLARE_API_TOKEN`, `CLOUDFLARE_ACCOUNT_ID` GitHub Secrets에 등록
 
 ### Out of Scope
@@ -144,11 +151,12 @@ Acceptance:
 
 #### REQ-DEPLOY-003 (U) — Required Secrets 명시
 
-The `deploy.yml` **shall** declare all required secrets (`VERCEL_TOKEN`, `VERCEL_ORG_ID`, `VERCEL_PROJECT_ID`, `CLOUDFLARE_API_TOKEN`, `CLOUDFLARE_ACCOUNT_ID`) in its `env` blocks via `${{ secrets.* }}` references; missing secret **shall** cause CI fail with clear error message identifying which secret is missing.
+The `deploy.yml` **shall** declare all required secrets (`VERCEL_TOKEN`, `VERCEL_ORG_ID`, `VERCEL_PROJECT_ID`, `CLOUDFLARE_API_TOKEN`, `CLOUDFLARE_ACCOUNT_ID`) in its `env` blocks via `${{ secrets.* }}` references. Missing Cloudflare staging secrets **shall** skip staging deploy with an explicit notice and no staging smoke run. Missing Vercel deploy secrets **shall** fail the relevant Vercel deploy path with a clear provider error.
 
 Acceptance:
 - `.github/workflows/deploy.yml` 내 `${{ secrets.VERCEL_TOKEN }}` 등 5개 secret 참조 존재
-- 의도적 secret 미등록 상태에서 PR 트리거 시 명확한 error 메시지 출력
+- Cloudflare staging secret 미등록 상태에서 `cloudflare-staging` job은 notice를 출력하고 `staging_url`을 비워 smoke를 트리거하지 않음
+- Vercel secret 미등록 상태에서 관련 Vercel deploy step이 provider error로 실패
 
 ### Group B — Preview Environment per PR (REQ-DEPLOY-004 ~ 006)
 
@@ -212,10 +220,11 @@ Acceptance:
 
 #### REQ-DEPLOY-010 (ED) — 모든 deploy 후 smoke 자동 실행
 
-**WHEN** any of the three deploy jobs (`vercel-preview`, `cloudflare-staging`, `vercel-production`) completes successfully, **THE** `post-deploy-smoke` job **shall** execute automatically with the deployed URL injected as `BASE_URL` env, running `scripts/post-deploy-smoke.sh` (LAUNCH REQ-LAUNCH-043 계승). For PR runs, the URL comes from `needs.vercel-preview.outputs.preview_url`. Smoke 실패 시 deploy 자체는 유지되나 PR/commit/release에 failure status 게시.
+**WHEN** any of the three deploy jobs (`vercel-preview`, `cloudflare-staging`, `vercel-production`) completes successfully and emits a deployed URL, **THE** `post-deploy-smoke` job **shall** execute automatically with the deployed URL injected as `BASE_URL` env, running `scripts/post-deploy-smoke.sh` (LAUNCH REQ-LAUNCH-043 계승). For PR runs, the URL comes from `needs.vercel-preview.outputs.preview_url`. Smoke 실패 시 deploy 자체는 유지되나 PR/commit/release에 failure status 게시.
 
 Acceptance:
 - 3 deploy job 각각의 `needs:` 또는 `on.workflow_run`로 smoke job 연결
+- URL output이 없는 skipped staging deploy는 smoke 대상에서 제외
 - preview deploy 후 PR comment에 smoke 결과 게시 (`Smoke check: passed/failed`)
 - production deploy 후 release notes에 smoke 결과 추가
 

@@ -1,13 +1,13 @@
 ---
 runbook_id: RELEASE-RC1
-version: 7.1.0
+version: 7.2.0
 created: 2026-05-05
 updated: 2026-05-06
 owner: drake.lee
 status: active
 ---
 
-# Regula 1차 RC v1.0.0-rc 실행 콘티 (Runbook v7.1)
+# Regula 1차 RC v1.0.0-rc 실행 콘티 (Runbook v7.2)
 
 > 기준: 2026-05-06 KST GitHub Issues/PR 전수 재점검.
 >
@@ -30,8 +30,8 @@ status: active
 | 항목 | 값 |
 |---|---|
 | active branch | `main` |
-| `HEAD` / `origin/main` | `8b06349` |
-| dirty files | deploy review follow-up files before commit |
+| `HEAD` / `origin/main` | `61137cd` |
+| dirty files | DEPLOY-001 Node 22 / staging secret gate follow-up in progress |
 
 ---
 
@@ -45,11 +45,11 @@ status: active
 | 2 | #33 RELEASE-HARDENING-001 / PR #102 | MERGED | 완료. Dashboard, Knowledge, logger, Citation E2E 일부 반영 |
 | 3 | #34 QUALITY-001 / PR #103 | MERGED | 완료. Corpus, Eval, Vectorize, DocIngest, Security/RBAC 반영 |
 | 4 | #97 SPEC E2EFIX + #104 Impl / PR #106 | MERGED | 완료. E2E 7-spec 활성화 및 `global-setup` 반영 |
-| 5 | #105 DEPLOY-001 | COMPLETED / REVIEW FOLLOW-UP | `.github/workflows/deploy.yml` 후속 리뷰 수정 반영 |
-| 6 | #26 build reproducibility | OPEN | #31 전 release blocker. build timeout/프로세스 정리 증거 필요 |
-| 7 | #30 PR/CI closure integrity | OPEN | #31 전 release blocker. PR #20/#21/#12/#13/#14 정합성 최종 댓글 필요 |
-| 8 | #31 RELEASE-001 | OPEN | #105/#26/#30 완료 후 최종 release umbrella gate |
-| 9 | `v1.0.0-rc` tag | 미생성 | #31 PASS 후 release notes 작성 및 prerelease tag |
+| 5 | #105 DEPLOY-001 | CLOSED / FOLLOW-UP IN PROGRESS | `.github/workflows/deploy.yml` Node 22 + staging secret gate 보정 |
+| 6 | #26 build reproducibility | OPEN / IN SCOPE | build timeout/프로세스 정리 절차 문서화 및 증거 댓글 필요 |
+| 7 | #30 PR/CI closure integrity | OPEN / IN SCOPE | PR #20/#21/#12/#13/#14 최신 증거 댓글 필요 |
+| 8 | #31 RELEASE-001 | CLOSED | `v1.0.0-rc` prerelease published |
+| 9 | `v1.0.0-rc` tag | PUBLISHED | GitHub Release target `main` |
 
 주의:
 
@@ -76,6 +76,8 @@ status: active
 후속 리뷰 수정:
 
 - Cloudflare staging deploy 전에 Wrangler CLI를 설치한다.
+- deploy workflow 런타임은 Wrangler current requirement에 맞춰 Node.js 22를 사용한다.
+- Cloudflare staging secrets가 없으면 staging deploy와 staging smoke를 explicit notice와 함께 skip한다.
 - `vercel-preview` job output의 preview URL을 post-deploy smoke에 전달한다.
 - `scripts/post-deploy-smoke.sh`는 파싱 가능해야 하며, `BASE_URL` 없이는 localhost로 fallback하지 않는다.
 
@@ -134,18 +136,18 @@ status: active
 
 | 이슈 | 상태 | 처리 |
 |---|---|---|
-| #26 | OPEN | #31 전 처리 필요 |
+| #26 | OPEN / post-RC follow-up | bounded build 절차 및 증거 댓글 필요 |
 | #27 | CLOSED / COMPLETED | 완료 |
 | #28 | CLOSED / COMPLETED | 완료 |
 | #29 | CLOSED / COMPLETED | 완료 |
-| #30 | OPEN | #31 전 처리 필요 |
-| #31 | OPEN | 최종 release umbrella |
+| #30 | OPEN / post-RC follow-up | PR/issue closure evidence 최신화 필요 |
+| #31 | CLOSED / COMPLETED | `v1.0.0-rc` prerelease published |
 | #32 | CLOSED / COMPLETED | 완료 |
 | #33 | CLOSED / COMPLETED | PR #102 완료 |
 | #34 | CLOSED / COMPLETED | PR #103 완료 |
 | #97 | CLOSED / COMPLETED | PR #106 closing reference |
 | #104 | CLOSED / COMPLETED | E2EFIX 구현 추적 완료 |
-| #105 | OPEN | 다음 구현 작업 |
+| #105 | CLOSED / COMPLETED | DEPLOY-001 구현 완료, Node 22/staging gate 후속 보정 중 |
 
 ### 3.2 Post-RC Wave 3 backlog
 

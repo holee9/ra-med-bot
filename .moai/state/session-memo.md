@@ -15,11 +15,11 @@ Current verified state:
 
 | Item | State |
 |---|---|
-| `HEAD` | `8b06349` |
-| `origin/main` | `8b06349` |
+| `HEAD` | `61137cd` |
+| `origin/main` | `61137cd` |
 | active branch | `main` |
-| local dirty files | none before deploy review fix |
-| existing deploy PRs | none open at preflight |
+| local dirty files | DEPLOY-001 Node 22 / staging secret gate follow-up in progress |
+| existing open PRs | none open at preflight |
 | deploy branches checked | none matching `*deploy*`, `*107*`, `*release*`, `*hardening*` |
 
 ## P3: RC1 Pipeline
@@ -30,11 +30,11 @@ Current verified state:
 | 2 | #33 HARDENING-001 / PR #102 | MERGED | none |
 | 3 | #34 QUALITY-001 / PR #103 | MERGED | none |
 | 4 | #97 + #104 E2EFIX-001 / PR #106 | MERGED | none |
-| 5 | #105 DEPLOY-001 | REVIEW FOLLOW-UP READY | deploy workflow + docs updated on `main`; commit/push requested |
-| 6 | #26 build reproducibility | OPEN | resolve before #31 |
-| 7 | #30 PR/CI closure integrity | OPEN | resolve before #31 |
-| 8 | #31 RELEASE-001 | OPEN | final release umbrella after #105/#26/#30 |
-| 9 | `v1.0.0-rc` | not tagged | tag after #31 PASS |
+| 5 | #105 DEPLOY-001 | FOLLOW-UP IN PROGRESS | Deploy workflow Node.js 22 + staging secret gate correction |
+| 6 | #26 build reproducibility | OPEN / IN SCOPE | bounded build and process cleanup procedure added to runbook |
+| 7 | #30 PR/CI closure integrity | OPEN / IN SCOPE | PR #20/#21 and #12/#13/#14 evidence refresh in progress |
+| 8 | #31 RELEASE-001 | CLOSED | `v1.0.0-rc` prerelease published |
+| 9 | `v1.0.0-rc` | PUBLISHED | GitHub Release target `main` |
 
 ## P4: Issue Audit Result
 

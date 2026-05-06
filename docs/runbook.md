@@ -22,6 +22,19 @@ All 17 steps must pass. If any step fails, do not proceed to deployment.
 
 If a local preflight/build command hangs, treat the local result as inconclusive, stop the runaway process, and use the GitHub Actions build result as the deployment gate. Do not mark `next build` as passing unless a bounded run completed.
 
+Bounded local build procedure:
+
+- Run local build checks with a 10-minute timeout.
+- If the process exceeds the timeout or stays silent for more than 5 minutes, stop it and record the result as inconclusive.
+- Check for orphan `node`, `next`, or `esbuild` processes before starting a second build attempt.
+- Use the latest green GitHub Actions `CI` run on `main` as the authoritative build gate when local execution is inconclusive.
+
+PowerShell cleanup check:
+
+```powershell
+Get-Process node,next,esbuild -ErrorAction SilentlyContinue
+```
+
 ### 1.2 Deployment Automation
 
 Regula deploys through `.github/workflows/deploy.yml`:
@@ -29,10 +42,10 @@ Regula deploys through `.github/workflows/deploy.yml`:
 | Trigger | Target | Gate |
 |---------|--------|------|
 | Pull request to `main` | Vercel preview | `vercel-preview` output is passed to post-deploy smoke |
-| Push to `main` | Cloudflare staging | Wrangler CLI is installed before `wrangler deploy --env staging` |
+| Push to `main` | Cloudflare staging | Node.js 22 + Wrangler CLI; staging deploy is skipped with a notice when Cloudflare secrets are absent |
 | `release/v*` publication | Vercel production | `production-vercel` environment approval |
 
-Post-deploy smoke must receive a non-empty `BASE_URL`; the script fails fast instead of falling back to localhost.
+Post-deploy smoke must receive a non-empty `BASE_URL`; the script fails fast instead of falling back to localhost. If a deploy job does not produce a URL, smoke is not triggered for that target.
 
 **Manual deploy (emergency):**
 ```bash

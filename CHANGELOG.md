@@ -11,6 +11,8 @@
 
 ### Fixed
 
+- Align Deploy workflow jobs with Node.js 22 for current Wrangler compatibility.
+- Skip Cloudflare staging deploy and staging smoke with an explicit notice when staging secrets are absent.
 - DEPLOY-001 review follow-up: install Wrangler before Cloudflare staging deploy.
 - Pass the Vercel preview deployment URL into post-deploy smoke instead of falling back to localhost.
 - Fix `scripts/post-deploy-smoke.sh` parsing and require explicit `BASE_URL`.
