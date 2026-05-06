@@ -1106,6 +1106,9 @@ Wave 3/4까지 완료되면 Regula는 분류, 근거 수집, 전략, 문서 생�
 
 모든 구현 이슈는 시작 전, 구현 중, PR 수락, Wave 통합, 도메인 UAT, 운영 회귀의 QA 단계를 거칩니다. #73 QA Matrix가 전체 이슈와 증거를 추적하고, #80은 E2E 실행 인프라 선행 조건입니다.
 
+- QA Matrix: [`docs/qa/qa-matrix.md`](docs/qa/qa-matrix.md)
+- Gate 0 SPEC readiness: [`docs/qa/gate-0-spec-readiness.md`](docs/qa/gate-0-spec-readiness.md)
+
 #### 2026-05-05 QA 본문 반영 결과
 
 QA 메타 이슈만 별도로 두는 방식은 실제 구현 흐름에서 놓칠 수 있으므로, 각 구현/기능/E2E 이슈 본문에 `## QA 단계`를 직접 삽입했습니다.

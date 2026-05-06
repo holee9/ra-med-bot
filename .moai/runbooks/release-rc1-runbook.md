@@ -30,8 +30,9 @@ status: active
 | 항목 | 값 |
 |---|---|
 | active branch | `main` |
-| verified implementation commit | `471ffa1` |
-| dirty files | final status docs sync in progress |
+| verified implementation commit | `370304c` |
+| dirty files | none at pre-#22 baseline |
+| merged stale branches | local `work/e2efix-001`; remote `origin/feature/SPEC-REGULA-RELEASE-HARDENING-001`, `origin/work/e2efix-001` |
 
 ---
 

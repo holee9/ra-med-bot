@@ -20,7 +20,7 @@ Optional but recommended:
 1. `git clone https://github.com/holee9/ra-med-bot.git && cd ra-med-bot`
 2. `pnpm install`
 3. `pnpm dev:bootstrap` — generates `.env.local` with dev placeholders
-4. `pnpm db:up && pnpm db:migrate && pnpm db:seed:corpus`
+4. Configure a PostgreSQL 16 + pgvector database and run `pnpm db:migrate`
 5. `pnpm dev`
 
 `lib/env.ts` validates required variables on first import and throws a
@@ -44,6 +44,8 @@ value so these markers cannot leak past local development.
 | `pnpm db:generate` | Generate Drizzle migrations from `lib/db/schema.ts` |
 | `pnpm db:migrate` | Push the schema to `DATABASE_URL` |
 | `pnpm db:studio` | Open Drizzle Studio |
+| `pnpm test:e2e:setup` | Start local E2E DB, push schema, and seed deterministic smoke data |
+| `pnpm test:e2e:local` | Run Playwright with `.env.test` loaded |
 
 ## Testing
 
@@ -63,6 +65,30 @@ pnpm test:e2e      # Playwright (requires `pnpm exec playwright install` once)
 
 Coverage reports land in `coverage/` (HTML at `coverage/index.html`).
 The TRUST 5 target is **>= 85%** on the `lib/` and `app/api/` directories.
+
+### Local E2E Stack
+
+#80 defines the local E2E prerequisite for #22 and later work.
+
+1. Copy `.env.test.example` to `.env.test`.
+2. Keep `E2E_TEST_USER_EMAIL`, `E2E_TEST_USER_PASSWORD`, and `PLAYWRIGHT_AUTH_STATE` unset unless a dedicated non-production SSO test account exists.
+3. Run `pnpm test:e2e:setup`.
+4. Run `pnpm test:e2e:local -- --project=chromium`.
+5. Stop the DB with `pnpm db:test:down`.
+
+Useful commands:
+
+```bash
+docker compose -f docker-compose.test.yml config
+pnpm db:test:up
+pnpm db:test:migrate
+pnpm db:test:seed
+pnpm test:e2e:local -- --project=chromium
+pnpm db:test:down
+```
+
+Auth-dependent tests skip unless an auth state file is generated. Non-auth
+smoke tests can run against the local dev server with the seeded database.
 
 ## Quality Gates
 

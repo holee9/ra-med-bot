@@ -2,7 +2,7 @@
 artifact: shared-roadmap
 title: "QA 단계 게이트 0~5 통합 로드맵"
 created: 2026-05-05
-updated: 2026-05-05
+updated: 2026-05-06
 author: manager-spec
 scope: regula-release-family
 related_specs:
@@ -130,3 +130,5 @@ R = Responsible, A = Accountable
 - GitHub Issues: #73~#79 (QA Program 7종)
 - 4개 owner SPEC: SPEC-REGULA-RELEASE-001, SPEC-REGULA-RELEASE-GATE-001, SPEC-REGULA-RELEASE-HARDENING-001, SPEC-REGULA-QUALITY-001
 - E2E 인프라 issues: #80, #81, #82, #83 (E2E 환경 구축·게이트)
+- QA Matrix: `docs/qa/qa-matrix.md`
+- Gate 0 readiness: `docs/qa/gate-0-spec-readiness.md`

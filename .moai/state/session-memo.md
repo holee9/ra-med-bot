@@ -15,12 +15,13 @@ Current verified state:
 
 | Item | State |
 |---|---|
-| verified implementation commit | `471ffa1` |
-| final docs sync | this session |
+| verified implementation commit | `370304c` |
+| final docs sync | `370304c` |
 | active branch | `main` |
-| local dirty files | final status docs sync in progress |
+| local dirty files | none at pre-#22 baseline |
 | existing open PRs | none open at preflight |
 | deploy branches checked | none matching `*deploy*`, `*107*`, `*release*`, `*hardening*` |
+| merged stale branches | local `work/e2efix-001`; remote `origin/feature/SPEC-REGULA-RELEASE-HARDENING-001`, `origin/work/e2efix-001` |
 
 ## P3: RC1 Pipeline
 
@@ -41,10 +42,20 @@ Current verified state:
 | Item | Result |
 |---|---|
 | P0 Deploy follow-up | `471ffa1`; CI / Deploy / Security Scan all SUCCESS |
+| Final docs sync follow-up | `370304c`; CI / Deploy / Security Scan all SUCCESS |
 | #108 quality audit | CLOSED |
 | #26 build reproducibility | CLOSED |
 | #30 PR/CI closure integrity | CLOSED |
 | #22 Wave 3 work | explicitly deferred |
+
+## P3.2 Pre-#22 Work Started
+
+| Item | State |
+|---|---|
+| #73 QA Matrix | documented in `docs/qa/qa-matrix.md` |
+| #74 Gate 0 SPEC readiness | documented in `docs/qa/gate-0-spec-readiness.md` |
+| #80 local E2E infra | foundation added; `docker compose config` PASS; `up -d` blocked because Docker Desktop engine is not running |
+| Remote stale branches | not deleted; requires explicit owner approval |
 
 ## P4: Issue Audit Result
 
