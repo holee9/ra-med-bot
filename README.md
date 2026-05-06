@@ -72,6 +72,7 @@ pnpm test:e2e         ✅ 7-spec CI 통과 (PR #106 globalSetup — 로컬 .env 
 - [Phase 10 Regulatory Radar 기능](#phase-10-regulatory-radar-기능-2026-05-04-완료)
 - [Phase 11 Department RBAC 기능](#phase-11-department-rbac-기능-2026-05-04-완료)
 - [시작 방법](#시작-방법)
+- [온프레미스 구축 가이드 (Ubuntu)](#온프레미스-구축-가이드-ubuntu)
 - [프로젝트 문서](#프로젝트-문서)
 - [개발 로드맵](#개발-로드맵)
 - [1차 RC v1.0.0-rc 실행 가이드](#-1차-rc-v100-rc-실행-가이드-진행-중)
@@ -677,6 +678,24 @@ pnpm start
 | `docker: command not found` | Docker Desktop 설치 확인 |
 | `Error: vector extension` | `docker compose up -d` 로 DB 컨테이너 시작 |
 | 포트 충돌 | `PORT=3001 pnpm dev` |
+
+---
+
+## 온프레미스 구축 가이드 (Ubuntu)
+
+사내 LAN 환경에서 단일 머신(개발 + 운영 일체형)으로 운영하는 방법입니다.
+
+> **대상**: Dell T3610 (Xeon E5-2696 v2 / 64GB RAM / SSD 480GB) + Ubuntu Desktop 24.04 LTS
+
+| 단계 | 내용 |
+|------|------|
+| Ubuntu 설치 | ISO 부팅 → SSD 단일 파티션 설치 |
+| 개발 도구 | Node.js 22 (nvm) + pnpm + Claude Code + Docker |
+| 코드 세팅 | git clone → pnpm install → .env.local 구성 |
+| DB + 코퍼스 | PostgreSQL 16 + pgvector → 마이그레이션 → corpus seed |
+| 앱 실행 | `pnpm build && pnpm start` → 사내 IP로 팀 접근 |
+
+**전체 단계별 가이드**: [docs/setup/ubuntu-onpremise-guide.md](docs/setup/ubuntu-onpremise-guide.md)
 
 ---
 
