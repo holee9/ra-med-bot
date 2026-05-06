@@ -1,13 +1,13 @@
 ---
 runbook_id: RELEASE-RC1
-version: 7.2.0
+version: 7.3.0
 created: 2026-05-05
 updated: 2026-05-06
 owner: drake.lee
 status: active
 ---
 
-# Regula 1차 RC v1.0.0-rc 실행 콘티 (Runbook v7.2)
+# Regula 1차 RC v1.0.0-rc 실행 콘티 (Runbook v7.3)
 
 > 기준: 2026-05-06 KST GitHub Issues/PR 전수 재점검.
 >
@@ -30,8 +30,11 @@ status: active
 | 항목 | 값 |
 |---|---|
 | active branch | `main` |
-| verified implementation commit | `370304c` |
-| dirty files | none at pre-#22 baseline |
+| verified implementation commit | `8b3a983` |
+| dirty files | none before implementation-status documentation update |
+| latest Actions | CI / Deploy / Security Scan success on `8b3a983` |
+| Playwright CI caveat | workflow success, but browser test steps skipped because staging URL was missing |
+| local E2E caveat | #80 foundation exists; Docker engine was not running for `up -d` evidence |
 | merged stale branches | local `work/e2efix-001`; remote `origin/feature/SPEC-REGULA-RELEASE-HARDENING-001`, `origin/work/e2efix-001` |
 
 ---

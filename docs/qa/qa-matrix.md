@@ -20,6 +20,15 @@ Completed RC references kept as evidence anchors:
 
 - #26, #30, #31, #97, #104, #105
 
+Current evidence state:
+
+- #73 matrix document exists and remains open as the QA program tracker.
+- #74 Gate 0 document exists and remains open as the readiness policy tracker.
+- #80 local E2E foundation exists, but full local E2E evidence is blocked until
+  Docker Desktop engine is running and `up/migrate/seed/Playwright` completes.
+- #22 implementation remains blocked until its Gate 0 `QA plan` is refreshed
+  against baseline commit `8b3a983`.
+
 ## Closure Rule
 
 An implementation issue cannot close until its PR or issue comment contains

@@ -6,6 +6,20 @@
 
 ## 1. Deployment Procedure
 
+### 1.0 Current Verified Baseline
+
+| Item | State |
+|---|---|
+| Baseline commit | `8b3a983` |
+| Branch | `main` |
+| Latest CI | success |
+| Latest Deploy workflow | success |
+| Latest Security Scan | success |
+| Playwright CI | success with browser test step skipped when staging URL is missing |
+| Local E2E | #80 groundwork exists; full local DB + Playwright evidence still requires Docker Desktop engine |
+
+For the full implementation review, see [`docs/implementation-status.md`](implementation-status.md).
+
 ### 1.1 Pre-Deployment Checklist
 
 Run the full pre-flight checklist before every production deployment:

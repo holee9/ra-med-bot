@@ -132,3 +132,4 @@ R = Responsible, A = Accountable
 - E2E 인프라 issues: #80, #81, #82, #83 (E2E 환경 구축·게이트)
 - QA Matrix: `docs/qa/qa-matrix.md`
 - Gate 0 readiness: `docs/qa/gate-0-spec-readiness.md`
+- Current implementation review: `docs/implementation-status.md`

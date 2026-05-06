@@ -11,56 +11,57 @@
 
 ---
 
-## 구현 현황 대시보드 (2026-05-06 기준)
+## 구현 현황 대시보드 (2026-05-06 KST 기준)
 
-### 종합 점수: 9.0 / 10
+상세 점검 기록: [`docs/implementation-status.md`](docs/implementation-status.md)
 
-| 카테고리 | 점수 | 측정 근거 |
+### 종합 판단
+
+`main`은 RC 기준으로 green 상태입니다. Wave 3 구현은 아직 시작하지 않았고, #22 착수 전 #80 로컬 E2E 증거와 #22 Gate 0 `QA plan` 갱신이 남아 있습니다.
+
+| 카테고리 | 상태 | 측정 근거 |
 |---------|------|---------|
-| TypeScript 타입 안전성 | ✅ 10/10 | `pnpm typecheck` — 0 에러 (474 파일) |
-| 코드 품질 (Lint) | ✅ 10/10 | Biome 0 위반, hex-color 0 위반 |
-| 단위/통합 테스트 | ✅ 9/10 | 1,686 통과 / 6 스킵 (174 파일) |
-| CI 품질 게이트 | ✅ 10/10 | tokens·i18n·rbac·contrast·audit·modules 6/6 PASS |
-| 구현 완성도 | ✅ 9/10 | 12 페이지 + 30+ API 엔드포인트 구현 |
-| E2E 실행 가능성 | ✅ 8/10 | PR #106 — 7-spec 활성화·globalSetup 완료. 로컬 DB·.env 미비 시 스킵. |
-| 런타임 검증 | ⛔ 2/10 | `.env` 없음 → 앱 로컬 시작 불가 |
-| 배포 준비도 | ✅ 9/10 | PR #107 + 후속 리뷰 수정 — Node 22 deploy runtime, staging secret gate, preview URL smoke 전달 |
+| 구현 기준 | PASS | implementation baseline `8b3a983`; 본 상태 갱신은 문서 전용 |
+| GitHub Actions | PASS | `CI`, `Deploy`, `Security Scan` 모두 success on `8b3a983` |
+| 구현 표면 | PASS | 16 pages, 28 API route handlers, 33 component files, 150 lib files |
+| 테스트 자산 | PASS | 184 test/spec files, 8 Playwright specs |
+| CI core gates | PASS | typecheck, lint, format, unit, RBAC, audit, tokens, i18n, glossary, contrast, modules, migrations, build |
+| E2E CI | WARN | Playwright jobs success, but `Run E2E tests` skipped because staging URL was missing |
+| 로컬 E2E | BLOCKED | #80 기반 파일 추가 완료. Docker Desktop engine 미실행으로 `up -d` evidence 없음 |
+| 런타임 로컬 검증 | WARN | `.env.local` 또는 `.env.test` 필요. `dev:bootstrap` 및 `.env.test.example` 제공 |
+| RC 상태 | PASS | `v1.0.0-rc` published, #31 closed |
+| 다음 구현 | BLOCKED | #22 open. Gate 0 `QA plan`을 `8b3a983` 기준으로 재작성 필요 |
 
-### CI 실행 결과
+### 최신 CI 실행 결과
 
-```
-pnpm typecheck        ✅ PASS  (0 errors, 474 files)
-pnpm lint             ✅ PASS  (0 violations)
-pnpm test             ✅ PASS  (1,686 / 1,692 tests, 174 files)
-pnpm ci:tokens        ✅ PASS
-pnpm ci:i18n          ✅ PASS
-pnpm ci:module-boundaries ✅ PASS
-pnpm ci:rbac          ✅ PASS
-pnpm ci:contrast      ✅ PASS
-pnpm ci:audit         ✅ PASS
-pnpm test:e2e         ✅ 7-spec CI 통과 (PR #106 globalSetup — 로컬 .env 필요 시 스킵)
-```
+| Job | 결과 | 비고 |
+|---|---|---|
+| CI Gates | PASS | 18개 core step 통과 |
+| Deploy | PASS | Vercel/Cloudflare deploy workflow success |
+| Security Scan | PASS | security workflow success |
+| Playwright E2E chromium/firefox/webkit | PASS with skip | staging URL 부재로 browser test step skipped |
+| LLM Eval Harness | SKIPPED | eval secret/trigger 조건 미충족 |
 
-### E2E 현황 (8개 spec 파일 존재 / 0개 실행 가능)
+### E2E 현황
 
-| Spec 파일 | 검증 내용 | 실행 가능 여부 |
+| Spec 파일 | 검증 내용 | 현재 실행 상태 |
 |-----------|-----------|--------------|
-| `auth.spec.ts` | 로그인·세션·로그아웃 | ⛔ DB 필요 |
-| `consultation.spec.ts` | 채팅·SSE 스트리밍 | ⛔ DB 필요 |
-| `citation-click.spec.ts` | 인용 클릭 | ⛔ DB 필요 |
-| `expert-review.spec.ts` | 전문가 검토 플로우 | ⛔ DB 필요 |
-| `i18n.spec.ts` | 언어 전환 | ⛔ 서버 필요 |
-| `project-switch.spec.ts` | 프로젝트 전환 | ⛔ DB 필요 |
-| `a11y.spec.ts` | WCAG 2.1 AA 접근성 | ⛔ 서버 필요 |
-| `security-headers.spec.ts` | CSP·HSTS 헤더 | ⛔ 프로덕션 URL 필요 |
+| `auth.spec.ts` | 로그인·세션·로그아웃 | 로컬 DB/auth state 필요 |
+| `consultation.spec.ts` | 채팅·SSE 스트리밍 | 로컬 DB 필요 |
+| `citation-click.spec.ts` | 인용 클릭 | 로컬 DB 필요 |
+| `expert-review.spec.ts` | 전문가 검토 플로우 | 로컬 DB 필요 |
+| `i18n.spec.ts` | 언어 전환 | 로컬 서버 필요 |
+| `project-switch.spec.ts` | 프로젝트 전환 | 로컬 DB 필요 |
+| `a11y.spec.ts` | WCAG 2.1 AA 접근성 | 로컬 서버 또는 staging URL 필요 |
+| `security-headers.spec.ts` | CSP·HSTS 헤더 | staging/production URL 필요 |
 
-**E2E 해결 경로**: [#80](https://github.com/holee9/ra-med-bot/issues/80) 환경 구축 → [#81](https://github.com/holee9/ra-med-bot/issues/81) Wave 1 게이트 → [#82](https://github.com/holee9/ra-med-bot/issues/82) Wave 2 게이트 → [#83](https://github.com/holee9/ra-med-bot/issues/83) CI 통합
+**E2E 해결 경로**: [#80](https://github.com/holee9/ra-med-bot/issues/80) 로컬 DB·fixture·Playwright 실행 증거 → [#81](https://github.com/holee9/ra-med-bot/issues/81) Wave 1 게이트 → [#82](https://github.com/holee9/ra-med-bot/issues/82) Wave 2 게이트 → [#83](https://github.com/holee9/ra-med-bot/issues/83) CI browser gate
 
 ---
 
 ## 📋 목차
 
-- [구현 현황 대시보드](#구현-현황-대시보드-2026-05-05-기준)
+- [구현 현황 대시보드](#구현-현황-대시보드-2026-05-06-kst-기준)
 - [개요](#개요)
 - [프로젝트 운영 철학](#프로젝트-운영-철학)
 - [아키텍처](#아키텍처)

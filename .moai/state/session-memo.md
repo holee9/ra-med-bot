@@ -15,10 +15,10 @@ Current verified state:
 
 | Item | State |
 |---|---|
-| verified implementation commit | `370304c` |
-| final docs sync | `370304c` |
+| verified implementation commit | `8b3a983` |
+| current implementation review baseline | `8b3a983` |
 | active branch | `main` |
-| local dirty files | none at pre-#22 baseline |
+| local dirty files | none before implementation-status documentation update |
 | existing open PRs | none open at preflight |
 | deploy branches checked | none matching `*deploy*`, `*107*`, `*release*`, `*hardening*` |
 | merged stale branches | local `work/e2efix-001`; remote `origin/feature/SPEC-REGULA-RELEASE-HARDENING-001`, `origin/work/e2efix-001` |
@@ -43,10 +43,27 @@ Current verified state:
 |---|---|
 | P0 Deploy follow-up | `471ffa1`; CI / Deploy / Security Scan all SUCCESS |
 | Final docs sync follow-up | `370304c`; CI / Deploy / Security Scan all SUCCESS |
+| Pre-#22 QA/E2E groundwork | `8b3a983`; CI / Deploy / Security Scan all SUCCESS |
 | #108 quality audit | CLOSED |
 | #26 build reproducibility | CLOSED |
 | #30 PR/CI closure integrity | CLOSED |
 | #22 Wave 3 work | explicitly deferred |
+
+## P3.1.1 Current Implementation Review
+
+| Item | State |
+|---|---|
+| review baseline | `8b3a983` |
+| app pages | 16 |
+| API route handlers | 28 |
+| component files | 33 |
+| lib files | 150 |
+| test/spec files | 184 |
+| Playwright specs | 8 |
+| latest CI | success; core gates passed |
+| Playwright CI | success with browser test steps skipped because staging URL was missing |
+| local E2E | #80 foundation exists; full up/migrate/seed/Playwright evidence still blocked by Docker engine not running |
+| next implementation | #22 remains blocked until Gate 0 `QA plan` is refreshed against `8b3a983` |
 
 ## P3.2 Pre-#22 Work Started
 

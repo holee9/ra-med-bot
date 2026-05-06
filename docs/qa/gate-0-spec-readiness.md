@@ -54,11 +54,13 @@ Implementation must not start when any of these are true:
 |---|---|
 | Issue | #22 open |
 | SPEC | SPEC-REGULA-PREDICATE-001 named in issue title |
-| Branch | Do not create until Gate 0 comment is posted |
+| Current baseline | `8b3a983` on `main` |
+| Branch | Do not create or reuse `work/issue-22-predicate` until Gate 0 is refreshed |
 | Required fixtures | Predicate source corpus, ranking fixture, negative/no-match fixture |
 | Required checks | Unit, API contract, DB integration, Playwright search flow, audit/citation evidence |
 | External dependency | FDA 510(k) source or deterministic offline substitute |
-| Decision | BLOCKED until #22 receives a `QA plan` comment |
+| Additional scope question | Gap Analysis request must be included in this SPEC or split after #59 |
+| Decision | BLOCKED until #22 receives a refreshed `QA plan` comment against `8b3a983` |
 
 ## Maintenance
 
