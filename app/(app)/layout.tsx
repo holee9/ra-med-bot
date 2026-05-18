@@ -2,11 +2,14 @@
 // left and Topbar (56px) over the main content area. The robots metadata
 // here is a redundant safety belt; root layout already forces noindex.
 // T-007: auth() called here to pass showExpertReview prop to Sidebar (REQ-ENTERPRISE-029).
+// Issue #111: mustChangePassword redirect — forces admin bootstrap accounts to
+// change their password on first login before accessing any app route.
 // auth is dynamically imported to avoid next-auth module resolution issues in test env.
 
 import Sidebar from '@/components/shell/Sidebar';
 import Topbar from '@/components/shell/Topbar';
 import type { Metadata } from 'next';
+import { redirect } from 'next/navigation';
 
 export const metadata: Metadata = {
   robots: { index: false, follow: false },
@@ -23,6 +26,10 @@ export default async function AppLayout({ children }: { children: React.ReactNod
     if (userRole) {
       showExpertReview = hasRole(userRole as Parameters<typeof hasRole>[0], 'ra-lead');
     }
+    // Issue #111: force password change before any app access.
+    const mustChange = (session?.user as { mustChangePassword?: boolean } | undefined)
+      ?.mustChangePassword;
+    if (mustChange) redirect('/change-password');
   } catch {
     // In test/build environments where auth is unavailable, default to false.
   }

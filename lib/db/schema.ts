@@ -192,6 +192,8 @@ export const users = pgTable('users', {
   image: text('image'),
   // pending = awaiting admin approval, active = approved, disabled = revoked.
   status: userStatusEnum('status').notNull().default('pending'),
+  // Issue #111: force password change on first login (admin bootstrap accounts only).
+  mustChangePassword: boolean('must_change_password').notNull().default(false),
 });
 
 // REQ-FND-034

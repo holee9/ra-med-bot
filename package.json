@@ -10,7 +10,7 @@
   "scripts": {
     "dev": "next dev",
     "dev:bootstrap": "node --experimental-strip-types scripts/dev-bootstrap.ts",
-    "admin:create": "node --experimental-strip-types scripts/create-admin.ts",
+    "admin:create": "pnpm dlx tsx scripts/create-admin.ts",
     "build": "next build",
     "start": "next start",
     "typecheck": "tsc --noEmit",

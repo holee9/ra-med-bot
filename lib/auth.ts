@@ -79,6 +79,18 @@ export const { handlers, auth, signIn, signOut } = NextAuth(() => {
         await writeAudit(buildLoginAuditEvent(user.id, account?.provider));
         return true;
       },
+      // Issue #111: expose mustChangePassword so the (app) layout can redirect.
+      // With database sessions, user.id is available; fetch the flag from DB here.
+      session: async ({ session, user }) => {
+        const [dbUser] = await db
+          .select({ mustChangePassword: users.mustChangePassword })
+          .from(users)
+          .where(eq(users.id, user.id))
+          .limit(1);
+        (session.user as Record<string, unknown>).mustChangePassword =
+          dbUser?.mustChangePassword ?? false;
+        return session;
+      },
     },
     events: {
       // REQ-ENTERPRISE-029: Wire auth.logout audit event.
