@@ -19,7 +19,7 @@ import { eq } from 'drizzle-orm';
 import { writeAudit } from './audit';
 import { buildLoginAuditEvent, buildLogoutAuditEvent } from './auth/audit-callbacks';
 import { db } from './db/client';
-import { users } from './db/schema';
+import { accounts, sessions, users, verificationTokens } from './db/schema';
 import { getEnv } from './env';
 
 // getEnv() is deferred inside the NextAuth callback to avoid ZodError during
@@ -28,7 +28,12 @@ import { getEnv } from './env';
 export const { handlers, auth, signIn, signOut } = NextAuth(() => {
   const env = getEnv();
   return {
-    adapter: DrizzleAdapter(db),
+    adapter: DrizzleAdapter(db, {
+      usersTable: users,
+      accountsTable: accounts,
+      sessionsTable: sessions,
+      verificationTokensTable: verificationTokens,
+    }),
     // REQ-FND-052: Database session strategy. JWT is rejected because we need
     // server-side revocation for compliance (forced logout on RA personnel
     // offboarding) and audit-trail joins by sessionId.
