@@ -77,6 +77,7 @@ export const expertReviewStatusEnum = pgEnum('expert_review_status', [
 // REQ-ENTERPRISE-016: user_role pgEnum replaces TEXT role column on users table.
 // Migration: 0004_user_role_enum.sql (creates type, migrates 'member' → 'ra-member').
 export const userRoleEnum = pgEnum('user_role', ['admin', 'ra-lead', 'ra-member', 'viewer']);
+export const userStatusEnum = pgEnum('user_status', ['pending', 'active', 'disabled']);
 // REQ-TENANT-001: department pgEnum for secondary RBAC axis (SPEC-REGULA-TENANT-001 Tenant-Lite).
 export const userDepartmentEnum = pgEnum('user_department', ['RA', 'Dev', 'Exec', 'External']);
 
@@ -186,6 +187,11 @@ export const users = pgTable('users', {
   updatedAt: timestamp('updated_at', { withTimezone: true, mode: 'date' }).notNull().defaultNow(),
   // REQ-TENANT-001: nullable department for secondary RBAC axis. null = unrestricted.
   department: userDepartmentEnum('department'),
+  // Credentials auth — null means SSO-only account.
+  password_hash: text('password_hash'),
+  image: text('image'),
+  // pending = awaiting admin approval, active = approved, disabled = revoked.
+  status: userStatusEnum('status').notNull().default('pending'),
 });
 
 // REQ-FND-034

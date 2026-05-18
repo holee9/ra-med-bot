@@ -1,11 +1,11 @@
 'use client';
 
-import { signIn } from 'next-auth/react';
 import { useRouter } from 'next/navigation';
 import { useState } from 'react';
 
-export default function LoginButtons() {
+export default function SignupPage() {
   const router = useRouter();
+  const [name, setName] = useState('');
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [error, setError] = useState('');
@@ -15,18 +15,38 @@ export default function LoginButtons() {
     e.preventDefault();
     setError('');
     setLoading(true);
-    const result = await signIn('credentials', { email, password, redirect: false });
+
+    const res = await fetch('/api/auth/signup', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ name, email, password }),
+    });
+
+    const data = await res.json();
     setLoading(false);
-    if (result?.error) {
-      setError('이메일/비밀번호가 올바르지 않거나 아직 승인 대기 중입니다');
-    } else {
-      router.push('/');
+
+    if (!res.ok) {
+      setError(data.error ?? '가입에 실패했습니다');
+      return;
     }
+
+    router.push('/login?registered=1');
   }
 
   return (
-    <div className="mt-8 flex w-full flex-col gap-4">
-      <form onSubmit={handleSubmit} className="flex flex-col gap-3">
+    <main className="mx-auto flex min-h-screen max-w-md flex-col items-center justify-center px-6 py-12">
+      <h1 className="font-serif text-3xl text-brand-800">Regula</h1>
+      <p className="mt-2 text-ink-600">신규 계정 신청</p>
+
+      <form onSubmit={handleSubmit} className="mt-8 flex w-full flex-col gap-3">
+        <input
+          type="text"
+          placeholder="이름"
+          value={name}
+          onChange={(e) => setName(e.target.value)}
+          required
+          className="rounded-md border border-ink-200 bg-surface px-4 py-3 text-sm text-ink-800 outline-none focus:border-brand-500"
+        />
         <input
           type="email"
           placeholder="이메일"
@@ -37,7 +57,7 @@ export default function LoginButtons() {
         />
         <input
           type="password"
-          placeholder="비밀번호"
+          placeholder="비밀번호 (8자 이상)"
           value={password}
           onChange={(e) => setPassword(e.target.value)}
           required
@@ -49,16 +69,16 @@ export default function LoginButtons() {
           disabled={loading}
           className="rounded-md bg-brand-700 px-4 py-3 text-sm font-medium text-white hover:bg-brand-800 disabled:opacity-50"
         >
-          {loading ? '로그인 중...' : '로그인'}
+          {loading ? '처리 중...' : '신청하기'}
         </button>
       </form>
 
-      <p className="text-center text-sm text-ink-500">
-        계정이 없으신가요?{' '}
-        <a href="/signup" className="text-brand-700 hover:underline">
-          신규 신청
+      <p className="mt-4 text-sm text-ink-500">
+        이미 계정이 있으신가요?{' '}
+        <a href="/login" className="text-brand-700 hover:underline">
+          로그인
         </a>
       </p>
-    </div>
+    </main>
   );
 }

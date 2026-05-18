@@ -129,6 +129,6 @@ export function middleware(req: NextRequest) {
 // reviewed against the public-route allow-list in handoff §16.
 export const config = {
   matcher: [
-    '/((?!_next/static|_next/image|favicon.ico|login|sso/callback|api/auth|robots.txt|public).*)',
+    '/((?!_next/static|_next/image|favicon.ico|login|signup|sso/callback|api/auth|robots.txt|public).*)',
   ],
 };

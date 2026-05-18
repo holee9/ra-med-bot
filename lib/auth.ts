@@ -10,12 +10,16 @@
 // REQ-ENTERPRISE-035: writeAudit failures MUST propagate — do NOT catch or swallow.
 
 import { DrizzleAdapter } from '@auth/drizzle-adapter';
+import bcrypt from 'bcryptjs';
 import NextAuth from 'next-auth';
+import Credentials from 'next-auth/providers/credentials';
 import Google from 'next-auth/providers/google';
 import MicrosoftEntraID from 'next-auth/providers/microsoft-entra-id';
+import { eq } from 'drizzle-orm';
 import { writeAudit } from './audit';
 import { buildLoginAuditEvent, buildLogoutAuditEvent } from './auth/audit-callbacks';
 import { db } from './db/client';
+import { users } from './db/schema';
 import { getEnv } from './env';
 
 // getEnv() is deferred inside the NextAuth callback to avoid ZodError during
@@ -30,6 +34,30 @@ export const { handlers, auth, signIn, signOut } = NextAuth(() => {
     // offboarding) and audit-trail joins by sessionId.
     session: { strategy: 'database' },
     providers: [
+      Credentials({
+        credentials: {
+          email: { label: 'Email', type: 'email' },
+          password: { label: 'Password', type: 'password' },
+        },
+        async authorize(credentials) {
+          const email = credentials?.email as string | undefined;
+          const password = credentials?.password as string | undefined;
+          if (!email || !password) return null;
+
+          const [user] = await db
+            .select()
+            .from(users)
+            .where(eq(users.email, email))
+            .limit(1);
+
+          if (!user?.password_hash) return null;
+          const valid = await bcrypt.compare(password, user.password_hash);
+          if (!valid) return null;
+          if (user.status !== 'active') return null; // pending or disabled
+
+          return { id: user.id, email: user.email, name: user.name, image: user.image };
+        },
+      }),
       MicrosoftEntraID({
         clientId: env.AUTH_MICROSOFT_ID,
         clientSecret: env.AUTH_MICROSOFT_SECRET,
