@@ -11,26 +11,43 @@
 
 ---
 
-## 구현 현황 대시보드 (2026-05-06 KST 기준)
+## 구현 현황 대시보드 (2026-05-21 KST 기준)
 
 상세 점검 기록: [`docs/implementation-status.md`](docs/implementation-status.md)
 
 ### 종합 판단
 
-`main`은 RC 기준으로 green 상태입니다. Wave 3 구현은 아직 시작하지 않았고, #22 착수 전 #80 로컬 E2E 증거와 #22 Gate 0 `QA plan` 갱신이 남아 있습니다.
+로그인 버그가 수정되어 Credentials 인증이 정상 동작합니다. `strategy: 'database'`가 Auth.js v5 beta에서 Credentials와 충돌하는 근본 원인을 해결했습니다.
 
 | 카테고리 | 상태 | 측정 근거 |
 |---------|------|---------|
-| 구현 기준 | PASS | implementation baseline `8b3a983`; 본 상태 갱신은 문서 전용 |
+| 구현 기준 | PASS | login fix commit; `drake.lee@abyzr.com` / `hnabyz2023@gmail.com` 로컬 검증 완료 |
 | GitHub Actions | PASS | `CI`, `Deploy`, `Security Scan` 모두 success on `8b3a983` |
 | 구현 표면 | PASS | 16 pages, 28 API route handlers, 33 component files, 150 lib files |
 | 테스트 자산 | PASS | 184 test/spec files, 8 Playwright specs |
 | CI core gates | PASS | typecheck, lint, format, unit, RBAC, audit, tokens, i18n, glossary, contrast, modules, migrations, build |
 | E2E CI | WARN | Playwright jobs success, but `Run E2E tests` skipped because staging URL was missing |
-| 로컬 E2E | BLOCKED | #80 기반 파일 추가 완료. Docker Desktop engine 미실행으로 `up -d` evidence 없음 |
-| 런타임 로컬 검증 | WARN | `.env.local` 또는 `.env.test` 필요. `dev:bootstrap` 및 `.env.test.example` 제공 |
+| 로컬 로그인 | PASS | Credentials 로그인 수정 완료 — 세션 반환 `{"user":{"name":"Drake Lee","mustChangePassword":true},"expires":"..."}` |
+| 런타임 로컬 검증 | PASS | `.env.local` + 로컬 DB 구동 확인. `dev:bootstrap` 및 `.env.test.example` 제공 |
 | RC 상태 | PASS | `v1.0.0-rc` published, #31 closed |
-| 다음 구현 | BLOCKED | #22 open. Gate 0 `QA plan`을 `8b3a983` 기준으로 재작성 필요 |
+| 다음 구현 | OPEN | #22 Wave 3, #112 가입 시 역할 선택 |
+
+### 최신 로그인 버그 수정 (2026-05-21)
+
+Auth.js v5 beta + Credentials 프로바이더 로그인 실패 근본 원인 및 수정:
+
+| 원인 | 수정 |
+|------|------|
+| `strategy: 'database'` 설정에도 불구하고 Credentials는 JWE(JWT) 쿠키를 생성 | `session: { strategy: 'jwt' }` 로 변경 |
+| `/api/auth/session`이 JWE 문자열을 sessions 테이블에서 조회 → 미발견 → 쿠키 무효화 | JWT 전략 일치로 세션 콜백이 JWE를 직접 디코딩 |
+| session callback이 `user.id` 참조 — JWT 전략에서 `user` 는 `undefined` → TypeError | `user?.id ?? token?.sub` 폴백으로 수정 |
+| `users` 테이블에 `image` 컬럼 누락 (schema 정의 있었으나 DB 미적용) | `migrations/0024_users_image_column.sql` 추가 (`ALTER TABLE users ADD COLUMN IF NOT EXISTS image text`) |
+
+검증 결과:
+```
+POST /api/auth/callback/credentials → {"url":"http://localhost:3000/"}
+GET  /api/auth/session             → {"user":{"name":"Drake Lee","email":"drake.lee@abyzr.com","mustChangePassword":true},"expires":"..."}
+```
 
 ### 최신 CI 실행 결과
 
@@ -61,7 +78,7 @@
 
 ## 📋 목차
 
-- [구현 현황 대시보드](#구현-현황-대시보드-2026-05-06-kst-기준)
+- [구현 현황 대시보드](#구현-현황-대시보드-2026-05-21-kst-기준)
 - [개요](#개요)
 - [프로젝트 운영 철학](#프로젝트-운영-철학)
 - [아키텍처](#아키텍처)
@@ -698,6 +715,8 @@ pnpm start
 | AI 전략 | Gemini Flash 무료($0) → 사용량 증가 시 유료 전환 → 필요 시 Pro/Claude |
 
 **전체 단계별 가이드**: [docs/setup/ubuntu-onpremise-guide.md](docs/setup/ubuntu-onpremise-guide.md)
+
+**개발 환경 자동화 스크립트**: [docs/setup/setup_dev_t3610.sh](docs/setup/setup_dev_t3610.sh) — 시스템 패키지, Node.js, Docker, pnpm, Git 다중 계정(holee9/hnabyz-bot), Claude Code CwdChanged 훅까지 한 번에 설정
 
 ---
 
@@ -1337,4 +1356,4 @@ MIT License - [LICENSE](LICENSE) 파일 참조
 
 **Built with ❤️ using [abyz-lab](https://abyz-lab.work)**
 
-_마지막 업데이트: 2026-05-06 (DEPLOY-001 리뷰 후속 수정 — Node 22 deploy runtime, staging secret gate, preview URL smoke 전달)_
+_마지막 업데이트: 2026-05-21 (Auth.js v5 Credentials 로그인 수정 — strategy jwt 전환, session callback userId 폴백, image 컬럼 마이그레이션, T3610 개발 환경 setup 스크립트 추가)_

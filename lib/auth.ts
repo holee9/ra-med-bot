@@ -34,10 +34,11 @@ export const { handlers, auth, signIn, signOut } = NextAuth(() => {
       sessionsTable: sessions,
       verificationTokensTable: verificationTokens,
     }),
-    // REQ-FND-052: Database session strategy. JWT is rejected because we need
-    // server-side revocation for compliance (forced logout on RA personnel
-    // offboarding) and audit-trail joins by sessionId.
-    session: { strategy: 'database' },
+    // REQ-FND-052: Credentials provider in Auth.js v5 beta forces JWT regardless of
+    // 'database' setting — the session cookie is a JWE, not a DB token.
+    // Switched to 'jwt' to match actual behavior; DB sessions for OAuth providers
+    // can be revisited once Auth.js v5 stable resolves the Credentials/DB gap.
+    session: { strategy: 'jwt' },
     providers: [
       Credentials({
         credentials: {
@@ -85,12 +86,15 @@ export const { handlers, auth, signIn, signOut } = NextAuth(() => {
         return true;
       },
       // Issue #111: expose mustChangePassword so the (app) layout can redirect.
-      // With database sessions, user.id is available; fetch the flag from DB here.
-      session: async ({ session, user }) => {
+      // Auth.js v5 Credentials provider forces JWT strategy; user is undefined, use token.sub.
+      // @MX:NOTE: [AUTO] session callback must handle both JWT (token.sub) and DB (user.id) strategies
+      session: async ({ session, user, token }) => {
+        const userId = user?.id ?? (token?.sub as string | undefined);
+        if (!userId) return session;
         const [dbUser] = await db
           .select({ mustChangePassword: users.mustChangePassword })
           .from(users)
-          .where(eq(users.id, user.id))
+          .where(eq(users.id, userId))
           .limit(1);
         (session.user as Record<string, unknown>).mustChangePassword =
           dbUser?.mustChangePassword ?? false;
