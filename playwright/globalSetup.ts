@@ -36,7 +36,8 @@ export default async function globalSetup(): Promise<void> {
     fs.mkdirSync(dir, { recursive: true });
   }
 
-  const browser = await chromium.launch();
+  const executablePath = process.env.PLAYWRIGHT_CHROMIUM_EXECUTABLE_PATH;
+  const browser = await chromium.launch({ executablePath, args: ['--no-sandbox', '--disable-setuid-sandbox'] });
   try {
     const context = await browser.newContext();
     const page = await context.newPage();

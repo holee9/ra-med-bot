@@ -8,7 +8,17 @@
 import TopbarClient from './TopbarClient';
 // T-007 — [END T-007 addition]
 
-export default function Topbar() {
+export default async function Topbar() {
+  let userInitial = 'U';
+  try {
+    const { auth } = await import('@/lib/auth');
+    const session = await auth();
+    const name = (session?.user as { name?: string } | undefined)?.name ?? '';
+    userInitial = name.charAt(0).toUpperCase() || 'U';
+  } catch {
+    // Non-critical in test/build environments
+  }
+
   return (
     <header
       className="flex h-14 shrink-0 items-center justify-between border-b border-ink-100 bg-surface px-4"
@@ -34,6 +44,14 @@ export default function Topbar() {
         </button>
         {/* T-007: Manual flag button for expert review (REQ-ENTERPRISE-028) */}
         <TopbarClient />
+        {/* User avatar indicator — data-testid required by auth E2E spec */}
+        <div
+          data-testid="user-avatar"
+          aria-label="사용자 프로필"
+          className="flex h-8 w-8 items-center justify-center rounded-full bg-brand-800 text-xs font-semibold text-white"
+        >
+          {userInitial}
+        </div>
       </div>
     </header>
   );

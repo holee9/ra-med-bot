@@ -18,6 +18,7 @@ const resolvedStorageState: string | undefined =
 
 export default defineConfig({
   testDir: './tests/e2e',
+  testIgnore: ['**/fixtures/**/*.test.ts'],
   globalSetup: path.resolve(__dirname, './playwright/globalSetup.ts'),
   fullyParallel: true,
   forbidOnly: !!process.env.CI,
@@ -42,7 +43,13 @@ export default defineConfig({
   projects: [
     {
       name: 'chromium',
-      use: { ...devices['Desktop Chrome'] },
+      use: {
+        ...devices['Desktop Chrome'],
+        launchOptions: {
+          executablePath: process.env.PLAYWRIGHT_CHROMIUM_EXECUTABLE_PATH,
+          args: ['--no-sandbox', '--disable-setuid-sandbox'],
+        },
+      },
     },
     {
       name: 'firefox',

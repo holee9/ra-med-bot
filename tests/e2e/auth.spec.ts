@@ -5,13 +5,17 @@ import { expect, test } from '@playwright/test';
 import { requiresAuthState, requiresLiveServer } from './fixtures/env-guard';
 
 test.describe('Authentication (REQ-LAUNCH-015)', () => {
-  test('unauthenticated user is redirected to login / SSO page', async ({ page }) => {
+  test('unauthenticated user is redirected to login / SSO page', async ({ browser }) => {
     const s = requiresLiveServer();
     test.skip(s.skip, s.reason);
 
+    // Use a fresh context without any stored auth state to test unauthenticated flow.
+    const ctx = await browser.newContext({ storageState: undefined });
+    const page = await ctx.newPage();
     await page.goto('/');
     // The app should redirect to the Next-Auth sign-in page or a custom /login route.
     await expect(page).toHaveURL(/\/(login|api\/auth\/signin)/);
+    await ctx.close();
   });
 
   test('sign-in page renders an SSO provider button', async ({ page }) => {
