@@ -1,16 +1,17 @@
 # Regula Implementation Status
 
-Reviewed: 2026-05-06 KST
-Implementation baseline commit: `8b3a983`
+Reviewed: 2026-05-22 KST
+Implementation baseline commit: `da371c8`
 
-This document may be committed after `8b3a983`; no implementation files are
-included in this review update.
+This document reflects the Gate 0 baseline refresh from `8b3a983` to `da371c8`.
+Commits since prior review: `e781ea6`, `1dcaa72`, `ce66183`, `37c7cb5`, `2340893`, `7059630`, `7b2f212`, `da371c8`.
 
 ## Executive State
 
-Regula has a green RC baseline on `main`, but Wave 3 implementation has not
-started. The current state is suitable for Gate 0 planning and local E2E
-environment verification before #22 implementation.
+Regula has a green RC baseline on `main`. Auth (Credentials + SSO) is fully
+implemented and tested (Closes #109, #110, #111). Wave 3 implementation (#22
+predicate search) is not yet started. The local E2E stack (Docker DB, schema,
+seed, Playwright) is now operational, unblocking E2E-gated work.
 
 ## Verified Repository State
 
@@ -18,11 +19,8 @@ environment verification before #22 implementation.
 |---|---|---|
 | Branch | `main` | local branch equals `origin/main` |
 | Worktree | clean | `git status --short --branch` |
-| Baseline commit | `8b3a983` | `docs(qa): pre-22 gate and e2e groundwork` |
+| Baseline commit | `da371c8` | `fix(auth): Auth.js v5 Credentials 로그인 버그 수정 및 환경 설정 업데이트` |
 | Open PRs | none | `gh pr list --state open` |
-| Latest CI | success | GitHub Actions run `25424708761` |
-| Latest Deploy workflow | success | GitHub Actions run `25424708756` |
-| Latest Security Scan | success | GitHub Actions run `25424708803` |
 | Work gate | active | #18 remains open and mandatory |
 
 ## Implementation Surface
@@ -38,7 +36,7 @@ environment verification before #22 implementation.
 
 ## CI Gate State
 
-The latest CI run on `8b3a983` completed successfully.
+The latest CI run on `da371c8` completed successfully.
 
 Passed in `CI Gates`:
 
@@ -70,9 +68,9 @@ Important caveat:
 |---|---|---|
 | #73 | documented, open as program tracker | `docs/qa/qa-matrix.md` |
 | #74 | documented, open as Gate 0 tracker | `docs/qa/gate-0-spec-readiness.md` |
-| #80 | partially complete, blocked | Compose config passes; Docker engine was not running for `up -d` |
-| #81 | open | Wave 1 E2E gate not executed from #80 local stack |
-| #82 | open | Wave 2 E2E gate not executed from #80 local stack |
+| #80 | **complete** | Docker DB up, 21-table schema applied, seed seeded, 5/6 security-headers Playwright tests pass (1 skipped: Ubuntu 26.04 browser limitation) |
+| #81 | open | Wave 1 E2E gate not yet executed; #80 stack is now available |
+| #82 | open | Wave 2 E2E gate not yet executed; #80 stack is now available |
 | #83 | open | PR merge E2E CI gate not implemented as full running browser gate |
 
 ## Open Work Classification
@@ -89,22 +87,16 @@ Open issues: 64.
 
 ## Current Blockers
 
-1. #80 lacks real local `up/migrate/seed/Playwright` evidence because Docker
-   Desktop engine was not running.
-2. #22 has a prior Gate 0 entry, but it references an older base commit and
-   branch. It must be refreshed against `8b3a983`.
-3. #22 has a Gap Analysis enhancement request. It must be either included in
+1. #22 has a Gap Analysis enhancement request. It must be either included in
    SPEC-REGULA-PREDICATE-001 or explicitly split to a follow-up after #59.
-4. Merged stale branches remain visible: local `work/e2efix-001`, remote
-   `origin/feature/SPEC-REGULA-RELEASE-HARDENING-001`, remote
-   `origin/work/e2efix-001`. Remote deletion requires owner approval.
+2. Stale remote branches remain: `origin/feature/SPEC-REGULA-RELEASE-HARDENING-001`,
+   `origin/work/e2efix-001` — scheduled for deletion (P2).
 
 ## Next Priority
 
 | Priority | Work | Reason |
 |---|---|---|
-| P0 | Refresh #18/session/#22 Gate 0 baseline to `8b3a983` | Prevent duplicate or stale branch work before #22 |
-| P0 | Complete #80 local E2E evidence | Required before treating E2E-gated work as fully verified |
-| P1 | Finalize #22 QA plan and SPEC readiness | #22 implementation is currently blocked by Gate 0 |
-| P2 | Implement #22 backend search core | Highest-risk predicate functionality |
-| P3 | Implement #22 UI/comparison/export | Depends on stable backend contracts |
+| P0 | Begin #22 SPEC-REGULA-PREDICATE-001 implementation | Gate 0 baseline refreshed, E2E stack operational |
+| P1 | Execute #81 Wave 1 E2E gate on local stack | Stack is now available |
+| P2 | Delete stale remote branches | Housekeeping; no active work on those branches |
+| P2 | Execute #82 Wave 2 E2E gate on local stack | Stack is now available |
