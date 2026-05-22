@@ -8,7 +8,6 @@ export default function SignupPage() {
   const [name, setName] = useState('');
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
-  const [role, setRole] = useState<'ra-member' | 'admin'>('ra-member');
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
 
@@ -20,7 +19,7 @@ export default function SignupPage() {
     const res = await fetch('/api/auth/signup', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ name, email, password, role }),
+      body: JSON.stringify({ name, email, password }),
     });
 
     const data = await res.json();
@@ -65,38 +64,9 @@ export default function SignupPage() {
           className="rounded-md border border-ink-200 bg-surface px-4 py-3 text-sm text-ink-800 outline-none focus:border-brand-500"
         />
 
-        <fieldset className="rounded-md border border-ink-200 px-4 py-3">
-          <legend className="px-1 text-xs text-ink-500">역할 선택</legend>
-          <div className="flex gap-6">
-            <label className="flex cursor-pointer items-center gap-2 text-sm text-ink-800">
-              <input
-                type="radio"
-                name="role"
-                value="ra-member"
-                checked={role === 'ra-member'}
-                onChange={() => setRole('ra-member')}
-                className="accent-brand-700"
-              />
-              일반 사용자
-            </label>
-            <label className="flex cursor-pointer items-center gap-2 text-sm text-ink-800">
-              <input
-                type="radio"
-                name="role"
-                value="admin"
-                checked={role === 'admin'}
-                onChange={() => setRole('admin')}
-                className="accent-brand-700"
-              />
-              관리자
-            </label>
-          </div>
-          {role === 'admin' && (
-            <p className="mt-2 text-xs text-amber-700">
-              관리자 계정은 별도 승인 절차가 필요합니다. 관리자 검토 후 활성화됩니다.
-            </p>
-          )}
-        </fieldset>
+        <p className="text-xs text-ink-500">
+          신규 계정은 일반 사용자로 등록됩니다. 관리자 권한이 필요한 경우 가입 후 별도 요청하세요.
+        </p>
 
         {error && <p className="text-sm text-red-600">{error}</p>}
         <button
