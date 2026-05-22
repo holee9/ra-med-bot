@@ -3,7 +3,8 @@
 // @MX:NOTE: Client-side interactive shell extracted from ChatPage (REQ-CHAT-058).
 // @MX:SPEC: SPEC-REGULA-CHAT-001 (REQ-CHAT-031..039, REQ-CHAT-051..052, REQ-CHAT-058)
 
-import { useCallback, useState } from 'react';
+import { useCallback, useEffect, useState } from 'react';
+import { useUIStore } from '@/stores/ui';
 import { useStreamingAnswer } from '../../hooks/useStreamingAnswer';
 import { AnswerBlock } from './AnswerBlock';
 import { Composer } from './Composer';
@@ -15,6 +16,12 @@ export function ChatShell() {
   const [inputValue, setInputValue] = useState('');
   const [sourceFilter, setSourceFilter] = useState<SourceFilter>('all');
   const [hasSubmitted, setHasSubmitted] = useState(false);
+  const currentProjectId = useUIStore((s) => s.currentProjectId);
+
+  // Reset draft when user switches project context.
+  useEffect(() => {
+    setInputValue('');
+  }, [currentProjectId]);
 
   const {
     status,
@@ -49,6 +56,20 @@ export function ChatShell() {
 
   return (
     <>
+      {/* Streaming indicator — visible while response is being generated */}
+      {isStreaming && (
+        <div
+          data-testid="streaming-indicator"
+          className="mb-2 flex items-center gap-1.5 text-xs text-ink-400"
+          aria-live="polite"
+          aria-label="Generating response"
+        >
+          <span className="inline-block h-1.5 w-1.5 animate-pulse rounded-full bg-brand-500" />
+          <span className="inline-block h-1.5 w-1.5 animate-pulse rounded-full bg-brand-500 [animation-delay:0.2s]" />
+          <span className="inline-block h-1.5 w-1.5 animate-pulse rounded-full bg-brand-500 [animation-delay:0.4s]" />
+        </div>
+      )}
+
       {/* Thinking trace */}
       {showThinking && (
         <div className="mb-4">
