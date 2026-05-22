@@ -1,14 +1,15 @@
+import { db } from '@/lib/db/client';
+import { users } from '@/lib/db/schema';
 import bcrypt from 'bcryptjs';
 import { eq } from 'drizzle-orm';
 import { NextResponse } from 'next/server';
 import { z } from 'zod';
-import { db } from '@/lib/db/client';
-import { users } from '@/lib/db/schema';
 
 const SignupSchema = z.object({
   name: z.string().min(2, '이름은 2자 이상이어야 합니다'),
   email: z.string().email('올바른 이메일 주소를 입력하세요'),
   password: z.string().min(8, '비밀번호는 8자 이상이어야 합니다'),
+  role: z.enum(['ra-member', 'admin']).default('ra-member'),
 });
 
 export async function POST(req: Request) {
@@ -22,7 +23,7 @@ export async function POST(req: Request) {
     );
   }
 
-  const { name, email, password } = parsed.data;
+  const { name, email, password, role } = parsed.data;
 
   const [existing] = await db.select().from(users).where(eq(users.email, email)).limit(1);
   if (existing) {
@@ -30,7 +31,7 @@ export async function POST(req: Request) {
   }
 
   const password_hash = await bcrypt.hash(password, 12);
-  await db.insert(users).values({ name, email, password_hash, status: 'pending' });
+  await db.insert(users).values({ name, email, password_hash, role, status: 'pending' });
 
   return NextResponse.json({ ok: true }, { status: 201 });
 }
