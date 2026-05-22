@@ -70,11 +70,12 @@ The TRUST 5 target is **>= 85%** on the `lib/` and `app/api/` directories.
 
 #80 defines the local E2E prerequisite for #22 and later work.
 
-1. Copy `.env.test.example` to `.env.test`.
-2. Keep `E2E_TEST_USER_EMAIL`, `E2E_TEST_USER_PASSWORD`, and `PLAYWRIGHT_AUTH_STATE` unset unless a dedicated non-production SSO test account exists.
-3. Run `pnpm test:e2e:setup`.
-4. Run `pnpm test:e2e:local -- --project=chromium`.
-5. Stop the DB with `pnpm db:test:down`.
+1. Copy `.env.test.example` to `.env.test` (credentials are already populated).
+2. Run `pnpm test:e2e:setup` — starts the Docker test DB, applies schema migrations, and seeds the `ra.lead@example.test` user with a hashed password.
+3. Run `pnpm test:e2e:local -- --project=chromium` — Playwright's `globalSetup` reads `E2E_TEST_USER_EMAIL` / `E2E_TEST_USER_PASSWORD` from `.env.test`, logs in via Credentials auth, and saves the auth state to `tests/e2e/fixtures/.auth.json`.
+4. Stop the DB with `pnpm db:test:down`.
+
+The seeded test user `ra.lead@example.test` has role `ra-lead`, status `active`, and the password defined in `.env.test` (`E2E_TEST_USER_PASSWORD`). Password hashing uses bcrypt with cost factor 12 (same as the production admin creation script).
 
 Useful commands:
 
@@ -87,8 +88,8 @@ pnpm test:e2e:local -- --project=chromium
 pnpm db:test:down
 ```
 
-Auth-dependent tests skip unless an auth state file is generated. Non-auth
-smoke tests can run against the local dev server with the seeded database.
+Auth-dependent tests use the persisted auth state from `.auth.json`. Non-auth
+smoke tests run against the local dev server without requiring the auth state file.
 
 ## Quality Gates
 

@@ -1,6 +1,7 @@
 #!/usr/bin/env node
 // Seeds deterministic records for local Playwright smoke paths.
 
+import bcrypt from 'bcryptjs';
 import postgres from 'postgres';
 
 const ORG_ID = '10000000-0000-4000-8000-000000000001';
@@ -12,6 +13,9 @@ const USER_MESSAGE_ID = '10000000-0000-4000-8000-000000000401';
 const ASSISTANT_MESSAGE_ID = '10000000-0000-4000-8000-000000000402';
 const AUDIT_LOG_ID = '10000000-0000-4000-8000-000000000501';
 
+// Fixed password for the E2E ra-lead test user — matches E2E_TEST_USER_PASSWORD in .env.test
+const E2E_PASSWORD = 'TestE2EPassword123!';
+
 async function main(): Promise<void> {
   const databaseUrl = process.env.DATABASE_URL;
   if (!databaseUrl) {
@@ -20,6 +24,7 @@ async function main(): Promise<void> {
   }
 
   const sql = postgres(databaseUrl, { max: 1 });
+  const passwordHash = await bcrypt.hash(E2E_PASSWORD, 12);
 
   try {
     await sql.begin(async (tx) => {
@@ -32,17 +37,29 @@ async function main(): Promise<void> {
       `;
 
       await tx`
-        insert into users (id, email, name, role, locale, theme_pref, department)
+        insert into users (
+          id, email, name, role, locale, theme_pref, department,
+          password_hash, status, must_change_password
+        )
         values
-          (${RA_LEAD_ID}, 'ra.lead@example.test', 'RA Lead', 'ra-lead', 'ko', 'system', 'RA'),
-          (${VIEWER_ID}, 'viewer@example.test', 'Viewer', 'viewer', 'en', 'system', 'External')
+          (
+            ${RA_LEAD_ID}, 'ra.lead@example.test', 'RA Lead', 'ra-lead', 'ko', 'system', 'RA',
+            ${passwordHash}, 'active', false
+          ),
+          (
+            ${VIEWER_ID}, 'viewer@example.test', 'Viewer', 'viewer', 'en', 'system', 'External',
+            null, 'active', false
+          )
         on conflict (id) do update set
           email = excluded.email,
           name = excluded.name,
           role = excluded.role,
           locale = excluded.locale,
           theme_pref = excluded.theme_pref,
-          department = excluded.department
+          department = excluded.department,
+          password_hash = excluded.password_hash,
+          status = excluded.status,
+          must_change_password = excluded.must_change_password
       `;
 
       await tx`
