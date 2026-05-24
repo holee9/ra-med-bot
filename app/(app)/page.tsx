@@ -27,7 +27,7 @@ export default function HomePage() {
   return (
     <section className="mx-auto flex max-w-content flex-col gap-8 px-6 py-10">
       <header>
-        <p className="text-xs font-medium uppercase tracking-widest text-ink-400">Regula</p>
+        <p className="text-xs font-medium uppercase tracking-widest text-ink-500">Regula</p>
         <h1 className="mt-2 font-serif text-4xl text-brand-800">의료기기 RA 상담 워크스페이스</h1>
         <p className="mt-3 max-w-2xl text-sm leading-relaxed text-ink-600">
           규제 질문, 근거 문서, 구조화 답변, 전문가 검토, 감사 로그를 한 흐름에서 관리합니다.

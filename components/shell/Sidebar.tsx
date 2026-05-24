@@ -33,6 +33,7 @@ const CHAT_LABELS: Record<string, string> = { ko: '채팅', en: 'Chat' };
 
 interface SidebarProps {
   showExpertReview?: boolean;
+  initialLocale?: string;
 }
 
 export default function Sidebar(props?: SidebarProps) {
@@ -43,21 +44,23 @@ export default function Sidebar(props?: SidebarProps) {
   const projects = data as ProjectSummary[];
   const currentProject = projects.find((p) => p.id === currentProjectId) ?? null;
 
-  const [locale, setLocale] = useState<string>('ko');
-  const [projectsOpen, setProjectsOpen] = useState(false);
-  const dropdownRef = useRef<HTMLDivElement>(null);
+  // initialLocale is passed from the server component (AppLayout) via cookies(),
+  // ensuring SSR renders the correct locale without waiting for a client-side useEffect.
+  const [locale, setLocale] = useState<string>(props?.initialLocale ?? 'ko');
+  const dropdownRef = useRef<HTMLDetailsElement>(null);
 
-  // Read locale from localStorage on mount.
+  // Sync locale from cookie after client-side navigation (SPA transitions without full reload).
   useEffect(() => {
-    const stored = localStorage.getItem('regula-locale');
-    if (stored) setLocale(stored);
+    const match = document.cookie.split('; ').find((row) => row.startsWith('regula-locale='));
+    const cookieLocale = match?.split('=')[1];
+    if (cookieLocale && cookieLocale !== locale) setLocale(cookieLocale);
   }, []);
 
   // Close project dropdown when clicking outside.
   useEffect(() => {
     function handleClickOutside(e: MouseEvent) {
       if (dropdownRef.current && !dropdownRef.current.contains(e.target as Node)) {
-        setProjectsOpen(false);
+        dropdownRef.current.open = false;
       }
     }
     document.addEventListener('mousedown', handleClickOutside);
@@ -120,63 +123,57 @@ export default function Sidebar(props?: SidebarProps) {
         </nav>
       )}
 
-      {/* REQ-BREADTH-044: Project switcher dropdown */}
+      {/* REQ-BREADTH-044: Project switcher dropdown.
+          Uses <details>/<summary> for hydration-safe toggle — Playwright can open
+          the dropdown before React attaches onClick (native browser behavior). */}
       <section className="mt-2 px-2 py-2">
-        <p className="mb-1 px-3 text-[10px] uppercase tracking-widest text-ink-400">프로젝트</p>
-        <div className="relative" ref={dropdownRef}>
-          <button
-            type="button"
+        <p className="mb-1 px-3 text-[10px] uppercase tracking-widest text-ink-500">프로젝트</p>
+        <details ref={dropdownRef} className="relative">
+          <summary
             data-testid="project-switcher"
-            aria-expanded={projectsOpen}
             aria-haspopup="listbox"
-            onClick={() => setProjectsOpen((o) => !o)}
-            className="flex w-full items-center justify-between rounded-md px-3 py-2 text-sm text-ink-700 hover:bg-ink-50"
+            className="flex w-full cursor-pointer list-none items-center justify-between rounded-md px-3 py-2 text-sm text-ink-700 hover:bg-ink-50"
           >
             <span className="truncate">
               {currentProject ? currentProject.name : '프로젝트 선택'}
             </span>
-            <ChevronDown
-              size={14}
-              className={`shrink-0 text-ink-400 transition-transform ${projectsOpen ? 'rotate-180' : ''}`}
-            />
-          </button>
+            <ChevronDown size={14} className="shrink-0 text-ink-400" />
+          </summary>
 
-          {projectsOpen && (
-            <ul
-              data-testid="project-list"
-              role="listbox"
-              aria-label="프로젝트 목록"
-              className="absolute left-0 right-0 top-full z-10 mt-1 max-h-56 overflow-y-auto rounded-md border border-ink-200 bg-white py-1 shadow-md"
-            >
-              {projects.length === 0 ? (
-                <li className="px-3 py-2 text-xs text-ink-400">프로젝트 없음</li>
-              ) : (
-                projects.map((project) => {
-                  const isActive = project.id === currentProjectId;
-                  return (
-                    <li key={project.id}>
-                      <button
-                        type="button"
-                        data-testid="project-item"
-                        role="option"
-                        aria-selected={isActive}
-                        onClick={() => {
-                          setCurrentProjectId(project.id);
-                          setProjectsOpen(false);
-                        }}
-                        className={`w-full px-3 py-2 text-left text-sm transition-colors hover:bg-ink-50 ${
-                          isActive ? 'font-medium text-brand-700' : 'text-ink-700'
-                        }`}
-                      >
-                        {project.name}
-                      </button>
-                    </li>
-                  );
-                })
-              )}
-            </ul>
-          )}
-        </div>
+          <ul
+            data-testid="project-list"
+            role="listbox"
+            aria-label="프로젝트 목록"
+            className="absolute left-0 right-0 top-full z-10 mt-1 max-h-56 overflow-y-auto rounded-md border border-ink-200 bg-white py-1 shadow-md"
+          >
+            {projects.length === 0 ? (
+              <li className="px-3 py-2 text-xs text-ink-500">프로젝트 없음</li>
+            ) : (
+              projects.map((project) => {
+                const isActive = project.id === currentProjectId;
+                return (
+                  <li key={project.id}>
+                    <button
+                      type="button"
+                      data-testid="project-item"
+                      role="option"
+                      aria-selected={isActive}
+                      onClick={() => {
+                        setCurrentProjectId(project.id);
+                        if (dropdownRef.current) dropdownRef.current.open = false;
+                      }}
+                      className={`w-full px-3 py-2 text-left text-sm transition-colors hover:bg-ink-50 ${
+                        isActive ? 'font-medium text-brand-700' : 'text-ink-700'
+                      }`}
+                    >
+                      {project.name}
+                    </button>
+                  </li>
+                );
+              })
+            )}
+          </ul>
+        </details>
       </section>
     </aside>
   );

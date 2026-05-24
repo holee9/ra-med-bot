@@ -6,6 +6,7 @@
 // @MX:SPEC SPEC-REGULA-ENTERPRISE-001 (REQ-ENTERPRISE-028, REQ-ENTERPRISE-035)
 
 import { useState } from 'react';
+import { LocaleToggle } from './LocaleToggle';
 import ThemeToggle from './ThemeToggle';
 
 interface FlagDialogState {
@@ -47,6 +48,7 @@ export default function TopbarClient() {
 
   return (
     <>
+      <LocaleToggle />
       <ThemeToggle />
       <button
         type="button"

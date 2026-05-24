@@ -10,6 +10,7 @@ import { SessionProvider } from 'next-auth/react';
 import { NextIntlClientProvider } from 'next-intl';
 import { getLocale, getMessages } from 'next-intl/server';
 import { IBM_Plex_Mono, IBM_Plex_Sans, Noto_Serif_KR, Source_Serif_4 } from 'next/font/google';
+import { headers } from 'next/headers';
 import { ReactQueryProvider } from './providers';
 import '@fontsource/pretendard';
 import './globals.css';
@@ -53,6 +54,11 @@ export const metadata: Metadata = {
 export default async function RootLayout({ children }: { children: React.ReactNode }) {
   const locale = await getLocale();
   const messages = await getMessages();
+  // Read the per-request nonce forwarded by middleware via x-nonce header.
+  // Setting nonce on <html> causes Next.js to propagate it to its own
+  // internal RSC-streaming scripts (self.__next_f.push), which is required
+  // for the nonce-based CSP to allow React hydration.
+  const nonce = (await headers()).get('x-nonce') ?? '';
 
   const fontVars = [
     plexSans.variable,
@@ -61,12 +67,13 @@ export default async function RootLayout({ children }: { children: React.ReactNo
     notoSerifKr.variable,
   ].join(' ');
   return (
-    <html lang={locale} suppressHydrationWarning className={fontVars}>
+    <html lang={locale} suppressHydrationWarning className={fontVars} nonce={nonce}>
       <head>
         {/* REQ-ENTERPRISE-033: FOUT prevention — reads persisted theme from localStorage
             and applies 'dark' class to <html> before React hydrates. Must be first script
             in <head> to prevent flash of unstyled (wrong) theme. */}
         <script
+          nonce={nonce}
           // biome-ignore lint/security/noDangerouslySetInnerHtml: intentional inline FOUT-prevention script
           dangerouslySetInnerHTML={{
             __html: `(function(){try{var s=localStorage.getItem('regula_ui');var t=s?JSON.parse(s).theme:null;if(t==='dark'){document.documentElement.classList.add('dark');}}catch(e){}})();`,

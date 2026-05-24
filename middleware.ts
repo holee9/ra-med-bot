@@ -52,9 +52,13 @@ function generateNonce(): string {
  *   REQ-QUAL-021.
  */
 function buildCsp(nonce: string): string {
+  // In development, Next.js webpack uses eval() for HMR source maps.
+  // Without 'unsafe-eval', the EvalError blocks client-side hydration entirely.
+  // This is safe because the dev server is never exposed to untrusted content.
+  const evalDirective = process.env.NODE_ENV === 'development' ? " 'unsafe-eval'" : '';
   const directives = [
     "default-src 'self'",
-    `script-src 'self' 'nonce-${nonce}' 'strict-dynamic' 'unsafe-inline' https:`,
+    `script-src 'self' 'nonce-${nonce}' 'strict-dynamic' 'unsafe-inline'${evalDirective} https:`,
     "style-src 'self' 'unsafe-inline'",
     "img-src 'self' data: blob: https:",
     "font-src 'self' data:",
@@ -105,6 +109,23 @@ export function middleware(req: NextRequest) {
   // `headers().get('x-nonce')` in Server Components.
   const requestHeaders = new Headers(req.headers);
   requestHeaders.set('x-nonce', nonce);
+
+  // Locale switch: set regula-locale cookie and redirect. Handled here in
+  // middleware (not in the route handler) because Next.js 15 can drop
+  // Set-Cookie headers from route handlers that pass through NextResponse.next().
+  // No auth required — locale is a presentation-only preference.
+  if (pathname === '/api/locale') {
+    const locale = req.nextUrl.searchParams.get('locale') === 'en' ? 'en' : 'ko';
+    const rawReturnTo = req.nextUrl.searchParams.get('returnTo') || '/';
+    const returnTo = rawReturnTo.startsWith('/') ? rawReturnTo : '/';
+    const res = NextResponse.redirect(new URL(returnTo, req.nextUrl));
+    res.cookies.set('regula-locale', locale, {
+      path: '/',
+      maxAge: 60 * 60 * 24 * 365,
+      sameSite: 'lax',
+    });
+    return applySecurityHeaders(res, nonce);
+  }
 
   // Already-signed-in users hitting /login are redirected to the app root.
   // Without this, the SSO callback would loop back to /login on every visit.

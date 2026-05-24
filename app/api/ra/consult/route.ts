@@ -16,6 +16,42 @@ import { withPermission } from '../../../../lib/auth/with-permission';
 import { ConsultRequestSchema } from '../../../../types/consult';
 import type { StreamEvent } from '../../../../types/streaming';
 
+// E2E_TEST_MODE: deterministic fake SSE stream — no LLM calls, no DB writes.
+// Active only when process.env.E2E_TEST_MODE === 'true'.
+async function* e2eTestEvents(query: string): AsyncGenerator<StreamEvent, void, unknown> {
+  const isLowConf = query.trim() === '__test:low_confidence__';
+  const text = isLowConf
+    ? 'Test response with low confidence score for expert review.'
+    : 'This is a test regulatory response. EU MDR Article 10 requires establishing a quality management system.';
+
+  for (const word of text.split(' ')) {
+    yield { type: 'prose_delta', delta: word + ' ' };
+  }
+
+  yield { type: 'confidence', level: isLowConf ? 'low' : 'high', score: isLowConf ? 0.3 : 0.9 };
+
+  if (isLowConf) {
+    yield { type: 'expert_review_required', reason: 'Low confidence score below threshold' };
+  } else {
+    yield {
+      type: 'sources',
+      items: [
+        {
+          id: 'test-src-1',
+          citeIndex: 1,
+          orgLabel: 'EU MDR',
+          title: 'Regulation (EU) 2017/745',
+          year: 2017,
+          type: 'Regulation' as const,
+          url: null,
+          anchor: 'Article 10',
+          offset: 0,
+        },
+      ],
+    };
+  }
+}
+
 // REQ-CHAT-007 — in-memory token bucket, 30 req / 60 s per user.
 const rateLimitMap = new Map<string, { count: number; resetAt: number }>();
 const RATE_LIMIT_MAX = 30;
@@ -98,8 +134,13 @@ export const POST = withPermission('consult.create', async (req, _ctx, session) 
         controller.enqueue(encoder.encode(encodeSSE(ev)));
       }
 
+      const eventSource =
+        process.env.E2E_TEST_MODE === 'true'
+          ? e2eTestEvents(input.question)
+          : consult(input, authJsSession, messageId, conversationId, signal);
+
       try {
-        for await (const ev of consult(input, authJsSession, messageId, conversationId, signal)) {
+        for await (const ev of eventSource) {
           if (signal.aborted) break;
           push(ev);
         }

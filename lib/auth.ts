@@ -19,7 +19,7 @@ import { eq } from 'drizzle-orm';
 import { writeAudit } from './audit';
 import { buildLoginAuditEvent, buildLogoutAuditEvent } from './auth/audit-callbacks';
 import { db } from './db/client';
-import { accounts, sessions, users, verificationTokens } from './db/schema';
+import { accounts, orgMembers, sessions, users, verificationTokens } from './db/schema';
 import { getEnv } from './env';
 
 // getEnv() is deferred inside the NextAuth callback to avoid ZodError during
@@ -92,12 +92,23 @@ export const { handlers, auth, signIn, signOut } = NextAuth(() => {
         const userId = user?.id ?? (token?.sub as string | undefined);
         if (!userId) return session;
         const [dbUser] = await db
-          .select({ mustChangePassword: users.mustChangePassword })
+          .select({
+            mustChangePassword: users.mustChangePassword,
+            role: users.role,
+          })
           .from(users)
           .where(eq(users.id, userId))
           .limit(1);
-        (session.user as Record<string, unknown>).mustChangePassword =
-          dbUser?.mustChangePassword ?? false;
+        const [membership] = await db
+          .select({ orgId: orgMembers.orgId })
+          .from(orgMembers)
+          .where(eq(orgMembers.userId, userId))
+          .limit(1);
+        const s = session.user as unknown as Record<string, unknown>;
+        s.id = userId;
+        s.mustChangePassword = dbUser?.mustChangePassword ?? false;
+        s.role = dbUser?.role ?? 'viewer';
+        s.organizationId = membership?.orgId ?? null;
         return session;
       },
     },
