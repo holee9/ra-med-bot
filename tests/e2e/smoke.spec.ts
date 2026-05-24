@@ -28,9 +28,9 @@ test.describe('Smoke — basic routing (no auth required)', () => {
     try {
       await page.goto('/login');
       // At least one sign-in trigger element must be visible.
-      await expect(
-        page.getByRole('button', { name: /로그인|Sign in|sign in|Login/i }),
-      ).toBeVisible({ timeout: 10_000 });
+      await expect(page.getByRole('button', { name: /로그인|Sign in|sign in|Login/i })).toBeVisible(
+        { timeout: 10_000 },
+      );
     } finally {
       await ctx.close();
     }

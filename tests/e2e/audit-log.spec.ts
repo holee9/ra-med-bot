@@ -34,9 +34,7 @@ test.describe('Audit log — 21 CFR Part 11 (REQ-LAUNCH-020)', () => {
     expect(res.status()).toBe(200);
     const body = await res.json();
     const entries: Array<{ action: string; createdAt: string }> = body.data ?? body;
-    const recent = entries.filter(
-      (e) => e.action === 'chat.query' && e.createdAt >= before,
-    );
+    const recent = entries.filter((e) => e.action === 'chat.query' && e.createdAt >= before);
     expect(recent.length).toBeGreaterThanOrEqual(1);
   });
 

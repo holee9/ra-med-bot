@@ -45,9 +45,7 @@ export default function ChangePasswordPage() {
     <div className="flex min-h-screen items-center justify-center bg-surface">
       <div className="w-full max-w-sm rounded-xl border border-ink-200 bg-surface-raised p-8 shadow-sm">
         <h1 className="mb-2 text-xl font-semibold text-ink-900">비밀번호 변경</h1>
-        <p className="mb-6 text-sm text-ink-500">
-          최초 로그인입니다. 새 비밀번호를 설정해 주세요.
-        </p>
+        <p className="mb-6 text-sm text-ink-500">최초 로그인입니다. 새 비밀번호를 설정해 주세요.</p>
         <form onSubmit={handleSubmit} className="flex flex-col gap-4">
           <div className="flex flex-col gap-1">
             <label htmlFor="password" className="text-sm font-medium text-ink-700">

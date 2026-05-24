@@ -5,9 +5,9 @@
 // DATABASE_URL must also be set (from .env.local).
 // Idempotent: if the email already exists, promotes it to admin + active.
 
-import bcrypt from 'bcryptjs';
 import fs from 'node:fs';
 import path from 'node:path';
+import bcrypt from 'bcryptjs';
 import postgres from 'postgres';
 
 // Load .env.local if present (script runs outside Next.js loader).

@@ -15,7 +15,12 @@ export default function LoginButtons() {
     e.preventDefault();
     setError('');
     setLoading(true);
-    const result = await signIn('credentials', { email, password, redirect: false, callbackUrl: '/' });
+    const result = await signIn('credentials', {
+      email,
+      password,
+      redirect: false,
+      callbackUrl: '/',
+    });
     setLoading(false);
     if (result?.error) {
       setError('이메일/비밀번호가 올바르지 않거나 아직 승인 대기 중입니다');

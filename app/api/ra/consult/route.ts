@@ -25,7 +25,7 @@ async function* e2eTestEvents(query: string): AsyncGenerator<StreamEvent, void, 
     : 'This is a test regulatory response. EU MDR Article 10 requires establishing a quality management system.';
 
   for (const word of text.split(' ')) {
-    yield { type: 'prose_delta', delta: word + ' ' };
+    yield { type: 'prose_delta', delta: `${word} ` };
   }
 
   yield { type: 'confidence', level: isLowConf ? 'low' : 'high', score: isLowConf ? 0.3 : 0.9 };

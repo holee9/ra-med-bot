@@ -25,7 +25,7 @@ export function LocaleToggle() {
         type="button"
         data-testid="locale-toggle"
         aria-label="언어 변경"
-        aria-haspopup="listbox"
+        aria-haspopup="menu"
         className="cursor-pointer rounded-md border border-ink-200 px-2 py-1.5 text-xs font-medium text-ink-700 hover:bg-ink-50"
       >
         {locale === 'ko' ? 'KO' : 'EN'}
@@ -33,15 +33,16 @@ export function LocaleToggle() {
 
       <div
         data-testid="locale-dropdown"
-        role="listbox"
+        role="menu"
         aria-label="언어 선택"
+        tabIndex={-1}
         className="invisible absolute right-0 top-full z-50 mt-1 min-w-[80px] rounded-md border border-ink-200 bg-white py-1 shadow-md group-focus-within:visible"
       >
         <a
           href="/api/locale?locale=ko&returnTo=/"
           data-testid="locale-option-ko"
-          role="option"
-          aria-selected={locale === 'ko'}
+          role="menuitem"
+          aria-current={locale === 'ko' ? 'true' : undefined}
           className={`block w-full px-3 py-1.5 text-left text-xs hover:bg-ink-50 ${locale === 'ko' ? 'font-semibold text-brand-700' : 'text-ink-700'}`}
         >
           한국어
@@ -49,8 +50,8 @@ export function LocaleToggle() {
         <a
           href="/api/locale?locale=en&returnTo=/"
           data-testid="locale-option-en"
-          role="option"
-          aria-selected={locale === 'en'}
+          role="menuitem"
+          aria-current={locale === 'en' ? 'true' : undefined}
           className={`block w-full px-3 py-1.5 text-left text-xs hover:bg-ink-50 ${locale === 'en' ? 'font-semibold text-brand-700' : 'text-ink-700'}`}
         >
           English

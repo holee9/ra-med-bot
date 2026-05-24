@@ -1,9 +1,9 @@
-import { eq } from 'drizzle-orm';
-import { NextResponse } from 'next/server';
-import { z } from 'zod';
 import { auth } from '@/lib/auth';
 import { db } from '@/lib/db/client';
 import { users } from '@/lib/db/schema';
+import { eq } from 'drizzle-orm';
+import { NextResponse } from 'next/server';
+import { z } from 'zod';
 
 const PatchSchema = z.object({
   status: z.enum(['active', 'pending', 'disabled']),

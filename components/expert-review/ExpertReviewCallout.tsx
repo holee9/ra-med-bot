@@ -13,7 +13,11 @@ interface ExpertReviewCalloutProps {
   reason: string;
 }
 
-export function ExpertReviewCallout({ conversationId, messageId, reason }: ExpertReviewCalloutProps) {
+export function ExpertReviewCallout({
+  conversationId,
+  messageId,
+  reason,
+}: ExpertReviewCalloutProps) {
   const [sent, setSent] = useState(false);
   const [loading, setLoading] = useState(false);
 

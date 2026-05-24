@@ -64,9 +64,7 @@ describe('ExpertReviewCallout (REQ-ENTERPRISE-027)', () => {
 
   it('send-review-btn is enabled initially', async () => {
     const { ExpertReviewCallout } = await import('@/components/expert-review/ExpertReviewCallout');
-    render(
-      <ExpertReviewCallout conversationId="conv-001" messageId="msg-001" reason="검토" />,
-    );
+    render(<ExpertReviewCallout conversationId="conv-001" messageId="msg-001" reason="검토" />);
     const btn = screen.getByTestId('send-review-btn') as HTMLButtonElement;
     expect(btn.disabled).toBe(false);
   });
