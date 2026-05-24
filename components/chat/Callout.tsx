@@ -28,7 +28,11 @@ export function Callout({ variant, title, children }: CalloutProps) {
   // expert variant uses role="alert" for accessibility (high-priority callout).
   const role = variant === 'expert' ? 'alert' : 'note';
   return (
-    <div className={`rounded-lg border px-4 py-3 text-sm ${VARIANT_CLASSES[variant]}`} role={role}>
+    <div
+      className={`rounded-lg border px-4 py-3 text-sm ${VARIANT_CLASSES[variant]}`}
+      role={role}
+      data-testid={variant === 'expert' ? 'expert-review-callout' : undefined}
+    >
       <p className={`mb-1 font-semibold ${VARIANT_TITLE_CLASSES[variant]}`}>{title}</p>
       <div className="text-ink-700">{children}</div>
     </div>

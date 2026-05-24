@@ -22,7 +22,7 @@ test.describe('Expert review flow (REQ-LAUNCH-017)', () => {
     // The expert-review callout component must appear.
     const callout = page.locator('[data-testid="expert-review-callout"]');
     await expect(callout).toBeVisible({ timeout: 15_000 });
-    await expect(callout).toContainText(/expert|review/i);
+    await expect(callout).toContainText(/전문가|expert|review/i);
   });
 
   test('clicking "Send for expert review" enqueues the item', async ({ page }) => {
