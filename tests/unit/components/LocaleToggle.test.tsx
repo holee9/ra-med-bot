@@ -3,18 +3,21 @@
 
 /** @vitest-environment jsdom */
 
-import { cleanup, fireEvent, render, screen } from '@testing-library/react';
+import { cleanup, render, screen, waitFor } from '@testing-library/react';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
+
+function clearLocaleCookie() {
+  document.cookie = 'regula-locale=; expires=Thu, 01 Jan 1970 00:00:00 GMT; path=/';
+}
 
 afterEach(() => {
   cleanup();
-  localStorage.clear();
+  clearLocaleCookie();
 });
 
 describe('LocaleToggle (REQ-ENTERPRISE-040)', () => {
   beforeEach(() => {
-    localStorage.clear();
-    // Prevent actual page reload during tests
+    clearLocaleCookie();
     vi.stubGlobal('location', {
       ...window.location,
       reload: vi.fn(),
@@ -31,41 +34,41 @@ describe('LocaleToggle (REQ-ENTERPRISE-040)', () => {
     expect(screen.getByTestId('locale-toggle')).toBeDefined();
   });
 
-  it('shows KO when no locale is stored (defaults to ko)', async () => {
+  it('shows KO when no locale cookie is set (defaults to ko)', async () => {
     const { LocaleToggle } = await import('@/components/shell/LocaleToggle');
     render(<LocaleToggle />);
     expect(screen.getByTestId('locale-toggle').textContent).toBe('KO');
   });
 
-  it('shows KO when locale is stored as ko', async () => {
-    localStorage.setItem('regula-locale', 'ko');
+  it('shows KO when locale cookie is ko', async () => {
+    document.cookie = 'regula-locale=ko; path=/';
     const { LocaleToggle } = await import('@/components/shell/LocaleToggle');
     render(<LocaleToggle />);
-    expect(screen.getByTestId('locale-toggle').textContent).toBe('KO');
+    await waitFor(() => {
+      expect(screen.getByTestId('locale-toggle').textContent).toBe('KO');
+    });
   });
 
-  it('shows EN when locale is stored as en', async () => {
-    localStorage.setItem('regula-locale', 'en');
+  it('shows EN when locale cookie is en', async () => {
+    document.cookie = 'regula-locale=en; path=/';
     const { LocaleToggle } = await import('@/components/shell/LocaleToggle');
     render(<LocaleToggle />);
-    expect(screen.getByTestId('locale-toggle').textContent).toBe('EN');
+    await waitFor(() => {
+      expect(screen.getByTestId('locale-toggle').textContent).toBe('EN');
+    });
   });
 
-  it('clicking saves en to localStorage and calls reload', async () => {
-    const reloadMock = vi.fn();
-    vi.stubGlobal('location', { reload: reloadMock });
-
+  it('locale-option-ko navigates to /api/locale?locale=ko', async () => {
     const { LocaleToggle } = await import('@/components/shell/LocaleToggle');
     render(<LocaleToggle />);
-    fireEvent.click(screen.getByTestId('locale-toggle'));
-    expect(localStorage.getItem('regula-locale')).toBe('en');
+    const koOption = screen.getByTestId('locale-option-ko');
+    expect(koOption.getAttribute('href')).toContain('locale=ko');
   });
 
-  it('clicking again from EN saves ko to localStorage', async () => {
-    localStorage.setItem('regula-locale', 'en');
+  it('locale-option-en navigates to /api/locale?locale=en', async () => {
     const { LocaleToggle } = await import('@/components/shell/LocaleToggle');
     render(<LocaleToggle />);
-    fireEvent.click(screen.getByTestId('locale-toggle'));
-    expect(localStorage.getItem('regula-locale')).toBe('ko');
+    const enOption = screen.getByTestId('locale-option-en');
+    expect(enOption.getAttribute('href')).toContain('locale=en');
   });
 });
