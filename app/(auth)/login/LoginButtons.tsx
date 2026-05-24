@@ -62,7 +62,7 @@ export default function LoginButtons() {
 
       <p className="text-center text-sm text-ink-500">
         계정이 없으신가요?{' '}
-        <a href="/signup" className="text-brand-700 hover:underline">
+        <a href="/signup" className="text-brand-700 underline">
           신규 신청
         </a>
       </p>
