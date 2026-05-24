@@ -52,4 +52,22 @@ describe('ExpertReviewCallout (REQ-ENTERPRISE-027)', () => {
     // Should have amber/accent or yellow background classes
     expect(el.className).toMatch(/accent|amber|yellow/);
   });
+
+  it('has data-testid="send-review-btn" button', async () => {
+    const { ExpertReviewCallout } = await import('@/components/expert-review/ExpertReviewCallout');
+    const { container } = render(
+      <ExpertReviewCallout conversationId="conv-001" messageId="msg-001" reason="검토" />,
+    );
+    const btn = container.querySelector('[data-testid="send-review-btn"]');
+    expect(btn).not.toBeNull();
+  });
+
+  it('send-review-btn is enabled initially', async () => {
+    const { ExpertReviewCallout } = await import('@/components/expert-review/ExpertReviewCallout');
+    render(
+      <ExpertReviewCallout conversationId="conv-001" messageId="msg-001" reason="검토" />,
+    );
+    const btn = screen.getByTestId('send-review-btn') as HTMLButtonElement;
+    expect(btn.disabled).toBe(false);
+  });
 });
