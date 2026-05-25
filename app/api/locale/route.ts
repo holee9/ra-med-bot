@@ -6,7 +6,8 @@ import type { NextRequest } from 'next/server';
 export function GET(request: NextRequest) {
   const { searchParams } = new URL(request.url);
   const locale = searchParams.get('locale') === 'en' ? 'en' : 'ko';
-  const returnTo = searchParams.get('returnTo') || '/';
+  const raw = searchParams.get('returnTo') ?? '/';
+  const returnTo = raw.startsWith('/') ? raw : '/';
   const redirectUrl = new URL(returnTo, request.url).toString();
 
   return new Response(null, {
