@@ -88,19 +88,18 @@ export const { handlers, auth, signIn, signOut } = NextAuth(() => {
       session: async ({ session, user, token }) => {
         const userId = user?.id ?? (token?.sub as string | undefined);
         if (!userId) return session;
-        const [dbUser] = await db
-          .select({
-            mustChangePassword: users.mustChangePassword,
-            role: users.role,
-          })
-          .from(users)
-          .where(eq(users.id, userId))
-          .limit(1);
-        const [membership] = await db
-          .select({ orgId: orgMembers.orgId })
-          .from(orgMembers)
-          .where(eq(orgMembers.userId, userId))
-          .limit(1);
+        const [[dbUser], [membership]] = await Promise.all([
+          db
+            .select({ mustChangePassword: users.mustChangePassword, role: users.role })
+            .from(users)
+            .where(eq(users.id, userId))
+            .limit(1),
+          db
+            .select({ orgId: orgMembers.orgId })
+            .from(orgMembers)
+            .where(eq(orgMembers.userId, userId))
+            .limit(1),
+        ]);
         const s = session.user as unknown as Record<string, unknown>;
         s.id = userId;
         s.mustChangePassword = dbUser?.mustChangePassword ?? false;

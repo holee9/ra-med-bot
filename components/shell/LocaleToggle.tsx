@@ -20,7 +20,12 @@ export function LocaleToggle() {
   }, []);
 
   return (
-    <div className="group relative">
+    <div
+      className="group relative"
+      onKeyDown={(e) => {
+        if (e.key === 'Escape') (document.activeElement as HTMLElement)?.blur();
+      }}
+    >
       <button
         type="button"
         data-testid="locale-toggle"

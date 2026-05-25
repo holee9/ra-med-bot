@@ -24,11 +24,12 @@ export function ExpertReviewCallout({
   async function handleSend() {
     setLoading(true);
     try {
-      await fetch('/api/ra/expert-review', {
+      const res = await fetch('/api/ra/expert-review', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ conversationId, messageId, reason }),
       });
+      if (!res.ok) return;
       setSent(true);
     } finally {
       setLoading(false);
