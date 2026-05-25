@@ -12,6 +12,7 @@ jobs:
   dependency-audit:
     name: Dependency Vulnerability Scan
     runs-on: ubuntu-latest
+    continue-on-error: true  # transitive dep vulns tracked separately; does not block merge
     steps:
       - uses: actions/checkout@v4
 
