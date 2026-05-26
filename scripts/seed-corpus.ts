@@ -617,7 +617,7 @@ interface SeedSummary {
 
 export async function runSeedCorpus(
   database: typeof db = db,
-  embed: (texts: string[]) => Promise<number[][]> = embedChunks,
+  embed: (texts: string[]) => Promise<(number[] | null)[]> = embedChunks,
 ): Promise<SeedSummary> {
   const summary: SeedSummary = {
     sourcesInserted: 0,
@@ -664,10 +664,10 @@ export async function runSeedCorpus(
 
     for (let i = 0; i < seed.sections.length; i += 1) {
       const section = seed.sections[i];
-      const embedding = sectionEmbeddings[i];
-      if (!section || !embedding) {
-        throw new Error(`Embedding missing for section index ${i} of ${seed.title}`);
+      if (!section) {
+        throw new Error(`Section missing at index ${i} of ${seed.title}`);
       }
+      const embedding = sectionEmbeddings[i] ?? null;
 
       try {
         // Use .returning() to make the call shape symmetric with the sources
@@ -717,7 +717,13 @@ const isCliEntry =
   process.argv[1].replace(/\\/g, '/').endsWith('scripts/seed-corpus.ts');
 
 if (isCliEntry) {
-  runSeedCorpus()
+  const hasRealOpenAiKey =
+    !!process.env.OPENAI_API_KEY && !process.env.OPENAI_API_KEY.startsWith('dev-placeholder');
+  const embedFn = hasRealOpenAiKey
+    ? embedChunks
+    : async (texts: string[]): Promise<(number[] | null)[]> => texts.map(() => null);
+
+  runSeedCorpus(db, embedFn)
     .then((summary) => {
       logger.info('seed-corpus complete', { summary });
       process.exit(0);

@@ -43,15 +43,19 @@ Answer (one word only):`;
 export async function classifyIntent(question: string, locale: 'ko' | 'en'): Promise<Intent> {
   const prompt = locale === 'ko' ? PROMPT_KO(question) : PROMPT_EN(question);
 
-  const { text } = await generateText({
-    model: MODEL,
-    prompt,
-    maxTokens: 50,
-  });
+  try {
+    const { text } = await generateText({
+      model: MODEL,
+      prompt,
+      maxTokens: 50,
+    });
 
-  const normalized = text.toLowerCase().trim();
-  for (const candidate of INTENTS) {
-    if (normalized.includes(candidate)) return candidate;
+    const normalized = text.toLowerCase().trim();
+    for (const candidate of INTENTS) {
+      if (normalized.includes(candidate)) return candidate;
+    }
+  } catch {
+    // LLM unavailable (billing, network) — fall back to general intent.
   }
   return 'general';
 }

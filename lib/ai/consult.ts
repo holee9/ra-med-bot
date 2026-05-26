@@ -100,7 +100,8 @@ export async function* consult(
   if (signal?.aborted) return;
   const searchStart = Date.now();
   const { corpora } = await classifyAndRoute(rewrittenQuery, input.projectTargetMarkets ?? ['us']);
-  const mergedResults = await parallelRetrieveAndMerge(rewrittenQuery, corpora, { limit: 10 });
+  const orgId = (session.user as unknown as { organizationId?: string | null }).organizationId ?? undefined;
+  const mergedResults = await parallelRetrieveAndMerge(rewrittenQuery, corpora, { limit: 10, orgId });
   // Adapt RetrievalResult[] → RetrievedChunk[] shape expected by composePrompt.
   const chunks: RetrievedChunk[] = mergedResults.map((r) => ({
     sectionId: r.id,
@@ -183,40 +184,55 @@ export async function* consult(
   });
 
   // @MX:NOTE Cast bridges the v3 provider → v1-typed `ai` SDK. Runtime is fine.
-  const result = await streamText({
-    model: anthropic('claude-sonnet-4-5') as unknown as LanguageModel,
-    messages: [
-      {
-        role: 'user',
-        content: [
-          // Pass system content as first user block via prefilled approach.
-          // Actually use system param directly.
-        ],
-      },
-    ],
-    system: systemMessages.map((m) => m.text).join('\n\n'),
-    prompt: rewrittenQuery,
-    maxTokens: 2048,
-    abortSignal: signal,
-  });
-
-  yield* emit({ type: 'trace', step: '답변 생성 중', status: 'done' });
-
   // ---- Phase B: Stream prose_delta ----
   let fullProse = '';
   let tokensIn: number | null = null;
   let tokensOut: number | null = null;
+  let llmFailed = false;
 
-  for await (const chunk of result.fullStream) {
-    if (signal?.aborted) return;
+  try {
+    const result = await streamText({
+      model: anthropic('claude-sonnet-4-5') as unknown as LanguageModel,
+      messages: [
+        {
+          role: 'user',
+          content: [
+            // Pass system content as first user block via prefilled approach.
+            // Actually use system param directly.
+          ],
+        },
+      ],
+      system: systemMessages.map((m) => m.text).join('\n\n'),
+      prompt: rewrittenQuery,
+      maxTokens: 2048,
+      abortSignal: signal,
+    });
 
-    if (chunk.type === 'text-delta' && chunk.textDelta) {
-      fullProse += chunk.textDelta;
-      yield* emit({ type: 'prose_delta', delta: chunk.textDelta });
-    } else if (chunk.type === 'finish') {
-      tokensIn = chunk.usage?.promptTokens ?? null;
-      tokensOut = chunk.usage?.completionTokens ?? null;
+    yield* emit({ type: 'trace', step: '답변 생성 중', status: 'done' });
+
+    for await (const chunk of result.fullStream) {
+      if (signal?.aborted) return;
+
+      if (chunk.type === 'text-delta' && chunk.textDelta) {
+        fullProse += chunk.textDelta;
+        yield* emit({ type: 'prose_delta', delta: chunk.textDelta });
+      } else if (chunk.type === 'finish') {
+        tokensIn = chunk.usage?.promptTokens ?? null;
+        tokensOut = chunk.usage?.completionTokens ?? null;
+      }
     }
+  } catch (llmErr) {
+    llmFailed = true;
+    // LLM generation unavailable (billing, quota, network) — continue pipeline so
+    // citations are still returned to the client.
+    logger.warn('[consult] LLM generation failed, continuing with citations only:', llmErr);
+    yield* emit({ type: 'trace', step: '답변 생성 중', status: 'done' });
+    const fallback =
+      input.locale === 'ko'
+        ? 'AI 응답 생성을 일시적으로 사용할 수 없습니다. 아래의 관련 규정 문서를 참고하세요.'
+        : 'AI response generation is temporarily unavailable. Please refer to the relevant regulatory documents below.';
+    fullProse = fallback;
+    yield* emit({ type: 'prose_delta', delta: fallback });
   }
 
   // ---- Stage 7: Post-process ----
@@ -233,10 +249,14 @@ export async function* consult(
   const confidenceLevel = getConfidenceLevel(confidenceScore);
 
   // Determine cited source indices from HTML.
+  // When LLM failed, fallback prose has no citation markers — emit all retrieved
+  // chunks as sources so users can see relevant documents regardless of LLM status.
   const citedIndices = extractDataSourceIndices(cleaned);
-  const citedChunks = topChunks
-    .map((c, i) => ({ ...c, citeIndex: i + 1 }))
-    .filter((c) => citedIndices.has(c.citeIndex));
+  const citedChunks = llmFailed
+    ? topChunks.map((c, i) => ({ ...c, citeIndex: i + 1 }))
+    : topChunks
+        .map((c, i) => ({ ...c, citeIndex: i + 1 }))
+        .filter((c) => citedIndices.has(c.citeIndex));
 
   // Audit: source access per unique sourceId in cited chunks (REQ-CHAT-054).
   const auditedSources = new Set<string>();

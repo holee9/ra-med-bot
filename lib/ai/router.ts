@@ -85,19 +85,24 @@ export async function classifyAndRoute(
   query: string,
   projectTargetMarkets: string[],
 ): Promise<{ intent: RouterIntent; corpora: string[] }> {
-  const { text } = await generateText({
-    model: MODEL,
-    prompt: CLASSIFICATION_PROMPT(query),
-    maxTokens: 50,
-  });
-
-  const normalized = text.toLowerCase().trim();
   let intent: RouterIntent = 'general';
-  for (const candidate of ROUTER_INTENTS) {
-    if (normalized.includes(candidate)) {
-      intent = candidate;
-      break;
+
+  try {
+    const { text } = await generateText({
+      model: MODEL,
+      prompt: CLASSIFICATION_PROMPT(query),
+      maxTokens: 50,
+    });
+
+    const normalized = text.toLowerCase().trim();
+    for (const candidate of ROUTER_INTENTS) {
+      if (normalized.includes(candidate)) {
+        intent = candidate;
+        break;
+      }
     }
+  } catch {
+    // LLM unavailable (billing, network) — fall back to 'general' intent.
   }
 
   // Start with corpora relevant to the intent.
