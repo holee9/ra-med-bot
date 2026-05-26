@@ -9,6 +9,7 @@
 import Sidebar from '@/components/shell/Sidebar';
 import Topbar from '@/components/shell/Topbar';
 import type { Metadata } from 'next';
+import { cookies } from 'next/headers';
 import { redirect } from 'next/navigation';
 
 export const metadata: Metadata = {
@@ -34,9 +35,12 @@ export default async function AppLayout({ children }: { children: React.ReactNod
     // In test/build environments where auth is unavailable, default to false.
   }
 
+  const cookieStore = await cookies();
+  const initialLocale = cookieStore.get('regula-locale')?.value ?? 'ko';
+
   return (
     <div className="flex min-h-screen bg-surface text-ink-700">
-      <Sidebar showExpertReview={showExpertReview} />
+      <Sidebar showExpertReview={showExpertReview} initialLocale={initialLocale} />
       <div className="flex min-w-0 flex-1 flex-col">
         <Topbar />
         <main id="main-content" className="min-w-0 flex-1">

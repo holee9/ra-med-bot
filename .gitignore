@@ -217,6 +217,12 @@ dist-ssr/
 tests/e2e/fixtures/.auth.json
 
 # ===========================================
+# Playwright E2E test artifacts
+# ===========================================
+playwright-report/
+test-results/
+
+# ===========================================
 # Deployment & CI/CD
 # ===========================================
 .vercel/

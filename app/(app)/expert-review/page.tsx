@@ -40,7 +40,7 @@ export default async function ExpertReviewQueuePage() {
   const items = await fetchPendingReviews();
 
   return (
-    <section className="mx-auto max-w-content px-6 py-8">
+    <section data-testid="review-queue-table" className="mx-auto max-w-content px-6 py-8">
       <h1 className="mb-6 font-serif text-2xl text-brand-800">전문가 검토 대기열</h1>
       <QueueList items={items} />
     </section>

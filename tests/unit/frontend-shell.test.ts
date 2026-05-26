@@ -192,13 +192,12 @@ describe('app/(app)/chat/page.tsx — REQ-FND-017', () => {
 });
 
 describe('app/(auth)/login/page.tsx — REQ-FND-018, 058', () => {
-  it('REQ-FND-018: renders sign-in buttons for both providers', async () => {
+  it('REQ-FND-018: renders email/password login form', async () => {
     const mod = await import('../../app/(auth)/login/page');
     render(mod.default());
-    // Both providers must surface — match by accessible name.
+    // Credentials-based login form (email + password inputs).
     const text = document.body.textContent ?? '';
-    expect(text).toMatch(/Microsoft/i);
-    expect(text).toMatch(/Google/i);
+    expect(text).toMatch(/로그인/);
   });
 
   it('REQ-FND-058: login metadata sets robots.index true', async () => {
@@ -211,7 +210,7 @@ describe('app/(auth)/login/page.tsx — REQ-FND-018, 058', () => {
 describe('components/shell/Sidebar.tsx — REQ-FND-019', () => {
   it('renders all 8 navigation links in correct order', async () => {
     const mod = await import('../../components/shell/Sidebar');
-    const { container } = render(mod.default());
+    const { container } = render(React.createElement(mod.default));
     // Scope to the <nav> region so the primary "새 상담" action button
     // (rendered outside <nav>) is excluded from the ordering assertion.
     const nav = container.querySelector('nav');
@@ -222,7 +221,7 @@ describe('components/shell/Sidebar.tsx — REQ-FND-019', () => {
     const navLinks = Array.from(nav.querySelectorAll('a'));
     const expected: Array<[string, string]> = [
       ['홈', '/'],
-      ['새 상담', '/chat'],
+      ['채팅', '/chat'], // ko locale label (CHAT_LABELS.ko = '채팅')
       ['히스토리', '/history'],
       ['템플릿', '/templates'],
       ['지식 베이스', '/knowledge'],
@@ -247,7 +246,7 @@ describe('components/shell/Sidebar.tsx — REQ-FND-019', () => {
 describe('components/shell/Topbar.tsx — REQ-FND-020', () => {
   it('renders 전문가 검토 button', async () => {
     const mod = await import('../../components/shell/Topbar');
-    render(mod.default());
+    render(await mod.default());
     expect(screen.getByText('전문가 검토')).toBeTruthy();
   });
 });

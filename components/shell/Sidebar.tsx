@@ -5,19 +5,22 @@
 // REQ-BREADTH-044: real project list added below nav links.
 // T-007: showExpertReview prop added (REQ-ENTERPRISE-029). Passed from AppLayout
 // which calls auth() server-side.
+// Wave 1: project-switcher dropdown + locale-aware nav-chat testid added.
 
 import { useProjects } from '@/lib/queries/useProjects';
+import type { ProjectSummary } from '@/lib/queries/useProjects';
 import { useUIStore } from '@/stores/ui';
+import { ChevronDown } from 'lucide-react';
 import Link from 'next/link';
+import { useEffect, useRef, useState } from 'react';
 
-type NavItem = { label: string; href: string };
-type ProjectRow = { id: string; name: string };
+type NavItem = { label: string; href: string; testId?: string };
 
 // @MX:ANCHOR Order is contractually fixed by REQ-FND-019; tests assert it.
 // @MX:REASON Reordering breaks UX expectations and the frontend-shell test.
 const NAV_ITEMS: NavItem[] = [
   { label: '홈', href: '/' },
-  { label: '새 상담', href: '/chat' },
+  { label: '새 상담', href: '/chat', testId: 'nav-chat' },
   { label: '히스토리', href: '/history' },
   { label: '템플릿', href: '/templates' },
   { label: '지식 베이스', href: '/knowledge' },
@@ -26,8 +29,11 @@ const NAV_ITEMS: NavItem[] = [
   { label: '설정', href: '/settings' },
 ];
 
+const CHAT_LABELS: Record<string, string> = { ko: '채팅', en: 'Chat' };
+
 interface SidebarProps {
   showExpertReview?: boolean;
+  initialLocale?: string;
 }
 
 export default function Sidebar(props?: SidebarProps) {
@@ -35,13 +41,50 @@ export default function Sidebar(props?: SidebarProps) {
   const currentProjectId = useUIStore((s) => s.currentProjectId);
   const setCurrentProjectId = useUIStore((s) => s.setCurrentProjectId);
   const { data = [] } = useProjects();
-  const projects = data as ProjectRow[];
+  const projects = data as ProjectSummary[];
+  const currentProject = projects.find((p) => p.id === currentProjectId) ?? null;
+
+  // initialLocale is passed from the server component (AppLayout) via cookies(),
+  // ensuring SSR renders the correct locale without waiting for a client-side useEffect.
+  const [locale, setLocale] = useState<string>(props?.initialLocale ?? 'ko');
+  const dropdownRef = useRef<HTMLDetailsElement>(null);
+
+  // Sync locale from cookie after client-side navigation (SPA transitions without full reload).
+  useEffect(() => {
+    const match = document.cookie.split('; ').find((row) => row.startsWith('regula-locale='));
+    const cookieLocale = match?.split('=')[1];
+    if (cookieLocale && cookieLocale !== locale) setLocale(cookieLocale);
+  }, []);
+
+  // Close project dropdown when clicking outside.
+  useEffect(() => {
+    function handleClickOutside(e: MouseEvent) {
+      if (dropdownRef.current && !dropdownRef.current.contains(e.target as Node)) {
+        dropdownRef.current.open = false;
+      }
+    }
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => document.removeEventListener('mousedown', handleClickOutside);
+  }, []);
+
+  const chatLabel = CHAT_LABELS[locale] ?? '채팅';
 
   return (
     <aside
       className="flex w-[260px] shrink-0 flex-col border-r border-ink-100 bg-surface-elevated"
       aria-label="주 메뉴"
     >
+      {/* project-header: shows selected project name across all pages */}
+      {currentProject && (
+        <div
+          data-testid="project-header"
+          className="border-b border-ink-100 px-4 py-2 text-xs font-medium text-brand-700 bg-brand-50 truncate"
+          title={currentProject.name}
+        >
+          {currentProject.name}
+        </div>
+      )}
+
       <div className="px-4 py-5">
         <Link
           href="/chat"
@@ -50,16 +93,21 @@ export default function Sidebar(props?: SidebarProps) {
           새 상담
         </Link>
       </div>
+
       <nav aria-label="메인 내비게이션" className="flex flex-col gap-1 px-2 py-2">
-        {NAV_ITEMS.map((item) => (
-          <Link
-            key={item.href}
-            href={item.href}
-            className="rounded-md px-3 py-2 text-sm text-ink-700 hover:bg-ink-50"
-          >
-            {item.label}
-          </Link>
-        ))}
+        {NAV_ITEMS.map((item) => {
+          const label = item.testId === 'nav-chat' ? chatLabel : item.label;
+          return (
+            <Link
+              key={item.href}
+              href={item.href}
+              data-testid={item.testId}
+              className="rounded-md px-3 py-2 text-sm text-ink-700 hover:bg-ink-50"
+            >
+              {label}
+            </Link>
+          );
+        })}
       </nav>
 
       {/* T-007: Expert Review conditional link (REQ-ENTERPRISE-029) */}
@@ -75,32 +123,59 @@ export default function Sidebar(props?: SidebarProps) {
         </nav>
       )}
 
-      {/* REQ-BREADTH-044: Projects section */}
-      {projects.length > 0 && (
-        <section className="mt-2 px-2 py-2">
-          <p className="mb-1 px-3 text-[10px] uppercase tracking-widest text-ink-400">프로젝트</p>
-          <ul className="flex flex-col gap-0.5">
-            {projects.map((project) => {
-              const isActive = project.id === currentProjectId;
-              return (
-                <li key={project.id}>
-                  <button
-                    type="button"
-                    data-active={isActive ? 'true' : undefined}
-                    aria-current={isActive ? 'true' : undefined}
-                    onClick={() => setCurrentProjectId(project.id)}
-                    className={`w-full rounded-md px-3 py-2 text-left text-sm transition-colors hover:bg-ink-50 ${
-                      isActive ? 'bg-brand-50 font-medium text-brand-700' : 'text-ink-700'
-                    }`}
-                  >
-                    {project.name}
-                  </button>
-                </li>
-              );
-            })}
+      {/* REQ-BREADTH-044: Project switcher dropdown.
+          Uses <details>/<summary> for hydration-safe toggle — Playwright can open
+          the dropdown before React attaches onClick (native browser behavior). */}
+      <section className="mt-2 px-2 py-2">
+        <p className="mb-1 px-3 text-[10px] uppercase tracking-widest text-ink-500">프로젝트</p>
+        <details ref={dropdownRef} className="relative">
+          <summary
+            data-testid="project-switcher"
+            aria-haspopup="listbox"
+            className="flex w-full cursor-pointer list-none items-center justify-between rounded-md px-3 py-2 text-sm text-ink-700 hover:bg-ink-50"
+          >
+            <span className="truncate">
+              {currentProject ? currentProject.name : '프로젝트 선택'}
+            </span>
+            <ChevronDown size={14} className="shrink-0 text-ink-400" />
+          </summary>
+
+          <ul
+            data-testid="project-list"
+            role="menu"
+            aria-label="프로젝트 목록"
+            tabIndex={-1}
+            className="absolute left-0 right-0 top-full z-10 mt-1 max-h-56 overflow-y-auto rounded-md border border-ink-200 bg-white py-1 shadow-md"
+          >
+            {projects.length === 0 ? (
+              <li className="px-3 py-2 text-xs text-ink-500">프로젝트 없음</li>
+            ) : (
+              projects.map((project) => {
+                const isActive = project.id === currentProjectId;
+                return (
+                  <li key={project.id}>
+                    <button
+                      type="button"
+                      data-testid="project-item"
+                      role="menuitem"
+                      aria-current={isActive ? 'true' : undefined}
+                      onClick={() => {
+                        setCurrentProjectId(project.id);
+                        if (dropdownRef.current) dropdownRef.current.open = false;
+                      }}
+                      className={`w-full px-3 py-2 text-left text-sm transition-colors hover:bg-ink-50 ${
+                        isActive ? 'font-medium text-brand-700' : 'text-ink-700'
+                      }`}
+                    >
+                      {project.name}
+                    </button>
+                  </li>
+                );
+              })
+            )}
           </ul>
-        </section>
-      )}
+        </details>
+      </section>
     </aside>
   );
 }

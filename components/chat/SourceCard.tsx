@@ -22,7 +22,10 @@ export function SourceCard({ source }: SourceCardProps) {
   const pillStyle = TYPE_PILL_STYLES[source.type] ?? 'bg-gray-100 text-gray-700';
 
   return (
-    <div className="flex flex-col gap-2 rounded-lg border border-border-weak bg-surface-soft p-3 transition-all hover:border-border-strong hover:shadow-sm hover:translate-y-[-1px] cursor-default">
+    <div
+      data-testid="citation-block"
+      className="flex flex-col gap-2 rounded-lg border border-border-weak bg-surface-soft p-3 transition-all hover:border-border-strong hover:shadow-sm hover:translate-y-[-1px] cursor-default"
+    >
       {/* Index badge + org label */}
       <div className="flex items-center justify-between gap-2">
         <span className="flex h-5 w-5 shrink-0 items-center justify-center rounded bg-brand-100 font-mono text-[10px] font-semibold text-brand-700">

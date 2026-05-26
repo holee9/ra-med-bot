@@ -1,38 +1,67 @@
 // @MX:NOTE [AUTO] LocaleToggle — T-009 (REQ-ENTERPRISE-040).
-// Cookie-based locale switching (ko/en) without next-intl routing.
-// Stores locale in localStorage key 'regula-locale' and sets cookie on toggle.
+// Cookie-based locale switching (ko/en) via /api/locale route.
+// Options are plain <a> tags pointing to /api/locale — they always navigate
+// server-side to set the cookie and redirect, regardless of React hydration.
+// Dropdown uses CSS group-focus-within: visible when any descendant has focus.
+// This eliminates snap Chromium race conditions and React hydration timing issues.
 // @MX:SPEC SPEC-REGULA-ENTERPRISE-001 (REQ-ENTERPRISE-040)
 
 'use client';
 
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 
 export function LocaleToggle() {
-  const [locale, setLocale] = useState<string>(() => {
-    if (typeof window !== 'undefined') {
-      return localStorage.getItem('regula-locale') ?? 'ko';
-    }
-    return 'ko';
-  });
+  const [locale, setLocale] = useState<string>('ko');
 
-  const toggle = () => {
-    const next = locale === 'ko' ? 'en' : 'ko';
-    localStorage.setItem('regula-locale', next);
-    // Set cookie for server-side locale detection (next-intl/server reads cookie)
-    document.cookie = `regula-locale=${next}; path=/; max-age=31536000; SameSite=Lax`;
-    setLocale(next);
-    window.location.reload();
-  };
+  useEffect(() => {
+    const match = document.cookie.split('; ').find((row) => row.startsWith('regula-locale='));
+    const cookieLocale = match?.split('=')[1];
+    if (cookieLocale) setLocale(cookieLocale);
+  }, []);
 
   return (
-    <button
-      type="button"
-      data-testid="locale-toggle"
-      onClick={toggle}
-      aria-label="언어 변경"
-      className="rounded-md border border-ink-200 px-2 py-1.5 text-xs font-medium text-ink-700 hover:bg-ink-50"
+    <div
+      className="group relative"
+      onKeyDown={(e) => {
+        if (e.key === 'Escape') (document.activeElement as HTMLElement)?.blur();
+      }}
     >
-      {locale === 'ko' ? 'KO' : 'EN'}
-    </button>
+      <button
+        type="button"
+        data-testid="locale-toggle"
+        aria-label="언어 변경"
+        aria-haspopup="menu"
+        className="cursor-pointer rounded-md border border-ink-200 px-2 py-1.5 text-xs font-medium text-ink-700 hover:bg-ink-50"
+      >
+        {locale === 'ko' ? 'KO' : 'EN'}
+      </button>
+
+      <div
+        data-testid="locale-dropdown"
+        role="menu"
+        aria-label="언어 선택"
+        tabIndex={-1}
+        className="invisible absolute right-0 top-full z-50 mt-1 min-w-[80px] rounded-md border border-ink-200 bg-white py-1 shadow-md group-focus-within:visible"
+      >
+        <a
+          href="/api/locale?locale=ko&returnTo=/"
+          data-testid="locale-option-ko"
+          role="menuitem"
+          aria-current={locale === 'ko' ? 'true' : undefined}
+          className={`block w-full px-3 py-1.5 text-left text-xs hover:bg-ink-50 ${locale === 'ko' ? 'font-semibold text-brand-700' : 'text-ink-700'}`}
+        >
+          한국어
+        </a>
+        <a
+          href="/api/locale?locale=en&returnTo=/"
+          data-testid="locale-option-en"
+          role="menuitem"
+          aria-current={locale === 'en' ? 'true' : undefined}
+          className={`block w-full px-3 py-1.5 text-left text-xs hover:bg-ink-50 ${locale === 'en' ? 'font-semibold text-brand-700' : 'text-ink-700'}`}
+        >
+          English
+        </a>
+      </div>
+    </div>
   );
 }

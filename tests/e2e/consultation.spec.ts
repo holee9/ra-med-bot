@@ -56,7 +56,7 @@ test.describe('Consultation flow (REQ-LAUNCH-016)', () => {
     await composer.fill('Quick question about IVDR scope.');
     await submitBtn.click();
 
-    // During streaming the submit button (or composer) should be disabled.
-    await expect(submitBtn).toBeDisabled({ timeout: 5_000 });
+    // During streaming the submit button becomes a Stop button (aria-label changes).
+    await expect(submitBtn).toHaveAttribute('aria-label', 'Stop generation', { timeout: 5_000 });
   });
 });
