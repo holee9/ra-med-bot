@@ -188,6 +188,8 @@ export const users = pgTable('users', {
   updatedAt: timestamp('updated_at', { withTimezone: true, mode: 'date' }).notNull().defaultNow(),
   // REQ-TENANT-001: nullable department for secondary RBAC axis. null = unrestricted.
   department: userDepartmentEnum('department'),
+  // Auth.js v5 DrizzleAdapter requires emailVerified — null = unverified (Credentials flow).
+  emailVerified: timestamp('email_verified', { withTimezone: true, mode: 'date' }),
   // Credentials auth — null means SSO-only account.
   password_hash: text('password_hash'),
   image: text('image'),

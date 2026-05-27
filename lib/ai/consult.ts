@@ -432,7 +432,7 @@ export async function* consult(
       expertReviewRequired: requiresExpertReview,
       tokensIn,
       tokensOut,
-      model: 'claude-sonnet-4-5',
+      model: process.env.OLLAMA_MODEL ?? process.env.OPENAI_MODEL ?? process.env.ANTHROPIC_MODEL ?? 'unknown',
       violations,
       citedChunks,
     });
