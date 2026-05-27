@@ -222,7 +222,9 @@ export async function* consult(
     llmFailed = true;
     // LLM generation unavailable (billing, quota, network) — continue pipeline so
     // citations are still returned to the client.
-    logger.warn('[consult] LLM generation failed, continuing with citations only:', llmErr);
+    logger.warn('[consult] LLM generation failed, continuing with citations only:', {
+      error: llmErr instanceof Error ? llmErr.message : String(llmErr),
+    });
     yield* emit({ type: 'trace', step: '답변 생성 중', status: 'done' });
     const fallback =
       input.locale === 'ko'
