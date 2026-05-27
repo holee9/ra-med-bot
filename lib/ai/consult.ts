@@ -9,8 +9,8 @@
 
 import { createHash } from 'node:crypto';
 import { logger } from '@/lib/observability/logger';
-import { anthropic } from '@ai-sdk/anthropic';
 import { type LanguageModel, streamText } from 'ai';
+import { getLlmModel } from './llm-provider';
 import { eq } from 'drizzle-orm';
 import type { Session } from 'next-auth';
 import type { ConsultRequest } from '../../types/consult';
@@ -156,9 +156,6 @@ export async function* consult(
           {
             type: 'text' as const,
             text: composed.chunkContext,
-            experimental_providerMetadata: {
-              anthropic: { cacheControl: { type: 'ephemeral' } },
-            },
           },
         ]
       : []),
@@ -175,7 +172,7 @@ export async function* consult(
     resource_id: messageId,
     conversation_id: conversationId,
     meta_json: {
-      model: 'claude-sonnet-4-5',
+      model: process.env.OLLAMA_MODEL ?? process.env.OPENAI_MODEL ?? process.env.ANTHROPIC_MODEL ?? 'unknown',
       question_hash: sha256Hex(input.question),
       locale: input.locale,
       source_filter: input.sourceFilter,
@@ -192,7 +189,7 @@ export async function* consult(
 
   try {
     const result = await streamText({
-      model: anthropic('claude-sonnet-4-5') as unknown as LanguageModel,
+      model: getLlmModel(),
       messages: [
         {
           role: 'user',
