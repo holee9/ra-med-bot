@@ -9,7 +9,7 @@
 
 import { openai } from '@ai-sdk/openai';
 import { type EmbeddingModel, embed } from 'ai';
-import { eq } from 'drizzle-orm';
+import { eq, sql } from 'drizzle-orm';
 import { db } from '../lib/db/client';
 import { sourceSections, sources } from '../lib/db/schema';
 import { logger } from '../lib/observability/logger';
@@ -296,8 +296,8 @@ const SEED: SeedSource[] = [
 
 async function embedText(text: string): Promise<number[] | null> {
   const key = process.env.OPENAI_API_KEY ?? '';
-  if (!key || key.startsWith('dev-') || key === 'placeholder') {
-    // FTS-only mode: skip embedding when no real OpenAI key is configured.
+  // FTS-only mode: skip embedding when no real OpenAI key (sk-... / sk-proj-...)
+  if (!key || key.startsWith('dev-') || key === 'placeholder' || !key.startsWith('sk-')) {
     return null;
   }
   try {
@@ -337,7 +337,8 @@ async function main(): Promise<void> {
           type: seed.type,
           region: seed.region,
           url: seed.url,
-          ...(titleEmbedding !== null ? { embedding: titleEmbedding } : {}),
+          // Use sql`NULL` to bypass postgres-js custom-type serialisation for null vectors.
+          embedding: titleEmbedding ?? (sql`NULL` as unknown as number[]),
         })
         .returning({ id: sources.id });
       const row = inserted[0];
@@ -365,7 +366,7 @@ async function main(): Promise<void> {
           anchor: section.anchor,
           heading: section.heading,
           text: section.text,
-          ...(sectionEmbedding !== null ? { embedding: sectionEmbedding } : {}),
+          embedding: sectionEmbedding ?? (sql`NULL` as unknown as number[]),
         });
         _totalSections += 1;
       } catch (err) {

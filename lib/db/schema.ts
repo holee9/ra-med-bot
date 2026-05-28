@@ -40,9 +40,17 @@ import {
 // pgvector custom type — backs sources.embedding and source_sections.embedding.
 // `dataType()` returns the SQL fragment Drizzle interpolates into DDL/DML.
 // ---------------------------------------------------------------------------
-const vector = customType<{ data: number[]; driverData: string }>({
+const vector = customType<{ data: number[] | null; driverData: string | null }>({
   dataType() {
     return 'vector(1536)';
+  },
+  toDriver(value: number[] | null): string | null {
+    if (value === null) return null;
+    return `[${value.join(',')}]`;
+  },
+  fromDriver(value: string | null): number[] | null {
+    if (value === null) return null;
+    return value.slice(1, -1).split(',').map(Number);
   },
 });
 
