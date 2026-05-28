@@ -294,13 +294,22 @@ const SEED: SeedSource[] = [
   },
 ];
 
-async function embedText(text: string): Promise<number[]> {
-  const { embedding } = await embed({
-    // @MX:NOTE v3 provider → v1 SDK type bridge. See lib/ai/intent.ts.
-    model: openai.embedding('text-embedding-3-small') as unknown as EmbeddingModel<string>,
-    value: text,
-  });
-  return embedding;
+async function embedText(text: string): Promise<number[] | null> {
+  const key = process.env.OPENAI_API_KEY ?? '';
+  if (!key || key.startsWith('dev-') || key === 'placeholder') {
+    // FTS-only mode: skip embedding when no real OpenAI key is configured.
+    return null;
+  }
+  try {
+    const { embedding } = await embed({
+      // @MX:NOTE v3 provider → v1 SDK type bridge. See lib/ai/intent.ts.
+      model: openai.embedding('text-embedding-3-small') as unknown as EmbeddingModel<string>,
+      value: text,
+    });
+    return embedding;
+  } catch {
+    return null;
+  }
 }
 
 async function main(): Promise<void> {
@@ -328,7 +337,7 @@ async function main(): Promise<void> {
           type: seed.type,
           region: seed.region,
           url: seed.url,
-          embedding: titleEmbedding,
+          ...(titleEmbedding !== null ? { embedding: titleEmbedding } : {}),
         })
         .returning({ id: sources.id });
       const row = inserted[0];
@@ -356,7 +365,7 @@ async function main(): Promise<void> {
           anchor: section.anchor,
           heading: section.heading,
           text: section.text,
-          embedding: sectionEmbedding,
+          ...(sectionEmbedding !== null ? { embedding: sectionEmbedding } : {}),
         });
         _totalSections += 1;
       } catch (err) {
