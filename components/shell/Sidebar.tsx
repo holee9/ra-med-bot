@@ -142,7 +142,6 @@ export default function Sidebar(props?: SidebarProps) {
 
           <ul
             data-testid="project-list"
-            role="listbox"
             aria-label="프로젝트 목록"
             className="absolute left-0 right-0 top-full z-10 mt-1 max-h-56 overflow-y-auto rounded-md border border-ink-200 bg-white py-1 shadow-md"
           >

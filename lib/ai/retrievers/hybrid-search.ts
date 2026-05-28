@@ -70,7 +70,12 @@ export async function hybridSearch(
   }
 
   // 2. Build OR-joined FTS query for better recall (prevents AND requiring all terms).
-  const ftsQuery = query.trim().split(/\s+/).filter((w) => w.length > 2).join(' OR ') || query;
+  const ftsQuery =
+    query
+      .trim()
+      .split(/\s+/)
+      .filter((w) => w.length > 2)
+      .join(' OR ') || query;
 
   // 3. Build the source-type WHERE fragment.
   let typeFilter = sql``;

@@ -10,7 +10,6 @@
 import { createHash } from 'node:crypto';
 import { logger } from '@/lib/observability/logger';
 import { type LanguageModel, streamText } from 'ai';
-import { getLlmModel } from './llm-provider';
 import { eq } from 'drizzle-orm';
 import type { Session } from 'next-auth';
 import type { ConsultRequest } from '../../types/consult';
@@ -24,6 +23,7 @@ import { shouldAutoFlag } from './expert-review-gating';
 import { enqueueExpertReview } from './expert-review-queue';
 import { enrichWithExternalData } from './external-enrichment';
 import { classifyIntent } from './intent';
+import { getLlmModel } from './llm-provider';
 import { parallelRetrieveAndMerge } from './merge';
 import { persistMessage } from './persistence';
 import { composePrompt } from './prompt-templates';
@@ -100,8 +100,12 @@ export async function* consult(
   if (signal?.aborted) return;
   const searchStart = Date.now();
   const { corpora } = await classifyAndRoute(rewrittenQuery, input.projectTargetMarkets ?? ['us']);
-  const orgId = (session.user as unknown as { organizationId?: string | null }).organizationId ?? undefined;
-  const mergedResults = await parallelRetrieveAndMerge(rewrittenQuery, corpora, { limit: 10, orgId });
+  const orgId =
+    (session.user as unknown as { organizationId?: string | null }).organizationId ?? undefined;
+  const mergedResults = await parallelRetrieveAndMerge(rewrittenQuery, corpora, {
+    limit: 10,
+    orgId,
+  });
   // Adapt RetrievalResult[] → RetrievedChunk[] shape expected by composePrompt.
   const chunks: RetrievedChunk[] = mergedResults.map((r) => ({
     sectionId: r.id,
@@ -172,7 +176,11 @@ export async function* consult(
     resource_id: messageId,
     conversation_id: conversationId,
     meta_json: {
-      model: process.env.OLLAMA_MODEL ?? process.env.OPENAI_MODEL ?? process.env.ANTHROPIC_MODEL ?? 'unknown',
+      model:
+        process.env.OLLAMA_MODEL ??
+        process.env.OPENAI_MODEL ??
+        process.env.ANTHROPIC_MODEL ??
+        'unknown',
       question_hash: sha256Hex(input.question),
       locale: input.locale,
       source_filter: input.sourceFilter,
@@ -432,7 +440,11 @@ export async function* consult(
       expertReviewRequired: requiresExpertReview,
       tokensIn,
       tokensOut,
-      model: process.env.OLLAMA_MODEL ?? process.env.OPENAI_MODEL ?? process.env.ANTHROPIC_MODEL ?? 'unknown',
+      model:
+        process.env.OLLAMA_MODEL ??
+        process.env.OPENAI_MODEL ??
+        process.env.ANTHROPIC_MODEL ??
+        'unknown',
       violations,
       citedChunks,
     });

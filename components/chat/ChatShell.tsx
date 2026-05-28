@@ -3,8 +3,8 @@
 // @MX:NOTE: Client-side interactive shell extracted from ChatPage (REQ-CHAT-058).
 // @MX:SPEC: SPEC-REGULA-CHAT-001 (REQ-CHAT-031..039, REQ-CHAT-051..052, REQ-CHAT-058)
 
-import { useCallback, useEffect, useState } from 'react';
 import { useUIStore } from '@/stores/ui';
+import { useCallback, useEffect, useState } from 'react';
 import { useStreamingAnswer } from '../../hooks/useStreamingAnswer';
 import { AnswerBlock } from './AnswerBlock';
 import { Composer } from './Composer';

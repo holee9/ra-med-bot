@@ -4,7 +4,7 @@
 // Future: oauth-subscription (REQ-LLM-OAUTH, planned)
 
 import { createOpenAI } from '@ai-sdk/openai';
-import { type LanguageModel } from 'ai';
+import type { LanguageModel } from 'ai';
 
 export type LlmProviderName = 'ollama' | 'openai' | 'anthropic';
 

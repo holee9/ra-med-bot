@@ -66,9 +66,7 @@ export default function AdminUsersClient({ users }: { users: User[] }) {
         </section>
       )}
 
-      {users.length === 0 && (
-        <p className="text-sm text-ink-400">등록된 사용자가 없습니다.</p>
-      )}
+      {users.length === 0 && <p className="text-sm text-ink-400">등록된 사용자가 없습니다.</p>}
     </div>
   );
 }
