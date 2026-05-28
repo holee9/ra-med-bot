@@ -39,8 +39,9 @@ for (const root of ROOTS) {
     const content = await fs.readFile(file, 'utf8');
     const lines = content.split(/\r?\n/);
     lines.forEach((line, idx) => {
-      // Skip lines that are clearly comments documenting the rule itself.
+      // Skip comment-only lines (e.g. // Issue #111: ...) and inline-suppression markers.
       if (/eslint-disable|biome-ignore|allow-hex/.test(line)) return;
+      if (line.trimStart().startsWith('//') || line.trimStart().startsWith('*')) return;
       const matches = line.match(HEX_PATTERN);
       if (matches) {
         violations.push({ file, line: idx + 1, snippet: line.trim(), matches });

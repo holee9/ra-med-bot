@@ -135,7 +135,7 @@ export const POST = withPermission('consult.create', async (req, _ctx, session) 
       }
 
       const eventSource =
-        process.env.E2E_TEST_MODE === 'true'
+        process.env.E2E_TEST_MODE === 'true' && process.env.NODE_ENV !== 'production'
           ? e2eTestEvents(input.question)
           : consult(input, authJsSession, messageId, conversationId, signal);
 

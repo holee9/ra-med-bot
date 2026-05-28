@@ -35,6 +35,7 @@ export default function LoginButtons() {
         <input
           type="email"
           placeholder="이메일"
+          aria-label="이메일"
           value={email}
           onChange={(e) => setEmail(e.target.value)}
           required
@@ -43,6 +44,7 @@ export default function LoginButtons() {
         <input
           type="password"
           placeholder="비밀번호"
+          aria-label="비밀번호"
           value={password}
           onChange={(e) => setPassword(e.target.value)}
           required
@@ -60,7 +62,7 @@ export default function LoginButtons() {
 
       <p className="text-center text-sm text-ink-500">
         계정이 없으신가요?{' '}
-        <a href="/signup" className="text-brand-700 hover:underline">
+        <a href="/signup" className="text-brand-700 underline">
           신규 신청
         </a>
       </p>
