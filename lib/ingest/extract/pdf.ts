@@ -1,5 +1,6 @@
 // @MX:NOTE [AUTO] PDF text extractor — wraps pdf-parse with error normalization.
 // @MX:SPEC SPEC-REGULA-DOCINGEST-001 (REQ-DOC-020)
+// pdf-parse uses `export =`; esModuleInterop allows default import.
 import pdfParse from 'pdf-parse';
 
 export class ExtractError extends Error {

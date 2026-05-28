@@ -13,12 +13,14 @@ function config(phase) {
   // any real env vars are available. Inject SKIP_ENV_VALIDATION so lib/env.ts
   // bypasses Zod validation for that phase only. Runtime modes (dev, start)
   // never set this, so full validation is enforced there.
-  if (phase === PHASE_PRODUCTION_BUILD) {
-    process.env.SKIP_ENV_VALIDATION = '1';
-  }
+  const isBuild = phase === PHASE_PRODUCTION_BUILD;
+  // Mutate parent-process env so child workers inherit it (belt-and-suspenders).
+  if (isBuild) process.env.SKIP_ENV_VALIDATION = '1';
 
   return {
     reactStrictMode: true,
+    // Also pass via Next.js env table so page-data workers receive it.
+    env: isBuild ? { SKIP_ENV_VALIDATION: '1' } : {},
     poweredByHeader: false,
     // App Router is the default in Next.js 15; no `experimental.appDir` needed.
     experimental: {

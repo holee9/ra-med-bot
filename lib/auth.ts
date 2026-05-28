@@ -29,7 +29,6 @@ export const { handlers, auth, signIn, signOut } = NextAuth(() => {
   const env = getEnv();
   return {
     adapter: DrizzleAdapter(db, {
-      // @ts-expect-error -- users extends DefaultPostgresUsersTable with app-specific columns; all required Auth.js fields are present
       usersTable: users,
       accountsTable: accounts,
       sessionsTable: sessions,
