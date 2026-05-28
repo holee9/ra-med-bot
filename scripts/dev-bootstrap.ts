@@ -83,9 +83,6 @@ function main(): void {
   const example = fs.readFileSync(EXAMPLE_PATH, 'utf8');
   const generated = generateEnvLocal(example);
   fs.writeFileSync(TARGET_PATH, generated, 'utf8');
-
-  console.log('✅ .env.local created with dev-placeholder values.');
-  console.log('   Replace placeholders before invoking real LLM/SSO providers.');
 }
 
 // Only execute when run directly (not when imported by tests).

@@ -66,9 +66,7 @@ export default function AdminUsersClient({ users }: { users: User[] }) {
         </section>
       )}
 
-      {users.length === 0 && (
-        <p className="text-sm text-ink-400">등록된 사용자가 없습니다.</p>
-      )}
+      {users.length === 0 && <p className="text-sm text-ink-400">등록된 사용자가 없습니다.</p>}
     </div>
   );
 }
@@ -96,6 +94,7 @@ function Row({
         </span>
         {user.status === 'pending' && (
           <button
+            type="button"
             onClick={() => onUpdate(user.id, 'active')}
             disabled={loading === user.id}
             className="rounded bg-brand-700 px-3 py-1 text-xs font-medium text-white hover:bg-brand-800 disabled:opacity-50"
@@ -105,6 +104,7 @@ function Row({
         )}
         {user.status === 'active' && (
           <button
+            type="button"
             onClick={() => onUpdate(user.id, 'disabled')}
             disabled={loading === user.id}
             className="rounded border border-ink-200 px-3 py-1 text-xs text-ink-600 hover:bg-ink-50 disabled:opacity-50"
@@ -114,6 +114,7 @@ function Row({
         )}
         {user.status === 'disabled' && (
           <button
+            type="button"
             onClick={() => onUpdate(user.id, 'active')}
             disabled={loading === user.id}
             className="rounded border border-ink-200 px-3 py-1 text-xs text-ink-600 hover:bg-ink-50 disabled:opacity-50"

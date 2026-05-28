@@ -142,8 +142,9 @@ export default function Sidebar(props?: SidebarProps) {
 
           <ul
             data-testid="project-list"
-            role="listbox"
+            role="menu"
             aria-label="프로젝트 목록"
+            tabIndex={-1}
             className="absolute left-0 right-0 top-full z-10 mt-1 max-h-56 overflow-y-auto rounded-md border border-ink-200 bg-white py-1 shadow-md"
           >
             {projects.length === 0 ? (
@@ -156,8 +157,8 @@ export default function Sidebar(props?: SidebarProps) {
                     <button
                       type="button"
                       data-testid="project-item"
-                      role="option"
-                      aria-selected={isActive}
+                      role="menuitem"
+                      aria-current={isActive ? 'true' : undefined}
                       onClick={() => {
                         setCurrentProjectId(project.id);
                         if (dropdownRef.current) dropdownRef.current.open = false;

@@ -6,6 +6,7 @@
 // FDA regulatory acronym lookup table — at least 20 acronyms required by REQ-CHAT-013.
 const FDA_ACRONYMS: Record<string, string> = {
   '510(k)': '510(k) premarket notification',
+  '510k': '510(k) premarket notification',
   QSR: 'QSR quality system regulation',
   PMA: 'PMA premarket approval',
   IDE: 'IDE investigational device exemption',

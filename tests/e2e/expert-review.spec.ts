@@ -30,8 +30,21 @@ test.describe('Expert review flow (REQ-LAUNCH-017)', () => {
     test.skip(s.skip, s.reason);
     const a = requiresAuthState();
     test.skip(a.skip, a.reason);
-    // TODO: SPEC-REGULA-RELEASE-HARDENING-001 REQ-QUALITY-E2E — callout submit button not yet implemented
-    test.skip(true, 'Blocked: ExpertReviewCallout missing "Send for expert review" button');
+
+    await page.goto('/chat');
+    const composer = page.locator('[data-testid="chat-composer"]');
+    await composer.fill('__test:low_confidence__');
+    await page.keyboard.press('Enter');
+
+    const callout = page.locator('[data-testid="expert-review-callout"]');
+    await expect(callout).toBeVisible({ timeout: 15_000 });
+
+    const sendBtn = callout.locator('[data-testid="send-review-btn"]');
+    await expect(sendBtn).toBeVisible();
+    await sendBtn.click();
+
+    // After clicking, button must be disabled (sent state = idempotent guard).
+    await expect(sendBtn).toBeDisabled({ timeout: 5_000 });
   });
 
   test('/expert-review queue lists pending items for RA experts', async ({ page }) => {
@@ -46,9 +59,30 @@ test.describe('Expert review flow (REQ-LAUNCH-017)', () => {
   });
 
   test('expert can resolve a queued item', async ({ page }) => {
+    const s = requiresLiveServer();
+    test.skip(s.skip, s.reason);
     const a = requiresAuthState();
     test.skip(a.skip, a.reason);
-    // TODO: SPEC-REGULA-RELEASE-HARDENING-001 REQ-QUALITY-E2E — needs seeded DB data + "Resolve" button
-    test.skip(true, 'Blocked: requires seeded review item and Resolve button implementation');
+
+    await page.goto('/expert-review');
+    await expect(page.locator('[data-testid="review-queue-table"]')).toBeVisible();
+
+    // If no items are present, skip gracefully — seeded data required.
+    const cards = page.locator('[data-testid="review-card"]');
+    const count = await cards.count();
+    test.skip(count === 0, 'No review items in queue — seed data required');
+
+    // Advance first pending card to in_progress to expose resolve button.
+    const startBtn = page.locator('[data-testid="review-card"]').first().locator('button').first();
+    if (await startBtn.isVisible()) {
+      await startBtn.click();
+    }
+
+    // resolve-btn must appear after in_progress transition.
+    const resolveBtn = page.locator('[data-testid="resolve-btn"]').first();
+    await expect(resolveBtn).toBeVisible({ timeout: 5_000 });
+    await resolveBtn.click();
+    // After resolve, button should disappear (status becomes resolved).
+    await expect(resolveBtn).not.toBeVisible({ timeout: 5_000 });
   });
 });

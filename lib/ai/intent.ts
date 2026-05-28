@@ -1,14 +1,8 @@
 // @MX:NOTE Intent classifier — fast Haiku call to route the rewriter.
 // @MX:SPEC SPEC-REGULA-CHAT-001 (REQ-CHAT-008)
 
-import { anthropic } from '@ai-sdk/anthropic';
 import { type LanguageModel, generateText } from 'ai';
-
-// @MX:NOTE @ai-sdk/anthropic@3.0.74 ships LanguageModelV3 specification while
-// ai@3.4.33 still types parameters as LanguageModelV1. The runtime contract is
-// compatible — generateText/streamText both accept the v3 model — but the
-// declaration mismatch requires an explicit cast at the boundary.
-const MODEL = anthropic('claude-haiku-4-5') as unknown as LanguageModel;
+import { getLlmFastModel } from './llm-provider';
 
 export type Intent = 'regulation-lookup' | 'comparison' | 'general';
 
@@ -43,15 +37,19 @@ Answer (one word only):`;
 export async function classifyIntent(question: string, locale: 'ko' | 'en'): Promise<Intent> {
   const prompt = locale === 'ko' ? PROMPT_KO(question) : PROMPT_EN(question);
 
-  const { text } = await generateText({
-    model: MODEL,
-    prompt,
-    maxTokens: 50,
-  });
+  try {
+    const { text } = await generateText({
+      model: getLlmFastModel(),
+      prompt,
+      maxTokens: 50,
+    });
 
-  const normalized = text.toLowerCase().trim();
-  for (const candidate of INTENTS) {
-    if (normalized.includes(candidate)) return candidate;
+    const normalized = text.toLowerCase().trim();
+    for (const candidate of INTENTS) {
+      if (normalized.includes(candidate)) return candidate;
+    }
+  } catch {
+    // LLM unavailable (billing, network) — fall back to general intent.
   }
   return 'general';
 }

@@ -160,7 +160,7 @@ describe('middleware.ts (REQ-FND-053)', () => {
 
   it('contains the exact REQ-FND-053 matcher pattern', () => {
     expect(src).toContain(
-      `'/((?!_next/static|_next/image|favicon.ico|login|sso/callback|api/auth|robots.txt|public).*)'`,
+      `'/((?!_next/static|_next/image|favicon.ico|login|signup|sso/callback|api/auth|robots.txt|public).*)'`,
     );
   });
 
@@ -176,8 +176,8 @@ describe('middleware.ts (REQ-FND-053)', () => {
 describe('lib/auth.ts (REQ-FND-051, 052, 054, 055)', () => {
   const src = readText('lib/auth.ts');
 
-  it('uses database session strategy', () => {
-    expect(src).toMatch(/strategy:\s*['"]database['"]/);
+  it('uses JWT session strategy (Auth.js v5 Credentials forces JWT — REQ-FND-052)', () => {
+    expect(src).toMatch(/strategy:\s*['"]jwt['"]/);
   });
 
   it('declares MicrosoftEntraID and Google providers', () => {

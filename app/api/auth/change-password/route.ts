@@ -1,10 +1,10 @@
+import { auth } from '@/lib/auth';
+import { db } from '@/lib/db/client';
+import { users } from '@/lib/db/schema';
 import bcrypt from 'bcryptjs';
 import { eq } from 'drizzle-orm';
 import { NextResponse } from 'next/server';
 import { z } from 'zod';
-import { auth } from '@/lib/auth';
-import { db } from '@/lib/db/client';
-import { users } from '@/lib/db/schema';
 
 const BodySchema = z.object({
   password: z.string().min(8),
@@ -23,7 +23,8 @@ export async function PATCH(req: Request) {
   }
 
   const userId = session.user.id;
-  const [user] = await db.select({ id: users.id, mustChangePassword: users.mustChangePassword })
+  const [user] = await db
+    .select({ id: users.id, mustChangePassword: users.mustChangePassword })
     .from(users)
     .where(eq(users.id, userId))
     .limit(1);

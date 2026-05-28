@@ -11,26 +11,56 @@
 
 ---
 
-## 구현 현황 대시보드 (2026-05-21 KST 기준)
+## 구현 현황 대시보드 (2026-05-28 KST 기준)
 
 상세 점검 기록: [`docs/implementation-status.md`](docs/implementation-status.md)
 
 ### 종합 판단
 
-로그인 버그가 수정되어 Credentials 인증이 정상 동작합니다. `strategy: 'database'`가 Auth.js v5 beta에서 Credentials와 충돌하는 근본 원인을 해결했습니다.
+RAG 파이프라인 E2E 동작이 완전히 복구되었습니다. hybrid search FTS fallback, internal SOPs 컬럼 수정, LLM 공급자 추상화가 완료되어 Ollama/OpenAI/Anthropic 환경 전환이 가능합니다.
 
 | 카테고리 | 상태 | 측정 근거 |
 |---------|------|---------|
-| 구현 기준 | PASS | login fix commit; `drake.lee@abyzr.com` / `hnabyz2023@gmail.com` 로컬 검증 완료 |
-| GitHub Actions | PASS | `CI`, `Deploy`, `Security Scan` 모두 success on `8b3a983` |
-| 구현 표면 | PASS | 16 pages, 28 API route handlers, 33 component files, 150 lib files |
+| 구현 기준 | PASS | RAG 파이프라인 E2E 복구 + LLM 공급자 추상화; `drake.lee@abyzr.com` 로컬 검증 완료 |
+| GitHub Actions | PASS | `CI`, `Deploy`, `Security Scan` 모두 success on `fix/issue-116` |
+| 구현 표면 | PASS | 16 pages, 28 API route handlers, 33 component files, 150+ lib files |
 | 테스트 자산 | PASS | 184 test/spec files, 8 Playwright specs |
 | CI core gates | PASS | typecheck, lint, format, unit, RBAC, audit, tokens, i18n, glossary, contrast, modules, migrations, build |
 | E2E CI | WARN | Playwright jobs success, but `Run E2E tests` skipped because staging URL was missing |
-| 로컬 로그인 | PASS | Credentials 로그인 수정 완료 — 세션 반환 `{"user":{"name":"Drake Lee","mustChangePassword":true},"expires":"..."}` |
+| RAG 파이프라인 | PASS | hybrid search FTS fallback 동작, 8 citations 정상 반환, LLM 오류 graceful degradation 확인 |
+| LLM 공급자 | PASS | `LLM_PROVIDER=anthropic` (로컬), Ollama/OpenAI 환경 전환 지원 |
+| Auth.js DrizzleAdapter | PASS | `emailVerified` 컬럼 추가, TS2322 오류 해결 |
 | 런타임 로컬 검증 | PASS | `.env.local` + 로컬 DB 구동 확인. `dev:bootstrap` 및 `.env.test.example` 제공 |
 | RC 상태 | PASS | `v1.0.0-rc` published, #31 closed |
 | 다음 구현 | OPEN | #22 Wave 3, #112 가입 시 역할 선택 |
+
+### 최신 RAG 파이프라인 복구 수정 (2026-05-28)
+
+Issue #116 — RAG 파이프라인 E2E 동작 복구 + LLM 공급자 추상화 + Auth.js v5 호환:
+
+| 영역 | 원인 | 수정 |
+|------|------|------|
+| hybrid-search | OpenAI embedding 오류 시 전체 retrieval 실패 | `embedError` catch → FTS-only fallback으로 계속 수행 |
+| hybrid-search | `plainto_tsquery` → recall 저하 | `websearch_to_tsquery` 교체, OR-joined FTS 쿼리 |
+| internal-sops | `ss.org_id` 존재하지 않는 컬럼 참조 | `s.organization_id` 수정, FTS-only fallback 추가 |
+| consult.ts | `llmFailed` 시 topChunks emit 누락 → 0 citations | `llmFailed` 분기에서 topChunks 전체 emit 복구 |
+| query-rewrite | `510k` 쿼리 확장 미흡 | `510(k) premarket notification` 전체 용어 확장 |
+| LLM 공급자 | Anthropic 하드코딩 (`claude-sonnet-4-5`) | `lib/ai/llm-provider.ts` 신설, `getLlmModel()` 팩토리로 통합 |
+| Auth.js | `emailVerified` 컬럼 누락 → TS2322 | `schema.ts` + `migrations/0025_users_email_verified.sql` 추가 |
+
+검증 결과:
+```
+# LLM 오류 시에도 RAG retrieval 정상 동작
+sources: 8 citations 반환 (llmFailed=true 상태에서도)
+
+# FTS fallback: OpenAI embedding 없이도 검색 가능
+hybrid-search: embedding skip → fts-only mode activated
+
+# LLM 공급자 전환
+LLM_PROVIDER=anthropic → claude-haiku-4-5-20251001
+LLM_PROVIDER=ollama    → llama3.2 (로컬 GX10)
+LLM_PROVIDER=openai    → gpt-4o (구독형)
+```
 
 ### 최신 로그인 버그 수정 (2026-05-21)
 
@@ -78,7 +108,7 @@ GET  /api/auth/session             → {"user":{"name":"Drake Lee","email":"drak
 
 ## 📋 목차
 
-- [구현 현황 대시보드](#구현-현황-대시보드-2026-05-21-kst-기준)
+- [구현 현황 대시보드](#구현-현황-대시보드-2026-05-28-kst-기준)
 - [개요](#개요)
 - [프로젝트 운영 철학](#프로젝트-운영-철학)
 - [아키텍처](#아키텍처)

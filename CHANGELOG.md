@@ -11,11 +11,34 @@
 
 ### Fixed
 
+- **RAG 파이프라인 E2E 동작 복구** (PR #117 — Issue #116): pgvector hybrid search + FTS fallback + internal SOPs retriever E2E 복구.
+  - `lib/ai/retrievers/hybrid-search.ts`: OpenAI embedding 오류 발생 시 FTS-only fallback 추가, `websearch_to_tsquery`로 재작성
+  - `lib/ai/retrievers/internal-sops.ts`: `ss.org_id` → `s.organization_id` 컬럼 참조 수정, FTS-only fallback 추가
+  - `lib/ai/consult.ts`: `llmFailed` flag 시 0 citations → 8 citations 정상 반환 (topChunks emit 복구)
+  - `lib/ai/query-rewrite.ts`: `510k` 약어 → `510(k) premarket notification` 확장
+- **LLM 공급자 추상화** (PR #117 — Issue #116): 환경 변수 기반 LLM 스위칭 (`ollama | openai | anthropic`) 도입.
+  - `lib/ai/llm-provider.ts` 신설: `getLlmModel()` / `getLlmFastModel()` 팩토리 함수
+  - `lib/ai/intent.ts`, `lib/ai/router.ts`: `getLlmModel()` 사용, LLM 오류 시 `general` intent fallback 추가
+  - `lib/ai/consult.ts`: 하드코딩 `claude-sonnet-4-5` → 환경 변수 동적 모델명 참조
+  - `.env.example`: `LLM_PROVIDER`, `OLLAMA_BASE_URL`, `OLLAMA_MODEL` 변수 추가
+- **Auth.js v5 DrizzleAdapter 호환** (PR #117 — Issue #116): `users` 테이블에 `email_verified` 컬럼 추가.
+  - `lib/db/schema.ts`: `emailVerified: timestamp(...)` 컬럼 추가 (DrizzleAdapter `DefaultPostgresUsersTable` 인터페이스 충족)
+  - `migrations/0025_users_email_verified.sql`: `ALTER TABLE users ADD COLUMN IF NOT EXISTS email_verified TIMESTAMPTZ`
+  - TypeScript TS2322 오류 해결: `lib/auth.ts` DrizzleAdapter 타입 정합성 확보
+- **LLM 오류 타입 처리** (PR #117 — Issue #116): `unknown` 타입 llmErr → `logger.warn` meta 객체 래핑으로 타입 안전성 확보.
 - Align Deploy workflow jobs with Node.js 22 for current Wrangler compatibility.
 - Skip Cloudflare staging deploy and staging smoke with an explicit notice when staging secrets are absent.
 - DEPLOY-001 review follow-up: install Wrangler before Cloudflare staging deploy.
 - Pass the Vercel preview deployment URL into post-deploy smoke instead of falling back to localhost.
 - Fix `scripts/post-deploy-smoke.sh` parsing and require explicit `BASE_URL`.
+
+### Refactored
+
+- **LLM 공급자 추상화 리팩토링** (PR #117 — Issue #116): Anthropic 하드코딩 제거, Ollama(로컬 GX10) 기본값 + OAuth 구독형 확장 구조 도입. `getLlmModel()` / `getLlmFastModel()` 중앙 팩토리로 전체 AI 파이프라인 통합.
+
+### Style
+
+- **Biome import sort** (PR #117): 18개 파일 import 정렬 자동 수정 (기능 변경 없음).
 
 ---
 

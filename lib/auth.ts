@@ -11,11 +11,11 @@
 
 import { DrizzleAdapter } from '@auth/drizzle-adapter';
 import bcrypt from 'bcryptjs';
+import { eq } from 'drizzle-orm';
 import NextAuth from 'next-auth';
 import Credentials from 'next-auth/providers/credentials';
 import Google from 'next-auth/providers/google';
 import MicrosoftEntraID from 'next-auth/providers/microsoft-entra-id';
-import { eq } from 'drizzle-orm';
 import { writeAudit } from './audit';
 import { buildLoginAuditEvent, buildLogoutAuditEvent } from './auth/audit-callbacks';
 import { db } from './db/client';
@@ -29,6 +29,7 @@ export const { handlers, auth, signIn, signOut } = NextAuth(() => {
   const env = getEnv();
   return {
     adapter: DrizzleAdapter(db, {
+      // @ts-expect-error -- users extends DefaultPostgresUsersTable with app-specific columns; all required Auth.js fields are present
       usersTable: users,
       accountsTable: accounts,
       sessionsTable: sessions,
@@ -50,11 +51,7 @@ export const { handlers, auth, signIn, signOut } = NextAuth(() => {
           const password = credentials?.password as string | undefined;
           if (!email || !password) return null;
 
-          const [user] = await db
-            .select()
-            .from(users)
-            .where(eq(users.email, email))
-            .limit(1);
+          const [user] = await db.select().from(users).where(eq(users.email, email)).limit(1);
 
           if (!user?.password_hash) return null;
           const valid = await bcrypt.compare(password, user.password_hash);
@@ -91,19 +88,18 @@ export const { handlers, auth, signIn, signOut } = NextAuth(() => {
       session: async ({ session, user, token }) => {
         const userId = user?.id ?? (token?.sub as string | undefined);
         if (!userId) return session;
-        const [dbUser] = await db
-          .select({
-            mustChangePassword: users.mustChangePassword,
-            role: users.role,
-          })
-          .from(users)
-          .where(eq(users.id, userId))
-          .limit(1);
-        const [membership] = await db
-          .select({ orgId: orgMembers.orgId })
-          .from(orgMembers)
-          .where(eq(orgMembers.userId, userId))
-          .limit(1);
+        const [[dbUser], [membership]] = await Promise.all([
+          db
+            .select({ mustChangePassword: users.mustChangePassword, role: users.role })
+            .from(users)
+            .where(eq(users.id, userId))
+            .limit(1),
+          db
+            .select({ orgId: orgMembers.orgId })
+            .from(orgMembers)
+            .where(eq(orgMembers.userId, userId))
+            .limit(1),
+        ]);
         const s = session.user as unknown as Record<string, unknown>;
         s.id = userId;
         s.mustChangePassword = dbUser?.mustChangePassword ?? false;
