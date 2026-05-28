@@ -56,16 +56,28 @@ export async function hybridSearch(
   k: number,
   sourceFilter: 'all' | 'regs' | 'internal',
 ): Promise<RetrievedChunk[]> {
-  // 1. Embed the query (OpenAI text-embedding-3-small, 1536 dims).
+  // 1. Attempt embedding — may fail when OPENAI_API_KEY is unavailable.
   // @MX:NOTE Cast bridges v3 provider → v1 SDK type. See lib/ai/intent.ts.
-  const { embedding } = await embed({
-    model: openai.embedding('text-embedding-3-small') as unknown as EmbeddingModel<string>,
-    value: query,
-  });
-  // pgvector accepts a string literal of the form "[v1,v2,...]".
-  const embeddingLiteral = `[${embedding.join(',')}]`;
+  let embeddingLiteral: string | null = null;
+  try {
+    const { embedding } = await embed({
+      model: openai.embedding('text-embedding-3-small') as unknown as EmbeddingModel<string>,
+      value: query,
+    });
+    embeddingLiteral = `[${embedding.join(',')}]`;
+  } catch {
+    // OpenAI key unavailable — fall through to FTS-only retrieval.
+  }
 
-  // 2. Build the source-type WHERE fragment.
+  // 2. Build OR-joined FTS query for better recall (prevents AND requiring all terms).
+  const ftsQuery =
+    query
+      .trim()
+      .split(/\s+/)
+      .filter((w) => w.length > 2)
+      .join(' OR ') || query;
+
+  // 3. Build the source-type WHERE fragment.
   let typeFilter = sql``;
   if (sourceFilter === 'regs') {
     typeFilter = sql`AND s.type IN ('Regulation', 'Guidance', 'Standard')`;
@@ -73,55 +85,79 @@ export async function hybridSearch(
     typeFilter = sql`AND s.type = 'Internal'`;
   }
 
-  // 3. Hybrid query — single round-trip. We compute both scores in CTEs and
-  // FULL OUTER JOIN them so a section is included even if it only ranks in
-  // one of the two branches.
-  const rows = await db.execute<HybridRow>(sql`
-    WITH vec AS (
+  // 4. Query — hybrid (pgvector cosine + FTS) when embedding available, FTS-only otherwise.
+  let rawRows: unknown;
+  if (embeddingLiteral !== null) {
+    // Hybrid: FULL OUTER JOIN so a section is included if it ranks in either branch.
+    rawRows = await db.execute<HybridRow>(sql`
+      WITH vec AS (
+        SELECT
+          ss.id AS section_id,
+          1.0 - (ss.embedding <=> ${embeddingLiteral}::vector) AS vec_score
+        FROM source_sections ss
+        INNER JOIN sources s ON s.id = ss.source_id
+        WHERE ss.embedding IS NOT NULL
+          ${typeFilter}
+        ORDER BY ss.embedding <=> ${embeddingLiteral}::vector
+        LIMIT ${k * 4}
+      ),
+      fts AS (
+        SELECT
+          ss.id AS section_id,
+          ts_rank(to_tsvector('english', ss.text), websearch_to_tsquery('english', ${ftsQuery})) AS fts_score
+        FROM source_sections ss
+        INNER JOIN sources s ON s.id = ss.source_id
+        WHERE to_tsvector('english', ss.text) @@ websearch_to_tsquery('english', ${ftsQuery})
+          ${typeFilter}
+        ORDER BY fts_score DESC
+        LIMIT ${k * 4}
+      )
       SELECT
-        ss.id AS section_id,
-        1.0 - (ss.embedding <=> ${embeddingLiteral}::vector) AS vec_score
+        ss.id            AS section_id,
+        ss.source_id     AS source_id,
+        ss.anchor        AS anchor,
+        ss.text          AS text,
+        vec.vec_score    AS vec_score,
+        fts.fts_score    AS fts_score,
+        s.org_label      AS org_label,
+        s.title          AS title,
+        s.year           AS year,
+        s.type::text     AS type,
+        s.url            AS url
       FROM source_sections ss
       INNER JOIN sources s ON s.id = ss.source_id
-      WHERE ss.embedding IS NOT NULL
-        ${typeFilter}
-      ORDER BY ss.embedding <=> ${embeddingLiteral}::vector
+      LEFT JOIN vec ON vec.section_id = ss.id
+      LEFT JOIN fts ON fts.section_id = ss.id
+      WHERE (vec.vec_score IS NOT NULL OR fts.fts_score IS NOT NULL)
       LIMIT ${k * 4}
-    ),
-    fts AS (
+    `);
+  } else {
+    // FTS-only: skips vector CTE when OpenAI embedding is unavailable.
+    rawRows = await db.execute<HybridRow>(sql`
       SELECT
-        ss.id AS section_id,
-        ts_rank(to_tsvector('english', ss.text), plainto_tsquery('english', ${query})) AS fts_score
+        ss.id            AS section_id,
+        ss.source_id     AS source_id,
+        ss.anchor        AS anchor,
+        ss.text          AS text,
+        NULL::float      AS vec_score,
+        ts_rank(to_tsvector('english', ss.text), websearch_to_tsquery('english', ${ftsQuery})) AS fts_score,
+        s.org_label      AS org_label,
+        s.title          AS title,
+        s.year           AS year,
+        s.type::text     AS type,
+        s.url            AS url
       FROM source_sections ss
       INNER JOIN sources s ON s.id = ss.source_id
-      WHERE to_tsvector('english', ss.text) @@ plainto_tsquery('english', ${query})
+      WHERE to_tsvector('english', ss.text) @@ websearch_to_tsquery('english', ${ftsQuery})
         ${typeFilter}
       ORDER BY fts_score DESC
       LIMIT ${k * 4}
-    )
-    SELECT
-      ss.id            AS section_id,
-      ss.source_id     AS source_id,
-      ss.anchor        AS anchor,
-      ss.text          AS text,
-      vec.vec_score    AS vec_score,
-      fts.fts_score    AS fts_score,
-      s.org_label      AS org_label,
-      s.title          AS title,
-      s.year           AS year,
-      s.type::text     AS type,
-      s.url            AS url
-    FROM source_sections ss
-    INNER JOIN sources s ON s.id = ss.source_id
-    LEFT JOIN vec ON vec.section_id = ss.id
-    LEFT JOIN fts ON fts.section_id = ss.id
-    WHERE (vec.vec_score IS NOT NULL OR fts.fts_score IS NOT NULL)
-    LIMIT ${k * 4}
-  `);
+    `);
+  }
 
-  // 4. Combine and rank in app-land. We normalize fts_score to [0,1] by
+  // 5. Combine and rank in app-land. We normalize fts_score to [0,1] by
   // dividing by the maximum to keep the weighted blend stable.
-  const list = rows as unknown as HybridRow[];
+  const list = rawRows as unknown as HybridRow[];
   const maxFts = list.reduce((m, r) => Math.max(m, r.fts_score ?? 0), 0) || 1;
 
   const chunks: RetrievedChunk[] = list.map((r) => {

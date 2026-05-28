@@ -3,12 +3,8 @@
 // fan_in >= 3: consult.ts, merge.ts, future scheduled analysis tasks.
 // @MX:SPEC SPEC-REGULA-BREADTH-001 (REQ-BREADTH-038)
 
-import { anthropic } from '@ai-sdk/anthropic';
 import { type LanguageModel, generateText } from 'ai';
-
-// Cast bridges @ai-sdk/anthropic v3 provider → ai v1 LanguageModel declaration.
-// Same pattern as intent.ts — runtime is compatible.
-const MODEL = anthropic('claude-haiku-4-5') as unknown as LanguageModel;
+import { getLlmFastModel } from './llm-provider';
 
 /**
  * Seven intent categories the router classifies user queries into.
@@ -85,19 +81,24 @@ export async function classifyAndRoute(
   query: string,
   projectTargetMarkets: string[],
 ): Promise<{ intent: RouterIntent; corpora: string[] }> {
-  const { text } = await generateText({
-    model: MODEL,
-    prompt: CLASSIFICATION_PROMPT(query),
-    maxTokens: 50,
-  });
-
-  const normalized = text.toLowerCase().trim();
   let intent: RouterIntent = 'general';
-  for (const candidate of ROUTER_INTENTS) {
-    if (normalized.includes(candidate)) {
-      intent = candidate;
-      break;
+
+  try {
+    const { text } = await generateText({
+      model: getLlmFastModel(),
+      prompt: CLASSIFICATION_PROMPT(query),
+      maxTokens: 50,
+    });
+
+    const normalized = text.toLowerCase().trim();
+    for (const candidate of ROUTER_INTENTS) {
+      if (normalized.includes(candidate)) {
+        intent = candidate;
+        break;
+      }
     }
+  } catch {
+    // LLM unavailable (billing, network) — fall back to 'general' intent.
   }
 
   // Start with corpora relevant to the intent.

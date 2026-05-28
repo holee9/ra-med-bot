@@ -177,9 +177,6 @@ if (!layoutGuardOk) {
 }
 
 if (!failed) {
-  console.log(
-    `[rbac] OK — ${files.length} API routes scanned, ${ADMIN_PAGE_MATRIX.length} admin pages covered, layout guard verified.`,
-  );
   process.exit(0);
 } else {
   process.exit(1);

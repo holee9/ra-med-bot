@@ -60,13 +60,11 @@ async function main() {
           must_change_password = true
       WHERE email = ${email}
     `;
-    console.log(`✅ Promoted to admin (password change required on next login): ${email}`);
   } else {
     await sql`
       INSERT INTO users (name, email, password_hash, role, status, must_change_password)
       VALUES (${name}, ${email}, ${password_hash}, 'admin', 'active', true)
     `;
-    console.log(`✅ Admin account created (password change required on next login): ${email}`);
   }
 
   await sql.end();
