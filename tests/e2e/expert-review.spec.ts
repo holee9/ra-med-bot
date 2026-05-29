@@ -64,16 +64,29 @@ test.describe('Expert review flow (REQ-LAUNCH-017)', () => {
     const a = requiresAuthState();
     test.skip(a.skip, a.reason);
 
+    // First: enqueue a review item via the low-confidence flow.
+    await page.goto('/chat');
+    const composer = page.locator('[data-testid="chat-composer"]');
+    await composer.fill('__test:low_confidence__');
+    await page.keyboard.press('Enter');
+
+    const callout = page.locator('[data-testid="expert-review-callout"]');
+    await expect(callout).toBeVisible({ timeout: 15_000 });
+
+    const sendBtn = callout.locator('[data-testid="send-review-btn"]');
+    await expect(sendBtn).toBeVisible();
+    await sendBtn.click();
+    await expect(sendBtn).toBeDisabled({ timeout: 5_000 });
+
+    // Navigate to the review queue — item should now be present.
     await page.goto('/expert-review');
     await expect(page.locator('[data-testid="review-queue-table"]')).toBeVisible();
 
-    // If no items are present, skip gracefully — seeded data required.
     const cards = page.locator('[data-testid="review-card"]');
-    const count = await cards.count();
-    test.skip(count === 0, 'No review items in queue — seed data required');
+    await expect(cards.first()).toBeVisible({ timeout: 5_000 });
 
     // Advance first pending card to in_progress to expose resolve button.
-    const startBtn = page.locator('[data-testid="review-card"]').first().locator('button').first();
+    const startBtn = cards.first().locator('button').first();
     if (await startBtn.isVisible()) {
       await startBtn.click();
     }
