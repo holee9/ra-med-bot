@@ -10,6 +10,7 @@
 
 import { Copy, RefreshCw } from 'lucide-react';
 import dynamic from 'next/dynamic';
+import { useState } from 'react';
 import ReactMarkdown from 'react-markdown';
 import rehypeRaw from 'rehype-raw';
 import rehypeSanitize, { defaultSchema } from 'rehype-sanitize';
@@ -21,6 +22,7 @@ import type {
   SourceItem,
   TimelineEvent,
 } from '../../types/streaming';
+import { RefinePanel } from '../refine/RefinePanel';
 import { ExpertReviewCallout } from '../expert-review/ExpertReviewCallout';
 import { Callout } from './Callout';
 import { Checklist } from './Checklist';
@@ -80,6 +82,8 @@ export function AnswerBlock({
   related,
   onSuggestionClick,
 }: AnswerBlockProps) {
+  const [refinedProse, setRefinedProse] = useState<string | null>(null);
+  const displayProse = refinedProse ?? prose;
   const sourceCount = sources?.length ?? 0;
   const durationSec = durationMs !== null ? (durationMs / 1000).toFixed(1) : null;
 
@@ -127,12 +131,31 @@ export function AnswerBlock({
 
       {/* Section 3: Prose (REQ-STRUCT-028 Step 3) */}
       <section>
-        <p className="section-label mb-2 font-serif text-[10px] uppercase tracking-widest text-ink-400">
-          요약 답변
-        </p>
-        <div className="prose-sm prose max-w-none text-[15px] leading-[1.65] text-ink-800">
+        <div className="mb-2 flex items-center justify-between">
+          <p className="section-label font-serif text-[10px] uppercase tracking-widest text-ink-400">
+            요약 답변
+          </p>
+          {/* REQ-ANSWER-REFINE-001: inline tone-based refinement */}
+          {conversationId && messageId && prose.length > 0 && (
+            <RefinePanel
+              messageId={messageId}
+              conversationId={conversationId}
+              prose={displayProse}
+              onRefined={(text) => setRefinedProse(text)}
+            />
+          )}
+        </div>
+        {refinedProse && (
+          <p className="mb-1 text-[10px] text-brand-500 font-medium" data-testid="refined-label">
+            답변이 정제되었습니다
+          </p>
+        )}
+        <div
+          className="prose-sm prose max-w-none text-[15px] leading-[1.65] text-ink-800"
+          data-testid="answer-prose"
+        >
           <ReactMarkdown rehypePlugins={[rehypeRaw, [rehypeSanitize, sanitizeSchema]]}>
-            {prose}
+            {displayProse}
           </ReactMarkdown>
         </div>
       </section>
