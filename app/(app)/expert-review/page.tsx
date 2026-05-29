@@ -1,25 +1,27 @@
 // @MX:NOTE [AUTO] Expert Review Queue Page — T-007 (REQ-ENTERPRISE-024).
 // Server component with RBAC check. Only ra-lead and above can access.
-// Fetches pending reviews from API and passes to QueueList.
+// Queries DB directly (RSC pattern) for fresh pending reviews.
 // @MX:SPEC SPEC-REGULA-ENTERPRISE-001 (REQ-ENTERPRISE-024)
 
 import { QueueList } from '@/components/expert-review/QueueList';
 import { auth } from '@/lib/auth';
 import { hasRole } from '@/lib/auth/rbac';
 import type { Role } from '@/lib/auth/rbac';
+import { db } from '@/lib/db/client';
+import { expertReviews } from '@/lib/db/schema';
 import type { ExpertReview } from '@/types/expert-review';
+import { desc, eq } from 'drizzle-orm';
 import { redirect } from 'next/navigation';
 
-// Server-side fetch with no-store cache (always fresh data).
+// Direct DB query — avoids unauthenticated server-side API fetch.
 async function fetchPendingReviews(): Promise<ExpertReview[]> {
   try {
-    const res = await fetch(
-      `${process.env.NEXTAUTH_URL ?? 'http://localhost:3000'}/api/ra/expert-review?status=pending`,
-      { cache: 'no-store' },
-    );
-    if (!res.ok) return [];
-    const data = (await res.json()) as { data: ExpertReview[] };
-    return data.data ?? [];
+    const rows = await db
+      .select()
+      .from(expertReviews)
+      .where(eq(expertReviews.status, 'pending'))
+      .orderBy(desc(expertReviews.createdAt));
+    return rows as unknown as ExpertReview[];
   } catch {
     return [];
   }

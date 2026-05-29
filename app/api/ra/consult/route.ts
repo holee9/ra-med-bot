@@ -14,16 +14,22 @@ import { consult, ensureConversation } from '../../../../lib/ai/consult';
 import { encodeSSE } from '../../../../lib/ai/streaming';
 import { writeAudit } from '../../../../lib/audit';
 import { withPermission } from '../../../../lib/auth/with-permission';
+import { db } from '../../../../lib/db/client';
+import { messages } from '../../../../lib/db/schema';
 import { ConsultRequestSchema } from '../../../../types/consult';
 import type { StreamEvent } from '../../../../types/streaming';
 
-// E2E_TEST_MODE: deterministic fake SSE stream — no LLM calls, no DB writes.
-// Active only when process.env.E2E_TEST_MODE === 'true'.
-async function* e2eTestEvents(query: string): AsyncGenerator<StreamEvent, void, unknown> {
+// E2E_TEST_MODE: deterministic fake SSE stream — no LLM calls.
+// Yields real conversationId/messageId so expert-review FK constraints are satisfied.
+async function* e2eTestEvents(
+  query: string,
+  conversationId: string,
+  messageId: string,
+): AsyncGenerator<StreamEvent, void, unknown> {
   const isLowConf = query.trim() === '__test:low_confidence__';
   const isCitationTest = query.trim() === '__test:citation_response__';
 
-  yield { type: 'meta', conversationId: 'e2e-test-conv-id', messageId: 'e2e-test-msg-id' };
+  yield { type: 'meta', conversationId, messageId };
   const text = isLowConf
     ? 'Test response with low confidence score for expert review.'
     : 'This is a test regulatory response. EU MDR Article 10 requires establishing a quality management system.';
@@ -168,8 +174,19 @@ export const POST = withPermission('consult.create', async (req, _ctx, session) 
 
       const isE2EMode =
         process.env.E2E_TEST_MODE === 'true' && process.env.NODE_ENV !== 'production';
+
+      if (isE2EMode) {
+        // Create a real message row so expert-review FK constraints pass.
+        await db.insert(messages).values({
+          id: messageId,
+          conversationId,
+          role: 'assistant',
+          contentProse: 'E2E test response.',
+        }).onConflictDoNothing();
+      }
+
       const eventSource = isE2EMode
-        ? e2eTestEvents(input.question)
+        ? e2eTestEvents(input.question, conversationId, messageId)
         : consult(input, authJsSession, messageId, conversationId, signal);
 
       try {
