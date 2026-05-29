@@ -60,13 +60,21 @@ test.describe('Audit log — 21 CFR Part 11 (REQ-LAUNCH-020)', () => {
     expect(entry).not.toHaveProperty('updatedAt');
   });
 
-  test('audit log is accessible to admin role only', async ({ page, request }) => {
+  test('audit log is accessible to admin role only', async ({ playwright, baseURL }) => {
     const server = requiresLiveServer();
     test.skip(server.skip, server.reason);
 
-    // Unauthenticated request must return 401.
-    const res = await request.get('/api/audit-logs');
-    expect([401, 403]).toContain(res.status());
+    // Explicitly empty storageState forces a truly unauthenticated request.
+    const ctx = await playwright.request.newContext({
+      baseURL: baseURL ?? 'http://localhost:3000',
+      storageState: { cookies: [], origins: [] },
+    });
+    try {
+      const res = await ctx.get('/api/audit-logs');
+      expect([401, 403]).toContain(res.status());
+    } finally {
+      await ctx.dispose();
+    }
   });
 
   test('audit log admin UI shows entries table', async ({ page }) => {

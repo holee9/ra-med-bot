@@ -198,15 +198,6 @@ export async function* consult(
   try {
     const result = await streamText({
       model: getLlmModel(),
-      messages: [
-        {
-          role: 'user',
-          content: [
-            // Pass system content as first user block via prefilled approach.
-            // Actually use system param directly.
-          ],
-        },
-      ],
       system: systemMessages.map((m) => m.text).join('\n\n'),
       prompt: rewrittenQuery,
       maxTokens: 2048,
