@@ -94,7 +94,9 @@ export type AuditAction =
   // Phase 10 Radar actions added via 0018_radar.sql (3):
   | 'radar.crawler_run'
   | 'radar.notification'
-  | 'radar.search';
+  | 'radar.search'
+  // E2E test mode audit action — added via 0026_chat_query_audit_action.sql:
+  | 'chat.query';
 
 export interface AuditEvent {
   /** User UUID, or null for system-initiated events. */

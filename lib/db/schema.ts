@@ -145,6 +145,8 @@ export const auditActionEnum = pgEnum('audit_action', [
   'radar.crawler_run',
   'radar.notification',
   'radar.search',
+  // E2E test mode audit action — added via 0026_chat_query_audit_action.sql:
+  'chat.query',
 ]);
 
 // REQ-WF-049: workflow_type pgEnum — three Phase 9 workflow kinds.

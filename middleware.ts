@@ -138,6 +138,13 @@ export function middleware(req: NextRequest) {
   // expressed in the matcher below, so by the time we get here we know the
   // request is for a gated path.
   if (!isAuthed) {
+    if (pathname.startsWith('/api/')) {
+      const res = new NextResponse(JSON.stringify({ error: 'Unauthorized' }), {
+        status: 401,
+        headers: { 'Content-Type': 'application/json' },
+      });
+      return applySecurityHeaders(res, nonce);
+    }
     return applySecurityHeaders(NextResponse.redirect(new URL('/login', req.nextUrl)), nonce);
   }
 

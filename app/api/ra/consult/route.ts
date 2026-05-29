@@ -12,6 +12,7 @@ import type { Session } from 'next-auth';
 import type { NextRequest } from 'next/server';
 import { consult, ensureConversation } from '../../../../lib/ai/consult';
 import { encodeSSE } from '../../../../lib/ai/streaming';
+import { writeAudit } from '../../../../lib/audit';
 import { withPermission } from '../../../../lib/auth/with-permission';
 import { ConsultRequestSchema } from '../../../../types/consult';
 import type { StreamEvent } from '../../../../types/streaming';
@@ -20,6 +21,9 @@ import type { StreamEvent } from '../../../../types/streaming';
 // Active only when process.env.E2E_TEST_MODE === 'true'.
 async function* e2eTestEvents(query: string): AsyncGenerator<StreamEvent, void, unknown> {
   const isLowConf = query.trim() === '__test:low_confidence__';
+  const isCitationTest = query.trim() === '__test:citation_response__';
+
+  yield { type: 'meta', conversationId: 'e2e-test-conv-id', messageId: 'e2e-test-msg-id' };
   const text = isLowConf
     ? 'Test response with low confidence score for expert review.'
     : 'This is a test regulatory response. EU MDR Article 10 requires establishing a quality management system.';
@@ -32,6 +36,34 @@ async function* e2eTestEvents(query: string): AsyncGenerator<StreamEvent, void, 
 
   if (isLowConf) {
     yield { type: 'expert_review_required', reason: 'Low confidence score below threshold' };
+  } else if (isCitationTest) {
+    yield {
+      type: 'sources',
+      items: [
+        {
+          id: 'test-src-1',
+          citeIndex: 1,
+          orgLabel: 'EU MDR',
+          title: 'Regulation (EU) 2017/745',
+          year: 2017,
+          type: 'Regulation' as const,
+          url: null,
+          anchor: 'Article 10',
+          offset: 0,
+        },
+        {
+          id: 'test-src-2',
+          citeIndex: 2,
+          orgLabel: 'FDA 21 CFR',
+          title: '21 CFR Part 820',
+          year: 2022,
+          type: 'Regulation' as const,
+          url: null,
+          anchor: '820.30',
+          offset: 0,
+        },
+      ],
+    };
   } else {
     yield {
       type: 'sources',
@@ -134,15 +166,26 @@ export const POST = withPermission('consult.create', async (req, _ctx, session) 
         controller.enqueue(encoder.encode(encodeSSE(ev)));
       }
 
-      const eventSource =
-        process.env.E2E_TEST_MODE === 'true' && process.env.NODE_ENV !== 'production'
-          ? e2eTestEvents(input.question)
-          : consult(input, authJsSession, messageId, conversationId, signal);
+      const isE2EMode =
+        process.env.E2E_TEST_MODE === 'true' && process.env.NODE_ENV !== 'production';
+      const eventSource = isE2EMode
+        ? e2eTestEvents(input.question)
+        : consult(input, authJsSession, messageId, conversationId, signal);
 
       try {
         for await (const ev of eventSource) {
           if (signal.aborted) break;
           push(ev);
+        }
+        // Write chat.query audit row after E2E stream completes (REQ-FND-048).
+        if (isE2EMode && !signal.aborted) {
+          await writeAudit({
+            actor_id: session.user.id,
+            action: 'chat.query',
+            resource_type: 'message',
+            resource_id: messageId,
+            conversation_id: conversationId,
+          });
         }
       } catch (err) {
         // REQ-CHAT-008 — safe error event.

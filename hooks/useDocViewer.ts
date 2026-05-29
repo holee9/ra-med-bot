@@ -1,9 +1,12 @@
 'use client';
 
-// @MX:NOTE DocViewer hook — manages open/close, source fetch, and offset scroll.
+// @MX:NOTE [AUTO] DocViewer hook — global Zustand store replacing per-component useState.
+// @MX:REASON Converted from useState to Zustand so SourceCard.open() and DocViewer
+// share the same state instance. REQ-CHAT-044 deep-link and DocViewer visibility
+// depend on a single source of truth.
 // @MX:SPEC SPEC-REGULA-CHAT-001 (REQ-CHAT-044)
 
-import { useCallback, useState } from 'react';
+import { create } from 'zustand';
 
 export interface SourceSection {
   id: string;
@@ -38,25 +41,20 @@ export interface UseDocViewerReturn extends DocViewerState {
   close: () => void;
 }
 
-export function useDocViewer(): UseDocViewerReturn {
-  const [state, setState] = useState<DocViewerState>({
-    isOpen: false,
-    sourceId: null,
-    sourceIndex: null,
-    targetOffset: null,
-    sourceDetail: null,
-    isLoading: false,
-    error: null,
-  });
+const useDocViewerStore = create<UseDocViewerReturn>((set) => ({
+  isOpen: false,
+  sourceId: null,
+  sourceIndex: null,
+  targetOffset: null,
+  sourceDetail: null,
+  isLoading: false,
+  error: null,
 
-  const open = useCallback((sourceIndex: number, offset: number, sourceId: string) => {
-    // Update URL hash for deep-link (REQ-CHAT-043).
+  open: (sourceIndex: number, offset: number, sourceId: string) => {
     if (typeof window !== 'undefined') {
       window.location.hash = `source=${sourceIndex}&offset=${offset}`;
     }
-
-    setState((prev) => ({
-      ...prev,
+    set({
       isOpen: true,
       sourceId,
       sourceIndex,
@@ -64,31 +62,29 @@ export function useDocViewer(): UseDocViewerReturn {
       isLoading: true,
       error: null,
       sourceDetail: null,
-    }));
-
-    // Fetch source detail.
+    });
     void fetch(`/api/ra/sources/${sourceId}?offset=${offset}`)
       .then(async (res) => {
         if (!res.ok) throw new Error(`Failed to load source: ${res.status}`);
         const data = (await res.json()) as SourceDetail;
-        setState((prev) => ({ ...prev, sourceDetail: data, isLoading: false }));
+        set({ sourceDetail: data, isLoading: false });
       })
       .catch((err) => {
-        setState((prev) => ({
-          ...prev,
+        set({
           isLoading: false,
           error: err instanceof Error ? err.message : 'Failed to load source',
-        }));
+        });
       });
-  }, []);
+  },
 
-  const close = useCallback(() => {
+  close: () => {
     if (typeof window !== 'undefined') {
-      // Clear hash.
       history.replaceState(null, '', window.location.pathname + window.location.search);
     }
-    setState((prev) => ({ ...prev, isOpen: false }));
-  }, []);
+    set({ isOpen: false });
+  },
+}));
 
-  return { ...state, open, close };
+export function useDocViewer(): UseDocViewerReturn {
+  return useDocViewerStore();
 }
