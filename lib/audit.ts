@@ -96,7 +96,9 @@ export type AuditAction =
   | 'radar.notification'
   | 'radar.search'
   // E2E test mode audit action — added via 0026_chat_query_audit_action.sql:
-  | 'chat.query';
+  | 'chat.query'
+  // Wave 5 Answer Refine — added via 0027_answer_refine_audit_action.sql:
+  | 'answer.refine';
 
 export interface AuditEvent {
   /** User UUID, or null for system-initiated events. */
