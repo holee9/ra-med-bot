@@ -579,3 +579,18 @@ export const verificationTokens = pgTable(
     pk: primaryKey({ columns: [t.identifier, t.token] }),
   }),
 );
+
+// SPEC-REGULA-NOTIFICATIONS-001 — per-org webhook settings.
+// Migration: 0028_org_notification_settings.sql
+export const orgNotificationSettings = pgTable('org_notification_settings', {
+  id: uuid('id').defaultRandom().primaryKey(),
+  orgId: uuid('org_id')
+    .notNull()
+    .unique()
+    .references(() => organizations.id, { onDelete: 'cascade' }),
+  slackWebhookUrl: text('slack_webhook_url'),
+  teamsWebhookUrl: text('teams_webhook_url'),
+  fromEmail: text('from_email'),
+  createdAt: timestamp('created_at', { withTimezone: true, mode: 'date' }).notNull().defaultNow(),
+  updatedAt: timestamp('updated_at', { withTimezone: true, mode: 'date' }).notNull().defaultNow(),
+});
