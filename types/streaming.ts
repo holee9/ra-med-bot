@@ -28,10 +28,19 @@ export interface ProseDeltaEvent {
   delta: string;
 }
 
+// SPEC-REGULA-CONFIDENCE-EXPLAIN-001 (REQ-CONFIDENCE-001..004)
+export interface ConfidenceBreakdown {
+  citationCoverage: number;  // 0-1: cited sentences / total sentences
+  sourceAgreement: number;   // 0-1: top-N source agreement score
+  sourceRecency: number;     // 0-1: normalized source recency
+  retrievalScore: number;    // 0-1: top-1 vector similarity
+}
+
 export interface ConfidenceEvent {
   type: 'confidence';
   level: 'high' | 'med' | 'low';
   score: number;
+  breakdown?: ConfidenceBreakdown;
 }
 
 // Represents a cited source item in the sources event.

@@ -118,6 +118,7 @@ export function AnswerBlock({
           messageId={messageId}
           reason={expertReviewReason ?? '전문가 검토가 필요한 내용입니다. 규제 전문가의 확인 후 결정을 내리시기 바랍니다.'}
           score={confidence?.score}
+          breakdown={confidence?.breakdown}
         />
       ) : expertReviewRequired ? (
         <Callout variant="expert" title="전문가 검토 필요">
