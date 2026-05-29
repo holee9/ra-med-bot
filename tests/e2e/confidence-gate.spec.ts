@@ -1,5 +1,5 @@
 // @MX:NOTE: [AUTO] E2E spec: low-confidence gate — AI blocks response and escalates to expert review
-// @MX:SPEC: REQ-LAUNCH-017, REQ-QUALITY-E2E-006
+// @MX:SPEC: REQ-LAUNCH-017, REQ-QUALITY-E2E-006, SPEC-REGULA-CONFIDENCE-EXPLAIN-001 (REQ-CONFIDENCE-001..004)
 
 import { expect, test } from '@playwright/test';
 import { requiresAuthState, requiresLiveServer } from './fixtures/env-guard';
@@ -33,9 +33,10 @@ test.describe('Confidence gate (REQ-LAUNCH-017)', () => {
     const callout = page.locator('[data-testid="expert-review-callout"]');
     await expect(callout).toBeVisible({ timeout: 15_000 });
 
-    // Confidence score label must be visible (e.g. "신뢰도 45%").
+    // Confidence score label must be visible (e.g. "신뢰도 30%").
     const score = callout.locator('[data-testid="confidence-score"]');
     await expect(score).toBeVisible();
+    await expect(score).toContainText('30%');
   });
 
   test('expert-review callout shows disclaimer text', async ({ page }) => {
@@ -61,5 +62,39 @@ test.describe('Confidence gate (REQ-LAUNCH-017)', () => {
 
     // No callout should be rendered.
     await expect(page.locator('[data-testid="expert-review-callout"]')).not.toBeVisible();
+  });
+
+  test('low-confidence callout shows breakdown toggle (REQ-CONFIDENCE-001)', async ({ page }) => {
+    const composer = page.locator('[data-testid="chat-composer"]');
+    await composer.fill('__test:low_confidence__');
+    await page.keyboard.press('Enter');
+
+    const callout = page.locator('[data-testid="expert-review-callout"]');
+    await expect(callout).toBeVisible({ timeout: 15_000 });
+
+    // Breakdown toggle button must be present.
+    const toggle = callout.locator('[data-testid="breakdown-toggle"]');
+    await expect(toggle).toBeVisible();
+  });
+
+  test('clicking breakdown toggle shows confidence components (REQ-CONFIDENCE-002)', async ({ page }) => {
+    const composer = page.locator('[data-testid="chat-composer"]');
+    await composer.fill('__test:low_confidence__');
+    await page.keyboard.press('Enter');
+
+    const callout = page.locator('[data-testid="expert-review-callout"]');
+    await expect(callout).toBeVisible({ timeout: 15_000 });
+
+    // Click the breakdown toggle.
+    const toggle = callout.locator('[data-testid="breakdown-toggle"]');
+    await toggle.click();
+
+    // All four breakdown bars must appear.
+    const breakdown = callout.locator('[data-testid="confidence-breakdown"]');
+    await expect(breakdown).toBeVisible();
+    await expect(breakdown.locator('[data-testid="breakdown-citation-coverage"]')).toBeVisible();
+    await expect(breakdown.locator('[data-testid="breakdown-source-agreement"]')).toBeVisible();
+    await expect(breakdown.locator('[data-testid="breakdown-source-recency"]')).toBeVisible();
+    await expect(breakdown.locator('[data-testid="breakdown-retrieval-score"]')).toBeVisible();
   });
 });

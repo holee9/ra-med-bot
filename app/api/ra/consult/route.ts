@@ -38,7 +38,14 @@ async function* e2eTestEvents(
     yield { type: 'prose_delta', delta: `${word} ` };
   }
 
-  yield { type: 'confidence', level: isLowConf ? 'low' : 'high', score: isLowConf ? 0.3 : 0.9 };
+  yield {
+    type: 'confidence',
+    level: isLowConf ? 'low' : 'high',
+    score: isLowConf ? 0.3 : 0.9,
+    breakdown: isLowConf
+      ? { citationCoverage: 0.38, sourceAgreement: 0.45, sourceRecency: 0.60, retrievalScore: 0.52 }
+      : { citationCoverage: 0.92, sourceAgreement: 0.88, sourceRecency: 0.80, retrievalScore: 0.94 },
+  };
 
   if (isLowConf) {
     yield { type: 'expert_review_required', reason: 'Low confidence score below threshold' };
