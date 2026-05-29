@@ -15,6 +15,7 @@ export type PermissionAction =
   | 'expertReview.view'
   | 'expertReview.assign'
   | 'expertReview.resolve'
+  | 'auditLogs.view'
   | 'profile.edit'
   | 'project.create'
   | 'project.manage'
@@ -65,6 +66,7 @@ export const PERMISSIONS: Record<PermissionAction, PermissionSpec> = {
   'project.manage': { minRole: 'ra-lead', scope: 'project', resourceType: 'project' },
 
   // admin-only actions
+  'auditLogs.view': { minRole: 'ra-lead', scope: 'org', resourceType: 'auditLogs' },
   'sources.ingest': { minRole: 'admin', scope: 'org', resourceType: 'sources' },
   'templates.edit': { minRole: 'ra-lead', scope: 'org', resourceType: 'templates' },
   // workflow actions

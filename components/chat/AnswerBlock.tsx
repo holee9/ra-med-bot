@@ -21,6 +21,7 @@ import type {
   SourceItem,
   TimelineEvent,
 } from '../../types/streaming';
+import { ExpertReviewCallout } from '../expert-review/ExpertReviewCallout';
 import { Callout } from './Callout';
 import { Checklist } from './Checklist';
 import { ComparisonTable } from './ComparisonTable';
@@ -51,6 +52,8 @@ interface AnswerBlockProps {
   prose: string;
   durationMs: number | null;
   expertReviewRequired?: boolean;
+  expertReviewReason?: string;
+  conversationId?: string;
   // Phase 3 structured fields
   messageId?: string;
   blockId?: string;
@@ -67,6 +70,8 @@ export function AnswerBlock({
   prose,
   durationMs,
   expertReviewRequired,
+  expertReviewReason,
+  conversationId,
   messageId,
   blockId,
   checklist,
@@ -107,11 +112,18 @@ export function AnswerBlock({
       </div>
 
       {/* Section 2: Expert review callout (REQ-STRUCT-028 Step 2) */}
-      {expertReviewRequired && (
+      {expertReviewRequired && conversationId && messageId ? (
+        <ExpertReviewCallout
+          conversationId={conversationId}
+          messageId={messageId}
+          reason={expertReviewReason ?? '전문가 검토가 필요한 내용입니다. 규제 전문가의 확인 후 결정을 내리시기 바랍니다.'}
+          score={confidence?.score}
+        />
+      ) : expertReviewRequired ? (
         <Callout variant="expert" title="전문가 검토 필요">
-          전문가 검토가 필요한 내용입니다. 규제 전문가의 확인 후 결정을 내리시기 바랍니다.
+          {expertReviewReason ?? '전문가 검토가 필요한 내용입니다. 규제 전문가의 확인 후 결정을 내리시기 바랍니다.'}
         </Callout>
-      )}
+      ) : null}
 
       {/* Section 3: Prose (REQ-STRUCT-028 Step 3) */}
       <section>

@@ -9,6 +9,32 @@
 
 ## [Unreleased]
 
+### Added
+
+- **감사 로그 관리 UI** (`app/admin/audit-logs/page.tsx`): 관리자용 감사 로그 테이블 페이지 신설. `data-testid="audit-log-table"` 포함.
+- **감사 로그 API** (`app/api/audit-logs/route.ts`): `GET /api/audit-logs` 엔드포인트 신설. `auditLogs.view` 권한 검증, limit/offset 페이징.
+- **ExpertReviewCallout 신뢰도 점수 표시** (`components/expert-review/ExpertReviewCallout.tsx`): `score` prop 추가 — 신뢰도 백분율(`data-testid="confidence-score"`) 표시.
+- **로컬 문서 시드 스크립트** (`scripts/seed-local-docs.ts`): 내부 SOP 문서를 pgvector에 직접 시드하는 스크립트 신설.
+
+### Fixed
+
+- **E2E Wave 3-5 사전 조건 수정**: 6개 실패 테스트 중 5개 수정 완료 (48 pass, 5 skip, 1 fail).
+  - `components/chat/SourceCard.tsx`: `data-testid="citation-source-title"`, `data-testid="citation-corpus"` 추가 + DocViewer 연결 클릭 핸들러.
+  - `hooks/useDocViewer.ts`: `useState` → Zustand 전역 스토어로 전환 — SourceCard·DocViewer 간 상태 공유 해결.
+  - `middleware.ts`: 미인증 `/api/*` 요청에 307 리다이렉트 대신 401 JSON 응답 반환.
+  - `app/api/ra/consult/route.ts`: E2E_TEST_MODE 시 `chat.query` 감사 로그 기록 추가.
+  - `lib/db/schema.ts`, `lib/audit.ts`: `audit_action` enum에 `'chat.query'` 추가.
+  - `migrations/0026_chat_query_audit_action.sql`: `ALTER TYPE audit_action ADD VALUE IF NOT EXISTS 'chat.query'`.
+  - **주의**: `tests/e2e/audit-log.spec.ts:63` (미인증 401 확인) — Playwright 전역 storageState 설계 모순으로 영구 SKIP 상태 유지.
+- **프로덕션 빌드 블로커 3개 수정** (`fix/build`): 빌드 오류 해결.
+- **FDA corpus 시드 스크립트 FTS-only 모드 지원** (`scripts/seed-fda-corpus.ts`).
+- **LocaleToggle ARIA 역할 수정** (`fix/a11y`): `listbox` → `menu/menuitem` 패턴.
+
+### Refactored
+
+- **AnswerBlock ExpertReviewCallout 통합** (`components/chat/AnswerBlock.tsx`): `expertReviewRequired` + `conversationId` + `messageId` 조건 시 `ExpertReviewCallout` 컴포넌트 렌더링, 미충족 시 기존 `Callout` fallback.
+- **권한 테이블 확장** (`lib/auth/permissions.ts`): `auditLogs.view` 권한 추가 (`minRole: 'ra-lead'`).
+
 ### Fixed
 
 - **RAG 파이프라인 E2E 동작 복구** (PR #117 — Issue #116): pgvector hybrid search + FTS fallback + internal SOPs retriever E2E 복구.

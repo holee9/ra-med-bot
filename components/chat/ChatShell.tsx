@@ -96,6 +96,9 @@ export function ChatShell() {
             prose={prose}
             durationMs={durationMs}
             expertReviewRequired={structured.expertReviewRequired}
+            expertReviewReason={structured.expertReviewReason}
+            conversationId={meta?.conversationId}
+            messageId={meta?.conversationId}
           />
         </div>
       )}

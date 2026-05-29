@@ -11,12 +11,14 @@ interface ExpertReviewCalloutProps {
   conversationId: string;
   messageId: string;
   reason: string;
+  score?: number;
 }
 
 export function ExpertReviewCallout({
   conversationId,
   messageId,
   reason,
+  score,
 }: ExpertReviewCalloutProps) {
   const [sent, setSent] = useState(false);
   const [loading, setLoading] = useState(false);
@@ -43,6 +45,14 @@ export function ExpertReviewCallout({
       role="alert"
     >
       <p className="mb-1 font-semibold text-accent-800">이 답변은 전문가 검토가 필요합니다</p>
+      {score !== undefined && (
+        <p
+          data-testid="confidence-score"
+          className="mb-1 text-xs text-accent-600"
+        >
+          신뢰도 {Math.round(score * 100)}%
+        </p>
+      )}
       <p className="text-ink-700">{reason}</p>
       <button
         type="button"
