@@ -95,6 +95,7 @@ describe('TypeScript type contracts', () => {
       total: 0,
       search_strategy: 'device_name',
       cached: false,
+      has_coverage_gap: false,
     };
     expect(result.search_strategy).toBe('device_name');
     expect(result.cached).toBe(false);

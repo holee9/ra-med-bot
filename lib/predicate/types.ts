@@ -38,6 +38,12 @@ export interface CascadeSearchResult {
   total: number;
   search_strategy: CascadeSearchStrategy;
   cached: boolean;
+  /**
+   * True when openFDA coverage may be incomplete — set when any result predates
+   * 2004-01-01 or when fewer than 10 total results were found. The UI displays a
+   * pre-2004 coverage notice based on this flag (REQ-PRE-007).
+   */
+  has_coverage_gap: boolean;
 }
 
 /** The five substantial-equivalence comparison dimensions. */
