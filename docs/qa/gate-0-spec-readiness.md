@@ -50,17 +50,22 @@ Implementation must not start when any of these are true:
 
 ## #22 Gate 0 Preflight Snapshot
 
+Updated: 2026-06-02
+
 | Item | Current state before #22 |
 |---|---|
 | Issue | #22 open |
-| SPEC | SPEC-REGULA-PREDICATE-001 named in issue title |
-| Current baseline | `8b3a983` on `main` |
-| Branch | Do not create or reuse `work/issue-22-predicate` until Gate 0 is refreshed |
-| Required fixtures | Predicate source corpus, ranking fixture, negative/no-match fixture |
-| Required checks | Unit, API contract, DB integration, Playwright search flow, audit/citation evidence |
-| External dependency | FDA 510(k) source or deterministic offline substitute |
-| Additional scope question | Gap Analysis request must be included in this SPEC or split after #59 |
-| Decision | BLOCKED until #22 receives a refreshed `QA plan` comment against `8b3a983` |
+| SPEC | SPEC-REGULA-PREDICATE-001 (draft, .moai/specs/SPEC-REGULA-PREDICATE-001/spec.md) |
+| Current baseline | `847e95c` on `main` (feat(notifications): Wave 3 인프라 #123) |
+| Open PRs | none |
+| Stale branches | none — 6개 정리 완료 (2026-06-02, issue #124) |
+| Branch | Create fresh `feat/issue-22-predicate` after Gate 0 PASS |
+| Required fixtures | FDA 510(k) source corpus or deterministic offline substitute, predicate ranking fixture, negative/no-match fixture |
+| Required checks | Unit, API contract, DB integration, Playwright predicate search flow, audit/citation evidence |
+| External dependency | FDA 510(k) Open API (offline mock 필수) |
+| Scope decision | Gap Analysis → SPEC-REGULA-PREDICATE-001에 포함하거나 #59 이후 별도 분리 결정 필요 |
+| Wave 3 already merged | #52 (notifications), #84 (refine), #85 (confidence) — main에 반영됨 |
+| Decision | BLOCKED — #22 이슈에 `847e95c` 기준 refreshed QA plan 코멘트 작성 후 PASS 전환 |
 
 ## Maintenance
 
