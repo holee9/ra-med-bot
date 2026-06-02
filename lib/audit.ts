@@ -106,7 +106,9 @@ export type AuditAction =
   | 'answer.refine'
   // Predicate Comparison — added via 0031_predicate_audit_actions.sql (REQ-PRE-017):
   | 'predicate_search'
-  | 'predicate_comparison_generated';
+  | 'predicate_comparison_generated'
+  // Predicate export (PDF/DOCX) — REQ-PRE-015, audited for traceability:
+  | 'predicate_comparison_exported';
 
 export interface AuditEvent {
   /** User UUID, or null for system-initiated events. */

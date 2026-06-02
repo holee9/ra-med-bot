@@ -152,6 +152,8 @@ export const auditActionEnum = pgEnum('audit_action', [
   // SPEC-REGULA-PREDICATE-001 — added via 0031_predicate_audit_actions.sql (REQ-PRE-017):
   'predicate_search',
   'predicate_comparison_generated',
+  // Predicate export (PDF/DOCX) — added via 0032_predicate_export_audit_action.sql (REQ-PRE-015):
+  'predicate_comparison_exported',
 ]);
 
 // REQ-WF-049: workflow_type pgEnum — three Phase 9 workflow kinds.
