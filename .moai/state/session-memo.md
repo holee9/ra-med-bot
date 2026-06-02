@@ -3,9 +3,9 @@
 ## P1: Session Context
 
 session_id: current
-cwd: D:\workspace-github\ra-med-bot
+cwd: /home/abyz-lab/work/workspace-github/holee9/ra-med-bot
 branch: main
-updated: 2026-05-06
+updated: 2026-06-02
 
 ## P2: Work Gate
 
@@ -15,90 +15,55 @@ Current verified state:
 
 | Item | State |
 |---|---|
-| verified implementation commit | `8b3a983` |
-| current implementation review baseline | `8b3a983` |
+| verified implementation commit | `f156124` |
+| current implementation review baseline | `f156124` |
 | active branch | `main` |
-| local dirty files | none before implementation-status documentation update |
-| existing open PRs | none open at preflight |
-| deploy branches checked | none matching `*deploy*`, `*107*`, `*release*`, `*hardening*` |
-| merged stale branches | local `work/e2efix-001`; remote `origin/feature/SPEC-REGULA-RELEASE-HARDENING-001`, `origin/work/e2efix-001` |
+| local dirty files | none |
+| existing open PRs | none |
+| stale remote branches | none — 6개 정리 완료 (2026-06-02, #124) |
 
-## P3: RC1 Pipeline
+## P3: Wave 3 Pipeline (현재 진행)
 
-| Step | Issue / PR | State | Next action |
+| Step | Issue | State | Next action |
 |---|---|---|---|
-| 1 | #32 RELEASE-GATE-001 | CLOSED / COMPLETED | none |
-| 2 | #33 HARDENING-001 / PR #102 | MERGED | none |
-| 3 | #34 QUALITY-001 / PR #103 | MERGED | none |
-| 4 | #97 + #104 E2EFIX-001 / PR #106 | MERGED | none |
-| 5 | #105 DEPLOY-001 | CLOSED / FOLLOW-UP COMPLETED | Deploy workflow Node.js 22 + staging secret gate correction pushed in `471ffa1` |
-| 6 | #26 build reproducibility | CLOSED | CI build evidence + bounded build/proc cleanup procedure recorded |
-| 7 | #30 PR/CI closure integrity | CLOSED | PR #20/#21 and #12/#13/#14 closure evidence recorded |
-| 8 | #31 RELEASE-001 | CLOSED | `v1.0.0-rc` prerelease published |
-| 9 | `v1.0.0-rc` | PUBLISHED | GitHub Release target `main` |
+| 1 | #52 notifications | MERGED #123 | 완료 |
+| 2 | #84 refine | MERGED #122 | 완료 |
+| 3 | #85 confidence | MERGED #121 | 완료 |
+| **4** | **#22 PREDICATE-001** | **Gate 0 PASS** | **브랜치 생성 → SPEC 작성 → 구현** |
+| 5 | #23 CER-001 | open | #22 이후 |
+| 6 | #24 PCCP-001 | open | #22 이후 |
+| 7 | #35~#43, #47~#51, #55, #58~#62 | open | Wave 3 나머지 20개 |
 
-## P3.1 Current Session Closure
-
-| Item | Result |
-|---|---|
-| P0 Deploy follow-up | `471ffa1`; CI / Deploy / Security Scan all SUCCESS |
-| Final docs sync follow-up | `370304c`; CI / Deploy / Security Scan all SUCCESS |
-| Pre-#22 QA/E2E groundwork | `8b3a983`; CI / Deploy / Security Scan all SUCCESS |
-| #108 quality audit | CLOSED |
-| #26 build reproducibility | CLOSED |
-| #30 PR/CI closure integrity | CLOSED |
-| #22 Wave 3 work | explicitly deferred |
-
-## P3.1.1 Current Implementation Review
+## P4: Implementation Review (f156124 기준)
 
 | Item | State |
 |---|---|
-| review baseline | `8b3a983` |
-| app pages | 16 |
-| API route handlers | 28 |
-| component files | 33 |
-| lib files | 150 |
-| test/spec files | 184 |
-| Playwright specs | 8 |
+| review baseline | `f156124` |
+| app pages | 20 |
+| API route handlers | 35 |
+| test/spec files | 185 |
+| Playwright specs | 14 |
 | latest CI | success; core gates passed |
-| Playwright CI | success with browser test steps skipped because staging URL was missing |
-| local E2E | #80 foundation exists; full up/migrate/seed/Playwright evidence still blocked by Docker engine not running |
-| next implementation | #22 remains blocked until Gate 0 `QA plan` is refreshed against `8b3a983` |
+| Playwright CI | staging URL 없어 skip 유지 |
+| local E2E (#80) | Docker stack 가용 (previously unblocked) |
 
-## P3.2 Pre-#22 Work Started
+## P5: 2026-06-02 정비 완료 항목
 
-| Item | State |
+| 항목 | 결과 |
 |---|---|
-| #73 QA Matrix | documented in `docs/qa/qa-matrix.md` |
-| #74 Gate 0 SPEC readiness | documented in `docs/qa/gate-0-spec-readiness.md` |
-| #80 local E2E infra | foundation added; `docker compose config` PASS; `up -d` blocked because Docker Desktop engine is not running |
-| Remote stale branches | not deleted; requires explicit owner approval |
+| stale 브랜치 6개 삭제 (#124) | 완료 — origin/main 단독 존재 |
+| Gate 0 베이스라인 갱신 | `847e95c` → `f156124`, docs/qa/gate-0-spec-readiness.md |
+| #22 QA plan 코멘트 | 등록 완료 → Gate 0 PASS |
+| FOUNDATION-001 status | draft → completed |
+| STRUCTURED-001 status | draft → completed |
+| CLOUDFLARE-001 #9 | 재오픈 (Wave 4) |
+| hermes-ra #35 (3계층 E2E) | 신규 등록 |
+| hermes-ra #36 (extract_mail_qa) | 신규 등록 |
 
-## P4: Issue Audit Result
+## P6: 다음 즉시 실행
 
-The prior ordering problem came from using limited latest-updated issue queries. That missed older open issues after #22 and made Wave ordering unreliable.
-
-Correct classification:
-
-| Lane | Issues |
-|---|---|
-| RC immediate | #105 -> #26 -> #30 -> #31 -> RC tag |
-| RC completed | #32, #33, #34, #97, #104 |
-| Wave 3 post-RC | #22, #23, #24, #35~#43, #47, #48, #50, #51, #52, #55, #58~#62 |
-| Wave 4 post-RC | #25, #44~#46, #49, #53, #54, #56, #57, #63~#65 |
-| Wave 5 post-RC | #66~#72, #84~#92 |
-| QA / E2E gates | #73~#83 |
-| Superseded / excluded | #93~#101 |
-| Persistent governance | #1, #18 |
-
-Wave 3 starts at #22, not #45.
-
-## P5: Follow-up Recording
-
-This audit is recorded in:
-
-- `.moai/runbooks/release-rc1-runbook.md`
-- `README.md`
-- GitHub comments on #18, #31, #73, #105
-
-Purpose: ensure future workers can start from the issue body/runbook without reconstructing the project state from chat history.
+```bash
+cd ~/work/workspace-github/holee9/ra-med-bot
+git checkout -b feat/issue-22-predicate
+# → /moai run SPEC-REGULA-PREDICATE-001
+```
