@@ -1,9 +1,9 @@
 ---
 id: SPEC-REGULA-FOUNDATION-001
 title: Regula Phase 1 Foundation — 스캐폴딩 및 규제 준수 핵심 프리미티브
-status: draft
+status: completed
 created: 2026-04-22
-updated: 2026-04-23
+updated: 2026-06-02
 author: manager-spec
 phase: 1
 skill: regula

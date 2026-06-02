@@ -1,9 +1,9 @@
 ---
 id: SPEC-REGULA-STRUCTURED-001
 title: Regula Phase 3 Structured Outputs — Checklist, ComparisonTable, Timeline, SuggestionPill, RightContextPanel
-status: draft
+status: completed
 created: 2026-04-22
-updated: 2026-04-23
+updated: 2026-06-02
 author: manager-spec
 phase: 3
 skill: regula
