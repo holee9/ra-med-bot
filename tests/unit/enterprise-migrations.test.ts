@@ -240,7 +240,7 @@ describe('lib/db/schema.ts Phase 5 additions', () => {
     expect(src).toMatch(/export const projectMembers\s*=/);
   });
 
-  it('auditActionEnum has 46 total values (43 through Phase 9 + 3 Phase 10 Radar actions)', () => {
+  it('auditActionEnum has 50 total values (48 baseline + 2 Predicate actions)', () => {
     const src = readText('lib/db/schema.ts');
     // Match the full auditActionEnum declaration (multiline)
     const enumSection = src.match(/export const auditActionEnum\s*=[\s\S]*?(?=\n\/\/|\nexport|$)/);
@@ -249,11 +249,10 @@ describe('lib/db/schema.ts Phase 5 additions', () => {
     const valueMatches = enumBody.match(/'[^']+'/g) ?? [];
     // First match is 'audit_action' (the type name), rest are values
     const values = valueMatches.slice(1);
-    // T-013 adds profile.update; Issue #7 remediation adds conversation.delete.
-    // Phase 9 adds 10 workflow.* actions via 0013_workflow_audit_actions.sql.
-    // Phase 8 DocIngest adds 6 document.* / redaction_map.access actions via 0016.
-    // Phase 10 Radar adds 3 radar.* actions via 0018_radar.sql.
-    expect(values).toHaveLength(46);
+    // Phase 9 (+10), Phase 8 DocIngest (+6), Phase 10 Radar (+3), chat.query (0026),
+    // answer.refine (0027) bring the baseline to 48. SPEC-REGULA-PREDICATE-001 adds
+    // predicate_search + predicate_comparison_generated (0031), total 50.
+    expect(values).toHaveLength(50);
   });
 });
 
@@ -267,7 +266,7 @@ describe('lib/audit.ts Phase 5 AuditAction type additions', () => {
     expect(src).toMatch(new RegExp(`'${escaped}'`));
   });
 
-  it('AuditAction type contains exactly 46 values (43 through Phase 9 + 3 Phase 10 Radar actions)', () => {
+  it('AuditAction type contains exactly 50 values (48 baseline + 2 Predicate actions)', () => {
     const src = readText('lib/audit.ts');
     const typeMatch = src.match(/export type AuditAction\s*=\s*([\s\S]*?);/);
     expect(typeMatch, 'AuditAction type not found').toBeTruthy();
@@ -276,11 +275,10 @@ describe('lib/audit.ts Phase 5 AuditAction type additions', () => {
       .split('|')
       .map((s) => s.trim())
       .filter((s) => s.startsWith("'"));
-    // T-013 adds profile.update; Issue #7 remediation adds conversation.delete.
-    // Phase 9 adds 10 workflow.* actions via 0013_workflow_audit_actions.sql.
-    // Phase 8 DocIngest adds 6 document.* / redaction_map.access actions via 0016.
-    // Phase 10 Radar adds 3 radar.* actions via 0018_radar.sql.
-    expect(values).toHaveLength(46);
+    // Phase 9 (+10), Phase 8 DocIngest (+6), Phase 10 Radar (+3), chat.query (0026),
+    // answer.refine (0027) bring the baseline to 48. SPEC-REGULA-PREDICATE-001 adds
+    // predicate_search + predicate_comparison_generated (0031), total 50.
+    expect(values).toHaveLength(50);
   });
 
   it('does NOT include auth.mfa_fail as a union value (removed in v0.3.0 H-5)', () => {
