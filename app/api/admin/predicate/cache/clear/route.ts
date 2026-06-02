@@ -7,13 +7,11 @@
 export const runtime = 'nodejs';
 
 import { eq } from 'drizzle-orm';
+import { canClearPredicateCache } from '@/lib/auth/predicate-permissions';
 import { withPermission } from '@/lib/auth/with-permission';
 import { db } from '@/lib/db/client';
 import { users } from '@/lib/db/schema';
 import { createPredicateCache } from '@/lib/predicate/cache';
-
-/** REQ-PRE-022: cache invalidation is restricted to the dev department. */
-const CLEAR_DEPARTMENTS = new Set(['Dev']);
 
 /** Fetch the caller's department; null when unset or the user row is missing. */
 async function getDepartment(userId: string): Promise<string | null> {
@@ -36,7 +34,7 @@ function getKv(): KVNamespace | undefined {
 export const POST = withPermission('workflow.execute', async (_req, _ctx, session) => {
   // Department RBAC (REQ-PRE-022): dev only.
   const department = await getDepartment(session.user.id);
-  if (!department || !CLEAR_DEPARTMENTS.has(department)) {
+  if (!canClearPredicateCache(department)) {
     return Response.json({ error: 'permission_denied', reason: 'department' }, { status: 403 });
   }
 

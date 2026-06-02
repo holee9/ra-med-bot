@@ -13,6 +13,7 @@
 export const runtime = 'nodejs';
 
 import { writeAudit } from '@/lib/audit';
+import { canExportComparisons } from '@/lib/auth/predicate-permissions';
 import { withPermission } from '@/lib/auth/with-permission';
 import { db } from '@/lib/db/client';
 import { users, workflowRuns } from '@/lib/db/schema';
@@ -34,8 +35,6 @@ import { eq } from 'drizzle-orm';
 import React from 'react';
 import { z } from 'zod';
 
-/** REQ-PRE-029: only RA/Dev may export (exec/external have no write scope). */
-const WRITE_DEPARTMENTS = new Set(['RA', 'Dev']);
 
 /**
  * REQ-PRE-014: the exact disclaimer wording. Rendered as the first block of
@@ -266,7 +265,7 @@ export const POST = withPermission('workflow.execute', async (req, _ctx, session
 
   // Department RBAC (REQ-PRE-029): only RA/Dev may export.
   const department = await getDepartment(session.user.id);
-  if (!department || !WRITE_DEPARTMENTS.has(department)) {
+  if (!canExportComparisons(department)) {
     return Response.json({ error: 'permission_denied', reason: 'department' }, { status: 403 });
   }
 

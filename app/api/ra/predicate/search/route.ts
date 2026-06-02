@@ -10,6 +10,7 @@ export const runtime = 'nodejs';
 import { eq } from 'drizzle-orm';
 import { z } from 'zod';
 import { writeAudit } from '@/lib/audit';
+import { canSearchPredicates } from '@/lib/auth/predicate-permissions';
 import { withPermission } from '@/lib/auth/with-permission';
 import { db } from '@/lib/db/client';
 import { users } from '@/lib/db/schema';
@@ -20,9 +21,6 @@ import {
   createOpenFDAClient,
 } from '@/lib/predicate/openfda-client';
 import type { PredicateCandidate } from '@/lib/predicate/types';
-
-/** REQ-PRE-029: departments permitted to run a predicate search. */
-const SEARCH_DEPARTMENTS = new Set(['RA', 'Dev']);
 
 /** Number of K-numbers recorded in the audit trail (REQ-PRE-010). */
 const AUDIT_TOP_K = 5;
@@ -78,7 +76,7 @@ export const POST = withPermission('consult.create', async (req, _ctx, session) 
 
   // 2. Department RBAC (REQ-PRE-029): RA/Dev may search; Exec/External may not.
   const department = await getDepartment(session.user.id);
-  if (!department || !SEARCH_DEPARTMENTS.has(department)) {
+  if (!canSearchPredicates(department)) {
     return Response.json(
       { error: 'permission_denied', reason: 'department' },
       { status: 403 },

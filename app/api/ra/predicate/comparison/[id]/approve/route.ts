@@ -11,13 +11,11 @@ export const runtime = 'nodejs';
 
 import { eq } from 'drizzle-orm';
 import { z } from 'zod';
+import { canManageComparisons } from '@/lib/auth/predicate-permissions';
 import { withPermission } from '@/lib/auth/with-permission';
 import { db } from '@/lib/db/client';
 import { users, workflowRuns } from '@/lib/db/schema';
 import type { PredicateComparison } from '@/lib/predicate/types';
-
-/** REQ-PRE-029: only RA/Dev may approve comparison cells (exec is read-only). */
-const WRITE_DEPARTMENTS = new Set(['RA', 'Dev']);
 
 const ApproveSchema = z.object({
   dimension: z.enum([
@@ -66,7 +64,7 @@ export const PUT = withPermission('workflow.execute', async (req, ctx, session) 
 
   // Department RBAC (REQ-PRE-029): only RA/Dev may approve.
   const department = await getDepartment(session.user.id);
-  if (!department || !WRITE_DEPARTMENTS.has(department)) {
+  if (!canManageComparisons(department)) {
     return Response.json({ error: 'permission_denied', reason: 'department' }, { status: 403 });
   }
 

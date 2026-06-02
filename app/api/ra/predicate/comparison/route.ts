@@ -13,16 +13,15 @@ import { and, asc, desc, eq } from 'drizzle-orm';
 import { z } from 'zod';
 import { sharedAnthropicClient } from '@/lib/ai/anthropic-client';
 import { writeAudit } from '@/lib/audit';
+import {
+  canManageComparisons,
+  canViewComparisons,
+} from '@/lib/auth/predicate-permissions';
 import { withPermission } from '@/lib/auth/with-permission';
 import { db } from '@/lib/db/client';
 import { users, workflowRuns } from '@/lib/db/schema';
 import { createComparisonBuilder } from '@/lib/predicate/comparison-builder';
 import type { ComparisonDimension, PredicateCandidate } from '@/lib/predicate/types';
-
-/** REQ-PRE-029: departments permitted to create a comparison. */
-const WRITE_DEPARTMENTS = new Set(['RA', 'Dev']);
-/** REQ-PRE-029: departments permitted to read comparison history (exec read-only). */
-const READ_DEPARTMENTS = new Set(['RA', 'Dev', 'Exec']);
 
 /** REQ-PRE-018: at most 3 predicates may be compared at once. */
 const MAX_PREDICATES = 3;
@@ -91,7 +90,7 @@ export const POST = withPermission('workflow.execute', async (req, _ctx, session
 
   // Department RBAC (REQ-PRE-029): only RA/Dev may create comparisons.
   const department = await getDepartment(session.user.id);
-  if (!department || !WRITE_DEPARTMENTS.has(department)) {
+  if (!canManageComparisons(department)) {
     return Response.json({ error: 'permission_denied', reason: 'department' }, { status: 403 });
   }
 
@@ -149,7 +148,7 @@ const SORT_VALUES = new Set(['asc', 'desc']);
 export const GET = withPermission('workflow.execute', async (req, _ctx, session) => {
   // Department RBAC (REQ-PRE-029): RA/Dev/Exec may list; External may not.
   const department = await getDepartment(session.user.id);
-  if (!department || !READ_DEPARTMENTS.has(department)) {
+  if (!canViewComparisons(department)) {
     return Response.json({ error: 'permission_denied', reason: 'department' }, { status: 403 });
   }
 
