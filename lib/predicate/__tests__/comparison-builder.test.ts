@@ -46,6 +46,7 @@ function subjectInputs(): Record<ComparisonDimension, string> {
  * mapping each dimension to a suggestion string. The builder is expected to
  * issue exactly ONE call regardless of dimension count.
  */
+// biome-ignore lint/suspicious/noExplicitAny: test mock helper requires any for vi.fn typing
 function mockAnthropic(): { client: Anthropic; create: ReturnType<typeof vi.fn<any[], any>> } {
   const suggestions = ALL_DIMENSIONS.reduce<Record<string, string>>((acc, dim) => {
     acc[dim] = `LLM suggestion for ${dim}`;
@@ -61,6 +62,7 @@ function mockAnthropic(): { client: Anthropic; create: ReturnType<typeof vi.fn<a
 }
 
 /** A mock Anthropic client that always throws — for graceful degradation. */
+// biome-ignore lint/suspicious/noExplicitAny: test mock helper requires any for vi.fn typing
 function failingAnthropic(): { client: Anthropic; create: ReturnType<typeof vi.fn<any[], any>> } {
   const create = vi.fn(async (): Promise<unknown> => {
     throw new Error('Anthropic API unavailable');

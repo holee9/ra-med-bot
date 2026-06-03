@@ -8,8 +8,8 @@
 // GET history (RA/Dev/Exec list own comparisons, sort order), and
 // PUT approve (dimension cell approval, validation).
 
-import { beforeEach, describe, expect, it, vi } from 'vitest';
 import type { ComparisonDimension, PredicateComparison } from '@/lib/predicate/types';
+import { beforeEach, describe, expect, it, vi } from 'vitest';
 
 // --- Mock withPermission: pass-through with an injectable session ---
 // Department lives on users.department, NOT on the session — the route fetches
@@ -65,9 +65,7 @@ vi.mock('@/lib/db/client', () => {
         // Drizzle desc()/asc() produce an SQL object whose queryChunks include a
         // trailing { value: [' desc'] } / { value: [' asc'] } fragment.
         const chunks = (arg as { queryChunks?: Array<{ value?: string[] }> })?.queryChunks ?? [];
-        const flat = chunks
-          .map((c) => (Array.isArray(c?.value) ? c.value.join('') : ''))
-          .join('');
+        const flat = chunks.map((c) => (Array.isArray(c?.value) ? c.value.join('') : '')).join('');
         capturedOrderBy = flat.includes('desc') ? 'desc' : 'asc';
         return Promise.resolve(historyRows);
       }),
@@ -239,7 +237,7 @@ describe('POST /api/ra/predicate/comparison — create (REQ-PRE-019)', () => {
     await POST(postReq(validBody()), {});
 
     expect(insertedValues).toHaveBeenCalledOnce();
-    const values = insertedValues.mock.calls[0]![0];
+    const values = (insertedValues.mock.calls[0] as unknown[])[0] as Record<string, unknown>;
     expect(values.workflowType).toBe('predicate_comparison');
     expect(values.userId).toBe('user-001');
   });
@@ -275,16 +273,17 @@ describe('POST /api/ra/predicate/comparison — create (REQ-PRE-019)', () => {
     await POST(postReq(validBody()), {});
 
     expect(writeAuditMock).toHaveBeenCalledOnce();
-    const event = writeAuditMock.mock.calls[0]![0];
+    const event = (writeAuditMock.mock.calls[0] as unknown[])[0] as Record<string, unknown>;
     expect(event.action).toBe('predicate_comparison_generated');
-    expect(event.meta_json.predicate_k_numbers).toEqual(['K1', 'K2']);
-    expect(event.meta_json.subject_device_name).toBe('Infusion Pump');
+    const meta = event.meta_json as Record<string, unknown>;
+    expect(meta.predicate_k_numbers).toEqual(['K1', 'K2']);
+    expect(meta.subject_device_name).toBe('Infusion Pump');
   });
 
   it('persists selected_predicate_knumbers in workflow_runs state (REQ-PRE-024)', async () => {
     await POST(postReq(validBody()), {});
 
-    const values = insertedValues.mock.calls[0]![0];
+    const values = (insertedValues.mock.calls[0] as unknown[])[0] as Record<string, unknown>;
     const state = values.resultJson as { selected_predicate_knumbers: string[] };
     expect(state.selected_predicate_knumbers).toEqual(['K1', 'K2']);
   });
@@ -341,7 +340,7 @@ describe('PUT /api/ra/predicate/comparison/[id]/approve — approve cell (REQ-PR
 
     expect(res.status).toBe(200);
     expect(updateSet).toHaveBeenCalledOnce();
-    const updated = updateSet.mock.calls[0]![0].resultJson as PredicateComparison;
+    const updated = updateSet.mock.calls[0]?.[0].resultJson as PredicateComparison;
     const cell = updated.cells.find((c) => c.dimension === 'intended_use');
     expect(cell?.approved[0]).toBe(true);
     expect(body.comparison).toBeDefined();

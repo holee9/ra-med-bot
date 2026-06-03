@@ -15,8 +15,7 @@ import { useState } from 'react';
 // REQ-PRE-026: only the top-5 results are surfaced in the search UI.
 const TOP_N = 5;
 
-const COVERAGE_NOTICE =
-  '일부 2004년 이전 510(k) 기록은 검색 결과에 포함되지 않을 수 있습니다.';
+const COVERAGE_NOTICE = '일부 2004년 이전 510(k) 기록은 검색 결과에 포함되지 않을 수 있습니다.';
 
 export default function PredicateSearchPage() {
   const router = useRouter();
@@ -85,15 +84,14 @@ export default function PredicateSearchPage() {
       </form>
 
       {loading && (
-        <div
+        <output
           data-testid="search-spinner"
-          role="status"
           aria-live="polite"
           className="mt-6 flex items-center gap-2 text-sm text-ink-500"
         >
           <span className="h-4 w-4 animate-spin rounded-full border-2 border-ink-200 border-t-brand-600" />
           검색 중...
-        </div>
+        </output>
       )}
 
       {error && (

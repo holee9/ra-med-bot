@@ -6,8 +6,8 @@
 // cascade-search invocation, audit logging with top-5 K-numbers, validation, and
 // openFDA failure → 500.
 
-import { beforeEach, describe, expect, it, vi } from 'vitest';
 import type { CascadeSearchResult, PredicateCandidate } from '@/lib/predicate/types';
+import { beforeEach, describe, expect, it, vi } from 'vitest';
 
 // --- Mock withPermission: pass-through with a department-injectable session ---
 // Department is NOT on the session (it lives on users.department); the route
@@ -193,12 +193,13 @@ describe('POST /api/ra/predicate/search — audit (REQ-PRE-010)', () => {
     await POST(postReq({ device_name: 'Infusion Pump' }), {});
 
     expect(writeAuditMock).toHaveBeenCalledOnce();
-    const event = writeAuditMock.mock.calls[0]![0];
+    const event = (writeAuditMock.mock.calls[0] as unknown[])[0] as Record<string, unknown>;
     expect(event.action).toBe('predicate_search');
-    expect(event.meta_json.query).toBe('Infusion Pump');
-    expect(event.meta_json.result_count).toBe(6);
+    const meta = event.meta_json as Record<string, unknown>;
+    expect(meta.query).toBe('Infusion Pump');
+    expect(meta.result_count).toBe(6);
     // Only the top-5 K-numbers are recorded.
-    expect(event.meta_json.top_k_numbers).toEqual(['K1', 'K2', 'K3', 'K4', 'K5']);
+    expect(meta.top_k_numbers).toEqual(['K1', 'K2', 'K3', 'K4', 'K5']);
   });
 
   it('writes an audit row on a cache hit as well', async () => {
