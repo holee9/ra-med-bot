@@ -56,13 +56,17 @@ export interface CreateOpenFDAClientEnv {
 const defaultSleep = (ms: number): Promise<void> =>
   new Promise((resolve) => setTimeout(resolve, ms));
 
-/** Build the openFDA `search` query string for the supported strategies. */
+/** Build the openFDA `search` query string for the supported strategies.
+ * Term values are URI-encoded to prevent query injection via device names
+ * containing quotes, operators, or special characters (HIGH-1 fix). */
 function buildSearchExpression(params: OpenFDASearchParams): string {
+  const term = (field: string, value: string) =>
+    `${field}:"${encodeURIComponent(value)}"`;
   const clauses: string[] = [];
-  if (params.device_name) clauses.push(`device_name:"${params.device_name}"`);
-  if (params.product_code) clauses.push(`product_code:"${params.product_code}"`);
-  if (params.panel) clauses.push(`openfda.device_class:"${params.panel}"`);
-  if (params.applicant) clauses.push(`applicant:"${params.applicant}"`);
+  if (params.device_name) clauses.push(term('device_name', params.device_name));
+  if (params.product_code) clauses.push(term('product_code', params.product_code));
+  if (params.panel) clauses.push(term('openfda.device_class', params.panel));
+  if (params.applicant) clauses.push(term('applicant', params.applicant));
   return clauses.join('+AND+');
 }
 

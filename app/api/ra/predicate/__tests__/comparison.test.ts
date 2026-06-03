@@ -86,7 +86,7 @@ vi.mock('@/lib/db/client', () => {
   const stateChain = () => ({
     from: vi.fn().mockReturnThis(),
     where: vi.fn().mockReturnThis(),
-    limit: vi.fn(async () => [{ id: 'wfr-001', resultJson: storedState }]),
+    limit: vi.fn(async () => [{ id: 'wfr-001', userId: 'user-001', resultJson: storedState }]),
   });
 
   return {
@@ -352,6 +352,23 @@ describe('PUT /api/ra/predicate/comparison/[id]/approve — approve cell (REQ-PR
     });
     expect(res.status).toBe(400);
     expect(updateSet).not.toHaveBeenCalled();
+  });
+
+  it('denies cross-user approval (IDOR): returns 403 when userId does not match session (security)', async () => {
+    // Simulate another user's comparison row by overriding the stateChain userId.
+    // Cast through unknown to avoid strict vi.fn generic mismatch in test context.
+    const { db: mockDb } = (await import('@/lib/db/client')) as unknown as { db: Record<string, unknown> };
+    const originalSelect = mockDb.select;
+    mockDb.select = vi.fn(() => ({
+      from: vi.fn().mockReturnThis(),
+      where: vi.fn().mockReturnThis(),
+      limit: vi.fn(async () => [{ id: 'wfr-001', userId: 'other-user-999', resultJson: storedState }]),
+    })) as unknown as ReturnType<typeof vi.fn>;
+    const res = await PUT(putReq({ dimension: 'intended_use', predicate_index: 0 }), {
+      params: { id: 'wfr-001' },
+    });
+    mockDb.select = originalSelect;
+    expect(res.status).toBe(403);
   });
 
   it('denies an Exec-department user from approving with 403', async () => {

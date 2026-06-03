@@ -9,13 +9,13 @@
 // REQ-PRE-029: nodejs runtime required — department lookup uses the pg driver.
 export const runtime = 'nodejs';
 
-import { eq } from 'drizzle-orm';
-import { z } from 'zod';
 import { canManageComparisons } from '@/lib/auth/predicate-permissions';
 import { withPermission } from '@/lib/auth/with-permission';
 import { db } from '@/lib/db/client';
 import { users, workflowRuns } from '@/lib/db/schema';
 import type { PredicateComparison } from '@/lib/predicate/types';
+import { eq } from 'drizzle-orm';
+import { z } from 'zod';
 
 const ApproveSchema = z.object({
   dimension: z.enum([
@@ -72,13 +72,18 @@ export const PUT = withPermission('workflow.execute', async (req, ctx, session) 
   if (!id) return Response.json({ error: 'Missing id' }, { status: 400 });
 
   const [row] = await db
-    .select({ id: workflowRuns.id, resultJson: workflowRuns.resultJson })
+    .select({ id: workflowRuns.id, userId: workflowRuns.userId, resultJson: workflowRuns.resultJson })
     .from(workflowRuns)
     .where(eq(workflowRuns.id, id))
     .limit(1);
 
   if (!row || !row.resultJson) {
     return Response.json({ error: 'Not Found' }, { status: 404 });
+  }
+
+  // Ownership check (REQ-PRE-016 data integrity): only the creator may approve their own comparison.
+  if (row.userId !== session.user.id) {
+    return Response.json({ error: 'Forbidden' }, { status: 403 });
   }
 
   const comparison = row.resultJson as PredicateComparison & {
