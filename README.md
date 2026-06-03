@@ -1080,7 +1080,7 @@ Phase 1-11 완료 후 사용자 경험·비즈니스 가치 확대를 위한 다
 
 | # | SPEC | 설명 | 우선순위 |
 |---|------|------|---------|
-| [#22](https://github.com/holee9/ra-med-bot/issues/22) | SPEC-REGULA-PREDICATE-001 | FDA 510(k) Predicate 검색 엔진 | High |
+| [#22](https://github.com/holee9/ra-med-bot/issues/22) | SPEC-REGULA-PREDICATE-001 | FDA 510(k) Predicate 검색 엔진 — **구현 완료** (`feat/issue-22-predicate`) | High |
 | [#23](https://github.com/holee9/ra-med-bot/issues/23) | SPEC-REGULA-CER-001 | EU MDR 임상평가보고서(CER) 빌더 | High |
 | [#24](https://github.com/holee9/ra-med-bot/issues/24) | SPEC-REGULA-PCCP-001 | FDA PCCP 구조화 작성기 | High |
 | [#35](https://github.com/holee9/ra-med-bot/issues/35) | SPEC-REGULA-KNOWLEDGE-GAP-001 | 미답변 자동 이슈화 및 지식베이스 보강 루프 | High |

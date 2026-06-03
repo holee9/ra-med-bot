@@ -1,11 +1,11 @@
 ---
 id: SPEC-REGULA-PREDICATE-001
 version: 0.1.0
-status: draft
+status: in-review
 phase: wave3
 priority: High
 created: 2026-05-04
-updated: 2026-05-04
+updated: 2026-06-03
 author: manager-spec (Regula harness)
 issue_number: null
 depends_on:
