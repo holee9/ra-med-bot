@@ -45,7 +45,7 @@ describe('lib/audit.ts (REQ-BREADTH-057) — extended AuditAction type', () => {
     expect(src).toMatch(new RegExp(`'${escaped}'`));
   });
 
-  it('AuditAction type contains exactly 50 values (48 baseline + 2 Predicate actions)', () => {
+  it('AuditAction type contains exactly 51 values (48 baseline + 3 Predicate actions)', () => {
     const src = readText('lib/audit.ts');
     // Extract the AuditAction type block
     const typeMatch = src.match(/export type AuditAction\s*=\s*([\s\S]*?);/);
@@ -61,9 +61,9 @@ describe('lib/audit.ts (REQ-BREADTH-057) — extended AuditAction type', () => {
     // Phase 8 DocIngest adds 6 document.* / redaction_map.access actions via 0016.
     // Phase 10 Radar adds 3 radar.* actions via 0018_radar.sql.
     // E2E chat.query (0026) + Wave 5 answer.refine (0027) bring the baseline to 48.
-    // SPEC-REGULA-PREDICATE-001 adds predicate_search + predicate_comparison_generated
-    // via 0031_predicate_audit_actions.sql (REQ-PRE-017), bringing the total to 50.
-    expect(values).toHaveLength(50);
+    // SPEC-REGULA-PREDICATE-001 adds predicate_search + predicate_comparison_generated (0031)
+    // + predicate_export_requested (0032 REQ-PRE-015), bringing the total to 51.
+    expect(values).toHaveLength(51);
   });
 
   it('AuditAction type includes Issue #7 remediation action: conversation.delete', () => {

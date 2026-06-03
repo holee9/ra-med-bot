@@ -28,8 +28,8 @@ const VALID_ROLES = ['admin', 'ra-lead', 'ra-member', 'viewer'] as const;
 const VALID_SCOPES = ['org', 'project', 'user', 'none'] as const;
 
 describe('lib/auth/permissions.ts (REQ-ENTERPRISE-020) — PERMISSIONS matrix', () => {
-  it('PERMISSIONS contains exactly 16 entries', () => {
-    expect(Object.keys(PERMISSIONS)).toHaveLength(16);
+  it('PERMISSIONS contains exactly 17 entries', () => {
+    expect(Object.keys(PERMISSIONS)).toHaveLength(17);
   });
 
   it.each(EXPECTED_ACTIONS)('PERMISSIONS contains action: %s', (action) => {
