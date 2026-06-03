@@ -118,16 +118,14 @@ describe('createCascadeSearch — Vectorize rerank (REQ-PRE-006)', () => {
     const client = { search, paginate: vi.fn() };
 
     // Rank K7 highest, K0 lowest, so rerank order differs from input order.
-    const retriever = makeRetriever(
-      found.map((d, i) => ({ id: d.k_number, score: (i + 1) / 8 })),
-    );
+    const retriever = makeRetriever(found.map((d, i) => ({ id: d.k_number, score: (i + 1) / 8 })));
 
     const cascade = createCascadeSearch(client as never, retriever as never);
     const result = await cascade.search('Infusion Pump', env);
 
     expect(result.candidates).toHaveLength(5);
     // Highest score (K7) should rank first.
-    expect(result.candidates[0]!.k_number).toBe('K7');
+    expect(result.candidates[0]?.k_number).toBe('K7');
   });
 
   it('falls back to recency sort (decision_date desc) when Vectorize returns empty', async () => {
@@ -144,8 +142,8 @@ describe('createCascadeSearch — Vectorize rerank (REQ-PRE-006)', () => {
     const cascade = createCascadeSearch(client as never, retriever as never);
     const result = await cascade.search('Infusion Pump', env);
 
-    expect(result.candidates[0]!.k_number).toBe('NEW');
-    expect(result.candidates[result.candidates.length - 1]!.k_number).toBe('OLD');
+    expect(result.candidates[0]?.k_number).toBe('NEW');
+    expect(result.candidates[result.candidates.length - 1]?.k_number).toBe('OLD');
   });
 
   it('falls back to recency sort when no Vectorize retriever is supplied', async () => {
@@ -159,7 +157,7 @@ describe('createCascadeSearch — Vectorize rerank (REQ-PRE-006)', () => {
     const cascade = createCascadeSearch(client as never);
     const result = await cascade.search('Infusion Pump', env);
 
-    expect(result.candidates[0]!.k_number).toBe('NEW');
+    expect(result.candidates[0]?.k_number).toBe('NEW');
   });
 });
 

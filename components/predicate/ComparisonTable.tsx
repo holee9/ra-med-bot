@@ -8,10 +8,7 @@
 // REQ-PRE-014: the SE disclaimer is rendered at the top and must always be
 // visible so the table is never mistaken for an automated SE determination.
 
-import type {
-  ComparisonDimension,
-  PredicateComparison,
-} from '@/lib/predicate/types';
+import type { ComparisonDimension, PredicateComparison } from '@/lib/predicate/types';
 
 interface ComparisonTableProps {
   comparison: PredicateComparison;
@@ -30,10 +27,7 @@ const SE_DISCLAIMER =
   'This tool assists with predicate identification only. Substantial equivalence ' +
   'determination requires RA professional review and cannot be automated.';
 
-export default function ComparisonTable({
-  comparison,
-  onApprove,
-}: ComparisonTableProps) {
+export default function ComparisonTable({ comparison, onApprove }: ComparisonTableProps) {
   const { selected_predicates, cells } = comparison;
 
   return (
@@ -52,12 +46,8 @@ export default function ComparisonTable({
         <table className="w-full min-w-[768px] border-collapse text-sm">
           <thead>
             <tr data-testid="comparison-header" className="border-b border-ink-200">
-              <th className="w-40 px-3 py-2 text-left font-medium text-ink-700">
-                Dimension
-              </th>
-              <th className="px-3 py-2 text-left font-medium text-ink-700">
-                Subject Device
-              </th>
+              <th className="w-40 px-3 py-2 text-left font-medium text-ink-700">Dimension</th>
+              <th className="px-3 py-2 text-left font-medium text-ink-700">Subject Device</th>
               {selected_predicates.map((p) => (
                 <th
                   key={p.k_number}
@@ -75,10 +65,7 @@ export default function ComparisonTable({
                 data-testid="comparison-row"
                 className="border-b border-ink-100 align-top"
               >
-                <th
-                  scope="row"
-                  className="px-3 py-3 text-left font-medium text-ink-700"
-                >
+                <th scope="row" className="px-3 py-3 text-left font-medium text-ink-700">
                   {DIMENSION_LABELS[cell.dimension]}
                 </th>
                 <td className="px-3 py-3 text-ink-800">{cell.subject_text}</td>

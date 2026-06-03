@@ -9,10 +9,7 @@
 
 import ComparisonTable from '@/components/predicate/ComparisonTable';
 import SubjectDeviceForm from '@/components/predicate/SubjectDeviceForm';
-import type {
-  ComparisonDimension,
-  PredicateComparison,
-} from '@/lib/predicate/types';
+import type { ComparisonDimension, PredicateComparison } from '@/lib/predicate/types';
 import { useSearchParams } from 'next/navigation';
 import { Suspense, useState } from 'react';
 

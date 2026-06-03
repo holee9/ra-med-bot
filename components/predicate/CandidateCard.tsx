@@ -18,8 +18,7 @@ interface CandidateCardProps {
 
 // FDA CDRH 510(k) detail base URL; the ID parameter is the K-number WITHOUT its
 // leading "K" (REQ-PRE-027): K123456 -> ID=123456.
-const FDA_CDRH_BASE =
-  'https://www.accessdata.fda.gov/scripts/cdrh/cfdocs/cfpmn/pmn.cfm?ID=';
+const FDA_CDRH_BASE = 'https://www.accessdata.fda.gov/scripts/cdrh/cfdocs/cfpmn/pmn.cfm?ID=';
 
 /** Strip the leading "K"/"k" so the FDA CDRH ID parameter is numeric. */
 function fdaId(kNumber: string): string {
@@ -72,17 +71,13 @@ export default function CandidateCard({
             <span
               data-testid="decision-badge"
               className={`inline-flex items-center rounded px-2 py-0.5 text-xs font-medium ${
-                se
-                  ? 'bg-success-bg text-success'
-                  : 'bg-danger-bg text-danger'
+                se ? 'bg-success-bg text-success' : 'bg-danger-bg text-danger'
               }`}
             >
               {se ? 'Substantially Equivalent' : 'Not Substantially Equivalent'}
             </span>
           </div>
-          <p className="mt-1 truncate text-sm font-medium text-ink-800">
-            {candidate.device_name}
-          </p>
+          <p className="mt-1 truncate text-sm font-medium text-ink-800">{candidate.device_name}</p>
           <p className="truncate text-xs text-ink-500">{candidate.applicant_name}</p>
         </button>
 

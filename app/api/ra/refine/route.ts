@@ -43,7 +43,10 @@ export const POST = withPermission('consult.create', async (req, _ctx, session) 
 
   const parsed = RefineSchema.safeParse(body);
   if (!parsed.success) {
-    return Response.json({ error: 'Validation failed', issues: parsed.error.issues }, { status: 400 });
+    return Response.json(
+      { error: 'Validation failed', issues: parsed.error.issues },
+      { status: 400 },
+    );
   }
 
   const { messageId, conversationId, blockContent, tone, customNote } = parsed.data;

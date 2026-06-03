@@ -2,7 +2,6 @@
 // Each helper is a pure function of the caller's department string; these tests
 // pin the full matrix so a refactor of any route cannot silently widen access.
 
-import { describe, expect, it } from 'vitest';
 import {
   canClearPredicateCache,
   canExportComparisons,
@@ -10,6 +9,7 @@ import {
   canSearchPredicates,
   canViewComparisons,
 } from '@/lib/auth/predicate-permissions';
+import { describe, expect, it } from 'vitest';
 
 // RBAC matrix (REQ-PRE-029):
 //   dept   | search | manage | view  | export | clearCache

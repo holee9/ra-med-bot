@@ -9,8 +9,9 @@ vi.mock('@/lib/queries/useProjects', () => ({
   useProjects: () => ({ data: [] }),
 }));
 vi.mock('@/stores/ui', () => ({
-  useUIStore: (selector: (s: { currentProjectId: null; setCurrentProjectId: () => void }) => unknown) =>
-    selector({ currentProjectId: null, setCurrentProjectId: () => {} }),
+  useUIStore: (
+    selector: (s: { currentProjectId: null; setCurrentProjectId: () => void }) => unknown,
+  ) => selector({ currentProjectId: null, setCurrentProjectId: () => {} }),
 }));
 
 import Sidebar from '../../../../components/shell/Sidebar';

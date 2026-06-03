@@ -4,8 +4,8 @@
 // @MX:SPEC SPEC-REGULA-CHAT-001 (REQ-CHAT-045)
 
 import { ExternalLink } from 'lucide-react';
-import type { SourceItem } from '../../types/streaming';
 import { useDocViewer } from '../../hooks/useDocViewer';
+import type { SourceItem } from '../../types/streaming';
 
 const TYPE_PILL_STYLES: Record<string, string> = {
   Regulation: 'bg-blue-100 text-blue-700',

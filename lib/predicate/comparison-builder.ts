@@ -163,9 +163,7 @@ function buildPrompt(
  * surrounding prose by extracting the first JSON object. Returns undefined if no
  * usable suggestions were found.
  */
-function parseSuggestions(
-  raw: string,
-): Record<ComparisonDimension, string> | undefined {
+function parseSuggestions(raw: string): Record<ComparisonDimension, string> | undefined {
   const start = raw.indexOf('{');
   const end = raw.lastIndexOf('}');
   if (start === -1 || end === -1 || end < start) return undefined;

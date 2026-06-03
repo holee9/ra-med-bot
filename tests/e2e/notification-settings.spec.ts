@@ -21,7 +21,9 @@ test.describe('Notification Settings (SPEC-REGULA-NOTIFICATIONS-001)', () => {
   });
 
   test('all 7 event types have email and slack checkboxes (REQ-NOTIFY-002)', async ({ page }) => {
-    await expect(page.locator('[data-testid="notification-settings"]')).toBeVisible({ timeout: 10_000 });
+    await expect(page.locator('[data-testid="notification-settings"]')).toBeVisible({
+      timeout: 10_000,
+    });
 
     const events = [
       'expert_review_assigned',
@@ -39,8 +41,12 @@ test.describe('Notification Settings (SPEC-REGULA-NOTIFICATIONS-001)', () => {
     }
   });
 
-  test('toggling a preference saves and shows saved indicator (REQ-NOTIFY-002)', async ({ page }) => {
-    await expect(page.locator('[data-testid="notification-settings"]')).toBeVisible({ timeout: 10_000 });
+  test('toggling a preference saves and shows saved indicator (REQ-NOTIFY-002)', async ({
+    page,
+  }) => {
+    await expect(page.locator('[data-testid="notification-settings"]')).toBeVisible({
+      timeout: 10_000,
+    });
 
     const checkbox = page.locator('[data-testid="notification-knowledge_gap_detected-email"]');
     const initialState = await checkbox.isChecked();

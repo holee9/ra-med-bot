@@ -9,19 +9,16 @@
 // which is not edge-runtime compatible.
 export const runtime = 'nodejs';
 
-import { and, asc, desc, eq } from 'drizzle-orm';
-import { z } from 'zod';
 import { sharedAnthropicClient } from '@/lib/ai/anthropic-client';
 import { writeAudit } from '@/lib/audit';
-import {
-  canManageComparisons,
-  canViewComparisons,
-} from '@/lib/auth/predicate-permissions';
+import { canManageComparisons, canViewComparisons } from '@/lib/auth/predicate-permissions';
 import { withPermission } from '@/lib/auth/with-permission';
 import { db } from '@/lib/db/client';
 import { users, workflowRuns } from '@/lib/db/schema';
 import { createComparisonBuilder } from '@/lib/predicate/comparison-builder';
 import type { ComparisonDimension, PredicateCandidate } from '@/lib/predicate/types';
+import { and, asc, desc, eq } from 'drizzle-orm';
+import { z } from 'zod';
 
 /** REQ-PRE-018: at most 3 predicates may be compared at once. */
 const MAX_PREDICATES = 3;

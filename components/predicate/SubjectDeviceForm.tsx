@@ -61,10 +61,7 @@ const EMPTY: Record<ComparisonDimension, string> = {
   performance: '',
 };
 
-export default function SubjectDeviceForm({
-  onSubmit,
-  isLoading = false,
-}: SubjectDeviceFormProps) {
+export default function SubjectDeviceForm({ onSubmit, isLoading = false }: SubjectDeviceFormProps) {
   const [values, setValues] = useState<Record<ComparisonDimension, string>>(EMPTY);
 
   function handleSubmit(e: React.FormEvent) {
@@ -87,9 +84,7 @@ export default function SubjectDeviceForm({
             data-testid={`subject-input-${field.key}`}
             value={values[field.key]}
             placeholder={field.placeholder}
-            onChange={(e) =>
-              setValues((prev) => ({ ...prev, [field.key]: e.target.value }))
-            }
+            onChange={(e) => setValues((prev) => ({ ...prev, [field.key]: e.target.value }))}
             rows={3}
             className="rounded-md border border-ink-200 bg-surface px-3 py-2 text-sm text-ink-800 focus:border-brand-400 focus:outline-none focus:ring-1 focus:ring-brand-300"
           />

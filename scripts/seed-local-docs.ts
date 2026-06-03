@@ -4,8 +4,8 @@
 // Run: pnpm tsx scripts/seed-local-docs.ts
 // Requires: DATABASE_URL in environment.
 
-import { readFileSync, readdirSync, statSync } from 'fs';
-import { join, relative, extname, basename } from 'path';
+import { readFileSync, readdirSync, statSync } from 'node:fs';
+import { basename, extname, join, relative } from 'node:path';
 import { eq } from 'drizzle-orm';
 import { db } from '../lib/db/client';
 import { sourceSections, sources } from '../lib/db/schema';
@@ -43,7 +43,11 @@ const LOCAL_SOURCES: LocalSource[] = [
 
 // Skip directories that are not useful for RA queries
 const SKIP_DIRS = new Set([
-  'node_modules', '.git', '.github', 'scripts', 'issue-drafts',
+  'node_modules',
+  '.git',
+  '.github',
+  'scripts',
+  'issue-drafts',
   '99_원본자료_업로드저장소',
 ]);
 
@@ -147,9 +151,8 @@ async function main(): Promise<void> {
         const chunk = chunks[i]!;
         // Anchor: relative path + chunk index (stable, unique per file)
         const anchor = `${relPath}#${i}`;
-        const heading = chunk.metadata.sectionPath !== 'Document'
-          ? chunk.metadata.sectionPath
-          : fileBasename;
+        const heading =
+          chunk.metadata.sectionPath !== 'Document' ? chunk.metadata.sectionPath : fileBasename;
 
         try {
           // Omit embedding — nullable column defaults to NULL in DB (FTS-only mode)

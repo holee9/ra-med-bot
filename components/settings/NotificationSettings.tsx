@@ -31,7 +31,14 @@ export function NotificationSettings() {
 
   async function handleToggle(event: string, channel: 'email' | 'slack', value: boolean) {
     if (!prefs) return;
-    const updated: Prefs = { ...prefs, [event]: { email: (prefs[event]?.email ?? false), slack: (prefs[event]?.slack ?? false), [channel]: value } };
+    const updated: Prefs = {
+      ...prefs,
+      [event]: {
+        email: prefs[event]?.email ?? false,
+        slack: prefs[event]?.slack ?? false,
+        [channel]: value,
+      },
+    };
     setPrefs(updated);
 
     setSaving(true);
@@ -70,7 +77,10 @@ export function NotificationSettings() {
       {Object.entries(EVENT_LABELS).map(([event, label]) => {
         const ch = prefs[event] ?? { email: false, slack: false };
         return (
-          <div key={event} className="flex items-center justify-between rounded-lg border border-border-weak bg-surface-soft px-4 py-3">
+          <div
+            key={event}
+            className="flex items-center justify-between rounded-lg border border-border-weak bg-surface-soft px-4 py-3"
+          >
             <span className="text-sm text-ink-700">{label}</span>
             <div className="flex gap-4">
               <input
@@ -92,9 +102,7 @@ export function NotificationSettings() {
         );
       })}
 
-      {saving && (
-        <p className="text-xs text-ink-400">저장 중…</p>
-      )}
+      {saving && <p className="text-xs text-ink-400">저장 중…</p>}
       {saved && (
         <p data-testid="notification-settings-saved" className="text-xs text-green-600">
           저장됨

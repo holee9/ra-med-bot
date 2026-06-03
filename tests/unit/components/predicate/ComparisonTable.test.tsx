@@ -52,9 +52,7 @@ describe('ComparisonTable', () => {
   it('renders the substantial-equivalence disclaimer at the top (REQ-PRE-014)', () => {
     render(<ComparisonTable comparison={comparison} onApprove={vi.fn()} />);
     const disclaimer = screen.getByTestId('se-disclaimer');
-    expect(disclaimer.textContent).toContain(
-      'predicate identification only',
-    );
+    expect(disclaimer.textContent).toContain('predicate identification only');
     expect(disclaimer.textContent).toContain('cannot be automated');
   });
 

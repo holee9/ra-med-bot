@@ -39,27 +39,21 @@ describe('workflow_type enum (REQ-PRE-010) — predicate_comparison value', () =
 });
 
 describe('audit_action lock-step (REQ-PRE-017) — predicate actions', () => {
-  it.each(PREDICATE_AUDIT_ACTIONS)(
-    'lib/audit.ts AuditAction union includes %s',
-    (action) => {
-      const src = readText('lib/audit.ts');
-      const typeMatch = src.match(/export type AuditAction\s*=\s*([\s\S]*?);/);
-      expect(typeMatch, 'AuditAction type not found').toBeTruthy();
-      const typeBody = (typeMatch as RegExpMatchArray)[1] as string;
-      expect(typeBody).toMatch(new RegExp(`'${action}'`));
-    },
-  );
+  it.each(PREDICATE_AUDIT_ACTIONS)('lib/audit.ts AuditAction union includes %s', (action) => {
+    const src = readText('lib/audit.ts');
+    const typeMatch = src.match(/export type AuditAction\s*=\s*([\s\S]*?);/);
+    expect(typeMatch, 'AuditAction type not found').toBeTruthy();
+    const typeBody = (typeMatch as RegExpMatchArray)[1] as string;
+    expect(typeBody).toMatch(new RegExp(`'${action}'`));
+  });
 
-  it.each(PREDICATE_AUDIT_ACTIONS)(
-    'schema.ts auditActionEnum array includes %s',
-    (action) => {
-      const src = readText('lib/db/schema.ts');
-      const match = src.match(/auditActionEnum\s*=\s*pgEnum\('audit_action',\s*\[([\s\S]*?)\]\)/);
-      expect(match, 'auditActionEnum not found').toBeTruthy();
-      const body = (match as RegExpMatchArray)[1] as string;
-      expect(body).toMatch(new RegExp(`'${action}'`));
-    },
-  );
+  it.each(PREDICATE_AUDIT_ACTIONS)('schema.ts auditActionEnum array includes %s', (action) => {
+    const src = readText('lib/db/schema.ts');
+    const match = src.match(/auditActionEnum\s*=\s*pgEnum\('audit_action',\s*\[([\s\S]*?)\]\)/);
+    expect(match, 'auditActionEnum not found').toBeTruthy();
+    const body = (match as RegExpMatchArray)[1] as string;
+    expect(body).toMatch(new RegExp(`'${action}'`));
+  });
 
   it('audit lock-step: both predicate actions present in type AND enum (consistency)', () => {
     const auditSrc = readText('lib/audit.ts');
@@ -104,9 +98,7 @@ describe('migration 0030_predicate_index.sql (REQ-PRE-023)', () => {
 
   it('creates a CONCURRENTLY partial index on workflow_runs predicate rows', () => {
     const sql = readText(rel);
-    expect(sql).toMatch(
-      /CREATE INDEX CONCURRENTLY IF NOT EXISTS idx_workflow_runs_user_predicate/,
-    );
+    expect(sql).toMatch(/CREATE INDEX CONCURRENTLY IF NOT EXISTS idx_workflow_runs_user_predicate/);
     expect(sql).toMatch(/ON workflow_runs/);
     expect(sql).toMatch(/user_id/);
     expect(sql).toMatch(/workflow_type/);

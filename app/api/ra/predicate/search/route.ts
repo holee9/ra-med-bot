@@ -7,20 +7,17 @@
 // which is not edge-runtime compatible.
 export const runtime = 'nodejs';
 
-import { eq } from 'drizzle-orm';
-import { z } from 'zod';
 import { writeAudit } from '@/lib/audit';
 import { canSearchPredicates } from '@/lib/auth/predicate-permissions';
 import { withPermission } from '@/lib/auth/with-permission';
 import { db } from '@/lib/db/client';
 import { users } from '@/lib/db/schema';
-import { createCascadeSearch } from '@/lib/predicate/cascade-search';
 import { createPredicateCache } from '@/lib/predicate/cache';
-import {
-  type CreateOpenFDAClientEnv,
-  createOpenFDAClient,
-} from '@/lib/predicate/openfda-client';
+import { createCascadeSearch } from '@/lib/predicate/cascade-search';
+import { type CreateOpenFDAClientEnv, createOpenFDAClient } from '@/lib/predicate/openfda-client';
 import type { PredicateCandidate } from '@/lib/predicate/types';
+import { eq } from 'drizzle-orm';
+import { z } from 'zod';
 
 /** Number of K-numbers recorded in the audit trail (REQ-PRE-010). */
 const AUDIT_TOP_K = 5;
@@ -77,10 +74,7 @@ export const POST = withPermission('consult.create', async (req, _ctx, session) 
   // 2. Department RBAC (REQ-PRE-029): RA/Dev may search; Exec/External may not.
   const department = await getDepartment(session.user.id);
   if (!canSearchPredicates(department)) {
-    return Response.json(
-      { error: 'permission_denied', reason: 'department' },
-      { status: 403 },
-    );
+    return Response.json({ error: 'permission_denied', reason: 'department' }, { status: 403 });
   }
 
   const { kv, openfdaEnv } = getPredicateEnv();

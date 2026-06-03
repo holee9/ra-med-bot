@@ -70,9 +70,7 @@ describe('createPredicateCache — get/set lifecycle (REQ-PRE-009)', () => {
 
     await cache.set('Infusion Pump', [candidate('K1')]);
 
-    const searchWrite = kv.put.mock.calls.find((c) =>
-      String(c[0]).includes('predicate:search:'),
-    );
+    const searchWrite = kv.put.mock.calls.find((c) => String(c[0]).includes('predicate:search:'));
     expect(searchWrite?.[2]).toMatchObject({ expirationTtl: 86400 });
   });
 
@@ -87,7 +85,7 @@ describe('createPredicateCache — get/set lifecycle (REQ-PRE-009)', () => {
 
     expect(result).not.toBeNull();
     expect(result).toHaveLength(2);
-    expect(result![0]!.k_number).toBe('K1');
+    expect(result?.[0]?.k_number).toBe('K1');
     // A read must never write back.
     expect(kv.put).not.toHaveBeenCalled();
   });
@@ -102,7 +100,7 @@ describe('createPredicateCache — normalization', () => {
     const result = await cache.get('  infusion pump  ');
 
     expect(result).not.toBeNull();
-    expect(result![0]!.k_number).toBe('K1');
+    expect(result?.[0]?.k_number).toBe('K1');
   });
 });
 
@@ -118,8 +116,8 @@ describe('createPredicateCache — 50-result cap (REQ-PRE-025)', () => {
 
     expect(result).toHaveLength(50);
     // Order preserved (no ranking) — first 50 by input order.
-    expect(result![0]!.k_number).toBe('K0');
-    expect(result![49]!.k_number).toBe('K49');
+    expect(result?.[0]?.k_number).toBe('K0');
+    expect(result?.[49]?.k_number).toBe('K49');
   });
 });
 

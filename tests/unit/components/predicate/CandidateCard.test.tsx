@@ -37,9 +37,7 @@ describe('CandidateCard', () => {
   it('links the K-number to FDA CDRH with the K prefix stripped', () => {
     render(<CandidateCard candidate={candidate} onSelect={vi.fn()} />);
     const link = screen.getByRole('link', { name: /K123456/ }) as HTMLAnchorElement;
-    expect(link.href).toContain(
-      'accessdata.fda.gov/scripts/cdrh/cfdocs/cfpmn/pmn.cfm?ID=123456',
-    );
+    expect(link.href).toContain('accessdata.fda.gov/scripts/cdrh/cfdocs/cfpmn/pmn.cfm?ID=123456');
     expect(link.href).not.toContain('ID=K123456');
   });
 

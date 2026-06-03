@@ -219,10 +219,7 @@ test.describe('Predicate full journey (A10, REQ-PRE-007/011/014/019/024)', () =>
     }
 
     // 6. Select the first candidate → navigate to the compare page with ?k=.
-    await cards
-      .first()
-      .getByRole('button', { name: 'Select as Predicate' })
-      .click();
+    await cards.first().getByRole('button', { name: 'Select as Predicate' }).click();
     await expect(page).toHaveURL(/\/predicate\/compare\?k=K181234/);
     await expect(page.getByTestId('selected-predicates')).toContainText('K181234');
 
@@ -244,9 +241,7 @@ test.describe('Predicate full journey (A10, REQ-PRE-007/011/014/019/024)', () =>
 
     // 9. The SE disclaimer banner is visible (REQ-PRE-014).
     await expect(page.getByTestId('se-disclaimer')).toBeVisible();
-    await expect(page.getByTestId('se-disclaimer')).toContainText(
-      'cannot be automated',
-    );
+    await expect(page.getByTestId('se-disclaimer')).toContainText('cannot be automated');
 
     // 10. Approve one LLM suggestion → that cell shows the approved state.
     const firstApprove = page.getByRole('button', { name: 'Approve' }).first();
@@ -355,9 +350,7 @@ test.describe('Predicate RBAC (A8, REQ-PRE-029)', () => {
     });
 
     await page.goto('/predicate/history');
-    await expect(
-      page.getByRole('heading', { name: '비교 이력' }),
-    ).toBeVisible();
+    await expect(page.getByRole('heading', { name: '비교 이력' })).toBeVisible();
     await expect(page.getByRole('link', { name: /Infusion Pump/ }).first()).toBeVisible();
   });
 
@@ -427,9 +420,7 @@ test.describe('Predicate responsiveness (A11, REQ-PRE-030)', () => {
 
       // Arrive on the compare page pre-seeded with a predicate K-number.
       await page.goto('/predicate/compare?k=K181234');
-      await page
-        .getByTestId('subject-input-intended_use')
-        .fill('Continuous IV fluid delivery.');
+      await page.getByTestId('subject-input-intended_use').fill('Continuous IV fluid delivery.');
       await page.getByRole('button', { name: 'Build Comparison Table' }).click();
 
       const scroll = page.getByTestId('comparison-scroll');
@@ -438,9 +429,7 @@ test.describe('Predicate responsiveness (A11, REQ-PRE-030)', () => {
       if (vp.width === 768) {
         // REQ-PRE-030: at 768px the min-width table forces horizontal scroll —
         // the scroll container's content is wider than its visible width.
-        const overflow = await scroll.evaluate(
-          (el) => el.scrollWidth > el.clientWidth,
-        );
+        const overflow = await scroll.evaluate((el) => el.scrollWidth > el.clientWidth);
         expect(overflow).toBe(true);
       }
     });
