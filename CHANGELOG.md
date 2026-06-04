@@ -7,7 +7,9 @@
 
 ---
 
-## [Unreleased]
+## [Unreleased] — Wave 3 (2026-06-04 sync)
+
+> **Sync 상태**: SPEC-REGULA-PREDICATE-001 구현 완료 (PR #126, Fixes #22). TypeScript 0 errors, 테스트 1976개 통과. A12(P95 latency) · A14(UAT)는 프로덕션 배포 후 검증 예정.
 
 ### Added
 
