@@ -71,12 +71,13 @@ async function getDepartment(userId: string): Promise<string | null> {
   return rows[0]?.department ?? null;
 }
 
+// allow-hex: react-pdf StyleSheet cannot use CSS variables or Tailwind tokens
 const styles = StyleSheet.create({
   page: { padding: 36, fontSize: 10, fontFamily: 'Helvetica' },
   disclaimer: {
-    backgroundColor: '#FEF2F2',
-    color: '#991B1B',
-    borderColor: '#991B1B',
+    backgroundColor: '#FEF2F2', // allow-hex
+    color: '#991B1B', // allow-hex
+    borderColor: '#991B1B', // allow-hex
     borderWidth: 1,
     padding: 10,
     marginBottom: 16,
@@ -85,10 +86,10 @@ const styles = StyleSheet.create({
   disclaimerHeading: { fontFamily: 'Helvetica-Bold', marginBottom: 4 },
   title: { fontSize: 14, fontFamily: 'Helvetica-Bold', marginBottom: 12 },
   predicateLine: { marginBottom: 4 },
-  cell: { marginBottom: 12, borderBottomWidth: 1, borderColor: '#E5E7EB', paddingBottom: 8 },
+  cell: { marginBottom: 12, borderBottomWidth: 1, borderColor: '#E5E7EB', paddingBottom: 8 }, // allow-hex
   dimension: { fontFamily: 'Helvetica-Bold', marginBottom: 2 },
   label: { fontFamily: 'Helvetica-Bold' },
-  footer: { position: 'absolute', bottom: 20, left: 36, right: 36, fontSize: 8, color: '#6B7280' },
+  footer: { position: 'absolute', bottom: 20, left: 36, right: 36, fontSize: 8, color: '#6B7280' }, // allow-hex
 });
 
 // @MX:NOTE [AUTO] PDF document tree built with React.createElement (no JSX) so
