@@ -28,18 +28,11 @@ export function SourceCard({ source }: SourceCardProps) {
   }
 
   return (
-    <div
+    <button
+      type="button"
       data-testid="citation-block"
-      className="flex flex-col gap-2 rounded-lg border border-border-weak bg-surface-soft p-3 transition-all hover:border-border-strong hover:shadow-sm hover:translate-y-[-1px] cursor-pointer"
-      role="button"
-      tabIndex={0}
+      className="flex flex-col gap-2 rounded-lg border border-border-weak bg-surface-soft p-3 transition-all hover:border-border-strong hover:shadow-sm hover:translate-y-[-1px] cursor-pointer w-full text-left"
       onClick={handleOpen}
-      onKeyDown={(e) => {
-        if (e.key === 'Enter' || e.key === ' ') {
-          e.preventDefault();
-          handleOpen();
-        }
-      }}
     >
       {/* Index badge + org label */}
       <div className="flex items-center justify-between gap-2">
@@ -81,6 +74,6 @@ export function SourceCard({ source }: SourceCardProps) {
           </a>
         )}
       </div>
-    </div>
+    </button>
   );
 }
