@@ -357,12 +357,16 @@ describe('PUT /api/ra/predicate/comparison/[id]/approve — approve cell (REQ-PR
   it('denies cross-user approval (IDOR): returns 403 when userId does not match session (security)', async () => {
     // Simulate another user's comparison row by overriding the stateChain userId.
     // Cast through unknown to avoid strict vi.fn generic mismatch in test context.
-    const { db: mockDb } = (await import('@/lib/db/client')) as unknown as { db: Record<string, unknown> };
+    const { db: mockDb } = (await import('@/lib/db/client')) as unknown as {
+      db: Record<string, unknown>;
+    };
     const originalSelect = mockDb.select;
     mockDb.select = vi.fn(() => ({
       from: vi.fn().mockReturnThis(),
       where: vi.fn().mockReturnThis(),
-      limit: vi.fn(async () => [{ id: 'wfr-001', userId: 'other-user-999', resultJson: storedState }]),
+      limit: vi.fn(async () => [
+        { id: 'wfr-001', userId: 'other-user-999', resultJson: storedState },
+      ]),
     })) as unknown as ReturnType<typeof vi.fn>;
     const res = await PUT(putReq({ dimension: 'intended_use', predicate_index: 0 }), {
       params: { id: 'wfr-001' },

@@ -72,7 +72,11 @@ export const PUT = withPermission('workflow.execute', async (req, ctx, session) 
   if (!id) return Response.json({ error: 'Missing id' }, { status: 400 });
 
   const [row] = await db
-    .select({ id: workflowRuns.id, userId: workflowRuns.userId, resultJson: workflowRuns.resultJson })
+    .select({
+      id: workflowRuns.id,
+      userId: workflowRuns.userId,
+      resultJson: workflowRuns.resultJson,
+    })
     .from(workflowRuns)
     .where(eq(workflowRuns.id, id))
     .limit(1);

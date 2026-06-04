@@ -60,8 +60,7 @@ const defaultSleep = (ms: number): Promise<void> =>
  * Term values are URI-encoded to prevent query injection via device names
  * containing quotes, operators, or special characters (HIGH-1 fix). */
 function buildSearchExpression(params: OpenFDASearchParams): string {
-  const term = (field: string, value: string) =>
-    `${field}:"${encodeURIComponent(value)}"`;
+  const term = (field: string, value: string) => `${field}:"${encodeURIComponent(value)}"`;
   const clauses: string[] = [];
   if (params.device_name) clauses.push(term('device_name', params.device_name));
   if (params.product_code) clauses.push(term('product_code', params.product_code));

@@ -58,7 +58,7 @@ export default function Sidebar(props?: SidebarProps) {
     const match = document.cookie.split('; ').find((row) => row.startsWith('regula-locale='));
     const cookieLocale = match?.split('=')[1];
     if (cookieLocale && cookieLocale !== locale) setLocale(cookieLocale);
-  }, []);
+  }, [locale]);
 
   // Close project dropdown when clicking outside.
   useEffect(() => {
