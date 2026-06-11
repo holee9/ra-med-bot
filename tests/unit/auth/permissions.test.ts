@@ -4,7 +4,7 @@
 import { PERMISSIONS, type PermissionAction } from '@/lib/auth/permissions';
 import { describe, expect, it } from 'vitest';
 
-// All 16 action strings defined in SPEC REQ-ENTERPRISE-020
+// All 17 action strings defined in SPEC REQ-ENTERPRISE-020
 const EXPECTED_ACTIONS: PermissionAction[] = [
   'consult.create',
   'conversation.view',
@@ -18,6 +18,7 @@ const EXPECTED_ACTIONS: PermissionAction[] = [
   'profile.edit',
   'project.create',
   'project.manage',
+  'auditLogs.view',
   'sources.ingest',
   'templates.edit',
   'rbac.manage',

@@ -19,7 +19,7 @@ export function ChatShell() {
   const currentProjectId = useUIStore((s) => s.currentProjectId);
 
   // Reset draft when user switches project context.
-  // biome-ignore lint/correctness/useExhaustiveDependencies: currentProjectId is an intentional trigger
+  // biome-ignore lint/correctness/useExhaustiveDependencies: currentProjectId is an intentional trigger, setInputValue is a stable useState setter
   useEffect(() => {
     setInputValue('');
   }, [currentProjectId]);
