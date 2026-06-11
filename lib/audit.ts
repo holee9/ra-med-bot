@@ -108,7 +108,13 @@ export type AuditAction =
   | 'predicate_search'
   | 'predicate_comparison_generated'
   // Predicate export (PDF/DOCX) — REQ-PRE-015, audited for traceability:
-  | 'predicate_comparison_exported';
+  | 'predicate_comparison_exported'
+  // CER-001 audit actions — added via 0032_cer_audit_actions.sql (REQ-CER-036~040):
+  | 'cer_created'
+  | 'cer_stage_completed'
+  | 'cer_expert_approved'
+  | 'cer_exported'
+  | 'cer_literature_search';
 
 export interface AuditEvent {
   /** User UUID, or null for system-initiated events. */

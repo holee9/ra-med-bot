@@ -45,7 +45,7 @@ describe('lib/audit.ts (REQ-BREADTH-057) — extended AuditAction type', () => {
     expect(src).toMatch(new RegExp(`'${escaped}'`));
   });
 
-  it('AuditAction type contains exactly 51 values (48 baseline + 3 Predicate actions)', () => {
+  it('AuditAction type contains exactly 56 values (48 baseline + 3 Predicate + 5 CER)', () => {
     const src = readText('lib/audit.ts');
     // Extract the AuditAction type block
     const typeMatch = src.match(/export type AuditAction\s*=\s*([\s\S]*?);/);
@@ -61,10 +61,18 @@ describe('lib/audit.ts (REQ-BREADTH-057) — extended AuditAction type', () => {
     // Phase 8 DocIngest adds 6 document.* / redaction_map.access actions via 0016.
     // Phase 10 Radar adds 3 radar.* actions via 0018_radar.sql.
     // E2E chat.query (0026) + Wave 5 answer.refine (0027) bring the baseline to 48.
-    // SPEC-REGULA-PREDICATE-001 adds predicate_search + predicate_comparison_generated (0031)
-    // + predicate_export_requested (0032 REQ-PRE-015), bringing the total to 51.
-    expect(values).toHaveLength(51);
+    // SPEC-REGULA-PREDICATE-001 adds 3 predicate_* actions (0031, 0032) → 51.
+    // REQ-CER-036~040 adds 5 cer_* actions (0033) → 56.
+    expect(values).toHaveLength(56);
   });
+
+  it.each(['cer_created', 'cer_stage_completed', 'cer_expert_approved', 'cer_exported', 'cer_literature_search'])(
+    'AuditAction type includes CER action: %s (REQ-CER-036~040)',
+    (action) => {
+      const src = readText('lib/audit.ts');
+      expect(src).toMatch(new RegExp(`'${action}'`));
+    }
+  );
 
   it('AuditAction type includes Issue #7 remediation action: conversation.delete', () => {
     const src = readText('lib/audit.ts');
