@@ -13,8 +13,9 @@ import {
 
 export const GET = withPermission(
   'dashboard.view',
-  async (_req, ctx: { params: Promise<{ assessmentId: string }> }, session) => {
-    const { assessmentId } = await ctx.params;
+  async (_req, ctx, session) => {
+    const params = ctx.params ? await ctx.params : {};
+    const assessmentId = (params as { assessmentId?: string }).assessmentId ?? '';
     const orgId = session.user.organizationId;
     if (!orgId) {
       return Response.json({ error: 'Organization context required' }, { status: 400 });
