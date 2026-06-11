@@ -66,13 +66,16 @@ describe('lib/audit.ts (REQ-BREADTH-057) — extended AuditAction type', () => {
     expect(values).toHaveLength(56);
   });
 
-  it.each(['cer_created', 'cer_stage_completed', 'cer_expert_approved', 'cer_exported', 'cer_literature_search'])(
-    'AuditAction type includes CER action: %s (REQ-CER-036~040)',
-    (action) => {
-      const src = readText('lib/audit.ts');
-      expect(src).toMatch(new RegExp(`'${action}'`));
-    }
-  );
+  it.each([
+    'cer_created',
+    'cer_stage_completed',
+    'cer_expert_approved',
+    'cer_exported',
+    'cer_literature_search',
+  ])('AuditAction type includes CER action: %s (REQ-CER-036~040)', (action) => {
+    const src = readText('lib/audit.ts');
+    expect(src).toMatch(new RegExp(`'${action}'`));
+  });
 
   it('AuditAction type includes Issue #7 remediation action: conversation.delete', () => {
     const src = readText('lib/audit.ts');

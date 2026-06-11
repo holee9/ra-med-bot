@@ -61,13 +61,16 @@ describe('0031_cer_audit_actions.sql', () => {
     expect(fs.existsSync(filepath), '0031_cer_audit_actions.sql not found').toBe(true);
   });
 
-  it.each(['cer_created', 'cer_stage_completed', 'cer_expert_approved', 'cer_exported', 'cer_literature_search'])(
-    'adds %s to audit_action enum (REQ-CER-036~040)',
-    (action) => {
-      const sql = readText('migrations/0031_cer_audit_actions.sql');
-      expect(sql).toMatch(new RegExp(`ADD VALUE.*'${action}'`, 'i'));
-    }
-  );
+  it.each([
+    'cer_created',
+    'cer_stage_completed',
+    'cer_expert_approved',
+    'cer_exported',
+    'cer_literature_search',
+  ])('adds %s to audit_action enum (REQ-CER-036~040)', (action) => {
+    const sql = readText('migrations/0031_cer_audit_actions.sql');
+    expect(sql).toMatch(new RegExp(`ADD VALUE.*'${action}'`, 'i'));
+  });
 });
 
 // ---------------------------------------------------------------------------
@@ -89,11 +92,14 @@ describe('lib/db/schema.ts workflowTypeEnum', () => {
 // lib/audit.ts — CER audit actions in AuditAction type
 // ---------------------------------------------------------------------------
 describe('lib/audit.ts CER audit actions (REQ-CER-036~040)', () => {
-  it.each(['cer_created', 'cer_stage_completed', 'cer_expert_approved', 'cer_exported', 'cer_literature_search'])(
-    "AuditAction type includes '%s'",
-    (action) => {
-      const src = readText('lib/audit.ts');
-      expect(src).toMatch(new RegExp(`'${action}'`));
-    }
-  );
+  it.each([
+    'cer_created',
+    'cer_stage_completed',
+    'cer_expert_approved',
+    'cer_exported',
+    'cer_literature_search',
+  ])("AuditAction type includes '%s'", (action) => {
+    const src = readText('lib/audit.ts');
+    expect(src).toMatch(new RegExp(`'${action}'`));
+  });
 });

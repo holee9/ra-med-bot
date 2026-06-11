@@ -1,5 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import { AUDIT_RESPONSE_STEPS } from '../../../lib/workflows/audit-response/steps';
+import { CER_STEPS } from '../../../lib/workflows/cer/steps';
 import { defaultReviewQueue } from '../../../lib/workflows/common/review-queue';
 import { INDICATION_IMPACT_STEPS } from '../../../lib/workflows/indication-impact/steps';
 import { WORKFLOW_REGISTRY } from '../../../lib/workflows/registry';
@@ -11,6 +12,7 @@ describe('Workflow System — cross-workflow validation', () => {
       'submission-drafter': SUBMISSION_DRAFTER_STEPS.length,
       'audit-response': AUDIT_RESPONSE_STEPS.length,
       'indication-impact': INDICATION_IMPACT_STEPS.length,
+      cer: CER_STEPS.length,
     };
 
     for (const entry of WORKFLOW_REGISTRY) {
