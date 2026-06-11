@@ -28,14 +28,16 @@ export function SourceCard({ source }: SourceCardProps) {
   }
 
   return (
-    <button
-      type="button"
+    <div
       data-testid="citation-block"
-      className="flex flex-col gap-2 rounded-lg border border-border-weak bg-surface-soft p-3 transition-all hover:border-border-strong hover:shadow-sm hover:translate-y-[-1px] cursor-pointer w-full text-left"
-      onClick={handleOpen}
+      className="flex flex-col gap-2 rounded-lg border border-border-weak bg-surface-soft p-3 transition-all hover:border-border-strong hover:shadow-sm hover:translate-y-[-1px]"
     >
       {/* Index badge + org label */}
-      <div className="flex items-center justify-between gap-2">
+      <button
+        type="button"
+        className="flex items-center justify-between gap-2 cursor-pointer w-full text-left"
+        onClick={handleOpen}
+      >
         <span className="flex h-5 w-5 shrink-0 items-center justify-center rounded bg-brand-100 font-mono text-[10px] font-semibold text-brand-700">
           {source.citeIndex}
         </span>
@@ -48,15 +50,17 @@ export function SourceCard({ source }: SourceCardProps) {
         <span className={`ml-auto rounded px-1.5 py-0.5 text-[10px] font-medium ${pillStyle}`}>
           {source.type}
         </span>
-      </div>
+      </button>
 
-      {/* Title — 2-line clamp */}
-      <p
+      {/* Title — 2-line clamp (clickable) */}
+      <button
+        type="button"
+        className="line-clamp-2 text-sm font-medium leading-snug text-ink-800 text-left cursor-pointer"
+        onClick={handleOpen}
         data-testid="citation-source-title"
-        className="line-clamp-2 text-sm font-medium leading-snug text-ink-800"
       >
         {source.title}
-      </p>
+      </button>
 
       {/* Year + external link */}
       <div className="flex items-center justify-between">
@@ -68,12 +72,11 @@ export function SourceCard({ source }: SourceCardProps) {
             rel="noopener noreferrer"
             className="ml-auto text-ink-400 hover:text-brand-600 transition-colors"
             aria-label={`Open ${source.title} in new tab`}
-            onClick={(e) => e.stopPropagation()}
           >
             <ExternalLink size={12} />
           </a>
         )}
       </div>
-    </button>
+    </div>
   );
 }
