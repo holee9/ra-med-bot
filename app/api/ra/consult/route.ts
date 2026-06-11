@@ -43,8 +43,8 @@ async function* e2eTestEvents(
     level: isLowConf ? 'low' : 'high',
     score: isLowConf ? 0.3 : 0.9,
     breakdown: isLowConf
-      ? { citationCoverage: 0.38, sourceAgreement: 0.45, sourceRecency: 0.60, retrievalScore: 0.52 }
-      : { citationCoverage: 0.92, sourceAgreement: 0.88, sourceRecency: 0.80, retrievalScore: 0.94 },
+      ? { citationCoverage: 0.38, sourceAgreement: 0.45, sourceRecency: 0.6, retrievalScore: 0.52 }
+      : { citationCoverage: 0.92, sourceAgreement: 0.88, sourceRecency: 0.8, retrievalScore: 0.94 },
   };
 
   if (isLowConf) {
@@ -184,12 +184,15 @@ export const POST = withPermission('consult.create', async (req, _ctx, session) 
 
       if (isE2EMode) {
         // Create a real message row so expert-review FK constraints pass.
-        await db.insert(messages).values({
-          id: messageId,
-          conversationId,
-          role: 'assistant',
-          contentProse: 'E2E test response.',
-        }).onConflictDoNothing();
+        await db
+          .insert(messages)
+          .values({
+            id: messageId,
+            conversationId,
+            role: 'assistant',
+            contentProse: 'E2E test response.',
+          })
+          .onConflictDoNothing();
       }
 
       const eventSource = isE2EMode

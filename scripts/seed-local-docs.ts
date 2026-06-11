@@ -4,8 +4,8 @@
 // Run: pnpm tsx scripts/seed-local-docs.ts
 // Requires: DATABASE_URL in environment.
 
-import { readFileSync, readdirSync, statSync } from 'fs';
-import { join, relative, extname, basename } from 'path';
+import { readFileSync, readdirSync, statSync } from 'node:fs';
+import { basename, extname, join, relative } from 'node:path';
 import { eq } from 'drizzle-orm';
 import { db } from '../lib/db/client';
 import { sourceSections, sources } from '../lib/db/schema';
@@ -22,9 +22,14 @@ interface LocalSource {
   docClass: DocClass;
 }
 
+const RA_PROJECT_PATH =
+  process.env.RA_PROJECT_PATH ?? '/home/abyz-lab/work/workspace-github/holee9/ra-project';
+const MD_PROCESS_PATH =
+  process.env.MD_PROCESS_PATH ?? '/home/abyz-lab/work/workspace-github/holee9/MD-process';
+
 const LOCAL_SOURCES: LocalSource[] = [
   {
-    repoPath: '/home/abyz-lab/work/workspace-github/holee9/ra-project',
+    repoPath: RA_PROJECT_PATH,
     orgLabel: 'Internal',
     title: 'RA Knowledge Base (ra-project)',
     type: 'Internal',
@@ -32,7 +37,7 @@ const LOCAL_SOURCES: LocalSource[] = [
     docClass: DocClass.internal_sop,
   },
   {
-    repoPath: '/home/abyz-lab/work/workspace-github/holee9/MD-process',
+    repoPath: MD_PROCESS_PATH,
     orgLabel: 'Internal',
     title: 'MD Process SOPs (MD-process)',
     type: 'Internal',
@@ -43,13 +48,17 @@ const LOCAL_SOURCES: LocalSource[] = [
 
 // Skip directories that are not useful for RA queries
 const SKIP_DIRS = new Set([
-  'node_modules', '.git', '.github', 'scripts', 'issue-drafts',
+  'node_modules',
+  '.git',
+  '.github',
+  'scripts',
+  'issue-drafts',
   '99_원본자료_업로드저장소',
 ]);
 
 /** Strip null bytes and control characters that postgres rejects. */
 function sanitize(s: string): string {
-  // eslint-disable-next-line no-control-regex
+  // biome-ignore lint/suspicious/noControlCharactersInRegex: intentionally strips postgres-rejected control bytes
   return s.replace(/\x00/g, '').replace(/[\x01-\x08\x0b\x0c\x0e-\x1f]/g, ' ');
 }
 
@@ -64,7 +73,7 @@ function collectMarkdownFiles(dir: string): string[] {
   for (const entry of entries) {
     if (SKIP_DIRS.has(entry)) continue;
     const full = join(dir, entry);
-    let stat;
+    let stat: ReturnType<typeof statSync>;
     try {
       stat = statSync(full);
     } catch {
@@ -144,12 +153,12 @@ async function main(): Promise<void> {
       if (chunks.length === 0) continue;
 
       for (let i = 0; i < chunks.length; i++) {
-        const chunk = chunks[i]!;
+        const chunk = chunks[i];
+        if (!chunk) continue;
         // Anchor: relative path + chunk index (stable, unique per file)
         const anchor = `${relPath}#${i}`;
-        const heading = chunk.metadata.sectionPath !== 'Document'
-          ? chunk.metadata.sectionPath
-          : fileBasename;
+        const heading =
+          chunk.metadata.sectionPath !== 'Document' ? chunk.metadata.sectionPath : fileBasename;
 
         try {
           // Omit embedding — nullable column defaults to NULL in DB (FTS-only mode)
@@ -162,7 +171,7 @@ async function main(): Promise<void> {
           totalInserted++;
         } catch (err) {
           const msg = err instanceof Error ? err.message : String(err);
-          const cause = (err as any)?.cause;
+          const cause = (err as { cause?: { code?: string; constraint_name?: string } })?.cause;
           const isUnique =
             msg.includes('source_sections_source_anchor_idx') ||
             msg.includes('unique constraint') ||

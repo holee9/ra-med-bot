@@ -60,7 +60,9 @@ describe('lib/audit.ts (REQ-BREADTH-057) — extended AuditAction type', () => {
     // Phase 9 adds 10 workflow.* actions via 0013_workflow_audit_actions.sql.
     // Phase 8 DocIngest adds 6 document.* / redaction_map.access actions via 0016.
     // Phase 10 Radar adds 3 radar.* actions via 0018_radar.sql.
-    expect(values).toHaveLength(46);
+    // 0026_chat_query_audit_action.sql adds chat.query (+1 = 47).
+    // 0027_answer_refine_audit_action.sql adds answer.refine (+1 = 48).
+    expect(values).toHaveLength(48);
   });
 
   it('AuditAction type includes Issue #7 remediation action: conversation.delete', () => {

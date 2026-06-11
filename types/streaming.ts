@@ -30,10 +30,10 @@ export interface ProseDeltaEvent {
 
 // SPEC-REGULA-CONFIDENCE-EXPLAIN-001 (REQ-CONFIDENCE-001..004)
 export interface ConfidenceBreakdown {
-  citationCoverage: number;  // 0-1: cited sentences / total sentences
-  sourceAgreement: number;   // 0-1: top-N source agreement score
-  sourceRecency: number;     // 0-1: normalized source recency
-  retrievalScore: number;    // 0-1: top-1 vector similarity
+  citationCoverage: number; // 0-1: cited sentences / total sentences
+  sourceAgreement: number; // 0-1: top-N source agreement score
+  sourceRecency: number; // 0-1: normalized source recency
+  retrievalScore: number; // 0-1: top-1 vector similarity
 }
 
 export interface ConfidenceEvent {

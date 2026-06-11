@@ -22,8 +22,8 @@ import type {
   SourceItem,
   TimelineEvent,
 } from '../../types/streaming';
-import { RefinePanel } from '../refine/RefinePanel';
 import { ExpertReviewCallout } from '../expert-review/ExpertReviewCallout';
+import { RefinePanel } from '../refine/RefinePanel';
 import { Callout } from './Callout';
 import { Checklist } from './Checklist';
 import { ComparisonTable } from './ComparisonTable';
@@ -120,13 +120,17 @@ export function AnswerBlock({
         <ExpertReviewCallout
           conversationId={conversationId}
           messageId={messageId}
-          reason={expertReviewReason ?? '전문가 검토가 필요한 내용입니다. 규제 전문가의 확인 후 결정을 내리시기 바랍니다.'}
+          reason={
+            expertReviewReason ??
+            '전문가 검토가 필요한 내용입니다. 규제 전문가의 확인 후 결정을 내리시기 바랍니다.'
+          }
           score={confidence?.score}
           breakdown={confidence?.breakdown}
         />
       ) : expertReviewRequired ? (
         <Callout variant="expert" title="전문가 검토 필요">
-          {expertReviewReason ?? '전문가 검토가 필요한 내용입니다. 규제 전문가의 확인 후 결정을 내리시기 바랍니다.'}
+          {expertReviewReason ??
+            '전문가 검토가 필요한 내용입니다. 규제 전문가의 확인 후 결정을 내리시기 바랍니다.'}
         </Callout>
       ) : null}
 
