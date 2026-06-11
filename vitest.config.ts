@@ -16,6 +16,10 @@ export default defineConfig({
       'tests/integration/**/*.test.{ts,tsx}',
       'tests/regression/**/*.test.{ts,tsx}',
       '__tests__/**/*.test.{ts,tsx}',
+      // Co-located library tests (e.g. lib/predicate/__tests__) — SPEC-REGULA-PREDICATE-001.
+      'lib/**/__tests__/**/*.test.{ts,tsx}',
+      // Co-located app route tests (e.g. app/api/ra/predicate/__tests__) — SPEC-REGULA-PREDICATE-001.
+      'app/**/__tests__/**/*.test.{ts,tsx}',
       // E2E fixture helpers and globalSetup have vitest unit tests (SPEC-REGULA-E2EFIX-001).
       'tests/e2e/fixtures/**/*.test.{ts,tsx}',
       'playwright/**/*.test.{ts,tsx}',

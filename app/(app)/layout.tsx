@@ -19,6 +19,9 @@ export const metadata: Metadata = {
 export default async function AppLayout({ children }: { children: React.ReactNode }) {
   // T-007: Dynamic import avoids pulling next-auth into test bundles at module init time.
   let showExpertReview = false;
+  // SPEC-REGULA-PREDICATE-001 (REQ-PRE-029): Predicate Search nav is restricted to
+  // RA/Dev/Exec departments. Resolved from the user's department on the session.
+  let showPredicate = false;
   try {
     const { auth } = await import('@/lib/auth');
     const { hasRole } = await import('@/lib/auth/rbac');
@@ -26,6 +29,13 @@ export default async function AppLayout({ children }: { children: React.ReactNod
     const userRole = (session?.user as { role?: string } | undefined)?.role;
     if (userRole) {
       showExpertReview = hasRole(userRole as Parameters<typeof hasRole>[0], 'ra-lead');
+    }
+    const department = (session?.user as { department?: string } | undefined)?.department;
+    if (department) {
+      const { canViewComparisons } = await import('@/lib/auth/predicate-permissions');
+      // canViewComparisons covers RA/Dev/Exec — the departments allowed to see
+      // the Predicate feature in the sidebar.
+      showPredicate = canViewComparisons(department);
     }
     // Issue #111: force password change before any app access.
     const mustChange = (session?.user as { mustChangePassword?: boolean } | undefined)
@@ -40,7 +50,11 @@ export default async function AppLayout({ children }: { children: React.ReactNod
 
   return (
     <div className="flex min-h-screen bg-surface text-ink-700">
-      <Sidebar showExpertReview={showExpertReview} initialLocale={initialLocale} />
+      <Sidebar
+        showExpertReview={showExpertReview}
+        showPredicate={showPredicate}
+        initialLocale={initialLocale}
+      />
       <div className="flex min-w-0 flex-1 flex-col">
         <Topbar />
         <main id="main-content" className="min-w-0 flex-1">

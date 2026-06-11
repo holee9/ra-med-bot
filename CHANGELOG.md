@@ -7,10 +7,29 @@
 
 ---
 
-## [Unreleased]
+## [Unreleased] — Wave 3 (2026-06-04 sync)
+
+> **Sync 상태**: SPEC-REGULA-PREDICATE-001 구현 완료 (PR #126, Fixes #22). TypeScript 0 errors, 테스트 1976개 통과. A12(P95 latency) · A14(UAT)는 프로덕션 배포 후 검증 예정.
 
 ### Added
 
+- **FDA 510(k) Predicate 검색 엔진** (SPEC-REGULA-PREDICATE-001 — Issue #22): Wave 3 핵심 기능. openFDA REST API 기반 3-tier 캐스케이드 검색(device_name → product_code → panel) + Vectorize 재순위화, 5-dimension Claude Haiku LLM 비교표 빌더, Cloudflare KV 캐시(24h TTL).
+  - `lib/predicate/types.ts`: `PredicateCandidate`, `PredicateComparison`, `ComparisonDimension` Zod 스키마
+  - `lib/predicate/openfda-client.ts`: KV 토큰 버킷(240/1000 req/min) + 지수 백오프 + 페이지네이션
+  - `lib/predicate/cache.ts`: Cloudflare KV 캐시 (24h TTL, md5 키, 50건 상한)
+  - `lib/predicate/cascade-search.ts`: 3-tier 캐스케이드 + Vectorize 재순위화
+  - `lib/predicate/comparison-builder.ts`: 5-dimension 비교표 빌더 (Claude Haiku 보조)
+  - `app/api/ra/predicate/search/route.ts`: POST 검색 — RBAC + KV 캐시 + 감사 로그
+  - `app/api/ra/predicate/comparison/route.ts`: POST 생성 + GET 이력 조회
+  - `app/api/ra/predicate/comparison/[id]/approve/route.ts`: PUT 셀 승인
+  - `app/api/ra/predicate/export/route.ts`: PDF(`@react-pdf/renderer`) + DOCX(`docx`) 내보내기
+  - `app/api/admin/predicate/cache/clear/route.ts`: 개발 전용 캐시 초기화
+  - `components/predicate/CandidateCard.tsx`, `ComparisonTable.tsx`, `SubjectDeviceForm.tsx`: UI 컴포넌트 3종
+  - `app/(app)/predicate/`: search / compare / history 페이지 3종
+  - `lib/auth/predicate-permissions.ts`: RBAC 헬퍼 (`canSearchPredicates`, `canManageComparisons` 등)
+  - `lib/db/schema.ts`: `workflow_type` ENUM에 `predicate_comparison` 추가
+  - `lib/audit.ts`: `predicate_search`, `predicate_comparison_generated`, `predicate_export_requested` 감사 액션 추가
+  - `migrations/0029-0032`: ENUM + 인덱스 + 감사 액션 마이그레이션 4건
 - **감사 로그 관리 UI** (`app/admin/audit-logs/page.tsx`): 관리자용 감사 로그 테이블 페이지 신설. `data-testid="audit-log-table"` 포함.
 - **감사 로그 API** (`app/api/audit-logs/route.ts`): `GET /api/audit-logs` 엔드포인트 신설. `auditLogs.view` 권한 검증, limit/offset 페이징.
 - **ExpertReviewCallout 신뢰도 점수 표시** (`components/expert-review/ExpertReviewCallout.tsx`): `score` prop 추가 — 신뢰도 백분율(`data-testid="confidence-score"`) 표시.
@@ -29,6 +48,10 @@
 - **프로덕션 빌드 블로커 3개 수정** (`fix/build`): 빌드 오류 해결.
 - **FDA corpus 시드 스크립트 FTS-only 모드 지원** (`scripts/seed-fda-corpus.ts`).
 - **LocaleToggle ARIA 역할 수정** (`fix/a11y`): `listbox` → `menu/menuitem` 패턴.
+
+### Security
+
+- **Predicate 비교 셀 승인 IDOR 수정** (`app/api/ra/predicate/comparison/[id]/approve/route.ts`): 소유권 검사를 통해 타 사용자의 비교 셀을 승인하는 IDOR 취약점 차단. 요청자 `userId`와 비교 생성자를 대조하여 권한 검증.
 
 ### Refactored
 

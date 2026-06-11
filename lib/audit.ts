@@ -45,7 +45,12 @@ import { auditLogs } from './db/schema';
 // Phase 8 DocIngest values added via 0016_docingest_audit_actions.sql (6):
 //   document.upload, document.access, document.redact,
 //   document.chunk, document.search, redaction_map.access
-// Total: 46 values.
+//
+// Phase 10 Radar (3) via 0018, chat.query (1) via 0026, answer.refine (1) via 0027.
+//
+// SPEC-REGULA-PREDICATE-001 values added via 0031_predicate_audit_actions.sql (2):
+//   predicate_search, predicate_comparison_generated
+// Total: 50 values.
 export type AuditAction =
   | 'llm.call'
   | 'source.access'
@@ -98,7 +103,12 @@ export type AuditAction =
   // E2E test mode audit action — added via 0026_chat_query_audit_action.sql:
   | 'chat.query'
   // Wave 5 Answer Refine — added via 0027_answer_refine_audit_action.sql:
-  | 'answer.refine';
+  | 'answer.refine'
+  // Predicate Comparison — added via 0031_predicate_audit_actions.sql (REQ-PRE-017):
+  | 'predicate_search'
+  | 'predicate_comparison_generated'
+  // Predicate export (PDF/DOCX) — REQ-PRE-015, audited for traceability:
+  | 'predicate_comparison_exported';
 
 export interface AuditEvent {
   /** User UUID, or null for system-initiated events. */

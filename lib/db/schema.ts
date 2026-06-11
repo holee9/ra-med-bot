@@ -149,14 +149,23 @@ export const auditActionEnum = pgEnum('audit_action', [
   'chat.query',
   // Wave 5 Answer Refine — added via 0027_answer_refine_audit_action.sql:
   'answer.refine',
+  // SPEC-REGULA-PREDICATE-001 — added via 0031_predicate_audit_actions.sql (REQ-PRE-017):
+  'predicate_search',
+  'predicate_comparison_generated',
+  // Predicate export (PDF/DOCX) — added via 0032_predicate_export_audit_action.sql (REQ-PRE-015):
+  'predicate_comparison_exported',
 ]);
 
 // REQ-WF-049: workflow_type pgEnum — three Phase 9 workflow kinds.
 // Migration: 0012_workflow_schema.sql
+// REQ-PRE-010: predicate_comparison added via 0029_predicate_workflow_type.sql
+// (SPEC-REGULA-PREDICATE-001). The new value MUST be added in its own migration
+// because Postgres cannot use a freshly added enum value in the same transaction.
 export const workflowTypeEnum = pgEnum('workflow_type', [
   'submission_drafter',
   'audit_response',
   'indication_impact',
+  'predicate_comparison',
 ]);
 
 // REQ-WF-049: workflow_status pgEnum — lifecycle states for workflow_runs.

@@ -33,11 +33,15 @@ const CHAT_LABELS: Record<string, string> = { ko: '채팅', en: 'Chat' };
 
 interface SidebarProps {
   showExpertReview?: boolean;
+  // SPEC-REGULA-PREDICATE-001 (REQ-PRE-029): Predicate Search is visible only to
+  // RA/Dev/Exec departments. Gated server-side and passed down as a prop.
+  showPredicate?: boolean;
   initialLocale?: string;
 }
 
 export default function Sidebar(props?: SidebarProps) {
   const showExpertReview = props?.showExpertReview ?? false;
+  const showPredicate = props?.showPredicate ?? false;
   const currentProjectId = useUIStore((s) => s.currentProjectId);
   const setCurrentProjectId = useUIStore((s) => s.setCurrentProjectId);
   const { data = [] } = useProjects();
@@ -55,7 +59,7 @@ export default function Sidebar(props?: SidebarProps) {
     const match = document.cookie.split('; ').find((row) => row.startsWith('regula-locale='));
     const cookieLocale = match?.split('=')[1];
     if (cookieLocale && cookieLocale !== locale) setLocale(cookieLocale);
-  }, []);
+  }, [locale]);
 
   // Close project dropdown when clicking outside.
   useEffect(() => {
@@ -110,6 +114,19 @@ export default function Sidebar(props?: SidebarProps) {
           );
         })}
       </nav>
+
+      {/* SPEC-REGULA-PREDICATE-001: Predicate Search conditional link (REQ-PRE-029) */}
+      {showPredicate && (
+        <nav className="px-2 py-1">
+          <Link
+            href="/predicate"
+            data-testid="sidebar-predicate-link"
+            className="rounded-md px-3 py-2 text-sm text-ink-700 hover:bg-ink-50 block"
+          >
+            Predicate 검색
+          </Link>
+        </nav>
+      )}
 
       {/* T-007: Expert Review conditional link (REQ-ENTERPRISE-029) */}
       {showExpertReview && (
