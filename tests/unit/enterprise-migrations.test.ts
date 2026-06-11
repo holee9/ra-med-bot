@@ -240,7 +240,7 @@ describe('lib/db/schema.ts Phase 5 additions', () => {
     expect(src).toMatch(/export const projectMembers\s*=/);
   });
 
-  it('auditActionEnum has 46 total values (43 through Phase 9 + 3 Phase 10 Radar actions)', () => {
+  it('auditActionEnum has 48 total values (46 through Phase 10 + chat.query + answer.refine)', () => {
     const src = readText('lib/db/schema.ts');
     // Match the full auditActionEnum declaration (multiline)
     const enumSection = src.match(/export const auditActionEnum\s*=[\s\S]*?(?=\n\/\/|\nexport|$)/);
@@ -252,8 +252,10 @@ describe('lib/db/schema.ts Phase 5 additions', () => {
     // T-013 adds profile.update; Issue #7 remediation adds conversation.delete.
     // Phase 9 adds 10 workflow.* actions via 0013_workflow_audit_actions.sql.
     // Phase 8 DocIngest adds 6 document.* / redaction_map.access actions via 0016.
-    // Phase 10 Radar adds 3 radar.* actions via 0018_radar.sql.
-    expect(values).toHaveLength(46);
+    // Phase 10 Radar adds 3 radar.* actions via 0018_radar.sql (total: 46).
+    // 0026_chat_query_audit_action.sql adds chat.query (+1 = 47).
+    // 0027_answer_refine_audit_action.sql adds answer.refine (+1 = 48).
+    expect(values).toHaveLength(48);
   });
 });
 
@@ -267,7 +269,7 @@ describe('lib/audit.ts Phase 5 AuditAction type additions', () => {
     expect(src).toMatch(new RegExp(`'${escaped}'`));
   });
 
-  it('AuditAction type contains exactly 46 values (43 through Phase 9 + 3 Phase 10 Radar actions)', () => {
+  it('AuditAction type contains exactly 48 values (46 through Phase 10 + chat.query + answer.refine)', () => {
     const src = readText('lib/audit.ts');
     const typeMatch = src.match(/export type AuditAction\s*=\s*([\s\S]*?);/);
     expect(typeMatch, 'AuditAction type not found').toBeTruthy();
@@ -279,8 +281,10 @@ describe('lib/audit.ts Phase 5 AuditAction type additions', () => {
     // T-013 adds profile.update; Issue #7 remediation adds conversation.delete.
     // Phase 9 adds 10 workflow.* actions via 0013_workflow_audit_actions.sql.
     // Phase 8 DocIngest adds 6 document.* / redaction_map.access actions via 0016.
-    // Phase 10 Radar adds 3 radar.* actions via 0018_radar.sql.
-    expect(values).toHaveLength(46);
+    // Phase 10 Radar adds 3 radar.* actions via 0018_radar.sql (total: 46).
+    // 0026_chat_query_audit_action.sql adds chat.query (+1 = 47).
+    // 0027_answer_refine_audit_action.sql adds answer.refine (+1 = 48).
+    expect(values).toHaveLength(48);
   });
 
   it('does NOT include auth.mfa_fail as a union value (removed in v0.3.0 H-5)', () => {
