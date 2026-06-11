@@ -72,7 +72,7 @@ export function PccpWizardForm() {
         <button
           type="button"
           disabled={stepIndex === 0}
-          onClick={() => setCurrentStep(PCCP_STEPS[stepIndex - 1])}
+          onClick={() => setCurrentStep(PCCP_STEPS[stepIndex - 1]!)}
           className="rounded border border-ink-300 px-4 py-2 text-sm text-ink-700 hover:bg-ink-50 disabled:opacity-40"
         >
           Back
@@ -80,7 +80,7 @@ export function PccpWizardForm() {
         <button
           type="button"
           disabled={stepIndex === PCCP_STEPS.length - 1}
-          onClick={() => setCurrentStep(PCCP_STEPS[stepIndex + 1])}
+          onClick={() => setCurrentStep(PCCP_STEPS[stepIndex + 1]!)}
           className="rounded bg-brand-600 px-4 py-2 text-sm font-medium text-white hover:bg-brand-700 disabled:opacity-40"
         >
           Next
