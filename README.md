@@ -11,20 +11,20 @@
 
 ---
 
-## 구현 현황 대시보드 (2026-05-28 KST 기준)
+## 구현 현황 대시보드 (2026-06-11 KST 기준)
 
 상세 점검 기록: [`docs/implementation-status.md`](docs/implementation-status.md)
 
 ### 종합 판단
 
-RAG 파이프라인 E2E 동작이 완전히 복구되었습니다. hybrid search FTS fallback, internal SOPs 컬럼 수정, LLM 공급자 추상화가 완료되어 Ollama/OpenAI/Anthropic 환경 전환이 가능합니다.
+**Wave 3 PREDICATE-001 구현 완료** (`feat/issue-22-predicate`, PR #126). FDA 510(k) Predicate 검색 엔진 — openFDA 3-tier 캐스케이드 검색, 5-dimension LLM 비교표, PDF/DOCX 내보내기, IDOR 수정 완료. TypeScript 0 errors, 1,976 테스트 통과.
 
 | 카테고리 | 상태 | 측정 근거 |
 |---------|------|---------|
-| 구현 기준 | PASS | RAG 파이프라인 E2E 복구 + LLM 공급자 추상화; `drake.lee@abyzr.com` 로컬 검증 완료 |
-| GitHub Actions | PASS | `CI`, `Deploy`, `Security Scan` 모두 success on `fix/issue-116` |
-| 구현 표면 | PASS | 16 pages, 28 API route handlers, 33 component files, 150+ lib files |
-| 테스트 자산 | PASS | 184 test/spec files, 8 Playwright specs |
+| 구현 기준 | PASS | PREDICATE-001 구현 완료 (PR #126, Fixes #22). TypeScript 0 errors, 1,976 테스트 통과 |
+| GitHub Actions | PASS | `CI`, `Deploy`, `Security Scan` 모두 success on `feat/issue-22-predicate` |
+| 구현 표면 | PASS | 19 pages, 33 API route handlers, 36 component files, 200+ lib files |
+| 테스트 자산 | PASS | 200+ test/spec files, 8 Playwright specs (1,976 tests passing) |
 | CI core gates | PASS | typecheck, lint, format, unit, RBAC, audit, tokens, i18n, glossary, contrast, modules, migrations, build |
 | E2E CI | WARN | Playwright jobs success, but `Run E2E tests` skipped because staging URL was missing |
 | RAG 파이프라인 | PASS | hybrid search FTS fallback 동작, 8 citations 정상 반환, LLM 오류 graceful degradation 확인 |
@@ -32,9 +32,31 @@ RAG 파이프라인 E2E 동작이 완전히 복구되었습니다. hybrid search
 | Auth.js DrizzleAdapter | PASS | `emailVerified` 컬럼 추가, TS2322 오류 해결 |
 | 런타임 로컬 검증 | PASS | `.env.local` + 로컬 DB 구동 확인. `dev:bootstrap` 및 `.env.test.example` 제공 |
 | RC 상태 | PASS | `v1.0.0-rc` published, #31 closed |
-| 다음 구현 | OPEN | #22 Wave 3, #112 가입 시 역할 선택 |
+| 다음 구현 | OPEN | #22 완료. 다음: [#23 CER-001](https://github.com/holee9/ra-med-bot/issues/23), [#24 PCCP-001](https://github.com/holee9/ra-med-bot/issues/24) |
 
-### 최신 RAG 파이프라인 복구 수정 (2026-05-28)
+### Wave 3 PREDICATE-001 완료 (2026-06-11)
+
+Issue #22 — FDA 510(k) Predicate Comparator 전체 구현:
+
+| 영역 | 구현 내용 |
+|------|---------|
+| openFDA 검색 | 3-tier 캐스케이드 (device_name → product_code → panel) + KV 토큰 버킷 rate limiting (240/1,000 req/min) |
+| 캐시 | Cloudflare KV 24h TTL, md5 키, 50건 상한 |
+| 비교표 | 5-dimension (기술 특성·의도 사용·안전성·성능·규제 이력) Claude Haiku 자동 평가 |
+| Export | PDF (`@react-pdf/renderer`) + DOCX (`docx`) 이중 포맷, 셀 승인 후 export 잠금 |
+| 보안 | 비교 셀 승인 IDOR 수정 (소유권 검사, REQ-PRED-033) |
+| 페이지 | `/predicate/search`, `/predicate/compare`, `/predicate/history` (3페이지 신규) |
+| API | `/api/ra/predicate/search`, `comparison`, `comparison/[id]/approve`, `export`, `admin/cache/clear` (5 routes) |
+
+검증 결과:
+```
+73 files changed, 6,215 insertions(+), 122 deletions(-)
+1,616 → 1,976 테스트 (+360 tests)
+REQ-PRED-001~038 전체 구현 완료
+TypeScript: 0 errors
+```
+
+### RAG 파이프라인 복구 수정 (2026-05-28)
 
 Issue #116 — RAG 파이프라인 E2E 동작 복구 + LLM 공급자 추상화 + Auth.js v5 호환:
 
@@ -148,9 +170,9 @@ Regula는 의료기기 규제(RA) 도메인에 특화된 AI 전문가 시스템�
 
 ### 타깃 사용자
 
-- **주 사용자**: 개발/QA팀 비RA 전문가 → RA 전문 지식 없이 규제 질의 → 근거 기반 답변
-- **부 사용자**: 사내 RA 리드 → 플래그된 답변 검토, expert review 큐 관리
-- **3차 사용자**: 해외 딜러/컨설턴트 → 특정 시장 규제 명확화 요청
+- **주 사용자**: RA Lead (1~2명) → 규제 문서 자동화, Predicate 분석, CER/PCCP 빌더, Expert Review 게이팅 (전체 기능의 80%+ 담당)
+- **부 사용자**: 개발/QA팀 비RA 전문가 → RA 전문 지식 없이 규제 질의 → 근거 기반 답변
+- **3차 사용자**: 해외 딜러/컨설턴트 → 특정 시장 규제 명확화, 초대된 문서 읽기/코멘트
 
 ---
 
@@ -998,6 +1020,24 @@ pnpm start
 
 ---
 
+### Phase 12: FDA 510(k) Predicate Comparator — Wave 3 ✅ (2026-06-11 완료)
+
+**목표**: openFDA 기반 Predicate 검색 엔진 38 REQ (SPEC-REGULA-PREDICATE-001)
+
+- [x] **3-Tier 캐스케이드 검색** — openFDA device_name → product_code → panel 순서 탐색 + Vectorize 재순위화
+- [x] **KV 토큰 버킷** — 240/1,000 req/min rate limit + 지수 백오프 + 페이지네이션
+- [x] **Cloudflare KV 캐시** — 24h TTL, md5 키, 50건 상한
+- [x] **5-dimension 비교표** — 기술 특성, 의도된 사용, 안전성, 성능, 규제 이력 Claude Haiku 자동 평가
+- [x] **PDF + DOCX export** — `@react-pdf/renderer` + `docx`, 셀 승인 후 export 잠금
+- [x] **IDOR 수정** — 비교 셀 승인 소유권 검사 강화 (REQ-PRED-033)
+
+**성과물**:
+- ✅ 38 REQ 전체 구현 (REQ-PRED-001~038)
+- ✅ PR [#126](https://github.com/holee9/ra-med-bot/pull/126) Fixes [#22](https://github.com/holee9/ra-med-bot/issues/22) — main merge 대기 중
+- ✅ 1,976 tests passing (+360 from baseline 1,616)
+
+---
+
 ## 🚀 1차 RC v1.0.0-rc — 현황 및 실행 계획
 
 > **현재 상태**: ✅ v1.0.0-rc **릴리즈 완료** (2026-05-06). 모든 RC1 SPEC(#32/#33/#34/#97/#105/#31) 완료. [GitHub Release](https://github.com/holee9/ra-med-bot/releases/tag/v1.0.0-rc)
@@ -1386,4 +1426,4 @@ MIT License - [LICENSE](LICENSE) 파일 참조
 
 **Built with ❤️ using [abyz-lab](https://abyz-lab.work)**
 
-_마지막 업데이트: 2026-05-21 (Auth.js v5 Credentials 로그인 수정 — strategy jwt 전환, session callback userId 폴백, image 컬럼 마이그레이션, T3610 개발 환경 setup 스크립트 추가)_
+_마지막 업데이트: 2026-06-11 (Wave 3 PREDICATE-001 완료 — FDA 510(k) Predicate 검색 엔진, 5-dimension 비교표, PDF/DOCX export, IDOR 수정. 제품 헌장 `.moai/specs/CHARTER.md` 추가. 주 사용자 RA Lead로 정정)_
