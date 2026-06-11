@@ -50,7 +50,9 @@ import { auditLogs } from './db/schema';
 //
 // SPEC-REGULA-PREDICATE-001 values added via 0031_predicate_audit_actions.sql (2):
 //   predicate_search, predicate_comparison_generated
-// Total: 50 values.
+// SPEC-REGULA-IMPACT-001 values added via 0034_impact_audit_actions.sql (3):
+//   impact.assessment_created, impact.critical_detected, impact.action_item_created
+// Total: 54 values.
 export type AuditAction =
   | 'llm.call'
   | 'source.access'
@@ -108,7 +110,11 @@ export type AuditAction =
   | 'predicate_search'
   | 'predicate_comparison_generated'
   // Predicate export (PDF/DOCX) — REQ-PRE-015, audited for traceability:
-  | 'predicate_comparison_exported';
+  | 'predicate_comparison_exported'
+  // SPEC-REGULA-IMPACT-001 — impact analysis events via 0034_impact_audit_actions.sql:
+  | 'impact.assessment_created'
+  | 'impact.critical_detected'
+  | 'impact.action_item_created';
 
 export interface AuditEvent {
   /** User UUID, or null for system-initiated events. */
