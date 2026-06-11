@@ -154,6 +154,12 @@ export const auditActionEnum = pgEnum('audit_action', [
   'predicate_comparison_generated',
   // Predicate export (PDF/DOCX) — added via 0032_predicate_export_audit_action.sql (REQ-PRE-015):
   'predicate_comparison_exported',
+  // PCCP audit actions — added via 0035_pccp_audit_actions.sql (REQ-PCCP-021~023, 015, 024):
+  'pccp_created',
+  'pccp_component_completed',
+  'pccp_expert_approved',
+  'pccp_algorithm_change_triggered',
+  'pccp_status_changed',
 ]);
 
 // REQ-WF-049: workflow_type pgEnum — three Phase 9 workflow kinds.
@@ -161,11 +167,13 @@ export const auditActionEnum = pgEnum('audit_action', [
 // REQ-PRE-010: predicate_comparison added via 0029_predicate_workflow_type.sql
 // (SPEC-REGULA-PREDICATE-001). The new value MUST be added in its own migration
 // because Postgres cannot use a freshly added enum value in the same transaction.
+// REQ-PCCP-025: 'pccp' added via 0033_pccp_workflow_type.sql (SPEC-REGULA-PCCP-001).
 export const workflowTypeEnum = pgEnum('workflow_type', [
   'submission_drafter',
   'audit_response',
   'indication_impact',
   'predicate_comparison',
+  'pccp',
 ]);
 
 // REQ-WF-049: workflow_status pgEnum — lifecycle states for workflow_runs.
@@ -586,6 +594,47 @@ export const verificationTokens = pgTable(
   },
   (t) => ({
     pk: primaryKey({ columns: [t.identifier, t.token] }),
+  }),
+);
+
+// SPEC-REGULA-PCCP-001 — PCCP version and component tables.
+// REQ-PCCP-010: pccp_versions — one PCCP document per device, versioned lifecycle.
+// REQ-PCCP-022: pccp_components — per-component content and completion tracking.
+// Migration: 0034_pccp_tables.sql
+// AC-9: at most one active PCCP per device — enforced by partial UNIQUE INDEX in migration.
+export const pccpVersions = pgTable('pccp_versions', {
+  id: uuid('id').defaultRandom().primaryKey(),
+  deviceId: uuid('device_id').notNull(),
+  version: text('version').notNull().default('1.0'),
+  // status CHECK: 'draft' | 'submitted' | 'cleared' | 'superseded' (REQ-PCCP-024)
+  status: text('status').notNull().default('draft'),
+  active: boolean('active').notNull().default(true),
+  baselineSnapshotJsonb: jsonb('baseline_snapshot_jsonb'),
+  parentWorkflowId: uuid('parent_workflow_id'),
+  deviceName: text('device_name').notNull(),
+  manufacturer: text('manufacturer').notNull(),
+  indication: text('indication'),
+  createdBy: uuid('created_by').notNull(),
+  createdAt: timestamp('created_at', { withTimezone: true, mode: 'date' }).notNull().defaultNow(),
+  updatedAt: timestamp('updated_at', { withTimezone: true, mode: 'date' }).notNull().defaultNow(),
+});
+
+export const pccpComponents = pgTable(
+  'pccp_components',
+  {
+    id: uuid('id').defaultRandom().primaryKey(),
+    pccpVersionId: uuid('pccp_version_id')
+      .notNull()
+      .references(() => pccpVersions.id, { onDelete: 'cascade' }),
+    // componentType CHECK: 'modification_description'|'sps'|'acp'|'impact_assessment'|'performance_testing'
+    componentType: text('component_type').notNull(),
+    contentJsonb: jsonb('content_jsonb').notNull().default({}),
+    completedAt: timestamp('completed_at', { withTimezone: true, mode: 'date' }),
+    createdAt: timestamp('created_at', { withTimezone: true, mode: 'date' }).notNull().defaultNow(),
+    updatedAt: timestamp('updated_at', { withTimezone: true, mode: 'date' }).notNull().defaultNow(),
+  },
+  (t) => ({
+    uniqueVersionComponent: unique().on(t.pccpVersionId, t.componentType),
   }),
 );
 

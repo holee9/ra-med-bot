@@ -2,8 +2,8 @@ import { describe, expect, it } from 'vitest';
 import { WORKFLOW_REGISTRY } from '../../../lib/workflows/registry';
 
 describe('WORKFLOW_REGISTRY', () => {
-  it('has 3 entries', () => {
-    expect(WORKFLOW_REGISTRY).toHaveLength(3);
+  it('has 4 entries', () => {
+    expect(WORKFLOW_REGISTRY).toHaveLength(4);
   });
 
   it('each entry has required fields', () => {
@@ -37,5 +37,11 @@ describe('WORKFLOW_REGISTRY', () => {
     const workflow = WORKFLOW_REGISTRY.find((w) => w.id === 'indication-impact');
     expect(workflow).toBeDefined();
     expect(workflow?.stepCount).toBe(6);
+  });
+
+  it('pccp has 4 steps', () => {
+    const workflow = WORKFLOW_REGISTRY.find((w) => w.id === 'pccp');
+    expect(workflow).toBeDefined();
+    expect(workflow?.stepCount).toBe(4);
   });
 });

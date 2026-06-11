@@ -2,6 +2,7 @@ import { describe, expect, it } from 'vitest';
 import { AUDIT_RESPONSE_STEPS } from '../../../lib/workflows/audit-response/steps';
 import { defaultReviewQueue } from '../../../lib/workflows/common/review-queue';
 import { INDICATION_IMPACT_STEPS } from '../../../lib/workflows/indication-impact/steps';
+import { PCCP_STEPS } from '../../../lib/workflows/pccp/steps';
 import { WORKFLOW_REGISTRY } from '../../../lib/workflows/registry';
 import { SUBMISSION_DRAFTER_STEPS } from '../../../lib/workflows/submission-drafter/steps';
 
@@ -11,6 +12,7 @@ describe('Workflow System — cross-workflow validation', () => {
       'submission-drafter': SUBMISSION_DRAFTER_STEPS.length,
       'audit-response': AUDIT_RESPONSE_STEPS.length,
       'indication-impact': INDICATION_IMPACT_STEPS.length,
+      pccp: PCCP_STEPS.length,
     };
 
     for (const entry of WORKFLOW_REGISTRY) {
@@ -20,10 +22,14 @@ describe('Workflow System — cross-workflow validation', () => {
     }
   });
 
-  it('all workflows have exactly 6 steps', () => {
+  it('SUBMISSION_DRAFTER, AUDIT_RESPONSE, INDICATION_IMPACT have exactly 6 steps', () => {
     expect(SUBMISSION_DRAFTER_STEPS).toHaveLength(6);
     expect(AUDIT_RESPONSE_STEPS).toHaveLength(6);
     expect(INDICATION_IMPACT_STEPS).toHaveLength(6);
+  });
+
+  it('PCCP_STEPS has exactly 4 steps', () => {
+    expect(PCCP_STEPS).toHaveLength(4);
   });
 
   it('workflow type strings match registry ids', () => {
@@ -31,6 +37,7 @@ describe('Workflow System — cross-workflow validation', () => {
     expect(registryIds).toContain('submission-drafter');
     expect(registryIds).toContain('audit-response');
     expect(registryIds).toContain('indication-impact');
+    expect(registryIds).toContain('pccp');
   });
 
   it('review-queue singleton is consistent', () => {

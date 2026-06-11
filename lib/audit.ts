@@ -108,7 +108,13 @@ export type AuditAction =
   | 'predicate_search'
   | 'predicate_comparison_generated'
   // Predicate export (PDF/DOCX) — REQ-PRE-015, audited for traceability:
-  | 'predicate_comparison_exported';
+  | 'predicate_comparison_exported'
+  // PCCP audit actions — added via 0035_pccp_audit_actions.sql (REQ-PCCP-021~023, 015, 024):
+  | 'pccp_created'
+  | 'pccp_component_completed'
+  | 'pccp_expert_approved'
+  | 'pccp_algorithm_change_triggered'
+  | 'pccp_status_changed';
 
 export interface AuditEvent {
   /** User UUID, or null for system-initiated events. */
