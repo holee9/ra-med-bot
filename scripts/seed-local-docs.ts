@@ -22,9 +22,14 @@ interface LocalSource {
   docClass: DocClass;
 }
 
+const RA_PROJECT_PATH =
+  process.env.RA_PROJECT_PATH ?? '/home/abyz-lab/work/workspace-github/holee9/ra-project';
+const MD_PROCESS_PATH =
+  process.env.MD_PROCESS_PATH ?? '/home/abyz-lab/work/workspace-github/holee9/MD-process';
+
 const LOCAL_SOURCES: LocalSource[] = [
   {
-    repoPath: '/home/abyz-lab/work/workspace-github/holee9/ra-project',
+    repoPath: RA_PROJECT_PATH,
     orgLabel: 'Internal',
     title: 'RA Knowledge Base (ra-project)',
     type: 'Internal',
@@ -32,7 +37,7 @@ const LOCAL_SOURCES: LocalSource[] = [
     docClass: DocClass.internal_sop,
   },
   {
-    repoPath: '/home/abyz-lab/work/workspace-github/holee9/MD-process',
+    repoPath: MD_PROCESS_PATH,
     orgLabel: 'Internal',
     title: 'MD Process SOPs (MD-process)',
     type: 'Internal',
