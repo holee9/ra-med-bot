@@ -26,12 +26,7 @@ interface BreakdownBarProps {
 
 function BreakdownBar({ label, value, testId }: BreakdownBarProps) {
   const pct = Math.round(value * 100);
-  const color =
-    value >= 0.7
-      ? 'bg-green-400'
-      : value >= 0.5
-        ? 'bg-yellow-400'
-        : 'bg-red-400';
+  const color = value >= 0.7 ? 'bg-green-400' : value >= 0.5 ? 'bg-yellow-400' : 'bg-red-400';
 
   return (
     <div className="flex items-center gap-2" data-testid={testId}>
@@ -82,10 +77,7 @@ export function ExpertReviewCallout({
       <p className="mb-1 font-semibold text-accent-800">이 답변은 전문가 검토가 필요합니다</p>
       {score !== undefined && (
         <div className="mb-1 flex items-center gap-2">
-          <p
-            data-testid="confidence-score"
-            className="text-xs text-accent-600"
-          >
+          <p data-testid="confidence-score" className="text-xs text-accent-600">
             신뢰도 {Math.round(score * 100)}%
           </p>
           {breakdown && (

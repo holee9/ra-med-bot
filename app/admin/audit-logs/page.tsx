@@ -1,11 +1,11 @@
 // @MX:NOTE [AUTO] Audit log admin page — displays audit trail for ra-lead+ users.
 // @MX:SPEC SPEC-REGULA-ENTERPRISE-001 (REQ-ENTERPRISE-020)
 
-import { redirect } from 'next/navigation';
 import { auth } from '@/lib/auth';
 import { db } from '@/lib/db/client';
 import { auditLogs } from '@/lib/db/schema';
 import { desc } from 'drizzle-orm';
+import { redirect } from 'next/navigation';
 
 export default async function AuditLogsPage() {
   const session = await auth();
@@ -27,7 +27,10 @@ export default async function AuditLogsPage() {
   return (
     <main className="p-6">
       <h1 className="mb-4 text-2xl font-bold text-ink-900">감사 로그</h1>
-      <div data-testid="audit-log-table" className="overflow-x-auto rounded-lg border border-border-weak">
+      <div
+        data-testid="audit-log-table"
+        className="overflow-x-auto rounded-lg border border-border-weak"
+      >
         <table className="min-w-full text-sm">
           <thead className="bg-surface-soft">
             <tr>

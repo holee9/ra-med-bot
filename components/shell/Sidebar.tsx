@@ -50,6 +50,7 @@ export default function Sidebar(props?: SidebarProps) {
   const dropdownRef = useRef<HTMLDetailsElement>(null);
 
   // Sync locale from cookie after client-side navigation (SPA transitions without full reload).
+  // biome-ignore lint/correctness/useExhaustiveDependencies: intentional mount-only effect for locale hydration
   useEffect(() => {
     const match = document.cookie.split('; ').find((row) => row.startsWith('regula-locale='));
     const cookieLocale = match?.split('=')[1];

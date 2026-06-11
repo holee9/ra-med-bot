@@ -10,9 +10,21 @@ import { useState } from 'react';
 type Tone = 'conservative' | 'regulatory-strict' | 'executive-summary' | 'technical-detail';
 
 const TONE_OPTIONS: { value: Tone; label: string; description: string }[] = [
-  { value: 'conservative', label: '보수적 / 안전 우선', description: '규제 리스크 최소화, 신중한 표현 사용' },
-  { value: 'regulatory-strict', label: '규제 엄격', description: 'FDA·EU MDR 조항 인용 강화, 정확한 법률 용어 사용' },
-  { value: 'executive-summary', label: '경영 요약', description: '핵심 결론 우선, 기술 세부사항 제거' },
+  {
+    value: 'conservative',
+    label: '보수적 / 안전 우선',
+    description: '규제 리스크 최소화, 신중한 표현 사용',
+  },
+  {
+    value: 'regulatory-strict',
+    label: '규제 엄격',
+    description: 'FDA·EU MDR 조항 인용 강화, 정확한 법률 용어 사용',
+  },
+  {
+    value: 'executive-summary',
+    label: '경영 요약',
+    description: '핵심 결론 우선, 기술 세부사항 제거',
+  },
   { value: 'technical-detail', label: '기술 상세', description: '구현 가이드·표준 요건 전면 포함' },
 ];
 

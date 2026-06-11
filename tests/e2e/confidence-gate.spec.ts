@@ -77,7 +77,9 @@ test.describe('Confidence gate (REQ-LAUNCH-017)', () => {
     await expect(toggle).toBeVisible();
   });
 
-  test('clicking breakdown toggle shows confidence components (REQ-CONFIDENCE-002)', async ({ page }) => {
+  test('clicking breakdown toggle shows confidence components (REQ-CONFIDENCE-002)', async ({
+    page,
+  }) => {
     const composer = page.locator('[data-testid="chat-composer"]');
     await composer.fill('__test:low_confidence__');
     await page.keyboard.press('Enter');

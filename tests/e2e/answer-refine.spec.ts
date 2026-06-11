@@ -25,7 +25,9 @@ test.describe('Answer Refine (SPEC-REGULA-ANSWER-REFINE-001)', () => {
     await expect(refineBtn).toBeVisible();
   });
 
-  test('clicking refine button opens tone selector popover (REQ-ANSWER-REFINE-001)', async ({ page }) => {
+  test('clicking refine button opens tone selector popover (REQ-ANSWER-REFINE-001)', async ({
+    page,
+  }) => {
     await page.locator('[data-testid="refine-btn"]').click();
 
     const popover = page.locator('[data-testid="refine-popover"]');
@@ -38,7 +40,9 @@ test.describe('Answer Refine (SPEC-REGULA-ANSWER-REFINE-001)', () => {
     await expect(popover.locator('[data-testid="tone-option-technical-detail"]')).toBeVisible();
   });
 
-  test('selecting a tone refines and replaces the prose (REQ-ANSWER-REFINE-002)', async ({ page }) => {
+  test('selecting a tone refines and replaces the prose (REQ-ANSWER-REFINE-002)', async ({
+    page,
+  }) => {
     const prose = page.locator('[data-testid="answer-prose"]');
     const originalText = await prose.innerText();
 

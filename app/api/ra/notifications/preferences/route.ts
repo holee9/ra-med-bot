@@ -57,7 +57,10 @@ export const PATCH = withPermission('profile.edit', async (req, _ctx, session) =
 
   const parsed = PatchSchema.safeParse(body);
   if (!parsed.success) {
-    return Response.json({ error: 'Validation failed', issues: parsed.error.issues }, { status: 400 });
+    return Response.json(
+      { error: 'Validation failed', issues: parsed.error.issues },
+      { status: 400 },
+    );
   }
 
   // Fetch current prefs.
@@ -73,13 +76,13 @@ export const PATCH = withPermission('profile.edit', async (req, _ctx, session) =
 
   for (const [event, channels] of Object.entries(parsed.data.preferences)) {
     const cur = (updated[event as keyof NotificationPreferences] as Record<string, boolean>) ?? {};
-    updated[event as keyof NotificationPreferences] = { ...cur, ...channels } as typeof DEFAULT_PREFS[keyof typeof DEFAULT_PREFS];
+    updated[event as keyof NotificationPreferences] = {
+      ...cur,
+      ...channels,
+    } as (typeof DEFAULT_PREFS)[keyof typeof DEFAULT_PREFS];
   }
 
-  await db
-    .update(users)
-    .set({ notificationPref: updated })
-    .where(eq(users.id, session.user.id));
+  await db.update(users).set({ notificationPref: updated }).where(eq(users.id, session.user.id));
 
   return Response.json({ preferences: { ...DEFAULT_PREFS, ...updated } });
 });

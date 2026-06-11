@@ -38,7 +38,7 @@ test.describe('Audit log — 21 CFR Part 11 (REQ-LAUNCH-020)', () => {
     expect(recent.length).toBeGreaterThanOrEqual(1);
   });
 
-  test('audit log entry contains required 21 CFR Part 11 fields', async ({ page, request }) => {
+  test('audit log entry contains required 21 CFR Part 11 fields', async ({ request }) => {
     const server = requiresLiveServer();
     const auth = requiresAuthState();
     test.skip(server.skip, server.reason);
