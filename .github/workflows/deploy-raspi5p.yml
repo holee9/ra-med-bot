@@ -32,6 +32,16 @@ jobs:
             echo "::notice::raspi5p SSH secrets not configured; skipping deploy."
           fi
 
+      # Connect runner to Tailscale so it can reach raspi5p via private network.
+      # Requires TAILSCALE_AUTHKEY secret (ephemeral, tag:ci key recommended).
+      - name: Connect to Tailscale
+        if: steps.creds.outputs.enabled == 'true' && secrets.TAILSCALE_AUTHKEY != ''
+        uses: tailscale/github-action@v3
+        with:
+          authkey: ${{ secrets.TAILSCALE_AUTHKEY }}
+          tags: tag:ci
+          version: latest
+
       - name: Deploy via SSH
         if: steps.creds.outputs.enabled == 'true'
         uses: appleboy/ssh-action@v1.0.3
