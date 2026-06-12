@@ -901,3 +901,31 @@ export const standardsApplicability = pgTable(
     uniqueMapping: unique().on(t.deviceTypeKey, t.standardId, t.regulatoryPathway),
   }),
 );
+
+// SPEC-REGULA-CLASSIFY-001 — device classification results.
+// Migration: 0050_device_classifications.sql
+export const deviceClassifications = pgTable('device_classifications', {
+  id: uuid('id').defaultRandom().primaryKey(),
+  orgId: uuid('org_id').notNull().references(() => organizations.id, { onDelete: 'cascade' }),
+  userId: uuid('user_id').notNull().references(() => users.id),
+  deviceDescription: text('device_description').notNull(),
+  // deviceType CHECK: 'active'|'non_active'|'software_only'|'ivd'|'implantable'
+  deviceType: text('device_type').notNull(),
+  // contactType CHECK: 'no_contact'|'external'|'internal'|'implant'
+  contactType: text('contact_type').notNull(),
+  hasSoftware: boolean('has_software').notNull().default(false),
+  hasAiMl: boolean('has_ai_ml').notNull().default(false),
+  isSterile: boolean('is_sterile').notNull().default(false),
+  fdaClass: text('fda_class'),
+  fdaPathway: text('fda_pathway'),
+  fdaProductCode: text('fda_product_code'),
+  fdaRegulationNumber: text('fda_regulation_number'),
+  euClass: text('eu_class'),
+  euPathway: text('eu_pathway'),
+  euRule: text('eu_rule'),
+  mfdsClass: text('mfds_class'),
+  nmpaClass: text('nmpa_class'),
+  pmdaClass: text('pmda_class'),
+  classificationRationale: jsonb('classification_rationale').notNull().default({}),
+  createdAt: timestamp('created_at', { withTimezone: true, mode: 'date' }).notNull().defaultNow(),
+});
