@@ -4,6 +4,10 @@ export const WorkflowTypeSchema = z.enum([
   'submission_drafter',
   'audit_response',
   'indication_impact',
+  // REQ-CER-012 (SPEC-REGULA-CER-001)
+  'cer',
+  // SPEC-REGULA-PCCP-001 (REQ-PCCP-025)
+  'pccp',
 ]);
 export type WorkflowType = z.infer<typeof WorkflowTypeSchema>;
 
@@ -74,6 +78,25 @@ export const CerExportSchema = z.object({
   stageContent: z.record(z.string(), z.string()).optional(),
 });
 export type CerExportInput = z.infer<typeof CerExportSchema>;
+
+// REQ-PCCP-001: PCCP workflow input (SPEC-REGULA-PCCP-001)
+export const PccpInputSchema = z.object({
+  device_id: z.string().uuid(),
+  device_name: z.string().min(3).max(255),
+  manufacturer: z.string().min(3).max(255),
+  indication: z.string().max(1000).optional(),
+  version: z.string().max(50).default('1.0'),
+  project_id: z.string().uuid(),
+});
+export type PccpInput = z.infer<typeof PccpInputSchema>;
+
+// REQ-PCCP-015: PCCP export schema
+export const PccpExportSchema = z.object({
+  pccp_version_id: z.string().uuid(),
+  format: z.enum(['docx', 'pdf']),
+  include_draft_watermark: z.boolean().default(true),
+});
+export type PccpExport = z.infer<typeof PccpExportSchema>;
 
 // Workflow trigger response (202 Accepted)
 export const WorkflowTriggerResponseSchema = z.object({

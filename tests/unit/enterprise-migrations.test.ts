@@ -240,7 +240,7 @@ describe('lib/db/schema.ts Phase 5 additions', () => {
     expect(src).toMatch(/export const projectMembers\s*=/);
   });
 
-  it('auditActionEnum has 59 total values (48 baseline + 3 Predicate + 5 CER + 3 Impact)', () => {
+  it('auditActionEnum has 64 total values (48 baseline + 3 Predicate + 5 CER + 3 Impact + 5 PCCP)', () => {
     const src = readText('lib/db/schema.ts');
     // Match the full auditActionEnum declaration (multiline)
     const enumSection = src.match(/export const auditActionEnum\s*=[\s\S]*?(?=\n\/\/|\nexport|$)/);
@@ -252,10 +252,12 @@ describe('lib/db/schema.ts Phase 5 additions', () => {
     // Phase 9 (+10), Phase 8 DocIngest (+6), Phase 10 Radar (+3), chat.query (0026),
     // answer.refine (0027) bring the baseline to 48. SPEC-REGULA-PREDICATE-001 adds
     // predicate_search + predicate_comparison_generated + predicate_comparison_exported (0031,0032) → 51.
-    // REQ-CER-036~040 adds 5 cer_* actions (0035) → 56.
+    // REQ-CER-036~040 adds 5 cer_* actions (0037) → 56.
     // SPEC-REGULA-IMPACT-001 adds impact.assessment_created, impact.critical_detected,
-    // impact.action_item_created (0034) → 59.
-    expect(values).toHaveLength(59);
+    // impact.action_item_created (0036) → 59.
+    // SPEC-REGULA-PCCP-001 adds pccp_created, pccp_component_completed, pccp_expert_approved,
+    // pccp_algorithm_change_triggered, pccp_status_changed (0040) → 64 total.
+    expect(values).toHaveLength(64);
   });
 });
 
@@ -269,7 +271,7 @@ describe('lib/audit.ts Phase 5 AuditAction type additions', () => {
     expect(src).toMatch(new RegExp(`'${escaped}'`));
   });
 
-  it('AuditAction type contains exactly 59 values (48 baseline + 3 Predicate + 5 CER + 3 Impact)', () => {
+  it('AuditAction type contains exactly 64 values (48 baseline + 3 Predicate + 5 CER + 3 Impact + 5 PCCP)', () => {
     const src = readText('lib/audit.ts');
     const typeMatch = src.match(/export type AuditAction\s*=\s*([\s\S]*?);/);
     expect(typeMatch, 'AuditAction type not found').toBeTruthy();
@@ -281,10 +283,11 @@ describe('lib/audit.ts Phase 5 AuditAction type additions', () => {
     // Phase 9 (+10), Phase 8 DocIngest (+6), Phase 10 Radar (+3), chat.query (0026),
     // answer.refine (0027) bring the baseline to 48. SPEC-REGULA-PREDICATE-001 adds
     // predicate_search + predicate_comparison_generated + predicate_comparison_exported (0031,0032) → 51.
-    // REQ-CER-036~040 adds 5 cer_* actions (0035) → 56.
+    // REQ-CER-036~040 adds 5 cer_* actions (0037) → 56.
     // SPEC-REGULA-IMPACT-001 adds impact.assessment_created, impact.critical_detected,
-    // impact.action_item_created (0034) → 59.
-    expect(values).toHaveLength(59);
+    // impact.action_item_created (0036) → 59.
+    // SPEC-REGULA-PCCP-001 adds 5 pccp_* actions (0040) → 64 total.
+    expect(values).toHaveLength(64);
   });
 
   it('does NOT include auth.mfa_fail as a union value (removed in v0.3.0 H-5)', () => {

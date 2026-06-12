@@ -39,4 +39,12 @@ export const WORKFLOW_REGISTRY: WorkflowEntry[] = [
     stepCount: 10,
     href: '/workflows/cer',
   },
+  // SPEC-REGULA-PCCP-001 (REQ-PCCP-025): PCCP workflow entry
+  {
+    id: 'pccp',
+    title: 'PCCP Builder',
+    description: 'Predetermined Change Control Plan (FDA AI/ML Final Guidance 2024)',
+    stepCount: 4,
+    href: '/workflows/pccp',
+  },
 ];
