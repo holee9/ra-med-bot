@@ -140,7 +140,10 @@ export type AuditAction =
   | 'standards_gap_analyzed'
   | 'standards_compliance_updated'
   // SPEC-REGULA-CLASSIFY-001 — classification audit actions via 0051_classification_audit_actions.sql:
-  | 'device_classified';
+  | 'device_classified'
+  // SPEC-REGULA-DIGEST-001 — digest audit actions via 0053_digest_audit_actions.sql:
+  | 'digest_generated'
+  | 'digest_emailed';
 
 export interface AuditEvent {
   /** User UUID, or null for system-initiated events. */
