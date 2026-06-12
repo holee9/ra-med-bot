@@ -96,7 +96,7 @@ export const userDepartmentEnum = pgEnum('user_department', ['RA', 'Dev', 'Exec'
 // Phase 9 Workflows: +10 via 0013_workflow_audit_actions.sql.
 // Phase 8 DocIngest: +6 via 0016_docingest_audit_actions.sql.
 // Phase 10 Radar: +3 via 0018_radar.sql. chat.query: +1. answer.refine: +1. Total: 48.
-// CER-001: +5 via 0031_cer_audit_actions.sql. Total: 53. (REQ-CER-036~040)
+// CER-001: +5 via 0035_cer_audit_actions.sql. Total: 53. (REQ-CER-036~040)
 // NOTE: auth.mfa_fail is NOT included (removed in v0.3.0 H-5).
 export const auditActionEnum = pgEnum('audit_action', [
   'llm.call',
@@ -155,7 +155,7 @@ export const auditActionEnum = pgEnum('audit_action', [
   'predicate_comparison_generated',
   // Predicate export (PDF/DOCX) — added via 0032_predicate_export_audit_action.sql (REQ-PRE-015):
   'predicate_comparison_exported',
-  // CER-001 audit actions — added via 0033_cer_audit_actions.sql (REQ-CER-036~040):
+  // CER-001 audit actions — added via 0035_cer_audit_actions.sql (REQ-CER-036~040):
   'cer_created',
   'cer_stage_completed',
   'cer_expert_approved',
@@ -167,7 +167,7 @@ export const auditActionEnum = pgEnum('audit_action', [
 // Migration: 0012_workflow_schema.sql
 // REQ-PRE-010: predicate_comparison added via 0029_predicate_workflow_type.sql
 // (SPEC-REGULA-PREDICATE-001). Enum values must each be in their own migration.
-// REQ-CER-012: cer added via 0030_cer_workflow_type.sql.
+// REQ-CER-012: cer added via 0033_cer_workflow_type.sql.
 export const workflowTypeEnum = pgEnum('workflow_type', [
   'submission_drafter',
   'audit_response',
