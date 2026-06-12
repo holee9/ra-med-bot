@@ -138,7 +138,9 @@ export type AuditAction =
   // SPEC-REGULA-STANDARDS-001 — standards tracker audit actions via 0048_standards_applicability.sql:
   | 'standards_searched'
   | 'standards_gap_analyzed'
-  | 'standards_compliance_updated';
+  | 'standards_compliance_updated'
+  // SPEC-REGULA-CLASSIFY-001 — classification audit actions via 0051_classification_audit_actions.sql:
+  | 'device_classified';
 
 export interface AuditEvent {
   /** User UUID, or null for system-initiated events. */
