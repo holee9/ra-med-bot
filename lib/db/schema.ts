@@ -20,6 +20,7 @@
 // does not yet ship a native vector helper. See migrations/0000_init.sql for
 // the matching `CREATE EXTENSION vector;` statement.
 
+import { sql } from 'drizzle-orm';
 import {
   boolean,
   customType,
@@ -181,6 +182,10 @@ export const auditActionEnum = pgEnum('audit_action', [
   // SPEC-REGULA-DIGEST-001 — added via 0053_digest_audit_actions.sql:
   'digest_generated',
   'digest_emailed',
+  // SPEC-REGULA-SAMD-001 — added via 0054_samd_assessments.sql (3):
+  'samd_assessment_created',
+  'samd_assessment_updated',
+  'samd_review_approved',
 ]);
 
 // REQ-WF-049: workflow_type pgEnum — workflow kinds.
@@ -939,6 +944,47 @@ export const standardsApplicability = pgTable(
     uniqueMapping: unique().on(t.deviceTypeKey, t.standardId, t.regulatoryPathway),
   }),
 );
+
+// SPEC-REGULA-SAMD-001 — AI/ML SaMD regulatory pathway assessments.
+// Migration: 0054_samd_assessments.sql
+export const samdAssessments = pgTable('samd_assessments', {
+  id: text('id').primaryKey().default(sql`gen_random_uuid()::text`),
+  orgId: text('org_id')
+    .notNull()
+    .references(() => organizations.id, { onDelete: 'cascade' }),
+  projectId: text('project_id'),
+  title: text('title').notNull(),
+  deviceDescription: text('device_description').notNull(),
+  intendedUse: text('intended_use').notNull(),
+  // aiMlType CHECK: 'locked'|'adaptive'|'continuously_learning'
+  aiMlType: text('ai_ml_type').notNull(),
+  // imdrfClinicalSituation CHECK: 'critical'|'serious'|'non_serious'
+  imdrfClinicalSituation: text('imdrf_clinical_situation').notNull(),
+  // imdrfHealthcareSituation CHECK: 'critical'|'serious'|'non_serious'
+  imdrfHealthcareSituation: text('imdrf_healthcare_situation').notNull(),
+  // Computed: 'I'|'II'|'III'|'IV'
+  imdrfCategory: text('imdrf_category'),
+  // fdaPathway: '510k'|'de_novo'|'pma'|'exempt'
+  fdaPathway: text('fda_pathway'),
+  // euAiRiskLevel: 'prohibited'|'high_risk'|'general_purpose'|'minimal'
+  euAiRiskLevel: text('eu_ai_risk_level'),
+  pccpRequired: boolean('pccp_required').notNull().default(false),
+  // status CHECK: 'draft'|'in_review'|'approved'|'archived'
+  status: text('status').notNull().default('draft'),
+  generatedModelCard: jsonb('generated_model_card'),
+  generatedChecklist: jsonb('generated_checklist'),
+  generatedMonitoringPlan: jsonb('generated_monitoring_plan'),
+  expertReviewApprovedBy: text('expert_review_approved_by'),
+  expertReviewApprovedAt: timestamp('expert_review_approved_at', {
+    withTimezone: true,
+    mode: 'date',
+  }),
+  createdBy: text('created_by')
+    .notNull()
+    .references(() => users.id),
+  createdAt: timestamp('created_at', { withTimezone: true, mode: 'date' }).notNull().defaultNow(),
+  updatedAt: timestamp('updated_at', { withTimezone: true, mode: 'date' }).notNull().defaultNow(),
+});
 
 // SPEC-REGULA-CLASSIFY-001 — device classification results.
 // Migration: 0050_device_classifications.sql

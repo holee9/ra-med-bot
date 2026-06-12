@@ -143,7 +143,11 @@ export type AuditAction =
   | 'device_classified'
   // SPEC-REGULA-DIGEST-001 — digest audit actions via 0053_digest_audit_actions.sql:
   | 'digest_generated'
-  | 'digest_emailed';
+  | 'digest_emailed'
+  // SPEC-REGULA-SAMD-001 — SaMD pathway builder audit actions via 0054_samd_assessments.sql:
+  | 'samd_assessment_created'
+  | 'samd_assessment_updated'
+  | 'samd_review_approved';
 
 export interface AuditEvent {
   /** User UUID, or null for system-initiated events. */
