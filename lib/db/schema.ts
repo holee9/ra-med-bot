@@ -98,6 +98,7 @@ export const userDepartmentEnum = pgEnum('user_department', ['RA', 'Dev', 'Exec'
 // Phase 8 DocIngest: +6 via 0016_docingest_audit_actions.sql.
 // Phase 10 Radar: +3 via 0018_radar.sql. chat.query: +1. answer.refine: +1. Total: 48.
 // CER-001: +5 via 0037_cer_audit_actions.sql. Total: 53. (REQ-CER-036~040)
+// VIGILANCE-001: +4 via 0042_vigilance_audit_actions.sql. Total: 57.
 // NOTE: auth.mfa_fail is NOT included (removed in v0.3.0 H-5).
 export const auditActionEnum = pgEnum('audit_action', [
   'llm.call',
@@ -172,11 +173,17 @@ export const auditActionEnum = pgEnum('audit_action', [
   'pccp_expert_approved',
   'pccp_algorithm_change_triggered',
   'pccp_status_changed',
+  // SPEC-REGULA-VIGILANCE-001 — added via 0042_vigilance_audit_actions.sql:
+  'vigilance_event_created',
+  'vigilance_reportability_assessed',
+  'vigilance_report_drafted',
+  'vigilance_report_exported',
 ]);
 
 // REQ-WF-049: workflow_type pgEnum — workflow kinds.
 // Migration: 0012_workflow_schema.sql
 // REQ-PRE-010: predicate_comparison added via 0029_predicate_workflow_type.sql
+// SPEC-REGULA-VIGILANCE-001: vigilance added via 0043_vigilance_workflow_type.sql
 // (SPEC-REGULA-PREDICATE-001). Enum values must each be in their own migration.
 // REQ-CER-012: cer added via 0035_cer_workflow_type.sql.
 // REQ-PCCP-025: 'pccp' added via 0038_pccp_workflow_type.sql (SPEC-REGULA-PCCP-001).
@@ -187,6 +194,7 @@ export const workflowTypeEnum = pgEnum('workflow_type', [
   'predicate_comparison',
   'cer',
   'pccp',
+  'vigilance',
 ]);
 
 // REQ-WF-049: workflow_status pgEnum — lifecycle states for workflow_runs.
@@ -779,6 +787,66 @@ export const pccpComponents = pgTable(
     uniqueVersionComponent: unique().on(t.pccpVersionId, t.componentType),
   }),
 );
+// ---------------------------------------------------------------------------
+// SPEC-REGULA-VIGILANCE-001 — Post-Market Surveillance tables (3).
+// Migration: 0041_vigilance_tables.sql
+// ---------------------------------------------------------------------------
+
+// REQ-VIG-001: adverse_events — captures raw adverse event input data.
+export const adverseEvents = pgTable('adverse_events', {
+  id: uuid('id').defaultRandom().primaryKey(),
+  workflowRunId: uuid('workflow_run_id').references(() => workflowRuns.id, {
+    onDelete: 'cascade',
+  }),
+  eventDate: date('event_date').notNull(),
+  deviceName: text('device_name').notNull(),
+  deviceModel: text('device_model'),
+  lotNumber: text('lot_number'),
+  eventDescription: text('event_description').notNull(),
+  patientOutcome: text('patient_outcome').notNull(),
+  awarenessDate: date('awareness_date').notNull(),
+  reporterName: text('reporter_name').notNull(),
+  reporterRole: text('reporter_role').notNull(),
+  createdAt: timestamp('created_at', { withTimezone: true, mode: 'date' }).notNull().defaultNow(),
+  createdBy: text('created_by').notNull(),
+});
+
+// REQ-VIG-002: reportability_assessments — deterministic rule engine output.
+export const reportabilityAssessments = pgTable('reportability_assessments', {
+  id: uuid('id').defaultRandom().primaryKey(),
+  adverseEventId: uuid('adverse_event_id')
+    .notNull()
+    .references(() => adverseEvents.id, { onDelete: 'cascade' }),
+  fdaMdrRequired: boolean('fda_mdr_required').notNull(),
+  fdaMdrDeadlineDays: integer('fda_mdr_deadline_days'),
+  euMdvRequired: boolean('eu_mdv_required').notNull(),
+  euMdvDeadlineDays: integer('eu_mdv_deadline_days'),
+  fscaRequired: boolean('fsca_required').notNull(),
+  assessmentRationale: text('assessment_rationale').notNull(),
+  assessedByAi: boolean('assessed_by_ai').notNull().default(true),
+  reviewedBy: text('reviewed_by'),
+  createdAt: timestamp('created_at', { withTimezone: true, mode: 'date' }).notNull().defaultNow(),
+});
+
+// REQ-VIG-003: vigilance_reports — AI-generated report draft content.
+export const vigilanceReports = pgTable('vigilance_reports', {
+  id: uuid('id').defaultRandom().primaryKey(),
+  adverseEventId: uuid('adverse_event_id')
+    .notNull()
+    .references(() => adverseEvents.id, { onDelete: 'cascade' }),
+  // report_type: 'fda_mdr' | 'eu_mdv' | 'fsca'
+  reportType: text('report_type').notNull(),
+  // report_format: 'mdr_3500a' | 'eu_mdv_initial' | 'eu_mdv_final' | 'fsca_notice'
+  reportFormat: text('report_format').notNull(),
+  draftContent: jsonb('draft_content').notNull().default({}),
+  version: integer('version').notNull().default(1),
+  // status: 'draft' | 'reviewed' | 'submitted'
+  status: text('status').notNull().default('draft'),
+  submissionDeadline: date('submission_deadline'),
+  createdAt: timestamp('created_at', { withTimezone: true, mode: 'date' }).notNull().defaultNow(),
+  updatedAt: timestamp('updated_at', { withTimezone: true, mode: 'date' }).notNull().defaultNow(),
+});
+
 // SPEC-REGULA-NOTIFICATIONS-001 — per-org webhook settings.
 // Migration: 0028_org_notification_settings.sql
 export const orgNotificationSettings = pgTable('org_notification_settings', {

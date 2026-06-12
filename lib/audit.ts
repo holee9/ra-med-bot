@@ -129,7 +129,12 @@ export type AuditAction =
   | 'pccp_component_completed'
   | 'pccp_expert_approved'
   | 'pccp_algorithm_change_triggered'
-  | 'pccp_status_changed';
+  | 'pccp_status_changed'
+  // SPEC-REGULA-VIGILANCE-001 — adverse event report audit actions via 0042_vigilance_audit_actions.sql:
+  | 'vigilance_event_created'
+  | 'vigilance_reportability_assessed'
+  | 'vigilance_report_drafted'
+  | 'vigilance_report_exported';
 
 export interface AuditEvent {
   /** User UUID, or null for system-initiated events. */
