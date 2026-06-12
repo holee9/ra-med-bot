@@ -111,7 +111,7 @@ export type AuditAction =
   | 'predicate_comparison_generated'
   // Predicate export (PDF/DOCX) — REQ-PRE-015, audited for traceability:
   | 'predicate_comparison_exported'
-  // CER-001 audit actions — added via 0035_cer_audit_actions.sql (REQ-CER-036~040):
+  // CER-001 audit actions — added via 0037_cer_audit_actions.sql (REQ-CER-036~040):
   | 'cer_created'
   | 'cer_stage_completed'
   | 'cer_expert_approved'
