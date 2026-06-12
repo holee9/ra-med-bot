@@ -178,6 +178,9 @@ export const auditActionEnum = pgEnum('audit_action', [
   'vigilance_reportability_assessed',
   'vigilance_report_drafted',
   'vigilance_report_exported',
+  // SPEC-REGULA-DIGEST-001 — added via 0053_digest_audit_actions.sql:
+  'digest_generated',
+  'digest_emailed',
 ]);
 
 // REQ-WF-049: workflow_type pgEnum — workflow kinds.
@@ -845,6 +848,41 @@ export const vigilanceReports = pgTable('vigilance_reports', {
   submissionDeadline: date('submission_deadline'),
   createdAt: timestamp('created_at', { withTimezone: true, mode: 'date' }).notNull().defaultNow(),
   updatedAt: timestamp('updated_at', { withTimezone: true, mode: 'date' }).notNull().defaultNow(),
+});
+
+// SPEC-REGULA-DIGEST-001 — per-org digest preferences.
+// Migration: 0052_weekly_digests.sql
+export const orgDigestPreferences = pgTable('org_digest_preferences', {
+  id: uuid('id').defaultRandom().primaryKey(),
+  orgId: uuid('org_id').notNull().unique().references(() => organizations.id, { onDelete: 'cascade' }),
+  // frequency: 'weekly'|'biweekly'|'manual'|'disabled'
+  frequency: text('frequency').notNull().default('weekly'),
+  timezone: text('timezone').notNull().default('UTC'),
+  sendDayOfWeek: integer('send_day_of_week').notNull().default(1),
+  sendHour: integer('send_hour').notNull().default(9),
+  // minSeverity: 'low'|'medium'|'high'|'critical'
+  minSeverity: text('min_severity').notNull().default('medium'),
+  includeImmediateAlerts: boolean('include_immediate_alerts').notNull().default(true),
+  recipientEmails: text('recipient_emails').array().notNull().default([]),
+  createdAt: timestamp('created_at', { withTimezone: true, mode: 'date' }).notNull().defaultNow(),
+  updatedAt: timestamp('updated_at', { withTimezone: true, mode: 'date' }).notNull().defaultNow(),
+});
+
+// SPEC-REGULA-DIGEST-001 — generated weekly digest records.
+// Migration: 0052_weekly_digests.sql
+export const weeklyDigests = pgTable('weekly_digests', {
+  id: uuid('id').defaultRandom().primaryKey(),
+  orgId: uuid('org_id').notNull().references(() => organizations.id, { onDelete: 'cascade' }),
+  weekId: text('week_id').notNull(),
+  generatedAt: timestamp('generated_at', { withTimezone: true, mode: 'date' }).notNull().defaultNow(),
+  updateCount: integer('update_count').notNull().default(0),
+  criticalCount: integer('critical_count').notNull().default(0),
+  highCount: integer('high_count').notNull().default(0),
+  mediumCount: integer('medium_count').notNull().default(0),
+  lowCount: integer('low_count').notNull().default(0),
+  digestJson: jsonb('digest_json').notNull().default({}),
+  emailSentAt: timestamp('email_sent_at', { withTimezone: true, mode: 'date' }),
+  shareToken: text('share_token').unique(),
 });
 
 // SPEC-REGULA-NOTIFICATIONS-001 — per-org webhook settings.
