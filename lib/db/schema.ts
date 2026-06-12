@@ -96,7 +96,8 @@ export const userDepartmentEnum = pgEnum('user_department', ['RA', 'Dev', 'Exec'
 // Phase 5 Enterprise: +12 via 0005_enterprise_audit_actions.sql.
 // Phase 9 Workflows: +10 via 0013_workflow_audit_actions.sql.
 // Phase 8 DocIngest: +6 via 0016_docingest_audit_actions.sql.
-// Total: 43 values. Adding values here requires a matching ALTER TYPE migration.
+// Phase 10 Radar: +3 via 0018_radar.sql. chat.query: +1. answer.refine: +1. Total: 48.
+// CER-001: +5 via 0037_cer_audit_actions.sql. Total: 53. (REQ-CER-036~040)
 // NOTE: auth.mfa_fail is NOT included (removed in v0.3.0 H-5).
 export const auditActionEnum = pgEnum('audit_action', [
   'llm.call',
@@ -155,22 +156,29 @@ export const auditActionEnum = pgEnum('audit_action', [
   'predicate_comparison_generated',
   // Predicate export (PDF/DOCX) — added via 0032_predicate_export_audit_action.sql (REQ-PRE-015):
   'predicate_comparison_exported',
+  // CER-001 audit actions — added via 0037_cer_audit_actions.sql (REQ-CER-036~040):
+  'cer_created',
+  'cer_stage_completed',
+  'cer_expert_approved',
+  'cer_exported',
+  'cer_literature_search',
   // SPEC-REGULA-IMPACT-001 — added via 0034_impact_audit_actions.sql (3):
   'impact.assessment_created',
   'impact.critical_detected',
   'impact.action_item_created',
 ]);
 
-// REQ-WF-049: workflow_type pgEnum — three Phase 9 workflow kinds.
+// REQ-WF-049: workflow_type pgEnum — workflow kinds.
 // Migration: 0012_workflow_schema.sql
 // REQ-PRE-010: predicate_comparison added via 0029_predicate_workflow_type.sql
-// (SPEC-REGULA-PREDICATE-001). The new value MUST be added in its own migration
-// because Postgres cannot use a freshly added enum value in the same transaction.
+// (SPEC-REGULA-PREDICATE-001). Enum values must each be in their own migration.
+// REQ-CER-012: cer added via 0035_cer_workflow_type.sql.
 export const workflowTypeEnum = pgEnum('workflow_type', [
   'submission_drafter',
   'audit_response',
   'indication_impact',
   'predicate_comparison',
+  'cer',
 ]);
 
 // REQ-WF-049: workflow_status pgEnum — lifecycle states for workflow_runs.
@@ -545,6 +553,26 @@ export const workflowRuns = pgTable('workflow_runs', {
   cloudflareWorkflowInstanceId: text('cloudflare_workflow_instance_id'),
   createdAt: timestamp('created_at', { withTimezone: true, mode: 'date' }).notNull().defaultNow(),
   updatedAt: timestamp('updated_at', { withTimezone: true, mode: 'date' }).notNull().defaultNow(),
+});
+
+// REQ-CER-013: cer_literature — PubMed literature per CER workflow run.
+// Migration: 0030_cer_literature.sql
+// Stores search results with SIGN 50 / GRADE evidence appraisal and
+// inclusion/exclusion decisions for EU MDR Annex XIV CER compliance.
+export const cerLiterature = pgTable('cer_literature', {
+  id: uuid('id').defaultRandom().primaryKey(),
+  cerRunId: uuid('cer_run_id')
+    .notNull()
+    .references(() => workflowRuns.id, { onDelete: 'cascade' }),
+  pmid: text('pmid').notNull(),
+  title: text('title').notNull(),
+  abstract: text('abstract'),
+  vancouverCitation: text('vancouver_citation'),
+  sign50Level: text('sign50_level'),
+  gradeQuality: text('grade_quality'),
+  included: boolean('included').notNull().default(false),
+  exclusionReason: text('exclusion_reason'),
+  createdAt: timestamp('created_at', { withTimezone: true, mode: 'date' }).notNull().defaultNow(),
 });
 
 // ---------------------------------------------------------------------------

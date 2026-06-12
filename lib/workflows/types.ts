@@ -54,6 +54,27 @@ export const IndicationImpactInputSchema = z.object({
 });
 export type IndicationImpactInput = z.infer<typeof IndicationImpactInputSchema>;
 
+// REQ-CER-001: Clinical Evaluation Report (CER) workflow input
+export const CerInputSchema = z.object({
+  deviceName: z.string().min(1).max(200),
+  manufacturer: z.string().min(1).max(200),
+  pubmedQuery: z.string().min(1).max(500),
+  deviceDescription: z.string().optional(),
+  intendedUse: z.string().optional(),
+});
+export type CerInput = z.infer<typeof CerInputSchema>;
+
+// REQ-CER-039: CER export input. stageContent maps a MEDDEV stage id (1-10,
+// as a string key) to authored content used to reconstruct the CerDocument.
+export const CerExportSchema = z.object({
+  cerRunId: z.string().uuid(),
+  format: z.enum(['docx', 'pdf']),
+  deviceName: z.string().min(1).max(200),
+  manufacturer: z.string().min(1).max(200),
+  stageContent: z.record(z.string(), z.string()).optional(),
+});
+export type CerExportInput = z.infer<typeof CerExportSchema>;
+
 // Workflow trigger response (202 Accepted)
 export const WorkflowTriggerResponseSchema = z.object({
   runId: z.string().uuid(),

@@ -32,4 +32,11 @@ export const WORKFLOW_REGISTRY: WorkflowEntry[] = [
     stepCount: 6,
     href: '/workflows/indication-impact',
   },
+  {
+    id: 'cer',
+    title: 'Clinical Evaluation Report',
+    description: 'EU MDR Annex XIV CER builder with MEDDEV 2.7/1 Rev4 methodology',
+    stepCount: 10,
+    href: '/workflows/cer',
+  },
 ];
