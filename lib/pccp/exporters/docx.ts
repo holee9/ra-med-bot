@@ -2,7 +2,7 @@
 // PCCP DOCX export — stub returning placeholder buffer.
 // Full docx generation (docx library) deferred until PCCP-002.
 
-import type { PccpComponent, PccpVersion } from '../types';
+import type { PccpComponentType, PccpVersion } from '../types';
 
 export interface PccpDocxExportOptions {
   includeDraftWatermark: boolean;
@@ -15,7 +15,7 @@ export interface PccpDocxExportOptions {
  */
 export async function exportPccpToDocx(
   _version: PccpVersion,
-  _components: PccpComponent[],
+  _components: PccpComponentType[],
   _options: PccpDocxExportOptions,
 ): Promise<Buffer> {
   // Placeholder: real DOCX generation in PCCP-002.

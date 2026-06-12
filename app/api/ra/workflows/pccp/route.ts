@@ -58,6 +58,10 @@ async function postCreatePccp(request: Request, session: AuthSession): Promise<R
     })
     .returning();
 
+  if (!created) {
+    return Response.json({ error: 'Insert failed' }, { status: 500 });
+  }
+
   await auditPccpCreated({
     actorId: session.user.id,
     pccpVersionId: created.id,

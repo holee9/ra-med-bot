@@ -2,7 +2,7 @@
 // PCCP PDF export — stub returning placeholder buffer.
 // Full PDF generation (react-pdf or puppeteer) deferred until PCCP-002.
 
-import type { PccpComponent, PccpVersion } from '../types';
+import type { PccpComponentType, PccpVersion } from '../types';
 
 export interface PccpPdfExportOptions {
   includeDraftWatermark: boolean;
@@ -15,7 +15,7 @@ export interface PccpPdfExportOptions {
  */
 export async function exportPccpToPdf(
   _version: PccpVersion,
-  _components: PccpComponent[],
+  _components: PccpComponentType[],
   _options: PccpPdfExportOptions,
 ): Promise<Buffer> {
   // Placeholder: real PDF generation in PCCP-002.

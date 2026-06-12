@@ -56,7 +56,7 @@ async function postExport(
       includeDraftWatermark: include_draft_watermark,
     });
     const filename = getDocxFilename(versionTyped);
-    return new Response(buf, {
+    return new Response(new Uint8Array(buf), {
       headers: {
         'Content-Type': 'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
         'Content-Disposition': `attachment; filename="${filename}"`,
@@ -68,7 +68,7 @@ async function postExport(
     includeDraftWatermark: include_draft_watermark,
   });
   const filename = getPdfFilename(versionTyped);
-  return new Response(buf, {
+  return new Response(new Uint8Array(buf), {
     headers: {
       'Content-Type': 'application/pdf',
       'Content-Disposition': `attachment; filename="${filename}"`,
