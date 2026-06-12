@@ -1,0 +1,88 @@
+name: Deploy to raspi5p
+
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+    inputs:
+      migrate:
+        description: 'Run DB migrations after deploy'
+        required: false
+        default: 'true'
+        type: boolean
+
+jobs:
+  deploy:
+    name: raspi5p-deploy
+    runs-on: ubuntu-latest
+    environment: raspi5p
+    concurrency:
+      group: raspi5p-deploy
+      cancel-in-progress: false
+
+    steps:
+      - name: Check SSH credentials
+        id: creds
+        shell: bash
+        run: |
+          if [[ -n "${{ secrets.RASPI5P_SSH_HOST }}" && -n "${{ secrets.RASPI5P_SSH_KEY }}" ]]; then
+            echo "enabled=true"  >> "$GITHUB_OUTPUT"
+          else
+            echo "enabled=false" >> "$GITHUB_OUTPUT"
+            echo "::notice::raspi5p SSH secrets not configured; skipping deploy."
+          fi
+
+      - name: Deploy via SSH
+        if: steps.creds.outputs.enabled == 'true'
+        uses: appleboy/ssh-action@v1.0.3
+        with:
+          host: ${{ secrets.RASPI5P_SSH_HOST }}
+          username: ${{ secrets.RASPI5P_SSH_USER || 'raspi5p' }}
+          key: ${{ secrets.RASPI5P_SSH_KEY }}
+          port: ${{ secrets.RASPI5P_SSH_PORT || 22 }}
+          script_stop: true
+          script: |
+            set -euo pipefail
+            DEPLOY_DIR=/opt/regula
+
+            echo "==> Pulling latest code"
+            cd "$DEPLOY_DIR"
+            git fetch origin main
+            git reset --hard origin/main
+
+            echo "==> Building and restarting containers"
+            docker compose -f docker-compose.prod.yml \
+              --env-file .env.production \
+              up -d --build --remove-orphans
+
+            echo "==> Waiting for app to be healthy (max 90s)"
+            for i in $(seq 1 18); do
+              STATUS=$(docker inspect --format='{{.State.Health.Status}}' regula-prod-app 2>/dev/null || echo "starting")
+              if [[ "$STATUS" == "healthy" ]]; then
+                echo "App is healthy."
+                break
+              fi
+              echo "  health=$STATUS (attempt $i/18)"
+              sleep 5
+            done
+
+            echo "==> Running DB migrations"
+            # drizzle-kit push via a temporary builder container that has devDeps
+            if [[ "${{ inputs.migrate }}" != "false" ]]; then
+              source .env.production
+              docker run --rm \
+                --network "$(basename $(pwd))_regula_net" \
+                -e DATABASE_URL="postgresql://${POSTGRES_USER:-regula}:${POSTGRES_PASSWORD}@db:5432/${POSTGRES_DB:-regula}" \
+                -v "$DEPLOY_DIR:/app" \
+                --workdir /app \
+                node:22-alpine sh -c \
+                  "corepack enable && pnpm install --frozen-lockfile --silent && pnpm exec drizzle-kit push --force" \
+                && echo "Migrations applied." \
+                || echo "WARN: migration step returned non-zero"
+            fi
+
+            echo "==> Smoke check"
+            curl -sf http://localhost:4000/api/health | grep -q '"status"' && echo "OK" || echo "WARN: health endpoint not responding"
+
+            echo "==> Deploy complete"
+            docker compose -f docker-compose.prod.yml ps

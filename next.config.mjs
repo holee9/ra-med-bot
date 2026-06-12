@@ -22,6 +22,9 @@ function config(phase) {
     // Also pass via Next.js env table so page-data workers receive it.
     env: isBuild ? { SKIP_ENV_VALIDATION: '1' } : {},
     poweredByHeader: false,
+    // Standalone output bundles only the minimal server runtime needed for
+    // Docker deployment (raspi5p self-hosted). Dev and `next start` are unaffected.
+    output: isBuild ? 'standalone' : undefined,
     // App Router is the default in Next.js 15; no `experimental.appDir` needed.
     experimental: {
       // Server Actions are GA in Next.js 15. Body size limit raised for
