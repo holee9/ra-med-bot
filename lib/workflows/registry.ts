@@ -47,4 +47,12 @@ export const WORKFLOW_REGISTRY: WorkflowEntry[] = [
     stepCount: 4,
     href: '/workflows/pccp',
   },
+  // SPEC-REGULA-SAMD-001: SaMD pathway builder entry
+  {
+    id: 'samd',
+    title: 'SaMD Pathway Builder',
+    description: 'AI/ML SaMD regulatory pathway — IMDRF N12, FDA AI/ML Guidance, EU AI Act',
+    stepCount: 5,
+    href: '/workflows/samd',
+  },
 ];
