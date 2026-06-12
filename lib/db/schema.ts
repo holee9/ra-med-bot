@@ -583,6 +583,70 @@ export const cerLiterature = pgTable('cer_literature', {
   createdAt: timestamp('created_at', { withTimezone: true, mode: 'date' }).notNull().defaultNow(),
 });
 
+// REQ-CLINLIT-001~005: literature_searches — PICO-based search protocol per CER run.
+// Migration: 0041_lit_searches.sql
+export const literatureSearches = pgTable('literature_searches', {
+  id: uuid('id').defaultRandom().primaryKey(),
+  cerRunId: uuid('cer_run_id')
+    .notNull()
+    .references(() => workflowRuns.id, { onDelete: 'cascade' }),
+  protocolVersion: integer('protocol_version').notNull().default(1),
+  deviceDescription: text('device_description').notNull(),
+  picoPatient: text('pico_patient').notNull(),
+  picoIntervention: text('pico_intervention').notNull(),
+  picoComparator: text('pico_comparator'),
+  picoOutcome: text('pico_outcome').notNull(),
+  searchQuery: text('search_query').notNull(),
+  meshTerms: jsonb('mesh_terms').$type<string[]>().notNull().default([]),
+  totalRecords: integer('total_records').notNull().default(0),
+  afterDedup: integer('after_dedup').notNull().default(0),
+  afterTitleAbstract: integer('after_title_abstract').notNull().default(0),
+  afterFullText: integer('after_full_text').notNull().default(0),
+  includedCount: integer('included_count').notNull().default(0),
+  createdAt: timestamp('created_at', { withTimezone: true, mode: 'date' }).notNull().defaultNow(),
+});
+
+// REQ-CLINLIT-011~014: literature_references — screened article records per search.
+// Migration: 0042_lit_references.sql
+export const literatureReferences = pgTable('literature_references', {
+  id: uuid('id').defaultRandom().primaryKey(),
+  searchId: uuid('search_id')
+    .notNull()
+    .references(() => literatureSearches.id, { onDelete: 'cascade' }),
+  pmid: text('pmid').notNull(),
+  title: text('title').notNull(),
+  abstract: text('abstract'),
+  authors: jsonb('authors').$type<string[]>().notNull().default([]),
+  journal: text('journal').notNull(),
+  year: integer('year').notNull(),
+  vancouverCitation: text('vancouver_citation'),
+  sign50Level: text('sign50_level'),
+  gradeQuality: text('grade_quality'),
+  screeningDecision: text('screening_decision').notNull().default('pending'),
+  screeningReason: text('screening_reason'),
+  included: boolean('included').notNull().default(false),
+  createdAt: timestamp('created_at', { withTimezone: true, mode: 'date' }).notNull().defaultNow(),
+});
+
+// REQ-CLINLIT-021~025: evidence_syntheses — GRADE synthesis + CER section drafts.
+// Migration: 0043_evidence_syntheses.sql
+export const evidenceSyntheses = pgTable('evidence_syntheses', {
+  id: uuid('id').defaultRandom().primaryKey(),
+  searchId: uuid('search_id')
+    .notNull()
+    .references(() => literatureSearches.id, { onDelete: 'cascade' }),
+  gradeSummary: text('grade_summary').notNull(),
+  narrativeSynthesis: text('narrative_synthesis').notNull(),
+  cerSection6Draft: text('cer_section6_draft').notNull(),
+  cerSection7Draft: text('cer_section7_draft').notNull(),
+  cerSection8Draft: text('cer_section8_draft').notNull(),
+  highCount: integer('high_count').notNull().default(0),
+  moderateCount: integer('moderate_count').notNull().default(0),
+  lowCount: integer('low_count').notNull().default(0),
+  veryLowCount: integer('very_low_count').notNull().default(0),
+  createdAt: timestamp('created_at', { withTimezone: true, mode: 'date' }).notNull().defaultNow(),
+});
+
 // ---------------------------------------------------------------------------
 // Auth.js v5 DrizzleAdapter tables — required for database session strategy.
 // Migration: 0023_auth_adapter_tables.sql
