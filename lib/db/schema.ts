@@ -5,10 +5,11 @@
 //          SPEC-REGULA-ENTERPRISE-001 (REQ-ENTERPRISE-016, 027, 028),
 //          SPEC-REGULA-WORKFLOWS-001 (REQ-WF-049, REQ-WF-051)
 //
-// Table inventory (16):
+// Table inventory (18):
 //   users, organizations, projects, conversations, messages, message_sources,
 //   message_blocks, sources, source_sections, templates, regulatory_updates,
-//   expert_reviews, audit_logs, org_members, project_members, workflow_runs
+//   expert_reviews, audit_logs, org_members, project_members, workflow_runs,
+//   regulatory_impact_assessments, impact_action_items
 //
 // pgEnum inventory (11):
 //   locale, theme_pref, message_role, confidence_level, block_type,
@@ -154,7 +155,11 @@ export const auditActionEnum = pgEnum('audit_action', [
   'predicate_comparison_generated',
   // Predicate export (PDF/DOCX) — added via 0032_predicate_export_audit_action.sql (REQ-PRE-015):
   'predicate_comparison_exported',
-  // PCCP audit actions — added via 0035_pccp_audit_actions.sql (REQ-PCCP-021~023, 015, 024):
+  // SPEC-REGULA-IMPACT-001 — added via 0034_impact_audit_actions.sql (3):
+  'impact.assessment_created',
+  'impact.critical_detected',
+  'impact.action_item_created',
+  // SPEC-REGULA-PCCP-001 — added via 0035_pccp_audit_actions.sql (REQ-PCCP-021~023, 015, 024):
   'pccp_created',
   'pccp_component_completed',
   'pccp_expert_approved',
@@ -597,6 +602,51 @@ export const verificationTokens = pgTable(
   }),
 );
 
+// SPEC-REGULA-IMPACT-001 — regulatory change impact assessment.
+// Migrations: 0033_impact_tables.sql, 0034_impact_audit_actions.sql
+// @MX:SPEC SPEC-REGULA-IMPACT-001
+export const regulatoryImpactAssessments = pgTable(
+  'regulatory_impact_assessments',
+  {
+    id: uuid('id').defaultRandom().primaryKey(),
+    regulatoryUpdateId: uuid('regulatory_update_id')
+      .notNull()
+      .references(() => regulatoryUpdates.id, { onDelete: 'cascade' }),
+    projectId: uuid('project_id')
+      .notNull()
+      .references(() => projects.id, { onDelete: 'cascade' }),
+    impactLevel: text('impact_level').notNull(),
+    affectedSections: jsonb('affected_sections').notNull().default([]),
+    analysisSummary: text('analysis_summary'),
+    confidence: numeric('confidence', { precision: 3, scale: 2 }),
+    createdBy: uuid('created_by').references(() => users.id, { onDelete: 'set null' }),
+    createdAt: timestamp('created_at', { withTimezone: true, mode: 'date' }).notNull().defaultNow(),
+  },
+  (t) => ({
+    riaUpdateProjectKey: unique('ria_update_project_key').on(t.regulatoryUpdateId, t.projectId),
+    riaProjectImpactIdx: index('idx_ria_project_impact').on(t.projectId, t.impactLevel),
+    riaUpdateIdx: index('idx_ria_update').on(t.regulatoryUpdateId),
+  }),
+);
+
+export const impactActionItems = pgTable('impact_action_items', {
+  id: uuid('id').defaultRandom().primaryKey(),
+  assessmentId: uuid('assessment_id')
+    .notNull()
+    .references(() => regulatoryImpactAssessments.id, { onDelete: 'cascade' }),
+  projectId: uuid('project_id')
+    .notNull()
+    .references(() => projects.id, { onDelete: 'cascade' }),
+  priority: text('priority').notNull(),
+  documentType: text('document_type'),
+  sectionReference: text('section_reference'),
+  description: text('description').notNull(),
+  status: text('status').notNull().default('open'),
+  assignedTo: uuid('assigned_to').references(() => users.id, { onDelete: 'set null' }),
+  createdAt: timestamp('created_at', { withTimezone: true, mode: 'date' }).notNull().defaultNow(),
+  resolvedAt: timestamp('resolved_at', { withTimezone: true, mode: 'date' }),
+});
+
 // SPEC-REGULA-PCCP-001 — PCCP version and component tables.
 // REQ-PCCP-010: pccp_versions — one PCCP document per device, versioned lifecycle.
 // REQ-PCCP-022: pccp_components — per-component content and completion tracking.
@@ -637,7 +687,6 @@ export const pccpComponents = pgTable(
     uniqueVersionComponent: unique().on(t.pccpVersionId, t.componentType),
   }),
 );
-
 // SPEC-REGULA-NOTIFICATIONS-001 — per-org webhook settings.
 // Migration: 0028_org_notification_settings.sql
 export const orgNotificationSettings = pgTable('org_notification_settings', {
