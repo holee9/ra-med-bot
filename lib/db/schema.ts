@@ -861,3 +861,43 @@ export const orgNotificationSettings = pgTable('org_notification_settings', {
   createdAt: timestamp('created_at', { withTimezone: true, mode: 'date' }).notNull().defaultNow(),
   updatedAt: timestamp('updated_at', { withTimezone: true, mode: 'date' }).notNull().defaultNow(),
 });
+
+// SPEC-REGULA-STANDARDS-001 — standards catalog.
+// Migration: 0047_standards_catalog.sql
+export const standardsCatalog = pgTable('standards_catalog', {
+  id: uuid('id').defaultRandom().primaryKey(),
+  standardNumber: text('standard_number').notNull().unique(),
+  title: text('title').notNull(),
+  body: text('body').notNull(),
+  version: text('version').notNull(),
+  publicationYear: integer('publication_year').notNull(),
+  // status CHECK: 'current'|'withdrawn'|'under_revision'
+  status: text('status').notNull().default('current'),
+  supersedes: text('supersedes'),
+  scopeKeywords: text('scope_keywords').array().notNull().default(['']),
+  fdaRecognized: boolean('fda_recognized').notNull().default(false),
+  euHarmonized: boolean('eu_harmonized').notNull().default(false),
+  createdAt: timestamp('created_at', { withTimezone: true, mode: 'date' }).notNull().defaultNow(),
+  updatedAt: timestamp('updated_at', { withTimezone: true, mode: 'date' }).notNull().defaultNow(),
+});
+
+// SPEC-REGULA-STANDARDS-001 — standards applicability mapping.
+// Migration: 0048_standards_applicability.sql
+export const standardsApplicability = pgTable(
+  'standards_applicability',
+  {
+    id: uuid('id').defaultRandom().primaryKey(),
+    deviceTypeKey: text('device_type_key').notNull(),
+    standardId: uuid('standard_id')
+      .notNull()
+      .references(() => standardsCatalog.id, { onDelete: 'cascade' }),
+    applicabilityReason: text('applicability_reason').notNull(),
+    // regulatoryPathway CHECK: 'fda_510k'|'fda_pma'|'eu_mdr_class_i'|'eu_mdr_class_ii'|'eu_mdr_class_iii'|'all'
+    regulatoryPathway: text('regulatory_pathway').notNull(),
+    isMandatory: boolean('is_mandatory').notNull().default(true),
+    createdAt: timestamp('created_at', { withTimezone: true, mode: 'date' }).notNull().defaultNow(),
+  },
+  (t) => ({
+    uniqueMapping: unique().on(t.deviceTypeKey, t.standardId, t.regulatoryPathway),
+  }),
+);

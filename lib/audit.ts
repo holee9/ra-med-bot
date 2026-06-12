@@ -134,7 +134,11 @@ export type AuditAction =
   | 'vigilance_event_created'
   | 'vigilance_reportability_assessed'
   | 'vigilance_report_drafted'
-  | 'vigilance_report_exported';
+  | 'vigilance_report_exported'
+  // SPEC-REGULA-STANDARDS-001 — standards tracker audit actions via 0048_standards_applicability.sql:
+  | 'standards_searched'
+  | 'standards_gap_analyzed'
+  | 'standards_compliance_updated';
 
 export interface AuditEvent {
   /** User UUID, or null for system-initiated events. */
