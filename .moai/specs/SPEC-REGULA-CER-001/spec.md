@@ -1,7 +1,7 @@
 ---
 id: SPEC-REGULA-CER-001
-version: 0.1.0
-status: draft
+version: 1.0.0
+status: completed
 phase: wave3
 priority: High
 created: 2026-05-04

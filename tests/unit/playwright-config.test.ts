@@ -1,10 +1,13 @@
 import type { Config } from '@playwright/test';
 /**
  * Unit tests for playwright.config.ts
- * REQ-LAUNCH-013: 3 browser projects (chromium, firefox, webkit)
+ * REQ-LAUNCH-013: 3 browser projects in CI (chromium, firefox, webkit); 1 locally (chromium only)
  * REQ-LAUNCH-014: baseURL from env, retries=2, workers=4, reporter configured
  */
 import { beforeAll, describe, expect, it } from 'vitest';
+
+// playwright.config.ts conditionally includes firefox/webkit only in CI environments
+const isCI = !!process.env.CI;
 
 describe('playwright.config.ts', () => {
   let config: Config;
@@ -16,8 +19,10 @@ describe('playwright.config.ts', () => {
     config = mod.default as Config;
   });
 
-  it('should have exactly 3 browser projects', () => {
-    expect(config.projects).toHaveLength(3);
+  it('should have correct browser project count for environment', () => {
+    // CI: chromium + firefox + webkit = 3; local: chromium only = 1
+    const expectedCount = isCI ? 3 : 1;
+    expect(config.projects).toHaveLength(expectedCount);
   });
 
   it('should include chromium project', () => {
@@ -25,12 +30,12 @@ describe('playwright.config.ts', () => {
     expect(names).toContain('chromium');
   });
 
-  it('should include firefox project', () => {
+  it.skipIf(!isCI)('should include firefox project in CI', () => {
     const names = (config.projects ?? []).map((project) => project.name);
     expect(names).toContain('firefox');
   });
 
-  it('should include webkit project', () => {
+  it.skipIf(!isCI)('should include webkit project in CI', () => {
     const names = (config.projects ?? []).map((project) => project.name);
     expect(names).toContain('webkit');
   });

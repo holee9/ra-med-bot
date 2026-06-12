@@ -509,11 +509,6 @@
       }
     ]
   },
-  "statusLine": {
-    "type": "command",
-    "command": ".moai/status_line.sh",
-    "refreshInterval": 10
-  },
   "outputStyle": "MoAI",
   "effortLevel": "medium",
   "plansDirectory": ".moai/plans",
@@ -522,5 +517,6 @@
   "disableBypassPermissionsMode": false,
   "enabledPlugins": {
     "harness@harness-marketplace": true
-  }
+  },
+  "disabledSkills": ["claude-api"]
 }
