@@ -11,36 +11,36 @@ const root = path.resolve(__dirname, '..', '..');
 const readText = (rel: string): string => fs.readFileSync(path.join(root, rel), 'utf8');
 
 // ---------------------------------------------------------------------------
-// Migration 0029 — workflow_type enum 'cer' addition
+// Migration 0033 — workflow_type enum 'cer' addition
 // ---------------------------------------------------------------------------
-describe('0029_cer_workflow_type.sql', () => {
+describe('0033_cer_workflow_type.sql', () => {
   it('migration file exists', () => {
-    const filepath = path.join(root, 'migrations/0029_cer_workflow_type.sql');
-    expect(fs.existsSync(filepath), '0029_cer_workflow_type.sql not found').toBe(true);
+    const filepath = path.join(root, 'migrations/0033_cer_workflow_type.sql');
+    expect(fs.existsSync(filepath), '0033_cer_workflow_type.sql not found').toBe(true);
   });
 
   it('adds cer value to workflow_type enum', () => {
-    const sql = readText('migrations/0029_cer_workflow_type.sql');
+    const sql = readText('migrations/0033_cer_workflow_type.sql');
     expect(sql).toMatch(/ALTER TYPE.*workflow_type.*ADD VALUE.*'cer'/i);
   });
 });
 
 // ---------------------------------------------------------------------------
-// Migration 0030 — cer_literature table
+// Migration 0034 — cer_literature table
 // ---------------------------------------------------------------------------
-describe('0030_cer_literature.sql', () => {
+describe('0034_cer_literature.sql', () => {
   it('migration file exists', () => {
-    const filepath = path.join(root, 'migrations/0030_cer_literature.sql');
-    expect(fs.existsSync(filepath), '0030_cer_literature.sql not found').toBe(true);
+    const filepath = path.join(root, 'migrations/0034_cer_literature.sql');
+    expect(fs.existsSync(filepath), '0034_cer_literature.sql not found').toBe(true);
   });
 
   it('creates cer_literature table', () => {
-    const sql = readText('migrations/0030_cer_literature.sql');
+    const sql = readText('migrations/0034_cer_literature.sql');
     expect(sql).toMatch(/CREATE TABLE.*cer_literature/i);
   });
 
   it('includes required columns', () => {
-    const sql = readText('migrations/0030_cer_literature.sql');
+    const sql = readText('migrations/0034_cer_literature.sql');
     expect(sql).toMatch(/pmid/i);
     expect(sql).toMatch(/title/i);
     expect(sql).toMatch(/abstract/i);
@@ -53,12 +53,12 @@ describe('0030_cer_literature.sql', () => {
 });
 
 // ---------------------------------------------------------------------------
-// Migration 0031 — cer_* audit actions
+// Migration 0035 — cer_* audit actions
 // ---------------------------------------------------------------------------
-describe('0031_cer_audit_actions.sql', () => {
+describe('0035_cer_audit_actions.sql', () => {
   it('migration file exists', () => {
-    const filepath = path.join(root, 'migrations/0031_cer_audit_actions.sql');
-    expect(fs.existsSync(filepath), '0031_cer_audit_actions.sql not found').toBe(true);
+    const filepath = path.join(root, 'migrations/0035_cer_audit_actions.sql');
+    expect(fs.existsSync(filepath), '0035_cer_audit_actions.sql not found').toBe(true);
   });
 
   it.each([
@@ -68,7 +68,7 @@ describe('0031_cer_audit_actions.sql', () => {
     'cer_exported',
     'cer_literature_search',
   ])('adds %s to audit_action enum (REQ-CER-036~040)', (action) => {
-    const sql = readText('migrations/0031_cer_audit_actions.sql');
+    const sql = readText('migrations/0035_cer_audit_actions.sql');
     expect(sql).toMatch(new RegExp(`ADD VALUE.*'${action}'`, 'i'));
   });
 });
