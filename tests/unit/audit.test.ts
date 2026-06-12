@@ -65,7 +65,7 @@ describe('lib/audit.ts (REQ-BREADTH-057) — extended AuditAction type', () => {
     // + predicate_comparison_exported (0032 REQ-PRE-015), bringing the total to 51.
     // SPEC-REGULA-IMPACT-001 adds impact.assessment_created, impact.critical_detected,
     // impact.action_item_created (0034) → 54.
-    // SPEC-REGULA-PCCP-001 adds 5 pccp_* actions via 0035_pccp_audit_actions.sql → 59 total.
+    // SPEC-REGULA-PCCP-001 adds 5 pccp_* actions via 0040_pccp_audit_actions.sql → 59 total.
     expect(values).toHaveLength(59);
   });
 

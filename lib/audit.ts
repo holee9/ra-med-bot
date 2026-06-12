@@ -52,7 +52,7 @@ import { auditLogs } from './db/schema';
 //   predicate_search, predicate_comparison_generated
 // SPEC-REGULA-IMPACT-001 values added via 0034_impact_audit_actions.sql (3):
 //   impact.assessment_created, impact.critical_detected, impact.action_item_created
-// SPEC-REGULA-PCCP-001 values added via 0035_pccp_audit_actions.sql (5):
+// SPEC-REGULA-PCCP-001 values added via 0040_pccp_audit_actions.sql (5):
 //   pccp_created, pccp_component_completed, pccp_expert_approved,
 //   pccp_algorithm_change_triggered, pccp_status_changed
 // Total: 59 values.
@@ -118,7 +118,7 @@ export type AuditAction =
   | 'impact.assessment_created'
   | 'impact.critical_detected'
   | 'impact.action_item_created'
-  // SPEC-REGULA-PCCP-001 — PCCP audit actions via 0035_pccp_audit_actions.sql (REQ-PCCP-021~023, 015, 024):
+  // SPEC-REGULA-PCCP-001 — PCCP audit actions via 0040_pccp_audit_actions.sql (REQ-PCCP-021~023, 015, 024):
   | 'pccp_created'
   | 'pccp_component_completed'
   | 'pccp_expert_approved'

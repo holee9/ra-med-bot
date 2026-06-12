@@ -159,7 +159,7 @@ export const auditActionEnum = pgEnum('audit_action', [
   'impact.assessment_created',
   'impact.critical_detected',
   'impact.action_item_created',
-  // SPEC-REGULA-PCCP-001 — added via 0035_pccp_audit_actions.sql (REQ-PCCP-021~023, 015, 024):
+  // SPEC-REGULA-PCCP-001 — added via 0040_pccp_audit_actions.sql (REQ-PCCP-021~023, 015, 024):
   'pccp_created',
   'pccp_component_completed',
   'pccp_expert_approved',
@@ -172,7 +172,7 @@ export const auditActionEnum = pgEnum('audit_action', [
 // REQ-PRE-010: predicate_comparison added via 0029_predicate_workflow_type.sql
 // (SPEC-REGULA-PREDICATE-001). The new value MUST be added in its own migration
 // because Postgres cannot use a freshly added enum value in the same transaction.
-// REQ-PCCP-025: 'pccp' added via 0033_pccp_workflow_type.sql (SPEC-REGULA-PCCP-001).
+// REQ-PCCP-025: 'pccp' added via 0038_pccp_workflow_type.sql (SPEC-REGULA-PCCP-001).
 export const workflowTypeEnum = pgEnum('workflow_type', [
   'submission_drafter',
   'audit_response',
@@ -650,7 +650,7 @@ export const impactActionItems = pgTable('impact_action_items', {
 // SPEC-REGULA-PCCP-001 — PCCP version and component tables.
 // REQ-PCCP-010: pccp_versions — one PCCP document per device, versioned lifecycle.
 // REQ-PCCP-022: pccp_components — per-component content and completion tracking.
-// Migration: 0034_pccp_tables.sql
+// Migration: 0039_pccp_tables.sql
 // AC-9: at most one active PCCP per device — enforced by partial UNIQUE INDEX in migration.
 export const pccpVersions = pgTable('pccp_versions', {
   id: uuid('id').defaultRandom().primaryKey(),
