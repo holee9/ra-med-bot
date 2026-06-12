@@ -8,6 +8,8 @@ RUN corepack enable && corepack prepare pnpm@latest --activate
 # ── 1. Install dependencies ──────────────────────────────────────────────────
 FROM base AS deps
 WORKDIR /app
+# Skip Playwright browser download — not needed in Docker; saves ~200MB per build
+ENV PLAYWRIGHT_SKIP_BROWSER_DOWNLOAD=1
 COPY package.json pnpm-lock.yaml ./
 RUN pnpm install --frozen-lockfile
 
