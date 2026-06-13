@@ -55,7 +55,9 @@ import { auditLogs } from './db/schema';
 // SPEC-REGULA-PCCP-001 values added via 0040_pccp_audit_actions.sql (5):
 //   pccp_created, pccp_component_completed, pccp_expert_approved,
 //   pccp_algorithm_change_triggered, pccp_status_changed
-// Total: 64 values.
+// SPEC-REGULA-DHF-001 values added via 0055_design_history_files.sql (4):
+//   dhf_created, dhf_updated, dhf_design_freeze, dhf_review_approved
+// Total: 68 values.
 export type AuditAction =
   | 'llm.call'
   | 'source.access'
@@ -147,7 +149,12 @@ export type AuditAction =
   // SPEC-REGULA-SAMD-001 — SaMD pathway builder audit actions via 0054_samd_assessments.sql:
   | 'samd_assessment_created'
   | 'samd_assessment_updated'
-  | 'samd_review_approved';
+  | 'samd_review_approved'
+  // SPEC-REGULA-DHF-001 — Design History File audit actions via 0055_design_history_files.sql (4):
+  | 'dhf_created'
+  | 'dhf_updated'
+  | 'dhf_design_freeze'
+  | 'dhf_review_approved';
 
 export interface AuditEvent {
   /** User UUID, or null for system-initiated events. */

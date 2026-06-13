@@ -55,4 +55,12 @@ export const WORKFLOW_REGISTRY: WorkflowEntry[] = [
     stepCount: 5,
     href: '/workflows/samd',
   },
+  // SPEC-REGULA-DHF-001: Design History File entry
+  {
+    id: 'dhf',
+    title: 'Design History File',
+    description: '21 CFR 820.30 / ISO 13485 / EU MDR — design inputs, V&V, and design reviews',
+    stepCount: 4,
+    href: '/workflows/dhf',
+  },
 ];
