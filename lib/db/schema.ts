@@ -191,6 +191,10 @@ export const auditActionEnum = pgEnum('audit_action', [
   'dhf_updated',
   'dhf_design_freeze',
   'dhf_review_approved',
+  // SPEC-REGULA-ESUBMIT-001 — added via 0056_submission_packages.sql (3):
+  'submission_package_created',
+  'submission_package_submitted',
+  'submission_validation_completed',
 ]);
 
 // REQ-WF-049: workflow_type pgEnum — workflow kinds.
@@ -1111,4 +1115,53 @@ export const designReviews = pgTable('design_reviews', {
 },
 (t) => ({
   dhfIdx: index('idx_design_reviews_dhf').on(t.dhfId),
+}));
+
+// ---------------------------------------------------------------------------
+// SPEC-REGULA-ESUBMIT-001: Electronic submission packages
+// Migration: 0056_submission_packages.sql
+// ---------------------------------------------------------------------------
+
+// @MX:ANCHOR: [AUTO] Submission package table — fan_in >= 3 (list, detail, validate routes)
+// @MX:REASON: [AUTO] Core entity for all e-submission workflows; schema changes affect all downstream routes
+// @MX:SPEC SPEC-REGULA-ESUBMIT-001
+export const submissionPackages = pgTable('submission_packages', {
+  id: text('id').primaryKey().default(sql`gen_random_uuid()::text`),
+  orgId: text('org_id').notNull(),
+  // submission_type CHECK: '510k'|'de_novo'|'pma'|'cer'|'pccp'|'mfds_import'|'nmpa_ecdt'
+  submissionType: text('submission_type').notNull(),
+  // jurisdiction CHECK: 'FDA'|'EU'|'MFDS'|'NMPA'|'PMDA'
+  jurisdiction: text('jurisdiction').notNull(),
+  deviceName: text('device_name').notNull(),
+  submissionNumber: text('submission_number'),
+  version: text('version').notNull().default('1.0'),
+  // status CHECK: 'draft'|'validating'|'validated'|'submitted'|'rta'|'accepted'|'rejected'
+  status: text('status').notNull().default('draft'),
+  packageManifest: jsonb('package_manifest').notNull().default(sql`'{}'::jsonb`),
+  validationResults: jsonb('validation_results').notNull().default(sql`'[]'::jsonb`),
+  createdBy: text('created_by').notNull(),
+  submittedAt: timestamp('submitted_at', { withTimezone: true, mode: 'date' }),
+  createdAt: timestamp('created_at', { withTimezone: true, mode: 'date' }).notNull().defaultNow(),
+  updatedAt: timestamp('updated_at', { withTimezone: true, mode: 'date' }).notNull().defaultNow(),
+},
+(t) => ({
+  orgIdx: index('idx_submission_packages_org').on(t.orgId),
+}));
+
+// Regulatory interaction history per submission package (RTA, AI requests, etc.)
+export const submissionInteractions = pgTable('submission_interactions', {
+  id: text('id').primaryKey().default(sql`gen_random_uuid()::text`),
+  packageId: text('package_id')
+    .notNull()
+    .references(() => submissionPackages.id, { onDelete: 'cascade' }),
+  // interaction_type CHECK: 'rta'|'ai_request'|'deficiency'|'approval'|'rejection'
+  interactionType: text('interaction_type').notNull(),
+  referenceNumber: text('reference_number'),
+  description: text('description').notNull(),
+  dueDate: date('due_date'),
+  resolvedAt: timestamp('resolved_at', { withTimezone: true, mode: 'date' }),
+  createdAt: timestamp('created_at', { withTimezone: true, mode: 'date' }).notNull().defaultNow(),
+},
+(t) => ({
+  pkgIdx: index('idx_submission_interactions_pkg').on(t.packageId),
 }));
