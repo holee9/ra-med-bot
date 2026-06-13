@@ -154,7 +154,11 @@ export type AuditAction =
   | 'dhf_created'
   | 'dhf_updated'
   | 'dhf_design_freeze'
-  | 'dhf_review_approved';
+  | 'dhf_review_approved'
+  // SPEC-REGULA-ESUBMIT-001 audit actions — added via 0056_submission_packages.sql:
+  | 'submission_package_created'
+  | 'submission_package_submitted'
+  | 'submission_validation_completed';
 
 export interface AuditEvent {
   /** User UUID, or null for system-initiated events. */

@@ -63,4 +63,12 @@ export const WORKFLOW_REGISTRY: WorkflowEntry[] = [
     stepCount: 4,
     href: '/workflows/dhf',
   },
+  // SPEC-REGULA-ESUBMIT-001: Electronic submission package builder entry
+  {
+    id: 'esubmit',
+    title: '전자 제출 패키지',
+    description: 'FDA 510(k) · De Novo · PMA · EU MDR CER · PCCP · MFDS · NMPA — 제출 패키지 빌더',
+    stepCount: 4,
+    href: '/workflows/esubmit',
+  },
 ];
