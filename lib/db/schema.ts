@@ -186,6 +186,11 @@ export const auditActionEnum = pgEnum('audit_action', [
   'samd_assessment_created',
   'samd_assessment_updated',
   'samd_review_approved',
+  // SPEC-REGULA-DHF-001 — added via 0055_design_history_files.sql (4):
+  'dhf_created',
+  'dhf_updated',
+  'dhf_design_freeze',
+  'dhf_review_approved',
 ]);
 
 // REQ-WF-049: workflow_type pgEnum — workflow kinds.
@@ -1013,3 +1018,97 @@ export const deviceClassifications = pgTable('device_classifications', {
   classificationRationale: jsonb('classification_rationale').notNull().default({}),
   createdAt: timestamp('created_at', { withTimezone: true, mode: 'date' }).notNull().defaultNow(),
 });
+
+// ---------------------------------------------------------------------------
+// SPEC-REGULA-DHF-001 — Design History File (DHF) tables.
+// Migration: 0055_design_history_files.sql
+// ---------------------------------------------------------------------------
+
+// Top-level DHF record per device.
+export const designHistoryFiles = pgTable('design_history_files', {
+  id: text('id').primaryKey().default(sql`gen_random_uuid()::text`),
+  orgId: text('org_id')
+    .notNull()
+    .references(() => organizations.id, { onDelete: 'cascade' }),
+  deviceName: text('device_name').notNull(),
+  deviceModel: text('device_model'),
+  intendedUse: text('intended_use').notNull(),
+  // jurisdiction CHECK: 'FDA'|'EU'|'MFDS'|'NMPA'|'PMDA'
+  jurisdiction: text('jurisdiction').notNull().default('FDA'),
+  // regulatory_framework CHECK: 'QSR_QMSR'|'ISO_13485'|'EU_MDR'
+  regulatoryFramework: text('regulatory_framework').notNull().default('QSR_QMSR'),
+  // status CHECK: 'draft'|'in_review'|'design_freeze'|'archived'
+  status: text('status').notNull().default('draft'),
+  completenessScore: integer('completeness_score').notNull().default(0),
+  designFreezeDate: date('design_freeze_date'),
+  createdBy: text('created_by')
+    .notNull()
+    .references(() => users.id),
+  createdAt: timestamp('created_at', { withTimezone: true, mode: 'date' }).notNull().defaultNow(),
+  updatedAt: timestamp('updated_at', { withTimezone: true, mode: 'date' }).notNull().defaultNow(),
+},
+(t) => ({
+  orgIdx: index('idx_dhf_org').on(t.orgId),
+}));
+
+// Design inputs (requirements) linked to a DHF.
+export const designInputs = pgTable('design_inputs', {
+  id: text('id').primaryKey().default(sql`gen_random_uuid()::text`),
+  dhfId: text('dhf_id')
+    .notNull()
+    .references(() => designHistoryFiles.id, { onDelete: 'cascade' }),
+  // input_type CHECK: 'user_need'|'regulatory'|'standards'|'risk'
+  inputType: text('input_type').notNull(),
+  requirementId: text('requirement_id'),
+  description: text('description').notNull(),
+  source: text('source'),
+  // priority CHECK: 'must'|'should'|'nice_to_have'
+  priority: text('priority').notNull().default('must'),
+  // verification_status CHECK: 'pending'|'verified'|'not_applicable'
+  verificationStatus: text('verification_status').notNull().default('pending'),
+  createdAt: timestamp('created_at', { withTimezone: true, mode: 'date' }).notNull().defaultNow(),
+},
+(t) => ({
+  dhfIdx: index('idx_design_inputs_dhf').on(t.dhfId),
+}));
+
+// V&V protocols linked to a DHF (optionally to a design input).
+export const designVerifications = pgTable('design_verifications', {
+  id: text('id').primaryKey().default(sql`gen_random_uuid()::text`),
+  dhfId: text('dhf_id')
+    .notNull()
+    .references(() => designHistoryFiles.id, { onDelete: 'cascade' }),
+  designInputId: text('design_input_id').references(() => designInputs.id),
+  // verification_type CHECK: 'analysis'|'test'|'inspection'|'demonstration'
+  verificationType: text('verification_type').notNull(),
+  protocolTitle: text('protocol_title').notNull(),
+  // result CHECK: 'pass'|'fail'|'pending'|'not_started'
+  result: text('result'),
+  testDate: date('test_date'),
+  performedBy: text('performed_by'),
+  notes: text('notes'),
+  createdAt: timestamp('created_at', { withTimezone: true, mode: 'date' }).notNull().defaultNow(),
+},
+(t) => ({
+  dhfIdx: index('idx_design_verifications_dhf').on(t.dhfId),
+}));
+
+// Formal design review records per DHF.
+export const designReviews = pgTable('design_reviews', {
+  id: text('id').primaryKey().default(sql`gen_random_uuid()::text`),
+  dhfId: text('dhf_id')
+    .notNull()
+    .references(() => designHistoryFiles.id, { onDelete: 'cascade' }),
+  // review_stage CHECK: 'concept'|'preliminary'|'critical'|'final'|'design_freeze'
+  reviewStage: text('review_stage').notNull(),
+  reviewDate: date('review_date').notNull(),
+  attendees: text('attendees').array().notNull().default(sql`'{}'::text[]`),
+  decisions: text('decisions'),
+  openActions: text('open_actions'),
+  approvedBy: text('approved_by'),
+  approvedAt: timestamp('approved_at', { withTimezone: true, mode: 'date' }),
+  createdAt: timestamp('created_at', { withTimezone: true, mode: 'date' }).notNull().defaultNow(),
+},
+(t) => ({
+  dhfIdx: index('idx_design_reviews_dhf').on(t.dhfId),
+}));
