@@ -35,7 +35,8 @@ function getReportFormat(reportType: ReportType): ReportFormat {
 function calculateDeadline(awarenessDate: string, deadlineDays: number): string {
   const awareness = new Date(awarenessDate);
   awareness.setDate(awareness.getDate() + deadlineDays);
-  return awareness.toISOString().split('T')[0]!;
+  const isoString = awareness.toISOString();
+  return isoString.split('T')[0];
 }
 
 function buildPrompt(event: AdverseEventInput, reportType: ReportType): string {

@@ -438,8 +438,14 @@ function InteractionsTab({ packageId }: { packageId: string }) {
         >
           <div className="grid grid-cols-2 gap-3">
             <div>
-              <label className="mb-1 block text-xs font-medium text-ink-700">유형</label>
+              <label
+                htmlFor="interaction_type"
+                className="mb-1 block text-xs font-medium text-ink-700"
+              >
+                유형
+              </label>
               <select
+                id="interaction_type"
                 value={form.interaction_type}
                 onChange={(e) => setForm((p) => ({ ...p, interaction_type: e.target.value }))}
                 className="w-full rounded border border-ink-300 px-2 py-1.5 text-sm"
@@ -452,8 +458,14 @@ function InteractionsTab({ packageId }: { packageId: string }) {
               </select>
             </div>
             <div>
-              <label className="mb-1 block text-xs font-medium text-ink-700">참조 번호</label>
+              <label
+                htmlFor="reference_number"
+                className="mb-1 block text-xs font-medium text-ink-700"
+              >
+                참조 번호
+              </label>
               <input
+                id="reference_number"
                 type="text"
                 value={form.reference_number}
                 onChange={(e) => setForm((p) => ({ ...p, reference_number: e.target.value }))}
@@ -463,10 +475,11 @@ function InteractionsTab({ packageId }: { packageId: string }) {
             </div>
           </div>
           <div>
-            <label className="mb-1 block text-xs font-medium text-ink-700">
+            <label htmlFor="description" className="mb-1 block text-xs font-medium text-ink-700">
               설명 <span className="text-red-500">*</span>
             </label>
             <textarea
+              id="description"
               required
               value={form.description}
               onChange={(e) => setForm((p) => ({ ...p, description: e.target.value }))}
@@ -475,8 +488,11 @@ function InteractionsTab({ packageId }: { packageId: string }) {
             />
           </div>
           <div>
-            <label className="mb-1 block text-xs font-medium text-ink-700">마감일</label>
+            <label htmlFor="due_date" className="mb-1 block text-xs font-medium text-ink-700">
+              마감일
+            </label>
             <input
+              id="due_date"
               type="date"
               value={form.due_date}
               onChange={(e) => setForm((p) => ({ ...p, due_date: e.target.value }))}

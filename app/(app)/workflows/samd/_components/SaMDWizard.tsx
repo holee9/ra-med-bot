@@ -546,8 +546,8 @@ export function SaMDWizard({ onCreated, onCancel }: SaMDWizardProps) {
 
             {generateProgress.length > 0 && (
               <div className="rounded-lg border border-green-200 bg-green-50 p-4">
-                {generateProgress.map((msg, i) => (
-                  <p key={i} className="text-sm text-green-800">
+                {generateProgress.map((msg) => (
+                  <p key={msg} className="text-sm text-green-800">
                     {msg}
                   </p>
                 ))}
@@ -572,10 +572,10 @@ export function SaMDWizard({ onCreated, onCancel }: SaMDWizardProps) {
 
             {generating && <p className="text-sm text-ink-500 animate-pulse">Generating...</p>}
 
-            {generateProgress.length > 0 && !generating && (
+            {generateProgress.length > 0 && !generating && createdAssessment && (
               <button
                 type="button"
-                onClick={() => onCreated(createdAssessment!)}
+                onClick={() => onCreated(createdAssessment)}
                 className="w-full rounded bg-green-600 px-4 py-2 text-sm font-medium text-white hover:bg-green-700 transition-colors"
               >
                 View Assessment

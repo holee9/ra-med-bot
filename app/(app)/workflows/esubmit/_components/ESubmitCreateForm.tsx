@@ -85,10 +85,11 @@ export function ESubmitCreateForm({ onCreated, onCancel }: Props) {
       <form onSubmit={handleSubmit} className="flex flex-col gap-4">
         {/* Device name */}
         <div>
-          <label className="mb-1 block text-sm font-medium text-ink-700">
+          <label htmlFor="device_name" className="mb-1 block text-sm font-medium text-ink-700">
             기기명 <span className="text-red-500">*</span>
           </label>
           <input
+            id="device_name"
             type="text"
             required
             value={form.device_name}
@@ -100,10 +101,11 @@ export function ESubmitCreateForm({ onCreated, onCancel }: Props) {
 
         {/* Submission type */}
         <div>
-          <label className="mb-1 block text-sm font-medium text-ink-700">
+          <label htmlFor="submission_type" className="mb-1 block text-sm font-medium text-ink-700">
             제출 유형 <span className="text-red-500">*</span>
           </label>
           <select
+            id="submission_type"
             value={form.submission_type}
             onChange={(e) => handleTypeChange(e.target.value)}
             className="w-full rounded-md border border-ink-300 px-3 py-2 text-sm focus:border-brand-400 focus:outline-none"
@@ -118,10 +120,11 @@ export function ESubmitCreateForm({ onCreated, onCancel }: Props) {
 
         {/* Jurisdiction */}
         <div>
-          <label className="mb-1 block text-sm font-medium text-ink-700">
+          <label htmlFor="jurisdiction" className="mb-1 block text-sm font-medium text-ink-700">
             규제 기관 <span className="text-red-500">*</span>
           </label>
           <select
+            id="jurisdiction"
             value={form.jurisdiction}
             onChange={(e) => setForm((p) => ({ ...p, jurisdiction: e.target.value }))}
             className="w-full rounded-md border border-ink-300 px-3 py-2 text-sm focus:border-brand-400 focus:outline-none"
@@ -136,10 +139,14 @@ export function ESubmitCreateForm({ onCreated, onCancel }: Props) {
 
         {/* Submission number (optional) */}
         <div>
-          <label className="mb-1 block text-sm font-medium text-ink-700">
+          <label
+            htmlFor="submission_number"
+            className="mb-1 block text-sm font-medium text-ink-700"
+          >
             제출 번호 <span className="text-ink-400 text-xs">(선택)</span>
           </label>
           <input
+            id="submission_number"
             type="text"
             value={form.submission_number}
             onChange={(e) => setForm((p) => ({ ...p, submission_number: e.target.value }))}
@@ -150,8 +157,11 @@ export function ESubmitCreateForm({ onCreated, onCancel }: Props) {
 
         {/* Version */}
         <div>
-          <label className="mb-1 block text-sm font-medium text-ink-700">버전</label>
+          <label htmlFor="version" className="mb-1 block text-sm font-medium text-ink-700">
+            버전
+          </label>
           <input
+            id="version"
             type="text"
             value={form.version}
             onChange={(e) => setForm((p) => ({ ...p, version: e.target.value }))}
