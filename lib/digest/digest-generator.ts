@@ -103,7 +103,7 @@ async function generateImpactSummary(update: {
           { timeout: 30000 },
         ),
         new Promise((_, reject) => setTimeout(() => reject(new Error('Request timeout')), 30000)),
-      ])) as any;
+      ]);
 
       const firstBlock = response.content[0];
       return firstBlock?.type === 'text' ? firstBlock.text.trim() : MOCK_IMPACT_SUMMARY;
