@@ -88,7 +88,7 @@ async function generateImpactSummary(update: {
 
   for (let attempt = 0; attempt < maxRetries; attempt++) {
     try {
-      const response = await Promise.race([
+      const response = (await Promise.race([
         client.messages.create(
           {
             model: 'claude-sonnet-4-6',
@@ -100,10 +100,10 @@ async function generateImpactSummary(update: {
               },
             ],
           },
-          { timeout: 30000 }
+          { timeout: 30000 },
         ),
         new Promise((_, reject) => setTimeout(() => reject(new Error('Request timeout')), 30000)),
-      ]) as any;
+      ])) as any;
 
       const firstBlock = response.content[0];
       return firstBlock?.type === 'text' ? firstBlock.text.trim() : MOCK_IMPACT_SUMMARY;
@@ -111,11 +111,16 @@ async function generateImpactSummary(update: {
       const isLastAttempt = attempt === maxRetries - 1;
 
       if (!isLastAttempt) {
-        const delayMs = baseDelayMs * Math.pow(2, attempt);
-        logger.warn(`[digest] AI summary attempt ${attempt + 1} failed, retrying in ${delayMs}ms`, { err });
-        await new Promise(resolve => setTimeout(resolve, delayMs));
+        const delayMs = baseDelayMs * 2 ** attempt;
+        logger.warn(`[digest] AI summary attempt ${attempt + 1} failed, retrying in ${delayMs}ms`, {
+          err,
+        });
+        await new Promise((resolve) => setTimeout(resolve, delayMs));
       } else {
-        logger.error('[digest] AI summary failed after retries, using title fallback', { err, attempts: maxRetries });
+        logger.error('[digest] AI summary failed after retries, using title fallback', {
+          err,
+          attempts: maxRetries,
+        });
         return `Regulatory update from ${update.region}: ${update.title}. Review applicability to your product portfolio.`;
       }
     }
@@ -194,10 +199,7 @@ export async function generateWeeklyDigest(orgId: string, weekId?: string): Prom
 
   // Check for existing digest to preserve shareToken for link stability
   const existing = await db.query.weeklyDigests.findFirst({
-    where: and(
-      eq(weeklyDigests.orgId, orgId),
-      eq(weeklyDigests.weekId, targetWeekId)
-    )
+    where: and(eq(weeklyDigests.orgId, orgId), eq(weeklyDigests.weekId, targetWeekId)),
   });
 
   // @MX:NOTE: [AUTO] Preserve existing shareToken to keep email links stable across normal regenerations
