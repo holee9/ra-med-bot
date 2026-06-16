@@ -1,7 +1,16 @@
 // @MX:SPEC: SPEC-REGULA-DIGEST-001
-import DOMPurify from 'dompurify';
 import { logger } from '../observability/logger';
 import type { DigestPayload } from './digest-generator';
+
+// Server-side HTML escape function (no DOM dependency, safe for Node.js)
+function escapeHtml(unsafe: string): string {
+  return unsafe
+    .replace(/&/g, "&amp;")
+    .replace(/</g, "&lt;")
+    .replace(/>/g, "&gt;")
+    .replace(/"/g, "&quot;")
+    .replace(/'/g, "&#039;");
+}
 
 function buildHtmlEmail(payload: DigestPayload, appUrl: string): string {
   const digestUrl = `${appUrl}/updates/digest/${payload.week_id}?token=${encodeURIComponent(payload.share_token)}`;
@@ -21,10 +30,10 @@ function buildHtmlEmail(payload: DigestPayload, appUrl: string): string {
     .slice(0, 20)
     .map(
       (u) => {
-        const sanitizedTitle = DOMPurify.sanitize(u.title, { USE_PROFILES: { html: true } });
-        const sanitizedRegion = DOMPurify.sanitize(u.region, { USE_PROFILES: { html: true } });
-        const sanitizedImpact = DOMPurify.sanitize(u.impact_summary, { USE_PROFILES: { html: true } });
-        const sanitizedSourceUrl = u.source_url ? DOMPurify.sanitize(u.source_url, { USE_PROFILES: { html: true } }) : '';
+        const sanitizedTitle = escapeHtml(u.title);
+        const sanitizedRegion = escapeHtml(u.region);
+        const sanitizedImpact = escapeHtml(u.impact_summary);
+        const sanitizedSourceUrl = u.source_url ? escapeHtml(u.source_url) : '';
 
         return `
     <div style="border:1px solid gainsboro;border-left:4px solid ${severityColor[u.severity_classification]};border-radius:4px;padding:12px;margin-bottom:10px;">

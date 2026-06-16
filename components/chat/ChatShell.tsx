@@ -22,6 +22,7 @@ export function ChatShell() {
   const [inputValue, setInputValue] = useState('');
   const [sourceFilter, setSourceFilter] = useState<SourceFilter>('all');
   const [hasSubmitted, setHasSubmitted] = useState(false);
+  const [lastSubmittedQuestion, setLastSubmittedQuestion] = useState('');
   const currentProjectId = useUIStore((s) => s.currentProjectId);
 
   // Reset draft when user switches project context.
@@ -47,9 +48,11 @@ export function ChatShell() {
 
   const handleSubmit = useCallback(() => {
     if (!inputValue.trim() || isStreaming) return;
+    const questionToSubmit = inputValue.trim();
+    setLastSubmittedQuestion(questionToSubmit);
     setHasSubmitted(true);
     start({
-      question: inputValue.trim(),
+      question: questionToSubmit,
       sourceFilter,
       locale: 'ko',
       conversationId: meta?.conversationId,
@@ -101,7 +104,8 @@ export function ChatShell() {
                 type="button"
                 onClick={() => {
                   setHasSubmitted(false);
-                  setInputValue(inputValue);
+                  setInputValue(lastSubmittedQuestion);
+                  setLastSubmittedQuestion('');
                 }}
                 className="mt-2 rounded-md bg-red-100 px-3 py-1.5 text-xs font-medium text-red-800 transition-colors hover:bg-red-200"
               >
