@@ -2,12 +2,12 @@
 // Returns validation issues. Does NOT call external FDA/EUDAMED APIs.
 // @MX:SPEC SPEC-REGULA-ESUBMIT-001
 
+import { writeAudit } from '@/lib/audit';
 import { withPermission } from '@/lib/auth/with-permission';
 import { db } from '@/lib/db/client';
 import { submissionPackages } from '@/lib/db/schema';
-import { writeAudit } from '@/lib/audit';
 import { validateSubmissionPackage } from '@/lib/esubmit/validators';
-import { eq, and } from 'drizzle-orm';
+import { and, eq } from 'drizzle-orm';
 
 export const POST = withPermission('dashboard.view', async (_req, ctx, session) => {
   const orgId = session.user.organizationId;

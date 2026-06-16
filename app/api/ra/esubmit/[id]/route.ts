@@ -2,11 +2,11 @@
 // PATCH /api/ra/esubmit/[id] — update package fields (manifest, status, etc.).
 // @MX:SPEC SPEC-REGULA-ESUBMIT-001
 
+import { writeAudit } from '@/lib/audit';
 import { withPermission } from '@/lib/auth/with-permission';
 import { db } from '@/lib/db/client';
-import { submissionPackages, submissionInteractions } from '@/lib/db/schema';
-import { writeAudit } from '@/lib/audit';
-import { eq, and } from 'drizzle-orm';
+import { submissionInteractions, submissionPackages } from '@/lib/db/schema';
+import { and, eq } from 'drizzle-orm';
 import { z } from 'zod';
 
 const PatchPackageSchema = z.object({

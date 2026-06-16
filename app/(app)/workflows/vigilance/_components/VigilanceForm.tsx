@@ -33,7 +33,8 @@ interface StreamResult {
   done: boolean;
 }
 
-const INPUT_CLASS = 'border border-ink-200 rounded-md px-3 py-2 text-sm w-full focus:outline-none focus:ring-1 focus:ring-brand-400';
+const INPUT_CLASS =
+  'border border-ink-200 rounded-md px-3 py-2 text-sm w-full focus:outline-none focus:ring-1 focus:ring-brand-400';
 const LABEL_CLASS = 'block text-sm font-medium text-ink-700 mb-1';
 const PRIMARY_BTN =
   'bg-brand-700 text-white hover:bg-brand-800 rounded-md px-4 py-2 text-sm disabled:cursor-not-allowed disabled:opacity-60';
@@ -138,7 +139,7 @@ export function VigilanceForm() {
             if (eventName === 'assessment') {
               setResult((prev) => ({
                 ...(prev ?? { assessment: null, drafts: [], eventId: null, done: false }),
-                assessment: data['decision'] as ReportabilityDecision,
+                assessment: data.decision as ReportabilityDecision,
               }));
             } else if (
               eventName === 'draft_fda' ||
@@ -158,11 +159,11 @@ export function VigilanceForm() {
             } else if (eventName === 'done') {
               setResult((prev) => ({
                 ...(prev ?? { assessment: null, drafts: [], eventId: null, done: false }),
-                eventId: data['eventId'] as string,
+                eventId: data.eventId as string,
                 done: true,
               }));
             } else if (eventName === 'error') {
-              setError(data['message'] as string);
+              setError(data.message as string);
             }
           } catch {
             // Ignore malformed SSE chunks
@@ -304,9 +305,7 @@ export function VigilanceForm() {
           />
         </div>
 
-        {error && (
-          <p className="mt-3 text-sm text-red-600">{error}</p>
-        )}
+        {error && <p className="mt-3 text-sm text-red-600">{error}</p>}
 
         <div className="mt-4">
           <button type="submit" className={PRIMARY_BTN} disabled={streaming}>
@@ -375,8 +374,7 @@ export function VigilanceForm() {
                 <div>
                   <div className="flex items-center justify-between mb-3">
                     <p className="text-xs text-ink-500">
-                      형식: {activeDraft.reportFormat} · 제출 기한:{' '}
-                      {activeDraft.submissionDeadline}
+                      형식: {activeDraft.reportFormat} · 제출 기한: {activeDraft.submissionDeadline}
                     </p>
                   </div>
                   <div className="grid gap-3">
@@ -395,9 +393,7 @@ export function VigilanceForm() {
           )}
 
           {result.done && result.eventId && (
-            <p className="mt-4 text-xs text-ink-400">
-              Event ID: {result.eventId}
-            </p>
+            <p className="mt-4 text-xs text-ink-400">Event ID: {result.eventId}</p>
           )}
         </div>
       )}

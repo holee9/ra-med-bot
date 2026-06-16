@@ -5,11 +5,11 @@ import type { DigestPayload } from './digest-generator';
 // Server-side HTML escape function (no DOM dependency, safe for Node.js)
 function escapeHtml(unsafe: string): string {
   return unsafe
-    .replace(/&/g, "&amp;")
-    .replace(/</g, "&lt;")
-    .replace(/>/g, "&gt;")
-    .replace(/"/g, "&quot;")
-    .replace(/'/g, "&#039;");
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;')
+    .replace(/'/g, '&#039;');
 }
 
 function buildHtmlEmail(payload: DigestPayload, appUrl: string): string {
@@ -28,22 +28,20 @@ function buildHtmlEmail(payload: DigestPayload, appUrl: string): string {
   };
   const updateCards = payload.updates
     .slice(0, 20)
-    .map(
-      (u) => {
-        const sanitizedTitle = escapeHtml(u.title);
-        const sanitizedRegion = escapeHtml(u.region);
-        const sanitizedImpact = escapeHtml(u.impact_summary);
-        const sanitizedSourceUrl = u.source_url ? escapeHtml(u.source_url) : '';
+    .map((u) => {
+      const sanitizedTitle = escapeHtml(u.title);
+      const sanitizedRegion = escapeHtml(u.region);
+      const sanitizedImpact = escapeHtml(u.impact_summary);
+      const sanitizedSourceUrl = u.source_url ? escapeHtml(u.source_url) : '';
 
-        return `
+      return `
     <div style="border:1px solid gainsboro;border-left:4px solid ${severityColor[u.severity_classification]};border-radius:4px;padding:12px;margin-bottom:10px;">
       <div style="font-weight:600;font-size:14px;color:black;">${sanitizedTitle}</div>
       <div style="font-size:12px;color:dimgray;margin:4px 0;">${sanitizedRegion} · ${u.severity_classification.toUpperCase()} · ${new Date(u.published_at).toLocaleDateString()}</div>
       <div style="font-size:13px;color:darkslategray;margin-top:6px;">${sanitizedImpact}</div>
       ${sanitizedSourceUrl ? `<a href="${sanitizedSourceUrl}" style="font-size:12px;color:royalblue;">원문 보기 →</a>` : ''}
     </div>`;
-      },
-    )
+    })
     .join('');
 
   return `<!DOCTYPE html><html><body style="font-family:sans-serif;max-width:640px;margin:0 auto;padding:20px;color:black;">

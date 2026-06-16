@@ -53,7 +53,7 @@ export function DHFCreateForm({ onCreated, onCancel }: Props) {
         return;
       }
 
-      const data = await res.json() as { dhf: DHFSummary };
+      const data = (await res.json()) as { dhf: DHFSummary };
       onCreated(data.dhf);
     } catch {
       setError('Network error. Please try again.');
@@ -125,7 +125,9 @@ export function DHFCreateForm({ onCreated, onCancel }: Props) {
               className="rounded border border-ink-300 px-3 py-2 text-sm focus:border-brand-500 focus:outline-none bg-white"
             >
               {JURISDICTIONS.map((j) => (
-                <option key={j} value={j}>{j}</option>
+                <option key={j} value={j}>
+                  {j}
+                </option>
               ))}
             </select>
           </div>
@@ -141,15 +143,15 @@ export function DHFCreateForm({ onCreated, onCancel }: Props) {
               className="rounded border border-ink-300 px-3 py-2 text-sm focus:border-brand-500 focus:outline-none bg-white"
             >
               {FRAMEWORKS.map((fw) => (
-                <option key={fw.value} value={fw.value}>{fw.label}</option>
+                <option key={fw.value} value={fw.value}>
+                  {fw.label}
+                </option>
               ))}
             </select>
           </div>
         </div>
 
-        {error && (
-          <p className="rounded bg-red-50 px-3 py-2 text-sm text-red-600">{error}</p>
-        )}
+        {error && <p className="rounded bg-red-50 px-3 py-2 text-sm text-red-600">{error}</p>}
 
         <div className="flex gap-3 justify-end pt-2">
           <button

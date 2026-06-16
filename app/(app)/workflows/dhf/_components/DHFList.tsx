@@ -30,22 +30,12 @@ export function DHFList() {
 
   // Detail view
   if (selectedId) {
-    return (
-      <DHFDetail
-        dhfId={selectedId}
-        onBack={() => setSelectedId(null)}
-      />
-    );
+    return <DHFDetail dhfId={selectedId} onBack={() => setSelectedId(null)} />;
   }
 
   // Create form
   if (showCreate) {
-    return (
-      <DHFCreateForm
-        onCreated={handleCreated}
-        onCancel={() => setShowCreate(false)}
-      />
-    );
+    return <DHFCreateForm onCreated={handleCreated} onCancel={() => setShowCreate(false)} />;
   }
 
   // List view

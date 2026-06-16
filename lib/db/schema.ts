@@ -247,131 +247,151 @@ export const organizations = pgTable('organizations', {
 });
 
 // REQ-FND-032, REQ-ENTERPRISE-016 (user_role enum), REQ-ENTERPRISE-027 (notification_pref)
-export const users = pgTable('users', {
-  id: uuid('id').defaultRandom().primaryKey(),
-  email: text('email').notNull().unique(),
-  name: text('name').notNull(),
-  // REQ-ENTERPRISE-016: migrated from TEXT to user_role pgEnum via 0004_user_role_enum.sql.
-  // Default 'ra-member' replaces legacy default 'member'.
-  role: userRoleEnum('role').notNull().default('ra-member'),
-  locale: localeEnum('locale').notNull().default('ko'),
-  themePref: themePrefEnum('theme_pref').notNull().default('system'),
-  // @MX:NOTE: [AUTO] REQ-ENTERPRISE-027: notification_pref column — write-only in Phase 5.
-  // Phase 6 will add read/update paths. Default '{}' is safe for existing rows.
-  notificationPref: jsonb('notification_pref').notNull().default({}),
-  createdAt: timestamp('created_at', { withTimezone: true, mode: 'date' }).notNull().defaultNow(),
-  updatedAt: timestamp('updated_at', { withTimezone: true, mode: 'date' }).notNull().defaultNow(),
-  // REQ-TENANT-001: nullable department for secondary RBAC axis. null = unrestricted.
-  department: userDepartmentEnum('department'),
-  // Auth.js v5 DrizzleAdapter requires emailVerified — null = unverified (Credentials flow).
-  emailVerified: timestamp('email_verified', { withTimezone: true, mode: 'date' }),
-  // Credentials auth — null means SSO-only account.
-  password_hash: text('password_hash'),
-  image: text('image'),
-  // pending = awaiting admin approval, active = approved, disabled = revoked.
-  status: userStatusEnum('status').notNull().default('pending'),
-  // Issue #111: force password change on first login (admin bootstrap accounts only).
-  mustChangePassword: boolean('must_change_password').notNull().default(false),
-}, (t) => ({
-  // Performance optimization: speed up authentication queries by email
-  emailIdx: index('idx_users_email').on(t.email),
-  // Performance optimization: filter users by status for admin dashboards
-  statusIdx: index('idx_users_status').on(t.status),
-}));
+export const users = pgTable(
+  'users',
+  {
+    id: uuid('id').defaultRandom().primaryKey(),
+    email: text('email').notNull().unique(),
+    name: text('name').notNull(),
+    // REQ-ENTERPRISE-016: migrated from TEXT to user_role pgEnum via 0004_user_role_enum.sql.
+    // Default 'ra-member' replaces legacy default 'member'.
+    role: userRoleEnum('role').notNull().default('ra-member'),
+    locale: localeEnum('locale').notNull().default('ko'),
+    themePref: themePrefEnum('theme_pref').notNull().default('system'),
+    // @MX:NOTE: [AUTO] REQ-ENTERPRISE-027: notification_pref column — write-only in Phase 5.
+    // Phase 6 will add read/update paths. Default '{}' is safe for existing rows.
+    notificationPref: jsonb('notification_pref').notNull().default({}),
+    createdAt: timestamp('created_at', { withTimezone: true, mode: 'date' }).notNull().defaultNow(),
+    updatedAt: timestamp('updated_at', { withTimezone: true, mode: 'date' }).notNull().defaultNow(),
+    // REQ-TENANT-001: nullable department for secondary RBAC axis. null = unrestricted.
+    department: userDepartmentEnum('department'),
+    // Auth.js v5 DrizzleAdapter requires emailVerified — null = unverified (Credentials flow).
+    emailVerified: timestamp('email_verified', { withTimezone: true, mode: 'date' }),
+    // Credentials auth — null means SSO-only account.
+    password_hash: text('password_hash'),
+    image: text('image'),
+    // pending = awaiting admin approval, active = approved, disabled = revoked.
+    status: userStatusEnum('status').notNull().default('pending'),
+    // Issue #111: force password change on first login (admin bootstrap accounts only).
+    mustChangePassword: boolean('must_change_password').notNull().default(false),
+  },
+  (t) => ({
+    // Performance optimization: speed up authentication queries by email
+    emailIdx: index('idx_users_email').on(t.email),
+    // Performance optimization: filter users by status for admin dashboards
+    statusIdx: index('idx_users_status').on(t.status),
+  }),
+);
 
 // REQ-FND-034
-export const projects = pgTable('projects', {
-  id: uuid('id').defaultRandom().primaryKey(),
-  organizationId: uuid('organization_id')
-    .notNull()
-    .references(() => organizations.id, { onDelete: 'cascade' }),
-  name: text('name').notNull(),
-  deviceClass: text('device_class'),
-  targetMarkets: text('target_markets')
-    .array()
-    .notNull()
-    .default(sql`'{}'::text[]`)
-    .$default(() => []),
-  color: text('color'),
-  submissionDate: date('submission_date'),
-  status: text('status').notNull().default('active'),
-  createdAt: timestamp('created_at', { withTimezone: true, mode: 'date' }).notNull().defaultNow(),
-}, (t) => ({
-  // Performance optimization: org-level project listings
-  orgIdx: index('idx_projects_org').on(t.organizationId),
-  // Performance optimization: status filtering for dashboards
-  statusIdx: index('idx_projects_status').on(t.status),
-}));
+export const projects = pgTable(
+  'projects',
+  {
+    id: uuid('id').defaultRandom().primaryKey(),
+    organizationId: uuid('organization_id')
+      .notNull()
+      .references(() => organizations.id, { onDelete: 'cascade' }),
+    name: text('name').notNull(),
+    deviceClass: text('device_class'),
+    targetMarkets: text('target_markets')
+      .array()
+      .notNull()
+      .default(sql`'{}'::text[]`)
+      .$default(() => []),
+    color: text('color'),
+    submissionDate: date('submission_date'),
+    status: text('status').notNull().default('active'),
+    createdAt: timestamp('created_at', { withTimezone: true, mode: 'date' }).notNull().defaultNow(),
+  },
+  (t) => ({
+    // Performance optimization: org-level project listings
+    orgIdx: index('idx_projects_org').on(t.organizationId),
+    // Performance optimization: status filtering for dashboards
+    statusIdx: index('idx_projects_status').on(t.status),
+  }),
+);
 
 // REQ-FND-035
-export const conversations = pgTable('conversations', {
-  id: uuid('id').defaultRandom().primaryKey(),
-  projectId: uuid('project_id').references(() => projects.id, { onDelete: 'set null' }),
-  userId: uuid('user_id')
-    .notNull()
-    .references(() => users.id, { onDelete: 'restrict' }),
-  title: text('title'),
-  status: text('status').notNull().default('active'),
-  createdAt: timestamp('created_at', { withTimezone: true, mode: 'date' }).notNull().defaultNow(),
-  archivedAt: timestamp('archived_at', { withTimezone: true, mode: 'date' }),
-}, (t) => ({
-  // Performance optimization: user conversation history queries
-  userIdx: index('idx_conversations_user').on(t.userId, t.createdAt),
-  // Performance optimization: project-specific conversations
-  projectIdx: index('idx_conversations_project').on(t.projectId),
-  // Performance optimization: active conversation filtering
-  statusIdx: index('idx_conversations_status').on(t.status),
-}));
+export const conversations = pgTable(
+  'conversations',
+  {
+    id: uuid('id').defaultRandom().primaryKey(),
+    projectId: uuid('project_id').references(() => projects.id, { onDelete: 'set null' }),
+    userId: uuid('user_id')
+      .notNull()
+      .references(() => users.id, { onDelete: 'restrict' }),
+    title: text('title'),
+    status: text('status').notNull().default('active'),
+    createdAt: timestamp('created_at', { withTimezone: true, mode: 'date' }).notNull().defaultNow(),
+    archivedAt: timestamp('archived_at', { withTimezone: true, mode: 'date' }),
+  },
+  (t) => ({
+    // Performance optimization: user conversation history queries
+    userIdx: index('idx_conversations_user').on(t.userId, t.createdAt),
+    // Performance optimization: project-specific conversations
+    projectIdx: index('idx_conversations_project').on(t.projectId),
+    // Performance optimization: active conversation filtering
+    statusIdx: index('idx_conversations_status').on(t.status),
+  }),
+);
 
 // REQ-FND-036 — meta_json is critical (v0.4.0 C7).
-export const messages = pgTable('messages', {
-  id: uuid('id').defaultRandom().primaryKey(),
-  conversationId: uuid('conversation_id')
-    .notNull()
-    .references(() => conversations.id, { onDelete: 'cascade' }),
-  role: messageRoleEnum('role').notNull(),
-  contentProse: text('content_prose').notNull().default(''),
-  confidenceLevel: confidenceLevelEnum('confidence_level'),
-  confidenceScore: numeric('confidence_score', { precision: 4, scale: 3 }),
-  durationMs: integer('duration_ms'),
-  expertReviewRequired: boolean('expert_review_required').notNull().default(false),
-  tokensIn: integer('tokens_in'),
-  tokensOut: integer('tokens_out'),
-  model: text('model'),
-  metaJson: jsonb('meta_json'),
-  createdAt: timestamp('created_at', { withTimezone: true, mode: 'date' }).notNull().defaultNow(),
-}, (t) => ({
-  // Performance optimization: conversation message loading (chronological)
-  conversationIdx: index('idx_messages_conversation_created').on(t.conversationId, t.createdAt),
-  // Performance optimization: expert review queue filtering
-  expertReviewIdx: index('idx_messages_expert_review').on(t.expertReviewRequired, t.createdAt),
-}));
+export const messages = pgTable(
+  'messages',
+  {
+    id: uuid('id').defaultRandom().primaryKey(),
+    conversationId: uuid('conversation_id')
+      .notNull()
+      .references(() => conversations.id, { onDelete: 'cascade' }),
+    role: messageRoleEnum('role').notNull(),
+    contentProse: text('content_prose').notNull().default(''),
+    confidenceLevel: confidenceLevelEnum('confidence_level'),
+    confidenceScore: numeric('confidence_score', { precision: 4, scale: 3 }),
+    durationMs: integer('duration_ms'),
+    expertReviewRequired: boolean('expert_review_required').notNull().default(false),
+    tokensIn: integer('tokens_in'),
+    tokensOut: integer('tokens_out'),
+    model: text('model'),
+    metaJson: jsonb('meta_json'),
+    createdAt: timestamp('created_at', { withTimezone: true, mode: 'date' }).notNull().defaultNow(),
+  },
+  (t) => ({
+    // Performance optimization: conversation message loading (chronological)
+    conversationIdx: index('idx_messages_conversation_created').on(t.conversationId, t.createdAt),
+    // Performance optimization: expert review queue filtering
+    expertReviewIdx: index('idx_messages_expert_review').on(t.expertReviewRequired, t.createdAt),
+  }),
+);
 
 // REQ-FND-039 — sources is created before message_sources because the latter FKs it.
-export const sources = pgTable('sources', {
-  id: uuid('id').defaultRandom().primaryKey(),
-  organizationId: uuid('organization_id').references(() => organizations.id, {
-    onDelete: 'cascade',
+export const sources = pgTable(
+  'sources',
+  {
+    id: uuid('id').defaultRandom().primaryKey(),
+    organizationId: uuid('organization_id').references(() => organizations.id, {
+      onDelete: 'cascade',
+    }),
+    orgLabel: text('org_label').notNull(),
+    title: text('title').notNull(),
+    year: integer('year'),
+    type: sourceTypeEnum('type').notNull(),
+    region: text('region'),
+    url: text('url'),
+    // tsvector and vector use raw SQL types via customType / text fallback;
+    // Drizzle does not introspect them but the migration creates them correctly.
+    fullTextTsv: text('full_text_tsv'),
+    embedding: vector('embedding'),
+    createdAt: timestamp('created_at', { withTimezone: true, mode: 'date' }).notNull().defaultNow(),
+  },
+  (t) => ({
+    // Performance optimization: org-level source catalog queries
+    orgIdx: index('idx_sources_org').on(t.organizationId),
+    // Performance optimization: source type filtering
+    typeIdx: index('idx_sources_type').on(t.type),
+    // Performance optimization: regional filtering
+    regionIdx: index('idx_sources_region').on(t.region),
   }),
-  orgLabel: text('org_label').notNull(),
-  title: text('title').notNull(),
-  year: integer('year'),
-  type: sourceTypeEnum('type').notNull(),
-  region: text('region'),
-  url: text('url'),
-  // tsvector and vector use raw SQL types via customType / text fallback;
-  // Drizzle does not introspect them but the migration creates them correctly.
-  fullTextTsv: text('full_text_tsv'),
-  embedding: vector('embedding'),
-  createdAt: timestamp('created_at', { withTimezone: true, mode: 'date' }).notNull().defaultNow(),
-}, (t) => ({
-  // Performance optimization: org-level source catalog queries
-  orgIdx: index('idx_sources_org').on(t.organizationId),
-  // Performance optimization: source type filtering
-  typeIdx: index('idx_sources_type').on(t.type),
-  // Performance optimization: regional filtering
-  regionIdx: index('idx_sources_region').on(t.region),
-}));
+);
 
 // REQ-FND-037 — cite_index is non-nullable; UNIQUE(message_id, cite_index).
 export const messageSources = pgTable(
@@ -547,25 +567,29 @@ export const expertReviews = pgTable(
 // the database layer (21 CFR Part 11 §11.10(c)). Do not add Drizzle-side
 // .update() or .delete() calls — they will raise P0001 at runtime.
 // @MX:REASON FDA Part 11 mandates immutable electronic records for 7 years.
-export const auditLogs = pgTable('audit_logs', {
-  id: uuid('id').defaultRandom().primaryKey(),
-  actorId: uuid('actor_id').references(() => users.id, { onDelete: 'set null' }),
-  action: auditActionEnum('action').notNull(),
-  resourceType: text('resource_type').notNull(),
-  resourceId: text('resource_id').notNull(),
-  conversationId: uuid('conversation_id').references(() => conversations.id, {
-    onDelete: 'restrict',
+export const auditLogs = pgTable(
+  'audit_logs',
+  {
+    id: uuid('id').defaultRandom().primaryKey(),
+    actorId: uuid('actor_id').references(() => users.id, { onDelete: 'set null' }),
+    action: auditActionEnum('action').notNull(),
+    resourceType: text('resource_type').notNull(),
+    resourceId: text('resource_id').notNull(),
+    conversationId: uuid('conversation_id').references(() => conversations.id, {
+      onDelete: 'restrict',
+    }),
+    metaJson: jsonb('meta_json').notNull().default({}),
+    createdAt: timestamp('created_at', { withTimezone: true, mode: 'date' }).notNull().defaultNow(),
+  },
+  (t) => ({
+    // Performance optimization: actor audit trail queries (REQ-FND-048)
+    actorIdx: index('idx_audit_logs_actor_created').on(t.actorId, t.createdAt),
+    // Performance optimization: action type filtering for compliance reports
+    actionIdx: index('idx_audit_logs_action_created').on(t.action, t.createdAt),
+    // Performance optimization: resource-specific audit queries
+    resourceIdx: index('idx_audit_logs_resource').on(t.resourceType, t.resourceId),
   }),
-  metaJson: jsonb('meta_json').notNull().default({}),
-  createdAt: timestamp('created_at', { withTimezone: true, mode: 'date' }).notNull().defaultNow(),
-}, (t) => ({
-  // Performance optimization: actor audit trail queries (REQ-FND-048)
-  actorIdx: index('idx_audit_logs_actor_created').on(t.actorId, t.createdAt),
-  // Performance optimization: action type filtering for compliance reports
-  actionIdx: index('idx_audit_logs_action_created').on(t.action, t.createdAt),
-  // Performance optimization: resource-specific audit queries
-  resourceIdx: index('idx_audit_logs_resource').on(t.resourceType, t.resourceId),
-}));
+);
 
 // CF-2 fix: RBAC 2-tier membership tables — absent from FOUNDATION schema.
 // Discovered during Phase 5 Phase 1 analysis. Required for REQ-ENTERPRISE-016
@@ -610,41 +634,45 @@ export const projectMembers = pgTable(
 // REQ-WF-049: workflow_runs — long-running regulatory workflow state persistence.
 // @MX:NOTE: [AUTO] review_required is enforced server-side; see lib/auth/with-workflow-review.ts
 // @MX:SPEC SPEC-REGULA-WORKFLOWS-001 (REQ-WF-049)
-export const workflowRuns = pgTable('workflow_runs', {
-  id: uuid('id').defaultRandom().primaryKey(),
-  userId: uuid('user_id')
-    .notNull()
-    .references(() => users.id),
-  organizationId: uuid('organization_id')
-    .notNull()
-    .references(() => organizations.id),
-  projectId: uuid('project_id').references(() => projects.id),
-  workflowType: workflowTypeEnum('workflow_type').notNull(),
-  status: workflowStatusEnum('status').notNull().default('queued'),
-  inputJson: jsonb('input_json').notNull(),
-  resultJson: jsonb('result_json'),
-  stepProgress: jsonb('step_progress'),
-  confidenceAggregate: numeric('confidence_aggregate', { precision: 3, scale: 2 }),
-  reviewRequired: boolean('review_required').notNull().default(true),
-  reviewerUserId: uuid('reviewer_user_id').references(() => users.id),
-  reviewedAt: timestamp('reviewed_at', { withTimezone: true, mode: 'date' }),
-  startedAt: timestamp('started_at', { withTimezone: true, mode: 'date' }).notNull().defaultNow(),
-  completedAt: timestamp('completed_at', { withTimezone: true, mode: 'date' }),
-  cloudflareWorkflowInstanceId: text('cloudflare_workflow_instance_id'),
-  createdAt: timestamp('created_at', { withTimezone: true, mode: 'date' }).notNull().defaultNow(),
-  updatedAt: timestamp('updated_at', { withTimezone: true, mode: 'date' }).notNull().defaultNow(),
-}, (t) => ({
-  // Performance optimization: user workflow history
-  userIdx: index('idx_workflow_runs_user').on(t.userId, t.createdAt),
-  // Performance optimization: org-level workflow dashboard
-  orgIdx: index('idx_workflow_runs_org').on(t.organizationId, t.createdAt),
-  // Performance optimization: project workflow filtering
-  projectIdx: index('idx_workflow_runs_project').on(t.projectId),
-  // Performance optimization: status-based queue queries
-  statusIdx: index('idx_workflow_runs_status').on(t.status, t.createdAt),
-  // Performance optimization: reviewer queue filtering
-  reviewerIdx: index('idx_workflow_runs_reviewer').on(t.reviewerUserId, t.status),
-}));
+export const workflowRuns = pgTable(
+  'workflow_runs',
+  {
+    id: uuid('id').defaultRandom().primaryKey(),
+    userId: uuid('user_id')
+      .notNull()
+      .references(() => users.id),
+    organizationId: uuid('organization_id')
+      .notNull()
+      .references(() => organizations.id),
+    projectId: uuid('project_id').references(() => projects.id),
+    workflowType: workflowTypeEnum('workflow_type').notNull(),
+    status: workflowStatusEnum('status').notNull().default('queued'),
+    inputJson: jsonb('input_json').notNull(),
+    resultJson: jsonb('result_json'),
+    stepProgress: jsonb('step_progress'),
+    confidenceAggregate: numeric('confidence_aggregate', { precision: 3, scale: 2 }),
+    reviewRequired: boolean('review_required').notNull().default(true),
+    reviewerUserId: uuid('reviewer_user_id').references(() => users.id),
+    reviewedAt: timestamp('reviewed_at', { withTimezone: true, mode: 'date' }),
+    startedAt: timestamp('started_at', { withTimezone: true, mode: 'date' }).notNull().defaultNow(),
+    completedAt: timestamp('completed_at', { withTimezone: true, mode: 'date' }),
+    cloudflareWorkflowInstanceId: text('cloudflare_workflow_instance_id'),
+    createdAt: timestamp('created_at', { withTimezone: true, mode: 'date' }).notNull().defaultNow(),
+    updatedAt: timestamp('updated_at', { withTimezone: true, mode: 'date' }).notNull().defaultNow(),
+  },
+  (t) => ({
+    // Performance optimization: user workflow history
+    userIdx: index('idx_workflow_runs_user').on(t.userId, t.createdAt),
+    // Performance optimization: org-level workflow dashboard
+    orgIdx: index('idx_workflow_runs_org').on(t.organizationId, t.createdAt),
+    // Performance optimization: project workflow filtering
+    projectIdx: index('idx_workflow_runs_project').on(t.projectId),
+    // Performance optimization: status-based queue queries
+    statusIdx: index('idx_workflow_runs_status').on(t.status, t.createdAt),
+    // Performance optimization: reviewer queue filtering
+    reviewerIdx: index('idx_workflow_runs_reviewer').on(t.reviewerUserId, t.status),
+  }),
+);
 
 // REQ-CER-013: cer_literature — PubMed literature per CER workflow run.
 // Migration: 0030_cer_literature.sql

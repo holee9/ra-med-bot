@@ -5,8 +5,8 @@ import { describe, expect, it } from 'vitest';
 import {
   classifySaMD,
   computeImdrfCategory,
-  deriveFdaPathway,
   deriveEuAiRiskLevel,
+  deriveFdaPathway,
   isPccpRequired,
 } from '../../../lib/samd/imdrf-matrix';
 

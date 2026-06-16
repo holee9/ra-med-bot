@@ -95,11 +95,17 @@ export function ChatShell() {
         >
           <div className="flex items-start gap-2">
             <svg className="mt-0.5 h-4 w-4 flex-shrink-0" fill="currentColor" viewBox="0 0 20 20">
-              <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM8.707 7.293a1 1 0 00-1.414 1.414L8.586 10l-1.293 1.293a1 1 0 101.414 1.414L10 11.414l1.293 1.293a1 1 0 001.414-1.414L11.414 10l1.293-1.293a1 1 0 00-1.414-1.414L10 8.586 8.707 7.293z" clipRule="evenodd" />
+              <path
+                fillRule="evenodd"
+                d="M10 18a8 8 0 100-16 8 8 0 000 16zM8.707 7.293a1 1 0 00-1.414 1.414L8.586 10l-1.293 1.293a1 1 0 101.414 1.414L10 11.414l1.293 1.293a1 1 0 001.414-1.414L11.414 10l1.293-1.293a1 1 0 00-1.414-1.414L10 8.586 8.707 7.293z"
+                clipRule="evenodd"
+              />
             </svg>
             <div className="flex-1">
               <p className="font-medium">답변 생성 중 오류가 발생했습니다</p>
-              <p className="mt-1 text-xs text-red-600">잠시 후 다시 시도해 주세요. 문제가 지속되면 관리자에게 문의해 주세요.</p>
+              <p className="mt-1 text-xs text-red-600">
+                잠시 후 다시 시도해 주세요. 문제가 지속되면 관리자에게 문의해 주세요.
+              </p>
               <button
                 type="button"
                 onClick={() => {

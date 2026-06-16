@@ -90,8 +90,7 @@ const REVIEW_STAGE_LABELS: Record<string, string> = {
 };
 
 function CompletenessBar({ score }: { score: number }) {
-  const color =
-    score >= 80 ? 'bg-green-500' : score >= 50 ? 'bg-amber-400' : 'bg-red-400';
+  const color = score >= 80 ? 'bg-green-500' : score >= 50 ? 'bg-amber-400' : 'bg-red-400';
   const textColor =
     score >= 80 ? 'text-green-700' : score >= 50 ? 'text-amber-700' : 'text-red-600';
 
@@ -112,7 +111,10 @@ function CompletenessBar({ score }: { score: number }) {
 // Add Input Form (inline)
 // ---------------------------------------------------------------------------
 
-function AddInputForm({ dhfId, onAdded }: { dhfId: string; onAdded: (input: DesignInput) => void }) {
+function AddInputForm({
+  dhfId,
+  onAdded,
+}: { dhfId: string; onAdded: (input: DesignInput) => void }) {
   const [open, setOpen] = useState(false);
   const [submitting, setSubmitting] = useState(false);
   const [form, setForm] = useState({
@@ -151,10 +153,16 @@ function AddInputForm({ dhfId, onAdded }: { dhfId: string; onAdded: (input: Desi
         }),
       });
       if (res.ok) {
-        const data = await res.json() as { input: DesignInput };
+        const data = (await res.json()) as { input: DesignInput };
         onAdded(data.input);
         setOpen(false);
-        setForm({ input_type: 'user_need', requirement_id: '', description: '', source: '', priority: 'must' });
+        setForm({
+          input_type: 'user_need',
+          requirement_id: '',
+          description: '',
+          source: '',
+          priority: 'must',
+        });
       }
     } finally {
       setSubmitting(false);
@@ -162,7 +170,10 @@ function AddInputForm({ dhfId, onAdded }: { dhfId: string; onAdded: (input: Desi
   };
 
   return (
-    <form onSubmit={handleSubmit} className="rounded border border-brand-200 bg-brand-50 p-4 flex flex-col gap-3">
+    <form
+      onSubmit={handleSubmit}
+      className="rounded border border-brand-200 bg-brand-50 p-4 flex flex-col gap-3"
+    >
       <div className="grid grid-cols-2 gap-3">
         <select
           value={form.input_type}
@@ -232,7 +243,11 @@ function AddInputForm({ dhfId, onAdded }: { dhfId: string; onAdded: (input: Desi
 // Add Verification Form (inline)
 // ---------------------------------------------------------------------------
 
-function AddVerificationForm({ dhfId, inputs, onAdded }: { dhfId: string; inputs: DesignInput[]; onAdded: (v: Verification) => void }) {
+function AddVerificationForm({
+  dhfId,
+  inputs,
+  onAdded,
+}: { dhfId: string; inputs: DesignInput[]; onAdded: (v: Verification) => void }) {
   const [open, setOpen] = useState(false);
   const [submitting, setSubmitting] = useState(false);
   const [form, setForm] = useState({
@@ -271,7 +286,7 @@ function AddVerificationForm({ dhfId, inputs, onAdded }: { dhfId: string; inputs
         }),
       });
       if (res.ok) {
-        const data = await res.json() as { verification: Verification };
+        const data = (await res.json()) as { verification: Verification };
         onAdded(data.verification);
         setOpen(false);
       }
@@ -281,7 +296,10 @@ function AddVerificationForm({ dhfId, inputs, onAdded }: { dhfId: string; inputs
   };
 
   return (
-    <form onSubmit={handleSubmit} className="rounded border border-brand-200 bg-brand-50 p-4 flex flex-col gap-3">
+    <form
+      onSubmit={handleSubmit}
+      className="rounded border border-brand-200 bg-brand-50 p-4 flex flex-col gap-3"
+    >
       <div className="grid grid-cols-2 gap-3">
         <select
           value={form.verification_type}
@@ -301,7 +319,8 @@ function AddVerificationForm({ dhfId, inputs, onAdded }: { dhfId: string; inputs
           <option value="">No linked input</option>
           {inputs.map((i) => (
             <option key={i.id} value={i.id}>
-              {i.requirementId ? `${i.requirementId}: ` : ''}{i.description.slice(0, 40)}
+              {i.requirementId ? `${i.requirementId}: ` : ''}
+              {i.description.slice(0, 40)}
             </option>
           ))}
         </select>
@@ -335,8 +354,18 @@ function AddVerificationForm({ dhfId, inputs, onAdded }: { dhfId: string; inputs
         />
       </div>
       <div className="flex gap-2 justify-end">
-        <button type="button" onClick={() => setOpen(false)} className="text-xs text-ink-500 hover:text-ink-700">Cancel</button>
-        <button type="submit" disabled={submitting} className="rounded bg-brand-600 px-3 py-1 text-xs font-medium text-white hover:bg-brand-700 disabled:opacity-50">
+        <button
+          type="button"
+          onClick={() => setOpen(false)}
+          className="text-xs text-ink-500 hover:text-ink-700"
+        >
+          Cancel
+        </button>
+        <button
+          type="submit"
+          disabled={submitting}
+          className="rounded bg-brand-600 px-3 py-1 text-xs font-medium text-white hover:bg-brand-700 disabled:opacity-50"
+        >
           {submitting ? 'Adding...' : 'Add'}
         </button>
       </div>
@@ -381,13 +410,16 @@ function AddReviewForm({ dhfId, onAdded }: { dhfId: string; onAdded: (r: DesignR
         body: JSON.stringify({
           review_stage: form.review_stage,
           review_date: form.review_date,
-          attendees: form.attendees_raw.split(',').map((s) => s.trim()).filter(Boolean),
+          attendees: form.attendees_raw
+            .split(',')
+            .map((s) => s.trim())
+            .filter(Boolean),
           decisions: form.decisions || undefined,
           approved_by: form.approved_by || undefined,
         }),
       });
       if (res.ok) {
-        const data = await res.json() as { review: DesignReview };
+        const data = (await res.json()) as { review: DesignReview };
         onAdded(data.review);
         setOpen(false);
       }
@@ -397,7 +429,10 @@ function AddReviewForm({ dhfId, onAdded }: { dhfId: string; onAdded: (r: DesignR
   };
 
   return (
-    <form onSubmit={handleSubmit} className="rounded border border-brand-200 bg-brand-50 p-4 flex flex-col gap-3">
+    <form
+      onSubmit={handleSubmit}
+      className="rounded border border-brand-200 bg-brand-50 p-4 flex flex-col gap-3"
+    >
       <div className="grid grid-cols-2 gap-3">
         <select
           value={form.review_stage}
@@ -440,8 +475,18 @@ function AddReviewForm({ dhfId, onAdded }: { dhfId: string; onAdded: (r: DesignR
         className="rounded border border-ink-300 px-2 py-1.5 text-xs"
       />
       <div className="flex gap-2 justify-end">
-        <button type="button" onClick={() => setOpen(false)} className="text-xs text-ink-500 hover:text-ink-700">Cancel</button>
-        <button type="submit" disabled={submitting} className="rounded bg-brand-600 px-3 py-1 text-xs font-medium text-white hover:bg-brand-700 disabled:opacity-50">
+        <button
+          type="button"
+          onClick={() => setOpen(false)}
+          className="text-xs text-ink-500 hover:text-ink-700"
+        >
+          Cancel
+        </button>
+        <button
+          type="submit"
+          disabled={submitting}
+          className="rounded bg-brand-600 px-3 py-1 text-xs font-medium text-white hover:bg-brand-700 disabled:opacity-50"
+        >
           {submitting ? 'Adding...' : 'Add Review'}
         </button>
       </div>
@@ -472,12 +517,19 @@ export function DHFDetail({ dhfId, onBack }: Props) {
   useEffect(() => {
     fetch(`/api/ra/dhf/${dhfId}`)
       .then((r) => r.json())
-      .then((data: { dhf: DHF; inputs: DesignInput[]; verifications: Verification[]; reviews: DesignReview[] }) => {
-        setDhf(data.dhf);
-        setInputs(data.inputs);
-        setVerifications(data.verifications);
-        setReviews(data.reviews);
-      })
+      .then(
+        (data: {
+          dhf: DHF;
+          inputs: DesignInput[];
+          verifications: Verification[];
+          reviews: DesignReview[];
+        }) => {
+          setDhf(data.dhf);
+          setInputs(data.inputs);
+          setVerifications(data.verifications);
+          setReviews(data.reviews);
+        },
+      )
       .catch(console.error)
       .finally(() => setLoading(false));
   }, [dhfId]);
@@ -492,7 +544,7 @@ export function DHFDetail({ dhfId, onBack }: Props) {
         body: JSON.stringify({ design_freeze: true }),
       });
       if (res.ok) {
-        const data = await res.json() as { dhf: DHF };
+        const data = (await res.json()) as { dhf: DHF };
         setDhf(data.dhf);
       }
     } finally {
@@ -609,7 +661,10 @@ export function DHFDetail({ dhfId, onBack }: Props) {
       {tab === 'inputs' && (
         <div className="flex flex-col gap-3">
           <div className="flex justify-end">
-            <AddInputForm dhfId={dhfId} onAdded={(input) => setInputs((prev) => [...prev, input])} />
+            <AddInputForm
+              dhfId={dhfId}
+              onAdded={(input) => setInputs((prev) => [...prev, input])}
+            />
           </div>
           {inputs.length === 0 ? (
             <div className="rounded-lg border border-ink-200 bg-ink-50 p-6 text-center text-sm text-ink-500">
@@ -638,7 +693,8 @@ export function DHFDetail({ dhfId, onBack }: Props) {
                   </div>
                   <span
                     className={`shrink-0 rounded px-2 py-0.5 text-xs font-medium ${
-                      VERIFICATION_STATUS_STYLES[input.verificationStatus] ?? 'bg-ink-100 text-ink-600'
+                      VERIFICATION_STATUS_STYLES[input.verificationStatus] ??
+                      'bg-ink-100 text-ink-600'
                     }`}
                   >
                     {input.verificationStatus.replace('_', ' ')}
@@ -707,10 +763,7 @@ export function DHFDetail({ dhfId, onBack }: Props) {
       {tab === 'reviews' && (
         <div className="flex flex-col gap-3">
           <div className="flex justify-end">
-            <AddReviewForm
-              dhfId={dhfId}
-              onAdded={(r) => setReviews((prev) => [...prev, r])}
-            />
+            <AddReviewForm dhfId={dhfId} onAdded={(r) => setReviews((prev) => [...prev, r])} />
           </div>
           {reviews.length === 0 ? (
             <div className="rounded-lg border border-ink-200 bg-ink-50 p-6 text-center text-sm text-ink-500">
@@ -732,13 +785,9 @@ export function DHFDetail({ dhfId, onBack }: Props) {
                         Attendees: {r.attendees.join(', ')}
                       </p>
                     )}
-                    {r.decisions && (
-                      <p className="mt-1 text-sm text-ink-700">{r.decisions}</p>
-                    )}
+                    {r.decisions && <p className="mt-1 text-sm text-ink-700">{r.decisions}</p>}
                     {r.openActions && (
-                      <p className="mt-1 text-xs text-amber-700">
-                        Open actions: {r.openActions}
-                      </p>
+                      <p className="mt-1 text-xs text-amber-700">Open actions: {r.openActions}</p>
                     )}
                   </div>
                   {r.approvedBy && (

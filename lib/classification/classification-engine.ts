@@ -90,8 +90,7 @@ function classifyFDA(input: DeviceInput): JurisdictionResult {
     jurisdiction: 'FDA',
     deviceClass: 'II',
     pathway: '510k',
-    rationale:
-      'Devices with moderate risk and established predicate typically Class II/510(k)',
+    rationale: 'Devices with moderate risk and established predicate typically Class II/510(k)',
   };
 }
 
@@ -104,8 +103,7 @@ function classifyEU(input: DeviceInput): JurisdictionResult {
       deviceClass: 'B',
       pathway: 'notified_body',
       rule: 'IVDR Rule 3',
-      rationale:
-        'IVD devices regulated under EU IVDR 2017/746 — most require Notified Body',
+      rationale: 'IVD devices regulated under EU IVDR 2017/746 — most require Notified Body',
       requiresNotifiedBody: true,
     };
   }

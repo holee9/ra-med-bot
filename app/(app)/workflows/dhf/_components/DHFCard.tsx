@@ -41,12 +41,7 @@ interface Props {
 }
 
 function CompletenessBar({ score }: { score: number }) {
-  const color =
-    score >= 80
-      ? 'bg-green-500'
-      : score >= 50
-        ? 'bg-amber-400'
-        : 'bg-red-400';
+  const color = score >= 80 ? 'bg-green-500' : score >= 50 ? 'bg-amber-400' : 'bg-red-400';
 
   return (
     <div className="flex items-center gap-2">
@@ -82,9 +77,7 @@ export function DHFCard({ dhf, onSelect }: Props) {
         <div className="flex-1 min-w-0">
           <div className="flex items-center gap-2 flex-wrap">
             <h3 className="font-medium text-ink-900 truncate">{dhf.deviceName}</h3>
-            {dhf.deviceModel && (
-              <span className="text-xs text-ink-500">{dhf.deviceModel}</span>
-            )}
+            {dhf.deviceModel && <span className="text-xs text-ink-500">{dhf.deviceModel}</span>}
             <span
               className={`rounded border px-2 py-0.5 text-xs font-semibold ${jurisdictionStyle}`}
             >
@@ -95,9 +88,7 @@ export function DHFCard({ dhf, onSelect }: Props) {
             <span className="font-medium">
               {FRAMEWORK_LABELS[dhf.regulatoryFramework] ?? dhf.regulatoryFramework}
             </span>
-            {dhf.designFreezeDate && (
-              <span>Frozen: {dhf.designFreezeDate}</span>
-            )}
+            {dhf.designFreezeDate && <span>Frozen: {dhf.designFreezeDate}</span>}
             <CompletenessBar score={dhf.completenessScore} />
           </div>
         </div>

@@ -92,7 +92,10 @@ export default function DigestPreferencesForm({ orgId, initialPrefs }: Props) {
   }
 
   return (
-    <form onSubmit={handleSave} className="space-y-6 bg-white rounded-lg border border-gray-200 p-6">
+    <form
+      onSubmit={handleSave}
+      className="space-y-6 bg-white rounded-lg border border-gray-200 p-6"
+    >
       {message && (
         <div
           className={`text-sm px-4 py-2 rounded ${message.type === 'success' ? 'bg-green-50 text-green-700' : 'bg-red-50 text-red-700'}`}

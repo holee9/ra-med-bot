@@ -2,8 +2,8 @@
 // @MX:SPEC SPEC-REGULA-ESUBMIT-001
 // Tabbed detail view: Overview | Manifest | Validation | Interactions
 
-import { useEffect, useState, useCallback } from 'react';
 import type { ValidationIssue } from '@/lib/esubmit/validators';
+import { useCallback, useEffect, useState } from 'react';
 
 // ---------------------------------------------------------------------------
 // Types
@@ -318,12 +318,8 @@ function ValidationTab({
               {warnCount > 0 && (
                 <span className="text-amber-600 font-medium">{warnCount}개 경고</span>
               )}
-              {infoCount > 0 && (
-                <span className="text-blue-600">{infoCount}개 정보</span>
-              )}
-              {issues.length === 0 && (
-                <span className="text-green-600 font-medium">이슈 없음</span>
-              )}
+              {infoCount > 0 && <span className="text-blue-600">{infoCount}개 정보</span>}
+              {issues.length === 0 && <span className="text-green-600 font-medium">이슈 없음</span>}
             </>
           )}
         </div>
@@ -587,7 +583,11 @@ export function ESubmitDetail({ packageId, onBack }: Props) {
     return (
       <div>
         <p className="text-sm text-red-600">패키지를 찾을 수 없습니다.</p>
-        <button type="button" onClick={onBack} className="mt-2 text-sm text-brand-600 hover:underline">
+        <button
+          type="button"
+          onClick={onBack}
+          className="mt-2 text-sm text-brand-600 hover:underline"
+        >
           목록으로
         </button>
       </div>
@@ -615,8 +615,8 @@ export function ESubmitDetail({ packageId, onBack }: Props) {
             </span>
           </div>
           <p className="mt-0.5 text-sm text-ink-500">
-            {SUBMISSION_TYPE_LABELS[pkg.submissionType] ?? pkg.submissionType} ·{' '}
-            {pkg.jurisdiction} · v{pkg.version}
+            {SUBMISSION_TYPE_LABELS[pkg.submissionType] ?? pkg.submissionType} · {pkg.jurisdiction}{' '}
+            · v{pkg.version}
           </p>
         </div>
       </div>
@@ -640,18 +640,10 @@ export function ESubmitDetail({ packageId, onBack }: Props) {
 
       {/* Tab content */}
       <div className="pt-2">
-        {activeTab === 'overview' && (
-          <OverviewTab pkg={pkg} onStatusUpdate={handleStatusUpdate} />
-        )}
-        {activeTab === 'manifest' && (
-          <ManifestTab pkg={pkg} onSaved={handleManifestSaved} />
-        )}
-        {activeTab === 'validation' && (
-          <ValidationTab pkg={pkg} onValidated={handleValidated} />
-        )}
-        {activeTab === 'interactions' && (
-          <InteractionsTab packageId={packageId} />
-        )}
+        {activeTab === 'overview' && <OverviewTab pkg={pkg} onStatusUpdate={handleStatusUpdate} />}
+        {activeTab === 'manifest' && <ManifestTab pkg={pkg} onSaved={handleManifestSaved} />}
+        {activeTab === 'validation' && <ValidationTab pkg={pkg} onValidated={handleValidated} />}
+        {activeTab === 'interactions' && <InteractionsTab packageId={packageId} />}
       </div>
     </div>
   );

@@ -4,7 +4,8 @@ import { SaMDAssessmentList } from './_components/SaMDAssessmentList';
 
 export const metadata = {
   title: 'SaMD Pathway Builder — Regula',
-  description: 'AI/ML Software as a Medical Device Regulatory Pathway Builder (IMDRF N12 / FDA / EU AI Act)',
+  description:
+    'AI/ML Software as a Medical Device Regulatory Pathway Builder (IMDRF N12 / FDA / EU AI Act)',
 };
 
 export default function SaMDPage() {
@@ -16,7 +17,8 @@ export default function SaMDPage() {
           <BetaBadge />
         </div>
         <p className="mt-2 text-sm text-ink-600">
-          AI/ML Software as a Medical Device — IMDRF N12 Classification · FDA AI/ML Guidance · EU AI Act
+          AI/ML Software as a Medical Device — IMDRF N12 Classification · FDA AI/ML Guidance · EU AI
+          Act
         </p>
       </header>
 

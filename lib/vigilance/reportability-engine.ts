@@ -7,20 +7,9 @@
 //   EU MDV:  EU MDR Article 87 — immediate/2-day, 15-day, or 30-day
 //   FSCA:    Field Safety Corrective Action (recall/corrective action)
 
-export type PatientOutcome =
-  | 'death'
-  | 'serious_injury'
-  | 'malfunction'
-  | 'no_injury'
-  | 'other';
+export type PatientOutcome = 'death' | 'serious_injury' | 'malfunction' | 'no_injury' | 'other';
 
-export type DeviceCategory =
-  | 'class_I'
-  | 'class_II'
-  | 'class_III'
-  | 'IIa'
-  | 'IIb'
-  | 'III';
+export type DeviceCategory = 'class_I' | 'class_II' | 'class_III' | 'IIa' | 'IIb' | 'III';
 
 export interface AdverseEventInput {
   eventDescription: string;
@@ -44,16 +33,10 @@ export interface ReportabilityDecision {
 }
 
 // Outcomes that trigger FDA MDR 30-day reporting (21 CFR 803.50(a))
-const FDA_30DAY_OUTCOMES: ReadonlySet<PatientOutcome> = new Set([
-  'death',
-  'serious_injury',
-]);
+const FDA_30DAY_OUTCOMES: ReadonlySet<PatientOutcome> = new Set(['death', 'serious_injury']);
 
 // Outcomes that trigger EU MDV 2-day serious incident reporting (EU MDR Art. 87(2))
-const EU_2DAY_OUTCOMES: ReadonlySet<PatientOutcome> = new Set([
-  'death',
-  'serious_injury',
-]);
+const EU_2DAY_OUTCOMES: ReadonlySet<PatientOutcome> = new Set(['death', 'serious_injury']);
 
 // EU device classes that are subject to vigilance reporting (Art. 87 scope)
 const EU_REPORTABLE_CLASSES: ReadonlySet<DeviceCategory> = new Set([
@@ -94,7 +77,7 @@ export function assessReportability(event: AdverseEventInput): ReportabilityDeci
       fdaMdrRequired = true;
       fdaMdrDeadlineDays = 30;
       rationale.push(
-        `FDA MDR required (30-day): 21 CFR 803.53 — Class II/III device malfunction requiring reporting.`,
+        'FDA MDR required (30-day): 21 CFR 803.53 — Class II/III device malfunction requiring reporting.',
       );
     }
   }
@@ -108,7 +91,7 @@ export function assessReportability(event: AdverseEventInput): ReportabilityDeci
   ) {
     fdaMdrDeadlineDays = 5;
     rationale.push(
-      `FDA MDR upgraded to 5-day (21 CFR 803.53(a)): malfunction with imminent risk of death or serious injury.`,
+      'FDA MDR upgraded to 5-day (21 CFR 803.53(a)): malfunction with imminent risk of death or serious injury.',
     );
   }
 
@@ -129,14 +112,14 @@ export function assessReportability(event: AdverseEventInput): ReportabilityDeci
       euMdvRequired = true;
       euMdvDeadlineDays = 15;
       rationale.push(
-        `EU MDV required (15-day): EU MDR Art. 87(1) — device malfunction that may have led to serious incident.`,
+        'EU MDV required (15-day): EU MDR Art. 87(1) — device malfunction that may have led to serious incident.',
       );
     } else if (event.patientOutcome === 'other') {
       // Art. 87(3): trend reporting — 30-day
       euMdvRequired = true;
       euMdvDeadlineDays = 30;
       rationale.push(
-        `EU MDV required (30-day): EU MDR Art. 87(3) — trend report for non-serious incident.`,
+        'EU MDV required (30-day): EU MDR Art. 87(3) — trend report for non-serious incident.',
       );
     }
   } else if (!EU_REPORTABLE_CLASSES.has(event.deviceCategory)) {
@@ -157,7 +140,7 @@ export function assessReportability(event: AdverseEventInput): ReportabilityDeci
 
   if (fscaRequired) {
     rationale.push(
-      `FSCA required: systematic malfunction or serious harm involving high-risk device warrants field safety corrective action notice.`,
+      'FSCA required: systematic malfunction or serious harm involving high-risk device warrants field safety corrective action notice.',
     );
   }
 

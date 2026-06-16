@@ -6,7 +6,12 @@ import { BetaBadge } from '@/components/ui/BetaBadge';
 import { MockDataDisclosure } from '@/components/ui/MockDataDisclosure';
 import { VigilanceForm } from './_components/VigilanceForm';
 
-const REPORT_TYPES: ReadonlyArray<{ id: string; label: string; deadline: string; regulation: string }> = [
+const REPORT_TYPES: ReadonlyArray<{
+  id: string;
+  label: string;
+  deadline: string;
+  regulation: string;
+}> = [
   {
     id: 'fda_mdr',
     label: 'FDA MDR (3500A)',

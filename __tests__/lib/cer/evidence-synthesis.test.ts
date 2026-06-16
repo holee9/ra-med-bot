@@ -41,7 +41,8 @@ const MOCK_SYNTHESIS_RESPONSE = {
     gradeSummary: 'The overall body of evidence is of moderate quality.',
     narrativeSynthesis: 'Studies demonstrate acceptable safety and efficacy.',
     cerSection6Draft: '## 6. Clinical Background\n\nContent here.',
-    cerSection7Draft: '## 7. Clinical Data\n\n| Study | GRADE |\n|-------|-------|\n| Study 1 | High |',
+    cerSection7Draft:
+      '## 7. Clinical Data\n\n| Study | GRADE |\n|-------|-------|\n| Study 1 | High |',
     cerSection8Draft: '## 8. Appraisal\n\nOverall the evidence supports the device.',
   },
 };

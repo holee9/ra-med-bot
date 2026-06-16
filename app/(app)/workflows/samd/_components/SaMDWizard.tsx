@@ -4,27 +4,76 @@
 // Step 1: Device Description → Step 2: AI/ML Type → Step 3: IMDRF Matrix
 // → Step 4: Results → Step 5: Generate Package
 
+import {
+  computeImdrfCategory,
+  deriveEuAiRiskLevel,
+  deriveFdaPathway,
+  isPccpRequired,
+} from '@/lib/samd/imdrf-matrix';
+import type {
+  AiMlType,
+  ImdrfClinicalSituation,
+  ImdrfHealthcareSituation,
+} from '@/lib/samd/imdrf-matrix';
 import { useState } from 'react';
-import { computeImdrfCategory, deriveEuAiRiskLevel, deriveFdaPathway, isPccpRequired } from '@/lib/samd/imdrf-matrix';
-import type { AiMlType, ImdrfClinicalSituation, ImdrfHealthcareSituation } from '@/lib/samd/imdrf-matrix';
 
 // @MX:NOTE [AUTO] IMDRF matrix labels — mirrors imdrf-matrix.ts values.
 const CLINICAL_OPTIONS: { value: ImdrfClinicalSituation; label: string; description: string }[] = [
-  { value: 'critical', label: 'Critical', description: 'State of irreversible deterioration; treatment/action needed immediately' },
-  { value: 'serious', label: 'Serious', description: 'Non-critical deterioration; treatment/action needed within minutes/hours' },
-  { value: 'non_serious', label: 'Non-Serious', description: 'No immediate action needed; intervention can be deferred' },
+  {
+    value: 'critical',
+    label: 'Critical',
+    description: 'State of irreversible deterioration; treatment/action needed immediately',
+  },
+  {
+    value: 'serious',
+    label: 'Serious',
+    description: 'Non-critical deterioration; treatment/action needed within minutes/hours',
+  },
+  {
+    value: 'non_serious',
+    label: 'Non-Serious',
+    description: 'No immediate action needed; intervention can be deferred',
+  },
 ];
 
-const HEALTHCARE_OPTIONS: { value: ImdrfHealthcareSituation; label: string; description: string }[] = [
-  { value: 'critical', label: 'Critical', description: 'Automated treatment or diagnosis with no human oversight' },
-  { value: 'serious', label: 'Serious', description: 'Informs clinician with time-critical decision urgency' },
-  { value: 'non_serious', label: 'Non-Serious', description: 'Informs clinician; no time-critical urgency' },
+const HEALTHCARE_OPTIONS: {
+  value: ImdrfHealthcareSituation;
+  label: string;
+  description: string;
+}[] = [
+  {
+    value: 'critical',
+    label: 'Critical',
+    description: 'Automated treatment or diagnosis with no human oversight',
+  },
+  {
+    value: 'serious',
+    label: 'Serious',
+    description: 'Informs clinician with time-critical decision urgency',
+  },
+  {
+    value: 'non_serious',
+    label: 'Non-Serious',
+    description: 'Informs clinician; no time-critical urgency',
+  },
 ];
 
 const AI_ML_OPTIONS: { value: AiMlType; label: string; description: string }[] = [
-  { value: 'locked', label: 'Locked', description: 'Algorithm does not change after deployment. No PCCP required.' },
-  { value: 'adaptive', label: 'Adaptive', description: 'Adapts between training periods or in deployment. PCCP required.' },
-  { value: 'continuously_learning', label: 'Continuously Learning', description: 'Continuously updates its algorithm from new data. PCCP required.' },
+  {
+    value: 'locked',
+    label: 'Locked',
+    description: 'Algorithm does not change after deployment. No PCCP required.',
+  },
+  {
+    value: 'adaptive',
+    label: 'Adaptive',
+    description: 'Adapts between training periods or in deployment. PCCP required.',
+  },
+  {
+    value: 'continuously_learning',
+    label: 'Continuously Learning',
+    description: 'Continuously updates its algorithm from new data. PCCP required.',
+  },
 ];
 
 const CATEGORY_DESCRIPTIONS: Record<string, string> = {
@@ -103,7 +152,12 @@ export function SaMDWizard({ onCreated, onCancel }: SaMDWizardProps) {
       : null;
 
   const canAdvance = () => {
-    if (step === 1) return formData.title.length > 0 && formData.deviceDescription.length >= 10 && formData.intendedUse.length >= 10;
+    if (step === 1)
+      return (
+        formData.title.length > 0 &&
+        formData.deviceDescription.length >= 10 &&
+        formData.intendedUse.length >= 10
+      );
     if (step === 2) return formData.aiMlType !== '';
     if (step === 3) return formData.clinicalSituation !== '' && formData.healthcareSituation !== '';
     return true;
@@ -220,7 +274,9 @@ export function SaMDWizard({ onCreated, onCancel }: SaMDWizardProps) {
                     : 'border-ink-200 bg-white text-ink-400',
               ].join(' ')}
             >
-              <span className="block text-xs opacity-60">{num} / {STEPS.length}</span>
+              <span className="block text-xs opacity-60">
+                {num} / {STEPS.length}
+              </span>
               {label}
             </div>
           );
@@ -233,7 +289,9 @@ export function SaMDWizard({ onCreated, onCancel }: SaMDWizardProps) {
         {step === 1 && (
           <div className="flex flex-col gap-4">
             <h2 className="font-serif text-xl text-brand-800">Device Description</h2>
-            <p className="text-sm text-ink-600">Describe your AI/ML-enabled medical device and its intended clinical use.</p>
+            <p className="text-sm text-ink-600">
+              Describe your AI/ML-enabled medical device and its intended clinical use.
+            </p>
             <label className="flex flex-col gap-1">
               <span className="text-sm font-medium text-ink-700">Title *</span>
               <input
@@ -308,13 +366,16 @@ export function SaMDWizard({ onCreated, onCancel }: SaMDWizardProps) {
           <div className="flex flex-col gap-6">
             <h2 className="font-serif text-xl text-brand-800">IMDRF N12 Situation Matrix</h2>
             <p className="text-sm text-ink-600">
-              Select the clinical situation and healthcare situation to determine the IMDRF N12 risk category.
+              Select the clinical situation and healthcare situation to determine the IMDRF N12 risk
+              category.
             </p>
 
             <div className="grid grid-cols-1 gap-6 md:grid-cols-2">
               <div>
                 <h3 className="mb-2 text-sm font-semibold text-ink-800">Clinical Situation</h3>
-                <p className="mb-3 text-xs text-ink-500">Severity of patient condition if device fails or gives wrong output.</p>
+                <p className="mb-3 text-xs text-ink-500">
+                  Severity of patient condition if device fails or gives wrong output.
+                </p>
                 <div className="flex flex-col gap-2">
                   {CLINICAL_OPTIONS.map((opt) => (
                     <label
@@ -331,7 +392,9 @@ export function SaMDWizard({ onCreated, onCancel }: SaMDWizardProps) {
                         name="clinical"
                         value={opt.value}
                         checked={formData.clinicalSituation === opt.value}
-                        onChange={() => setFormData((p) => ({ ...p, clinicalSituation: opt.value }))}
+                        onChange={() =>
+                          setFormData((p) => ({ ...p, clinicalSituation: opt.value }))
+                        }
                         className="mt-0.5"
                       />
                       <div>
@@ -345,7 +408,9 @@ export function SaMDWizard({ onCreated, onCancel }: SaMDWizardProps) {
 
               <div>
                 <h3 className="mb-2 text-sm font-semibold text-ink-800">Healthcare Situation</h3>
-                <p className="mb-3 text-xs text-ink-500">Role of AI/ML output in the clinical decision pathway.</p>
+                <p className="mb-3 text-xs text-ink-500">
+                  Role of AI/ML output in the clinical decision pathway.
+                </p>
                 <div className="flex flex-col gap-2">
                   {HEALTHCARE_OPTIONS.map((opt) => (
                     <label
@@ -362,7 +427,9 @@ export function SaMDWizard({ onCreated, onCancel }: SaMDWizardProps) {
                         name="healthcare"
                         value={opt.value}
                         checked={formData.healthcareSituation === opt.value}
-                        onChange={() => setFormData((p) => ({ ...p, healthcareSituation: opt.value }))}
+                        onChange={() =>
+                          setFormData((p) => ({ ...p, healthcareSituation: opt.value }))
+                        }
                         className="mt-0.5"
                       />
                       <div>
@@ -379,7 +446,8 @@ export function SaMDWizard({ onCreated, onCancel }: SaMDWizardProps) {
             {classification && (
               <div className="rounded-lg border border-brand-200 bg-brand-50 p-4">
                 <p className="text-sm font-semibold text-brand-800">
-                  Computed IMDRF Category: <span className="text-brand-600">Category {classification.category}</span>
+                  Computed IMDRF Category:{' '}
+                  <span className="text-brand-600">Category {classification.category}</span>
                 </p>
                 <p className="mt-1 text-xs text-brand-700">
                   {CATEGORY_DESCRIPTIONS[classification.category]}
@@ -394,20 +462,29 @@ export function SaMDWizard({ onCreated, onCancel }: SaMDWizardProps) {
           <div className="flex flex-col gap-4">
             <h2 className="font-serif text-xl text-brand-800">Regulatory Pathway Results</h2>
             <p className="text-sm text-ink-600">
-              Based on the IMDRF N12 matrix and FDA/EU AI Act rules, the following regulatory pathways apply.
+              Based on the IMDRF N12 matrix and FDA/EU AI Act rules, the following regulatory
+              pathways apply.
             </p>
 
             <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
               <div className="rounded-lg border border-ink-200 p-4">
                 <p className="text-xs font-semibold uppercase text-ink-400">IMDRF Category</p>
-                <p className="mt-1 text-2xl font-bold text-ink-900">Category {classification.category}</p>
-                <p className="mt-1 text-xs text-ink-500">{CATEGORY_DESCRIPTIONS[classification.category]}</p>
+                <p className="mt-1 text-2xl font-bold text-ink-900">
+                  Category {classification.category}
+                </p>
+                <p className="mt-1 text-xs text-ink-500">
+                  {CATEGORY_DESCRIPTIONS[classification.category]}
+                </p>
               </div>
 
               <div className="rounded-lg border border-ink-200 p-4">
                 <p className="text-xs font-semibold uppercase text-ink-400">FDA Pathway</p>
-                <p className="mt-1 text-2xl font-bold text-ink-900 uppercase">{classification.fdaPathway.replace('_', ' ')}</p>
-                <p className="mt-1 text-xs text-ink-500">Approximate pathway — final determination requires regulatory review</p>
+                <p className="mt-1 text-2xl font-bold text-ink-900 uppercase">
+                  {classification.fdaPathway.replace('_', ' ')}
+                </p>
+                <p className="mt-1 text-xs text-ink-500">
+                  Approximate pathway — final determination requires regulatory review
+                </p>
               </div>
 
               <div className="rounded-lg border border-ink-200 p-4">
@@ -415,12 +492,18 @@ export function SaMDWizard({ onCreated, onCancel }: SaMDWizardProps) {
                 <p className="mt-1 text-lg font-bold text-ink-900 capitalize">
                   {classification.euRisk.replace('_', ' ')}
                 </p>
-                <p className="mt-1 text-xs text-ink-500">{EU_RISK_DESCRIPTIONS[classification.euRisk]}</p>
+                <p className="mt-1 text-xs text-ink-500">
+                  {EU_RISK_DESCRIPTIONS[classification.euRisk]}
+                </p>
               </div>
 
-              <div className={`rounded-lg border p-4 ${classification.pccpRequired ? 'border-purple-200 bg-purple-50' : 'border-ink-200'}`}>
+              <div
+                className={`rounded-lg border p-4 ${classification.pccpRequired ? 'border-purple-200 bg-purple-50' : 'border-ink-200'}`}
+              >
                 <p className="text-xs font-semibold uppercase text-ink-400">PCCP Requirement</p>
-                <p className={`mt-1 text-lg font-bold ${classification.pccpRequired ? 'text-purple-700' : 'text-green-700'}`}>
+                <p
+                  className={`mt-1 text-lg font-bold ${classification.pccpRequired ? 'text-purple-700' : 'text-green-700'}`}
+                >
                   {classification.pccpRequired ? 'Required' : 'Not Required'}
                 </p>
                 <p className="mt-1 text-xs text-ink-500">
@@ -432,7 +515,9 @@ export function SaMDWizard({ onCreated, onCancel }: SaMDWizardProps) {
             </div>
 
             {error && (
-              <div className="rounded bg-red-50 border border-red-200 px-4 py-3 text-sm text-red-700">{error}</div>
+              <div className="rounded bg-red-50 border border-red-200 px-4 py-3 text-sm text-red-700">
+                {error}
+              </div>
             )}
           </div>
         )}
@@ -442,14 +527,17 @@ export function SaMDWizard({ onCreated, onCancel }: SaMDWizardProps) {
           <div className="flex flex-col gap-4">
             <h2 className="font-serif text-xl text-brand-800">Generate Regulatory Package</h2>
             <p className="text-sm text-ink-600">
-              Generate an AI/ML Model Card, regulatory checklist, and post-market monitoring plan using AI.
+              Generate an AI/ML Model Card, regulatory checklist, and post-market monitoring plan
+              using AI.
             </p>
 
             {!generating && generateProgress.length === 0 && (
               <div className="rounded-lg border border-ink-200 bg-ink-50 p-4 text-sm text-ink-600">
                 <p>The package includes:</p>
                 <ul className="mt-2 list-disc pl-4 space-y-1 text-ink-500">
-                  <li>AI/ML Model Card (name, version, intended use, training data, limitations)</li>
+                  <li>
+                    AI/ML Model Card (name, version, intended use, training data, limitations)
+                  </li>
                   <li>Regulatory Checklist (FDA AI/ML, EU AI Act Annex IV, IMDRF N10/N12/N41)</li>
                   <li>Post-Market Monitoring Plan (KPIs, drift thresholds, retraining triggers)</li>
                 </ul>
@@ -459,13 +547,17 @@ export function SaMDWizard({ onCreated, onCancel }: SaMDWizardProps) {
             {generateProgress.length > 0 && (
               <div className="rounded-lg border border-green-200 bg-green-50 p-4">
                 {generateProgress.map((msg, i) => (
-                  <p key={i} className="text-sm text-green-800">{msg}</p>
+                  <p key={i} className="text-sm text-green-800">
+                    {msg}
+                  </p>
                 ))}
               </div>
             )}
 
             {error && (
-              <div className="rounded bg-red-50 border border-red-200 px-4 py-3 text-sm text-red-700">{error}</div>
+              <div className="rounded bg-red-50 border border-red-200 px-4 py-3 text-sm text-red-700">
+                {error}
+              </div>
             )}
 
             {!generating && generateProgress.length === 0 && (
@@ -478,9 +570,7 @@ export function SaMDWizard({ onCreated, onCancel }: SaMDWizardProps) {
               </button>
             )}
 
-            {generating && (
-              <p className="text-sm text-ink-500 animate-pulse">Generating...</p>
-            )}
+            {generating && <p className="text-sm text-ink-500 animate-pulse">Generating...</p>}
 
             {generateProgress.length > 0 && !generating && (
               <button

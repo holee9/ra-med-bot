@@ -5,8 +5,8 @@ import { writeAudit } from '../../../../../lib/audit';
 import { withPermission } from '../../../../../lib/auth/with-permission';
 import { db } from '../../../../../lib/db/client';
 import { orgDigestPreferences, weeklyDigests } from '../../../../../lib/db/schema';
-import { sendDigestEmail } from '../../../../../lib/digest/email-sender';
 import { generateWeeklyDigest } from '../../../../../lib/digest/digest-generator';
+import { sendDigestEmail } from '../../../../../lib/digest/email-sender';
 
 const RequestSchema = z.object({
   weekId: z
@@ -31,7 +31,10 @@ export const POST = withPermission('dashboard.view', async (req, _ctx, session) 
 
   const parsed = RequestSchema.safeParse(body);
   if (!parsed.success) {
-    return Response.json({ error: 'Invalid input', details: parsed.error.flatten() }, { status: 400 });
+    return Response.json(
+      { error: 'Invalid input', details: parsed.error.flatten() },
+      { status: 400 },
+    );
   }
 
   const payload = await generateWeeklyDigest(orgId, parsed.data.weekId);

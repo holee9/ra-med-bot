@@ -34,43 +34,43 @@ export function computeCompleteness(
   let score = 0;
 
   if (dhf.intendedUse && dhf.intendedUse.length >= 10) {
-    breakdown['has_device_description'] = 10;
+    breakdown.has_device_description = 10;
     score += 10;
   }
   if (inputs.length >= 3) {
-    breakdown['has_3_or_more_inputs'] = 15;
+    breakdown.has_3_or_more_inputs = 15;
     score += 15;
   }
   if (inputs.some((i) => i.inputType === 'user_need')) {
-    breakdown['has_user_need_inputs'] = 10;
+    breakdown.has_user_need_inputs = 10;
     score += 10;
   }
   if (inputs.some((i) => i.inputType === 'regulatory')) {
-    breakdown['has_regulatory_inputs'] = 10;
+    breakdown.has_regulatory_inputs = 10;
     score += 10;
   }
   if (verifications.length >= 1) {
-    breakdown['has_verification'] = 15;
+    breakdown.has_verification = 15;
     score += 15;
   }
   if (verifications.length > 0 && verifications.every((v) => v.result !== null)) {
-    breakdown['all_verifications_have_result'] = 10;
+    breakdown.all_verifications_have_result = 10;
     score += 10;
   }
   if (reviews.some((r) => r.approvedBy)) {
-    breakdown['has_approved_review'] = 15;
+    breakdown.has_approved_review = 15;
     score += 15;
   }
   if (reviews.some((r) => r.reviewStage === 'preliminary')) {
-    breakdown['has_preliminary_review'] = 5;
+    breakdown.has_preliminary_review = 5;
     score += 5;
   }
   if (reviews.some((r) => r.reviewStage === 'critical')) {
-    breakdown['has_critical_review'] = 5;
+    breakdown.has_critical_review = 5;
     score += 5;
   }
   if (reviews.some((r) => r.reviewStage === 'final')) {
-    breakdown['has_final_review'] = 5;
+    breakdown.has_final_review = 5;
     score += 5;
   }
 

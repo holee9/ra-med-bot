@@ -37,19 +37,16 @@ export function SaMDAssessmentList() {
   };
 
   if (showWizard) {
-    return (
-      <SaMDWizard
-        onCreated={handleCreated}
-        onCancel={() => setShowWizard(false)}
-      />
-    );
+    return <SaMDWizard onCreated={handleCreated} onCancel={() => setShowWizard(false)} />;
   }
 
   return (
     <div className="flex flex-col gap-4">
       <div className="flex items-center justify-between">
         <p className="text-sm text-ink-500">
-          {loading ? 'Loading...' : `${assessments.length} assessment${assessments.length !== 1 ? 's' : ''}`}
+          {loading
+            ? 'Loading...'
+            : `${assessments.length} assessment${assessments.length !== 1 ? 's' : ''}`}
         </p>
         <button
           type="button"

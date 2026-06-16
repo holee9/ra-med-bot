@@ -88,7 +88,7 @@ async function generateImpactSummary(update: {
 
   for (let attempt = 0; attempt < maxRetries; attempt++) {
     try {
-      const response = (await Promise.race([
+      const response = await Promise.race<Anthropic.Messages.Message>([
         client.messages.create(
           {
             model: 'claude-sonnet-4-6',
