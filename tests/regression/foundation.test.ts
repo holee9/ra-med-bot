@@ -95,8 +95,8 @@ describe('FOUNDATION regression', () => {
   // ---------------------------------------------------------------------------
   // consult.create scope check (REQ-ENTERPRISE-020 regression)
   // ---------------------------------------------------------------------------
-  it('consult.create has none scope (no membership check)', () => {
-    expect(PERMISSIONS['consult.create'].scope).toBe('none');
+  it('consult.create has org scope (organization membership check)', () => {
+    expect(PERMISSIONS['consult.create'].scope).toBe('org');
   });
 
   // ---------------------------------------------------------------------------

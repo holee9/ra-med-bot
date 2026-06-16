@@ -192,7 +192,18 @@ export async function generateWeeklyDigest(orgId: string, weekId?: string): Prom
     { critical: 0, high: 0, medium: 0, low: 0 },
   );
 
-  const shareToken = crypto.randomBytes(16).toString('hex');
+  // Check for existing digest to preserve shareToken for link stability
+  const existing = await db.query.weeklyDigests.findFirst({
+    where: and(
+      eq(weeklyDigests.orgId, orgId),
+      eq(weeklyDigests.weekId, targetWeekId)
+    )
+  });
+
+  // @MX:NOTE: [AUTO] Preserve existing shareToken to keep email links stable across normal regenerations
+  // @MX:REASON: Using existing?.shareToken prevents 404 errors on previously sent token-gated email links
+  // Preserve existing token for normal regeneration, only generate new for explicit rotation
+  const shareToken = existing?.shareToken || crypto.randomBytes(16).toString('hex');
   const payload: DigestPayload = {
     week_id: targetWeekId,
     share_token: shareToken,
