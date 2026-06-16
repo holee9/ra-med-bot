@@ -41,9 +41,9 @@ export interface PermissionSpec {
  *   'none'    — no membership check required
  */
 export const PERMISSIONS: Record<PermissionAction, PermissionSpec> = {
-  // @MX:ANCHOR consult.create requires project membership verification
-  // @MX:REASON OWASP A01:2021 — prevents unauthorized consult creation (REQ-CHAT-001)
-  'consult.create': { minRole: 'ra-member', scope: 'project', resourceType: 'consult' },
+  // @MX:ANCHOR consult.create requires global scope for routes without project ID
+  // @MX:REASON Routes like /api/ra/consult, refine, workflows need org-level access (REQ-CHAT-001)
+  'consult.create': { minRole: 'ra-member', scope: 'org', resourceType: 'consult' },
 
   // conversation actions
   'conversation.view': { minRole: 'ra-member', scope: 'org', resourceType: 'conversation' },

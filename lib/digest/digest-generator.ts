@@ -89,17 +89,19 @@ async function generateImpactSummary(update: {
   for (let attempt = 0; attempt < maxRetries; attempt++) {
     try {
       const response = await Promise.race([
-        client.messages.create({
-          model: 'claude-sonnet-4-6',
-          max_tokens: 256,
-          timeout: 30000,
-          messages: [
-            {
-              role: 'user',
-              content: `You are a regulatory affairs expert. Summarize the impact of this regulatory update in 2-3 sentences, focusing on "so what does this mean for a medical device company?"\n\nTitle: ${update.title}\nRegion: ${update.region}\nContent: ${update.rawContentEn ?? update.title}\n\nProvide only the 2-3 sentence summary, no preamble:`,
-            },
-          ],
-        }),
+        client.messages.create(
+          {
+            model: 'claude-sonnet-4-6',
+            max_tokens: 256,
+            messages: [
+              {
+                role: 'user',
+                content: `You are a regulatory affairs expert. Summarize the impact of this regulatory update in 2-3 sentences, focusing on "so what does this mean for a medical device company?"\n\nTitle: ${update.title}\nRegion: ${update.region}\nContent: ${update.rawContentEn ?? update.title}\n\nProvide only the 2-3 sentence summary, no preamble:`,
+              },
+            ],
+          },
+          { timeout: 30000 }
+        ),
         new Promise((_, reject) => setTimeout(() => reject(new Error('Request timeout')), 30000)),
       ]) as any;
 
