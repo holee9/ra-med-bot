@@ -1,14 +1,11 @@
 // POST /api/ra/standards — deterministic standards applicability lookup.
 // @MX:SPEC SPEC-REGULA-STANDARDS-001
 
-import { NextResponse } from 'next/server';
-import { z } from 'zod';
 import { writeAudit } from '@/lib/audit';
 import { withPermission } from '@/lib/auth/with-permission';
-import {
-  type DeviceProfile,
-  getApplicableStandards,
-} from '@/lib/standards/applicability-engine';
+import { type DeviceProfile, getApplicableStandards } from '@/lib/standards/applicability-engine';
+import { NextResponse } from 'next/server';
+import { z } from 'zod';
 
 const RequestSchema = z.object({
   deviceTypeKey: z.enum([

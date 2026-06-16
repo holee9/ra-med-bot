@@ -2,16 +2,16 @@
 // PATCH /api/ra/dhf/[id] — update DHF fields (including design_freeze).
 // @MX:SPEC SPEC-REGULA-DHF-001
 
+import { writeAudit } from '@/lib/audit';
 import { withPermission } from '@/lib/auth/with-permission';
 import { db } from '@/lib/db/client';
 import {
   designHistoryFiles,
   designInputs,
-  designVerifications,
   designReviews,
+  designVerifications,
 } from '@/lib/db/schema';
-import { writeAudit } from '@/lib/audit';
-import { eq, and } from 'drizzle-orm';
+import { and, eq } from 'drizzle-orm';
 import { z } from 'zod';
 
 const PatchDHFSchema = z.object({
@@ -103,7 +103,9 @@ export const PATCH = withPermission('dashboard.view', async (req, ctx, session) 
       ...(data.device_model !== undefined && { deviceModel: data.device_model }),
       ...(data.intended_use !== undefined && { intendedUse: data.intended_use }),
       ...(data.jurisdiction !== undefined && { jurisdiction: data.jurisdiction }),
-      ...(data.regulatory_framework !== undefined && { regulatoryFramework: data.regulatory_framework }),
+      ...(data.regulatory_framework !== undefined && {
+        regulatoryFramework: data.regulatory_framework,
+      }),
       ...(data.status !== undefined && { status: data.status }),
       ...(isDesignFreeze && {
         status: 'design_freeze',

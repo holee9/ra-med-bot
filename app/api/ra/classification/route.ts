@@ -1,7 +1,7 @@
+import { writeAudit } from '@/lib/audit';
 // @MX:SPEC SPEC-REGULA-CLASSIFY-001 (REQ-CLASSIFY-001, REQ-CLASSIFY-015)
 import { withPermission } from '@/lib/auth/with-permission';
 import type { AuthSession } from '@/lib/auth/with-permission';
-import { writeAudit } from '@/lib/audit';
 import { classifyDevice } from '@/lib/classification/classification-engine';
 import { parseDeviceIntent } from '@/lib/classification/intent-parser';
 import { db } from '@/lib/db/client';
@@ -10,12 +10,8 @@ import { z } from 'zod';
 
 const RequestSchema = z.object({
   deviceDescription: z.string().min(10).max(2000),
-  deviceType: z
-    .enum(['active', 'non_active', 'software_only', 'ivd', 'implantable'])
-    .optional(),
-  contactType: z
-    .enum(['no_contact', 'external', 'internal', 'implant'])
-    .optional(),
+  deviceType: z.enum(['active', 'non_active', 'software_only', 'ivd', 'implantable']).optional(),
+  contactType: z.enum(['no_contact', 'external', 'internal', 'implant']).optional(),
   hasSoftware: z.boolean().default(false),
   hasAiMl: z.boolean().default(false),
   isSterile: z.boolean().default(false),
@@ -25,10 +21,7 @@ function sse(data: unknown): string {
   return `data: ${JSON.stringify(data)}\n\n`;
 }
 
-async function postClassification(
-  request: Request,
-  session: AuthSession,
-): Promise<Response> {
+async function postClassification(request: Request, session: AuthSession): Promise<Response> {
   const orgId = session.user.organizationId;
   if (!orgId) {
     return new Response(JSON.stringify({ error: 'No organization' }), { status: 403 });
@@ -56,9 +49,7 @@ async function postClassification(
     async start(controller) {
       try {
         controller.enqueue(
-          encoder.encode(
-            sse({ event: 'parsing', message: 'Analyzing device description...' }),
-          ),
+          encoder.encode(sse({ event: 'parsing', message: 'Analyzing device description...' })),
         );
 
         const parsedIntent = await parseDeviceIntent(deviceDescription);
@@ -150,7 +141,6 @@ async function postClassification(
   });
 }
 
-export const POST = withPermission(
-  'consult.create',
-  async (request, _ctx, session) => postClassification(request, session),
+export const POST = withPermission('consult.create', async (request, _ctx, session) =>
+  postClassification(request, session),
 );

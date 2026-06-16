@@ -41,8 +41,9 @@ export interface PermissionSpec {
  *   'none'    — no membership check required
  */
 export const PERMISSIONS: Record<PermissionAction, PermissionSpec> = {
-  // consult.create: project-scoped if projectId present, default to none
-  'consult.create': { minRole: 'ra-member', scope: 'none', resourceType: 'consult' },
+  // @MX:ANCHOR consult.create requires global scope for routes without project ID
+  // @MX:REASON Routes like /api/ra/consult, refine, workflows need org-level access (REQ-CHAT-001)
+  'consult.create': { minRole: 'ra-member', scope: 'org', resourceType: 'consult' },
 
   // conversation actions
   'conversation.view': { minRole: 'ra-member', scope: 'org', resourceType: 'conversation' },
@@ -66,7 +67,7 @@ export const PERMISSIONS: Record<PermissionAction, PermissionSpec> = {
   'project.manage': { minRole: 'ra-lead', scope: 'project', resourceType: 'project' },
 
   // admin-only actions
-  'auditLogs.view': { minRole: 'ra-lead', scope: 'org', resourceType: 'auditLogs' },
+  'auditLogs.view': { minRole: 'admin', scope: 'org', resourceType: 'auditLogs' },
   'sources.ingest': { minRole: 'admin', scope: 'org', resourceType: 'sources' },
   'templates.edit': { minRole: 'ra-lead', scope: 'org', resourceType: 'templates' },
   // workflow actions

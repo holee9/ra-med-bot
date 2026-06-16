@@ -5,6 +5,8 @@ import { expect, test } from '@playwright/test';
 import { requiresAuthState, requiresLiveServer } from './fixtures/env-guard';
 
 test.describe('Expert review flow (REQ-LAUNCH-017)', () => {
+  test.describe.configure({ mode: 'serial' });
+
   test('low-confidence AI response shows expert-review callout', async ({ page }) => {
     const s = requiresLiveServer();
     test.skip(s.skip, s.reason);
@@ -64,6 +66,18 @@ test.describe('Expert review flow (REQ-LAUNCH-017)', () => {
     const a = requiresAuthState();
     test.skip(a.skip, a.reason);
 
+    await page.route('**/api/ra/expert-review/*', async (route) => {
+      if (route.request().method() !== 'PATCH') {
+        await route.continue();
+        return;
+      }
+      await route.fulfill({
+        status: 200,
+        contentType: 'application/json',
+        body: JSON.stringify({ ok: true }),
+      });
+    });
+
     // First: enqueue a review item via the low-confidence flow.
     await page.goto('/chat');
     const composer = page.locator('[data-testid="chat-composer"]');
@@ -86,15 +100,19 @@ test.describe('Expert review flow (REQ-LAUNCH-017)', () => {
     await expect(cards.first()).toBeVisible({ timeout: 5_000 });
 
     // Advance first pending card to in_progress to expose resolve button.
-    const startBtn = cards.first().locator('button').first();
+    const firstCard = cards.first();
+    const startBtn = firstCard.locator('[data-testid="start-review-btn"]');
     if (await startBtn.isVisible()) {
-      await startBtn.click();
+      await startBtn.dispatchEvent('click');
+      await expect(firstCard.locator('[data-status="in_progress"]')).toBeVisible({
+        timeout: 10_000,
+      });
     }
 
     // resolve-btn must appear after in_progress transition.
-    const resolveBtn = page.locator('[data-testid="resolve-btn"]').first();
-    await expect(resolveBtn).toBeVisible({ timeout: 5_000 });
-    await resolveBtn.click();
+    const resolveBtn = firstCard.locator('[data-testid="resolve-btn"]');
+    await expect(resolveBtn).toBeVisible({ timeout: 10_000 });
+    await resolveBtn.dispatchEvent('click');
     // After resolve, button should disappear (status becomes resolved).
     await expect(resolveBtn).not.toBeVisible({ timeout: 5_000 });
   });

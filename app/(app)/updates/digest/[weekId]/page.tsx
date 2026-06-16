@@ -1,7 +1,7 @@
+import { and, eq } from 'drizzle-orm';
 // @MX:SPEC SPEC-REGULA-DIGEST-001
 // Public shareable digest view — no auth required (token-gated).
 import { notFound } from 'next/navigation';
-import { and, eq } from 'drizzle-orm';
 import { db } from '../../../../../lib/db/client';
 import { weeklyDigests } from '../../../../../lib/db/schema';
 import type { DigestPayload, DigestUpdate } from '../../../../../lib/digest/digest-generator';
@@ -58,13 +58,13 @@ export default async function DigestPage({ params, searchParams }: PageProps) {
   const { weekId } = await params;
   const { token } = await searchParams;
 
-  const rows = token
-    ? await db
-        .select()
-        .from(weeklyDigests)
-        .where(and(eq(weeklyDigests.weekId, weekId), eq(weeklyDigests.shareToken, token)))
-        .limit(1)
-    : await db.select().from(weeklyDigests).where(eq(weeklyDigests.weekId, weekId)).limit(1);
+  if (!token) notFound();
+
+  const rows = await db
+    .select()
+    .from(weeklyDigests)
+    .where(and(eq(weeklyDigests.weekId, weekId), eq(weeklyDigests.shareToken, token)))
+    .limit(1);
 
   const digest = rows[0];
   if (!digest) notFound();
@@ -106,7 +106,9 @@ export default async function DigestPage({ params, searchParams }: PageProps) {
           <UpdateCard key={u.id} update={u} />
         ))}
         {payload.update_count === 0 && (
-          <p className="text-sm text-gray-500 text-center py-8">이번 주 규제 업데이트가 없습니다.</p>
+          <p className="text-sm text-gray-500 text-center py-8">
+            이번 주 규제 업데이트가 없습니다.
+          </p>
         )}
         <p className="text-xs text-gray-400 text-center mt-6">
           생성일: {new Date(digest.generatedAt).toLocaleString('ko-KR')}

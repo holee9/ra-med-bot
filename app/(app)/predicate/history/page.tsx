@@ -14,6 +14,13 @@ interface HistoryRow {
 
 type SortDir = 'desc' | 'asc';
 
+const dateFormatter = new Intl.DateTimeFormat('ko-KR', {
+  timeZone: 'Asia/Seoul',
+  year: 'numeric',
+  month: '2-digit',
+  day: '2-digit',
+});
+
 export default function PredicateHistoryPage() {
   const [rows, setRows] = useState<HistoryRow[]>([]);
   const [sort, setSort] = useState<SortDir>('desc');
@@ -57,9 +64,9 @@ export default function PredicateHistoryPage() {
       ) : rows.length === 0 ? (
         <p className="mt-6 text-sm text-ink-500">저장된 비교가 없습니다.</p>
       ) : (
-        <ul className="mt-4 flex flex-col gap-2">
+        <ul data-testid="predicate-history-list" className="mt-4 flex flex-col gap-2">
           {rows.map((row) => (
-            <li key={row.id}>
+            <li key={row.id} data-testid="predicate-history-item">
               <a
                 href={`/predicate/compare?id=${row.id}`}
                 className="flex items-center justify-between rounded-md border border-ink-150 bg-surface-elevated px-4 py-3 text-sm hover:border-brand-300"
@@ -68,7 +75,7 @@ export default function PredicateHistoryPage() {
                   {row.resultJson?.subject_device_name ?? '(제목 없음)'}
                 </span>
                 <span className="text-xs text-ink-500">
-                  {new Date(row.createdAt).toLocaleDateString('ko-KR')}
+                  {dateFormatter.format(new Date(row.createdAt))}
                 </span>
               </a>
             </li>

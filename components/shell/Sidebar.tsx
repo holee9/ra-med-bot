@@ -10,6 +10,7 @@
 import { useProjects } from '@/lib/queries/useProjects';
 import type { ProjectSummary } from '@/lib/queries/useProjects';
 import { useUIStore } from '@/stores/ui';
+import { useQueryClient } from '@tanstack/react-query';
 import { ChevronDown } from 'lucide-react';
 import Link from 'next/link';
 import { useEffect, useRef, useState } from 'react';
@@ -45,12 +46,14 @@ export default function Sidebar(props?: SidebarProps) {
   const currentProjectId = useUIStore((s) => s.currentProjectId);
   const setCurrentProjectId = useUIStore((s) => s.setCurrentProjectId);
   const { data = [] } = useProjects();
+  const queryClient = useQueryClient();
   const projects = data as ProjectSummary[];
   const currentProject = projects.find((p) => p.id === currentProjectId) ?? null;
 
   // initialLocale is passed from the server component (AppLayout) via cookies(),
   // ensuring SSR renders the correct locale without waiting for a client-side useEffect.
   const [locale, setLocale] = useState<string>(props?.initialLocale ?? 'ko');
+  const [creatingProject, setCreatingProject] = useState(false);
   const dropdownRef = useRef<HTMLDetailsElement>(null);
 
   // Sync locale from cookie after client-side navigation (SPA transitions without full reload).
@@ -72,6 +75,31 @@ export default function Sidebar(props?: SidebarProps) {
   }, []);
 
   const chatLabel = CHAT_LABELS[locale] ?? '채팅';
+
+  async function createDefaultProject() {
+    setCreatingProject(true);
+    try {
+      const res = await fetch('/api/ra/projects', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          name: '기본 검증 프로젝트',
+          deviceClass: 'Class II',
+          targetMarkets: ['FDA'],
+        }),
+      });
+      if (res.ok) {
+        const body = (await res.json()) as { project?: ProjectSummary };
+        if (body.project?.id) {
+          setCurrentProjectId(body.project.id);
+        }
+        await queryClient.invalidateQueries({ queryKey: ['projects'] });
+        if (dropdownRef.current) dropdownRef.current.open = false;
+      }
+    } finally {
+      setCreatingProject(false);
+    }
+  }
 
   return (
     <aside
@@ -165,7 +193,18 @@ export default function Sidebar(props?: SidebarProps) {
             className="absolute left-0 right-0 top-full z-10 mt-1 max-h-56 overflow-y-auto rounded-md border border-ink-200 bg-white py-1 shadow-md"
           >
             {projects.length === 0 ? (
-              <li className="px-3 py-2 text-xs text-ink-500">프로젝트 없음</li>
+              <li className="px-3 py-2 text-xs text-ink-500">
+                <p>프로젝트 없음</p>
+                <button
+                  type="button"
+                  data-testid="project-empty-create"
+                  disabled={creatingProject}
+                  onClick={() => void createDefaultProject()}
+                  className="mt-2 rounded border border-brand-200 bg-brand-50 px-2 py-1 text-xs font-medium text-brand-700 hover:bg-brand-100 disabled:opacity-60"
+                >
+                  {creatingProject ? '생성 중...' : '기본 프로젝트 만들기'}
+                </button>
+              </li>
             ) : (
               projects.map((project) => {
                 const isActive = project.id === currentProjectId;

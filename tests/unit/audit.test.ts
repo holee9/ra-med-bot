@@ -12,6 +12,13 @@ import { describe, expect, it } from 'vitest';
 const root = path.resolve(__dirname, '..', '..');
 const readText = (rel: string): string => fs.readFileSync(path.join(root, rel), 'utf8');
 
+const extractAuditActionTypeValues = (src: string): string[] => {
+  const typeMatch = src.match(/export type AuditAction\s*=\s*([\s\S]*?);/);
+  expect(typeMatch, 'AuditAction type not found').toBeTruthy();
+  const typeBody = (typeMatch as RegExpMatchArray)[1] as string;
+  return (typeBody.match(/'[^']+'/g) ?? []).map((value) => value.slice(1, -1));
+};
+
 const BREADTH_ACTIONS = [
   'conversations.list',
   'conversation.view',
@@ -45,28 +52,20 @@ describe('lib/audit.ts (REQ-BREADTH-057) — extended AuditAction type', () => {
     expect(src).toMatch(new RegExp(`'${escaped}'`));
   });
 
-  it('AuditAction type contains exactly 64 values (48 baseline + 3 Predicate + 5 CER + 3 Impact + 5 PCCP)', () => {
+  it('AuditAction type includes current regulated workflow actions through 0056', () => {
     const src = readText('lib/audit.ts');
-    // Extract the AuditAction type block
-    const typeMatch = src.match(/export type AuditAction\s*=\s*([\s\S]*?);/);
-    expect(typeMatch, 'AuditAction type not found').toBeTruthy();
-    const typeBody = (typeMatch as RegExpMatchArray)[1] as string;
-    // Count pipe-separated literal values
-    const values = typeBody
-      .split('|')
-      .map((s) => s.trim())
-      .filter((s) => s.startsWith("'"));
-    // T-013 adds profile.update; Issue #7 remediation adds conversation.delete.
-    // Phase 9 adds 10 workflow.* actions via 0013_workflow_audit_actions.sql.
-    // Phase 8 DocIngest adds 6 document.* / redaction_map.access actions via 0016.
-    // Phase 10 Radar adds 3 radar.* actions via 0018_radar.sql.
-    // E2E chat.query (0026) + Wave 5 answer.refine (0027) bring the baseline to 48.
-    // SPEC-REGULA-PREDICATE-001 adds 3 predicate_* actions (0031, 0032) → 51.
-    // REQ-CER-036~040 adds 5 cer_* actions (0037) → 56.
-    // SPEC-REGULA-IMPACT-001 adds impact.assessment_created, impact.critical_detected,
-    // impact.action_item_created (0036) → 59.
-    // SPEC-REGULA-PCCP-001 adds 5 pccp_* actions via 0040_pccp_audit_actions.sql → 64 total.
-    expect(values).toHaveLength(64);
+    const values = extractAuditActionTypeValues(src);
+    expect(values).toEqual(
+      expect.arrayContaining([
+        'standards_searched',
+        'device_classified',
+        'digest_generated',
+        'samd_assessment_created',
+        'dhf_created',
+        'submission_validation_completed',
+      ]),
+    );
+    expect(values).toHaveLength(84);
   });
 
   it.each([

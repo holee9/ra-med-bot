@@ -186,7 +186,11 @@ export function LiteratureSearchPanel({ cerRunId, initialDeviceDescription = '' 
             disabled={isRunning}
           />
         </div>
-        <button type="submit" className={PRIMARY_BTN} disabled={isRunning || !deviceDescription.trim()}>
+        <button
+          type="submit"
+          className={PRIMARY_BTN}
+          disabled={isRunning || !deviceDescription.trim()}
+        >
           {isRunning ? '검색 중...' : '검색 시작'}
         </button>
       </form>

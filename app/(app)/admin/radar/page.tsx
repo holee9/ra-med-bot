@@ -6,6 +6,20 @@ import { useState } from 'react';
 
 type CrawlerName = 'fda-federal-register' | 'eu-oj' | 'mfds-notice';
 
+const dateTimeFormatter = new Intl.DateTimeFormat('ko-KR', {
+  timeZone: 'Asia/Seoul',
+  year: 'numeric',
+  month: '2-digit',
+  day: '2-digit',
+  hour: '2-digit',
+  minute: '2-digit',
+});
+
+function formatKstDateTime(value: string | Date | null | undefined): string {
+  if (!value) return '—';
+  return dateTimeFormatter.format(new Date(value));
+}
+
 export default function AdminRadarPage() {
   const { data, isLoading, refetch } = useCrawlerRuns();
   const [running, setRunning] = useState<string | null>(null);
@@ -104,7 +118,7 @@ export default function AdminRadarPage() {
                   <tr key={run.id}>
                     <td className="px-4 py-2 font-mono text-xs">{run.crawlerName}</td>
                     <td className="px-4 py-2 text-xs text-ink-500">
-                      {run.startedAt ? new Date(run.startedAt).toLocaleString('ko-KR') : '—'}
+                      {formatKstDateTime(run.startedAt)}
                     </td>
                     <td className="px-4 py-2">
                       <span

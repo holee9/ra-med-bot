@@ -9,7 +9,7 @@
     "MOAI_CONFIG_SOURCE": "sections",
     "CLAUDE_CODE_NO_FLICKER": "1",
     "CLAUDE_CODE_SUBPROCESS_ENV_SCRUB": "1",
-    "PATH": "C:\\Users\\drake.lee\\.local\\bin;C:\\Users\\drake.lee\\go\\bin;/usr/local/bin;/usr/local/sbin;/usr/bin;/bin;/usr/sbin;/sbin"
+    "PATH": "/home/abyz-lab/.local/bin:/home/abyz-lab/go/bin:/home/abyz-lab/.npm-global/bin:/usr/local/bin:/usr/local/sbin:/usr/bin:/bin:/usr/sbin:/sbin"
   },
   "attribution": {
     "commit": "🗿 MoAI <email@mo.ai.kr>",

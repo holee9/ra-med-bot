@@ -7,11 +7,13 @@ import postgres from 'postgres';
 const ORG_ID = '10000000-0000-4000-8000-000000000001';
 const RA_LEAD_ID = '10000000-0000-4000-8000-000000000101';
 const VIEWER_ID = '10000000-0000-4000-8000-000000000102';
+const ADMIN_ID = '10000000-0000-4000-8000-000000000103';
 const PROJECT_ID = '10000000-0000-4000-8000-000000000201';
 const CONVERSATION_ID = '10000000-0000-4000-8000-000000000301';
 const USER_MESSAGE_ID = '10000000-0000-4000-8000-000000000401';
 const ASSISTANT_MESSAGE_ID = '10000000-0000-4000-8000-000000000402';
 const AUDIT_LOG_ID = '10000000-0000-4000-8000-000000000501';
+const CHAT_QUERY_AUDIT_LOG_ID = '10000000-0000-4000-8000-000000000502';
 
 // Fixed password for the E2E ra-lead test user — matches E2E_TEST_USER_PASSWORD in .env.test
 const E2E_PASSWORD = 'TestE2EPassword123!';
@@ -49,6 +51,10 @@ async function main(): Promise<void> {
           (
             ${VIEWER_ID}, 'viewer@example.test', 'Viewer', 'viewer', 'en', 'system', 'External',
             null, 'active', false
+          ),
+          (
+            ${ADMIN_ID}, 'admin@example.test', 'Admin', 'admin', 'ko', 'system', 'RA',
+            ${passwordHash}, 'active', false
           )
         on conflict (id) do update set
           email = excluded.email,
@@ -97,7 +103,8 @@ async function main(): Promise<void> {
         insert into org_members (user_id, org_id)
         values
           (${RA_LEAD_ID}, ${ORG_ID}),
-          (${VIEWER_ID}, ${ORG_ID})
+          (${VIEWER_ID}, ${ORG_ID}),
+          (${ADMIN_ID}, ${ORG_ID})
         on conflict do nothing
       `;
 
@@ -105,7 +112,8 @@ async function main(): Promise<void> {
         insert into project_members (user_id, project_id)
         values
           (${RA_LEAD_ID}, ${PROJECT_ID}),
-          (${VIEWER_ID}, ${PROJECT_ID})
+          (${VIEWER_ID}, ${PROJECT_ID}),
+          (${ADMIN_ID}, ${PROJECT_ID})
         on conflict do nothing
       `;
 
@@ -179,6 +187,34 @@ async function main(): Promise<void> {
           ${CONVERSATION_ID},
           ${CONVERSATION_ID},
           '{"seededBy":"scripts/seed-test-db.ts","purpose":"local-e2e"}'::jsonb
+        )
+        on conflict (id) do update set
+          actor_id = excluded.actor_id,
+          action = excluded.action,
+          resource_type = excluded.resource_type,
+          resource_id = excluded.resource_id,
+          conversation_id = excluded.conversation_id,
+          meta_json = excluded.meta_json
+      `;
+
+      await tx`
+        insert into audit_logs (
+          id,
+          actor_id,
+          action,
+          resource_type,
+          resource_id,
+          conversation_id,
+          meta_json
+        )
+        values (
+          ${CHAT_QUERY_AUDIT_LOG_ID},
+          ${RA_LEAD_ID},
+          'chat.query',
+          'message',
+          ${ASSISTANT_MESSAGE_ID},
+          ${CONVERSATION_ID},
+          '{"seededBy":"scripts/seed-test-db.ts","purpose":"local-e2e-chat-query"}'::jsonb
         )
         on conflict (id) do update set
           actor_id = excluded.actor_id,

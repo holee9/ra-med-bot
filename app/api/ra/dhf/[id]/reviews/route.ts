@@ -2,11 +2,11 @@
 // POST /api/ra/dhf/[id]/reviews — add a design review record.
 // @MX:SPEC SPEC-REGULA-DHF-001
 
+import { writeAudit } from '@/lib/audit';
 import { withPermission } from '@/lib/auth/with-permission';
 import { db } from '@/lib/db/client';
 import { designHistoryFiles, designReviews } from '@/lib/db/schema';
-import { writeAudit } from '@/lib/audit';
-import { eq, and } from 'drizzle-orm';
+import { and, eq } from 'drizzle-orm';
 import { z } from 'zod';
 
 const CreateReviewSchema = z.object({
@@ -40,10 +40,7 @@ export const GET = withPermission('dashboard.view', async (_req, ctx, session) =
     return Response.json({ error: 'Not found' }, { status: 404 });
   }
 
-  const reviews = await db
-    .select()
-    .from(designReviews)
-    .where(eq(designReviews.dhfId, id));
+  const reviews = await db.select().from(designReviews).where(eq(designReviews.dhfId, id));
 
   return Response.json({ reviews });
 });

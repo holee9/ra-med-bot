@@ -33,7 +33,8 @@ interface StreamResult {
   done: boolean;
 }
 
-const INPUT_CLASS = 'border border-ink-200 rounded-md px-3 py-2 text-sm w-full focus:outline-none focus:ring-1 focus:ring-brand-400';
+const INPUT_CLASS =
+  'border border-ink-200 rounded-md px-3 py-2 text-sm w-full focus:outline-none focus:ring-1 focus:ring-brand-400';
 const LABEL_CLASS = 'block text-sm font-medium text-ink-700 mb-1';
 const PRIMARY_BTN =
   'bg-brand-700 text-white hover:bg-brand-800 rounded-md px-4 py-2 text-sm disabled:cursor-not-allowed disabled:opacity-60';
@@ -138,7 +139,7 @@ export function VigilanceForm() {
             if (eventName === 'assessment') {
               setResult((prev) => ({
                 ...(prev ?? { assessment: null, drafts: [], eventId: null, done: false }),
-                assessment: data['decision'] as ReportabilityDecision,
+                assessment: data.decision as ReportabilityDecision,
               }));
             } else if (
               eventName === 'draft_fda' ||
@@ -158,11 +159,11 @@ export function VigilanceForm() {
             } else if (eventName === 'done') {
               setResult((prev) => ({
                 ...(prev ?? { assessment: null, drafts: [], eventId: null, done: false }),
-                eventId: data['eventId'] as string,
+                eventId: data.eventId as string,
                 done: true,
               }));
             } else if (eventName === 'error') {
-              setError(data['message'] as string);
+              setError(data.message as string);
             }
           } catch {
             // Ignore malformed SSE chunks
@@ -186,8 +187,11 @@ export function VigilanceForm() {
         <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
           {/* Device info */}
           <div>
-            <label className={LABEL_CLASS}>기기명 *</label>
+            <label htmlFor="deviceName" className={LABEL_CLASS}>
+              기기명 *
+            </label>
             <input
+              id="deviceName"
               className={INPUT_CLASS}
               value={deviceName}
               onChange={(e) => setDeviceName(e.target.value)}
@@ -196,8 +200,11 @@ export function VigilanceForm() {
             />
           </div>
           <div>
-            <label className={LABEL_CLASS}>모델번호</label>
+            <label htmlFor="deviceModel" className={LABEL_CLASS}>
+              모델번호
+            </label>
             <input
+              id="deviceModel"
               className={INPUT_CLASS}
               value={deviceModel}
               onChange={(e) => setDeviceModel(e.target.value)}
@@ -205,8 +212,11 @@ export function VigilanceForm() {
             />
           </div>
           <div>
-            <label className={LABEL_CLASS}>로트 번호</label>
+            <label htmlFor="lotNumber" className={LABEL_CLASS}>
+              로트 번호
+            </label>
             <input
+              id="lotNumber"
               className={INPUT_CLASS}
               value={lotNumber}
               onChange={(e) => setLotNumber(e.target.value)}
@@ -214,8 +224,11 @@ export function VigilanceForm() {
             />
           </div>
           <div>
-            <label className={LABEL_CLASS}>기기 분류 *</label>
+            <label htmlFor="deviceCategory" className={LABEL_CLASS}>
+              기기 분류 *
+            </label>
             <select
+              id="deviceCategory"
               className={INPUT_CLASS}
               value={deviceCategory}
               onChange={(e) => setDeviceCategory(e.target.value as DeviceCategory)}
@@ -231,8 +244,11 @@ export function VigilanceForm() {
 
           {/* Event dates */}
           <div>
-            <label className={LABEL_CLASS}>사고 발생일 *</label>
+            <label htmlFor="eventDate" className={LABEL_CLASS}>
+              사고 발생일 *
+            </label>
             <input
+              id="eventDate"
               type="date"
               className={INPUT_CLASS}
               value={eventDate}
@@ -241,8 +257,11 @@ export function VigilanceForm() {
             />
           </div>
           <div>
-            <label className={LABEL_CLASS}>인지일 (Awareness Date) *</label>
+            <label htmlFor="awarenessDate" className={LABEL_CLASS}>
+              인지일 (Awareness Date) *
+            </label>
             <input
+              id="awarenessDate"
               type="date"
               className={INPUT_CLASS}
               value={awarenessDate}
@@ -253,8 +272,11 @@ export function VigilanceForm() {
 
           {/* Outcome */}
           <div>
-            <label className={LABEL_CLASS}>환자 결과 *</label>
+            <label htmlFor="patientOutcome" className={LABEL_CLASS}>
+              환자 결과 *
+            </label>
             <select
+              id="patientOutcome"
               className={INPUT_CLASS}
               value={patientOutcome}
               onChange={(e) => setPatientOutcome(e.target.value as PatientOutcome)}
@@ -270,8 +292,11 @@ export function VigilanceForm() {
 
           {/* Reporter */}
           <div>
-            <label className={LABEL_CLASS}>보고자 이름 *</label>
+            <label htmlFor="reporterName" className={LABEL_CLASS}>
+              보고자 이름 *
+            </label>
             <input
+              id="reporterName"
               className={INPUT_CLASS}
               value={reporterName}
               onChange={(e) => setReporterName(e.target.value)}
@@ -280,8 +305,11 @@ export function VigilanceForm() {
             />
           </div>
           <div>
-            <label className={LABEL_CLASS}>보고자 직책 *</label>
+            <label htmlFor="reporterRole" className={LABEL_CLASS}>
+              보고자 직책 *
+            </label>
             <input
+              id="reporterRole"
               className={INPUT_CLASS}
               value={reporterRole}
               onChange={(e) => setReporterRole(e.target.value)}
@@ -293,8 +321,11 @@ export function VigilanceForm() {
 
         {/* Event description */}
         <div className="mt-4">
-          <label className={LABEL_CLASS}>사고 경위 *</label>
+          <label htmlFor="eventDescription" className={LABEL_CLASS}>
+            사고 경위 *
+          </label>
           <textarea
+            id="eventDescription"
             className={`${INPUT_CLASS} min-h-[100px] resize-y`}
             value={eventDescription}
             onChange={(e) => setEventDescription(e.target.value)}
@@ -304,9 +335,7 @@ export function VigilanceForm() {
           />
         </div>
 
-        {error && (
-          <p className="mt-3 text-sm text-red-600">{error}</p>
-        )}
+        {error && <p className="mt-3 text-sm text-red-600">{error}</p>}
 
         <div className="mt-4">
           <button type="submit" className={PRIMARY_BTN} disabled={streaming}>
@@ -375,8 +404,7 @@ export function VigilanceForm() {
                 <div>
                   <div className="flex items-center justify-between mb-3">
                     <p className="text-xs text-ink-500">
-                      형식: {activeDraft.reportFormat} · 제출 기한:{' '}
-                      {activeDraft.submissionDeadline}
+                      형식: {activeDraft.reportFormat} · 제출 기한: {activeDraft.submissionDeadline}
                     </p>
                   </div>
                   <div className="grid gap-3">
@@ -395,9 +423,7 @@ export function VigilanceForm() {
           )}
 
           {result.done && result.eventId && (
-            <p className="mt-4 text-xs text-ink-400">
-              Event ID: {result.eventId}
-            </p>
+            <p className="mt-4 text-xs text-ink-400">Event ID: {result.eventId}</p>
           )}
         </div>
       )}

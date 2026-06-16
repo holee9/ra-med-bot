@@ -6,13 +6,13 @@ import { db } from '@/lib/db/client';
 import {
   designHistoryFiles,
   designInputs,
-  designVerifications,
   designReviews,
+  designVerifications,
 } from '@/lib/db/schema';
 import { computeCompleteness } from '@/lib/dhf/completeness';
-import { eq, and } from 'drizzle-orm';
+import { and, eq } from 'drizzle-orm';
 
-export { type CompletenessResult } from '@/lib/dhf/completeness';
+export type { CompletenessResult } from '@/lib/dhf/completeness';
 
 export const GET = withPermission('dashboard.view', async (_req, ctx, session) => {
   const orgId = session.user.organizationId;

@@ -13,9 +13,7 @@ export default function ClassificationPage() {
     <section className="mx-auto flex max-w-content flex-col gap-6">
       <header>
         <div className="flex items-center gap-2">
-          <h1 className="font-serif text-3xl text-brand-800">
-            Device Classification Wizard
-          </h1>
+          <h1 className="font-serif text-3xl text-brand-800">Device Classification Wizard</h1>
           <BetaBadge />
         </div>
         <p className="mt-2 text-sm text-ink-600">

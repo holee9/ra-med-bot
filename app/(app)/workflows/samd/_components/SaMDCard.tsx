@@ -54,9 +54,7 @@ export function SaMDCard({ assessment }: { assessment: SaMDAssessment }) {
           <div className="flex items-center gap-2 flex-wrap">
             <h3 className="font-medium text-ink-900 truncate">{assessment.title}</h3>
             {assessment.imdrfCategory && (
-              <span
-                className={`rounded border px-2 py-0.5 text-xs font-semibold ${categoryStyle}`}
-              >
+              <span className={`rounded border px-2 py-0.5 text-xs font-semibold ${categoryStyle}`}>
                 IMDRF {assessment.imdrfCategory}
               </span>
             )}
@@ -68,21 +66,32 @@ export function SaMDCard({ assessment }: { assessment: SaMDAssessment }) {
           </div>
           <div className="mt-2 flex flex-wrap items-center gap-3 text-xs text-ink-500">
             <span>
-              AI/ML: <span className="font-medium">{AI_ML_LABELS[assessment.aiMlType] ?? assessment.aiMlType}</span>
+              AI/ML:{' '}
+              <span className="font-medium">
+                {AI_ML_LABELS[assessment.aiMlType] ?? assessment.aiMlType}
+              </span>
             </span>
             {assessment.fdaPathway && (
               <span>
-                FDA: <span className="font-medium uppercase">{assessment.fdaPathway.replace('_', ' ')}</span>
+                FDA:{' '}
+                <span className="font-medium uppercase">
+                  {assessment.fdaPathway.replace('_', ' ')}
+                </span>
               </span>
             )}
             {assessment.euAiRiskLevel && (
               <span>
-                EU AI Act: <span className="font-medium">{EU_RISK_LABELS[assessment.euAiRiskLevel] ?? assessment.euAiRiskLevel}</span>
+                EU AI Act:{' '}
+                <span className="font-medium">
+                  {EU_RISK_LABELS[assessment.euAiRiskLevel] ?? assessment.euAiRiskLevel}
+                </span>
               </span>
             )}
           </div>
         </div>
-        <span className={`shrink-0 rounded px-2 py-1 text-xs font-medium capitalize ${statusStyle}`}>
+        <span
+          className={`shrink-0 rounded px-2 py-1 text-xs font-medium capitalize ${statusStyle}`}
+        >
           {assessment.status.replace('_', ' ')}
         </span>
       </div>

@@ -29,6 +29,33 @@ const CORPUS_GROUPS: Record<string, string> = {
   'ra-project': '사내 지식',
 };
 
+const KNOWLEDGE_BOUNDARIES = [
+  {
+    source: 'GitHub ra-project',
+    mode: 'read-only',
+    owner: 'upstream knowledge project',
+    issueRoute: '운영 중 발견된 누락·충돌은 원 소유 레포 이슈로 회수',
+  },
+  {
+    source: 'GitHub MD-process',
+    mode: 'read-only',
+    owner: 'upstream process project',
+    issueRoute: '프로세스 문서 변경 요구는 원 소유 레포 이슈로 회수',
+  },
+  {
+    source: 'Gitea ra-llm-wiki',
+    mode: 'read-only',
+    owner: 'upstream wiki project',
+    issueRoute: '위키 품질·범위 이슈는 원 소유 레포 이슈로 회수',
+  },
+  {
+    source: 'SaaS RA backend',
+    mode: 'integration target',
+    owner: 'external backend project',
+    issueRoute: 'API 계약·인증·동기화 문제는 연동 이슈로 분리 추적',
+  },
+];
+
 async function fetchCorpora(): Promise<CorpusRow[]> {
   // Same-origin server-side fetch — forward auth/cookies via inbound headers.
   const h = await headers();
@@ -121,6 +148,28 @@ export default function KnowledgePage() {
           Regula가 답변 근거로 사용하는 규제 문서와 사내 지식 범위를 확인합니다.
         </p>
       </header>
+
+      <section className="rounded-lg border border-ink-150 bg-ink-50 p-4">
+        <h2 className="text-sm font-semibold text-ink-900">연계 지식 경계</h2>
+        <p className="mt-2 text-sm leading-relaxed text-ink-600">
+          외부 지식 프로젝트는 이 저장소에서 훼손하지 않고 읽기 전용으로 참조합니다. 운영 중
+          발견되는 누락, 충돌, 품질 문제는 각 소유 프로젝트 이슈로 회수해 함께 개선합니다.
+        </p>
+        <div className="mt-4 grid gap-2 lg:grid-cols-2">
+          {KNOWLEDGE_BOUNDARIES.map((item) => (
+            <div key={item.source} className="rounded-md border border-ink-150 bg-surface p-3">
+              <div className="flex flex-wrap items-center gap-2">
+                <span className="text-sm font-medium text-ink-900">{item.source}</span>
+                <span className="rounded-md bg-brand-50 px-2 py-1 text-xs text-brand-700">
+                  {item.mode}
+                </span>
+              </div>
+              <p className="mt-2 text-xs text-ink-500">{item.owner}</p>
+              <p className="mt-1 text-sm text-ink-700">{item.issueRoute}</p>
+            </div>
+          ))}
+        </div>
+      </section>
 
       <Suspense fallback={<CorpusGridFallback />}>
         <CorpusGrid />

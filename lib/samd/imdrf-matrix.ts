@@ -14,24 +14,26 @@ export type EuAiRiskLevel = 'prohibited' | 'high_risk' | 'general_purpose' | 'mi
  * IMDRF N12 Annex II Category matrix.
  * Rows = clinical situation, Columns = healthcare situation.
  */
-const IMDRF_MATRIX: Record<ImdrfClinicalSituation, Record<ImdrfHealthcareSituation, ImdrfCategory>> =
-  {
-    critical: {
-      critical: 'IV',
-      serious: 'III',
-      non_serious: 'III',
-    },
-    serious: {
-      critical: 'III',
-      serious: 'II',
-      non_serious: 'II',
-    },
-    non_serious: {
-      critical: 'I',
-      serious: 'I',
-      non_serious: 'I',
-    },
-  };
+const IMDRF_MATRIX: Record<
+  ImdrfClinicalSituation,
+  Record<ImdrfHealthcareSituation, ImdrfCategory>
+> = {
+  critical: {
+    critical: 'IV',
+    serious: 'III',
+    non_serious: 'III',
+  },
+  serious: {
+    critical: 'III',
+    serious: 'II',
+    non_serious: 'II',
+  },
+  non_serious: {
+    critical: 'I',
+    serious: 'I',
+    non_serious: 'I',
+  },
+};
 
 /** Compute IMDRF N12 category from clinical × healthcare situation. */
 export function computeImdrfCategory(

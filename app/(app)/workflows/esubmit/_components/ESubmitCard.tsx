@@ -72,7 +72,9 @@ export function ESubmitCard({ pkg, onSelect }: Props) {
         <div className="flex-1 min-w-0">
           <div className="flex items-center gap-2 flex-wrap">
             <h3 className="font-medium text-ink-900 truncate">{pkg.deviceName}</h3>
-            <span className={`rounded border px-2 py-0.5 text-xs font-semibold ${jurisdictionStyle}`}>
+            <span
+              className={`rounded border px-2 py-0.5 text-xs font-semibold ${jurisdictionStyle}`}
+            >
               {pkg.jurisdiction}
             </span>
             <span className="rounded bg-ink-100 px-2 py-0.5 text-xs font-medium text-ink-700">
@@ -81,9 +83,7 @@ export function ESubmitCard({ pkg, onSelect }: Props) {
           </div>
           <div className="mt-2 flex flex-wrap items-center gap-3 text-xs text-ink-500">
             <span>v{pkg.version}</span>
-            {pkg.submissionNumber && (
-              <span className="font-mono">{pkg.submissionNumber}</span>
-            )}
+            {pkg.submissionNumber && <span className="font-mono">{pkg.submissionNumber}</span>}
             {pkg.submittedAt && (
               <span>제출: {new Date(pkg.submittedAt).toLocaleDateString('ko-KR')}</span>
             )}

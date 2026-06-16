@@ -1,3 +1,4 @@
+import { writeAudit } from '@/lib/audit';
 // @MX:SPEC SPEC-REGULA-PCCP-001 (REQ-PCCP-018, REQ-PCCP-019)
 import { withPermission } from '@/lib/auth/with-permission';
 import type { AuthSession } from '@/lib/auth/with-permission';
@@ -17,7 +18,7 @@ const ExportBodySchema = z.object({
 async function postExport(
   request: Request,
   params: { id: string },
-  _session: AuthSession,
+  session: AuthSession,
 ): Promise<Response> {
   const { id } = params;
 
@@ -55,6 +56,13 @@ async function postExport(
     const buf = await exportPccpToDocx(versionTyped, componentsTyped, {
       includeDraftWatermark: include_draft_watermark,
     });
+    await writeAudit({
+      actor_id: session.user.id,
+      action: 'workflow.download',
+      resource_type: 'pccp_version',
+      resource_id: id,
+      meta_json: { format, includeDraftWatermark: include_draft_watermark },
+    });
     const filename = getDocxFilename(versionTyped);
     return new Response(new Uint8Array(buf), {
       headers: {
@@ -66,6 +74,13 @@ async function postExport(
 
   const buf = await exportPccpToPdf(versionTyped, componentsTyped, {
     includeDraftWatermark: include_draft_watermark,
+  });
+  await writeAudit({
+    actor_id: session.user.id,
+    action: 'workflow.download',
+    resource_type: 'pccp_version',
+    resource_id: id,
+    meta_json: { format, includeDraftWatermark: include_draft_watermark },
   });
   const filename = getPdfFilename(versionTyped);
   return new Response(new Uint8Array(buf), {

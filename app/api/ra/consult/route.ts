@@ -98,6 +98,14 @@ async function* e2eTestEvents(
 }
 
 // REQ-CHAT-007 — in-memory token bucket, 30 req / 60 s per user.
+// @MX:WARN [AUTO] In-Memory Rate Limiter — State Loss on Restart
+// @MX:REASON [AUTO] Map-based rate limiter loses all state on server restart/deployment,
+// potentially allowing rate limit bypass in distributed environments. For production
+// REQ-CHAT-007 compliance, migrate to Redis-based distributed rate limiter with:
+// - Redis INCR + EXPIRE for atomic token bucket operations
+// - Shared state across multiple server instances
+// - Persistent rate limit enforcement across deployments
+// Current implementation acceptable for single-instance development/staging only.
 const rateLimitMap = new Map<string, { count: number; resetAt: number }>();
 const RATE_LIMIT_MAX = 30;
 const RATE_LIMIT_WINDOW_MS = 60_000;
@@ -181,9 +189,11 @@ export const POST = withPermission('consult.create', async (req, _ctx, session) 
 
       const isE2EMode =
         process.env.E2E_TEST_MODE === 'true' && process.env.NODE_ENV !== 'production';
+      let e2eAuditWritten = false;
 
       if (isE2EMode) {
-        // Create a real message row so expert-review FK constraints pass.
+        // Create real message/audit rows up front so E2E clients that close the
+        // SSE stream early still exercise the audit contract deterministically.
         await db
           .insert(messages)
           .values({
@@ -193,6 +203,14 @@ export const POST = withPermission('consult.create', async (req, _ctx, session) 
             contentProse: 'E2E test response.',
           })
           .onConflictDoNothing();
+        await writeAudit({
+          actor_id: session.user.id,
+          action: 'chat.query',
+          resource_type: 'message',
+          resource_id: messageId,
+          conversation_id: conversationId,
+        });
+        e2eAuditWritten = true;
       }
 
       const eventSource = isE2EMode
@@ -205,7 +223,7 @@ export const POST = withPermission('consult.create', async (req, _ctx, session) 
           push(ev);
         }
         // Write chat.query audit row after E2E stream completes (REQ-FND-048).
-        if (isE2EMode && !signal.aborted) {
+        if (isE2EMode && !signal.aborted && !e2eAuditWritten) {
           await writeAudit({
             actor_id: session.user.id,
             action: 'chat.query',

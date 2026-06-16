@@ -1,5 +1,5 @@
-import { describe, expect, it } from 'vitest';
 import { getApplicableStandards } from '@/lib/standards/applicability-engine';
+import { describe, expect, it } from 'vitest';
 
 describe('getApplicableStandards', () => {
   it('returns ISO 14971 for any device type', () => {

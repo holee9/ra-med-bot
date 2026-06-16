@@ -74,10 +74,20 @@ export type Env = z.infer<typeof envSchema>;
  */
 export function parseEnv(source: NodeJS.ProcessEnv = process.env): Env {
   // During `next build`, Next.js collects route data before env vars are set.
-  // SKIP_ENV_VALIDATION=1 is injected by next.config.mjs only for that phase
-  // so the DB/auth modules can be imported without crashing. Runtime callers
-  // (next dev, next start, pnpm test) never have this set, so validation runs.
+  // The build script explicitly sets REGULA_ALLOW_ENV_VALIDATION_SKIP=build.
+  // Runtime callers (next dev, next start, public validation) must never bypass
+  // validation because empty env objects make downstream clients fall back to
+  // unsafe defaults.
   if (source.SKIP_ENV_VALIDATION === '1') {
+    if (source.REGULA_ALLOW_ENV_VALIDATION_SKIP !== 'build') {
+      // @MX:WARN Runtime env validation bypass — security risk
+      // @MX:REASON OWASP A05:2021 — skipping validation allows running with unsafe defaults
+      throw new Error(
+        'SKIP_ENV_VALIDATION=1 is allowed only for next build. Use pnpm dev:public or unset SKIP_ENV_VALIDATION for runtime validation.',
+      );
+    }
+    // Build-time bypass: Next.js needs this for route data collection
+    // This is safe because the binary won't run without env validation at startup
     return {} as Env;
   }
 

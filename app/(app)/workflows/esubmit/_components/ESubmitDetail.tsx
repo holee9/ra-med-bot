@@ -2,8 +2,8 @@
 // @MX:SPEC SPEC-REGULA-ESUBMIT-001
 // Tabbed detail view: Overview | Manifest | Validation | Interactions
 
-import { useEffect, useState, useCallback } from 'react';
 import type { ValidationIssue } from '@/lib/esubmit/validators';
+import { useCallback, useEffect, useState } from 'react';
 
 // ---------------------------------------------------------------------------
 // Types
@@ -318,12 +318,8 @@ function ValidationTab({
               {warnCount > 0 && (
                 <span className="text-amber-600 font-medium">{warnCount}개 경고</span>
               )}
-              {infoCount > 0 && (
-                <span className="text-blue-600">{infoCount}개 정보</span>
-              )}
-              {issues.length === 0 && (
-                <span className="text-green-600 font-medium">이슈 없음</span>
-              )}
+              {infoCount > 0 && <span className="text-blue-600">{infoCount}개 정보</span>}
+              {issues.length === 0 && <span className="text-green-600 font-medium">이슈 없음</span>}
             </>
           )}
         </div>
@@ -442,8 +438,14 @@ function InteractionsTab({ packageId }: { packageId: string }) {
         >
           <div className="grid grid-cols-2 gap-3">
             <div>
-              <label className="mb-1 block text-xs font-medium text-ink-700">유형</label>
+              <label
+                htmlFor="interaction_type"
+                className="mb-1 block text-xs font-medium text-ink-700"
+              >
+                유형
+              </label>
               <select
+                id="interaction_type"
                 value={form.interaction_type}
                 onChange={(e) => setForm((p) => ({ ...p, interaction_type: e.target.value }))}
                 className="w-full rounded border border-ink-300 px-2 py-1.5 text-sm"
@@ -456,8 +458,14 @@ function InteractionsTab({ packageId }: { packageId: string }) {
               </select>
             </div>
             <div>
-              <label className="mb-1 block text-xs font-medium text-ink-700">참조 번호</label>
+              <label
+                htmlFor="reference_number"
+                className="mb-1 block text-xs font-medium text-ink-700"
+              >
+                참조 번호
+              </label>
               <input
+                id="reference_number"
                 type="text"
                 value={form.reference_number}
                 onChange={(e) => setForm((p) => ({ ...p, reference_number: e.target.value }))}
@@ -467,10 +475,11 @@ function InteractionsTab({ packageId }: { packageId: string }) {
             </div>
           </div>
           <div>
-            <label className="mb-1 block text-xs font-medium text-ink-700">
+            <label htmlFor="description" className="mb-1 block text-xs font-medium text-ink-700">
               설명 <span className="text-red-500">*</span>
             </label>
             <textarea
+              id="description"
               required
               value={form.description}
               onChange={(e) => setForm((p) => ({ ...p, description: e.target.value }))}
@@ -479,8 +488,11 @@ function InteractionsTab({ packageId }: { packageId: string }) {
             />
           </div>
           <div>
-            <label className="mb-1 block text-xs font-medium text-ink-700">마감일</label>
+            <label htmlFor="due_date" className="mb-1 block text-xs font-medium text-ink-700">
+              마감일
+            </label>
             <input
+              id="due_date"
               type="date"
               value={form.due_date}
               onChange={(e) => setForm((p) => ({ ...p, due_date: e.target.value }))}
@@ -587,7 +599,11 @@ export function ESubmitDetail({ packageId, onBack }: Props) {
     return (
       <div>
         <p className="text-sm text-red-600">패키지를 찾을 수 없습니다.</p>
-        <button type="button" onClick={onBack} className="mt-2 text-sm text-brand-600 hover:underline">
+        <button
+          type="button"
+          onClick={onBack}
+          className="mt-2 text-sm text-brand-600 hover:underline"
+        >
           목록으로
         </button>
       </div>
@@ -615,8 +631,8 @@ export function ESubmitDetail({ packageId, onBack }: Props) {
             </span>
           </div>
           <p className="mt-0.5 text-sm text-ink-500">
-            {SUBMISSION_TYPE_LABELS[pkg.submissionType] ?? pkg.submissionType} ·{' '}
-            {pkg.jurisdiction} · v{pkg.version}
+            {SUBMISSION_TYPE_LABELS[pkg.submissionType] ?? pkg.submissionType} · {pkg.jurisdiction}{' '}
+            · v{pkg.version}
           </p>
         </div>
       </div>
@@ -640,18 +656,10 @@ export function ESubmitDetail({ packageId, onBack }: Props) {
 
       {/* Tab content */}
       <div className="pt-2">
-        {activeTab === 'overview' && (
-          <OverviewTab pkg={pkg} onStatusUpdate={handleStatusUpdate} />
-        )}
-        {activeTab === 'manifest' && (
-          <ManifestTab pkg={pkg} onSaved={handleManifestSaved} />
-        )}
-        {activeTab === 'validation' && (
-          <ValidationTab pkg={pkg} onValidated={handleValidated} />
-        )}
-        {activeTab === 'interactions' && (
-          <InteractionsTab packageId={packageId} />
-        )}
+        {activeTab === 'overview' && <OverviewTab pkg={pkg} onStatusUpdate={handleStatusUpdate} />}
+        {activeTab === 'manifest' && <ManifestTab pkg={pkg} onSaved={handleManifestSaved} />}
+        {activeTab === 'validation' && <ValidationTab pkg={pkg} onValidated={handleValidated} />}
+        {activeTab === 'interactions' && <InteractionsTab packageId={packageId} />}
       </div>
     </div>
   );

@@ -2,15 +2,11 @@
 // @MX:REASON: Public boundary; Sonnet AI per-update impact summaries + digest compilation (fan_in >= 3)
 // @MX:SPEC: SPEC-REGULA-DIGEST-001
 
+import crypto from 'node:crypto';
 import Anthropic from '@anthropic-ai/sdk';
-import crypto from 'crypto';
 import { and, desc, eq, gte, lte } from 'drizzle-orm';
 import { db } from '../db/client';
-import {
-  orgUpdateRelevance,
-  regulatoryUpdates,
-  weeklyDigests,
-} from '../db/schema';
+import { orgUpdateRelevance, regulatoryUpdates, weeklyDigests } from '../db/schema';
 import { logger } from '../observability/logger';
 
 const client = new Anthropic();
@@ -29,6 +25,7 @@ export interface DigestUpdate {
 
 export interface DigestPayload {
   week_id: string;
+  share_token: string;
   week_start: string;
   week_end: string;
   org_id: string;
@@ -46,7 +43,7 @@ export function getWeekId(date: Date): string {
   const dayNum = d.getUTCDay() || 7;
   d.setUTCDate(d.getUTCDate() + 4 - dayNum);
   const yearStart = new Date(Date.UTC(d.getUTCFullYear(), 0, 1));
-  const weekNo = Math.ceil((((d.getTime() - yearStart.getTime()) / 86400000) + 1) / 7);
+  const weekNo = Math.ceil(((d.getTime() - yearStart.getTime()) / 86400000 + 1) / 7);
   return `${d.getUTCFullYear()}-W${String(weekNo).padStart(2, '0')}`;
 }
 
@@ -85,32 +82,57 @@ async function generateImpactSummary(update: {
   if (process.env.E2E_TEST_MODE === 'true') {
     return MOCK_IMPACT_SUMMARY;
   }
-  try {
-    const response = await client.messages.create({
-      model: 'claude-sonnet-4-6',
-      max_tokens: 256,
-      messages: [
-        {
-          role: 'user',
-          content: `You are a regulatory affairs expert. Summarize the impact of this regulatory update in 2-3 sentences, focusing on "so what does this mean for a medical device company?"\n\nTitle: ${update.title}\nRegion: ${update.region}\nContent: ${update.rawContentEn ?? update.title}\n\nProvide only the 2-3 sentence summary, no preamble:`,
-        },
-      ],
-    });
-    const firstBlock = response.content[0];
-    return firstBlock?.type === 'text' ? firstBlock.text.trim() : MOCK_IMPACT_SUMMARY;
-  } catch (err) {
-    logger.warn('[digest] AI summary failed, using title fallback', { err });
-    return `Regulatory update from ${update.region}: ${update.title}. Review applicability to your product portfolio.`;
+
+  const maxRetries = 3;
+  const baseDelayMs = 1000;
+
+  for (let attempt = 0; attempt < maxRetries; attempt++) {
+    try {
+      const response = await Promise.race<Anthropic.Messages.Message>([
+        client.messages.create(
+          {
+            model: 'claude-sonnet-4-6',
+            max_tokens: 256,
+            messages: [
+              {
+                role: 'user',
+                content: `You are a regulatory affairs expert. Summarize the impact of this regulatory update in 2-3 sentences, focusing on "so what does this mean for a medical device company?"\n\nTitle: ${update.title}\nRegion: ${update.region}\nContent: ${update.rawContentEn ?? update.title}\n\nProvide only the 2-3 sentence summary, no preamble:`,
+              },
+            ],
+          },
+          { timeout: 30000 },
+        ),
+        new Promise((_, reject) => setTimeout(() => reject(new Error('Request timeout')), 30000)),
+      ]);
+
+      const firstBlock = response.content[0];
+      return firstBlock?.type === 'text' ? firstBlock.text.trim() : MOCK_IMPACT_SUMMARY;
+    } catch (err) {
+      const isLastAttempt = attempt === maxRetries - 1;
+
+      if (!isLastAttempt) {
+        const delayMs = baseDelayMs * 2 ** attempt;
+        logger.warn(`[digest] AI summary attempt ${attempt + 1} failed, retrying in ${delayMs}ms`, {
+          err,
+        });
+        await new Promise((resolve) => setTimeout(resolve, delayMs));
+      } else {
+        logger.error('[digest] AI summary failed after retries, using title fallback', {
+          err,
+          attempts: maxRetries,
+        });
+        return `Regulatory update from ${update.region}: ${update.title}. Review applicability to your product portfolio.`;
+      }
+    }
   }
+
+  return MOCK_IMPACT_SUMMARY;
 }
 
 // @MX:ANCHOR: [AUTO] generateWeeklyDigest — primary entry point for digest compilation
 // @MX:REASON: Called by API route POST /api/ra/digest/generate and Inngest cron stub
 // @MX:SPEC: SPEC-REGULA-DIGEST-001
-export async function generateWeeklyDigest(
-  orgId: string,
-  weekId?: string,
-): Promise<DigestPayload> {
+export async function generateWeeklyDigest(orgId: string, weekId?: string): Promise<DigestPayload> {
   const targetWeekId = weekId ?? getWeekId(new Date());
   const { start, end } = getWeekBounds(targetWeekId);
 
@@ -135,12 +157,7 @@ export async function generateWeeklyDigest(
         eq(orgUpdateRelevance.orgId, orgId),
       ),
     )
-    .where(
-      and(
-        gte(regulatoryUpdates.publishedAt, start),
-        lte(regulatoryUpdates.publishedAt, end),
-      ),
-    )
+    .where(and(gte(regulatoryUpdates.publishedAt, start), lte(regulatoryUpdates.publishedAt, end)))
     .orderBy(desc(regulatoryUpdates.impactScore))
     .limit(50);
 
@@ -180,8 +197,18 @@ export async function generateWeeklyDigest(
     { critical: 0, high: 0, medium: 0, low: 0 },
   );
 
+  // Check for existing digest to preserve shareToken for link stability
+  const existing = await db.query.weeklyDigests.findFirst({
+    where: and(eq(weeklyDigests.orgId, orgId), eq(weeklyDigests.weekId, targetWeekId)),
+  });
+
+  // @MX:NOTE: [AUTO] Preserve existing shareToken to keep email links stable across normal regenerations
+  // @MX:REASON: Using existing?.shareToken prevents 404 errors on previously sent token-gated email links
+  // Preserve existing token for normal regeneration, only generate new for explicit rotation
+  const shareToken = existing?.shareToken || crypto.randomBytes(16).toString('hex');
   const payload: DigestPayload = {
     week_id: targetWeekId,
+    share_token: shareToken,
     week_start: start.toISOString(),
     week_end: end.toISOString(),
     org_id: orgId,
@@ -194,7 +221,6 @@ export async function generateWeeklyDigest(
   };
 
   // Upsert digest record
-  const shareToken = crypto.randomBytes(16).toString('hex');
   await db
     .insert(weeklyDigests)
     .values({
@@ -217,6 +243,7 @@ export async function generateWeeklyDigest(
         mediumCount: counts.medium,
         lowCount: counts.low,
         digestJson: payload as unknown as Record<string, unknown>,
+        shareToken,
         generatedAt: new Date(),
       },
     });

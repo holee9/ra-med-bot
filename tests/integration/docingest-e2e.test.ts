@@ -140,7 +140,58 @@ describe('Document Ingestion E2E (REQ-QUAL-015..019)', () => {
       expect.objectContaining({ action: 'document.upload' }),
     );
     expect(writeAuditMock).toHaveBeenCalledWith(
+      expect.objectContaining({ action: 'document.redact' }),
+    );
+    expect(writeAuditMock).toHaveBeenCalledWith(
       expect.objectContaining({ action: 'document.chunk' }),
+    );
+  });
+
+  it('redacts PII before embedding and source_sections persistence (REQ-QUAL-019)', async () => {
+    authMock.mockResolvedValue({
+      user: { id: 'user-1', role: 'admin', organizationId: 'org-1' },
+    });
+    vi.resetModules();
+
+    const piiText = Buffer.from(
+      'Internal SOP. Contact patient@example.com. Patient SSN is 123-45-6789.',
+    );
+    const res = await callPost(
+      buildFormData({
+        bytes: piiText,
+        filename: 'patient@example.com 123-45-6789.txt',
+        docClass: 'internal_sop',
+      }),
+    );
+
+    expect(res.status).toBe(201);
+    const embeddedTexts = embedChunksMock.mock.calls[0]?.[0] as string[];
+    expect(embeddedTexts.join('\n')).not.toContain('patient@example.com');
+    expect(embeddedTexts.join('\n')).not.toContain('123-45-6789');
+    expect(embeddedTexts.join('\n')).toContain('[REDACTED:EMAIL]');
+    expect(embeddedTexts.join('\n')).toContain('[REDACTED:SSN]');
+
+    const sectionRows = insertedSections.at(-1) as Array<{ text: string }>;
+    const persistedText = sectionRows.map((row) => row.text).join('\n');
+    expect(persistedText).not.toContain('patient@example.com');
+    expect(persistedText).not.toContain('123-45-6789');
+
+    expect(insertedSources[0]).toEqual(
+      expect.objectContaining({
+        title: '[REDACTED:EMAIL] [REDACTED:SSN].txt',
+      }),
+    );
+    expect(writeAuditMock).toHaveBeenCalledWith(
+      expect.objectContaining({
+        action: 'document.redact',
+        meta_json: expect.objectContaining({ redactionCount: expect.any(Number) }),
+      }),
+    );
+    expect(writeAuditMock).toHaveBeenCalledWith(
+      expect.objectContaining({
+        action: 'document.upload',
+        meta_json: expect.not.objectContaining({ filename: expect.any(String) }),
+      }),
     );
   });
 

@@ -13,14 +13,14 @@ import {
   auditReportabilityAssessed,
   auditVigilanceEventCreated,
 } from '@/lib/vigilance/audit';
-import { assessReportability } from '@/lib/vigilance/reportability-engine';
-import type { AdverseEventInput } from '@/lib/vigilance/reportability-engine';
 import { generateReportDraft } from '@/lib/vigilance/report-generator';
 import type { ReportType } from '@/lib/vigilance/report-generator';
+import { assessReportability } from '@/lib/vigilance/reportability-engine';
+import type { AdverseEventInput } from '@/lib/vigilance/reportability-engine';
 import { z } from 'zod';
 
 // Zod validation schema for incoming adverse event data
-const AdverseEventSchema = z.object({
+const _AdverseEventSchema = z.object({
   eventDescription: z.string().min(10, 'Event description must be at least 10 characters'),
   patientOutcome: z.enum(['death', 'serious_injury', 'malfunction', 'no_injury', 'other']),
   deviceCategory: z.enum(['class_I', 'class_II', 'class_III', 'IIa', 'IIb', 'III']),

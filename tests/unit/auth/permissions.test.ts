@@ -86,6 +86,10 @@ describe('lib/auth/permissions.ts (REQ-ENTERPRISE-020) — PERMISSIONS matrix', 
       expect(PERMISSIONS['sources.ingest'].minRole).toBe('admin');
     });
 
+    it('auditLogs.view requires admin', () => {
+      expect(PERMISSIONS['auditLogs.view'].minRole).toBe('admin');
+    });
+
     it('rbac.manage requires admin', () => {
       expect(PERMISSIONS['rbac.manage'].minRole).toBe('admin');
     });

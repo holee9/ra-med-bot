@@ -1,5 +1,5 @@
 // @MX:ANCHOR [AUTO] GET /api/audit-logs — 21 CFR Part 11 audit log read endpoint
-// @MX:REASON Public API boundary for audit log access; requires ra-lead role.
+// @MX:REASON Public API boundary for audit log access; requires admin role.
 // @MX:SPEC SPEC-REGULA-ENTERPRISE-001 (REQ-FND-044, REQ-LAUNCH-020)
 
 export const runtime = 'nodejs';

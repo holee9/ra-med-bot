@@ -35,13 +35,11 @@ function getReportFormat(reportType: ReportType): ReportFormat {
 function calculateDeadline(awarenessDate: string, deadlineDays: number): string {
   const awareness = new Date(awarenessDate);
   awareness.setDate(awareness.getDate() + deadlineDays);
-  return awareness.toISOString().split('T')[0]!;
+  const isoString = awareness.toISOString();
+  return isoString.split('T')[0] ?? isoString;
 }
 
-function buildPrompt(
-  event: AdverseEventInput,
-  reportType: ReportType,
-): string {
+function buildPrompt(event: AdverseEventInput, reportType: ReportType): string {
   const baseContext = `
 Device Name: ${event.eventDescription}
 Patient Outcome: ${event.patientOutcome}
@@ -178,8 +176,7 @@ export async function generateReportDraft(
   const submissionDeadline = calculateDeadline(event.awarenessDate, deadlineDays);
 
   // E2E test mode: return deterministic mock without LLM call
-  const isE2EMode =
-    process.env.E2E_TEST_MODE === 'true' && process.env.NODE_ENV !== 'production';
+  const isE2EMode = process.env.E2E_TEST_MODE === 'true' && process.env.NODE_ENV !== 'production';
   if (isE2EMode) {
     return {
       reportType,

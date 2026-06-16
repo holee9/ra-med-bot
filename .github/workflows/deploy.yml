@@ -21,6 +21,7 @@ jobs:
     env:
       VERCEL_ORG_ID: ${{ secrets.VERCEL_ORG_ID }}
       VERCEL_PROJECT_ID: ${{ secrets.VERCEL_PROJECT_ID }}
+      VERCEL_TOKEN: ${{ secrets.VERCEL_TOKEN }}
     steps:
       - uses: actions/checkout@v4
 
@@ -48,22 +49,38 @@ jobs:
           ANTHROPIC_API_KEY: "ci-placeholder-anthropic-key"
           OPENAI_API_KEY: "ci-placeholder-openai-key"
 
+      - name: Check Vercel preview credentials
+        id: vercel_creds
+        shell: bash
+        run: |
+          if [[ -n "${VERCEL_TOKEN}" && -n "${VERCEL_ORG_ID}" && -n "${VERCEL_PROJECT_ID}" ]]; then
+            echo "enabled=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "enabled=false" >> "$GITHUB_OUTPUT"
+            echo "::notice::Vercel preview secrets are not configured; skipping preview deploy."
+          fi
+
       - name: Install Vercel CLI
+        if: steps.vercel_creds.outputs.enabled == 'true'
         run: pnpm add -g vercel
 
       - name: Pull Vercel environment (preview)
-        run: vercel pull --yes --environment=preview --token=${{ secrets.VERCEL_TOKEN }}
+        if: steps.vercel_creds.outputs.enabled == 'true'
+        run: vercel pull --yes --environment=preview --token="${VERCEL_TOKEN}"
 
       - name: Build Vercel artifacts (preview)
-        run: vercel build --token=${{ secrets.VERCEL_TOKEN }}
+        if: steps.vercel_creds.outputs.enabled == 'true'
+        run: vercel build --token="${VERCEL_TOKEN}"
 
       - name: Deploy to Vercel (preview)
         id: deploy
+        if: steps.vercel_creds.outputs.enabled == 'true'
         run: |
-          URL=$(vercel deploy --prebuilt --token=${{ secrets.VERCEL_TOKEN }})
+          URL=$(vercel deploy --prebuilt --token="${VERCEL_TOKEN}")
           echo "preview_url=$URL" >> "$GITHUB_OUTPUT"
 
       - name: Post PR comment
+        if: steps.vercel_creds.outputs.enabled == 'true' && steps.deploy.outputs.preview_url != ''
         uses: actions/github-script@v7
         with:
           script: |
@@ -151,6 +168,7 @@ jobs:
     env:
       VERCEL_ORG_ID: ${{ secrets.VERCEL_ORG_ID }}
       VERCEL_PROJECT_ID: ${{ secrets.VERCEL_PROJECT_ID }}
+      VERCEL_TOKEN: ${{ secrets.VERCEL_TOKEN }}
     steps:
       - uses: actions/checkout@v4
 
@@ -178,19 +196,34 @@ jobs:
           ANTHROPIC_API_KEY: "ci-placeholder-anthropic-key"
           OPENAI_API_KEY: "ci-placeholder-openai-key"
 
+      - name: Check Vercel production credentials
+        id: vercel_creds
+        shell: bash
+        run: |
+          if [[ -n "${VERCEL_TOKEN}" && -n "${VERCEL_ORG_ID}" && -n "${VERCEL_PROJECT_ID}" ]]; then
+            echo "enabled=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "enabled=false" >> "$GITHUB_OUTPUT"
+            echo "::notice::Vercel production secrets are not configured; skipping production deploy."
+          fi
+
       - name: Install Vercel CLI
+        if: steps.vercel_creds.outputs.enabled == 'true'
         run: pnpm add -g vercel
 
       - name: Pull Vercel environment (production)
-        run: vercel pull --yes --environment=production --token=${{ secrets.VERCEL_TOKEN }}
+        if: steps.vercel_creds.outputs.enabled == 'true'
+        run: vercel pull --yes --environment=production --token="${VERCEL_TOKEN}"
 
       - name: Build Vercel artifacts (production)
-        run: vercel build --prod --token=${{ secrets.VERCEL_TOKEN }}
+        if: steps.vercel_creds.outputs.enabled == 'true'
+        run: vercel build --prod --token="${VERCEL_TOKEN}"
 
       - name: Deploy to Vercel (production)
         id: deploy
+        if: steps.vercel_creds.outputs.enabled == 'true'
         run: |
-          URL=$(vercel deploy --prebuilt --prod --token=${{ secrets.VERCEL_TOKEN }})
+          URL=$(vercel deploy --prebuilt --prod --token="${VERCEL_TOKEN}")
           echo "production_url=$URL" >> "$GITHUB_OUTPUT"
 
   post-deploy-smoke:

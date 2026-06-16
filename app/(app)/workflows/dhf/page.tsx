@@ -16,7 +16,8 @@ export default function DHFPage() {
           <BetaBadge />
         </div>
         <p className="mt-2 text-sm text-ink-600">
-          21 CFR 820.30 · ISO 13485 · EU MDR — Design inputs, V&amp;V, and design reviews in one place
+          21 CFR 820.30 · ISO 13485 · EU MDR — Design inputs, V&amp;V, and design reviews in one
+          place
         </p>
       </header>
 

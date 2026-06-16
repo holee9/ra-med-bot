@@ -1,7 +1,7 @@
+import { eq } from 'drizzle-orm';
 // @MX:SPEC SPEC-REGULA-DIGEST-001
 // Digest preferences settings page — authenticated.
 import { redirect } from 'next/navigation';
-import { eq } from 'drizzle-orm';
 import { auth } from '../../../../lib/auth';
 import { db } from '../../../../lib/db/client';
 import { orgDigestPreferences } from '../../../../lib/db/schema';

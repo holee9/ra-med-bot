@@ -115,7 +115,8 @@ export const STANDARDS_SEED_DATA = [
   },
   {
     standardNumber: 'ISO 11607-1:2019',
-    title: 'Packaging for terminally sterilized medical devices — Part 1: Requirements for materials',
+    title:
+      'Packaging for terminally sterilized medical devices — Part 1: Requirements for materials',
     body: 'ISO',
     version: '2019',
     publicationYear: 2019,
@@ -289,7 +290,7 @@ export function getApplicableStandards(profile: DeviceProfile): ApplicableStanda
     STANDARDS_SEED_DATA.map((s) => [s.standardNumber as string, s]),
   );
   const rules: ApplicabilityRule[] =
-    APPLICABILITY_RULES[profile.deviceTypeKey] ?? APPLICABILITY_RULES['general_device'] ?? [];
+    APPLICABILITY_RULES[profile.deviceTypeKey] ?? APPLICABILITY_RULES.general_device ?? [];
   const additionalRules: ApplicabilityRule[] = [];
 
   if (profile.hasSoftware) {

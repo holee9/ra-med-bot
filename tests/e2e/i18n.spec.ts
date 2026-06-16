@@ -10,6 +10,8 @@ const STRINGS = {
 };
 
 test.describe('i18n language toggle (REQ-LAUNCH-020)', () => {
+  test.describe.configure({ mode: 'serial' });
+
   test('locale toggle button is visible in settings or navbar', async ({ page }) => {
     const s = requiresLiveServer();
     test.skip(s.skip, s.reason);
@@ -32,7 +34,6 @@ test.describe('i18n language toggle (REQ-LAUNCH-020)', () => {
     const toggle = page.locator('[data-testid="locale-toggle"]');
     await toggle.click();
     await page.locator('[data-testid="locale-option-ko"]').click();
-    await page.waitForLoadState('networkidle');
 
     const navChat = page.locator('[data-testid="nav-chat"]');
     await expect(navChat).toContainText(STRINGS.ko.chat);
@@ -49,11 +50,10 @@ test.describe('i18n language toggle (REQ-LAUNCH-020)', () => {
     const toggle = page.locator('[data-testid="locale-toggle"]');
     await toggle.click();
     await page.locator('[data-testid="locale-option-ko"]').click();
-    await page.waitForLoadState('networkidle');
+    await expect(page.locator('[data-testid="nav-chat"]')).toContainText(STRINGS.ko.chat);
 
     await toggle.click();
     await page.locator('[data-testid="locale-option-en"]').click();
-    await page.waitForLoadState('networkidle');
 
     const navChat = page.locator('[data-testid="nav-chat"]');
     await expect(navChat).toContainText(STRINGS.en.chat);
@@ -70,10 +70,9 @@ test.describe('i18n language toggle (REQ-LAUNCH-020)', () => {
     const toggle = page.locator('[data-testid="locale-toggle"]');
     await toggle.click();
     await page.locator('[data-testid="locale-option-ko"]').click();
-    await page.waitForLoadState('networkidle');
+    await expect(page.locator('[data-testid="nav-chat"]')).toContainText(STRINGS.ko.chat);
 
-    await page.reload();
-    await page.waitForLoadState('networkidle');
+    await page.reload({ waitUntil: 'domcontentloaded' });
 
     const navChat = page.locator('[data-testid="nav-chat"]');
     await expect(navChat).toContainText(STRINGS.ko.chat);

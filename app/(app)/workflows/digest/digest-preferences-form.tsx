@@ -92,7 +92,10 @@ export default function DigestPreferencesForm({ orgId, initialPrefs }: Props) {
   }
 
   return (
-    <form onSubmit={handleSave} className="space-y-6 bg-white rounded-lg border border-gray-200 p-6">
+    <form
+      onSubmit={handleSave}
+      className="space-y-6 bg-white rounded-lg border border-gray-200 p-6"
+    >
       {message && (
         <div
           className={`text-sm px-4 py-2 rounded ${message.type === 'success' ? 'bg-green-50 text-green-700' : 'bg-red-50 text-red-700'}`}
@@ -102,8 +105,11 @@ export default function DigestPreferencesForm({ orgId, initialPrefs }: Props) {
       )}
 
       <div>
-        <label className="block text-sm font-medium text-gray-700 mb-1">발송 빈도</label>
+        <label htmlFor="frequency" className="block text-sm font-medium text-gray-700 mb-1">
+          발송 빈도
+        </label>
         <select
+          id="frequency"
           className="w-full border border-gray-300 rounded px-3 py-2 text-sm"
           value={prefs.frequency}
           onChange={(e) => setPrefs((p) => ({ ...p, frequency: e.target.value }))}
@@ -118,38 +124,50 @@ export default function DigestPreferencesForm({ orgId, initialPrefs }: Props) {
 
       <div className="grid grid-cols-2 gap-4">
         <div>
-          <label className="block text-sm font-medium text-gray-700 mb-1">발송 요일</label>
+          <label htmlFor="sendDayOfWeek" className="block text-sm font-medium text-gray-700 mb-1">
+            발송 요일
+          </label>
           <select
+            id="sendDayOfWeek"
             className="w-full border border-gray-300 rounded px-3 py-2 text-sm"
             value={prefs.sendDayOfWeek}
             onChange={(e) => setPrefs((p) => ({ ...p, sendDayOfWeek: Number(e.target.value) }))}
           >
             {DAYS.map((d, i) => (
-              <option key={i} value={i}>
+              <option key={`day-${d}`} value={i}>
                 {d}
               </option>
             ))}
           </select>
         </div>
         <div>
-          <label className="block text-sm font-medium text-gray-700 mb-1">발송 시각 (시)</label>
+          <label htmlFor="sendHour" className="block text-sm font-medium text-gray-700 mb-1">
+            발송 시각 (시)
+          </label>
           <select
+            id="sendHour"
             className="w-full border border-gray-300 rounded px-3 py-2 text-sm"
             value={prefs.sendHour}
             onChange={(e) => setPrefs((p) => ({ ...p, sendHour: Number(e.target.value) }))}
           >
-            {Array.from({ length: 24 }, (_, i) => (
-              <option key={i} value={i}>
-                {String(i).padStart(2, '0')}:00
-              </option>
-            ))}
+            {Array.from({ length: 24 }, (_, i) => {
+              const hour = `${String(i).padStart(2, '0')}:00`;
+              return (
+                <option key={hour} value={i}>
+                  {hour}
+                </option>
+              );
+            })}
           </select>
         </div>
       </div>
 
       <div>
-        <label className="block text-sm font-medium text-gray-700 mb-1">최소 심각도</label>
+        <label htmlFor="minSeverity" className="block text-sm font-medium text-gray-700 mb-1">
+          최소 심각도
+        </label>
         <select
+          id="minSeverity"
           className="w-full border border-gray-300 rounded px-3 py-2 text-sm"
           value={prefs.minSeverity}
           onChange={(e) => setPrefs((p) => ({ ...p, minSeverity: e.target.value }))}
@@ -163,9 +181,12 @@ export default function DigestPreferencesForm({ orgId, initialPrefs }: Props) {
       </div>
 
       <div>
-        <label className="block text-sm font-medium text-gray-700 mb-2">수신 이메일</label>
+        <label htmlFor="email" className="block text-sm font-medium text-gray-700 mb-2">
+          수신 이메일
+        </label>
         <div className="flex gap-2 mb-2">
           <input
+            id="email"
             type="email"
             className="flex-1 border border-gray-300 rounded px-3 py-2 text-sm"
             placeholder="이메일 주소 입력"

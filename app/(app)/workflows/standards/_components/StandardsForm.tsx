@@ -1,7 +1,7 @@
 'use client';
 
-import { useState } from 'react';
 import type { ApplicableStandard } from '@/lib/standards/applicability-engine';
+import { useState } from 'react';
 
 interface StandardsResult {
   standards: ApplicableStandard[];
@@ -176,9 +176,7 @@ export function StandardsForm() {
                   )}
                   <span
                     className={`rounded px-1.5 py-0.5 text-xs font-medium ${
-                      s.isMandatory
-                        ? 'bg-brand-100 text-brand-800'
-                        : 'bg-ink-100 text-ink-600'
+                      s.isMandatory ? 'bg-brand-100 text-brand-800' : 'bg-ink-100 text-ink-600'
                     }`}
                   >
                     {s.isMandatory ? 'Mandatory' : 'Recommended'}

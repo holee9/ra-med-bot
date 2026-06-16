@@ -3,20 +3,122 @@
 **SPEC**: SPEC-REGULA-LAUNCH-001 (REQ-LAUNCH-039)  
 **Last Updated**: 2026-05-03
 
-This guide covers DNS configuration, custom domain setup, HTTPS/TLS, and HSTS for Regula
-deployed on Vercel.
+This guide covers DNS configuration, custom domain setup, HTTPS/TLS, and HSTS for Regula.
+The production-style Vercel path remains documented below. T3610 field validation uses
+Tailscale first, then Cloudflare Tunnel when the connector is healthy.
 
 ---
 
 ## Overview
 
-Regula is hosted on Vercel. Vercel handles TLS certificate provisioning automatically via
+Regula has three domain/access paths:
+
+| Path | URL | Purpose |
+|---|---|---|
+| T3610 validation | `http://100.119.79.28:3000` | Browser validation before Cloudflare Tunnel is connected. |
+| T3610 public hostname | `https://regula.abyz-lab.work/` | Cloudflare-proxied hostname for real-user validation after tunnel recovery. |
+| Vercel production path | project custom domain | Managed production deployment path. |
+
+For Vercel-hosted production, Vercel handles TLS certificate provisioning automatically via
 Let's Encrypt. The primary steps are:
 
 1. Add the custom domain in Vercel.
 2. Create the CNAME record at your DNS provider.
 3. Verify ownership (Vercel checks propagation automatically).
 4. Enable HSTS and apply for HSTS preloading (post-launch hardening).
+
+---
+
+## T3610 Cloudflare Tunnel for `regula.abyz-lab.work`
+
+Before the Cloudflare Tunnel is healthy, validate the app in a browser through Tailscale:
+
+```bash
+tailscale ip -4
+# Current T3610 value: 100.119.79.28
+```
+
+Open:
+
+```text
+http://100.119.79.28:3000
+```
+
+The local app must listen on all interfaces:
+
+```bash
+pnpm dev:public
+```
+
+`pnpm dev:public` validates `.env.local`-backed runtime variables before opening the
+public listener. Do not start public validation with `SKIP_ENV_VALIDATION=1`; runtime
+env bypass is reserved for `next build` only and will fail fast in app startup code.
+
+Current field status recorded on 2026-06-15 KST:
+
+| Check | Result |
+|---|---|
+| `http://100.119.79.28:3000` | Reachable; redirects to `/login` |
+| `https://regula.abyz-lab.work/` | Reachable through Cloudflare; redirects to `/login` |
+| Cloudflare Tunnel host | `raspi5p` |
+| Cloudflare Tunnel service | `cloudflared.service` active |
+| Cloudflare Tunnel origin | `http://100.119.79.28:3000` |
+
+The current working topology is:
+
+```text
+Browser -> Cloudflare -> raspi5p cloudflared -> http://100.119.79.28:3000 -> T3610 Next.js
+```
+
+This topology is a validation bridge. The planned steady-state topology is tracked in GitHub Issue #160:
+
+```text
+Browser -> Cloudflare -> T3610 cloudflared -> http://127.0.0.1:3000 -> T3610 Next.js
+```
+
+Keep the `raspi5p` ingress in place until the T3610 connector is installed, healthy, and smoke-tested.
+
+To restore the public hostname after a 502 regression, update the existing `raspi5p` Cloudflare Tunnel ingress rule:
+
+| Field | Value |
+|---|---|
+| Public hostname | `regula.abyz-lab.work` |
+| Service type | `HTTP` |
+| Service URL | `http://100.119.79.28:3000` |
+
+On `raspi5p`, the rule should look like:
+
+```yaml
+- hostname: regula.abyz-lab.work
+  service: http://100.119.79.28:3000
+```
+
+After editing `/etc/cloudflared/config.yml`, restart the connector:
+
+```bash
+ssh raspi5p 'sudo systemctl restart cloudflared && systemctl is-active cloudflared'
+```
+
+After the connector shows Healthy in Cloudflare Zero Trust, verify:
+
+```bash
+curl -I http://100.119.79.28:3000/
+curl -I https://regula.abyz-lab.work/
+```
+
+Expected result is no Cloudflare `502`; unauthenticated app access should redirect to `/login` or return the configured login page.
+
+If Google OAuth is used through the public hostname, also set:
+
+```bash
+NEXTAUTH_URL=https://regula.abyz-lab.work
+```
+
+and add this redirect URI in Google Cloud Console:
+
+```text
+https://regula.abyz-lab.work/api/auth/callback/google
+```
 
 ---
 

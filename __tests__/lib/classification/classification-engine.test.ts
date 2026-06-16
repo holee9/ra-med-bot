@@ -2,8 +2,8 @@
 // REQ-CLASSIFY-001~010: verify correct class assignment for each device type × jurisdiction.
 import { describe, expect, it } from 'vitest';
 import {
-  classifyDevice,
   type DeviceInput,
+  classifyDevice,
 } from '../../../lib/classification/classification-engine';
 
 // ---------------------------------------------------------------------------
@@ -27,9 +27,7 @@ function input(overrides: Partial<DeviceInput>): DeviceInput {
 // ---------------------------------------------------------------------------
 describe('FDA classification', () => {
   it('REQ-CLASSIFY-001: active implantable → Class III / PMA', () => {
-    const result = classifyDevice(
-      input({ deviceType: 'implantable', contactType: 'implant' }),
-    );
+    const result = classifyDevice(input({ deviceType: 'implantable', contactType: 'implant' }));
     expect(result.fda.deviceClass).toBe('III');
     expect(result.fda.pathway).toBe('PMA');
   });
@@ -50,17 +48,13 @@ describe('FDA classification', () => {
   });
 
   it('REQ-CLASSIFY-004: active device no patient contact → Class I exempt', () => {
-    const result = classifyDevice(
-      input({ deviceType: 'active', contactType: 'no_contact' }),
-    );
+    const result = classifyDevice(input({ deviceType: 'active', contactType: 'no_contact' }));
     expect(result.fda.deviceClass).toBe('I');
     expect(result.fda.pathway).toBe('exempt');
   });
 
   it('REQ-CLASSIFY-005: active device internal contact → Class III / PMA', () => {
-    const result = classifyDevice(
-      input({ deviceType: 'active', contactType: 'internal' }),
-    );
+    const result = classifyDevice(input({ deviceType: 'active', contactType: 'internal' }));
     expect(result.fda.deviceClass).toBe('III');
     expect(result.fda.pathway).toBe('PMA');
   });
@@ -78,34 +72,26 @@ describe('EU MDR classification', () => {
   });
 
   it('REQ-CLASSIFY-007: active implantable → Class III / Rule 8', () => {
-    const result = classifyDevice(
-      input({ deviceType: 'implantable', contactType: 'implant' }),
-    );
+    const result = classifyDevice(input({ deviceType: 'implantable', contactType: 'implant' }));
     expect(result.eu.deviceClass).toBe('III');
     expect(result.eu.rule).toBe('Rule 8');
     expect(result.eu.requiresNotifiedBody).toBe(true);
   });
 
   it('REQ-CLASSIFY-008: software-only with AI/ML → Class IIb / Rule 11', () => {
-    const result = classifyDevice(
-      input({ deviceType: 'software_only', hasAiMl: true }),
-    );
+    const result = classifyDevice(input({ deviceType: 'software_only', hasAiMl: true }));
     expect(result.eu.deviceClass).toBe('IIb');
     expect(result.eu.rule).toBe('Rule 11');
   });
 
   it('REQ-CLASSIFY-009: software-only without AI/ML → Class IIa / Rule 11', () => {
-    const result = classifyDevice(
-      input({ deviceType: 'software_only', hasAiMl: false }),
-    );
+    const result = classifyDevice(input({ deviceType: 'software_only', hasAiMl: false }));
     expect(result.eu.deviceClass).toBe('IIa');
     expect(result.eu.rule).toBe('Rule 11');
   });
 
   it('REQ-CLASSIFY-010: non-invasive external contact → Class I self_cert', () => {
-    const result = classifyDevice(
-      input({ deviceType: 'non_active', contactType: 'external' }),
-    );
+    const result = classifyDevice(input({ deviceType: 'non_active', contactType: 'external' }));
     expect(result.eu.deviceClass).toBe('I');
     expect(result.eu.pathway).toBe('self_cert');
     expect(result.eu.requiresNotifiedBody).toBe(false);
@@ -117,9 +103,7 @@ describe('EU MDR classification', () => {
 // ---------------------------------------------------------------------------
 describe('MFDS classification', () => {
   it('REQ-CLASSIFY-011: implantable contact → Class 4', () => {
-    const result = classifyDevice(
-      input({ deviceType: 'active', contactType: 'implant' }),
-    );
+    const result = classifyDevice(input({ deviceType: 'active', contactType: 'implant' }));
     expect(result.mfds.deviceClass).toBe('4');
   });
 
@@ -134,16 +118,12 @@ describe('MFDS classification', () => {
 // ---------------------------------------------------------------------------
 describe('NMPA classification', () => {
   it('REQ-CLASSIFY-013: implantable contact → Class III', () => {
-    const result = classifyDevice(
-      input({ deviceType: 'active', contactType: 'implant' }),
-    );
+    const result = classifyDevice(input({ deviceType: 'active', contactType: 'implant' }));
     expect(result.nmpa.deviceClass).toBe('III');
   });
 
   it('REQ-CLASSIFY-014: general non-active device → Class II', () => {
-    const result = classifyDevice(
-      input({ deviceType: 'non_active', contactType: 'external' }),
-    );
+    const result = classifyDevice(input({ deviceType: 'non_active', contactType: 'external' }));
     expect(result.nmpa.deviceClass).toBe('II');
   });
 });
@@ -153,17 +133,13 @@ describe('NMPA classification', () => {
 // ---------------------------------------------------------------------------
 describe('PMDA classification', () => {
   it('REQ-CLASSIFY-015: AI/ML software → Class III', () => {
-    const result = classifyDevice(
-      input({ deviceType: 'software_only', hasAiMl: true }),
-    );
+    const result = classifyDevice(input({ deviceType: 'software_only', hasAiMl: true }));
     expect(result.pmda.deviceClass).toBe('III');
     expect(result.pmda.pathway).toBe('製造販売承認');
   });
 
   it('REQ-CLASSIFY-016: no patient contact non-active → Class I届出', () => {
-    const result = classifyDevice(
-      input({ deviceType: 'non_active', contactType: 'no_contact' }),
-    );
+    const result = classifyDevice(input({ deviceType: 'non_active', contactType: 'no_contact' }));
     expect(result.pmda.deviceClass).toBe('I');
     expect(result.pmda.pathway).toBe('届出');
   });

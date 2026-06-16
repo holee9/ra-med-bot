@@ -9,7 +9,10 @@ export default function ChatPage() {
       {/* Empty state — rendered server-side so it is always in the initial HTML */}
       <section className="flex flex-1 flex-col items-center justify-center text-center py-16">
         <h1 className="font-serif text-3xl text-brand-800">새로운 상담을 시작하세요</h1>
-        <p className="mt-4 text-ink-600">규제 질문을 입력하면 출처와 함께 답변해 드립니다.</p>
+        <p className="mt-4 max-w-xl text-ink-600">
+          규제 질문을 입력하면 조직 범위에 맞는 source, citation, confidence, 전문가 검토 필요
+          여부를 함께 확인합니다.
+        </p>
       </section>
 
       {/* Client shell owns all interactive state */}

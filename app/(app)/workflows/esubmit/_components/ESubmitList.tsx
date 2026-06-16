@@ -30,22 +30,12 @@ export function ESubmitList() {
 
   // Detail view
   if (selectedId) {
-    return (
-      <ESubmitDetail
-        packageId={selectedId}
-        onBack={() => setSelectedId(null)}
-      />
-    );
+    return <ESubmitDetail packageId={selectedId} onBack={() => setSelectedId(null)} />;
   }
 
   // Create form
   if (showCreate) {
-    return (
-      <ESubmitCreateForm
-        onCreated={handleCreated}
-        onCancel={() => setShowCreate(false)}
-      />
-    );
+    return <ESubmitCreateForm onCreated={handleCreated} onCancel={() => setShowCreate(false)} />;
   }
 
   // List view

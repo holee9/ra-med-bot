@@ -20,6 +20,96 @@
 
 For the full implementation review, see [`docs/implementation-status.md`](implementation-status.md).
 
+### 1.0.1 T3610 Field Validation Access
+
+Use this access order when validating the T3610-hosted app from an SSH session or another browser device.
+
+| Priority | URL | Current use |
+|---|---|---|
+| 1 | `http://100.119.79.28:3000` | Tailscale validation path. Use this before Cloudflare Tunnel is healthy. |
+| 2 | `http://192.168.100.200:3000` | LAN validation path when the browser device is on the same network. |
+| 3 | `https://regula.abyz-lab.work/` | Public Cloudflare hostname. Use only after the tunnel connector is healthy. |
+
+Current verified state on 2026-06-15 KST:
+
+| Check | Result |
+|---|---|
+| Next.js listener | `0.0.0.0:3000`, `next-server` PID `1913371` |
+| Tailscale IP | `100.119.79.28` |
+| Tailscale HTTP check | `curl -I http://100.119.79.28:3000` returns `307` to `/login` |
+| Public hostname check | `curl -I https://regula.abyz-lab.work/` returns `307` to `/login` |
+| Cloudflare Tunnel host | `raspi5p` |
+| Cloudflare Tunnel origin | `http://100.119.79.28:3000` |
+
+Do not use `localhost` from a remote SSH client browser. `localhost` points to the user's local machine, not the T3610. For browser validation before Cloudflare is restored, use the Tailscale URL above.
+
+Start the public validation server with:
+
+```bash
+pnpm dev:public
+```
+
+This command fails before binding `0.0.0.0:3000` when required runtime env values are
+missing. Do not use `SKIP_ENV_VALIDATION=1` for `next dev` or `next start`; that bypass
+is allowed only by the build script.
+
+Before a full E2E pass, warm the public validation routes once to remove dev cold-compile
+noise from latency measurements:
+
+```bash
+for path in / /chat /history /dashboard /predicate /workflows /workflows/dhf /admin/documents; do
+  curl -I "http://100.119.79.28:3000$path"
+done
+```
+
+Use these local validation targets unless a SPEC defines stricter thresholds:
+
+| Surface | Warm target |
+|---|---|
+| HTML route | < 2s |
+| Read API | < 500ms |
+| LLM/SSE route | progress event visible, no silent stall |
+
+### 1.0.2 Cloudflare 502 Triage for `regula.abyz-lab.work`
+
+`Bad gateway Error code 502` with Cloudflare and browser both shown as working means the edge reached Cloudflare, but Cloudflare could not reach the origin path for `regula.abyz-lab.work`.
+
+The current working topology is:
+
+```text
+Browser -> Cloudflare -> raspi5p cloudflared -> http://100.119.79.28:3000 -> T3610 Next.js
+```
+
+Run these checks from T3610 and `raspi5p`:
+
+```bash
+tailscale ip -4
+ss -ltnp
+curl -I http://100.119.79.28:3000
+curl -I https://regula.abyz-lab.work/
+ssh raspi5p 'systemctl is-active cloudflared'
+ssh raspi5p 'sudo sed -n "/hostname: regula.abyz-lab.work/,+1p" /etc/cloudflared/config.yml'
+```
+
+Interpretation:
+
+| Finding | Action |
+|---|---|
+| Tailscale URL returns `307 /login` but Cloudflare returns `502` | App is reachable; restore Cloudflare Tunnel/DNS origin mapping. |
+| `raspi5p` tunnel rule points at `http://localhost:4000` | Change only the `regula.abyz-lab.work` ingress service to `http://100.119.79.28:3000` and restart `cloudflared`. |
+| Tunnel is healthy but hostname still returns `502` | Verify `raspi5p` can `curl -I http://100.119.79.28:3000`; if not, fix Tailscale/LAN reachability to T3610. |
+| Custom HTTPS hostname is restored | Set `NEXTAUTH_URL=https://regula.abyz-lab.work` and add OAuth redirect URI `https://regula.abyz-lab.work/api/auth/callback/google`, then restart the app. |
+
+### 1.0.3 Planned T3610-Native Tunnel
+
+The current `raspi5p` tunnel path is acceptable for browser validation because the Regula app still runs on T3610. For long-term operation, move the public hostname to a T3610-native Cloudflare connector:
+
+```text
+Browser -> Cloudflare -> T3610 cloudflared -> http://127.0.0.1:3000 -> T3610 Next.js
+```
+
+Track this migration in GitHub Issue #160. Do not remove the `raspi5p` ingress until the T3610 connector is healthy and `https://regula.abyz-lab.work/login` returns `200` through the T3610-native tunnel.
+
 ### 1.1 Pre-Deployment Checklist
 
 Run the full pre-flight checklist before every production deployment:

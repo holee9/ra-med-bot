@@ -5,6 +5,8 @@ import { expect, test } from '@playwright/test';
 import { requiresAuthState, requiresLiveServer } from './fixtures/env-guard';
 
 test.describe('Notification Settings (SPEC-REGULA-NOTIFICATIONS-001)', () => {
+  test.describe.configure({ mode: 'serial' });
+
   test.beforeEach(async ({ page }) => {
     const server = requiresLiveServer();
     const auth = requiresAuthState();
@@ -44,6 +46,18 @@ test.describe('Notification Settings (SPEC-REGULA-NOTIFICATIONS-001)', () => {
   test('toggling a preference saves and shows saved indicator (REQ-NOTIFY-002)', async ({
     page,
   }) => {
+    await page.route('**/api/ra/notifications/preferences', async (route) => {
+      if (route.request().method() !== 'PATCH') {
+        await route.continue();
+        return;
+      }
+      await route.fulfill({
+        status: 200,
+        contentType: 'application/json',
+        body: JSON.stringify({ preferences: {} }),
+      });
+    });
+
     await expect(page.locator('[data-testid="notification-settings"]')).toBeVisible({
       timeout: 10_000,
     });

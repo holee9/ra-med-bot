@@ -5,6 +5,7 @@
 export const runtime = 'nodejs';
 
 import { withPermission } from '@/lib/auth/with-permission';
+import { auditCerLiteratureSearch } from '@/lib/cer/audit';
 import { formatVancouver } from '@/lib/cer/citation-formatter';
 import { synthesizeEvidence } from '@/lib/cer/evidence-synthesis';
 import { appraiseEvidence } from '@/lib/cer/literature-appraisal';
@@ -31,7 +32,7 @@ function sseEvent(event: string, data: unknown): string {
   return `data: ${JSON.stringify({ event, data })}\n\n`;
 }
 
-export const POST = withPermission('consult.create', async (req, _ctx, _session) => {
+export const POST = withPermission('consult.create', async (req, _ctx, session) => {
   let body: unknown;
   try {
     body = await req.json();
@@ -162,6 +163,12 @@ export const POST = withPermission('consult.create', async (req, _ctx, _session)
           lowCount: synthesis.gradeCounts.low,
           veryLowCount: synthesis.gradeCounts.veryLow,
         });
+        await auditCerLiteratureSearch(
+          session.user.id,
+          cerRunId,
+          pico.searchQuery,
+          articles.length,
+        );
 
         push('done', {
           searchId,

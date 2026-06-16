@@ -7,10 +7,11 @@
 export const runtime = 'nodejs';
 
 import { sharedAnthropicClient } from '@/lib/ai/anthropic-client';
+import { writeAudit } from '@/lib/audit';
 import { withPermission } from '@/lib/auth/with-permission';
 import { db } from '@/lib/db/client';
 import { samdAssessments } from '@/lib/db/schema';
-import { eq, and } from 'drizzle-orm';
+import { and, eq } from 'drizzle-orm';
 
 const SSE_HEADERS = {
   'Content-Type': 'text/event-stream',
@@ -187,6 +188,13 @@ Return only the JSON object.`,
             updatedAt: new Date(),
           })
           .where(and(eq(samdAssessments.id, id), eq(samdAssessments.orgId, orgId)));
+        await writeAudit({
+          actor_id: session.user.id,
+          action: 'samd_assessment_updated',
+          resource_type: 'samd_assessment',
+          resource_id: id,
+          meta_json: { generatedArtifacts: ['model_card', 'checklist', 'monitoring_plan'] },
+        });
 
         send('done', {
           model_card: modelCard,

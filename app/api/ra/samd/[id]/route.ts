@@ -2,13 +2,17 @@
 // PATCH /api/ra/samd/[id] — update assessment fields (or approve expert review).
 // @MX:SPEC SPEC-REGULA-SAMD-001
 
-import { classifySaMD } from '@/lib/samd/imdrf-matrix';
-import type { AiMlType, ImdrfClinicalSituation, ImdrfHealthcareSituation } from '@/lib/samd/imdrf-matrix';
-import { withPermission } from '@/lib/auth/with-permission';
 import { writeAudit } from '@/lib/audit';
+import { withPermission } from '@/lib/auth/with-permission';
 import { db } from '@/lib/db/client';
 import { samdAssessments } from '@/lib/db/schema';
-import { eq, and } from 'drizzle-orm';
+import { classifySaMD } from '@/lib/samd/imdrf-matrix';
+import type {
+  AiMlType,
+  ImdrfClinicalSituation,
+  ImdrfHealthcareSituation,
+} from '@/lib/samd/imdrf-matrix';
+import { and, eq } from 'drizzle-orm';
 import { z } from 'zod';
 
 const PatchSaMDSchema = z.object({
@@ -90,8 +94,10 @@ export const PATCH = withPermission('dashboard.view', async (req, ctx, session) 
   }
 
   const aiMlType = (data.ai_ml_type ?? existing.aiMlType) as AiMlType;
-  const clinicalSituation = (data.imdrf_clinical_situation ?? existing.imdrfClinicalSituation) as ImdrfClinicalSituation;
-  const healthcareSituation = (data.imdrf_healthcare_situation ?? existing.imdrfHealthcareSituation) as ImdrfHealthcareSituation;
+  const clinicalSituation = (data.imdrf_clinical_situation ??
+    existing.imdrfClinicalSituation) as ImdrfClinicalSituation;
+  const healthcareSituation = (data.imdrf_healthcare_situation ??
+    existing.imdrfHealthcareSituation) as ImdrfHealthcareSituation;
 
   const classification = classifySaMD(aiMlType, clinicalSituation, healthcareSituation);
 

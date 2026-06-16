@@ -2,8 +2,11 @@
 // @MX:SPEC SPEC-REGULA-CLASSIFY-001 (REQ-CLASSIFY-001~020)
 // Multi-jurisdiction device classification wizard with SSE streaming.
 
+import type {
+  ClassificationResult,
+  JurisdictionResult,
+} from '@/lib/classification/classification-engine';
 import { useState } from 'react';
-import type { ClassificationResult, JurisdictionResult } from '@/lib/classification/classification-engine';
 
 type DeviceType = 'active' | 'non_active' | 'software_only' | 'ivd' | 'implantable';
 type ContactType = 'no_contact' | 'external' | 'internal' | 'implant';
@@ -55,9 +58,7 @@ function JurisdictionCard({ result }: { result: JurisdictionResult }) {
         <span
           className={[
             'rounded px-2 py-0.5 text-xs font-bold',
-            isHighRisk
-              ? 'bg-red-100 text-red-700'
-              : 'bg-brand-100 text-brand-700',
+            isHighRisk ? 'bg-red-100 text-red-700' : 'bg-brand-100 text-brand-700',
           ].join(' ')}
         >
           Class {result.deviceClass}
@@ -68,9 +69,7 @@ function JurisdictionCard({ result }: { result: JurisdictionResult }) {
         {result.rule ? ` — ${result.rule}` : ''}
       </p>
       {result.requiresNotifiedBody && (
-        <p className="mt-1 text-xs font-medium text-amber-700">
-          Requires Notified Body
-        </p>
+        <p className="mt-1 text-xs font-medium text-amber-700">Requires Notified Body</p>
       )}
       <p className="mt-2 text-xs text-ink-600 leading-relaxed">{result.rationale}</p>
     </div>
@@ -201,12 +200,16 @@ export function ClassificationWizard() {
                   id="deviceType"
                   className="mt-1 w-full rounded border border-ink-300 px-2 py-1.5 text-sm text-ink-800"
                   value={form.deviceType}
-                  onChange={(e) => setForm((f) => ({ ...f, deviceType: e.target.value as DeviceType | '' }))}
+                  onChange={(e) =>
+                    setForm((f) => ({ ...f, deviceType: e.target.value as DeviceType | '' }))
+                  }
                 >
                   <option value="">Auto-detect</option>
                   {(Object.entries(DEVICE_TYPE_LABELS) as [DeviceType, string][]).map(
                     ([value, label]) => (
-                      <option key={value} value={value}>{label}</option>
+                      <option key={value} value={value}>
+                        {label}
+                      </option>
                     ),
                   )}
                 </select>
@@ -219,12 +222,16 @@ export function ClassificationWizard() {
                   id="contactType"
                   className="mt-1 w-full rounded border border-ink-300 px-2 py-1.5 text-sm text-ink-800"
                   value={form.contactType}
-                  onChange={(e) => setForm((f) => ({ ...f, contactType: e.target.value as ContactType | '' }))}
+                  onChange={(e) =>
+                    setForm((f) => ({ ...f, contactType: e.target.value as ContactType | '' }))
+                  }
                 >
                   <option value="">Auto-detect</option>
                   {(Object.entries(CONTACT_TYPE_LABELS) as [ContactType, string][]).map(
                     ([value, label]) => (
-                      <option key={value} value={value}>{label}</option>
+                      <option key={value} value={value}>
+                        {label}
+                      </option>
                     ),
                   )}
                 </select>
@@ -239,7 +246,11 @@ export function ClassificationWizard() {
                     onChange={(e) => setForm((f) => ({ ...f, [field]: e.target.checked }))}
                     className="rounded border-ink-300"
                   />
-                  {field === 'hasSoftware' ? 'Has Software' : field === 'hasAiMl' ? 'Has AI/ML' : 'Is Sterile'}
+                  {field === 'hasSoftware'
+                    ? 'Has Software'
+                    : field === 'hasAiMl'
+                      ? 'Has AI/ML'
+                      : 'Is Sterile'}
                 </label>
               ))}
             </div>
@@ -293,7 +304,8 @@ export function ClassificationWizard() {
           <div className="rounded-lg border border-brand-200 bg-brand-50 p-4">
             <h2 className="font-serif text-lg text-brand-800">Classification Results</h2>
             <p className="mt-1 text-xs text-ink-500">
-              Deterministic rules based on FDA 21 CFR, EU MDR 2017/745, MFDS (의료기기법), NMPA 分类, and PMDA 薬機法
+              Deterministic rules based on FDA 21 CFR, EU MDR 2017/745, MFDS (의료기기법), NMPA
+              分类, and PMDA 薬機法
             </p>
           </div>
 

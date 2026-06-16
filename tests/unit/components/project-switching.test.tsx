@@ -1,7 +1,7 @@
 // @MX:NOTE T-030 project switching wiring tests — REQ-BREADTH-044~048.
 // @vitest-environment jsdom
 
-import { cleanup, fireEvent, render, screen } from '@testing-library/react';
+import { act, cleanup, fireEvent, render, screen } from '@testing-library/react';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
 // ─── Zustand store mock ────────────────────────────────────────────────────
@@ -39,10 +39,11 @@ vi.mock('@/stores/ui', () => ({
 }));
 
 // ─── TanStack Query mock ────────────────────────────────────────────────────
-const mockProjects = [
+let mockProjects = [
   { id: 'proj-1', name: '프로젝트 A', organizationId: 'org-1' },
   { id: 'proj-2', name: '프로젝트 B', organizationId: 'org-1' },
 ];
+const mockInvalidateQueries = vi.fn();
 
 vi.mock('@/lib/queries/useProjects', () => ({
   useProjects: vi.fn(() => ({ data: mockProjects, isLoading: false })),
@@ -57,7 +58,7 @@ vi.mock('@tanstack/react-query', () => ({
       return { data: undefined, isLoading: false };
     }
   }),
-  useQueryClient: vi.fn(() => ({ invalidateQueries: vi.fn() })),
+  useQueryClient: vi.fn(() => ({ invalidateQueries: mockInvalidateQueries })),
 }));
 
 // ─── Test helpers ────────────────────────────────────────────────────────────
@@ -68,6 +69,11 @@ function resetMockState() {
   mockPendingQuestion = null;
   mockSetCurrentProjectId.mockClear();
   mockSetPendingQuestion.mockClear();
+  mockInvalidateQueries.mockClear();
+  mockProjects = [
+    { id: 'proj-1', name: '프로젝트 A', organizationId: 'org-1' },
+    { id: 'proj-2', name: '프로젝트 B', organizationId: 'org-1' },
+  ];
   // Keep getState in sync with current mock state
   mockGetState.mockImplementation(() => makeState());
 }
@@ -177,6 +183,28 @@ describe('Sidebar project switching (REQ-BREADTH-044)', () => {
     const activeEl = container.querySelector('[data-active="true"], [aria-current="true"]');
     expect(activeEl).toBeDefined();
     expect(activeEl?.textContent).toContain('프로젝트 A');
+  });
+
+  it('offers an inline default project CTA when the org has no projects', async () => {
+    mockProjects = [];
+    const fetchMock = vi.fn().mockResolvedValue({
+      ok: true,
+      json: async () => ({ project: { id: 'proj-default', name: '기본 검증 프로젝트' } }),
+    });
+    vi.stubGlobal('fetch', fetchMock);
+
+    const Sidebar = (await import('@/components/shell/Sidebar')).default;
+    render(<Sidebar />);
+
+    await act(async () => {
+      fireEvent.click(screen.getByTestId('project-empty-create'));
+    });
+
+    await vi.waitFor(() => {
+      expect(fetchMock).toHaveBeenCalledWith('/api/ra/projects', expect.any(Object));
+      expect(mockSetCurrentProjectId).toHaveBeenCalledWith('proj-default');
+      expect(mockInvalidateQueries).toHaveBeenCalledWith({ queryKey: ['projects'] });
+    });
   });
 });
 

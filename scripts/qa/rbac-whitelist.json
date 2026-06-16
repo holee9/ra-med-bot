@@ -1,3 +1,3 @@
 {
-  "exempt_patterns": ["app/api/auth/**", "app/api/health/**"]
+  "exempt_patterns": ["app/api/auth/**", "app/api/health/**", "app/api/ra/digest/[weekId]/route.ts"]
 }

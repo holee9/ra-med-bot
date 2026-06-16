@@ -27,6 +27,11 @@ vi.mock('../../../lib/db/client', () => ({
     insert: vi.fn().mockReturnThis(),
     values: vi.fn().mockReturnThis(),
     onConflictDoUpdate: vi.fn().mockResolvedValue(undefined),
+    query: {
+      weeklyDigests: {
+        findFirst: vi.fn().mockResolvedValue(null),
+      },
+    },
   },
 }));
 

@@ -1,13 +1,13 @@
 // @MX:SPEC SPEC-REGULA-ESUBMIT-001
 // Unit tests for electronic submission validators.
 
-import { describe, it, expect } from 'vitest';
 import {
   validate510k,
   validateCER,
   validatePCCP,
   validateSubmissionPackage,
 } from '@/lib/esubmit/validators';
+import { describe, expect, it } from 'vitest';
 
 // ---------------------------------------------------------------------------
 // validate510k
@@ -18,7 +18,8 @@ describe('validate510k', () => {
     const manifest = {
       device_description: 'A detailed description of the device with sufficient length',
       intended_use: 'This device is intended for use in the treatment of X condition',
-      substantial_equivalence: 'Substantially equivalent to predicate device ABC-123 cleared in 2020',
+      substantial_equivalence:
+        'Substantially equivalent to predicate device ABC-123 cleared in 2020',
       performance_testing: 'Bench testing conducted per ISO 10993 with passing results obtained',
       biocompatibility: 'Biocompatibility evaluation per ISO 10993-1 demonstrates safety',
       predicate_device: 'K203456',
@@ -129,7 +130,7 @@ describe('validatePCCP', () => {
       pccp_sections: 'Algorithm update procedures for model retraining and validation',
       modification_protocol: 'Pre-specified modification criteria and performance thresholds',
       performance_targets: [
-        { metric: 'sensitivity', baseline: 0.92, threshold: 0.90 },
+        { metric: 'sensitivity', baseline: 0.92, threshold: 0.9 },
         { metric: 'specificity', baseline: 0.88, threshold: 0.85 },
       ],
     };

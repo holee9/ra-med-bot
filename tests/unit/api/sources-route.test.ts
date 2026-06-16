@@ -91,6 +91,7 @@ describe('GET /api/ra/sources', () => {
     expect(fda.documentCount).toBe(12);
     expect(fda.sectionCount).toBe(340);
     expect(typeof fda.lastUpdated).toBe('string');
+    expect(chain.where).toHaveBeenCalledTimes(1);
   });
 
   it('returns empty array when no sources exist', async () => {

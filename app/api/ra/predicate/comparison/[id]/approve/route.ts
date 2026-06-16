@@ -9,6 +9,7 @@
 // REQ-PRE-029: nodejs runtime required — department lookup uses the pg driver.
 export const runtime = 'nodejs';
 
+import { writeAudit } from '@/lib/audit';
 import { canManageComparisons } from '@/lib/auth/predicate-permissions';
 import { withPermission } from '@/lib/auth/with-permission';
 import { db } from '@/lib/db/client';
@@ -107,6 +108,13 @@ export const PUT = withPermission('workflow.execute', async (req, ctx, session) 
     .set({ resultJson: comparison, updatedAt: new Date() })
     .where(eq(workflowRuns.id, id))
     .returning();
+  await writeAudit({
+    actor_id: session.user.id,
+    action: 'workflow.approve',
+    resource_type: 'predicate_comparison',
+    resource_id: id,
+    meta_json: { dimension, predicateIndex: predicate_index },
+  });
 
   return Response.json({ comparison });
 });

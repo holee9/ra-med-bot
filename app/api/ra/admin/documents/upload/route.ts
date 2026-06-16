@@ -24,6 +24,7 @@ import { chunk } from '@/lib/ingest/chunkers';
 import { DocClass } from '@/lib/ingest/doc-class';
 import { embedChunks } from '@/lib/ingest/embed';
 import { SUPPORTED_MIME_TYPES, extractText } from '@/lib/ingest/extract';
+import { redactPiiForIngest, redactRegexPii } from '@/lib/ingest/pii/redact';
 import { z } from 'zod';
 
 // REQ-QUAL-019 — configurable size cap (default 10MB to match handoff §16).
@@ -110,16 +111,26 @@ export const POST = withPermission('sources.ingest', async (req, _ctx, session) 
   }
 
   // ---------------------------------------------------------------------
-  // 4. Chunk + embed.
-  //    NOTE: PII redaction layers (regex/Workers AI/Presidio) live in the
-  //    Inngest async pipeline. The admin sync upload relies on the
-  //    embed-time PII guard (lib/ingest/embed.ts) as defense-in-depth and
-  //    fails closed if SSN/email patterns leak through.
-  //    @MX:TODO [AUTO] Hook redaction layers from upload-processed.ts into
-  //    this sync path once they are extracted into a reusable module.
+  // 4. Redact + chunk + embed.
+  //    The sync admin upload and async Inngest path share redactPiiForIngest()
+  //    so source_sections and embedding inputs never receive known PII patterns.
   // ---------------------------------------------------------------------
+  let redaction: Awaited<ReturnType<typeof redactPiiForIngest>>;
+  try {
+    redaction = await redactPiiForIngest(rawText, docClass);
+  } catch (err) {
+    return Response.json(
+      { error: 'redaction_failed', detail: err instanceof Error ? err.message : 'unknown' },
+      { status: 422 },
+    );
+  }
+
+  if (redaction.text.trim().length === 0) {
+    return Response.json({ error: 'redaction_produced_empty' }, { status: 422 });
+  }
+
   const orgId = session.user.organizationId ?? '';
-  const chunks = chunk(docClass, rawText, { orgId, uploadedBy: session.user.id });
+  const chunks = chunk(docClass, redaction.text, { orgId, uploadedBy: session.user.id });
   if (chunks.length === 0) {
     return Response.json({ error: 'chunking_produced_empty' }, { status: 422 });
   }
@@ -143,8 +154,9 @@ export const POST = withPermission('sources.ingest', async (req, _ctx, session) 
   // ---------------------------------------------------------------------
   const title =
     typeof titleOverride === 'string' && titleOverride.trim().length > 0
-      ? titleOverride.trim()
-      : file.name;
+      ? redactRegexPii(titleOverride.trim()).text
+      : redactRegexPii(file.name).text;
+  const filenameExt = file.name.includes('.') ? file.name.split('.').pop()?.slice(0, 32) : null;
 
   const result: UploadSuccess = await db.transaction(async (tx) => {
     const inserted = await tx
@@ -189,7 +201,21 @@ export const POST = withPermission('sources.ingest', async (req, _ctx, session) 
       mimeType,
       sizeBytes: file.size,
       sectionCount: result.sectionCount,
-      filename: file.name,
+      filenameExt,
+      filenameLength: file.name.length,
+    },
+  });
+
+  await writeAudit({
+    action: 'document.redact',
+    actor_id: session.user.id,
+    resource_type: 'source',
+    resource_id: result.sourceId,
+    meta_json: {
+      docClass,
+      layersRun: redaction.layersRun,
+      redactionCount: redaction.redactionCount,
+      sensitivityLevel: redaction.sensitivityLevel,
     },
   });
 

@@ -18,8 +18,10 @@
 
 set -e
 
+export PATH="$HOME/.local/bin:$HOME/go/bin:$HOME/.npm-global/bin:/usr/local/bin:/usr/local/sbin:/usr/bin:/bin:/usr/sbin:/sbin${PATH:+:$PATH}"
+
 # Get action from first argument (use lowercase to avoid template token detection)
-action="$${1:-}"
+action="${1:-}"
 if [ -z "$action" ]; then
     echo "Error: No action specified" >&2
     echo "Usage: $$0 <action>" >&2
