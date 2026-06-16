@@ -5,9 +5,9 @@
 
 import { chunk } from '../../ingest/chunkers/index';
 import type { DocClass } from '../../ingest/doc-class';
-import { docSensitivity } from '../../ingest/doc-sensitivity';
 import { embedChunks } from '../../ingest/embed';
 import { extractText } from '../../ingest/extract/index';
+import { redactPiiForIngest } from '../../ingest/pii/redact';
 import { notifyAdminQuarantine } from '../../notifications/admin-quarantine';
 
 // @MX:TODO: [AUTO] Inngest client not yet wired — reserved for SPEC-REGULA-DOCINGEST-001 Phase 2.
@@ -51,7 +51,8 @@ export const uploadProcessedFn = {
     // Step 2: PII redaction (Layer 1 regex + Layer 2 Workers AI; Layer 3 for critical_phi)
     let redactedText: string;
     try {
-      redactedText = await redactText(rawText, docClass);
+      const redaction = await redactPiiForIngest(rawText, docClass);
+      redactedText = redaction.text;
     } catch (err) {
       await notifyAdminQuarantine(documentId, `Redaction failed: ${err}`);
       throw new Error(`Redaction failed for ${documentId}: ${err}`);
@@ -99,45 +100,6 @@ async function fetchFromR2(r2Key: string): Promise<Buffer> {
   });
   if (!response.ok) throw new Error(`R2 fetch failed: ${r2Key}`);
   return Buffer.from(await response.arrayBuffer());
-}
-
-async function redactText(text: string, docClass: DocClass): Promise<string> {
-  const sensitivity = docSensitivity[docClass];
-  let redacted = text;
-
-  // Layer 1: Regex-based redaction (always applied)
-  const { detectPii, redactText } = await import('../../ingest/pii/regex');
-  redacted = redactText(redacted, detectPii(redacted));
-
-  if (sensitivity === 'high' || sensitivity === 'critical_phi') {
-    // Layer 2: Workers AI (if configured)
-    const { detectPiiWorkersAi } = await import('../../ingest/pii/workers-ai');
-    const spans = await detectPiiWorkersAi(redacted);
-    redacted = applySpanRedaction(redacted, spans);
-  }
-
-  if (sensitivity === 'critical_phi') {
-    // Layer 3: Presidio (for maximum PHI protection)
-    const { detectPiiPresidio } = await import('../../ingest/pii/presidio');
-    const spans = await detectPiiPresidio(redacted);
-    redacted = applySpanRedaction(redacted, spans);
-  }
-
-  return redacted;
-}
-
-function applySpanRedaction(
-  text: string,
-  spans: Array<{ start: number; end: number; entity: string }>,
-): string {
-  // Sort spans in reverse order to preserve offsets during replacement
-  const sorted = [...spans].sort((a, b) => b.start - a.start);
-  let result = text;
-  for (const span of sorted) {
-    const replacement = `[REDACTED:${span.entity}]`;
-    result = result.slice(0, span.start) + replacement + result.slice(span.end);
-  }
-  return result;
 }
 
 async function insertChunks(

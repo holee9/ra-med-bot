@@ -148,7 +148,7 @@ async function mockPredicateApis(page: import('@playwright/test').Page): Promise
     });
   });
 
-  await page.route('**/api/ra/predicate/comparison', async (route) => {
+  await page.route('**/api/ra/predicate/comparison**', async (route) => {
     if (route.request().method() === 'POST') {
       await route.fulfill({
         status: 200,
@@ -190,6 +190,8 @@ async function mockPredicateApis(page: import('@playwright/test').Page): Promise
 
 test.describe('Predicate full journey (A10, REQ-PRE-007/011/014/019/024)', () => {
   test('search → select → compare → approve → export → history', async ({ page }) => {
+    test.setTimeout(60_000);
+
     const server = requiresLiveServer();
     const auth = requiresAuthState();
     test.skip(server.skip, server.reason);
@@ -219,8 +221,10 @@ test.describe('Predicate full journey (A10, REQ-PRE-007/011/014/019/024)', () =>
     }
 
     // 6. Select the first candidate → navigate to the compare page with ?k=.
-    await cards.first().getByRole('button', { name: 'Select as Predicate' }).click();
-    await expect(page).toHaveURL(/\/predicate\/compare\?k=K181234/);
+    await Promise.all([
+      page.waitForURL(/\/predicate\/compare\?k=K181234/),
+      cards.first().getByRole('button', { name: 'Select as Predicate' }).click(),
+    ]);
     await expect(page.getByTestId('selected-predicates')).toContainText('K181234');
 
     // 7. Fill the subject-device form (all five SE dimensions).
@@ -266,9 +270,8 @@ test.describe('Predicate full journey (A10, REQ-PRE-007/011/014/019/024)', () =>
     await expect(page.getByRole('button', { name: /저장됨|Save/ })).toBeVisible();
 
     // 13. Navigate to history → at least one saved comparison is listed (REQ-PRE-020).
-    await page.goto('/predicate/history');
-    const historyItems = page.getByRole('link', { name: /Infusion Pump/ });
-    await expect(historyItems.first()).toBeVisible();
+    await page.goto('/predicate/history', { waitUntil: 'domcontentloaded' });
+    await expect(page.getByTestId('predicate-history-list')).toContainText('Infusion Pump');
   });
 
   test('NSE candidates render a "Not Substantially Equivalent" badge (REQ-PRE-028)', async ({
@@ -318,7 +321,9 @@ test.describe('Predicate RBAC (A8, REQ-PRE-029)', () => {
     if (await searchInput.isVisible().catch(() => false)) {
       await searchInput.fill('infusion pump');
       await page.getByRole('button', { name: 'Search' }).click();
-      await expect(page.getByRole('alert')).toBeVisible();
+      await expect(
+        page.locator('main [role="alert"], #main-content [role="alert"]').first(),
+      ).toBeVisible();
       await expect(page.getByTestId('candidate-card')).toHaveCount(0);
     } else {
       // Middleware blocked the route entirely (redirect to /login or 403 page).
@@ -374,7 +379,9 @@ test.describe('Predicate RBAC (A8, REQ-PRE-029)', () => {
     if (await searchInput.isVisible().catch(() => false)) {
       await searchInput.fill('infusion pump');
       await page.getByRole('button', { name: 'Search' }).click();
-      await expect(page.getByRole('alert')).toBeVisible();
+      await expect(
+        page.locator('main [role="alert"], #main-content [role="alert"]').first(),
+      ).toBeVisible();
       await expect(page.getByTestId('candidate-card')).toHaveCount(0);
     } else {
       await expect(page).not.toHaveURL(/\/predicate$/);

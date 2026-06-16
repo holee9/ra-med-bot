@@ -40,11 +40,13 @@ import {
 
 // ---------------------------------------------------------------------------
 // pgvector custom type — backs sources.embedding and source_sections.embedding.
-// `dataType()` returns the SQL fragment Drizzle interpolates into DDL/DML.
+// Drizzle Kit 0.20 quotes custom type names containing parentheses during
+// `push:pg`, so migrations keep the production `vector(1536)` dimension while
+// schema-push based local test DBs use the extension's generic `vector` type.
 // ---------------------------------------------------------------------------
 const vector = customType<{ data: number[] | null; driverData: string | null }>({
   dataType() {
-    return 'vector(1536)';
+    return 'vector';
   },
   toDriver(value: number[] | null): string | null {
     if (value === null) return null;
@@ -179,6 +181,12 @@ export const auditActionEnum = pgEnum('audit_action', [
   'vigilance_reportability_assessed',
   'vigilance_report_drafted',
   'vigilance_report_exported',
+  // SPEC-REGULA-STANDARDS-001 — added via 0048_standards_applicability.sql:
+  'standards_searched',
+  'standards_gap_analyzed',
+  'standards_compliance_updated',
+  // SPEC-REGULA-CLASSIFY-001 — added via 0051_classification_audit_actions.sql:
+  'device_classified',
   // SPEC-REGULA-DIGEST-001 — added via 0053_digest_audit_actions.sql:
   'digest_generated',
   'digest_emailed',
@@ -264,7 +272,12 @@ export const users = pgTable('users', {
   status: userStatusEnum('status').notNull().default('pending'),
   // Issue #111: force password change on first login (admin bootstrap accounts only).
   mustChangePassword: boolean('must_change_password').notNull().default(false),
-});
+}, (t) => ({
+  // Performance optimization: speed up authentication queries by email
+  emailIdx: index('idx_users_email').on(t.email),
+  // Performance optimization: filter users by status for admin dashboards
+  statusIdx: index('idx_users_status').on(t.status),
+}));
 
 // REQ-FND-034
 export const projects = pgTable('projects', {
@@ -277,13 +290,18 @@ export const projects = pgTable('projects', {
   targetMarkets: text('target_markets')
     .array()
     .notNull()
-    .default(['']) // overridden below in SQL via DEFAULT '{}'
+    .default(sql`'{}'::text[]`)
     .$default(() => []),
   color: text('color'),
   submissionDate: date('submission_date'),
   status: text('status').notNull().default('active'),
   createdAt: timestamp('created_at', { withTimezone: true, mode: 'date' }).notNull().defaultNow(),
-});
+}, (t) => ({
+  // Performance optimization: org-level project listings
+  orgIdx: index('idx_projects_org').on(t.organizationId),
+  // Performance optimization: status filtering for dashboards
+  statusIdx: index('idx_projects_status').on(t.status),
+}));
 
 // REQ-FND-035
 export const conversations = pgTable('conversations', {
@@ -296,7 +314,14 @@ export const conversations = pgTable('conversations', {
   status: text('status').notNull().default('active'),
   createdAt: timestamp('created_at', { withTimezone: true, mode: 'date' }).notNull().defaultNow(),
   archivedAt: timestamp('archived_at', { withTimezone: true, mode: 'date' }),
-});
+}, (t) => ({
+  // Performance optimization: user conversation history queries
+  userIdx: index('idx_conversations_user').on(t.userId, t.createdAt),
+  // Performance optimization: project-specific conversations
+  projectIdx: index('idx_conversations_project').on(t.projectId),
+  // Performance optimization: active conversation filtering
+  statusIdx: index('idx_conversations_status').on(t.status),
+}));
 
 // REQ-FND-036 — meta_json is critical (v0.4.0 C7).
 export const messages = pgTable('messages', {
@@ -315,7 +340,12 @@ export const messages = pgTable('messages', {
   model: text('model'),
   metaJson: jsonb('meta_json'),
   createdAt: timestamp('created_at', { withTimezone: true, mode: 'date' }).notNull().defaultNow(),
-});
+}, (t) => ({
+  // Performance optimization: conversation message loading (chronological)
+  conversationIdx: index('idx_messages_conversation_created').on(t.conversationId, t.createdAt),
+  // Performance optimization: expert review queue filtering
+  expertReviewIdx: index('idx_messages_expert_review').on(t.expertReviewRequired, t.createdAt),
+}));
 
 // REQ-FND-039 — sources is created before message_sources because the latter FKs it.
 export const sources = pgTable('sources', {
@@ -334,7 +364,14 @@ export const sources = pgTable('sources', {
   fullTextTsv: text('full_text_tsv'),
   embedding: vector('embedding'),
   createdAt: timestamp('created_at', { withTimezone: true, mode: 'date' }).notNull().defaultNow(),
-});
+}, (t) => ({
+  // Performance optimization: org-level source catalog queries
+  orgIdx: index('idx_sources_org').on(t.organizationId),
+  // Performance optimization: source type filtering
+  typeIdx: index('idx_sources_type').on(t.type),
+  // Performance optimization: regional filtering
+  regionIdx: index('idx_sources_region').on(t.region),
+}));
 
 // REQ-FND-037 — cite_index is non-nullable; UNIQUE(message_id, cite_index).
 export const messageSources = pgTable(
@@ -465,7 +502,10 @@ export const orgUpdateRelevance = pgTable(
       .notNull()
       .references(() => regulatoryUpdates.id, { onDelete: 'cascade' }),
     impactScore: numeric('impact_score', { precision: 3, scale: 2 }).notNull(),
-    matchedProductCategories: text('matched_product_categories').array().notNull().default([]),
+    matchedProductCategories: text('matched_product_categories')
+      .array()
+      .notNull()
+      .default(sql`'{}'::text[]`),
     feedback: text('feedback'),
     createdAt: timestamp('created_at', { withTimezone: true, mode: 'date' }).notNull().defaultNow(),
   },
@@ -518,7 +558,14 @@ export const auditLogs = pgTable('audit_logs', {
   }),
   metaJson: jsonb('meta_json').notNull().default({}),
   createdAt: timestamp('created_at', { withTimezone: true, mode: 'date' }).notNull().defaultNow(),
-});
+}, (t) => ({
+  // Performance optimization: actor audit trail queries (REQ-FND-048)
+  actorIdx: index('idx_audit_logs_actor_created').on(t.actorId, t.createdAt),
+  // Performance optimization: action type filtering for compliance reports
+  actionIdx: index('idx_audit_logs_action_created').on(t.action, t.createdAt),
+  // Performance optimization: resource-specific audit queries
+  resourceIdx: index('idx_audit_logs_resource').on(t.resourceType, t.resourceId),
+}));
 
 // CF-2 fix: RBAC 2-tier membership tables — absent from FOUNDATION schema.
 // Discovered during Phase 5 Phase 1 analysis. Required for REQ-ENTERPRISE-016
@@ -586,7 +633,18 @@ export const workflowRuns = pgTable('workflow_runs', {
   cloudflareWorkflowInstanceId: text('cloudflare_workflow_instance_id'),
   createdAt: timestamp('created_at', { withTimezone: true, mode: 'date' }).notNull().defaultNow(),
   updatedAt: timestamp('updated_at', { withTimezone: true, mode: 'date' }).notNull().defaultNow(),
-});
+}, (t) => ({
+  // Performance optimization: user workflow history
+  userIdx: index('idx_workflow_runs_user').on(t.userId, t.createdAt),
+  // Performance optimization: org-level workflow dashboard
+  orgIdx: index('idx_workflow_runs_org').on(t.organizationId, t.createdAt),
+  // Performance optimization: project workflow filtering
+  projectIdx: index('idx_workflow_runs_project').on(t.projectId),
+  // Performance optimization: status-based queue queries
+  statusIdx: index('idx_workflow_runs_status').on(t.status, t.createdAt),
+  // Performance optimization: reviewer queue filtering
+  reviewerIdx: index('idx_workflow_runs_reviewer').on(t.reviewerUserId, t.status),
+}));
 
 // REQ-CER-013: cer_literature — PubMed literature per CER workflow run.
 // Migration: 0030_cer_literature.sql
@@ -868,7 +926,10 @@ export const vigilanceReports = pgTable('vigilance_reports', {
 // Migration: 0052_weekly_digests.sql
 export const orgDigestPreferences = pgTable('org_digest_preferences', {
   id: uuid('id').defaultRandom().primaryKey(),
-  orgId: uuid('org_id').notNull().unique().references(() => organizations.id, { onDelete: 'cascade' }),
+  orgId: uuid('org_id')
+    .notNull()
+    .unique()
+    .references(() => organizations.id, { onDelete: 'cascade' }),
   // frequency: 'weekly'|'biweekly'|'manual'|'disabled'
   frequency: text('frequency').notNull().default('weekly'),
   timezone: text('timezone').notNull().default('UTC'),
@@ -877,7 +938,7 @@ export const orgDigestPreferences = pgTable('org_digest_preferences', {
   // minSeverity: 'low'|'medium'|'high'|'critical'
   minSeverity: text('min_severity').notNull().default('medium'),
   includeImmediateAlerts: boolean('include_immediate_alerts').notNull().default(true),
-  recipientEmails: text('recipient_emails').array().notNull().default([]),
+  recipientEmails: text('recipient_emails').array().notNull().default(sql`'{}'::text[]`),
   createdAt: timestamp('created_at', { withTimezone: true, mode: 'date' }).notNull().defaultNow(),
   updatedAt: timestamp('updated_at', { withTimezone: true, mode: 'date' }).notNull().defaultNow(),
 });
@@ -886,9 +947,13 @@ export const orgDigestPreferences = pgTable('org_digest_preferences', {
 // Migration: 0052_weekly_digests.sql
 export const weeklyDigests = pgTable('weekly_digests', {
   id: uuid('id').defaultRandom().primaryKey(),
-  orgId: uuid('org_id').notNull().references(() => organizations.id, { onDelete: 'cascade' }),
+  orgId: uuid('org_id')
+    .notNull()
+    .references(() => organizations.id, { onDelete: 'cascade' }),
   weekId: text('week_id').notNull(),
-  generatedAt: timestamp('generated_at', { withTimezone: true, mode: 'date' }).notNull().defaultNow(),
+  generatedAt: timestamp('generated_at', { withTimezone: true, mode: 'date' })
+    .notNull()
+    .defaultNow(),
   updateCount: integer('update_count').notNull().default(0),
   criticalCount: integer('critical_count').notNull().default(0),
   highCount: integer('high_count').notNull().default(0),
@@ -926,7 +991,7 @@ export const standardsCatalog = pgTable('standards_catalog', {
   // status CHECK: 'current'|'withdrawn'|'under_revision'
   status: text('status').notNull().default('current'),
   supersedes: text('supersedes'),
-  scopeKeywords: text('scope_keywords').array().notNull().default(['']),
+  scopeKeywords: text('scope_keywords').array().notNull().default(sql`ARRAY['']::text[]`),
   fdaRecognized: boolean('fda_recognized').notNull().default(false),
   euHarmonized: boolean('eu_harmonized').notNull().default(false),
   createdAt: timestamp('created_at', { withTimezone: true, mode: 'date' }).notNull().defaultNow(),
@@ -958,7 +1023,7 @@ export const standardsApplicability = pgTable(
 // Migration: 0054_samd_assessments.sql
 export const samdAssessments = pgTable('samd_assessments', {
   id: text('id').primaryKey().default(sql`gen_random_uuid()::text`),
-  orgId: text('org_id')
+  orgId: uuid('org_id')
     .notNull()
     .references(() => organizations.id, { onDelete: 'cascade' }),
   projectId: text('project_id'),
@@ -988,7 +1053,7 @@ export const samdAssessments = pgTable('samd_assessments', {
     withTimezone: true,
     mode: 'date',
   }),
-  createdBy: text('created_by')
+  createdBy: uuid('created_by')
     .notNull()
     .references(() => users.id),
   createdAt: timestamp('created_at', { withTimezone: true, mode: 'date' }).notNull().defaultNow(),
@@ -999,8 +1064,12 @@ export const samdAssessments = pgTable('samd_assessments', {
 // Migration: 0050_device_classifications.sql
 export const deviceClassifications = pgTable('device_classifications', {
   id: uuid('id').defaultRandom().primaryKey(),
-  orgId: uuid('org_id').notNull().references(() => organizations.id, { onDelete: 'cascade' }),
-  userId: uuid('user_id').notNull().references(() => users.id),
+  orgId: uuid('org_id')
+    .notNull()
+    .references(() => organizations.id, { onDelete: 'cascade' }),
+  userId: uuid('user_id')
+    .notNull()
+    .references(() => users.id),
   deviceDescription: text('device_description').notNull(),
   // deviceType CHECK: 'active'|'non_active'|'software_only'|'ivd'|'implantable'
   deviceType: text('device_type').notNull(),
@@ -1029,93 +1098,105 @@ export const deviceClassifications = pgTable('device_classifications', {
 // ---------------------------------------------------------------------------
 
 // Top-level DHF record per device.
-export const designHistoryFiles = pgTable('design_history_files', {
-  id: text('id').primaryKey().default(sql`gen_random_uuid()::text`),
-  orgId: text('org_id')
-    .notNull()
-    .references(() => organizations.id, { onDelete: 'cascade' }),
-  deviceName: text('device_name').notNull(),
-  deviceModel: text('device_model'),
-  intendedUse: text('intended_use').notNull(),
-  // jurisdiction CHECK: 'FDA'|'EU'|'MFDS'|'NMPA'|'PMDA'
-  jurisdiction: text('jurisdiction').notNull().default('FDA'),
-  // regulatory_framework CHECK: 'QSR_QMSR'|'ISO_13485'|'EU_MDR'
-  regulatoryFramework: text('regulatory_framework').notNull().default('QSR_QMSR'),
-  // status CHECK: 'draft'|'in_review'|'design_freeze'|'archived'
-  status: text('status').notNull().default('draft'),
-  completenessScore: integer('completeness_score').notNull().default(0),
-  designFreezeDate: date('design_freeze_date'),
-  createdBy: text('created_by')
-    .notNull()
-    .references(() => users.id),
-  createdAt: timestamp('created_at', { withTimezone: true, mode: 'date' }).notNull().defaultNow(),
-  updatedAt: timestamp('updated_at', { withTimezone: true, mode: 'date' }).notNull().defaultNow(),
-},
-(t) => ({
-  orgIdx: index('idx_dhf_org').on(t.orgId),
-}));
+export const designHistoryFiles = pgTable(
+  'design_history_files',
+  {
+    id: text('id').primaryKey().default(sql`gen_random_uuid()::text`),
+    orgId: uuid('org_id')
+      .notNull()
+      .references(() => organizations.id, { onDelete: 'cascade' }),
+    deviceName: text('device_name').notNull(),
+    deviceModel: text('device_model'),
+    intendedUse: text('intended_use').notNull(),
+    // jurisdiction CHECK: 'FDA'|'EU'|'MFDS'|'NMPA'|'PMDA'
+    jurisdiction: text('jurisdiction').notNull().default('FDA'),
+    // regulatory_framework CHECK: 'QSR_QMSR'|'ISO_13485'|'EU_MDR'
+    regulatoryFramework: text('regulatory_framework').notNull().default('QSR_QMSR'),
+    // status CHECK: 'draft'|'in_review'|'design_freeze'|'archived'
+    status: text('status').notNull().default('draft'),
+    completenessScore: integer('completeness_score').notNull().default(0),
+    designFreezeDate: date('design_freeze_date'),
+    createdBy: uuid('created_by')
+      .notNull()
+      .references(() => users.id),
+    createdAt: timestamp('created_at', { withTimezone: true, mode: 'date' }).notNull().defaultNow(),
+    updatedAt: timestamp('updated_at', { withTimezone: true, mode: 'date' }).notNull().defaultNow(),
+  },
+  (t) => ({
+    orgIdx: index('idx_dhf_org').on(t.orgId),
+  }),
+);
 
 // Design inputs (requirements) linked to a DHF.
-export const designInputs = pgTable('design_inputs', {
-  id: text('id').primaryKey().default(sql`gen_random_uuid()::text`),
-  dhfId: text('dhf_id')
-    .notNull()
-    .references(() => designHistoryFiles.id, { onDelete: 'cascade' }),
-  // input_type CHECK: 'user_need'|'regulatory'|'standards'|'risk'
-  inputType: text('input_type').notNull(),
-  requirementId: text('requirement_id'),
-  description: text('description').notNull(),
-  source: text('source'),
-  // priority CHECK: 'must'|'should'|'nice_to_have'
-  priority: text('priority').notNull().default('must'),
-  // verification_status CHECK: 'pending'|'verified'|'not_applicable'
-  verificationStatus: text('verification_status').notNull().default('pending'),
-  createdAt: timestamp('created_at', { withTimezone: true, mode: 'date' }).notNull().defaultNow(),
-},
-(t) => ({
-  dhfIdx: index('idx_design_inputs_dhf').on(t.dhfId),
-}));
+export const designInputs = pgTable(
+  'design_inputs',
+  {
+    id: text('id').primaryKey().default(sql`gen_random_uuid()::text`),
+    dhfId: text('dhf_id')
+      .notNull()
+      .references(() => designHistoryFiles.id, { onDelete: 'cascade' }),
+    // input_type CHECK: 'user_need'|'regulatory'|'standards'|'risk'
+    inputType: text('input_type').notNull(),
+    requirementId: text('requirement_id'),
+    description: text('description').notNull(),
+    source: text('source'),
+    // priority CHECK: 'must'|'should'|'nice_to_have'
+    priority: text('priority').notNull().default('must'),
+    // verification_status CHECK: 'pending'|'verified'|'not_applicable'
+    verificationStatus: text('verification_status').notNull().default('pending'),
+    createdAt: timestamp('created_at', { withTimezone: true, mode: 'date' }).notNull().defaultNow(),
+  },
+  (t) => ({
+    dhfIdx: index('idx_design_inputs_dhf').on(t.dhfId),
+  }),
+);
 
 // V&V protocols linked to a DHF (optionally to a design input).
-export const designVerifications = pgTable('design_verifications', {
-  id: text('id').primaryKey().default(sql`gen_random_uuid()::text`),
-  dhfId: text('dhf_id')
-    .notNull()
-    .references(() => designHistoryFiles.id, { onDelete: 'cascade' }),
-  designInputId: text('design_input_id').references(() => designInputs.id),
-  // verification_type CHECK: 'analysis'|'test'|'inspection'|'demonstration'
-  verificationType: text('verification_type').notNull(),
-  protocolTitle: text('protocol_title').notNull(),
-  // result CHECK: 'pass'|'fail'|'pending'|'not_started'
-  result: text('result'),
-  testDate: date('test_date'),
-  performedBy: text('performed_by'),
-  notes: text('notes'),
-  createdAt: timestamp('created_at', { withTimezone: true, mode: 'date' }).notNull().defaultNow(),
-},
-(t) => ({
-  dhfIdx: index('idx_design_verifications_dhf').on(t.dhfId),
-}));
+export const designVerifications = pgTable(
+  'design_verifications',
+  {
+    id: text('id').primaryKey().default(sql`gen_random_uuid()::text`),
+    dhfId: text('dhf_id')
+      .notNull()
+      .references(() => designHistoryFiles.id, { onDelete: 'cascade' }),
+    designInputId: text('design_input_id').references(() => designInputs.id),
+    // verification_type CHECK: 'analysis'|'test'|'inspection'|'demonstration'
+    verificationType: text('verification_type').notNull(),
+    protocolTitle: text('protocol_title').notNull(),
+    // result CHECK: 'pass'|'fail'|'pending'|'not_started'
+    result: text('result'),
+    testDate: date('test_date'),
+    performedBy: text('performed_by'),
+    notes: text('notes'),
+    createdAt: timestamp('created_at', { withTimezone: true, mode: 'date' }).notNull().defaultNow(),
+  },
+  (t) => ({
+    dhfIdx: index('idx_design_verifications_dhf').on(t.dhfId),
+  }),
+);
 
 // Formal design review records per DHF.
-export const designReviews = pgTable('design_reviews', {
-  id: text('id').primaryKey().default(sql`gen_random_uuid()::text`),
-  dhfId: text('dhf_id')
-    .notNull()
-    .references(() => designHistoryFiles.id, { onDelete: 'cascade' }),
-  // review_stage CHECK: 'concept'|'preliminary'|'critical'|'final'|'design_freeze'
-  reviewStage: text('review_stage').notNull(),
-  reviewDate: date('review_date').notNull(),
-  attendees: text('attendees').array().notNull().default(sql`'{}'::text[]`),
-  decisions: text('decisions'),
-  openActions: text('open_actions'),
-  approvedBy: text('approved_by'),
-  approvedAt: timestamp('approved_at', { withTimezone: true, mode: 'date' }),
-  createdAt: timestamp('created_at', { withTimezone: true, mode: 'date' }).notNull().defaultNow(),
-},
-(t) => ({
-  dhfIdx: index('idx_design_reviews_dhf').on(t.dhfId),
-}));
+export const designReviews = pgTable(
+  'design_reviews',
+  {
+    id: text('id').primaryKey().default(sql`gen_random_uuid()::text`),
+    dhfId: text('dhf_id')
+      .notNull()
+      .references(() => designHistoryFiles.id, { onDelete: 'cascade' }),
+    // review_stage CHECK: 'concept'|'preliminary'|'critical'|'final'|'design_freeze'
+    reviewStage: text('review_stage').notNull(),
+    reviewDate: date('review_date').notNull(),
+    attendees: text('attendees').array().notNull().default(sql`'{}'::text[]`),
+    decisions: text('decisions'),
+    openActions: text('open_actions'),
+    approvedBy: text('approved_by'),
+    approvedAt: timestamp('approved_at', { withTimezone: true, mode: 'date' }),
+    createdAt: timestamp('created_at', { withTimezone: true, mode: 'date' }).notNull().defaultNow(),
+  },
+  (t) => ({
+    dhfIdx: index('idx_design_reviews_dhf').on(t.dhfId),
+  }),
+);
 
 // ---------------------------------------------------------------------------
 // SPEC-REGULA-ESUBMIT-001: Electronic submission packages
@@ -1125,43 +1206,53 @@ export const designReviews = pgTable('design_reviews', {
 // @MX:ANCHOR: [AUTO] Submission package table — fan_in >= 3 (list, detail, validate routes)
 // @MX:REASON: [AUTO] Core entity for all e-submission workflows; schema changes affect all downstream routes
 // @MX:SPEC SPEC-REGULA-ESUBMIT-001
-export const submissionPackages = pgTable('submission_packages', {
-  id: text('id').primaryKey().default(sql`gen_random_uuid()::text`),
-  orgId: text('org_id').notNull(),
-  // submission_type CHECK: '510k'|'de_novo'|'pma'|'cer'|'pccp'|'mfds_import'|'nmpa_ecdt'
-  submissionType: text('submission_type').notNull(),
-  // jurisdiction CHECK: 'FDA'|'EU'|'MFDS'|'NMPA'|'PMDA'
-  jurisdiction: text('jurisdiction').notNull(),
-  deviceName: text('device_name').notNull(),
-  submissionNumber: text('submission_number'),
-  version: text('version').notNull().default('1.0'),
-  // status CHECK: 'draft'|'validating'|'validated'|'submitted'|'rta'|'accepted'|'rejected'
-  status: text('status').notNull().default('draft'),
-  packageManifest: jsonb('package_manifest').notNull().default(sql`'{}'::jsonb`),
-  validationResults: jsonb('validation_results').notNull().default(sql`'[]'::jsonb`),
-  createdBy: text('created_by').notNull(),
-  submittedAt: timestamp('submitted_at', { withTimezone: true, mode: 'date' }),
-  createdAt: timestamp('created_at', { withTimezone: true, mode: 'date' }).notNull().defaultNow(),
-  updatedAt: timestamp('updated_at', { withTimezone: true, mode: 'date' }).notNull().defaultNow(),
-},
-(t) => ({
-  orgIdx: index('idx_submission_packages_org').on(t.orgId),
-}));
+export const submissionPackages = pgTable(
+  'submission_packages',
+  {
+    id: text('id').primaryKey().default(sql`gen_random_uuid()::text`),
+    orgId: uuid('org_id')
+      .notNull()
+      .references(() => organizations.id, { onDelete: 'cascade' }),
+    // submission_type CHECK: '510k'|'de_novo'|'pma'|'cer'|'pccp'|'mfds_import'|'nmpa_ecdt'
+    submissionType: text('submission_type').notNull(),
+    // jurisdiction CHECK: 'FDA'|'EU'|'MFDS'|'NMPA'|'PMDA'
+    jurisdiction: text('jurisdiction').notNull(),
+    deviceName: text('device_name').notNull(),
+    submissionNumber: text('submission_number'),
+    version: text('version').notNull().default('1.0'),
+    // status CHECK: 'draft'|'validating'|'validated'|'submitted'|'rta'|'accepted'|'rejected'
+    status: text('status').notNull().default('draft'),
+    packageManifest: jsonb('package_manifest').notNull().default(sql`'{}'::jsonb`),
+    validationResults: jsonb('validation_results').notNull().default(sql`'[]'::jsonb`),
+    createdBy: uuid('created_by')
+      .notNull()
+      .references(() => users.id),
+    submittedAt: timestamp('submitted_at', { withTimezone: true, mode: 'date' }),
+    createdAt: timestamp('created_at', { withTimezone: true, mode: 'date' }).notNull().defaultNow(),
+    updatedAt: timestamp('updated_at', { withTimezone: true, mode: 'date' }).notNull().defaultNow(),
+  },
+  (t) => ({
+    orgIdx: index('idx_submission_packages_org').on(t.orgId),
+  }),
+);
 
 // Regulatory interaction history per submission package (RTA, AI requests, etc.)
-export const submissionInteractions = pgTable('submission_interactions', {
-  id: text('id').primaryKey().default(sql`gen_random_uuid()::text`),
-  packageId: text('package_id')
-    .notNull()
-    .references(() => submissionPackages.id, { onDelete: 'cascade' }),
-  // interaction_type CHECK: 'rta'|'ai_request'|'deficiency'|'approval'|'rejection'
-  interactionType: text('interaction_type').notNull(),
-  referenceNumber: text('reference_number'),
-  description: text('description').notNull(),
-  dueDate: date('due_date'),
-  resolvedAt: timestamp('resolved_at', { withTimezone: true, mode: 'date' }),
-  createdAt: timestamp('created_at', { withTimezone: true, mode: 'date' }).notNull().defaultNow(),
-},
-(t) => ({
-  pkgIdx: index('idx_submission_interactions_pkg').on(t.packageId),
-}));
+export const submissionInteractions = pgTable(
+  'submission_interactions',
+  {
+    id: text('id').primaryKey().default(sql`gen_random_uuid()::text`),
+    packageId: text('package_id')
+      .notNull()
+      .references(() => submissionPackages.id, { onDelete: 'cascade' }),
+    // interaction_type CHECK: 'rta'|'ai_request'|'deficiency'|'approval'|'rejection'
+    interactionType: text('interaction_type').notNull(),
+    referenceNumber: text('reference_number'),
+    description: text('description').notNull(),
+    dueDate: date('due_date'),
+    resolvedAt: timestamp('resolved_at', { withTimezone: true, mode: 'date' }),
+    createdAt: timestamp('created_at', { withTimezone: true, mode: 'date' }).notNull().defaultNow(),
+  },
+  (t) => ({
+    pkgIdx: index('idx_submission_interactions_pkg').on(t.packageId),
+  }),
+);

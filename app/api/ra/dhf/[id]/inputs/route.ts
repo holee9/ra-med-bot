@@ -2,10 +2,11 @@
 // POST /api/ra/dhf/[id]/inputs — add a new design input.
 // @MX:SPEC SPEC-REGULA-DHF-001
 
+import { writeAudit } from '@/lib/audit';
 import { withPermission } from '@/lib/auth/with-permission';
 import { db } from '@/lib/db/client';
 import { designHistoryFiles, designInputs } from '@/lib/db/schema';
-import { eq, and } from 'drizzle-orm';
+import { and, eq } from 'drizzle-orm';
 import { z } from 'zod';
 
 const CreateInputSchema = z.object({
@@ -39,10 +40,7 @@ export const GET = withPermission('dashboard.view', async (_req, ctx, session) =
     return Response.json({ error: 'Not found' }, { status: 404 });
   }
 
-  const inputs = await db
-    .select()
-    .from(designInputs)
-    .where(eq(designInputs.dhfId, id));
+  const inputs = await db.select().from(designInputs).where(eq(designInputs.dhfId, id));
 
   return Response.json({ inputs });
 });
@@ -107,6 +105,17 @@ export const POST = withPermission('dashboard.view', async (req, ctx, session) =
     .update(designHistoryFiles)
     .set({ updatedAt: new Date() })
     .where(eq(designHistoryFiles.id, id));
+  await writeAudit({
+    actor_id: session.user.id,
+    action: 'dhf_updated',
+    resource_type: 'dhf',
+    resource_id: id,
+    meta_json: {
+      inputId: created.id,
+      inputType: data.input_type,
+      priority: data.priority,
+    },
+  });
 
   return Response.json({ input: created }, { status: 201 });
 });

@@ -14,6 +14,20 @@ const root = path.resolve(__dirname, '..', '..');
 const readText = (rel: string): string => fs.readFileSync(path.join(root, rel), 'utf8');
 const fileExists = (rel: string): boolean => fs.existsSync(path.join(root, rel));
 
+const extractAuditActionEnumValues = (src: string): string[] => {
+  const enumSection = src.match(/export const auditActionEnum\s*=[\s\S]*?(?=\n\/\/|\nexport|$)/);
+  expect(enumSection, 'auditActionEnum not found').toBeTruthy();
+  const valueMatches = (enumSection as RegExpMatchArray)[0].match(/'[^']+'/g) ?? [];
+  return valueMatches.slice(1).map((value) => value.slice(1, -1));
+};
+
+const extractAuditActionTypeValues = (src: string): string[] => {
+  const typeMatch = src.match(/export type AuditAction\s*=\s*([\s\S]*?);/);
+  expect(typeMatch, 'AuditAction type not found').toBeTruthy();
+  const typeBody = (typeMatch as RegExpMatchArray)[1] as string;
+  return (typeBody.match(/'[^']+'/g) ?? []).map((value) => value.slice(1, -1));
+};
+
 // ---------------------------------------------------------------------------
 // Migration 1: user_role pgEnum (REQ-ENTERPRISE-016)
 // ---------------------------------------------------------------------------
@@ -68,6 +82,45 @@ const ENTERPRISE_AUDIT_ACTIONS = [
   'checklist.toggle',
   'consult.expert_review_auto_flag',
   'project.switch',
+] as const;
+
+const REQUIRED_RECOVERY_TABLES = [
+  ['device_classifications', 'deviceClassifications'],
+  ['regulatory_impact_assessments', 'regulatoryImpactAssessments'],
+  ['impact_action_items', 'impactActionItems'],
+  ['samd_assessments', 'samdAssessments'],
+  ['design_history_files', 'designHistoryFiles'],
+  ['submission_packages', 'submissionPackages'],
+  ['pccp_versions', 'pccpVersions'],
+  ['weekly_digests', 'weeklyDigests'],
+  ['org_digest_preferences', 'orgDigestPreferences'],
+  ['adverse_events', 'adverseEvents'],
+  ['reportability_assessments', 'reportabilityAssessments'],
+  ['vigilance_reports', 'vigilanceReports'],
+] as const;
+
+const REQUIRED_RECOVERY_AUDIT_ACTIONS = [
+  'standards_searched',
+  'standards_gap_analyzed',
+  'standards_compliance_updated',
+  'cer_created',
+  'cer_stage_completed',
+  'cer_expert_approved',
+  'cer_exported',
+  'cer_literature_search',
+  'device_classified',
+  'digest_generated',
+  'digest_emailed',
+  'samd_assessment_created',
+  'samd_assessment_updated',
+  'samd_review_approved',
+  'dhf_created',
+  'dhf_updated',
+  'dhf_design_freeze',
+  'dhf_review_approved',
+  'submission_package_created',
+  'submission_package_submitted',
+  'submission_validation_completed',
 ] as const;
 
 describe('Migration 2: audit_action enum +12 values (REQ-ENTERPRISE-028)', () => {
@@ -240,24 +293,29 @@ describe('lib/db/schema.ts Phase 5 additions', () => {
     expect(src).toMatch(/export const projectMembers\s*=/);
   });
 
-  it('auditActionEnum has 64 total values (48 baseline + 3 Predicate + 5 CER + 3 Impact + 5 PCCP)', () => {
+  it('auditActionEnum stays in lock-step with AuditAction through the latest regulated workflows', () => {
     const src = readText('lib/db/schema.ts');
-    // Match the full auditActionEnum declaration (multiline)
-    const enumSection = src.match(/export const auditActionEnum\s*=[\s\S]*?(?=\n\/\/|\nexport|$)/);
-    expect(enumSection, 'auditActionEnum not found').toBeTruthy();
-    const enumBody = (enumSection as RegExpMatchArray)[0];
-    const valueMatches = enumBody.match(/'[^']+'/g) ?? [];
-    // First match is 'audit_action' (the type name), rest are values
-    const values = valueMatches.slice(1);
-    // Phase 9 (+10), Phase 8 DocIngest (+6), Phase 10 Radar (+3), chat.query (0026),
-    // answer.refine (0027) bring the baseline to 48. SPEC-REGULA-PREDICATE-001 adds
-    // predicate_search + predicate_comparison_generated + predicate_comparison_exported (0031,0032) → 51.
-    // REQ-CER-036~040 adds 5 cer_* actions (0037) → 56.
-    // SPEC-REGULA-IMPACT-001 adds impact.assessment_created, impact.critical_detected,
-    // impact.action_item_created (0036) → 59.
-    // SPEC-REGULA-PCCP-001 adds pccp_created, pccp_component_completed, pccp_expert_approved,
-    // pccp_algorithm_change_triggered, pccp_status_changed (0040) → 64 total.
-    expect(values).toHaveLength(64);
+    const auditSrc = readText('lib/audit.ts');
+    const values = extractAuditActionEnumValues(src);
+    const typeValues = extractAuditActionTypeValues(auditSrc);
+    expect(values).toEqual(typeValues);
+    expect(values).toHaveLength(84);
+  });
+
+  it.each(REQUIRED_RECOVERY_TABLES)(
+    'exports required quality-recovery table %s as %s',
+    (tableName, exportName) => {
+      const src = readText('lib/db/schema.ts');
+      expect(src).toMatch(new RegExp(`export const ${exportName}\\s*=\\s*pgTable`));
+      expect(src).toContain(`'${tableName}'`);
+    },
+  );
+
+  it('uses explicit SQL defaults for text array columns so drizzle-kit push emits valid SQL', () => {
+    const src = readText('lib/db/schema.ts');
+    expect(src).not.toMatch(/\.array\(\)\s*\.notNull\(\)\s*\.default\(\[\]\)/);
+    expect(src).toContain(".default(sql`'{}'::text[]`)");
+    expect(src).toContain(".default(sql`ARRAY['']::text[]`)");
   });
 });
 
@@ -271,24 +329,37 @@ describe('lib/audit.ts Phase 5 AuditAction type additions', () => {
     expect(src).toMatch(new RegExp(`'${escaped}'`));
   });
 
-  it('AuditAction type contains exactly 64 values (48 baseline + 3 Predicate + 5 CER + 3 Impact + 5 PCCP)', () => {
+  it('AuditAction type includes post-enterprise regulated workflow actions through 0056', () => {
     const src = readText('lib/audit.ts');
-    const typeMatch = src.match(/export type AuditAction\s*=\s*([\s\S]*?);/);
-    expect(typeMatch, 'AuditAction type not found').toBeTruthy();
-    const typeBody = (typeMatch as RegExpMatchArray)[1] as string;
-    const values = typeBody
-      .split('|')
-      .map((s) => s.trim())
-      .filter((s) => s.startsWith("'"));
-    // Phase 9 (+10), Phase 8 DocIngest (+6), Phase 10 Radar (+3), chat.query (0026),
-    // answer.refine (0027) bring the baseline to 48. SPEC-REGULA-PREDICATE-001 adds
-    // predicate_search + predicate_comparison_generated + predicate_comparison_exported (0031,0032) → 51.
-    // REQ-CER-036~040 adds 5 cer_* actions (0037) → 56.
-    // SPEC-REGULA-IMPACT-001 adds impact.assessment_created, impact.critical_detected,
-    // impact.action_item_created (0036) → 59.
-    // SPEC-REGULA-PCCP-001 adds 5 pccp_* actions (0040) → 64 total.
-    expect(values).toHaveLength(64);
+    const values = extractAuditActionTypeValues(src);
+    expect(values).toEqual(
+      expect.arrayContaining([
+        'standards_searched',
+        'device_classified',
+        'digest_generated',
+        'samd_assessment_created',
+        'dhf_created',
+        'submission_validation_completed',
+      ]),
+    );
+    expect(values).toHaveLength(84);
   });
+
+  it.each(REQUIRED_RECOVERY_AUDIT_ACTIONS)(
+    'AuditAction type includes quality-recovery audit action: %s',
+    (action) => {
+      const values = extractAuditActionTypeValues(readText('lib/audit.ts'));
+      expect(values).toContain(action);
+    },
+  );
+
+  it.each(REQUIRED_RECOVERY_AUDIT_ACTIONS)(
+    'auditActionEnum includes quality-recovery audit action: %s',
+    (action) => {
+      const values = extractAuditActionEnumValues(readText('lib/db/schema.ts'));
+      expect(values).toContain(action);
+    },
+  );
 
   it('does NOT include auth.mfa_fail as a union value (removed in v0.3.0 H-5)', () => {
     const src = readText('lib/audit.ts');

@@ -12,5 +12,13 @@ export function AnalyticsProvider() {
   useEffect(() => {
     initPostHog();
   }, []);
+
+  if (
+    process.env.NODE_ENV !== 'production' ||
+    process.env.NEXT_PUBLIC_ENABLE_VERCEL_ANALYTICS === '0'
+  ) {
+    return null;
+  }
+
   return <Analytics />;
 }

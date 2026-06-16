@@ -2,6 +2,7 @@
 // @MX:SPEC SPEC-REGULA-NOTIFICATIONS-001 (REQ-NOTIFY-002)
 export const runtime = 'nodejs';
 
+import { writeAudit } from '@/lib/audit';
 import { withPermission } from '@/lib/auth/with-permission';
 import { db } from '@/lib/db/client';
 import { users } from '@/lib/db/schema';
@@ -82,7 +83,16 @@ export const PATCH = withPermission('profile.edit', async (req, _ctx, session) =
     } as (typeof DEFAULT_PREFS)[keyof typeof DEFAULT_PREFS];
   }
 
+  const changedEvents = Object.keys(parsed.data.preferences).sort();
+
   await db.update(users).set({ notificationPref: updated }).where(eq(users.id, session.user.id));
+  await writeAudit({
+    actor_id: session.user.id,
+    action: 'profile.update',
+    resource_type: 'notification_preferences',
+    resource_id: session.user.id,
+    meta_json: { changedEvents },
+  });
 
   return Response.json({ preferences: { ...DEFAULT_PREFS, ...updated } });
 });

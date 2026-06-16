@@ -15,6 +15,9 @@ describe('Workflow System — cross-workflow validation', () => {
       'indication-impact': INDICATION_IMPACT_STEPS.length,
       cer: CER_STEPS.length,
       pccp: PCCP_STEPS.length,
+      samd: 5,
+      dhf: 4,
+      esubmit: 4,
     };
 
     for (const entry of WORKFLOW_REGISTRY) {
@@ -41,6 +44,9 @@ describe('Workflow System — cross-workflow validation', () => {
     expect(registryIds).toContain('indication-impact');
     expect(registryIds).toContain('cer');
     expect(registryIds).toContain('pccp');
+    expect(registryIds).toContain('samd');
+    expect(registryIds).toContain('dhf');
+    expect(registryIds).toContain('esubmit');
   });
 
   it('review-queue singleton is consistent', () => {

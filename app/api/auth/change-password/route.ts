@@ -1,3 +1,4 @@
+import { writeAudit } from '@/lib/audit';
 import { auth } from '@/lib/auth';
 import { db } from '@/lib/db/client';
 import { users } from '@/lib/db/schema';
@@ -39,6 +40,13 @@ export async function PATCH(req: Request) {
     .update(users)
     .set({ password_hash, mustChangePassword: false })
     .where(eq(users.id, userId));
+  await writeAudit({
+    actor_id: userId,
+    action: 'profile.update',
+    resource_type: 'user',
+    resource_id: userId,
+    meta_json: { passwordChanged: true, mustChangePasswordCleared: true },
+  });
 
   return NextResponse.json({ ok: true });
 }

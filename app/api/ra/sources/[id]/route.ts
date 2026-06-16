@@ -1,6 +1,7 @@
 // @MX:NOTE [AUTO] Sources GET API — returns source content with optional offset query param.
 // @MX:SPEC SPEC-REGULA-CHAT-001 (REQ-CHAT-044)
 
+import { writeAudit } from '@/lib/audit';
 import { eq } from 'drizzle-orm';
 import { withPermission } from '../../../../../lib/auth/with-permission';
 import { db } from '../../../../../lib/db/client';
@@ -54,7 +55,7 @@ const E2E_MOCK_SOURCES: Record<
   },
 };
 
-export const GET = withPermission('conversation.view', async (_req, ctx) => {
+export const GET = withPermission('conversation.view', async (_req, ctx, session) => {
   // Next.js 15 passes params as a Promise. Resolve it safely.
   const rawParams = (ctx as { params: Promise<{ id: string }> | { id: string } }).params;
   const params = rawParams instanceof Promise ? await rawParams : rawParams;
@@ -73,6 +74,24 @@ export const GET = withPermission('conversation.view', async (_req, ctx) => {
   const [source] = await db.select().from(sources).where(eq(sources.id, id)).limit(1);
   if (!source) {
     return new Response('Not Found', { status: 404 });
+  }
+
+  if (source.organizationId && source.organizationId !== session.user.organizationId) {
+    await writeAudit({
+      action: 'rbac.permission_deny',
+      actor_id: session.user.id,
+      resource_type: 'source',
+      resource_id: id,
+      meta_json: {
+        required: 'conversation.view',
+        actualRole: session.user.role,
+        reason: 'source_org_mismatch',
+      },
+    });
+    return Response.json(
+      { error: 'not_a_member', resource_type: 'source', resource_id: id },
+      { status: 403 },
+    );
   }
 
   const sections = await db

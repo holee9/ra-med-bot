@@ -8,6 +8,9 @@ import { afterEach, describe, expect, it, vi } from 'vitest';
 vi.mock('@/lib/queries/useProjects', () => ({
   useProjects: () => ({ data: [] }),
 }));
+vi.mock('@tanstack/react-query', () => ({
+  useQueryClient: () => ({ invalidateQueries: vi.fn() }),
+}));
 vi.mock('@/stores/ui', () => ({
   useUIStore: (
     selector: (s: { currentProjectId: null; setCurrentProjectId: () => void }) => unknown,

@@ -5,11 +5,30 @@ import { expect, test } from '@playwright/test';
 import { requiresAuthState, requiresLiveServer } from './fixtures/env-guard';
 
 test.describe('Answer Refine (SPEC-REGULA-ANSWER-REFINE-001)', () => {
+  test.describe.configure({ mode: 'serial' });
+
   test.beforeEach(async ({ page }) => {
     const server = requiresLiveServer();
     const auth = requiresAuthState();
     test.skip(server.skip, server.reason);
     test.skip(auth.skip, auth.reason);
+
+    await page.route('**/api/ra/refine', async (route) => {
+      const body = route.request().postDataJSON() as {
+        blockContent?: string;
+        messageId?: string;
+        tone?: string;
+      };
+      await route.fulfill({
+        status: 200,
+        contentType: 'application/json',
+        body: JSON.stringify({
+          refined: `[경영 요약 톤으로 정제됨] ${body.blockContent ?? ''}`,
+          tone: body.tone ?? 'executive-summary',
+          sourceMessageId: body.messageId ?? 'e2e-message',
+        }),
+      });
+    });
 
     await page.goto('/chat');
     const composer = page.locator('[data-testid="chat-composer"]');

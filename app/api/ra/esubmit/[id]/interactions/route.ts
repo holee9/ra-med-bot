@@ -2,10 +2,11 @@
 // POST /api/ra/esubmit/[id]/interactions — add a new RTA/AI request interaction.
 // @MX:SPEC SPEC-REGULA-ESUBMIT-001
 
+import { writeAudit } from '@/lib/audit';
 import { withPermission } from '@/lib/auth/with-permission';
 import { db } from '@/lib/db/client';
-import { submissionPackages, submissionInteractions } from '@/lib/db/schema';
-import { eq, and, desc } from 'drizzle-orm';
+import { submissionInteractions, submissionPackages } from '@/lib/db/schema';
+import { and, desc, eq } from 'drizzle-orm';
 import { z } from 'zod';
 
 const CreateInteractionSchema = z.object({
@@ -105,6 +106,17 @@ export const POST = withPermission('dashboard.view', async (req, ctx, session) =
       .set({ status: 'rta', updatedAt: new Date() })
       .where(eq(submissionPackages.id, id));
   }
+  await writeAudit({
+    actor_id: session.user.id,
+    action: 'submission_validation_completed',
+    resource_type: 'submission_package',
+    resource_id: id,
+    meta_json: {
+      interactionId: created?.id ?? null,
+      interactionType: data.interaction_type,
+      statusUpdated: data.interaction_type === 'rta',
+    },
+  });
 
   return Response.json({ interaction: created }, { status: 201 });
 });

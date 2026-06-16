@@ -1,33 +1,23 @@
 // @MX:SPEC SPEC-REGULA-DIGEST-001
-// Public shareable digest view — token-based, no auth required.
+// Public shareable digest view — token-gated, no auth required.
 import { and, eq } from 'drizzle-orm';
 import { db } from '../../../../../lib/db/client';
 import { weeklyDigests } from '../../../../../lib/db/schema';
 
-export async function GET(
-  req: Request,
-  { params }: { params: Promise<{ weekId: string }> },
-) {
+export async function GET(req: Request, { params }: { params: Promise<{ weekId: string }> }) {
   const { weekId } = await params;
   const { searchParams } = new URL(req.url);
   const token = searchParams.get('token');
 
-  const rows = token
-    ? await db
-        .select()
-        .from(weeklyDigests)
-        .where(
-          and(
-            eq(weeklyDigests.weekId, weekId),
-            eq(weeklyDigests.shareToken, token),
-          ),
-        )
-        .limit(1)
-    : await db
-        .select()
-        .from(weeklyDigests)
-        .where(eq(weeklyDigests.weekId, weekId))
-        .limit(1);
+  if (!token) {
+    return Response.json({ error: 'share_token_required' }, { status: 401 });
+  }
+
+  const rows = await db
+    .select()
+    .from(weeklyDigests)
+    .where(and(eq(weeklyDigests.weekId, weekId), eq(weeklyDigests.shareToken, token)))
+    .limit(1);
 
   const digest = rows[0];
   if (!digest) {

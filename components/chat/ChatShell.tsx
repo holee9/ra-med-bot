@@ -12,6 +12,12 @@ import { Thinking } from './Thinking';
 
 type SourceFilter = 'all' | 'regs' | 'internal';
 
+const suggestedQuestions = [
+  'Class II SaMD의 FDA 제출 경로를 근거와 함께 비교해줘',
+  'EU MDR 임상평가 보고서에서 전문가 검토가 필요한 항목을 찾아줘',
+  '내부 SOP와 공식 규정이 충돌할 때 이슈로 남길 내용을 정리해줘',
+];
+
 export function ChatShell() {
   const [inputValue, setInputValue] = useState('');
   const [sourceFilter, setSourceFilter] = useState<SourceFilter>('all');
@@ -84,7 +90,25 @@ export function ChatShell() {
           className="mb-4 rounded-lg border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700"
           role="alert"
         >
-          {error}
+          <div className="flex items-start gap-2">
+            <svg className="mt-0.5 h-4 w-4 flex-shrink-0" fill="currentColor" viewBox="0 0 20 20">
+              <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM8.707 7.293a1 1 0 00-1.414 1.414L8.586 10l-1.293 1.293a1 1 0 101.414 1.414L10 11.414l1.293 1.293a1 1 0 001.414-1.414L11.414 10l1.293-1.293a1 1 0 00-1.414-1.414L10 8.586 8.707 7.293z" clipRule="evenodd" />
+            </svg>
+            <div className="flex-1">
+              <p className="font-medium">답변 생성 중 오류가 발생했습니다</p>
+              <p className="mt-1 text-xs text-red-600">잠시 후 다시 시도해 주세요. 문제가 지속되면 관리자에게 문의해 주세요.</p>
+              <button
+                type="button"
+                onClick={() => {
+                  setHasSubmitted(false);
+                  setInputValue(inputValue);
+                }}
+                className="mt-2 rounded-md bg-red-100 px-3 py-1.5 text-xs font-medium text-red-800 transition-colors hover:bg-red-200"
+              >
+                다시 시도
+              </button>
+            </div>
+          </div>
         </div>
       )}
 
@@ -106,6 +130,27 @@ export function ChatShell() {
 
       {/* Spacer to push composer to bottom */}
       {!showEmptyState && <div className="flex-1" />}
+
+      {showEmptyState && (
+        <section className="mx-auto mb-4 grid w-full max-w-2xl gap-2" aria-label="추천 질문">
+          <div className="rounded-lg border border-ink-150 bg-ink-50 p-3 text-left">
+            <p className="text-xs font-medium uppercase text-ink-500">Source scope</p>
+            <p className="mt-1 text-sm text-ink-700">
+              공용 규제 지식과 현재 조직에 허용된 내부 source만 답변 근거로 사용합니다.
+            </p>
+          </div>
+          {suggestedQuestions.map((question) => (
+            <button
+              key={question}
+              type="button"
+              className="rounded-lg border border-ink-150 bg-surface px-4 py-3 text-left text-sm text-ink-700 transition-colors hover:border-brand-200 hover:bg-brand-50"
+              onClick={() => setInputValue(question)}
+            >
+              {question}
+            </button>
+          ))}
+        </section>
+      )}
 
       {/* Composer — pinned at bottom */}
       <div className={showEmptyState ? 'w-full max-w-2xl mx-auto' : 'sticky bottom-4 w-full'}>

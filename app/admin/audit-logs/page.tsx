@@ -1,7 +1,8 @@
-// @MX:NOTE [AUTO] Audit log admin page — displays audit trail for ra-lead+ users.
+// @MX:NOTE [AUTO] Audit log admin page — displays audit trail for admin users.
 // @MX:SPEC SPEC-REGULA-ENTERPRISE-001 (REQ-ENTERPRISE-020)
 
 import { auth } from '@/lib/auth';
+import { hasRole } from '@/lib/auth/rbac';
 import { db } from '@/lib/db/client';
 import { auditLogs } from '@/lib/db/schema';
 import { desc } from 'drizzle-orm';
@@ -10,6 +11,11 @@ import { redirect } from 'next/navigation';
 export default async function AuditLogsPage() {
   const session = await auth();
   if (!session?.user?.id) redirect('/login');
+  if (
+    !hasRole((session.user as { role?: string }).role as Parameters<typeof hasRole>[0], 'admin')
+  ) {
+    redirect('/403');
+  }
 
   const rows = await db
     .select({

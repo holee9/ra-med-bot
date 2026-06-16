@@ -20,6 +20,33 @@ const MUTABLE_METHODS = ['POST', 'PUT', 'PATCH', 'DELETE'];
 // Maximum allowed string literal length inside writeAudit meta arguments.
 const MAX_META_STRING_LENGTH = 500;
 
+const DIRECT_AUDIT_CALL_PATTERN = /writeAudit\s*\(/;
+
+const APPROVED_AUDIT_WRAPPER_NAMES = [
+  'auditAssessmentCreated',
+  'auditCerCreated',
+  'auditCerExported',
+  'auditCerLiteratureSearch',
+  'auditCerStageCompleted',
+  'auditPccpAlgorithmChangeTriggered',
+  'auditPccpComponentCompleted',
+  'auditPccpCreated',
+  'auditPccpExpertApproved',
+  'auditPccpStatusChanged',
+  'auditReportDrafted',
+  'auditReportabilityAssessed',
+  'auditVigilanceEventCreated',
+  'analyzeImpact',
+];
+
+const APPROVED_AUDIT_WRAPPER_PATTERN = new RegExp(
+  `(?:${APPROVED_AUDIT_WRAPPER_NAMES.join('|')})\\s*\\(`,
+);
+
+function hasAuditCall(content: string): boolean {
+  return DIRECT_AUDIT_CALL_PATTERN.test(content) || APPROVED_AUDIT_WRAPPER_PATTERN.test(content);
+}
+
 /**
  * Check a single file's content for missing writeAudit calls in mutable handlers.
  *
@@ -52,9 +79,8 @@ export function checkFileForAuditCoverage(content: string, filePath: string): st
       continue;
     }
 
-    // Check whether writeAudit( appears anywhere in the file body.
-    const hasWriteAudit = /writeAudit\s*\(/.test(content);
-    if (!hasWriteAudit) {
+    // Check whether writeAudit( or an approved audit wrapper appears anywhere in the file body.
+    if (!hasAuditCall(content)) {
       violations.push(`${filePath}: ${method} handler missing writeAudit() call`);
     }
   }

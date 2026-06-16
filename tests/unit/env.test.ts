@@ -40,6 +40,22 @@ describe('parseEnv', () => {
     expect(() => parseEnv({ ...validEnv, DATABASE_URL: 'not-a-url' })).toThrow(ZodError);
   });
 
+  it('rejects SKIP_ENV_VALIDATION at runtime', () => {
+    expect(() => parseEnv({ ...validEnv, SKIP_ENV_VALIDATION: '1' })).toThrow(
+      /allowed only for next build/,
+    );
+  });
+
+  it('allows SKIP_ENV_VALIDATION only for the explicit build gate', () => {
+    expect(
+      parseEnv({
+        ...validEnv,
+        SKIP_ENV_VALIDATION: '1',
+        REGULA_ALLOW_ENV_VALIDATION_SKIP: 'build',
+      }),
+    ).toEqual({});
+  });
+
   it('throws ZodError when both Microsoft env-var aliases are missing', () => {
     const { AUTH_MICROSOFT_ID: _omit, ...rest } = validEnv;
     expect(() => parseEnv(rest)).toThrow(ZodError);

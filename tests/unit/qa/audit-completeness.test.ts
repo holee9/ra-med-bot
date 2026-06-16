@@ -45,6 +45,18 @@ export const POST = withPermission('consult.create', async (req, ctx, session) =
     expect(violations).toHaveLength(0);
   });
 
+  it('returns no violation when a route delegates to an approved audit wrapper', () => {
+    const content = `
+import { auditCerExported } from '@/lib/cer/audit';
+export const POST = withPermission('consult.create', async (req, ctx, session) => {
+  await auditCerExported(session.user.id, 'run-1', 'pdf');
+  return new Response(null, { status: 200 });
+});
+`;
+    const violations = checkFileForAuditCoverage(content, 'app/api/ra/test/route.ts');
+    expect(violations).toHaveLength(0);
+  });
+
   it('returns violation when export const DELETE = withPermission(...) does NOT contain writeAudit', () => {
     const content = `
 export const DELETE = withPermission('consult.create', async (req, ctx, session) => {

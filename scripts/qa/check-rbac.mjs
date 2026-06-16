@@ -5,8 +5,8 @@
 //   1) API routes (app/api/**): every route.ts must wrap HTTP exports with withPermission (or be exempt).
 //   2) Admin page routes (app/(app)/admin/**): every page.tsx must appear in ADMIN_PAGE_MATRIX,
 //      and ADMIN_PAGE_MATRIX must not reference pages that no longer exist.
-//      Additionally, the admin section layout (app/(app)/admin/layout.tsx) must enforce a
-//      role guard ('admin' or 'ra-lead'); otherwise non-admin users would not get 403.
+//      Additionally, the admin section layout (app/(app)/admin/layout.tsx) must enforce an
+//      admin-only role guard; otherwise ra-lead users would see admin pages whose APIs reject them.
 //
 // Exits 1 on any violation; exits 0 when complete.
 
@@ -16,7 +16,7 @@ import { fileURLToPath } from 'node:url';
 
 const HTTP_METHODS = ['GET', 'POST', 'PUT', 'PATCH', 'DELETE', 'HEAD', 'OPTIONS'];
 const PLAIN = new RegExp(`export\\s+async\\s+function\\s+(${HTTP_METHODS.join('|')})\\b`);
-const exempt = ['app/api/auth', 'app/api/health'];
+const exempt = ['app/api/auth', 'app/api/health', 'app/api/ra/digest/[weekId]/route.ts'];
 
 // REQ-QUAL-024: admin page route coverage matrix.
 // Each entry asserts the expected RBAC outcome for non-admin / admin users.
@@ -135,13 +135,14 @@ if (!existsSync(adminLayoutPath)) {
 } else {
   const layoutSrc = readFileSync(adminLayoutPath, 'utf-8');
   const hasAuthCall = /\bauth\s*\(/.test(layoutSrc);
-  const hasRoleCheck = /\b(?:admin|ra-lead)\b/.test(layoutSrc);
+  const hasAdminCheck = /\badmin\b/.test(layoutSrc);
+  const allowsRaLead = /\bra-lead\b/.test(layoutSrc);
   const hasRedirectOrForbidden = /\bredirect\s*\(\s*['"]\/403['"]\s*\)|notFound\s*\(/.test(
     layoutSrc,
   );
-  layoutGuardOk = hasAuthCall && hasRoleCheck && hasRedirectOrForbidden;
+  layoutGuardOk = hasAuthCall && hasAdminCheck && !allowsRaLead && hasRedirectOrForbidden;
   if (!layoutGuardOk) {
-    layoutGuardReason = `auth=${hasAuthCall} roleCheck=${hasRoleCheck} redirect403=${hasRedirectOrForbidden}`;
+    layoutGuardReason = `auth=${hasAuthCall} adminCheck=${hasAdminCheck} allowsRaLead=${allowsRaLead} redirect403=${hasRedirectOrForbidden}`;
   }
 }
 
@@ -172,7 +173,7 @@ if (missingFromFilesystem.length > 0) {
 if (!layoutGuardOk) {
   failed = true;
   console.error(
-    `[rbac] Admin layout role guard missing or weakened (${layoutGuardReason}). All admin pages rely on app/(app)/admin/layout.tsx calling auth() and redirect('/403') for non-admin/non-ra-lead users.`,
+    `[rbac] Admin layout role guard missing or weakened (${layoutGuardReason}). All admin pages rely on app/(app)/admin/layout.tsx calling auth() and redirect('/403') for every non-admin user.`,
   );
 }
 

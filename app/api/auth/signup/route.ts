@@ -1,3 +1,4 @@
+import { writeAudit } from '@/lib/audit';
 import { db } from '@/lib/db/client';
 import { users } from '@/lib/db/schema';
 import bcrypt from 'bcryptjs';
@@ -11,8 +12,8 @@ const SignupSchema = z.object({
   password: z.string().min(8, '비밀번호는 8자 이상이어야 합니다'),
 });
 
-// @MX:ANCHOR: [AUTO] Public signup endpoint — role is always set server-side, never from client
-// @MX:REASON: OWASP A01:2021 — accepting role from client allows privilege escalation
+// @MX:ANCHOR: [AUTO] Public signup endpoint — no role assignment, defers to admin approval
+// @MX:REASON: OWASP A01:2021 — prevents privilege escalation via self-signup
 export async function POST(req: Request) {
   const body = await req.json().catch(() => null);
   const parsed = SignupSchema.safeParse(body);
@@ -32,9 +33,24 @@ export async function POST(req: Request) {
   }
 
   const password_hash = await bcrypt.hash(password, 12);
-  await db
+  // @MX:ANCHOR Deferred role assignment — users created without role until admin approval
+  // @MX:REASON OWASP A01:2021 — prevents privilege escalation via self-signup
+  const [created] = await db
     .insert(users)
-    .values({ name, email, password_hash, role: 'ra-member', status: 'pending' });
+    .values({ name, email, password_hash, status: 'pending' })
+    .returning({ id: users.id });
+
+  if (!created) {
+    return NextResponse.json({ error: '회원가입 처리에 실패했습니다' }, { status: 500 });
+  }
+
+  await writeAudit({
+    actor_id: null,
+    action: 'profile.update',
+    resource_type: 'user',
+    resource_id: created.id,
+    meta_json: { status: 'pending', source: 'signup' },
+  });
 
   return NextResponse.json({ ok: true }, { status: 201 });
 }

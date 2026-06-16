@@ -48,6 +48,7 @@ export function ReviewCard({ item, onStatusChange }: ReviewCardProps) {
         {item.status === 'pending' && (
           <button
             type="button"
+            data-testid="start-review-btn"
             onClick={() => onStatusChange?.(item.id, 'in_progress')}
             className="rounded-md border border-brand-300 px-3 py-1.5 text-sm text-brand-700 hover:bg-brand-50"
           >

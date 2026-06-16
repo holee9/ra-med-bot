@@ -3,6 +3,8 @@
 # This script forwards stdin JSON to the moai hook teammate-idle command.
 # Project-local hook: .claude/hooks/moai/handle-teammate-idle.sh
 
+export PATH="$HOME/.local/bin:$HOME/go/bin:$HOME/.npm-global/bin:/usr/local/bin:/usr/local/sbin:/usr/bin:/bin:/usr/sbin:/sbin${PATH:+:$PATH}"
+
 # Create temp file to store stdin
 temp_file=$(mktemp)
 trap 'rm -f "$temp_file"' EXIT

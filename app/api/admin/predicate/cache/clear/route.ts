@@ -6,6 +6,7 @@
 // REQ-PRE-029: nodejs runtime required — department lookup uses the pg driver.
 export const runtime = 'nodejs';
 
+import { writeAudit } from '@/lib/audit';
 import { canClearPredicateCache } from '@/lib/auth/predicate-permissions';
 import { withPermission } from '@/lib/auth/with-permission';
 import { db } from '@/lib/db/client';
@@ -40,6 +41,13 @@ export const POST = withPermission('workflow.execute', async (_req, _ctx, sessio
 
   const cache = createPredicateCache(getKv());
   await cache.invalidateAll();
+  await writeAudit({
+    actor_id: session.user.id,
+    action: 'workflow.edit',
+    resource_type: 'predicate_cache',
+    resource_id: 'global',
+    meta_json: { department },
+  });
 
   return Response.json({ cleared: true });
 });

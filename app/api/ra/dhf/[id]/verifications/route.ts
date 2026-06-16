@@ -2,10 +2,11 @@
 // POST /api/ra/dhf/[id]/verifications — add a verification protocol.
 // @MX:SPEC SPEC-REGULA-DHF-001
 
+import { writeAudit } from '@/lib/audit';
 import { withPermission } from '@/lib/auth/with-permission';
 import { db } from '@/lib/db/client';
 import { designHistoryFiles, designVerifications } from '@/lib/db/schema';
-import { eq, and } from 'drizzle-orm';
+import { and, eq } from 'drizzle-orm';
 import { z } from 'zod';
 
 const CreateVerificationSchema = z.object({
@@ -109,6 +110,17 @@ export const POST = withPermission('dashboard.view', async (req, ctx, session) =
     .update(designHistoryFiles)
     .set({ updatedAt: new Date() })
     .where(eq(designHistoryFiles.id, id));
+  await writeAudit({
+    actor_id: session.user.id,
+    action: 'dhf_updated',
+    resource_type: 'dhf',
+    resource_id: id,
+    meta_json: {
+      result: data.result ?? null,
+      verificationId: created.id,
+      verificationType: data.verification_type,
+    },
+  });
 
   return Response.json({ verification: created }, { status: 201 });
 });

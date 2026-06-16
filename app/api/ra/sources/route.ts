@@ -4,7 +4,7 @@
 import { withPermission } from '@/lib/auth/with-permission';
 import { db } from '@/lib/db/client';
 import { sourceSections, sources } from '@/lib/db/schema';
-import { count, countDistinct, eq, max } from 'drizzle-orm';
+import { count, countDistinct, eq, isNull, max, or } from 'drizzle-orm';
 
 /**
  * Returns the list of source corpora (grouped by `sources.org_label`) along with
@@ -18,7 +18,12 @@ import { count, countDistinct, eq, max } from 'drizzle-orm';
  * `source_sections` holds the chunked text used by the retriever. We left-join sections
  * onto sources so corpora without ingested chunks still appear with `sectionCount = 0`.
  */
-export const GET = withPermission('dashboard.view', async () => {
+export const GET = withPermission('dashboard.view', async (_req, _ctx, session) => {
+  const orgId = session.user.organizationId;
+  const sourceScope = orgId
+    ? or(isNull(sources.organizationId), eq(sources.organizationId, orgId))
+    : isNull(sources.organizationId);
+
   const rows = await db
     .select({
       orgLabel: sources.orgLabel,
@@ -28,6 +33,7 @@ export const GET = withPermission('dashboard.view', async () => {
     })
     .from(sources)
     .leftJoin(sourceSections, eq(sources.id, sourceSections.sourceId))
+    .where(sourceScope)
     .groupBy(sources.orgLabel)
     .orderBy(sources.orgLabel);
 

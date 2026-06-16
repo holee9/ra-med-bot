@@ -12,6 +12,11 @@ import { beforeEach, describe, expect, it, vi } from 'vitest';
 // the real withPermission session guard).
 let currentDepartment: 'RA' | 'Dev' | 'Exec' | 'External' | null = 'Dev';
 let authenticated = true;
+const writeAudit = vi.fn<[], Promise<void>>(async () => {});
+
+vi.mock('@/lib/audit', () => ({
+  writeAudit,
+}));
 
 vi.mock('@/lib/auth/with-permission', () => ({
   withPermission: vi.fn(
@@ -73,6 +78,13 @@ describe('POST /api/admin/predicate/cache/clear (REQ-PRE-022)', () => {
     expect(res.status).toBe(200);
     expect(body.cleared).toBe(true);
     expect(invalidateAll).toHaveBeenCalledOnce();
+    expect(writeAudit).toHaveBeenCalledWith({
+      actor_id: 'user-001',
+      action: 'workflow.edit',
+      resource_type: 'predicate_cache',
+      resource_id: 'global',
+      meta_json: { department: 'Dev' },
+    });
   });
 
   it('denies an RA-department user with 403', async () => {
@@ -80,6 +92,7 @@ describe('POST /api/admin/predicate/cache/clear (REQ-PRE-022)', () => {
     const res = await POST(postReq(), {});
     expect(res.status).toBe(403);
     expect(invalidateAll).not.toHaveBeenCalled();
+    expect(writeAudit).not.toHaveBeenCalled();
   });
 
   it('denies an Exec-department user with 403', async () => {
@@ -87,6 +100,7 @@ describe('POST /api/admin/predicate/cache/clear (REQ-PRE-022)', () => {
     const res = await POST(postReq(), {});
     expect(res.status).toBe(403);
     expect(invalidateAll).not.toHaveBeenCalled();
+    expect(writeAudit).not.toHaveBeenCalled();
   });
 
   it('returns 401 for an unauthenticated request', async () => {
@@ -94,5 +108,6 @@ describe('POST /api/admin/predicate/cache/clear (REQ-PRE-022)', () => {
     const res = await POST(postReq(), {});
     expect(res.status).toBe(401);
     expect(invalidateAll).not.toHaveBeenCalled();
+    expect(writeAudit).not.toHaveBeenCalled();
   });
 });

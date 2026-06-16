@@ -10,6 +10,8 @@ const NEEDS_SERVER =
     : undefined;
 
 test.describe('Citation click → DocViewer (REQ-LAUNCH-019)', () => {
+  test.describe.configure({ mode: 'serial' });
+
   test.beforeEach(async ({ page }) => {
     test.skip(!!NEEDS_SERVER, NEEDS_SERVER ?? '');
     const auth = requiresAuthState();

@@ -16,7 +16,7 @@
 6. [환경 변수 설정](#6-환경-변수-설정)
 7. [DB 초기화 및 코퍼스 투입](#7-db-초기화-및-코퍼스-투입)
 8. [앱 실행](#8-앱-실행)
-9. [사내망 접근 설정](#9-사내망-접근-설정)
+9. [사내망/Tailscale/Cloudflare 접근 설정](#9-사내망tailscalecloudflare-접근-설정)
 10. [부팅 시 자동 시작 (선택)](#10-부팅-시-자동-시작-선택)
 11. [AI 전략 — LLM 단계별 확장](#11-ai-전략--llm-단계별-확장)
 12. [문제 해결](#12-문제-해결)
@@ -204,7 +204,7 @@ pnpm dev:bootstrap
 | `GOOGLE_GENERATIVE_AI_API_KEY` | Gemini API 키 (채팅 추론) | [aistudio.google.com](https://aistudio.google.com/app/apikey) — 무료 |
 | `OPENAI_API_KEY` | 임베딩 생성용 (소량 사용) | [platform.openai.com](https://platform.openai.com) |
 | `AUTH_SECRET` | 세션 암호화 (32자 이상 임의 문자열) | `openssl rand -base64 32` |
-| `NEXTAUTH_URL` | 앱 접근 URL | `http://localhost:3000` 또는 `http://192.168.x.x:3000` |
+| `NEXTAUTH_URL` | 앱 접근 URL | 로컬/LAN/Tailscale 검증 시 현재 URL, Cloudflare 검증 시 `https://regula.abyz-lab.work` |
 | `AUTH_GOOGLE_ID` | Google OAuth 클라이언트 ID | [Google Cloud Console](#6-3-google-oauth-설정) |
 | `AUTH_GOOGLE_SECRET` | Google OAuth 시크릿 | [Google Cloud Console](#6-3-google-oauth-설정) |
 
@@ -268,23 +268,58 @@ pnpm start
 
 ---
 
-## 9. 사내망 접근 설정
+## 9. 사내망/Tailscale/Cloudflare 접근 설정
 
-### 9-1. T3610 IP 확인
+### 9-1. T3610 LAN/Tailscale IP 확인
 
 ```bash
 ip addr show | grep "inet " | grep -v 127.0.0.1
 # 예: 192.168.1.100
+
+tailscale ip -4
+# 현재 T3610 확인값: 100.119.79.28
 ```
 
-### 9-2. 방화벽 포트 허용
+### 9-2. 원격 브라우저 검증용 앱 실행
+
+SSH로 T3610에 접속한 상태에서 `localhost:3000`을 안내하면 원격 사용자의 브라우저에서는 열리지 않습니다. 브라우저 검증 전 앱을 모든 인터페이스에 바인딩합니다.
+
+```bash
+pnpm dev:public
+```
+
+정상 상태:
+
+```bash
+ss -ltnp
+# 0.0.0.0:3000 에 next-server가 표시되어야 함
+```
+
+### 9-3. Cloudflare 연결 전 Tailscale 검증
+
+Cloudflare Tunnel이 아직 연결되지 않았거나 `regula.abyz-lab.work`가 `502 Bad Gateway`이면, 먼저 Tailscale URL로 실제 화면을 검증합니다.
+
+브라우저에서:
+
+```text
+http://100.119.79.28:3000
+```
+
+터미널 확인:
+
+```bash
+curl -I http://100.119.79.28:3000
+# 정상 예: HTTP/1.1 307 Temporary Redirect, location: /login
+```
+
+### 9-4. LAN 접근용 방화벽 포트 허용
 
 ```bash
 sudo ufw allow 3000/tcp
 sudo ufw status
 ```
 
-### 9-3. 팀원 접근
+### 9-5. 팀원 LAN 접근
 
 팀원 브라우저에서:
 ```
@@ -292,6 +327,62 @@ http://192.168.1.100:3000
 ```
 
 > Google OAuth 설정 시 **6-3**에서 추가한 리디렉션 URI에 사내 IP가 포함되어 있어야 합니다.
+
+### 9-6. Cloudflare 공개 도메인 복구
+
+공개 검증 URL은 다음과 같습니다.
+
+```text
+https://regula.abyz-lab.work/
+```
+
+현재 운영 경로는 T3610에 `cloudflared`를 직접 설치하는 방식이 아니라, `raspi5p`의 기존 Cloudflare Tunnel을 통해 T3610의 Tailscale IP로 들어오는 방식입니다.
+
+```text
+Browser -> Cloudflare -> raspi5p cloudflared -> http://100.119.79.28:3000 -> T3610 Next.js
+```
+
+검증 완료 후 장기 운영에서는 GitHub Issue #160 기준으로 T3610 native connector로 전환합니다.
+
+```text
+Browser -> Cloudflare -> T3610 cloudflared -> http://127.0.0.1:3000 -> T3610 Next.js
+```
+
+다음 화면이 보이면 Cloudflare edge는 동작하지만 T3610 origin 연결이 실패한 상태입니다.
+
+```text
+Bad gateway
+Error code 502
+Cloudflare: Working
+Host: Error
+```
+
+T3610에서 확인할 항목:
+
+```bash
+curl -I http://100.119.79.28:3000
+curl -I https://regula.abyz-lab.work/
+```
+
+`raspi5p`에서 확인할 항목:
+
+```bash
+ssh raspi5p 'systemctl is-active cloudflared'
+ssh raspi5p 'curl -I http://100.119.79.28:3000'
+ssh raspi5p 'sudo sed -n "/hostname: regula.abyz-lab.work/,+1p" /etc/cloudflared/config.yml'
+```
+
+복구 기준:
+
+| 항목 | 값 |
+|------|----|
+| Cloudflare Tunnel public hostname | `regula.abyz-lab.work` |
+| Tunnel service type | `HTTP` |
+| Tunnel service URL | `http://100.119.79.28:3000` |
+| 앱 canonical URL | `NEXTAUTH_URL=https://regula.abyz-lab.work` |
+| Google OAuth redirect URI | `https://regula.abyz-lab.work/api/auth/callback/google` |
+
+`raspi5p`의 `/etc/cloudflared/config.yml`에서 `regula.abyz-lab.work` ingress만 위 service URL로 맞춘 뒤 `sudo systemctl restart cloudflared`를 실행합니다. 실행 후 Cloudflare Zero Trust의 tunnel 상태가 `Healthy`가 되어야 공개 도메인 검증을 시작합니다.
 
 ---
 
