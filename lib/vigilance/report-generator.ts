@@ -36,7 +36,7 @@ function calculateDeadline(awarenessDate: string, deadlineDays: number): string 
   const awareness = new Date(awarenessDate);
   awareness.setDate(awareness.getDate() + deadlineDays);
   const isoString = awareness.toISOString();
-  return isoString.split('T')[0];
+  return isoString.split('T')[0] ?? isoString;
 }
 
 function buildPrompt(event: AdverseEventInput, reportType: ReportType): string {

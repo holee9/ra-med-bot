@@ -25,7 +25,8 @@ test.describe('Accessibility — WCAG 2.1 AA (REQ-LAUNCH-021)', () => {
       // Wait for the page to finish hydrating before running the scan.
       await page.waitForLoadState('networkidle');
 
-      const accessibilityScanResults = await new AxeBuilder({ page })
+      const axePage = page as unknown as ConstructorParameters<typeof AxeBuilder>[0]['page'];
+      const accessibilityScanResults = await new AxeBuilder({ page: axePage })
         .withTags(['wcag2a', 'wcag2aa', 'wcag21aa'])
         .analyze();
 
@@ -49,7 +50,8 @@ test.describe('Accessibility — WCAG 2.1 AA (REQ-LAUNCH-021)', () => {
     await page.goto('/');
     await page.waitForLoadState('networkidle');
 
-    const results = await new AxeBuilder({ page })
+    const axePage = page as unknown as ConstructorParameters<typeof AxeBuilder>[0]['page'];
+    const results = await new AxeBuilder({ page: axePage })
       .withTags(['wcag2a', 'wcag2aa', 'wcag21aa'])
       .analyze();
 

@@ -46,25 +46,33 @@ function subjectInputs(): Record<ComparisonDimension, string> {
  * mapping each dimension to a suggestion string. The builder is expected to
  * issue exactly ONE call regardless of dimension count.
  */
-// biome-ignore lint/suspicious/noExplicitAny: test mock helper requires any for vi.fn typing
-function mockAnthropic(): { client: Anthropic; create: ReturnType<typeof vi.fn<any[], any>> } {
+function mockAnthropic(): {
+  client: Anthropic;
+  create: ReturnType<
+    typeof vi.fn<[unknown], Promise<{ content: Array<{ type: string; text: string }> }>>
+  >;
+} {
   const suggestions = ALL_DIMENSIONS.reduce<Record<string, string>>((acc, dim) => {
     acc[dim] = `LLM suggestion for ${dim}`;
     return acc;
   }, {});
 
-  const create = vi.fn(async () => ({
-    content: [{ type: 'text', text: JSON.stringify(suggestions) }],
-  }));
+  const create = vi.fn<[unknown], Promise<{ content: Array<{ type: string; text: string }> }>>(
+    async () => ({
+      content: [{ type: 'text', text: JSON.stringify(suggestions) }],
+    }),
+  );
 
   const client = { messages: { create } } as unknown as Anthropic;
   return { client, create };
 }
 
 /** A mock Anthropic client that always throws — for graceful degradation. */
-// biome-ignore lint/suspicious/noExplicitAny: test mock helper requires any for vi.fn typing
-function failingAnthropic(): { client: Anthropic; create: ReturnType<typeof vi.fn<any[], any>> } {
-  const create = vi.fn(async (): Promise<unknown> => {
+function failingAnthropic(): {
+  client: Anthropic;
+  create: ReturnType<typeof vi.fn<[unknown], Promise<unknown>>>;
+} {
+  const create = vi.fn<[unknown], Promise<unknown>>(async (): Promise<unknown> => {
     throw new Error('Anthropic API unavailable');
   });
   const client = { messages: { create } } as unknown as Anthropic;
@@ -174,7 +182,8 @@ describe('createComparisonBuilder', () => {
       selected_predicates: [candidate('K111')],
     });
 
-    const callArg = create.mock.calls[0]?.[0] as { model: string };
+    const callArg = create.mock.calls[0]?.[0] as { model: string } | undefined;
+    if (!callArg) throw new Error('Expected Anthropic create to be called');
     expect(callArg.model).toBe('claude-haiku-4-5-20251001');
   });
 

@@ -464,7 +464,8 @@ test.describe('Predicate accessibility (WCAG 2.1 AA)', () => {
       await page.goto(route);
       await page.waitForLoadState('networkidle');
 
-      const results = await new AxeBuilder({ page })
+      const axePage = page as unknown as ConstructorParameters<typeof AxeBuilder>[0]['page'];
+      const results = await new AxeBuilder({ page: axePage })
         .withTags(['wcag2a', 'wcag2aa', 'wcag21aa'])
         .analyze();
 
