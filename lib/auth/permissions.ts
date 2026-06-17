@@ -25,7 +25,10 @@ export type PermissionAction =
   | 'rbac.manage'
   | 'checklist.generate'
   | 'checklist.view'
-  | 'checklist.update';
+  | 'checklist.update'
+  | 'traceability.scan'
+  | 'traceability.view'
+  | 'traceability.impact';
 
 export interface PermissionSpec {
   minRole: Role;
@@ -82,4 +85,9 @@ export const PERMISSIONS: Record<PermissionAction, PermissionSpec> = {
   'checklist.generate': { minRole: 'ra-member', scope: 'org', resourceType: 'checklist' },
   'checklist.view': { minRole: 'ra-member', scope: 'org', resourceType: 'checklist' },
   'checklist.update': { minRole: 'ra-member', scope: 'org', resourceType: 'checklist' },
+
+  // traceability actions (hybrid-ra-saas integration — Issue #169)
+  'traceability.scan': { minRole: 'ra-member', scope: 'org', resourceType: 'traceability' },
+  'traceability.view': { minRole: 'ra-member', scope: 'org', resourceType: 'traceability' },
+  'traceability.impact': { minRole: 'ra-member', scope: 'org', resourceType: 'traceability' },
 };
