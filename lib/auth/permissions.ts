@@ -22,7 +22,10 @@ export type PermissionAction =
   | 'sources.ingest'
   | 'templates.edit'
   | 'workflow.execute'
-  | 'rbac.manage';
+  | 'rbac.manage'
+  | 'checklist.generate'
+  | 'checklist.view'
+  | 'checklist.update';
 
 export interface PermissionSpec {
   minRole: Role;
@@ -74,4 +77,9 @@ export const PERMISSIONS: Record<PermissionAction, PermissionSpec> = {
   'workflow.execute': { minRole: 'ra-member', scope: 'none', resourceType: 'workflow' },
 
   'rbac.manage': { minRole: 'admin', scope: 'org', resourceType: 'rbac' },
+
+  // checklist actions (hybrid-ra-saas integration — Issue #170)
+  'checklist.generate': { minRole: 'ra-member', scope: 'org', resourceType: 'checklist' },
+  'checklist.view': { minRole: 'ra-member', scope: 'org', resourceType: 'checklist' },
+  'checklist.update': { minRole: 'ra-member', scope: 'org', resourceType: 'checklist' },
 };
