@@ -286,6 +286,29 @@ graph TB
 
 ---
 
+### 코드베이스 분석 (2026-06-17 기준)
+
+**프로젝트 규모**:
+- TypeScript 파일: 377개
+- API 라우트: 67개  
+- 데이터베이스 테이블: 18개
+- lib 모듈: 27개
+- components 카테고리: 11개
+
+**모듈 구조**:
+- 12개 핵심 모듈 (app/(auth), app/(app), components/shell, components/chat, lib/ai, lib/db 등)
+- 단방향 의존성 설계 (순환 참조 없음)
+- 계층형 아키텍처 (Presentation → Application → Domain → Infrastructure)
+
+**상세 문서**:
+- `.moai/project/codemaps/overview.md` - 아키텍처 개요
+- `.moai/project/codemaps/modules.md` - 모듈 상세 설명
+- `.moai/project/codemaps/dependencies.md` - 의존성 구조
+- `.moai/project/codemaps/entry-points.md` - API 진입점
+- `.moai/project/codemaps/data-flow.md` - 데이터 흐름
+
+---
+
 ## 기술 스택
 
 ### Frontend

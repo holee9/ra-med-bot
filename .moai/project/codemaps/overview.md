@@ -1,7 +1,10 @@
 # 아키텍처 개요 — Regula
 
-> 최종 업데이트: 2026-04-30
-> 출처: `RA-bot-design/design_handoff_regula/README.md`
+> 최종 업데이트: 2026-06-17
+> 출처: 자동 생성된 코드베이스 분석
+> 총 TypeScript 파일: 377개
+> 총 API 라우트: 67개
+> 데이터베이스 테이블: 18개
 
 ---
 

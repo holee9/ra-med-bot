@@ -1,7 +1,10 @@
 # 모듈 구조 — Regula
 
-> 최종 업데이트: 2026-04-30
-> 출처: `RA-bot-design/design_handoff_regula/README.md`
+> 최종 업데이트: 2026-06-17
+> 출처: 자동 생성된 코드베이스 분석
+> 총 TypeScript 파일: 377개
+> 주요 lib 모듈: 27개
+> 주요 components 카테고리: 11개
 
 ---
 

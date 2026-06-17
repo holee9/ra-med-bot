@@ -107,4 +107,36 @@ Important caveat:
 | P0 | Merge PR #119 → #120 → #121 → #122 sequentially | citation, security, confidence, refine fixes |
 | P1 | Begin #23 SPEC-REGULA-CER-001 (EU MDR Clinical Evaluation Report) | Wave 3 next SPEC |
 | P1 | Begin #24 SPEC-REGULA-PCCP-001 (FDA PCCP builder) | Wave 3 next SPEC |
-| P2 | Delete stale remote branches | Housekeeping |
+| P2 | Delete stale remote branches | Housekeeping
+
+---
+
+## Codebase Analysis Update (2026-06-17)
+
+### Latest Architecture Documentation
+
+**Project Scale Analysis**:
+- TypeScript files: 377 (updated from baseline)
+- API routes: 67 (stable across Wave 3)
+- Database tables: 18 (includes new predicate tables)
+- lib modules: 27 (comprehensive coverage)
+- components categories: 11 (full UI coverage)
+
+**Architecture Documentation Updates**:
+- `.moai/project/codemaps/overview.md` - Updated with 2026-06-17 timestamp
+- `.moai/project/codemaps/modules.md` - 12 core modules documented
+- `.moai/project/codemaps/dependencies.md` - 110+ dependencies analyzed
+- `.moai/project/codemaps/entry-points.md` - 67 API routes catalogued
+- `.moai/project/codemaps/data-flow.md` - RAG pipeline and data flows documented
+
+**README.md Integration**:
+- Added codebase analysis section with project scale metrics
+- Integrated architecture overview with latest module structure
+- Updated technical stack breakdown with current versions
+- Connected documentation references for detailed architecture
+
+**Documentation Status**:
+- ✅ README.md - Updated with codebase analysis
+- ✅ docs/architecture.md - Enhanced with latest codebase metrics
+- ✅ docs/implementation-status.md - This file updated
+- ✅ `.moai/project/codemaps/` - All 5 codemap files current |

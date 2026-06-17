@@ -1,7 +1,9 @@
 # 의존성 구조 — Regula
 
-> 최종 업데이트: 2026-04-30
-> 출처: `RA-bot-design/design_handoff_regula/README.md`
+> 최종 업데이트: 2026-06-17
+> 출처: 자동 생성된 코드베이스 분석
+> 총 의존성 패키지: 110+개
+> 주요 업데이트: Next.js 15.5.18, Drizzle ORM 0.45.2
 
 ---
 

@@ -354,4 +354,48 @@ If a security incident is suspected:
 
 ---
 
-*Last updated: 2026-05-03 | Regula v1.0.0*
+## 7. Architecture Documentation (2026-06-17)
+
+### 7.1 Codebase Overview
+
+**Current System Scale**:
+- TypeScript files: 377
+- API routes: 67
+- Database tables: 18
+- lib modules: 27
+- components categories: 11
+
+**Key Architecture Components**:
+- **Frontend**: Next.js 15 App Router with React 18
+- **Backend**: Next.js Route Handlers with Drizzle ORM
+- **Database**: PostgreSQL 16 + pgvector extension
+- **AI/ML**: Multi-LLM strategy (Sonnet 4.5 + Haiku 4.5)
+- **RAG Pipeline**: Hybrid retrieval (pgvector + FTS) with citation enforcement
+
+### 7.2 Documentation Structure
+
+**Architecture Documentation**:
+- `.moai/project/codemaps/overview.md` - System boundaries and patterns
+- `.moai/project/codemaps/modules.md` - 12 core modules detailed
+- `.moai/project/codemaps/dependencies.md` - 110+ dependencies breakdown
+- `.moai/project/codemaps/entry-points.md` - 67 API routes catalogued
+- `.moai/project/codemaps/data-flow.md` - RAG pipeline and data flows
+
+**Operational Documentation**:
+- `README.md` - Project overview and quick start
+- `docs/architecture.md` - Detailed system architecture
+- `docs/implementation-status.md` - Implementation baseline and status
+- `docs/runbook.md` - This operational runbook
+
+### 7.3 Recent Updates
+
+**2026-06-17 Documentation Refresh**:
+- ✅ README.md - Added codebase analysis section
+- ✅ docs/architecture.md - Enhanced with latest metrics
+- ✅ docs/implementation-status.md - Updated with documentation status
+- ✅ docs/runbook.md - Added architecture documentation section
+- ✅ `.moai/project/codemaps/` - All 5 codemap files updated with 2026-06-17 timestamp
+
+---
+
+*Last updated: 2026-06-17 | Regula v1.0.0*

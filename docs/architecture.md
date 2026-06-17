@@ -242,3 +242,69 @@ For full security documentation, see [`docs/security/`](security/).
 | Vercel Analytics | Core Web Vitals | LCP, INP, CLS |
 
 Observability is strictly separated from `audit_logs` — observability tools never write to the audit table.
+
+---
+
+## 9. Codebase Analysis (2026-06-17)
+
+### 9.1 Project Scale
+
+- **TypeScript files**: 377
+- **API routes**: 67
+- **Database tables**: 18
+- **lib modules**: 27
+- **components categories**: 11
+
+### 9.2 Module Structure
+
+**12 Core Modules**:
+1. `app/(auth)` - Authentication and login pages
+2. `app/(app)` - Main application layout and routing
+3. `components/shell` - Application shell (Sidebar, Topbar)
+4. `components/chat` - Chat components (Composer, AnswerBlock, etc.)
+5. `components/views` - Page-specific components
+6. `components/primitives` - Basic UI elements
+7. `lib/ai` - RAG pipeline and AI logic
+8. `lib/db` - Database schema and queries
+9. `lib/auth` - Authentication logic
+10. `hooks` - Custom React hooks
+11. `stores` - Client state management
+12. `lib/i18n` - Internationalization
+
+### 9.3 Dependency Breakdown
+
+**Frontend (30+)**:
+- Next.js 15, React 18, TypeScript 5.4+
+- Radix UI, Tailwind v4, Zustand, TanStack Query v5
+
+**Backend (25+)**:
+- Node.js 20+, Drizzle ORM, PostgreSQL 16+pgvector
+- Auth.js v5, Zod validation
+
+**AI/ML (20+)**:
+- abyz-lab Sonnet 4.5, Haiku 4.5
+- LangChain, Cohere Rerank
+- OpenAI embedding
+
+**Database (15+)**:
+- PostgreSQL 16, pgvector extension
+- Full-text search, RLS policies
+
+**Dev Tools (20+)**:
+- Biome (lint/format), Vitest (testing)
+- Playwright (E2E), Storybook (components)
+
+### 9.4 Key Architecture Decisions
+
+1. **Backend-first implementation** - API → RAG → UI order
+2. **Multi-LLM strategy** - Sonnet (inference) + Haiku (classification)
+3. **PostgreSQL + pgvector** - ACID transactions + vector search
+4. **21 CFR Part 11 audit logging** - Immutable append-only logs, 7-year retention
+5. **SSE streaming** - Real-time UI updates with structured data
+
+For detailed codemaps, see:
+- `.moai/project/codemaps/overview.md`
+- `.moai/project/codemaps/modules.md`
+- `.moai/project/codemaps/dependencies.md`
+- `.moai/project/codemaps/entry-points.md`
+- `.moai/project/codemaps/data-flow.md`
