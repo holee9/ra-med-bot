@@ -19,11 +19,13 @@
 
 Issue #182 — 실사용자 E2E 검증 체계 PR #184는 CI 복구 후 main에 머지 완료.
 Issue #169 — Traceability 통합 PR #177은 동일 변경이 main에 이미 반영되어 stale/superseded로 종료.
+Issue #185 — Predicate 비교 분석 시각화 PR #186은 기존 feature branch를 재사용해 리뷰 수정 및 문서 보강 중.
 
 | 항목 | 상태 | 근거 |
 |---|---|---|
 | PR #184 | MERGED | squash merge `a79759c` |
 | PR #177 | CLOSED / SUPERSEDED | main 병합 시 실질 코드 diff 없음, stale branch 직접 머지 방지 |
+| PR #186 | OPEN / REVIEW FIXED | `feat/issue-185-predicate-visualization`에서 lint, demo animation, optional color, session memo 리뷰 반영 |
 | Traceability UI | PASS | `/workflows/traceability` 스캔, 그래프, 영향 분석 탭 구현 |
 | BFF 프록시 | PASS | `/api/ra/traceability/{scan,graph,impact}` |
 | 권한 매트릭스 | PASS | `traceability.scan/view/impact`, `checklist.generate/view/update` 포함 23 actions |
@@ -39,6 +41,8 @@ Issue #169 — Traceability 통합 PR #177은 동일 변경이 main에 이미 �
 **Cloudflare Tunnel 복구 완료** (`regula.abyz-lab.work` 502 → 307 정상). T3610 Tailscale 경유 → Cloudflare public hostname 복구, `NEXTAUTH_URL` 환경 변수 설정, OAuth redirect URI 추가.
 
 **2026-06-18 PR 정리 완료**: #178(dev DB migration drift), #180(`/api/ra/projects/[id]` RBAC), #181(admin upload PII redaction 3-layer), #184(E2E user validation + Traceability state) 순차 머지 완료. #179와 #177은 main에 대체 반영되어 stale/superseded로 종료. 최신 `main`은 CI Gates, E2E Smoke, Security Scan, Vercel Preview, Playwright E2E, LLM Eval Harness 통과.
+
+**Predicate 시각화 보강 진행** (`feat/issue-185-predicate-visualization`, PR #186). `/predicate/compare` 결과 화면에 Recharts 기반 Bar/Radar/Table 전환, Before-After mode, Demo animation, 필수/선택 dimension 색상 구분, 테이블 상세 패널을 추가. 리뷰 후 명시 타입, design token 색상, row별 optional 색상, session memo 보존을 보강했고 로컬 `pnpm lint`, `pnpm typecheck`, predicate 관련 unit 45 tests가 통과.
 
 | 카테고리 | 상태 | 측정 근거 |
 |---------|------|---------|
@@ -75,6 +79,30 @@ Issue #22 — FDA 510(k) Predicate Comparator 전체 구현:
 1,616 → 1,976 테스트 (+360 tests)
 REQ-PRED-001~038 전체 구현 완료
 TypeScript: 0 errors
+```
+
+### Predicate 비교 분석 시각화 보강 — Issue #185 / PR #186 (2026-06-18 진행)
+
+Issue #185는 Wave 3 Predicate Comparator의 비교 결과를 투자자/고객 데모에 적합한 시각적 분석 화면으로 확장한다. 기존 `ComparisonTable`은 승인/내보내기 흐름을 유지하고, 새 `PredicateVisualization` 컴포넌트는 비교 결과를 빠르게 스캔할 수 있는 chart-first view로 제공한다.
+
+| 영역 | 구현 내용 |
+|------|---------|
+| 진입점 | `/predicate/compare` 결과 영역에 `Show Interactive Visualization` 토글 추가 |
+| 차트 모드 | Bar chart, Radar chart, Table view 3모드 |
+| Before-After | subject와 첫 번째 predicate를 dimension별 길이 proxy로 비교하는 before/after chart |
+| 필수/선택 구분 | 첫 3개 dimension은 required token color, 나머지는 optional token color로 row별 표시 |
+| Demo Mode | presentation용 shadow/scale/banner와 Bar/Radar animation phase 재실행 |
+| 접근성 보강 | table row 전체 click 제거, dimension 상세 열기는 명시적 button으로 처리 |
+| 디자인 토큰 | raw hex 금지 규칙에 맞춰 `--color-brand-500`, `--color-ink-400`, `--color-success` 사용 |
+| 리뷰 수정 | explicit `any` 제거, tooltip/chart row 타입 명시, accumulator spread 제거, session memo history 보존 |
+
+검증 결과:
+```
+pnpm lint                                                                    PASS
+pnpm typecheck                                                               PASS
+pnpm exec vitest run tests/unit/components/predicate/PredicateComparePage.test.tsx tests/unit/predicate-schema.test.ts tests/unit/predicate-rbac.test.ts
+45 tests PASS
+git diff --check                                                             PASS
 ```
 
 ### RAG 파이프라인 복구 수정 (2026-05-28)
@@ -1080,8 +1108,26 @@ pnpm start
 
 **성과물**:
 - ✅ 38 REQ 전체 구현 (REQ-PRED-001~038)
-- ✅ PR [#126](https://github.com/holee9/ra-med-bot/pull/126) Fixes [#22](https://github.com/holee9/ra-med-bot/issues/22) — main merge 대기 중
+- ✅ PR [#126](https://github.com/holee9/ra-med-bot/pull/126) Fixes [#22](https://github.com/holee9/ra-med-bot/issues/22) — main merged
 - ✅ 1,976 tests passing (+360 from baseline 1,616)
+
+---
+
+### Phase 12.1: Predicate Visualization Addendum — Issue #185 🚧 (2026-06-18 진행)
+
+**목표**: Predicate 비교 결과를 테이블 중심 UI에서 데모 가능한 인터랙티브 분석 화면으로 확장
+
+- [x] **Recharts 시각화 컴포넌트** — Bar/Radar/Table view 지원
+- [x] **Compare page 토글** — visualization과 기존 approval table 간 전환
+- [x] **Before-After mode** — subject vs predicate dimension 비교
+- [x] **Required/Optional dimension 색상 구분** — legend와 실제 bar row 색상 일치
+- [x] **Demo Mode animation** — phase state가 chart/radar animation props에 실제 연결
+- [x] **Lint gate 보강** — explicit `any`, raw hex, accumulator spread 제거
+- [x] **Session memo 보존** — 기존 handoff 기록 복원 후 이번 PR 상태 append
+
+**성과물**:
+- 🚧 PR [#186](https://github.com/holee9/ra-med-bot/pull/186) Fixes [#185](https://github.com/holee9/ra-med-bot/issues/185) — review fix and docs update in progress
+- ✅ `pnpm lint`, `pnpm typecheck`, predicate unit 45 tests passing locally
 
 ---
 

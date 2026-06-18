@@ -88,3 +88,36 @@ Final actions:
 - Compared PR #177 against post-#184 main; substantive changes were already present, so it was not merged.
 - Updated README, implementation status, and QA matrix with PR #184/#177 disposition.
 - Confirmed main workflows for docs commit `700bb8e`: CI, Security Scan, E2E Tests, and Deploy all success.
+
+## P2: 2026-06-18 PR #186 Predicate Visualization Review Fix
+
+| Item | State |
+|---|---|
+| active branch | `feat/issue-185-predicate-visualization` |
+| main reference | `origin/main` fetched before edits (`b775e5728ea79854b0aed161ba88733c78599829`) |
+| issue | #185 `[P1][Predicate] 비교 분석 시각화 개선 - 입결전 상태 완성` |
+| PR | #186 `[P1][Predicate] 비교 분석 시각화 개선 - 입결전 상태 완성` |
+| #18 work gate | rechecked before edits; existing branch/PR reused, no stale branch merge performed |
+
+Review fixes applied:
+
+- Restored demo animation phase consumption in bar and radar rendering.
+- Typed predicate visualization chart rows and tooltip payloads without explicit `any`.
+- Colored optional dimension predicate bars with the optional document color.
+- Restored prior session memo history and appended this PR state instead of replacing the file.
+
+Verification:
+
+| Command | Result |
+|---|---|
+| `pnpm lint` | pass |
+| `pnpm typecheck` | pass |
+| `pnpm exec vitest run tests/unit/components/predicate/PredicateComparePage.test.tsx tests/unit/predicate-schema.test.ts tests/unit/predicate-rbac.test.ts` | 45 tests pass |
+| `git diff --check` | pass |
+
+Follow-up docs/branch update:
+
+- Updated README, implementation status, E2E validation report, and SPEC-PREDICATE-VIS-001 with PR #186 review-fix state.
+- Rechecked branches after `git fetch --all --prune`: open PRs = #186 only; remotes = `origin/main`, `origin/feat/issue-185-predicate-visualization`.
+- Noted local `main` is ahead of `origin/main` by duplicate compare-page toggle commit `63d0e91`; did not push or merge local `main`.
+- Re-ran `pnpm lint`, `pnpm typecheck`, targeted predicate Vitest, and `git diff --check`; all pass.

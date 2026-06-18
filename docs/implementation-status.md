@@ -1,11 +1,12 @@
 # Regula Implementation Status
 
 Reviewed: 2026-06-18 KST
-Implementation baseline commit: `a79759c` (main after PR #184)
+Implementation baseline commit: `b775e57` (`origin/main` after PR #184 cleanup docs)
 
-This document includes the 2026-06-18 PR cleanup after PR #184 merge and
-PR #177 superseded closure.
-Branch: `main` — no open PRs remain after the cleanup.
+This document includes the 2026-06-18 PR cleanup after PR #184 merge,
+PR #177 superseded closure, and the active Predicate Visualization addendum
+for Issue #185 / PR #186.
+Branch under review: `feat/issue-185-predicate-visualization`.
 
 ## Executive State
 
@@ -17,15 +18,23 @@ present on main and the branch was stale/conflicting.
 CI Gates, Playwright chromium/firefox/webkit, LLM Eval Harness, E2E Smoke,
 Vercel preview, and Security Scan all passed for PR #184 before merge.
 
+PR #186 is the only open PR after branch inspection. It adds the Predicate
+Visualization addendum for Issue #185 on top of the existing Predicate
+Comparator surface. The branch reuses the existing feature branch per Issue #18
+duplicate-work prevention rules. Local `main` has one unpushed commit with the
+compare-page visualization toggle, but the same functional change is already
+present in PR #186; the local `main` commit was not merged or pushed.
+
 ## Verified Repository State
 
 | Area | State | Evidence |
 |---|---|---|
-| Branch | `main` | after PR #184 merge |
-| Baseline commit | `a79759c` | `feat(e2e): add user validation framework` |
-| Mergeability | CLEAN | PR #184 merged; PR #177 closed as superseded |
-| Tests | 2,307 passing, 7 skipped | local full `vitest run` after CI fix |
-| Open PRs | none | `gh pr list --state open` |
+| Active branch | `feat/issue-185-predicate-visualization` | existing branch reused for Issue #185 |
+| Base commit | `b775e57` | `origin/main`, fetched before docs update |
+| Active PR | #186 | `[P1][Predicate] 비교 분석 시각화 개선 - 입결전 상태 완성` |
+| Mergeability | UNSTABLE | GitHub merge state at branch check time; awaiting PR checks/review state |
+| Tests | 45 predicate-focused tests passing | local targeted Vitest run after review fixes |
+| Open PRs | 1 | PR #186 only |
 | Work gate | #18 active | #18 remains open and mandatory |
 
 ## 2026-06-18 PR Cleanup Update
@@ -49,13 +58,39 @@ Verification evidence:
 - GitHub PR #184 checks — CI Gates, LLM Eval Harness, Playwright chromium/firefox/webkit,
   Vercel preview, E2E Smoke, Dependency Vulnerability Scan, and gitleaks all success.
 
+## 2026-06-18 Predicate Visualization Addendum — PR #186
+
+Issue #185 addresses the highest-priority E2E validation finding that Predicate
+comparison was too text-heavy for investor/customer demos and technical
+assessment review. The addendum keeps the existing approval table path intact
+and layers an interactive visualization-first view into `/predicate/compare`.
+
+| Area | State | Evidence |
+|---|---|---|
+| Compare page entry | Complete | `app/(app)/predicate/compare/page.tsx` imports `PredicateVisualization` and exposes `Show Interactive Visualization` |
+| Visualization component | Complete | `components/predicate/PredicateVisualization.tsx` |
+| View modes | Complete | Bar chart, Radar chart, Table view |
+| Before-After mode | Complete | subject vs first predicate dimension comparison |
+| Required/Optional distinction | Complete | required rows use brand token; optional rows use ink token in actual bar cells and legend |
+| Demo animation | Complete | `animationPhase` drives Bar/Radar animation keys, duration, begin, and radar opacity |
+| Accessibility refinement | Complete | table row click replaced with explicit dimension button |
+| Lint hardening | Complete | no explicit `any`, no raw hex colors, no accumulator spread |
+| Session history | Complete | `.moai/state/session-memo.md` restored previous records and appended PR #186 state |
+
+Validation evidence:
+
+- `pnpm lint` — pass.
+- `pnpm typecheck` — pass.
+- `pnpm exec vitest run tests/unit/components/predicate/PredicateComparePage.test.tsx tests/unit/predicate-schema.test.ts tests/unit/predicate-rbac.test.ts` — 45 tests pass.
+- `git diff --check` — pass.
+
 ## Implementation Surface
 
 | Surface | Count | Delta | Notes |
 |---|---:|---:|---|
 | App pages | 19 | +3 | Added: predicate/search, predicate/compare, predicate/history |
 | API route handlers | 33 | +5 | Added: predicate search, comparison, comparison/[id]/approve, export, admin/cache/clear |
-| Component files | 36 | +3 | Added: CandidateCard, ComparisonTable, SubjectDeviceForm |
+| Component files | 37 | +4 | Added: CandidateCard, ComparisonTable, SubjectDeviceForm, PredicateVisualization |
 | Library files | 200+ | +50+ | Added: predicate cascade-search, comparison-builder, openfda-client, cache, pdf-builder, docx-builder |
 | Test/spec files | 200+ | +16 | Predicate unit + integration tests |
 | Playwright specs | 8 | 0 | No new E2E specs added |
@@ -103,6 +138,7 @@ Important caveat:
 | Search page | `app/(app)/predicate/search/page.tsx` | — | ✅ |
 | Compare page | `app/(app)/predicate/compare/page.tsx` | — | ✅ |
 | History page | `app/(app)/predicate/history/page.tsx` | — | ✅ |
+| Visualization addendum | `components/predicate/PredicateVisualization.tsx` | SPEC-PREDICATE-VIS-001 | 🚧 PR #186 |
 
 ## Open Work Classification
 
@@ -113,24 +149,23 @@ Important caveat:
 | Wave 3 — remaining | 21 | #35~#43, #47, #48, #50, #51, #52, #55, #58~#62 |
 | Wave 4 | 12 | #25, #44~#46, #49, #53, #54, #56, #57, #63~#65 |
 | Wave 5 | 16 | #66~#72, #84~#92 |
-| Pending PRs | 4 | #119 citation-click, #120 security, #121 confidence, #122 refine |
+| Pending PRs | 1 | #186 Predicate Visualization |
 
 ## Current Blockers
 
-1. PR #126 needs merge to main (no technical blocker, ready to merge).
-2. PRs #119–#122 need sequential merge after #126.
-3. Stale remote branches: `origin/feature/SPEC-REGULA-RELEASE-HARDENING-001`,
-   `origin/work/e2efix-001` — scheduled for deletion (P2).
+1. PR #186 merge state is `UNSTABLE` at branch check time; wait for GitHub checks/review state after push.
+2. Local `main` is ahead of `origin/main` by one duplicate compare-page toggle commit. Do not push or merge it into this PR; PR #186 already carries the functional change.
+3. No stale remote feature branches were found during `git branch -r` inspection.
 
 ## Next Priority
 
 | Priority | Work | Reason |
 |---|---|---|
-| P0 | Merge PR #126 (feat/issue-22-predicate → main) | PREDICATE-001 complete, all gates green |
-| P0 | Merge PR #119 → #120 → #121 → #122 sequentially | citation, security, confidence, refine fixes |
+| P0 | Push PR #186 review/doc updates | unblock Issue #185 review |
+| P0 | Confirm PR #186 checks after push | merge state currently `UNSTABLE` |
 | P1 | Begin #23 SPEC-REGULA-CER-001 (EU MDR Clinical Evaluation Report) | Wave 3 next SPEC |
 | P1 | Begin #24 SPEC-REGULA-PCCP-001 (FDA PCCP builder) | Wave 3 next SPEC |
-| P2 | Delete stale remote branches | Housekeeping
+| P2 | Resolve duplicate local `main` commit disposition | Housekeeping after PR #186 lands
 
 ---
 
