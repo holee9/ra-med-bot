@@ -1,8 +1,7 @@
 // @MX:NOTE [AUTO] GET|PATCH /api/ra/projects/:id — single project fetch and update.
 // @MX:SPEC SPEC-REGULA-ENTERPRISE-001 (REQ-ENTERPRISE-019)
-// NOTE: project.manage is org-scoped in PERMISSIONS. withPermission only checks role;
-// project membership check via isProjectMember is skipped due to Next.js 15 async params
-// limitation. This is a known limitation documented in T-003 spec.
+// NOTE: GET uses 'project.manage' for project membership enforcement. Both GET and PATCH
+// now properly resolve Next.js 15 Promise params for project-scoped RBAC validation.
 
 import { eq } from 'drizzle-orm';
 import { z } from 'zod';
@@ -17,7 +16,7 @@ async function resolveId(ctx: unknown): Promise<string> {
   return (p as { id?: string })?.id ?? '';
 }
 
-export const GET = withPermission('dashboard.view', async (_req, ctx) => {
+export const GET = withPermission('project.manage', async (_req, ctx) => {
   const id = await resolveId(ctx);
   if (!id) return new Response('Missing id', { status: 400 });
 

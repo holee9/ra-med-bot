@@ -272,6 +272,31 @@ describe('lib/auth/with-permission.ts (REQ-ENTERPRISE-019, 022, 023) — withPer
       expect(isOrgMember).not.toHaveBeenCalled();
       expect(handler).toHaveBeenCalledTimes(1);
     });
+
+    it('resolves Promise params before project membership checks', async () => {
+      const { auth } = await import('@/lib/auth');
+      vi.mocked(auth).mockResolvedValueOnce({
+        user: { id: 'user-9', role: 'ra-lead', organizationId: 'org-9', email: 'lead@test.com' },
+      } as never);
+
+      const { hasRole } = await import('@/lib/auth/rbac');
+      vi.mocked(hasRole).mockReturnValue(true);
+
+      const { isProjectMember } = await import('@/lib/auth/acl');
+      vi.mocked(isProjectMember).mockResolvedValue(true);
+
+      const { withPermission } = await import('@/lib/auth/with-permission');
+      const handler = vi.fn().mockResolvedValue(Response.json({ ok: true }));
+      const wrapped = withPermission('project.manage', handler);
+
+      const req = new Request('http://localhost/api/ra/projects/project-1');
+      const ctx = { params: Promise.resolve({ id: 'project-1' }) };
+      const res = await wrapped(req, ctx);
+
+      expect(isProjectMember).toHaveBeenCalledWith('user-9', 'project-1');
+      expect(handler).toHaveBeenCalledTimes(1);
+      expect(res.status).toBe(200);
+    });
   });
 
   describe('multiple role scenarios', () => {
