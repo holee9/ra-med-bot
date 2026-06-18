@@ -1,30 +1,51 @@
 # Regula Implementation Status
 
-Reviewed: 2026-06-11 KST
-Implementation baseline commit: `2c8fe91` (feat/issue-22-predicate)
+Reviewed: 2026-06-18 KST
+Implementation baseline commit: `c36eed0` (feat/issue-169 / PR #177)
 
-This document reflects the Wave 3 PREDICATE-001 completion state.
-Branch: `feat/issue-22-predicate` — PR #126 (Fixes #22) awaiting merge to main.
+This document includes the PR #177 mergeability recovery for Issue #169
+Traceability API UI integration.
+Branch: `feat/issue-169` — PR #177 (Fixes #169) is clean and mergeable.
 
 ## Executive State
 
-Wave 3 PREDICATE-001 is complete. FDA 510(k) Predicate Comparator (38 REQ) is
-fully implemented across `feat/issue-22-predicate`. TypeScript 0 errors, 1,976
-tests passing. PR #126 is ready for merge.
+PR #177 is clean and mergeable. The hybrid-ra-saas Traceability integration adds
+browser UI, BFF proxy routes, TanStack Query hooks, retry/error handling, and
+RBAC actions for traceability scan/view/impact.
 
-Wave 1+2 (Phase 1-11, v1.0.0-rc) remain merged and stable on `main`.
-Next: merge PR #126, then begin CER-001 (#23).
+CI Gates, Playwright chromium/firefox/webkit, LLM Eval Harness, E2E Smoke,
+Vercel preview, and Security Scan all passed after the mergeability fix.
 
 ## Verified Repository State
 
 | Area | State | Evidence |
 |---|---|---|
-| Branch | `feat/issue-22-predicate` | predicate implementation branch |
-| Baseline commit | `2c8fe91` | `fix(lint): biome 포맷 위반 해소 — predicate export route 재포맷` |
-| TypeScript | 0 errors | `tsc --noEmit` clean |
-| Tests | 1,976 passing | vitest run |
-| Open PRs | PR #126 ready | `feat/issue-22-predicate → main` |
+| Branch | `feat/issue-169` | traceability integration PR branch |
+| Baseline commit | `c36eed0` | `test(auth): update permission matrix expectations` |
+| Mergeability | CLEAN / MERGEABLE | PR #177 final state |
+| Tests | 2,274 passing, 7 skipped | full `vitest run` |
+| Open PRs | PR #177 ready | `feat/issue-169 -> main` |
 | Work gate | #18 active | #18 remains open and mandatory |
+
+## PR #177 Traceability Integration Update
+
+| Area | State | Evidence |
+|---|---|---|
+| Issue | #169 | hybrid-ra-saas Traceability API UI integration |
+| PR | #177 | `feat/issue-169 -> main` |
+| BFF routes | Complete | `/api/ra/traceability/scan`, `graph`, `impact` |
+| Browser client/hooks | Complete | `traceabilityClient`, `useScanTraceability`, `useTraceGraph`, `useImpactAnalysis` |
+| UI | Complete | `/workflows/traceability` scan, graph, impact tabs |
+| RBAC | Complete | `traceability.scan`, `traceability.view`, `traceability.impact` |
+| Mergeability fix | Complete | Biome format/import/a11y fixes, permission-count tests updated to 23 actions |
+
+Verification evidence:
+
+- `biome check .` — pass.
+- `node scripts/no-hex-colors.mjs` — pass.
+- `vitest run` — 219 files passed, 2,274 tests passed, 7 skipped.
+- GitHub PR checks — CI Gates, LLM Eval Harness, Playwright chromium/firefox/webkit,
+  Vercel preview, E2E Smoke, Dependency Vulnerability Scan, and gitleaks all success.
 
 ## Implementation Surface
 

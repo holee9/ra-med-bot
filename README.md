@@ -15,6 +15,19 @@
 
 상세 점검 기록: [`docs/implementation-status.md`](docs/implementation-status.md)
 
+### 최신 PR #177 Traceability 통합 상태 (2026-06-18)
+
+Issue #169 — hybrid-ra-saas Traceability API UI 연동 PR #177은 mergeability 복구 완료.
+
+| 항목 | 상태 | 근거 |
+|---|---|---|
+| PR 상태 | CLEAN / MERGEABLE | PR #177 `feat/issue-169 -> main` |
+| Traceability UI | PASS | `/workflows/traceability` 스캔, 그래프, 영향 분석 탭 구현 |
+| BFF 프록시 | PASS | `/api/ra/traceability/{scan,graph,impact}` |
+| 권한 매트릭스 | PASS | `traceability.scan/view/impact`, `checklist.generate/view/update` 포함 23 actions |
+| CI 복구 | PASS | CI Gates, Playwright chromium/firefox/webkit, LLM Eval, E2E Smoke, Security Scan success |
+| QA evidence | PASS | 전체 `vitest run`: 219 files, 2,274 tests pass, 7 skipped |
+
 ### 종합 판단
 
 **Wave 3 PREDICATE-001 구현 완료** (`feat/issue-22-predicate`, PR #126). FDA 510(k) Predicate 검색 엔진 — openFDA 3-tier 캐스케이드 검색, 5-dimension LLM 비교표, PDF/DOCX 내보내기, IDOR 수정 완료. TypeScript 0 errors, 1,976 테스트 통과.

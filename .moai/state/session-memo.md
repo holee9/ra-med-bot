@@ -55,3 +55,18 @@ Verification:
 | `pnpm audit --prod --audit-level=high` | pass; only 2 low vulnerabilities reported |
 | `pnpm lint` | pass |
 | `git diff --check` | pass |
+
+## P2: 2026-06-18 PR #184 / PR #177 Review
+
+| Item | State |
+|---|---|
+| active branch | `feat/issue-182-e2e-user-validation` |
+| main reference | `origin/main` checked before edits |
+| PRs reviewed | #184 `실사용자 E2E 검증 체계 수립`, #177 `feat(integration): Traceability API BFF 프록시 및 UI 연동 #169` |
+| #18 work gate | rechecked; stale PR #177 will not be merged directly if superseded by #184 |
+
+Findings:
+
+- PR #184 CI Gates failed on TypeScript strictness in E2E tests and stale permission-count tests after traceability actions were added.
+- PR #184 also carried a stale session memo replacement that would remove previous main history.
+- PR #177 is still conflicting and appears to overlap with traceability changes already included in PR #184; re-evaluate after #184 lands.
