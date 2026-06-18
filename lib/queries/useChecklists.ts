@@ -13,8 +13,13 @@
  * @MX:REASON: [AUTO] Multiple components depend on these hooks for checklist state
  */
 
-import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import { checklistClient, Checklist, ChecklistItem, GapAnalysisResult } from '@/lib/api/checklist-client';
+import {
+  type Checklist,
+  type ChecklistItem,
+  type GapAnalysisResult,
+  checklistClient,
+} from '@/lib/api/checklist-client';
+import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 
 /**
  * Generate checklist hook
@@ -77,9 +82,7 @@ export function useUpdateChecklistItem() {
 
         return {
           ...old,
-          items: old.items.map((item) =>
-            item.id === updatedItem.id ? updatedItem : item
-          ),
+          items: old.items.map((item) => (item.id === updatedItem.id ? updatedItem : item)),
         };
       });
 

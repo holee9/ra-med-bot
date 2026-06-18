@@ -1,6 +1,6 @@
+import { BetaBadge } from '@/components/ui/BetaBadge';
 // @MX:SPEC Issue #170
 import type { Metadata } from 'next';
-import { BetaBadge } from '@/components/ui/BetaBadge';
 import { ChecklistShell } from './_components/ChecklistShell';
 
 export const metadata: Metadata = {
