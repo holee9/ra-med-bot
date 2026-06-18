@@ -20,11 +20,17 @@ const PII_GUARD_PATTERNS: RegExp[] = [
 function detectPii(text: string): { found: boolean; pattern: string } {
   for (const pattern of PII_GUARD_PATTERNS) {
     if (pattern.test(text)) {
-      const name = pattern.source.includes('@') ? 'email' :
-                   pattern.source.includes('\\d{3}-\\d{2}-\\d{4}') ? 'SSN' :
-                   pattern.source.includes('https?') ? 'URL' :
-                   pattern.source.includes('\\+1') ? 'phone' :
-                   pattern.source.includes('\\d{4}') ? 'credit_card' : 'pattern';
+      const name = pattern.source.includes('@')
+        ? 'email'
+        : pattern.source.includes('\\d{3}-\\d{2}-\\d{4}')
+          ? 'SSN'
+          : pattern.source.includes('https?')
+            ? 'URL'
+            : pattern.source.includes('\\+1')
+              ? 'phone'
+              : pattern.source.includes('\\d{4}')
+                ? 'credit_card'
+                : 'pattern';
       return { found: true, pattern: name };
     }
   }

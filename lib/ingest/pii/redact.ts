@@ -28,7 +28,7 @@ export function redactRegexPii(text: string): { text: string; redactionCount: nu
 export async function redactPiiForIngest(
   text: string,
   docClass: DocClass,
-  options?: { documentId?: string; saveMap?: boolean },
+  _options?: { documentId?: string; saveMap?: boolean },
 ): Promise<RedactionResult> {
   const policy = PII_POLICY_BY_CLASS[docClass];
   let redacted = text;
@@ -53,7 +53,10 @@ export async function redactPiiForIngest(
     } catch (err) {
       // Fail-closed: log error but continue to next layer
       // Layer 2 failure doesn't block processing (Layer 1 already redacted common patterns)
-      console.error('[Layer 2] Workers AI PII detection failed, continuing with Layer 1 results:', err);
+      console.error(
+        '[Layer 2] Workers AI PII detection failed, continuing with Layer 1 results:',
+        err,
+      );
     }
   }
 
@@ -68,9 +71,14 @@ export async function redactPiiForIngest(
       // Fail-closed: Layer 3 failure is critical for PHI documents
       // For critical_phi documents, Presidio failure blocks processing
       if (policy.sensitivityLevel === 'critical') {
-        throw new Error(`Presidio Layer 3 failed for ${docClass} (critical_phi): ${err instanceof Error ? err.message : 'unknown'}`);
+        throw new Error(
+          `Presidio Layer 3 failed for ${docClass} (critical_phi): ${err instanceof Error ? err.message : 'unknown'}`,
+        );
       }
-      console.error('[Layer 3] Presidio PII detection failed, continuing with previous layers:', err);
+      console.error(
+        '[Layer 3] Presidio PII detection failed, continuing with previous layers:',
+        err,
+      );
     }
   }
 
@@ -91,7 +99,9 @@ export async function redactPiiForIngest(
   if (remainingPii.length > 0 && policy.sensitivityLevel !== 'low') {
     // For non-low sensitivity documents, log remaining PII but don't fail
     // (regex detect may have false positives; Layers 2/3 handle real PII)
-    console.warn(`[PII Redaction] ${remainingPii.length} potential PII patterns remain after ${layersRun.join(' + ')} layers`);
+    console.warn(
+      `[PII Redaction] ${remainingPii.length} potential PII patterns remain after ${layersRun.join(' + ')} layers`,
+    );
   }
 
   return {

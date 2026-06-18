@@ -1,9 +1,9 @@
 // @MX:TEST Unit tests for 3-layer PII redaction
 // @MX:SPEC SPEC-REGULA-DOCINGEST-001 (REQ-DOC-026, REQ-DOC-027, REQ-DOC-028, REQ-DOC-035)
 
-import { describe, it, expect, beforeEach } from 'vitest';
-import { redactPiiForIngest, redactRegexPii } from '@/lib/ingest/pii/redact';
 import { DocClass } from '@/lib/ingest/doc-class';
+import { redactPiiForIngest, redactRegexPii } from '@/lib/ingest/pii/redact';
+import { beforeEach, describe, expect, it } from 'vitest';
 
 describe('3-layer PII Redaction', () => {
   describe('Layer 1: Regex-based redaction', () => {
@@ -51,7 +51,8 @@ describe('3-layer PII Redaction', () => {
 
   describe('3-layer pipeline integration', () => {
     it('should apply Layer 1+2 for medium sensitivity documents', async () => {
-      const input = 'Dr. John Smith (john.smith@example.com) can be reached at (555) 123-4567. SSN: 123-45-6789';
+      const input =
+        'Dr. John Smith (john.smith@example.com) can be reached at (555) 123-4567. SSN: 123-45-6789';
 
       const result = await redactPiiForIngest(input, DocClass.issued_certificate);
 

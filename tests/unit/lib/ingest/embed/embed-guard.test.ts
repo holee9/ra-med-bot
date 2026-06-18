@@ -1,10 +1,27 @@
 // @MX:TEST Unit tests for embed-time PII guard
 // @MX:SPEC SPEC-REGULA-DOCINGEST-001 (REQ-DOC-035)
 
-import { describe, it, expect, beforeEach } from 'vitest';
+import { beforeEach, describe, expect, it, vi } from 'vitest';
+
+vi.mock('openai', () => ({
+  default: vi.fn().mockImplementation(() => ({
+    embeddings: {
+      create: vi.fn().mockImplementation(({ input }: { input: string[] }) =>
+        Promise.resolve({
+          data: input.map(() => ({ embedding: new Array(1536).fill(0.1) })),
+        }),
+      ),
+    },
+  })),
+}));
+
 import { embedChunks } from '@/lib/ingest/embed';
 
 describe('Embed-time PII Guard', () => {
+  beforeEach(() => {
+    vi.clearAllMocks();
+  });
+
   describe('Enhanced PII detection', () => {
     it('should reject SSN patterns', async () => {
       const texts = ['Patient SSN: 123-45-6789'];
@@ -43,7 +60,9 @@ describe('Embed-time PII Guard', () => {
 
       expect(result).toBeDefined();
       expect(result.length).toBe(1);
-      expect(result[0].length).toBeGreaterThan(0);
+      const firstEmbedding = result[0];
+      expect(firstEmbedding).toBeDefined();
+      expect(firstEmbedding?.length).toBeGreaterThan(0);
     });
 
     it('should pass clean text without PII patterns', async () => {
@@ -56,11 +75,7 @@ describe('Embed-time PII Guard', () => {
     });
 
     it('should detect PII in batch of multiple chunks', async () => {
-      const texts = [
-        'Patient John Smith',
-        'SSN: 123-45-6789',
-        'Contact: test@example.com',
-      ];
+      const texts = ['Patient John Smith', 'SSN: 123-45-6789', 'Contact: test@example.com'];
 
       await expect(embedChunks(texts)).rejects.toThrow();
     });
