@@ -70,3 +70,21 @@ Findings:
 - PR #184 CI Gates failed on TypeScript strictness in E2E tests and stale permission-count tests after traceability actions were added.
 - PR #184 also carried a stale session memo replacement that would remove previous main history.
 - PR #177 is still conflicting and appears to overlap with traceability changes already included in PR #184; re-evaluate after #184 lands.
+
+## P2: 2026-06-18 PR #184 / PR #177 Final State
+
+| Item | State |
+|---|---|
+| active branch | `main` |
+| final main commit | `700bb8eb4d689e15e69a79bfb19e565338a8f221` before this memo update |
+| PR #184 | merged via squash commit `a79759c7d9a4650b331a6186cea218bd057319a9` |
+| PR #177 | closed as stale/superseded after GitHub comment |
+| open PRs | none |
+| #18 work gate | main checked; stale branch work was not merged directly |
+
+Final actions:
+
+- Fixed PR #184 CI blockers, pushed `7f5db85`, confirmed all PR checks green, and merged.
+- Compared PR #177 against post-#184 main; substantive changes were already present, so it was not merged.
+- Updated README, implementation status, and QA matrix with PR #184/#177 disposition.
+- Confirmed main workflows for docs commit `700bb8e`: CI, Security Scan, E2E Tests, and Deploy all success.
