@@ -11,7 +11,7 @@
 
 ---
 
-## 구현 현황 대시보드 (2026-06-15 KST 기준)
+## 구현 현황 대시보드 (2026-06-18 KST 기준)
 
 상세 점검 기록: [`docs/implementation-status.md`](docs/implementation-status.md)
 
@@ -23,14 +23,16 @@
 
 **Cloudflare Tunnel 복구 완료** (`regula.abyz-lab.work` 502 → 307 정상). T3610 Tailscale 경유 → Cloudflare public hostname 복구, `NEXTAUTH_URL` 환경 변수 설정, OAuth redirect URI 추가.
 
+**2026-06-18 PR 정리 완료**: #178(dev DB migration drift), #180(`/api/ra/projects/[id]` RBAC), #181(admin upload PII redaction 3-layer) 순차 머지 완료. #179는 #178에 의해 대체 반영되어 stale/superseded로 종료. 최신 `main`은 CI Gates, E2E Smoke, Security Scan, Vercel Preview, Playwright E2E, LLM Eval Harness 통과.
+
 | 카테고리 | 상태 | 측정 근거 |
 |---------|------|---------|
 | 구현 기준 | PASS | PREDICATE-001 구현 완료 (PR #126, Fixes #22). TypeScript 0 errors, 1,976 테스트 통과 |
 | GitHub Actions | PASS | `CI`, `Deploy`, `Security Scan` 모두 success on `feat/issue-22-predicate` |
 | 구현 표면 | PASS | 19 pages, 33 API route handlers, 36 component files, 200+ lib files |
-| 테스트 자산 | PASS | 200+ test/spec files, 8 Playwright specs (1,976 tests passing) |
+| 테스트 자산 | PASS | 220+ test/spec files, 8 Playwright specs, 2,286 tests passing on #181 |
 | CI core gates | PASS | typecheck, lint, format, unit, RBAC, audit, tokens, i18n, glossary, contrast, modules, migrations, build |
-| E2E CI | WARN | Playwright jobs success, but `Run E2E tests` skipped because staging URL was missing |
+| E2E CI | PASS | E2E Smoke 및 Playwright chromium/firefox/webkit 통과 |
 | RAG 파이프라인 | PASS | hybrid search FTS fallback 동작, 8 citations 정상 반환, LLM 오류 graceful degradation 확인 |
 | LLM 공급자 | PASS | `LLM_PROVIDER=anthropic` (로컬), Ollama/OpenAI 환경 전환 지원 |
 | Auth.js DrizzleAdapter | PASS | `emailVerified` 컬럼 추가, TS2322 오류 해결 |
@@ -105,15 +107,16 @@ POST /api/auth/callback/credentials → {"url":"http://localhost:3000/"}
 GET  /api/auth/session             → {"user":{"name":"Drake Lee","email":"drake.lee@abyzr.com","mustChangePassword":true},"expires":"..."}
 ```
 
-### 최신 CI 실행 결과 (2026-06-15)
+### 최신 CI 실행 결과 (2026-06-18)
 
 | Job | 결과 | 비고 |
 |---|---|---|
-| CI Gates | PASS | 18개 core step 통과 |
-| Deploy | PASS | Vercel/Cloudflare deploy workflow success |
-| Security Scan | PASS | security workflow success |
-| Playwright E2E chromium/firefox/webkit | PASS with skip | staging URL 부재로 browser test step skipped |
-| LLM Eval Harness | SKIPPED | eval secret/trigger 조건 미충족 |
+| CI Gates | PASS | #181 기준 core step 통과 |
+| Deploy | PASS | Vercel preview success, production/staging jobs는 PR 조건상 skipped |
+| Security Scan | PASS | Dependency Vulnerability Scan, Secret Detection 통과 |
+| E2E Smoke | PASS | DB-free smoke 통과 |
+| Playwright E2E chromium/firefox/webkit | PASS | CI Gates 후속 browser jobs 모두 success |
+| LLM Eval Harness | PASS | CI Gates 후속 eval job success |
 | Persona 85% Quality | PASS | 3회 교차검증 완료 (RBAC, audit enum, PII redaction) |
 | Cloudflare Tunnel | PASS | T3610 → raspi5p → public hostname 복구 완료 |
 
@@ -136,7 +139,7 @@ GET  /api/auth/session             → {"user":{"name":"Drake Lee","email":"drak
 
 ## 📋 목차
 
-- [구현 현황 대시보드](#구현-현황-대시보드-2026-05-28-kst-기준)
+- [구현 현황 대시보드](#구현-현황-대시보드-2026-06-18-kst-기준)
 - [개요](#개요)
 - [프로젝트 운영 철학](#프로젝트-운영-철학)
 - [아키텍처](#아키텍처)
