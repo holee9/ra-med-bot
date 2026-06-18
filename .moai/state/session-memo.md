@@ -55,3 +55,38 @@ Verification:
 | `pnpm audit --prod --audit-level=high` | pass; only 2 low vulnerabilities reported |
 | `pnpm lint` | pass |
 | `git diff --check` | pass |
+
+## P2: 2026-06-18 PR #177 Mergeability Fix
+
+Work Gate:
+
+- Issue #18 reviewed before edits; duplicate-work prevention rule applied.
+- Active branch: `feat/issue-169`.
+- PR: #177 `feat(integration): Traceability API BFF 프록시 및 UI 연동 #169`.
+- `origin/main`: `10bfe3ccbfe171340a93b128102925f1f6b9d390`.
+- PR HEAD before local fix: `5b7a2279195612bc8cee38052eb4552296aa8d09`.
+- Duplicate PR check: #169 open PR is #177 only; #170 search returned no open PR.
+- No new branch created; no stale branch merged.
+
+Observed blocker:
+
+- GitHub PR #177 was `MERGEABLE` but `UNSTABLE`.
+- Failing check: `CI / CI Gates`.
+- Root cause: Biome lint/format/import-order/accessibility violations in PR-added checklist/traceability files.
+
+Local fix scope:
+
+- Applied Biome safe formatting/import fixes to PR-changed files.
+- Added keyboard focusability to checklist progress bars.
+- Removed unused gap completion calculation.
+- Replaced retry backoff `Math.pow` with exponentiation operator.
+
+Verification:
+
+| Command | Result |
+|---|---|
+| targeted `biome check` on 20 PR files | pass |
+| `biome check .` | pass |
+| `node scripts/no-hex-colors.mjs` | pass |
+| `git diff --check` | pass |
+| `tsc --noEmit` | blocked locally by pre-existing `drizzle.config.ts` type mismatch; PR CI had progressed past typecheck to lint |

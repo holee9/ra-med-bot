@@ -3,15 +3,21 @@
 // @MX:ANCHOR: [AUTO] TraceabilityShell — central client entry point for traceability feature
 // @MX:REASON: [AUTO] Orchestrates scan, graph, and impact sub-views; expected fan_in >= 3 from page, tests, and future links
 
-import { useState } from 'react';
-import { Loader2, AlertCircle, Network, Scan, GitMerge } from 'lucide-react';
-import { cn } from '@/lib/utils';
 import {
+  useImpactAnalysis,
   useScanTraceability,
   useTraceGraph,
-  useImpactAnalysis,
 } from '@/lib/queries/useTraceability';
-import type { ScanResult, TraceGraph, ImpactResult, TraceNode, ImpactedNode } from '@/lib/queries/useTraceability';
+import type {
+  ImpactResult,
+  ImpactedNode,
+  ScanResult,
+  TraceGraph,
+  TraceNode,
+} from '@/lib/queries/useTraceability';
+import { cn } from '@/lib/utils';
+import { AlertCircle, GitMerge, Loader2, Network, Scan } from 'lucide-react';
+import { useState } from 'react';
 
 // ---------------------------------------------------------------------------
 // Tab type
@@ -99,7 +105,12 @@ function ScanResultCard({ result }: { result: ScanResult }) {
     <div className="rounded-lg border border-ink-200 bg-white p-4">
       <div className="flex items-center justify-between">
         <span className="text-sm font-medium text-ink-700">스캔 완료</span>
-        <span className={cn('rounded-full px-2.5 py-0.5 text-xs font-medium', statusColors[result.status] ?? 'bg-ink-100 text-ink-600')}>
+        <span
+          className={cn(
+            'rounded-full px-2.5 py-0.5 text-xs font-medium',
+            statusColors[result.status] ?? 'bg-ink-100 text-ink-600',
+          )}
+        >
           {result.status}
         </span>
       </div>
@@ -156,7 +167,10 @@ function GraphPanel({ scanId }: GraphPanelProps) {
         {[
           { label: '전체 노드', value: graph.metadata.total_nodes },
           { label: '전체 엣지', value: graph.metadata.total_edges },
-          { label: '생성 시각', value: new Date(graph.metadata.generated_at).toLocaleString('ko-KR') },
+          {
+            label: '생성 시각',
+            value: new Date(graph.metadata.generated_at).toLocaleString('ko-KR'),
+          },
         ].map(({ label, value }) => (
           <div key={label} className="rounded-lg border border-ink-200 bg-white p-3 text-center">
             <span className="block text-xs text-ink-400">{label}</span>
@@ -172,7 +186,9 @@ function GraphPanel({ scanId }: GraphPanelProps) {
         </div>
         <div className="divide-y divide-ink-50">
           {graph.nodes.length === 0 ? (
-            <p className="py-6 text-center text-sm text-ink-400">노드가 없습니다. 먼저 스캔을 실행해 주세요.</p>
+            <p className="py-6 text-center text-sm text-ink-400">
+              노드가 없습니다. 먼저 스캔을 실행해 주세요.
+            </p>
           ) : (
             graph.nodes.map((node) => <NodeRow key={node.id} node={node} edges={graph.edges} />)
           )}
@@ -189,14 +205,22 @@ const NODE_TYPE_COLORS: Record<string, string> = {
   document: 'bg-amber-100 text-amber-700',
 };
 
-function NodeRow({ node, edges }: { node: TraceNode; edges: { source: string; target: string; relationship: string }[] }) {
+function NodeRow({
+  node,
+  edges,
+}: { node: TraceNode; edges: { source: string; target: string; relationship: string }[] }) {
   const outEdges = edges.filter((e) => e.source === node.id);
   const inEdges = edges.filter((e) => e.target === node.id);
 
   return (
     <div className="px-4 py-3">
       <div className="flex items-center gap-2">
-        <span className={cn('rounded-full px-2 py-0.5 text-xs font-medium', NODE_TYPE_COLORS[node.type] ?? 'bg-ink-100 text-ink-600')}>
+        <span
+          className={cn(
+            'rounded-full px-2 py-0.5 text-xs font-medium',
+            NODE_TYPE_COLORS[node.type] ?? 'bg-ink-100 text-ink-600',
+          )}
+        >
           {node.type}
         </span>
         <span className="text-sm font-medium text-ink-800">{node.label}</span>
@@ -305,7 +329,12 @@ function ImpactResultCard({ result }: { result: ImpactResult }) {
     <div className="rounded-lg border border-ink-200 bg-white">
       <div className="flex items-center justify-between border-b border-ink-100 px-4 py-3">
         <span className="text-sm font-semibold text-ink-800">영향 분석 결과</span>
-        <span className={cn('rounded-full px-2.5 py-0.5 text-xs font-medium', RISK_COLORS[result.risk_level] ?? 'bg-ink-100 text-ink-600')}>
+        <span
+          className={cn(
+            'rounded-full px-2.5 py-0.5 text-xs font-medium',
+            RISK_COLORS[result.risk_level] ?? 'bg-ink-100 text-ink-600',
+          )}
+        >
           리스크 {RISK_LABELS[result.risk_level] ?? result.risk_level}
         </span>
       </div>
@@ -348,7 +377,12 @@ function ImpactResultCard({ result }: { result: ImpactResult }) {
 function ImpactedNodeRow({ node }: { node: ImpactedNode }) {
   return (
     <div className="flex items-start gap-3 rounded-md border border-ink-100 p-3">
-      <span className={cn('mt-0.5 shrink-0 rounded-full px-2 py-0.5 text-xs font-medium', RISK_COLORS[node.risk] ?? 'bg-ink-100 text-ink-600')}>
+      <span
+        className={cn(
+          'mt-0.5 shrink-0 rounded-full px-2 py-0.5 text-xs font-medium',
+          RISK_COLORS[node.risk] ?? 'bg-ink-100 text-ink-600',
+        )}
+      >
         {RISK_LABELS[node.risk] ?? node.risk}
       </span>
       <div className="min-w-0 flex-1">

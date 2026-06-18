@@ -8,7 +8,7 @@ export class TraceabilityApiError extends Error {
   constructor(
     message: string,
     public statusCode?: number,
-    public endpoint?: string
+    public endpoint?: string,
   ) {
     super(message);
     this.name = 'TraceabilityApiError';
@@ -29,7 +29,7 @@ export function parseApiError(response: Response): Promise<TraceabilityApiError>
       return new TraceabilityApiError(
         'Failed to parse error response',
         response.status,
-        response.url
+        response.url,
       );
     });
 }
@@ -73,15 +73,8 @@ export interface RetryConfig {
 /**
  * Execute API call with retry logic
  */
-export async function withRetry<T>(
-  fn: () => Promise<T>,
-  config: RetryConfig = {}
-): Promise<T> {
-  const {
-    maxAttempts = 3,
-    delayMs = 1000,
-    backoffMultiplier = 2,
-  } = config;
+export async function withRetry<T>(fn: () => Promise<T>, config: RetryConfig = {}): Promise<T> {
+  const { maxAttempts = 3, delayMs = 1000, backoffMultiplier = 2 } = config;
 
   let lastError: Error | undefined;
 
@@ -92,7 +85,12 @@ export async function withRetry<T>(
       lastError = error as Error;
 
       // Don't retry client errors (4xx)
-      if (error instanceof TraceabilityApiError && error.statusCode && error.statusCode >= 400 && error.statusCode < 500) {
+      if (
+        error instanceof TraceabilityApiError &&
+        error.statusCode &&
+        error.statusCode >= 400 &&
+        error.statusCode < 500
+      ) {
         throw error;
       }
 
@@ -102,7 +100,7 @@ export async function withRetry<T>(
       }
 
       // Wait before retry with exponential backoff
-      const delay = delayMs * Math.pow(backoffMultiplier, attempt - 1);
+      const delay = delayMs * backoffMultiplier ** (attempt - 1);
       await new Promise((resolve) => setTimeout(resolve, delay));
     }
   }

@@ -3,16 +3,16 @@
 // @MX:ANCHOR: [AUTO] ChecklistShell — central client entry point for checklist feature
 // @MX:REASON: [AUTO] Orchestrates all checklist sub-views; expected fan_in >= 3 from page, tests, and future links
 
-import { useState } from 'react';
-import { Loader2, ChevronLeft, AlertCircle } from 'lucide-react';
-import { cn } from '@/lib/utils';
 import {
-  useGenerateChecklist,
   useChecklist,
-  useUpdateChecklistItem,
   useGapAnalysis,
+  useGenerateChecklist,
+  useUpdateChecklistItem,
 } from '@/lib/queries/useChecklists';
 import type { Checklist, ChecklistItem, GapAnalysisResult } from '@/lib/queries/useChecklists';
+import { cn } from '@/lib/utils';
+import { AlertCircle, ChevronLeft, Loader2 } from 'lucide-react';
+import { useState } from 'react';
 
 // ---------------------------------------------------------------------------
 // Types
@@ -178,12 +178,8 @@ function ChecklistItemRow({ item, checklistId }: ChecklistItemRowProps) {
               <span className="text-xs text-ink-400">{item.requirement_ref}</span>
             )}
           </div>
-          {item.description && (
-            <p className="mt-1 text-xs text-ink-500">{item.description}</p>
-          )}
-          {item.notes && (
-            <p className="mt-1 text-xs italic text-ink-400">메모: {item.notes}</p>
-          )}
+          {item.description && <p className="mt-1 text-xs text-ink-500">{item.description}</p>}
+          {item.notes && <p className="mt-1 text-xs italic text-ink-400">메모: {item.notes}</p>}
         </div>
 
         <div className="shrink-0">
@@ -219,7 +215,11 @@ interface ChecklistViewProps {
 }
 
 function ChecklistView({ checklistId, onReset }: ChecklistViewProps) {
-  const { data: checklist, isLoading: checklistLoading, error: checklistError } = useChecklist(checklistId);
+  const {
+    data: checklist,
+    isLoading: checklistLoading,
+    error: checklistError,
+  } = useChecklist(checklistId);
   const { data: gapAnalysis, isLoading: gapLoading } = useGapAnalysis(checklistId);
 
   if (checklistLoading) {
@@ -255,8 +255,7 @@ function ChecklistView({ checklistId, onReset }: ChecklistViewProps) {
           className="flex items-center gap-1 text-sm text-ink-500 hover:text-ink-700 transition-colors"
           aria-label="새 체크리스트 생성"
         >
-          <ChevronLeft className="h-4 w-4" />
-          새 체크리스트
+          <ChevronLeft className="h-4 w-4" />새 체크리스트
         </button>
         <div className="text-sm text-ink-500">
           {completedCount} / {totalCount} 완료
@@ -287,6 +286,7 @@ function ChecklistView({ checklistId, onReset }: ChecklistViewProps) {
               aria-valuemin={0}
               aria-valuemax={totalCount}
               aria-label="체크리스트 진행률"
+              tabIndex={0}
             />
           </div>
         </div>
@@ -323,17 +323,12 @@ function GapAnalysisPanel({ gapAnalysis, isLoading }: GapAnalysisPanelProps) {
   if (isLoading) {
     return (
       <div className="flex items-center gap-2 rounded-lg border border-ink-200 bg-white p-4 text-sm text-ink-400">
-        <Loader2 className="h-4 w-4 animate-spin" />
-        갭 분석 계산 중...
+        <Loader2 className="h-4 w-4 animate-spin" />갭 분석 계산 중...
       </div>
     );
   }
 
   if (!gapAnalysis) return null;
-
-  const completionRate = gapAnalysis.total_items > 0
-    ? Math.round(((gapAnalysis.total_items - gapAnalysis.gap_percentage / 100 * gapAnalysis.total_items) / gapAnalysis.total_items) * 100)
-    : 0;
 
   const gapPercent = Math.round(gapAnalysis.gap_percentage);
 
@@ -355,6 +350,7 @@ function GapAnalysisPanel({ gapAnalysis, isLoading }: GapAnalysisPanelProps) {
           aria-valuemin={0}
           aria-valuemax={100}
           aria-label="갭 비율"
+          tabIndex={0}
         />
       </div>
 
@@ -395,7 +391,8 @@ function GapAnalysisPanel({ gapAnalysis, isLoading }: GapAnalysisPanelProps) {
       )}
 
       <p className="mt-3 text-xs text-amber-600">
-        완료: {gapAnalysis.completed_items} / {gapAnalysis.total_items} 항목 ({100 - gapPercent}% 충족)
+        완료: {gapAnalysis.completed_items} / {gapAnalysis.total_items} 항목 ({100 - gapPercent}%
+        충족)
       </p>
     </div>
   );
@@ -425,18 +422,9 @@ export function ChecklistShell() {
 
   if (activeChecklistId) {
     return (
-      <ChecklistView
-        checklistId={activeChecklistId}
-        onReset={() => setActiveChecklistId(null)}
-      />
+      <ChecklistView checklistId={activeChecklistId} onReset={() => setActiveChecklistId(null)} />
     );
   }
 
-  return (
-    <GenerateForm
-      onSubmit={handleGenerate}
-      isPending={isPending}
-      error={error}
-    />
-  );
+  return <GenerateForm onSubmit={handleGenerate} isPending={isPending} error={error} />;
 }
