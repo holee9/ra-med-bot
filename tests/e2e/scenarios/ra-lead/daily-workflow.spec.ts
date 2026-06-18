@@ -1,4 +1,4 @@
-import { test, expect } from '@playwright/test';
+import { expect, test } from '@playwright/test';
 
 /**
  * RA Lead Daily Workflow E2E Test
@@ -64,7 +64,10 @@ test.describe('RA Lead Daily Workflow', () => {
 
     // Verify evaluation accuracy (should be 95%+)
     const accuracy = await page.textContent('[data-testid="evaluation-accuracy"]');
-    const accuracyPercent = parseFloat(accuracy.replace('%', ''));
+    if (accuracy === null) {
+      throw new Error('Missing text content for evaluation accuracy');
+    }
+    const accuracyPercent = Number.parseFloat(accuracy.replace('%', ''));
     expect(accuracyPercent).toBeGreaterThanOrEqual(95);
   });
 
@@ -79,7 +82,10 @@ test.describe('RA Lead Daily Workflow', () => {
     await page.click('[data-testid="collaborate-tab"]');
 
     // Fill collaboration comment
-    await page.fill('[data-testid="collaboration-comment"]', '임상적 타당성 평가 요청: Cardiovascular stent 임상 데이터 검토 부탁드립니다.');
+    await page.fill(
+      '[data-testid="collaboration-comment"]',
+      '임상적 타당성 평가 요청: Cardiovascular stent 임상 데이터 검토 부탁드립니다.',
+    );
 
     // Send to Clinical Lead
     await page.click('[data-testid="send-to-clinical-lead"]');
@@ -89,7 +95,9 @@ test.describe('RA Lead Daily Workflow', () => {
 
     // Check collaboration history
     await page.click('[data-testid="collaboration-history"]');
-    await expect(page.locator('[data-testid="latest-collaboration"]')).toContainText('임상적 타당성 평가 요청');
+    await expect(page.locator('[data-testid="latest-collaboration"]')).toContainText(
+      '임상적 타당성 평가 요청',
+    );
   });
 
   test('11:00-13:00: Predicate device 비교 분석', async ({ page }) => {
@@ -126,7 +134,10 @@ test.describe('RA Lead Daily Workflow', () => {
     await page.click('[data-testid="start-pccp-wizard"]');
 
     // Step 1: Device Description
-    await page.fill('[data-testid="device-description"]', 'Cardiovascular stent for coronary artery disease');
+    await page.fill(
+      '[data-testid="device-description"]',
+      'Cardiovascular stent for coronary artery disease',
+    );
     await page.click('[data-testid="step-next"]');
 
     // Step 2: Intended Use
@@ -134,11 +145,17 @@ test.describe('RA Lead Daily Workflow', () => {
     await page.click('[data-testid="step-next"]');
 
     // Step 3: Principle Components
-    await page.fill('[data-testid="principle-components"]', 'Stent material, coating system, delivery system');
+    await page.fill(
+      '[data-testid="principle-components"]',
+      'Stent material, coating system, delivery system',
+    );
     await page.click('[data-testid="step-next"]');
 
     // Step 4: Characteristics
-    await page.fill('[data-testid="characteristics"]', 'Size, material composition, biocompatibility');
+    await page.fill(
+      '[data-testid="characteristics"]',
+      'Size, material composition, biocompatibility',
+    );
     await page.click('[data-testid="step-complete"]');
 
     // Verify PCCP draft created
@@ -174,7 +191,10 @@ test.describe('RA Lead Daily Workflow', () => {
     await page.click('[data-testid="expert-review-gate"]');
 
     // Provide approval comment
-    await page.fill('[data-testid="approval-comment"]', 'All sections reviewed and approved. Ready for submission.');
+    await page.fill(
+      '[data-testid="approval-comment"]',
+      'All sections reviewed and approved. Ready for submission.',
+    );
 
     // Approve
     await page.click('[data-testid="approve-gate"]');
@@ -184,7 +204,9 @@ test.describe('RA Lead Daily Workflow', () => {
 
     // Verify audit_logs entry
     await page.goto('/audit-logs');
-    await expect(page.locator('[data-testid="audit-entry"]')).toContainText('Expert Review Gate approved by RA Lead');
+    await expect(page.locator('[data-testid="audit-entry"]')).toContainText(
+      'Expert Review Gate approved by RA Lead',
+    );
   });
 
   test('전체 일일 타임라인 통합 테스트', async ({ page }) => {
@@ -222,13 +244,22 @@ test.describe('RA Lead Daily Workflow', () => {
     // 14:00-16:00: PCCP 작성
     await page.goto('/workflows/pccp');
     await page.click('[data-testid="start-pccp-wizard"]');
-    await page.fill('[data-testid="device-description"]', 'Cardiovascular stent for coronary artery disease');
+    await page.fill(
+      '[data-testid="device-description"]',
+      'Cardiovascular stent for coronary artery disease',
+    );
     await page.click('[data-testid="step-next"]');
     await page.fill('[data-testid="intended-use"]', 'Treatment of coronary artery stenosis');
     await page.click('[data-testid="step-next"]');
-    await page.fill('[data-testid="principle-components"]', 'Stent material, coating system, delivery system');
+    await page.fill(
+      '[data-testid="principle-components"]',
+      'Stent material, coating system, delivery system',
+    );
     await page.click('[data-testid="step-next"]');
-    await page.fill('[data-testid="characteristics"]', 'Size, material composition, biocompatibility');
+    await page.fill(
+      '[data-testid="characteristics"]',
+      'Size, material composition, biocompatibility',
+    );
     await page.click('[data-testid="step-complete"]');
     await expect(page.locator('[data-testid="pccp-draft"]')).toBeVisible();
 
@@ -241,12 +272,17 @@ test.describe('RA Lead Daily Workflow', () => {
     await page.click('[data-testid="run-review"]');
     await page.waitForSelector('[data-testid="review-complete"]');
     await page.click('[data-testid="expert-review-gate"]');
-    await page.fill('[data-testid="approval-comment"]', 'All sections reviewed and approved. Ready for submission.');
+    await page.fill(
+      '[data-testid="approval-comment"]',
+      'All sections reviewed and approved. Ready for submission.',
+    );
     await page.click('[data-testid="approve-gate"]');
     await expect(page.locator('[data-testid="approval-confirmed"]')).toBeVisible();
 
     // Verify audit_logs
     await page.goto('/audit-logs');
-    await expect(page.locator('[data-testid="audit-entry"]')).toContainText('Expert Review Gate approved by RA Lead');
+    await expect(page.locator('[data-testid="audit-entry"]')).toContainText(
+      'Expert Review Gate approved by RA Lead',
+    );
   });
 });

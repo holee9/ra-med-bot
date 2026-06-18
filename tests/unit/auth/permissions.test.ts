@@ -4,7 +4,7 @@
 import { PERMISSIONS, type PermissionAction } from '@/lib/auth/permissions';
 import { describe, expect, it } from 'vitest';
 
-// All 20 action strings defined in SPEC REQ-ENTERPRISE-020 and checklist integration.
+// All 23 action strings defined in SPEC REQ-ENTERPRISE-020, checklist, and traceability integration.
 const EXPECTED_ACTIONS: PermissionAction[] = [
   'consult.create',
   'conversation.view',
@@ -26,14 +26,17 @@ const EXPECTED_ACTIONS: PermissionAction[] = [
   'checklist.generate',
   'checklist.view',
   'checklist.update',
+  'traceability.scan',
+  'traceability.view',
+  'traceability.impact',
 ];
 
 const VALID_ROLES = ['admin', 'ra-lead', 'ra-member', 'viewer'] as const;
 const VALID_SCOPES = ['org', 'project', 'user', 'none'] as const;
 
 describe('lib/auth/permissions.ts (REQ-ENTERPRISE-020) — PERMISSIONS matrix', () => {
-  it('PERMISSIONS contains exactly 20 entries', () => {
-    expect(Object.keys(PERMISSIONS)).toHaveLength(20);
+  it('PERMISSIONS contains exactly 23 entries', () => {
+    expect(Object.keys(PERMISSIONS)).toHaveLength(23);
   });
 
   it.each(EXPECTED_ACTIONS)('PERMISSIONS contains action: %s', (action) => {
