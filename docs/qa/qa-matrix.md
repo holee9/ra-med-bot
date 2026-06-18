@@ -1,6 +1,6 @@
 # Regula QA Matrix
 
-Updated: 2026-05-06
+Updated: 2026-06-18
 
 ## Scope
 
@@ -28,6 +28,10 @@ Current evidence state:
   Docker Desktop engine is running and `up/migrate/seed/Playwright` completes.
 - #22 implementation remains blocked until its Gate 0 `QA plan` is refreshed
   against baseline commit `8b3a983`.
+- #169 Traceability UI integration PR #177 is CLEAN / MERGEABLE after CI recovery.
+  Evidence: CI Gates, Playwright chromium/firefox/webkit, LLM Eval, E2E Smoke,
+  Vercel preview, Security Scan, local `biome check .`, and full `vitest run`
+  all passed on `feat/issue-169`.
 
 ## Closure Rule
 
@@ -110,6 +114,7 @@ is defined in [Gate 0 SPEC Readiness](gate-0-spec-readiness.md).
 | #90 | Wave 5 | high | backend, rag | Gate 0, contract, integration, ops | Region routing fixture, LLM/embedding proof evidence |
 | #91 | Wave 5 | high | backend | Gate 0, unit, contract, integration | DLP/redaction fixture, leakage negative test evidence |
 | #92 | Wave 5 | high | frontend, backend | Gate 0, unit, contract, E2E | Auditor role fixture, read-only export package evidence |
+| #169 | Integration | high | frontend, backend | static, unit, contract, E2E smoke | PR #177 checks green; Traceability BFF/UI/RBAC evidence |
 
 ## QA Comment Templates
 

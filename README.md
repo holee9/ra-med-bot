@@ -11,9 +11,22 @@
 
 ---
 
-## 구현 현황 대시보드 (2026-06-15 KST 기준)
+## 구현 현황 대시보드 (2026-06-18 KST 기준)
 
 상세 점검 기록: [`docs/implementation-status.md`](docs/implementation-status.md)
+
+### 최신 PR #177 Traceability 통합 상태 (2026-06-18)
+
+Issue #169 — hybrid-ra-saas Traceability API UI 연동 PR #177은 mergeability 복구 완료.
+
+| 항목 | 상태 | 근거 |
+|---|---|---|
+| PR 상태 | CLEAN / MERGEABLE | PR #177 `feat/issue-169 -> main` |
+| Traceability UI | PASS | `/workflows/traceability` 스캔, 그래프, 영향 분석 탭 구현 |
+| BFF 프록시 | PASS | `/api/ra/traceability/{scan,graph,impact}` |
+| 권한 매트릭스 | PASS | `traceability.scan/view/impact`, `checklist.generate/view/update` 포함 23 actions |
+| CI 복구 | PASS | CI Gates, Playwright chromium/firefox/webkit, LLM Eval, E2E Smoke, Security Scan success |
+| QA evidence | PASS | 전체 `vitest run`: 219 files, 2,274 tests pass, 7 skipped |
 
 ### 종합 판단
 
