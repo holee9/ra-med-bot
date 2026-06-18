@@ -1,7 +1,7 @@
 // @MX:TEST [E2E] /api/ra/projects/[id] RBAC验证 — 비멤버 403, 멤버 200, Next.js 15 Promise params 올바른 처리
 // @MX:SPEC Issue #150 (P0 Security/RBAC gap fix)
 
-import { test, expect } from '@playwright/test';
+import { expect, test } from '@playwright/test';
 
 test.describe('/api/ra/projects/[id] RBAC验证', () => {
   const baseUrl = process.env.NEXT_PUBLIC_API_BASE_URL || 'http://localhost:3000';
@@ -36,7 +36,7 @@ test.describe('/api/ra/projects/[id] RBAC验证', () => {
 
     const projectsResp = await fetch(`${baseUrl}/api/ra/projects`, {
       headers: {
-        'Cookie': `authjs.session-token=${leadData.sessionToken}`,
+        Cookie: `authjs.session-token=${leadData.sessionToken}`,
         'Content-Type': 'application/json',
       },
     });
@@ -63,7 +63,7 @@ test.describe('/api/ra/projects/[id] RBAC验证', () => {
 
     const memberProjectsResp = await fetch(`${baseUrl}/api/ra/projects`, {
       headers: {
-        'Cookie': `authjs.session-token=${memberData.sessionToken}`,
+        Cookie: `authjs.session-token=${memberData.sessionToken}`,
         'Content-Type': 'application/json',
       },
     });
@@ -74,7 +74,7 @@ test.describe('/api/ra/projects/[id] RBAC验证', () => {
     if (memberProjectsData.projects.length > 0) {
       const memberIdProject = memberProjectsData.projects[0].id;
       // ra-member 프로젝트와 ra-lead 프로젝트가 다른지 확인
-      nonMemberProjectId = (memberIdProject !== testProjectId) ? memberIdProject : testProjectId;
+      nonMemberProjectId = memberIdProject !== testProjectId ? memberIdProject : testProjectId;
     } else {
       // ra-member가 속한 프로젝트가 없는 경우, dummy ID 사용
       nonMemberProjectId = '00000000-0000-0000-0000-000000000000';
@@ -93,7 +93,7 @@ test.describe('/api/ra/projects/[id] RBAC验证', () => {
     // 2) 멤버 프로젝트 GET — 200 예상
     const memberResp = await request.get(`${baseUrl}/api/ra/projects/${memberProjectId}`, {
       headers: {
-        'Cookie': `authjs.session-token=${loginData.sessionToken}`,
+        Cookie: `authjs.session-token=${loginData.sessionToken}`,
       },
     });
     expect(memberResp.ok()).toBeTruthy();
@@ -104,7 +104,7 @@ test.describe('/api/ra/projects/[id] RBAC验证', () => {
     // 3) 비멤버 프로젝트 GET — 403 예상
     const nonMemberResp = await request.get(`${baseUrl}/api/ra/projects/${nonMemberProjectId}`, {
       headers: {
-        'Cookie': `authjs.session-token=${loginData.sessionToken}`,
+        Cookie: `authjs.session-token=${loginData.sessionToken}`,
       },
     });
     expect(nonMemberResp.status()).toBe(403);
@@ -125,7 +125,7 @@ test.describe('/api/ra/projects/[id] RBAC验证', () => {
     const updateData = { name: 'Updated Project Name (RBAC test)' };
     const memberResp = await request.patch(`${baseUrl}/api/ra/projects/${memberProjectId}`, {
       headers: {
-        'Cookie': `authjs.session-token=${loginData.sessionToken}`,
+        Cookie: `authjs.session-token=${loginData.sessionToken}`,
         'Content-Type': 'application/json',
       },
       data: updateData,
@@ -138,7 +138,7 @@ test.describe('/api/ra/projects/[id] RBAC验证', () => {
     // 3) 비멤버 프로젝트 PATCH — 403 예상
     const nonMemberResp = await request.patch(`${baseUrl}/api/ra/projects/${nonMemberProjectId}`, {
       headers: {
-        'Cookie': `authjs.session-token=${loginData.sessionToken}`,
+        Cookie: `authjs.session-token=${loginData.sessionToken}`,
         'Content-Type': 'application/json',
       },
       data: { name: 'Should not update' },
@@ -148,7 +148,9 @@ test.describe('/api/ra/projects/[id] RBAC验证', () => {
     expect(errorData.error).toMatch(/not_a_member|permission_denied/);
   });
 
-  test('Next.js 15 Promise params 환경에서 project-scoped permission이 올바르게 작동', async ({ request }) => {
+  test('Next.js 15 Promise params 환경에서 project-scoped permission이 올바르게 작동', async ({
+    request,
+  }) => {
     // 이 테스트는 Next.js 15 async params가 올바르게 처리되는지 검증
     const loginResp = await request.post(`${baseUrl}/api/auth/login`, {
       data: raLeadUser,
@@ -159,7 +161,7 @@ test.describe('/api/ra/projects/[id] RBAC验证', () => {
     // Promise params가 올바르게 resolved되어 projectId가 전달되는지 확인
     const getResp = await request.get(`${baseUrl}/api/ra/projects/${testProjectId}`, {
       headers: {
-        'Cookie': `authjs.session-token=${loginData.sessionToken}`,
+        Cookie: `authjs.session-token=${loginData.sessionToken}`,
       },
     });
     expect(getResp.ok()).toBeTruthy();
