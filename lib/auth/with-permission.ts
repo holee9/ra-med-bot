@@ -91,10 +91,10 @@ export function withPermission(action: PermissionAction, handler: InnerHandler) 
         );
       }
     } else if (spec.scope === 'project') {
-      // Project id comes from route params or request body.
+      // Project id comes from route params. Handle Next.js 15 Promise params properly.
       const rawParams = ctx.params;
-      const params = rawParams && 'then' in rawParams ? {} : rawParams;
-      const projectId = params?.id ?? '';
+      const resolvedParams = rawParams && 'then' in rawParams ? await rawParams : rawParams;
+      const projectId = resolvedParams?.id ?? '';
       const member = await isProjectMember(user.id, projectId);
       if (!member) {
         await writeAudit({
