@@ -3,7 +3,7 @@
 
 import type { Role } from './rbac';
 
-// REQ-ENTERPRISE-020: All 15 permission action strings.
+// REQ-ENTERPRISE-020: All permission action strings.
 // Each action corresponds to a specific user operation in the Regula system.
 export type PermissionAction =
   | 'consult.create'

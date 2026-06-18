@@ -71,8 +71,10 @@ Work Gate:
 Observed blocker:
 
 - GitHub PR #177 was `MERGEABLE` but `UNSTABLE`.
-- Failing check: `CI / CI Gates`.
-- Root cause: Biome lint/format/import-order/accessibility violations in PR-added checklist/traceability files.
+- First failing check: `CI / CI Gates`.
+- First root cause: Biome lint/format/import-order/accessibility violations in PR-added checklist/traceability files.
+- Second failing check after lint fix: `CI / CI Gates` unit tests.
+- Second root cause: `PERMISSIONS` grew from 17 to 23 actions after checklist/traceability integration, but two regression tests still asserted 17.
 
 Local fix scope:
 
@@ -80,6 +82,7 @@ Local fix scope:
 - Added keyboard focusability to checklist progress bars.
 - Removed unused gap completion calculation.
 - Replaced retry backoff `Math.pow` with exponentiation operator.
+- Updated permission matrix tests for checklist/traceability action additions.
 
 Verification:
 
@@ -89,4 +92,6 @@ Verification:
 | `biome check .` | pass |
 | `node scripts/no-hex-colors.mjs` | pass |
 | `git diff --check` | pass |
+| targeted Vitest `permissions.test.ts` + `foundation.test.ts` | 185 tests pass |
+| full `vitest run` | 219 files pass, 2274 tests pass, 7 skipped |
 | `tsc --noEmit` | blocked locally by pre-existing `drizzle.config.ts` type mismatch; PR CI had progressed past typecheck to lint |
