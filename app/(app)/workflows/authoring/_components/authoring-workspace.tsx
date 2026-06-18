@@ -1,8 +1,15 @@
 'use client';
 
+import type { ApprovalRequest, SessionRequest } from '@/lib/api/authoring-client';
+import {
+  useApproveSession,
+  useAuthoringSession,
+  useCreateAuthoringSession,
+  useRejectSession,
+} from '@/lib/queries/useAuthoring';
 import { useState } from 'react';
-import { useCreateAuthoringSession, useAuthoringSession, useApproveSession, useRejectSession } from '@/lib/queries/useAuthoring';
-import type { SessionRequest, ApprovalRequest } from '@/lib/api/authoring-client';
+
+type ApprovalDecision = ApprovalRequest['decision'];
 
 export function AuthoringWorkspace() {
   const createSession = useCreateAuthoringSession();
@@ -72,10 +79,14 @@ export function AuthoringWorkspace() {
           <h2 className="text-xl font-semibold mb-4">섹션 초안 작성 세션 생성</h2>
           <form onSubmit={handleCreateSession} className="space-y-4">
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">
+              <label
+                htmlFor="authoring-section-id"
+                className="block text-sm font-medium text-gray-700 mb-1"
+              >
                 섹션 ID
               </label>
               <input
+                id="authoring-section-id"
                 type="text"
                 value={sessionForm.section_id}
                 onChange={(e) => setSessionForm({ ...sessionForm, section_id: e.target.value })}
@@ -85,10 +96,14 @@ export function AuthoringWorkspace() {
             </div>
 
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">
+              <label
+                htmlFor="authoring-device-id"
+                className="block text-sm font-medium text-gray-700 mb-1"
+              >
                 기기 ID
               </label>
               <input
+                id="authoring-device-id"
                 type="text"
                 value={sessionForm.device_id}
                 onChange={(e) => setSessionForm({ ...sessionForm, device_id: e.target.value })}
@@ -112,6 +127,7 @@ export function AuthoringWorkspace() {
             <div className="flex justify-between items-center mb-4">
               <h2 className="text-xl font-semibold">세션 상태 및 초안</h2>
               <button
+                type="button"
                 onClick={() => setCurrentSessionId(null)}
                 className="text-sm text-gray-600 hover:underline"
               >
@@ -128,12 +144,17 @@ export function AuthoringWorkspace() {
                   </div>
                   <div>
                     <p className="text-sm text-gray-500">상태</p>
-                    <span className={`px-2 py-1 text-xs rounded ${
-                      session.status === 'approved' ? 'bg-green-100 text-green-800' :
-                      session.status === 'rejected' ? 'bg-red-100 text-red-800' :
-                      session.status === 'in_progress' ? 'bg-blue-100 text-blue-800' :
-                      'bg-gray-100 text-gray-800'
-                    }`}>
+                    <span
+                      className={`px-2 py-1 text-xs rounded ${
+                        session.status === 'approved'
+                          ? 'bg-green-100 text-green-800'
+                          : session.status === 'rejected'
+                            ? 'bg-red-100 text-red-800'
+                            : session.status === 'in_progress'
+                              ? 'bg-blue-100 text-blue-800'
+                              : 'bg-gray-100 text-gray-800'
+                      }`}
+                    >
                       {session.status}
                     </span>
                   </div>
@@ -148,7 +169,8 @@ export function AuthoringWorkspace() {
 
                 <div className="text-xs text-gray-500">
                   생성: {new Date(session.created_at).toLocaleString()}
-                  {session.updated_at && ` | 업데이트: ${new Date(session.updated_at).toLocaleString()}`}
+                  {session.updated_at &&
+                    ` | 업데이트: ${new Date(session.updated_at).toLocaleString()}`}
                 </div>
               </div>
             )}
@@ -158,12 +180,21 @@ export function AuthoringWorkspace() {
             <h2 className="text-xl font-semibold mb-4">승인/반려</h2>
             <div className="space-y-4">
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">
+                <label
+                  htmlFor="authoring-decision"
+                  className="block text-sm font-medium text-gray-700 mb-1"
+                >
                   결정
                 </label>
                 <select
+                  id="authoring-decision"
                   value={approvalForm.decision}
-                  onChange={(e) => setApprovalForm({ ...approvalForm, decision: e.target.value as any })}
+                  onChange={(e) =>
+                    setApprovalForm({
+                      ...approvalForm,
+                      decision: e.target.value as ApprovalDecision,
+                    })
+                  }
                   className="w-full border border-gray-300 rounded-md p-2"
                 >
                   <option value="approve">승인</option>
@@ -172,10 +203,14 @@ export function AuthoringWorkspace() {
               </div>
 
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">
+                <label
+                  htmlFor="authoring-comments"
+                  className="block text-sm font-medium text-gray-700 mb-1"
+                >
                   코멘트
                 </label>
                 <textarea
+                  id="authoring-comments"
                   value={approvalForm.comments}
                   onChange={(e) => setApprovalForm({ ...approvalForm, comments: e.target.value })}
                   className="w-full border border-gray-300 rounded-md p-2"
@@ -185,6 +220,7 @@ export function AuthoringWorkspace() {
 
               <div className="flex space-x-4">
                 <button
+                  type="button"
                   onClick={handleApprove}
                   disabled={approveSession.isPending || approvalForm.decision !== 'approve'}
                   className="flex-1 bg-green-600 text-white px-4 py-2 rounded-md hover:bg-green-700 disabled:opacity-50"
@@ -192,6 +228,7 @@ export function AuthoringWorkspace() {
                   {approveSession.isPending ? '처리 중...' : '승인'}
                 </button>
                 <button
+                  type="button"
                   onClick={handleReject}
                   disabled={rejectSession.isPending || approvalForm.decision !== 'reject'}
                   className="flex-1 bg-red-600 text-white px-4 py-2 rounded-md hover:bg-red-700 disabled:opacity-50"

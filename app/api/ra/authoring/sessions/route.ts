@@ -2,9 +2,10 @@
 // @MX:SPEC issue #171
 
 import { HybridRaClientError, createHybridRaFetch } from '@/lib/api/hybrid-ra-client';
+import { writeAudit } from '@/lib/audit';
 import { withPermission } from '@/lib/auth/with-permission';
 
-export const POST = withPermission('authoring.create', async (req) => {
+export const POST = withPermission('authoring.create', async (req, _ctx, session) => {
   try {
     const body = await req.json();
     const hybridFetch = createHybridRaFetch();
@@ -13,6 +14,16 @@ export const POST = withPermission('authoring.create', async (req) => {
       body: JSON.stringify(body),
     });
     const data = await res.json();
+    await writeAudit({
+      actor_id: session.user.id,
+      action: 'workflow.start',
+      resource_type: 'authoring_session',
+      resource_id: data.session_id ?? 'unknown',
+      meta_json: {
+        section_id: body.section_id,
+        device_id: body.device_id,
+      },
+    });
     return Response.json(data, { status: 200 });
   } catch (err) {
     if (err instanceof HybridRaClientError) {

@@ -2,15 +2,12 @@
 // @MX:SPEC issue #171
 
 import { HybridRaClientError, createHybridRaFetch } from '@/lib/api/hybrid-ra-client';
+import { writeAudit } from '@/lib/audit';
 import { withPermission } from '@/lib/auth/with-permission';
-import { NextRequest } from 'next/server';
 
-export async function POST(
-  req: NextRequest,
-  { params }: { params: Promise<{ sessionId: string }> }
-) {
+export const POST = withPermission('authoring.approve', async (req, ctx, session) => {
   try {
-    const { sessionId } = await params;
+    const { sessionId } = (await ctx.params) as { sessionId: string };
     const body = await req.json();
     const hybridFetch = createHybridRaFetch();
     const res = await hybridFetch(`/api/v1/authoring/sessions/${sessionId}/approve`, {
@@ -18,6 +15,15 @@ export async function POST(
       body: JSON.stringify(body),
     });
     const data = await res.json();
+    await writeAudit({
+      actor_id: session.user.id,
+      action: 'workflow.approve',
+      resource_type: 'authoring_session',
+      resource_id: sessionId,
+      meta_json: {
+        decision: body.decision,
+      },
+    });
     return Response.json(data, { status: 200 });
   } catch (err) {
     if (err instanceof HybridRaClientError) {
@@ -25,4 +31,4 @@ export async function POST(
     }
     throw err;
   }
-}
+});

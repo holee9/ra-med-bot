@@ -3,14 +3,10 @@
 
 import { HybridRaClientError, createHybridRaFetch } from '@/lib/api/hybrid-ra-client';
 import { withPermission } from '@/lib/auth/with-permission';
-import { NextRequest } from 'next/server';
 
-export async function GET(
-  req: NextRequest,
-  { params }: { params: Promise<{ reqId: string }> }
-) {
+export const GET = withPermission('evidence.link', async (_req, ctx) => {
   try {
-    const { reqId } = await params;
+    const { reqId } = (await ctx.params) as { reqId: string };
     const hybridFetch = createHybridRaFetch();
     const res = await hybridFetch(`/api/v1/evidence/links/${reqId}`, {
       method: 'GET',
@@ -23,4 +19,4 @@ export async function GET(
     }
     throw err;
   }
-}
+});

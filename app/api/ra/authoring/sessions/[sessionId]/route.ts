@@ -3,14 +3,10 @@
 
 import { HybridRaClientError, createHybridRaFetch } from '@/lib/api/hybrid-ra-client';
 import { withPermission } from '@/lib/auth/with-permission';
-import { NextRequest } from 'next/server';
 
-export async function GET(
-  req: NextRequest,
-  { params }: { params: Promise<{ sessionId: string }> }
-) {
+export const GET = withPermission('authoring.view', async (_req, ctx) => {
   try {
-    const { sessionId } = await params;
+    const { sessionId } = (await ctx.params) as { sessionId: string };
     const hybridFetch = createHybridRaFetch();
     const res = await hybridFetch(`/api/v1/authoring/sessions/${sessionId}`, {
       method: 'GET',
@@ -23,4 +19,4 @@ export async function GET(
     }
     throw err;
   }
-}
+});
