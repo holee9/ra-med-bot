@@ -8,6 +8,7 @@
 // K-number passed via the ?k= query param into the comparison request.
 
 import ComparisonTable from '@/components/predicate/ComparisonTable';
+import PredicateVisualization from '@/components/predicate/PredicateVisualization';
 import SubjectDeviceForm from '@/components/predicate/SubjectDeviceForm';
 import type { ComparisonDimension, PredicateComparison } from '@/lib/predicate/types';
 import { useSearchParams } from 'next/navigation';
@@ -24,6 +25,7 @@ function ComparePageInner() {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [saved, setSaved] = useState(false);
+  const [showVisualization, setShowVisualization] = useState(true);
 
   // Selected predicate K-numbers — seeded from the query param, never empty
   // because the user arrives here from selecting a candidate.
@@ -124,8 +126,25 @@ function ComparePageInner() {
           <SubjectDeviceForm onSubmit={handleSubmit} isLoading={loading} />
         </section>
       ) : (
-        <section className="mt-6 flex flex-col gap-4">
-          <ComparisonTable comparison={comparison} onApprove={handleApprove} />
+        <section className="mt-6 flex flex-col gap-6">
+          {/* Toggle between visualization and table */}
+          <div className="flex items-center gap-4">
+            <label className="flex items-center gap-2 text-sm font-medium text-ink-700">
+              <input
+                type="checkbox"
+                checked={showVisualization}
+                onChange={(e) => setShowVisualization(e.target.checked)}
+                className="h-4 w-4 rounded border-ink-300 text-brand-600 focus:ring-brand-500"
+              />
+              Show Interactive Visualization
+            </label>
+          </div>
+
+          {showVisualization ? (
+            <PredicateVisualization comparison={comparison} />
+          ) : (
+            <ComparisonTable comparison={comparison} onApprove={handleApprove} />
+          )}
 
           <div className="flex flex-wrap items-center gap-2">
             <button
