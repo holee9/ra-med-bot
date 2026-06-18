@@ -61,6 +61,12 @@ const envSchema = z.object({
 
   // Optional: label shown in the UI for the LLM model.
   NEXT_PUBLIC_LLM_MODEL_LABEL: z.string().optional(),
+
+  // Optional: hybrid-ra-saas integration (Issue #170).
+  // These stay optional so deployments without hybrid-ra-saas still boot cleanly.
+  HYBRID_RA_API_BASE_URL: z.string().url().optional(),
+  HYBRID_RA_API_TOKEN: z.string().optional(),
+  HYBRID_RA_TENANT_ID: z.string().optional(),
 });
 
 export type Env = z.infer<typeof envSchema>;
@@ -108,6 +114,9 @@ export function parseEnv(source: NodeJS.ProcessEnv = process.env): Env {
     ANTHROPIC_API_KEY: source.ANTHROPIC_API_KEY,
     OPENAI_API_KEY: source.OPENAI_API_KEY,
     NEXT_PUBLIC_LLM_MODEL_LABEL: source.NEXT_PUBLIC_LLM_MODEL_LABEL,
+    HYBRID_RA_API_BASE_URL: source.HYBRID_RA_API_BASE_URL,
+    HYBRID_RA_API_TOKEN: source.HYBRID_RA_API_TOKEN,
+    HYBRID_RA_TENANT_ID: source.HYBRID_RA_TENANT_ID,
   });
 }
 

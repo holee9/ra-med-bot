@@ -33,10 +33,10 @@ describe('FOUNDATION regression', () => {
   });
 
   // ---------------------------------------------------------------------------
-  // Permissions matrix has exactly 17 actions
+  // Permissions matrix has exactly 20 actions
   // ---------------------------------------------------------------------------
-  it('has 17 permission actions defined', () => {
-    expect(Object.keys(PERMISSIONS).length).toBe(17);
+  it('has 20 permission actions defined', () => {
+    expect(Object.keys(PERMISSIONS).length).toBe(20);
   });
 
   it('profile.edit permission exists with user scope', () => {
