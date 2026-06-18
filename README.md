@@ -15,18 +15,20 @@
 
 상세 점검 기록: [`docs/implementation-status.md`](docs/implementation-status.md)
 
-### 최신 PR #177 Traceability 통합 상태 (2026-06-18)
+### 최신 PR 정리 상태 (2026-06-18)
 
-Issue #169 — hybrid-ra-saas Traceability API UI 연동 PR #177은 mergeability 복구 완료.
+Issue #182 — 실사용자 E2E 검증 체계 PR #184는 CI 복구 후 main에 머지 완료.
+Issue #169 — Traceability 통합 PR #177은 동일 변경이 main에 이미 반영되어 stale/superseded로 종료.
 
 | 항목 | 상태 | 근거 |
 |---|---|---|
-| PR 상태 | CLEAN / MERGEABLE | PR #177 `feat/issue-169 -> main` |
+| PR #184 | MERGED | squash merge `a79759c` |
+| PR #177 | CLOSED / SUPERSEDED | main 병합 시 실질 코드 diff 없음, stale branch 직접 머지 방지 |
 | Traceability UI | PASS | `/workflows/traceability` 스캔, 그래프, 영향 분석 탭 구현 |
 | BFF 프록시 | PASS | `/api/ra/traceability/{scan,graph,impact}` |
 | 권한 매트릭스 | PASS | `traceability.scan/view/impact`, `checklist.generate/view/update` 포함 23 actions |
 | CI 복구 | PASS | CI Gates, Playwright chromium/firefox/webkit, LLM Eval, E2E Smoke, Security Scan success |
-| QA evidence | PASS | 전체 `vitest run`: 219 files, 2,274 tests pass, 7 skipped |
+| QA evidence | PASS | 로컬 전체 `vitest run`: 222 files pass, 2,307 tests pass, 7 skipped |
 
 ### 종합 판단
 
@@ -36,14 +38,14 @@ Issue #169 — hybrid-ra-saas Traceability API UI 연동 PR #177은 mergeability
 
 **Cloudflare Tunnel 복구 완료** (`regula.abyz-lab.work` 502 → 307 정상). T3610 Tailscale 경유 → Cloudflare public hostname 복구, `NEXTAUTH_URL` 환경 변수 설정, OAuth redirect URI 추가.
 
-**2026-06-18 PR 정리 완료**: #178(dev DB migration drift), #180(`/api/ra/projects/[id]` RBAC), #181(admin upload PII redaction 3-layer) 순차 머지 완료. #179는 #178에 의해 대체 반영되어 stale/superseded로 종료. 최신 `main`은 CI Gates, E2E Smoke, Security Scan, Vercel Preview, Playwright E2E, LLM Eval Harness 통과.
+**2026-06-18 PR 정리 완료**: #178(dev DB migration drift), #180(`/api/ra/projects/[id]` RBAC), #181(admin upload PII redaction 3-layer), #184(E2E user validation + Traceability state) 순차 머지 완료. #179와 #177은 main에 대체 반영되어 stale/superseded로 종료. 최신 `main`은 CI Gates, E2E Smoke, Security Scan, Vercel Preview, Playwright E2E, LLM Eval Harness 통과.
 
 | 카테고리 | 상태 | 측정 근거 |
 |---------|------|---------|
 | 구현 기준 | PASS | PREDICATE-001 구현 완료 (PR #126, Fixes #22). TypeScript 0 errors, 1,976 테스트 통과 |
 | GitHub Actions | PASS | `CI`, `Deploy`, `Security Scan` 모두 success on `feat/issue-22-predicate` |
 | 구현 표면 | PASS | 19 pages, 33 API route handlers, 36 component files, 200+ lib files |
-| 테스트 자산 | PASS | 220+ test/spec files, 8 Playwright specs, 2,286 tests passing on #181 |
+| 테스트 자산 | PASS | 220+ test/spec files, 8+ Playwright specs, 2,307 tests passing locally after #184 |
 | CI core gates | PASS | typecheck, lint, format, unit, RBAC, audit, tokens, i18n, glossary, contrast, modules, migrations, build |
 | E2E CI | PASS | E2E Smoke 및 Playwright chromium/firefox/webkit 통과 |
 | RAG 파이프라인 | PASS | hybrid search FTS fallback 동작, 8 citations 정상 반환, LLM 오류 graceful degradation 확인 |
@@ -124,7 +126,7 @@ GET  /api/auth/session             → {"user":{"name":"Drake Lee","email":"drak
 
 | Job | 결과 | 비고 |
 |---|---|---|
-| CI Gates | PASS | #181 기준 core step 통과 |
+| CI Gates | PASS | #184 기준 core step 통과 |
 | Deploy | PASS | Vercel preview success, production/staging jobs는 PR 조건상 skipped |
 | Security Scan | PASS | Dependency Vulnerability Scan, Secret Detection 통과 |
 | E2E Smoke | PASS | DB-free smoke 통과 |

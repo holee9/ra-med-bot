@@ -1,50 +1,52 @@
 # Regula Implementation Status
 
 Reviewed: 2026-06-18 KST
-Implementation baseline commit: `c36eed0` (feat/issue-169 / PR #177)
+Implementation baseline commit: `a79759c` (main after PR #184)
 
-This document includes the PR #177 mergeability recovery for Issue #169
-Traceability API UI integration.
-Branch: `feat/issue-169` — PR #177 (Fixes #169) is clean and mergeable.
+This document includes the 2026-06-18 PR cleanup after PR #184 merge and
+PR #177 superseded closure.
+Branch: `main` — no open PRs remain after the cleanup.
 
 ## Executive State
 
-PR #177 is clean and mergeable. The hybrid-ra-saas Traceability integration adds
-browser UI, BFF proxy routes, TanStack Query hooks, retry/error handling, and
-RBAC actions for traceability scan/view/impact.
+PR #184 was merged to main after CI recovery. The merged state includes the
+E2E user validation framework and Traceability integration surface. PR #177 was
+closed as superseded because its substantive Traceability changes were already
+present on main and the branch was stale/conflicting.
 
 CI Gates, Playwright chromium/firefox/webkit, LLM Eval Harness, E2E Smoke,
-Vercel preview, and Security Scan all passed after the mergeability fix.
+Vercel preview, and Security Scan all passed for PR #184 before merge.
 
 ## Verified Repository State
 
 | Area | State | Evidence |
 |---|---|---|
-| Branch | `feat/issue-169` | traceability integration PR branch |
-| Baseline commit | `c36eed0` | `test(auth): update permission matrix expectations` |
-| Mergeability | CLEAN / MERGEABLE | PR #177 final state |
-| Tests | 2,274 passing, 7 skipped | full `vitest run` |
-| Open PRs | PR #177 ready | `feat/issue-169 -> main` |
+| Branch | `main` | after PR #184 merge |
+| Baseline commit | `a79759c` | `feat(e2e): add user validation framework` |
+| Mergeability | CLEAN | PR #184 merged; PR #177 closed as superseded |
+| Tests | 2,307 passing, 7 skipped | local full `vitest run` after CI fix |
+| Open PRs | none | `gh pr list --state open` |
 | Work gate | #18 active | #18 remains open and mandatory |
 
-## PR #177 Traceability Integration Update
+## 2026-06-18 PR Cleanup Update
 
 | Area | State | Evidence |
 |---|---|---|
-| Issue | #169 | hybrid-ra-saas Traceability API UI integration |
-| PR | #177 | `feat/issue-169 -> main` |
+| PR #184 | Merged | squash merge `a79759c` |
+| PR #177 | Closed | stale/superseded; code already present on main |
 | BFF routes | Complete | `/api/ra/traceability/scan`, `graph`, `impact` |
 | Browser client/hooks | Complete | `traceabilityClient`, `useScanTraceability`, `useTraceGraph`, `useImpactAnalysis` |
 | UI | Complete | `/workflows/traceability` scan, graph, impact tabs |
 | RBAC | Complete | `traceability.scan`, `traceability.view`, `traceability.impact` |
-| Mergeability fix | Complete | Biome format/import/a11y fixes, permission-count tests updated to 23 actions |
+| E2E validation | Complete | persona scenarios, Go/No-Go criteria, RA Lead daily workflow docs/tests |
+| PR #177 disposition | Complete | GitHub comment added, PR closed per Issue #18 stale-branch rule |
 
 Verification evidence:
 
 - `biome check .` — pass.
 - `node scripts/no-hex-colors.mjs` — pass.
-- `vitest run` — 219 files passed, 2,274 tests passed, 7 skipped.
-- GitHub PR checks — CI Gates, LLM Eval Harness, Playwright chromium/firefox/webkit,
+- `vitest run` — 222 files passed, 2,307 tests passed, 7 skipped.
+- GitHub PR #184 checks — CI Gates, LLM Eval Harness, Playwright chromium/firefox/webkit,
   Vercel preview, E2E Smoke, Dependency Vulnerability Scan, and gitleaks all success.
 
 ## Implementation Surface
