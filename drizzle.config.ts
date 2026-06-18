@@ -14,16 +14,15 @@ if (!databaseUrl) {
   );
 }
 
-// drizzle-kit 0.20.x uses `driver: 'pg'` + `connectionString`. The 0.21+
-// release renamed these to `dialect: 'postgresql'` + `url`. Pinned to 0.20
-// for compatibility with the current handoff stack.
+// Updated for drizzle-kit 0.31+ which uses `dialect: 'postgresql'` + `url`.
+// Previous versions used `driver: 'pg'` + `connectionString`.
 export default {
   schema: './lib/db/schema.ts',
   out: './lib/db/migrations',
-  driver: 'pg',
+  dialect: 'postgresql',
   dbCredentials: {
-    connectionString: databaseUrl,
+    url: databaseUrl,
   },
-  strict: false,
+  strict: true,
   verbose: true,
 } satisfies Config;
