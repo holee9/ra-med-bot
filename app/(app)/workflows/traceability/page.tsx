@@ -1,6 +1,6 @@
+import { BetaBadge } from '@/components/ui/BetaBadge';
 // @MX:SPEC Issue #169
 import type { Metadata } from 'next';
-import { BetaBadge } from '@/components/ui/BetaBadge';
 import { TraceabilityShell } from './_components/TraceabilityShell';
 
 export const metadata: Metadata = {
@@ -16,9 +16,7 @@ export default function TraceabilityPage() {
           <h1 className="font-serif text-3xl text-brand-800">Traceability</h1>
           <BetaBadge />
         </div>
-        <p className="mt-2 text-sm text-ink-600">
-          규제 추적 그래프 스캔 및 변경 영향 분석
-        </p>
+        <p className="mt-2 text-sm text-ink-600">규제 추적 그래프 스캔 및 변경 영향 분석</p>
       </header>
 
       <TraceabilityShell />

@@ -1,15 +1,22 @@
-// @MX:NOTE [AUTO] TanStack Query hooks for Traceability API (Issue #169).
-import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import {
-  traceabilityClient,
-  type ScanRequest,
   type ImpactRequest,
+  type ImpactResult,
+  type ScanRequest,
   type ScanResult,
   type TraceGraph,
-  type ImpactResult,
+  traceabilityClient,
 } from '@/lib/api/traceability-client';
+// @MX:NOTE [AUTO] TanStack Query hooks for Traceability API (Issue #169).
+import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 
-export type { ScanResult, TraceGraph, ImpactResult, TraceNode, TraceEdge, ImpactedNode } from '@/lib/api/traceability-client';
+export type {
+  ScanResult,
+  TraceGraph,
+  ImpactResult,
+  TraceNode,
+  TraceEdge,
+  ImpactedNode,
+} from '@/lib/api/traceability-client';
 
 export function useScanTraceability() {
   const queryClient = useQueryClient();
