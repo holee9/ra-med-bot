@@ -361,9 +361,10 @@
 
 ### 5.1 우선순위 높은 개선 사항
 
-**1. Predicate 비교 분석 시각화 개선**
-- **현재 문제점:** 텍스트 기반 비교 결과만 제공
-- **개선 방안:** 인터랙티브 차트 및 그래프 추가
+**1. Predicate 비교 분석 시각화 개선 — 진행 중 (#185 / PR #186)**
+- **기존 문제점:** 텍스트 기반 비교 결과만 제공되어 기술적 차이와 필수/선택 dimension을 빠르게 스캔하기 어려움
+- **적용 방안:** `/predicate/compare`에 Recharts 기반 Bar/Radar/Table view, Before-After mode, Demo Mode animation, 필수/선택 row 색상 구분 추가
+- **검증 상태:** `pnpm lint`, `pnpm typecheck`, predicate 관련 unit 45 tests 통과. PR #186 review fix에서 animation phase 연결, optional bar color, session memo 보존까지 반영
 - **예상 효과:** 기술적 평가 이해도 30-40% 향상
 
 **2. PCCP 위저드 step-by-step 가이드 개선**
