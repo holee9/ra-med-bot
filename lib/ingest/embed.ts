@@ -8,15 +8,29 @@ const MAX_RETRIES = 3;
 const MODEL = 'text-embedding-3-small';
 
 // PII guard patterns — defense-in-depth before sending to external API
+// Enhanced 3-layer guard matching SPEC-REGULA-DOCINGEST-001 REQ-DOC-035
 const PII_GUARD_PATTERNS: RegExp[] = [
   /\d{3}-\d{2}-\d{4}/, // SSN
   /[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}/, // email
+  /\b(\+1[\s.-]?)?\(?\d{3}\)?[\s.-]\d{3}[\s.-]\d{4}\b/g, // phone
+  /\b\d{4}[\s-]?\d{4}[\s-]?\d{4}[\s-]?\d{4}\b/g, // credit card
+  /https?:\/\/[^\s]+/g, // URL
 ];
 
 function detectPii(text: string): { found: boolean; pattern: string } {
   for (const pattern of PII_GUARD_PATTERNS) {
     if (pattern.test(text)) {
-      const name = pattern.source.includes('@') ? 'email' : 'SSN';
+      const name = pattern.source.includes('@')
+        ? 'email'
+        : pattern.source.includes('\\d{3}-\\d{2}-\\d{4}')
+          ? 'SSN'
+          : pattern.source.includes('https?')
+            ? 'URL'
+            : pattern.source.includes('\\+1')
+              ? 'phone'
+              : pattern.source.includes('\\d{4}')
+                ? 'credit_card'
+                : 'pattern';
       return { found: true, pattern: name };
     }
   }
