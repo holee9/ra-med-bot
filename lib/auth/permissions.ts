@@ -28,7 +28,14 @@ export type PermissionAction =
   | 'checklist.update'
   | 'traceability.scan'
   | 'traceability.view'
-  | 'traceability.impact';
+  | 'traceability.impact'
+  // Evidence API (hybrid-ra-saas integration — Issue #168)
+  | 'evidence.link'
+  | 'evidence.binder'
+  // Authoring API (hybrid-ra-saas integration — Issue #171)
+  | 'authoring.create'
+  | 'authoring.view'
+  | 'authoring.approve';
 
 export interface PermissionSpec {
   minRole: Role;
@@ -90,4 +97,13 @@ export const PERMISSIONS: Record<PermissionAction, PermissionSpec> = {
   'traceability.scan': { minRole: 'ra-member', scope: 'org', resourceType: 'traceability' },
   'traceability.view': { minRole: 'ra-member', scope: 'org', resourceType: 'traceability' },
   'traceability.impact': { minRole: 'ra-member', scope: 'org', resourceType: 'traceability' },
+
+  // Evidence API (hybrid-ra-saas integration — Issue #168)
+  'evidence.link': { minRole: 'ra-member', scope: 'org', resourceType: 'evidence' },
+  'evidence.binder': { minRole: 'ra-member', scope: 'org', resourceType: 'evidence' },
+
+  // Authoring API (hybrid-ra-saas integration — Issue #171)
+  'authoring.create': { minRole: 'ra-member', scope: 'org', resourceType: 'authoring' },
+  'authoring.view': { minRole: 'ra-member', scope: 'org', resourceType: 'authoring' },
+  'authoring.approve': { minRole: 'ra-lead', scope: 'org', resourceType: 'authoring' },
 };

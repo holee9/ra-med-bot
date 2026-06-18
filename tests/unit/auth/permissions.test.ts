@@ -4,7 +4,8 @@
 import { PERMISSIONS, type PermissionAction } from '@/lib/auth/permissions';
 import { describe, expect, it } from 'vitest';
 
-// All 23 action strings defined in SPEC REQ-ENTERPRISE-020, checklist, and traceability integration.
+// All action strings defined in SPEC REQ-ENTERPRISE-020 plus checklist, traceability,
+// evidence, and authoring integrations.
 const EXPECTED_ACTIONS: PermissionAction[] = [
   'consult.create',
   'conversation.view',
@@ -29,14 +30,19 @@ const EXPECTED_ACTIONS: PermissionAction[] = [
   'traceability.scan',
   'traceability.view',
   'traceability.impact',
+  'evidence.link',
+  'evidence.binder',
+  'authoring.create',
+  'authoring.view',
+  'authoring.approve',
 ];
 
 const VALID_ROLES = ['admin', 'ra-lead', 'ra-member', 'viewer'] as const;
 const VALID_SCOPES = ['org', 'project', 'user', 'none'] as const;
 
 describe('lib/auth/permissions.ts (REQ-ENTERPRISE-020) — PERMISSIONS matrix', () => {
-  it('PERMISSIONS contains exactly 23 entries', () => {
-    expect(Object.keys(PERMISSIONS)).toHaveLength(23);
+  it('PERMISSIONS contains exactly 28 entries', () => {
+    expect(Object.keys(PERMISSIONS)).toHaveLength(28);
   });
 
   it.each(EXPECTED_ACTIONS)('PERMISSIONS contains action: %s', (action) => {
@@ -102,6 +108,18 @@ describe('lib/auth/permissions.ts (REQ-ENTERPRISE-020) — PERMISSIONS matrix', 
 
     it('profile.edit requires ra-member', () => {
       expect(PERMISSIONS['profile.edit'].minRole).toBe('ra-member');
+    });
+
+    it('evidence.link requires ra-member', () => {
+      expect(PERMISSIONS['evidence.link'].minRole).toBe('ra-member');
+    });
+
+    it('evidence.binder requires ra-member', () => {
+      expect(PERMISSIONS['evidence.binder'].minRole).toBe('ra-member');
+    });
+
+    it('authoring.approve requires ra-lead', () => {
+      expect(PERMISSIONS['authoring.approve'].minRole).toBe('ra-lead');
     });
   });
 
