@@ -118,6 +118,24 @@ test.describe('Audit log — 21 CFR Part 11 (REQ-LAUNCH-020)', () => {
     }
   });
 
+  test('ra-lead is redirected from /admin/audit-logs UI', async ({ browser, baseURL }) => {
+    const auth = requiresAuthState();
+    test.skip(auth.skip, auth.reason);
+
+    // Default storageState (.auth.json) is ra-lead — must be redirected to /403
+    const context = await browser.newContext({
+      storageState: process.env.PLAYWRIGHT_AUTH_STATE ?? 'tests/e2e/fixtures/.auth.json',
+    });
+    const page = await context.newPage();
+    try {
+      await page.goto(`${baseURL ?? 'http://localhost:3000'}/admin/audit-logs`);
+      await page.waitForURL(/\/403/, { timeout: 5000 });
+      expect(page.url()).toContain('/403');
+    } finally {
+      await context.close();
+    }
+  });
+
   test('audit log admin UI shows entries table', async ({ browser, baseURL }) => {
     const auth = requiresAuthState();
     test.skip(auth.skip, auth.reason);
