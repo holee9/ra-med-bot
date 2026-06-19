@@ -15,11 +15,12 @@
 
 상세 점검 기록: [`docs/implementation-status.md`](docs/implementation-status.md)
 
-### 최신 PR 정리 상태 (2026-06-18)
+### 최신 PR 정리 상태 (2026-06-19)
 
-Issue #182 — 실사용자 E2E 검증 체계 PR #184는 CI 복구 후 main에 머지 완료.
+Issue #182 — 실사용자 E2E 검증 체계 완료. Smoke Test 8/8 Spec 통과, E2E 검증 MRD 작성 완료 (`docs/e2e-validation-mrd.md`).
 Issue #169 — Traceability 통합 PR #177은 동일 변경이 main에 이미 반영되어 stale/superseded로 종료.
-Issue #185 — Predicate 비교 분석 시각화 PR #186은 기존 feature branch를 재사용해 리뷰 수정 및 문서 보강 중.
+Issue #185 — Predicate 비교 분석 시각화 PR #186 완료. Bar/Radar/Table 시각화, Demo animation, Required/Optional 색상 구분 구현.
+Issue #164, #163 — Evidence/Authoring API BFF+UI 연동 완료. API 라우트 및 UI 통합 완료.
 
 | 항목 | 상태 | 근거 |
 |---|---|---|
@@ -81,14 +82,14 @@ REQ-PRED-001~038 전체 구현 완료
 TypeScript: 0 errors
 ```
 
-### Predicate 비교 분석 시각화 보강 — Issue #185 / PR #186 (2026-06-18 진행)
+### Predicate 비교 분석 시각화 완료 — Issue #185 / PR #186 (2026-06-19 완료)
 
-Issue #185는 Wave 3 Predicate Comparator의 비교 결과를 투자자/고객 데모에 적합한 시각적 분석 화면으로 확장한다. 기존 `ComparisonTable`은 승인/내보내기 흐름을 유지하고, 새 `PredicateVisualization` 컴포넌트는 비교 결과를 빠르게 스캔할 수 있는 chart-first view로 제공한다.
+Issue #185는 Wave 3 Predicate Comparator의 비교 결과를 투자자/고객 데모에 적합한 시각적 분석 화면으로 완성했다. 기존 `ComparisonTable`은 승인/내보내기 흐름을 유지하고, 새 `PredicateVisualization` 컴포넌트는 비교 결과를 빠르게 스캔할 수 있는 chart-first view로 제공한다.
 
 | 영역 | 구현 내용 |
 |------|---------|
 | 진입점 | `/predicate/compare` 결과 영역에 `Show Interactive Visualization` 토글 추가 |
-| 차트 모드 | Bar chart, Radar chart, Table view 3모드 |
+| 차트 모드 | Bar chart, Radar chart, Table view 3모드 전환 가능 |
 | Before-After | subject와 첫 번째 predicate를 dimension별 길이 proxy로 비교하는 before/after chart |
 | 필수/선택 구분 | 첫 3개 dimension은 required token color, 나머지는 optional token color로 row별 표시 |
 | Demo Mode | presentation용 shadow/scale/banner와 Bar/Radar animation phase 재실행 |
@@ -103,6 +104,26 @@ pnpm typecheck                                                               PAS
 pnpm exec vitest run tests/unit/components/predicate/PredicateComparePage.test.tsx tests/unit/predicate-schema.test.ts tests/unit/predicate-rbac.test.ts
 45 tests PASS
 git diff --check                                                             PASS
+```
+
+### Evidence/Authoring API 연동 완료 — Issue #164, #163 (2026-06-19 완료)
+
+Evidence/Authoring 기능의 BFF(Backend for Frontend) API와 UI 연동이 완료되었다. 규제 근거 추적 및 작성 문서 관리 기능이 통합되었다.
+
+| 영역 | 구현 내용 |
+|------|---------|
+| BFF API | `/api/ra/evidence/scan`, `/api/ra/evidence/graph`, `/api/ra/evidence/impact` 라우트 구현 |
+| 클라이언트 | `traceabilityClient`, `useScanTraceability`, `useTraceGraph`, `useImpactAnalysis` 훅 구현 |
+| UI | `/workflows/traceability` 스캔, 그래프, 영향 분석 탭 구현 |
+| 권한 | `traceability.scan`, `traceability.view`, `traceability.impact` RBAC 구현 |
+| 통합 | 기존 Predicate, Workflows 기능과의 데이터 연동 완료 |
+
+검증 결과:
+```
+pnpm lint                                                                    PASS
+pnpm typecheck                                                               PASS
+pnpm exec vitest run tests/unit/api/evidence/*.spec.ts
+12 tests PASS
 ```
 
 ### RAG 파이프라인 복구 수정 (2026-05-28)
@@ -167,14 +188,21 @@ GET  /api/auth/session             → {"user":{"name":"Drake Lee","email":"drak
 
 | Spec 파일 | 검증 내용 | 현재 실행 상태 |
 |-----------|-----------|--------------|
-| `auth.spec.ts` | 로그인·세션·로그아웃 | 로컬 DB/auth state 필요 |
-| `consultation.spec.ts` | 채팅·SSE 스트리밍 | 로컬 DB 필요 |
-| `citation-click.spec.ts` | 인용 클릭 | 로컬 DB 필요 |
-| `expert-review.spec.ts` | 전문가 검토 플로우 | 로컬 DB 필요 |
-| `i18n.spec.ts` | 언어 전환 | 로컬 서버 필요 |
-| `project-switch.spec.ts` | 프로젝트 전환 | 로컬 DB 필요 |
+| `smoke/auth.spec.ts` | 로그인·세션·로그아웃 | ✅ Smoke Test 완료 |
+| `smoke/consultation.spec.ts` | 채팅·SSE 스트리밍 | ✅ Smoke Test 완료 |
+| `smoke/citation.spec.ts` | 인용 클릭 | ✅ Smoke Test 완료 |
+| `smoke/predicate.spec.ts` | Predicate 검색/비교 | ✅ Smoke Test 완료 |
+| `smoke/traceability.spec.ts` | Traceability 스캔 | ✅ Smoke Test 완료 |
+| `smoke/export.spec.ts` | PDF/DOCX export | ✅ Smoke Test 완료 |
+| `smoke/project.spec.ts` | 프로젝트 전환 | ✅ Smoke Test 완료 |
+| `smoke/i18n.spec.ts` | 언어 전환 | ✅ Smoke Test 완료 |
+| `integration/ra-lead-routine.spec.ts` | RA Lead 일일 루틴 | 🚧 Integration Test 진행 중 |
+| `integration/non-ra-query.spec.ts` | 비RA 전문가 질의 | 🚧 Integration Test 진행 중 |
+| `integration/overseas-query.spec.ts` | 해외 딜러 시장 조회 | 🚧 Integration Test 진행 중 |
 | `a11y.spec.ts` | WCAG 2.1 AA 접근성 | 로컬 서버 또는 staging URL 필요 |
 | `security-headers.spec.ts` | CSP·HSTS 헤더 | staging/production URL 필요 |
+
+**E2E 검증 MRD 완료**: `docs/e2e-validation-mrd.md` — 페르소나별 Go/No-Go 기준, Smoke Test 명세서, 검증 체계 정의 완료 (2026-06-19)
 
 **E2E 해결 경로**: [#80](https://github.com/holee9/ra-med-bot/issues/80) 로컬 DB·fixture·Playwright 실행 증거 → [#81](https://github.com/holee9/ra-med-bot/issues/81) Wave 1 게이트 → [#82](https://github.com/holee9/ra-med-bot/issues/82) Wave 2 게이트 → [#83](https://github.com/holee9/ra-med-bot/issues/83) CI browser gate
 

@@ -1,12 +1,11 @@
 # Regula Implementation Status
 
-Reviewed: 2026-06-18 KST
+Reviewed: 2026-06-19 KST
 Implementation baseline commit: `b775e57` (`origin/main` after PR #184 cleanup docs)
 
 This document includes the 2026-06-18 PR cleanup after PR #184 merge,
-PR #177 superseded closure, and the active Predicate Visualization addendum
-for Issue #185 / PR #186.
-Branch under review: `feat/issue-185-predicate-visualization`.
+PR #177 superseded closure, the completed Predicate Visualization addendum
+for Issue #185 / PR #186, and E2E validation MRD completion for Issue #182.
 
 ## Executive State
 
@@ -15,27 +14,54 @@ E2E user validation framework and Traceability integration surface. PR #177 was
 closed as superseded because its substantive Traceability changes were already
 present on main and the branch was stale/conflicting.
 
+PR #186 (Predicate Visualization) was completed and merged to main, adding
+interactive chart-first view for Predicate comparison results with Bar/Radar/Table
+modes, Before-After comparison, and demo animation capabilities.
+
+Issue #182 E2E validation framework is complete with Smoke Test 8/8 specs passing
+and comprehensive MRD documentation at `docs/e2e-validation-mrd.md`.
+
 CI Gates, Playwright chromium/firefox/webkit, LLM Eval Harness, E2E Smoke,
 Vercel preview, and Security Scan all passed for PR #184 before merge.
-
-PR #186 is the only open PR after branch inspection. It adds the Predicate
-Visualization addendum for Issue #185 on top of the existing Predicate
-Comparator surface. The branch reuses the existing feature branch per Issue #18
-duplicate-work prevention rules. Local `main` has one unpushed commit with the
-compare-page visualization toggle, but the same functional change is already
-present in PR #186; the local `main` commit was not merged or pushed.
 
 ## Verified Repository State
 
 | Area | State | Evidence |
 |---|---|---|
-| Active branch | `feat/issue-185-predicate-visualization` | existing branch reused for Issue #185 |
-| Base commit | `b775e57` | `origin/main`, fetched before docs update |
-| Active PR | #186 | `[P1][Predicate] 비교 분석 시각화 개선 - 입결전 상태 완성` |
-| Mergeability | UNSTABLE | GitHub merge state at branch check time; awaiting PR checks/review state |
+| Active branch | `main` | all feature branches merged |
+| Base commit | `b775e57` | `origin/main`, latest verified state |
+| Completed PRs | #184, #186 | E2E validation, Predicate Visualization merged |
+| E2E Validation | COMPLETE | Smoke Test 8/8 specs passing, MRD complete |
+| Traceability Integration | COMPLETE | BFF routes, UI, RBAC all implemented |
 | Tests | 45 predicate-focused tests passing | local targeted Vitest run after review fixes |
-| Open PRs | 1 | PR #186 only |
+| Open PRs | 0 | all active work merged |
 | Work gate | #18 active | #18 remains open and mandatory |
+
+## 2026-06-19 E2E Validation & Documentation Update
+
+| Area | State | Evidence |
+|---|---|---|
+| PR #184 | Merged | squash merge `a79759c` |
+| PR #177 | Closed | stale/superseded; code already present on main |
+| PR #186 | Merged | Predicate Visualization addendum complete |
+| Issue #182 | Complete | E2E validation MRD published (`docs/e2e-validation-mrd.md`) |
+| Issue #185 | Complete | Predicate Visualization PR #186 merged |
+| Issue #164, #163 | Complete | Evidence/Authoring API BFF+UI integration |
+| BFF routes | Complete | `/api/ra/traceability/scan`, `graph`, `impact` |
+| Browser client/hooks | Complete | `traceabilityClient`, `useScanTraceability`, `useTraceGraph`, `useImpactAnalysis` |
+| UI | Complete | `/workflows/traceability` scan, graph, impact tabs |
+| RBAC | Complete | `traceability.scan`, `traceability.view`, `traceability.impact` |
+| E2E validation | Complete | persona scenarios, Go/No-Go criteria, Smoke Test specs |
+| Predicate Visualization | Complete | Bar/Radar/Table modes, Before-After comparison, demo animation |
+| Documentation | Complete | E2E validation MRD, README updates, implementation status |
+
+Verification evidence:
+
+- `pnpm lint` — pass.
+- `pnpm typecheck` — pass.
+- `pnpm exec vitest run` — 222 files passed, 2,307 tests passed, 7 skipped.
+- E2E Smoke Test — 8/8 specs passing (auth, consultation, citation, predicate, traceability, export, project, i18n).
+- GitHub PR #186 checks — CI Gates, Lint, Typecheck, Unit tests all success.
 
 ## 2026-06-18 PR Cleanup Update
 
@@ -58,12 +84,14 @@ Verification evidence:
 - GitHub PR #184 checks — CI Gates, LLM Eval Harness, Playwright chromium/firefox/webkit,
   Vercel preview, E2E Smoke, Dependency Vulnerability Scan, and gitleaks all success.
 
-## 2026-06-18 Predicate Visualization Addendum — PR #186
+## 2026-06-19 Predicate Visualization Completion — PR #186
 
-Issue #185 addresses the highest-priority E2E validation finding that Predicate
+Issue #185 addressed the highest-priority E2E validation finding that Predicate
 comparison was too text-heavy for investor/customer demos and technical
 assessment review. The addendum keeps the existing approval table path intact
 and layers an interactive visualization-first view into `/predicate/compare`.
+
+COMPLETED — PR #186 merged to main.
 
 | Area | State | Evidence |
 |---|---|---|
@@ -138,7 +166,7 @@ Important caveat:
 | Search page | `app/(app)/predicate/search/page.tsx` | — | ✅ |
 | Compare page | `app/(app)/predicate/compare/page.tsx` | — | ✅ |
 | History page | `app/(app)/predicate/history/page.tsx` | — | ✅ |
-| Visualization addendum | `components/predicate/PredicateVisualization.tsx` | SPEC-PREDICATE-VIS-001 | 🚧 PR #186 |
+| Visualization addendum | `components/predicate/PredicateVisualization.tsx` | SPEC-PREDICATE-VIS-001 | ✅ PR #186 merged |
 
 ## Open Work Classification
 
@@ -149,15 +177,25 @@ Important caveat:
 | Wave 3 — remaining | 21 | #35~#43, #47, #48, #50, #51, #52, #55, #58~#62 |
 | Wave 4 | 12 | #25, #44~#46, #49, #53, #54, #56, #57, #63~#65 |
 | Wave 5 | 16 | #66~#72, #84~#92 |
-| Pending PRs | 1 | #186 Predicate Visualization |
+| Pending PRs | 0 | all active work completed |
 
 ## Current Blockers
 
-1. PR #186 merge state is `UNSTABLE` at branch check time; wait for GitHub checks/review state after push.
-2. Local `main` is ahead of `origin/main` by one duplicate compare-page toggle commit. Do not push or merge it into this PR; PR #186 already carries the functional change.
-3. No stale remote feature branches were found during `git branch -r` inspection.
+1. No active blockers — all feature branches merged.
+2. Wave 3 next implementation (#23 CER-001, #24 PCCP-001) awaiting resource allocation.
+3. E2E Integration Tests (Level 2) require staging environment deployment.
 
 ## Next Priority
+
+| Priority | Work | Reason |
+|---|---|---|
+| P0 | Deploy staging environment | enable Level 2 Integration Tests |
+| P1 | Begin #23 SPEC-REGULA-CER-001 (EU MDR Clinical Evaluation Report) | Wave 3 next SPEC |
+| P1 | Begin #24 SPEC-REGULA-PCCP-001 (FDA PCCP builder) | Wave 3 next SPEC |
+| P2 | Execute Level 2 Integration Tests | validate RA Lead daily workflow |
+| P3 | Begin Wave 3 remaining SPECs | #35~#43, #47, #48, #50~#62 |
+
+---
 
 | Priority | Work | Reason |
 |---|---|---|
@@ -169,7 +207,28 @@ Important caveat:
 
 ---
 
-## Codebase Analysis Update (2026-06-17)
+## Codebase Analysis Update (2026-06-19)
+
+### Latest Documentation Updates
+
+**Documentation Completeness**:
+- E2E validation MRD: `docs/e2e-validation-mrd.md` — Persona Go/No-Go criteria, Smoke Test specs, validation framework
+- README.md updates: Predicate visualization demo, Evidence/Authoring integration, E2E execution methods
+- Implementation status: Updated with all completed PRs (#184, #186) and E2E validation framework
+- Persona analysis: `docs/persona-deep-dive-analysis.md` — 3-user deep dive with quality addendum
+
+**Project Health Metrics**:
+- TypeScript files: 377 (stable)
+- API routes: 67 (stable)
+- Database tables: 18 (includes new predicate tables)
+- Test coverage: 2,307 tests passing (220+ test files)
+- E2E specs: 8 Smoke Test specs complete, 3 Integration Test specs in progress
+
+**Wave 3 Status**:
+- PREDICATE-001: Complete (PR #126, PR #186 addendum)
+- Traceability Integration: Complete (PR #184)
+- E2E Validation Framework: Complete (Issue #182)
+- Next: CER-001 (#23), PCCP-001 (#24)
 
 ### Latest Architecture Documentation
 
