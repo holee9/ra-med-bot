@@ -126,6 +126,29 @@ pnpm exec vitest run tests/unit/api/evidence/*.spec.ts
 12 tests PASS
 ```
 
+### hybrid-ra-saas inbound webhook 연동 완료 — Issue #188 (2026-06-19 완료)
+
+hybrid-ra-saas (Customer Local Runtime + Cloud Control Plane)에서 ra-med-bot으로 이벤트를 push하는 inbound webhook 3개를 구현했다.
+
+| 영역 | 구현 내용 |
+|------|---------|
+| Webhook 엔드포인트 | `POST /api/webhooks/audit`, `POST /api/webhooks/ifu`, `POST /api/webhooks/knowledge-sync` |
+| 인증 | timing-safe compare (Node.js crypto.timingSafeEqual with SHA256 hash) |
+| 보안 | 401 Unauthorized (silent no-op 금지), Zod payload 검증 |
+| 환경변수 | `REGULA_API_KEY` (audit/ifu), `CRAWL_PUSH_SECRET` (knowledge-sync) |
+
+**발신측 연동 (hybrid-ra-saas 배포 시 설정):**
+- `REGULA_AUDIT_WEBHOOK_URL` → `https://<ra-med-bot-domain>/api/webhooks/audit`
+- `REGULA_IFU_WEBHOOK_URL` → `https://<ra-med-bot-domain>/api/webhooks/ifu`
+- `REGULA_KNOWLEDGE_PUSH_URL` → `https://<ra-med-bot-domain>/api/webhooks/knowledge-sync`
+
+검증 결과:
+```
+pnpm tsc --noEmit                                          PASS (기존 onboarding.ts 에러만 존재)
+pnpm test                                                  68 tests PASS (2 skipped)
+git diff --check                                           PASS
+```
+
 ### RAG 파이프라인 복구 수정 (2026-05-28)
 
 Issue #116 — RAG 파이프라인 E2E 동작 복구 + LLM 공급자 추상화 + Auth.js v5 호환:
