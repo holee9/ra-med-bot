@@ -334,6 +334,62 @@ System health check endpoint. Does not require authentication.
 
 ---
 
+## hybrid-ra-saas Outbound Typed Adapter
+
+Regula calls hybrid-ra-saas through the server-only adapter in
+`lib/api/hybrid-ra-client.ts`. Do not import this module from client
+components because it reads server-side secrets from `lib/env.ts`.
+
+### Configuration
+
+| Variable | Purpose |
+|----------|---------|
+| `HYBRID_RA_API_BASE_URL` | Base URL for the hybrid-ra-saas API, for example `https://hybrid.example.com` |
+| `HYBRID_RA_API_TOKEN` | Bearer token sent as `Authorization: Bearer <token>` |
+| `HYBRID_RA_TENANT_ID` | Tenant scope sent as `X-Tenant-Id` |
+
+### Client Methods
+
+Use `createHybridRaClient(timeoutMs?)` for typed calls. The default timeout is
+30 seconds.
+
+| Method | Upstream endpoint | Request type | Response type |
+|--------|-------------------|--------------|---------------|
+| `health()` | `GET /health` | none | `HealthResponse` |
+| `syncManifest()` | `GET /sync/manifest` | none | `SyncManifestResponse` |
+| `ragQuery(req)` | `POST /rag/query` | `RagQueryRequest` | `RagQueryResponse` |
+| `uploadDocument(req)` | `POST /documents/upload` | `DocumentUploadRequest` | `DocumentUploadResponse` |
+| `createParseJob(req)` | `POST /parse/jobs` | `ParseJobRequest` | `ParseJobResponse` |
+| `runGuardrail(req)` | `POST /guardrail/run` | `GuardrailRunRequest` | `GuardrailRunResponse` |
+| `exportAudit(req)` | `POST /audit/export` | `AuditExportRequest` | `AuditExportResponse` |
+
+### Error Classification
+
+`HybridRaClientError` includes `statusCode`, `endpoint`, and `kind`.
+
+| Kind | Trigger |
+|------|---------|
+| `unconfigured` | missing `HYBRID_RA_API_BASE_URL` or `HYBRID_RA_API_TOKEN` |
+| `auth` | upstream `401` or `403` |
+| `schema_mismatch` | upstream `422` |
+| `server_error` | other non-2xx upstream response |
+| `timeout` | request aborted after timeout |
+| `network` | fetch throws an unexpected network error |
+
+### Example
+
+```ts
+import { createHybridRaClient } from '@/lib/api/hybrid-ra-client';
+
+const hybrid = createHybridRaClient();
+const result = await hybrid.ragQuery({
+  query: 'FDA 510(k) predicate evidence requirements',
+  top_k: 5,
+});
+```
+
+---
+
 ## Inbound Webhooks
 
 hybrid-ra-saas pushes customer-runtime and cloud-control-plane events into
