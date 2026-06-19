@@ -67,6 +67,11 @@ const envSchema = z.object({
   HYBRID_RA_API_BASE_URL: z.string().url().optional(),
   HYBRID_RA_API_TOKEN: z.string().optional(),
   HYBRID_RA_TENANT_ID: z.string().optional(),
+
+  // Optional: inbound webhook authentication (Issue #188).
+  // These stay optional so deployments without inbound webhooks still boot cleanly.
+  REGULA_API_KEY: z.string().optional(),
+  CRAWL_PUSH_SECRET: z.string().optional(),
 });
 
 export type Env = z.infer<typeof envSchema>;
@@ -117,6 +122,8 @@ export function parseEnv(source: NodeJS.ProcessEnv = process.env): Env {
     HYBRID_RA_API_BASE_URL: source.HYBRID_RA_API_BASE_URL,
     HYBRID_RA_API_TOKEN: source.HYBRID_RA_API_TOKEN,
     HYBRID_RA_TENANT_ID: source.HYBRID_RA_TENANT_ID,
+    REGULA_API_KEY: source.REGULA_API_KEY,
+    CRAWL_PUSH_SECRET: source.CRAWL_PUSH_SECRET,
   });
 }
 
