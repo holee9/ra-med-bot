@@ -863,14 +863,23 @@ pnpm db:migrate
 
 ### 5단계: 개발 서버 시작
 
+> **중요**: `pnpm dev`는 환경 변수 검증을 우회하므로 **사용 금지**입니다. 반드시 `pnpm dev:public`를 사용하세요.
+
 ```bash
-# 개발 서버 (http://localhost:3000)
+# ❌ 금지: 환경 변수 검증 우회
 pnpm dev
+
+# ✅ 권장: 환경 변수 검증 포함
+pnpm dev:public
 
 # 또는 프로덕션 모드
 pnpm build
 pnpm start
 ```
+
+### Runbook (운영 가이드)
+
+개발 서버 시작, health check, 공개 URL 검증 절차는 [`.moai/runbooks/dev-server-startup.md`](.moai/runbooks/dev-server-startup.md)를 참조하세요.
 
 ### 문제 해결
 
