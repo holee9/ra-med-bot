@@ -4,12 +4,12 @@ vi.mock('@/lib/env', () => ({
   getEnv: vi.fn(),
 }));
 
-import { getEnv } from '@/lib/env';
 import {
   HybridRaClientError,
   createHybridRaClient,
   createHybridRaFetch,
 } from '@/lib/api/hybrid-ra-client';
+import { getEnv } from '@/lib/env';
 
 // ---------------------------------------------------------------------------
 // Env mock helpers
@@ -49,9 +49,7 @@ function mockFetchOk(body: unknown) {
 }
 
 function mockFetchError(status: number, body = '') {
-  global.fetch = vi.fn().mockResolvedValueOnce(
-    new Response(body, { status, statusText: 'Error' }),
-  );
+  global.fetch = vi.fn().mockResolvedValueOnce(new Response(body, { status, statusText: 'Error' }));
 }
 
 function lastFetchCall(): [string, RequestInit] {
@@ -89,7 +87,7 @@ describe('createHybridRaFetch — configured env', () => {
 
     const [, init] = lastFetchCall();
     const headers = init.headers as Record<string, string>;
-    expect(headers['Authorization']).toBe('Bearer test-token');
+    expect(headers.Authorization).toBe('Bearer test-token');
     expect(headers['X-Tenant-Id']).toBe('tenant-abc');
   });
 
@@ -131,9 +129,11 @@ describe('createHybridRaFetch — configured env', () => {
 
   it('throws kind=timeout when AbortError fires', async () => {
     setConfiguredEnv();
-    global.fetch = vi.fn().mockRejectedValueOnce(
-      Object.assign(new Error('The operation was aborted'), { name: 'AbortError' }),
-    );
+    global.fetch = vi
+      .fn()
+      .mockRejectedValueOnce(
+        Object.assign(new Error('The operation was aborted'), { name: 'AbortError' }),
+      );
     await expect(createHybridRaFetch(100)('/health')).rejects.toMatchObject({
       statusCode: 504,
       kind: 'timeout',
@@ -168,7 +168,12 @@ describe('createHybridRaClient — endpoint contracts', () => {
 
   it('syncManifest() GETs /sync/manifest and returns SyncManifestResponse', async () => {
     setConfiguredEnv();
-    mockFetchOk({ last_sync: '2026-06-19T10:00:00Z', total_documents: 42, sync_status: 'synced', tenant_id: 'tenant-abc' });
+    mockFetchOk({
+      last_sync: '2026-06-19T10:00:00Z',
+      total_documents: 42,
+      sync_status: 'synced',
+      tenant_id: 'tenant-abc',
+    });
     const result = await createHybridRaClient().syncManifest();
     expect(result.sync_status).toBe('synced');
     expect(result.total_documents).toBe(42);
@@ -176,7 +181,11 @@ describe('createHybridRaClient — endpoint contracts', () => {
 
   it('ragQuery() POSTs to /rag/query with request body', async () => {
     setConfiguredEnv();
-    mockFetchOk({ answer: '30일', citations: [{ source_id: 'src-1', title: 'CFR', excerpt: '...', score: 0.9 }], confidence: 0.9 });
+    mockFetchOk({
+      answer: '30일',
+      citations: [{ source_id: 'src-1', title: 'CFR', excerpt: '...', score: 0.9 }],
+      confidence: 0.9,
+    });
     const result = await createHybridRaClient().ragQuery({ query: 'FDA deadline?' });
     expect(result.confidence).toBe(0.9);
 
@@ -189,7 +198,10 @@ describe('createHybridRaClient — endpoint contracts', () => {
   it('uploadDocument() POSTs to /documents/upload', async () => {
     setConfiguredEnv();
     mockFetchOk({ document_id: 'doc-123', status: 'uploaded', created_at: '2026-06-19T00:00:00Z' });
-    const result = await createHybridRaClient().uploadDocument({ filename: 'ifu.pdf', content_base64: 'base64==' });
+    const result = await createHybridRaClient().uploadDocument({
+      filename: 'ifu.pdf',
+      content_base64: 'base64==',
+    });
     expect(result.document_id).toBe('doc-123');
     expect(result.status).toBe('uploaded');
   });
@@ -197,23 +209,38 @@ describe('createHybridRaClient — endpoint contracts', () => {
   it('createParseJob() POSTs to /parse/jobs', async () => {
     setConfiguredEnv();
     mockFetchOk({ job_id: 'job-456', status: 'queued', created_at: '2026-06-19T00:00:00Z' });
-    const result = await createHybridRaClient().createParseJob({ document_id: 'doc-123', parser_type: 'ifu' });
+    const result = await createHybridRaClient().createParseJob({
+      document_id: 'doc-123',
+      parser_type: 'ifu',
+    });
     expect(result.job_id).toBe('job-456');
     expect(result.status).toBe('queued');
   });
 
   it('runGuardrail() POSTs to /guardrail/run', async () => {
     setConfiguredEnv();
-    mockFetchOk({ safe: false, flags: [{ rule: 'pii_detected', severity: 'high', message: 'PII found' }], processed_at: '2026-06-19T00:00:00Z' });
+    mockFetchOk({
+      safe: false,
+      flags: [{ rule: 'pii_detected', severity: 'high', message: 'PII found' }],
+      processed_at: '2026-06-19T00:00:00Z',
+    });
     const result = await createHybridRaClient().runGuardrail({ content: 'PII content' });
     expect(result.safe).toBe(false);
-    expect(result.flags[0].severity).toBe('high');
+    expect(result.flags[0]).toMatchObject({ severity: 'high' });
   });
 
   it('exportAudit() POSTs to /audit/export', async () => {
     setConfiguredEnv();
-    mockFetchOk({ export_id: 'exp-789', download_url: 'https://storage.example.com/audit.csv', expires_at: '2026-06-20T00:00:00Z', record_count: 120 });
-    const result = await createHybridRaClient().exportAudit({ from: '2026-06-01', to: '2026-06-19' });
+    mockFetchOk({
+      export_id: 'exp-789',
+      download_url: 'https://storage.example.com/audit.csv',
+      expires_at: '2026-06-20T00:00:00Z',
+      record_count: 120,
+    });
+    const result = await createHybridRaClient().exportAudit({
+      from: '2026-06-01',
+      to: '2026-06-19',
+    });
     expect(result.record_count).toBe(120);
     expect(result.download_url).toContain('audit.csv');
   });

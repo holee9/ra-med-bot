@@ -8,7 +8,13 @@ import { getEnv } from '@/lib/env';
 // Error types
 // ---------------------------------------------------------------------------
 
-export type HybridRaErrorKind = 'unconfigured' | 'auth' | 'schema_mismatch' | 'server_error' | 'timeout' | 'network';
+export type HybridRaErrorKind =
+  | 'unconfigured'
+  | 'auth'
+  | 'schema_mismatch'
+  | 'server_error'
+  | 'timeout'
+  | 'network';
 
 export class HybridRaClientError extends Error {
   constructor(
@@ -108,7 +114,7 @@ export interface GuardrailRunResponse {
 // POST /audit/export
 export interface AuditExportRequest {
   from: string; // ISO-8601 date
-  to: string;   // ISO-8601 date
+  to: string; // ISO-8601 date
   format?: 'csv' | 'json';
 }
 
@@ -177,7 +183,12 @@ export function createHybridRaFetch(timeoutMs: number = DEFAULT_TIMEOUT_MS) {
     } catch (err) {
       if (err instanceof HybridRaClientError) throw err;
       if (err instanceof Error && err.name === 'AbortError') {
-        throw new HybridRaClientError(`Request timed out after ${timeoutMs}ms`, 504, path, 'timeout');
+        throw new HybridRaClientError(
+          `Request timed out after ${timeoutMs}ms`,
+          504,
+          path,
+          'timeout',
+        );
       }
       throw new HybridRaClientError(
         err instanceof Error ? err.message : 'Network error',
