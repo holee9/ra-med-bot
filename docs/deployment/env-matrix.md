@@ -1,7 +1,7 @@
 # Environment Variables Matrix
 
 **SPEC**: SPEC-REGULA-LAUNCH-001 (REQ-LAUNCH-039)  
-**Last Updated**: 2026-06-19
+**Last Updated**: 2026-06-20
 
 This document lists all environment variables required by Regula across environments.
 Do **not** commit real secrets. Use Vercel project settings or your secret manager.
@@ -39,6 +39,9 @@ Do **not** commit real secrets. Use Vercel project settings or your secret manag
 | `LANGFUSE_PUBLIC_KEY` | Langfuse public key | Optional | Optional | Required | No |
 | `LANGFUSE_BASEURL` | Langfuse API base URL | `https://cloud.langfuse.com` | Same | Same | No |
 | `ANTHROPIC_API_KEY_EVAL` | Separate Anthropic key for eval harness | Test key | Test key | Eval pipeline key | Yes |
+| `HYBRID_RA_API_BASE_URL` | Base URL for outbound hybrid-ra-saas API calls from `createHybridRaClient()` | Optional local hybrid runtime URL | Preview hybrid API URL | Production hybrid API URL | No |
+| `HYBRID_RA_API_TOKEN` | Bearer token for outbound hybrid-ra-saas API calls | Optional local token | Preview integration token | Production integration token | Yes |
+| `HYBRID_RA_TENANT_ID` | Tenant scope sent as `X-Tenant-Id` to hybrid-ra-saas | Optional local tenant | Preview tenant ID | Production tenant ID | Yes |
 | `REGULA_API_KEY` | Shared secret for `POST /api/webhooks/audit` and `POST /api/webhooks/ifu` from hybrid-ra-saas customer runtime | Optional local test secret | Preview webhook secret | Production webhook secret | Yes |
 | `CRAWL_PUSH_SECRET` | Shared secret for `POST /api/webhooks/knowledge-sync` from hybrid-ra-saas cloud control plane | Optional local test secret | Preview crawl push secret | Production crawl push secret | Yes |
 
@@ -64,7 +67,7 @@ Do **not** commit real secrets. Use Vercel project settings or your secret manag
 
 ### Secret rotation
 
-- Rotate `AUTH_SECRET` / `NEXTAUTH_SECRET`, `ANTHROPIC_API_KEY`, `REGULA_API_KEY`, and `CRAWL_PUSH_SECRET` at least quarterly.
+- Rotate `AUTH_SECRET` / `NEXTAUTH_SECRET`, `ANTHROPIC_API_KEY`, `HYBRID_RA_API_TOKEN`, `REGULA_API_KEY`, and `CRAWL_PUSH_SECRET` at least quarterly.
 - After rotation: update Vercel env vars, then redeploy.
 - For webhook secret rotation, update the sending hybrid-ra-saas deployment and receiving Regula deployment during the same maintenance window.
 

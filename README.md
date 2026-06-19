@@ -11,7 +11,7 @@
 
 ---
 
-## 구현 현황 대시보드 (2026-06-19 KST 기준)
+## 구현 현황 대시보드 (2026-06-20 KST 기준)
 
 상세 점검 기록: [`docs/implementation-status.md`](docs/implementation-status.md)
 
@@ -21,6 +21,7 @@ Issue #182 — 실사용자 E2E 검증 체계 완료. Smoke Test 8/8 Spec 통과
 Issue #169 — Traceability 통합 PR #177은 동일 변경이 main에 이미 반영되어 stale/superseded로 종료.
 Issue #185 — Predicate 비교 분석 시각화 PR #186 완료. Bar/Radar/Table 시각화, Demo animation, Required/Optional 색상 구분 구현.
 Issue #164, #163 — Evidence/Authoring API BFF+UI 연동 완료. API 라우트 및 UI 통합 완료.
+Issue #156 — hybrid-ra-saas outbound typed adapter PR #192 완료. 7개 upstream endpoint 타입 계약, 30초 timeout, error kind 분류, contract tests 추가.
 Issue #188 — hybrid-ra-saas inbound webhook 3종 구현 후 리뷰 보강 완료. invalid JSON 400 응답, SHA-256 digest 기반 timing-safe 인증 비교, webhook 단위 테스트 추가.
 
 | 항목 | 상태 | 근거 |
@@ -28,12 +29,13 @@ Issue #188 — hybrid-ra-saas inbound webhook 3종 구현 후 리뷰 보강 완�
 | PR #184 | MERGED | squash merge `a79759c` |
 | PR #177 | CLOSED / SUPERSEDED | main 병합 시 실질 코드 diff 없음, stale branch 직접 머지 방지 |
 | PR #186 | MERGED | Predicate 시각화 완료 (Bar/Radar/Table, Demo animation, 필수/선택 색상 구분) |
+| PR #192 | MERGED | Issue #156 hybrid-ra-saas typed adapter + contract tests, merge commit `04b6333` |
 | Issue #188 | CLOSED | `POST /api/webhooks/{audit,ifu,knowledge-sync}` 구현 및 리뷰 보강 완료 |
 | Traceability UI | PASS | `/workflows/traceability` 스캔, 그래프, 영향 분석 탭 구현 |
 | BFF 프록시 | PASS | `/api/ra/traceability/{scan,graph,impact}` |
 | 권한 매트릭스 | PASS | `traceability.scan/view/impact`, `checklist.generate/view/update` 포함 28 actions |
 | CI 복구 | PASS | CI Gates, Playwright chromium/firefox/webkit, LLM Eval, E2E Smoke, Security Scan success |
-| QA evidence | PASS | 로컬 전체 `vitest run`: 2,352 tests pass, 7 skipped |
+| QA evidence | PASS | 로컬 전체 `vitest run`: 2,386 tests pass, 7 skipped |
 
 ### 종합 판단
 
@@ -52,9 +54,10 @@ Issue #188 — hybrid-ra-saas inbound webhook 3종 구현 후 리뷰 보강 완�
 | 구현 기준 | PASS | PREDICATE-001 구현 완료 (PR #126, Fixes #22). TypeScript 0 errors, 1,976 테스트 통과 |
 | GitHub Actions | PASS | `CI`, `Deploy`, `Security Scan` 모두 success on `feat/issue-22-predicate` |
 | 구현 표면 | PASS | 19 pages, 33 API route handlers, 36 component files, 200+ lib files |
-| 테스트 자산 | PASS | 220+ test/spec files, 8+ Playwright specs, 2,352 tests passing locally after #188 review fixes |
+| 테스트 자산 | PASS | 220+ test/spec files, 8+ Playwright specs, 2,386 tests passing locally after PR #192 docs sync |
 | CI core gates | PASS | typecheck, lint, format, unit, RBAC, audit, tokens, i18n, glossary, contrast, modules, migrations, build |
 | E2E CI | PASS | E2E Smoke 및 Playwright chromium/firefox/webkit 통과 |
+| hybrid-ra-saas typed adapter | PASS | `createHybridRaClient()` 7개 endpoint contract tests, auth/schema/timeout/network error kind 분류 |
 | RAG 파이프라인 | PASS | hybrid search FTS fallback 동작, 8 citations 정상 반환, LLM 오류 graceful degradation 확인 |
 | LLM 공급자 | PASS | `LLM_PROVIDER=anthropic` (로컬), Ollama/OpenAI 환경 전환 지원 |
 | Auth.js DrizzleAdapter | PASS | `emailVerified` 컬럼 추가, TS2322 오류 해결 |
@@ -126,6 +129,30 @@ pnpm lint                                                                    PAS
 pnpm typecheck                                                               PASS
 pnpm exec vitest run tests/unit/api/evidence/*.spec.ts
 12 tests PASS
+```
+
+### hybrid-ra-saas typed adapter 완료 — Issue #156 / PR #192 (2026-06-20 완료)
+
+hybrid-ra-saas로 나가는 outbound 호출을 단일 typed adapter로 정리했다. 서버 전용 모듈 `lib/api/hybrid-ra-client.ts`는 env 기반 Bearer 인증, tenant header, 30초 timeout, error kind 분류를 제공하며 BFF route와 future caller가 직접 fetch를 재구현하지 않도록 한다.
+
+| 영역 | 구현 내용 |
+|------|---------|
+| Low-level wrapper | `createHybridRaFetch(timeoutMs?)` — `Authorization: Bearer`, `X-Tenant-Id`, JSON content type 주입 |
+| Typed client | `createHybridRaClient()` — `health`, `syncManifest`, `ragQuery`, `uploadDocument`, `createParseJob`, `runGuardrail`, `exportAudit` |
+| Endpoint contracts | `/health`, `/sync/manifest`, `/rag/query`, `/documents/upload`, `/parse/jobs`, `/guardrail/run`, `/audit/export` |
+| Error taxonomy | `unconfigured`, `auth`, `schema_mismatch`, `server_error`, `timeout`, `network` |
+| 환경변수 | `HYBRID_RA_API_BASE_URL`, `HYBRID_RA_API_TOKEN`, `HYBRID_RA_TENANT_ID` |
+| 회귀 테스트 | `tests/unit/api/hybrid-ra-client.test.ts` 15개 contract test |
+
+검증 결과:
+```
+corepack pnpm typecheck                                                        PASS
+corepack pnpm exec biome check .                                               PASS
+corepack pnpm lint:hex                                                         PASS
+corepack pnpm ci:format                                                        PASS
+corepack pnpm test                                                             PASS (2386 passed / 7 skipped)
+corepack pnpm build                                                            PASS
+GitHub PR #192 checks                                                          PASS
 ```
 
 ### hybrid-ra-saas inbound webhook 연동 완료 — Issue #188 (2026-06-19 완료)

@@ -1,12 +1,13 @@
 # Regula Implementation Status
 
-Reviewed: 2026-06-19 KST
-Implementation baseline commit: `2a3ac67` (`main` after Issue #188 webhook review fixes)
+Reviewed: 2026-06-20 KST
+Implementation baseline commit: `04b6333` (`main` after PR #192 / Issue #156 typed adapter merge)
 
 This document includes the 2026-06-18 PR cleanup after PR #184 merge,
 PR #177 superseded closure, the completed Predicate Visualization addendum
 for Issue #185 / PR #186, E2E validation MRD completion for Issue #182,
-and the Issue #188 hybrid-ra-saas inbound webhook hardening pass.
+the Issue #188 hybrid-ra-saas inbound webhook hardening pass, and the
+Issue #156 hybrid-ra-saas outbound typed adapter merge.
 
 ## Executive State
 
@@ -30,19 +31,52 @@ boundary by returning 400 for malformed JSON, comparing SHA-256 digests via
 `crypto.timingSafeEqual`, removing production no-op logging, and adding focused
 unit coverage for webhook error handling and timing-safe comparison behavior.
 
+Issue #156 is complete via PR #192. Regula now has a server-only typed adapter
+for outbound hybrid-ra-saas calls with endpoint-specific request/response
+types, Bearer + tenant header injection, 30 second timeout handling, and
+classified `HybridRaClientError.kind` values for unconfigured, auth, schema,
+server, timeout, and network failures.
+
 ## Verified Repository State
 
 | Area | State | Evidence |
 |---|---|---|
 | Active branch | `main` | no open PRs for current work |
-| Base commit | `2a3ac67` | Issue #188 review fixes committed locally before docs push |
-| Completed PRs/issues | #184, #186, #188 | E2E validation, Predicate Visualization, inbound webhooks complete |
+| Base commit | `04b6333` | PR #192 squash merge on main |
+| Completed PRs/issues | #184, #186, #188, #192/#156 | E2E validation, Predicate Visualization, inbound webhooks, outbound typed adapter complete |
 | E2E Validation | COMPLETE | Smoke Test 8/8 specs passing, MRD complete |
 | Traceability Integration | COMPLETE | BFF routes, UI, RBAC all implemented |
 | Webhook Integration | COMPLETE | `/api/webhooks/audit`, `ifu`, `knowledge-sync` implemented and hardened |
-| Tests | 2,352 tests passing | full local Vitest run after Issue #188 review fixes |
-| Open PRs | 0 | all active work merged |
+| hybrid-ra-saas typed adapter | COMPLETE | `createHybridRaClient()` covers 7 upstream endpoint contracts |
+| Tests | 2,386 tests passing | full local Vitest run after PR #192 docs sync |
+| Open PRs | 1 | #190 remains open and unrelated to this docs sync |
 | Work gate | #18 active | #18 remains open and mandatory |
+
+## 2026-06-20 hybrid-ra-saas Typed Adapter — Issue #156 / PR #192
+
+Regula now has a typed outbound integration layer for hybrid-ra-saas in
+`lib/api/hybrid-ra-client.ts`. The adapter centralizes server-side env loading,
+auth headers, tenant scoping, timeout handling, and error classification so BFF
+routes do not hand-roll upstream fetch calls.
+
+| Area | State | Evidence |
+|---|---|---|
+| Low-level wrapper | Complete | `createHybridRaFetch(timeoutMs?)` injects `Authorization`, `X-Tenant-Id`, JSON content type |
+| Typed client | Complete | `createHybridRaClient()` exposes 7 named methods |
+| Endpoint coverage | Complete | `/health`, `/sync/manifest`, `/rag/query`, `/documents/upload`, `/parse/jobs`, `/guardrail/run`, `/audit/export` |
+| Error taxonomy | Complete | `unconfigured`, `auth`, `schema_mismatch`, `server_error`, `timeout`, `network` |
+| Contract tests | Complete | `tests/unit/api/hybrid-ra-client.test.ts` has 15 tests |
+| PR status | Merged | PR #192 squash merge `04b6333` |
+
+Validation evidence:
+
+- `corepack pnpm typecheck` — pass.
+- `corepack pnpm exec biome check .` — pass.
+- `corepack pnpm lint:hex` — pass.
+- `corepack pnpm ci:format` — pass.
+- `corepack pnpm test` — 2,386 tests passed, 7 skipped.
+- `corepack pnpm build` — pass.
+- GitHub PR #192 checks — CI Gates, Playwright chromium/firefox/webkit, LLM Eval, E2E Smoke, Security Scan, Vercel Preview all pass.
 
 ## 2026-06-19 hybrid-ra-saas Webhook Hardening — Issue #188
 
