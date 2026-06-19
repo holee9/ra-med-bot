@@ -2,9 +2,9 @@
 // @MX:REASON Verify timing-safe compare prevents timing attacks and correctly validates API keys
 // @MX:SPEC Issue #188 (hybrid-ra-saas inbound webhook)
 
-import { describe, it, expect, vi, beforeEach } from 'vitest';
-import { POST } from '../route';
 import { getEnv } from '@/lib/env';
+import { beforeEach, describe, expect, it, vi } from 'vitest';
+import { POST } from '../route';
 
 // Mock timing-safe module
 vi.mock('@/lib/webauth/timing-safe', () => ({
