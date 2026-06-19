@@ -1,7 +1,26 @@
 # Regula Implementation Status
 
 Reviewed: 2026-06-19 KST
-Implementation baseline commit: `2a3ac67` (`main` after Issue #188 webhook review fixes)
+Implementation baseline commit: `a63915a` (current HEAD, `feat/p0-e2e-validation-mrd` equals main state)
+
+## Historical Context (Archived)
+
+The following references are kept for historical traceability only. These represent completed work and do not indicate current blockers.
+
+**Completed PRs (Historical)**:
+- PR #119-#122: Early Wave 2 implementation (merged 2026-05)
+- PR #126: Predicate core implementation (merged 2026-05)
+- PR #184: E2E validation & Traceability integration (merged 2026-06-18)
+- PR #186: Predicate Visualization addendum (merged 2026-06-19)
+- PR #177: Superseded by main (closed 2026-06-18 as stale)
+
+**Stale Baseline Commits**:
+- `2c8fe91`: Previous baseline reference (superseded by `a63915a`)
+- `f156124`: Branch state reference (archived session context)
+- `8b3a983`: QA baseline reference (updated to `a63915a`)
+- `2a3ac67`: Previous review baseline (superseded by `a63915a`)
+
+
 
 This document includes the 2026-06-18 PR cleanup after PR #184 merge,
 PR #177 superseded closure, the completed Predicate Visualization addendum
@@ -34,8 +53,9 @@ unit coverage for webhook error handling and timing-safe comparison behavior.
 
 | Area | State | Evidence |
 |---|---|---|
-| Active branch | `main` | no open PRs for current work |
-| Base commit | `2a3ac67` | Issue #188 review fixes committed locally before docs push |
+| Active branch | `feat/p0-e2e-validation-mrd` | matches main state (commit `a63915a`) |
+| Base commit | `a63915a` | current HEAD equals main |
+| Open PRs | 1 | PR #190 (env validation hardening) |
 | Completed PRs/issues | #184, #186, #188 | E2E validation, Predicate Visualization, inbound webhooks complete |
 | E2E Validation | COMPLETE | Smoke Test 8/8 specs passing, MRD complete |
 | Traceability Integration | COMPLETE | BFF routes, UI, RBAC all implemented |

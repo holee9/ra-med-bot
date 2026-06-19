@@ -21,11 +21,13 @@ export default function LoginButtons() {
       redirect: false,
       callbackUrl: '/',
     });
+    console.log('[LoginButtons] signIn result:', result);
     setLoading(false);
     if (result?.error) {
       setError('이메일/비밀번호가 올바르지 않거나 아직 승인 대기 중입니다');
+      console.error('[LoginButtons] signIn error:', result.error);
     } else {
-      router.push('/');
+      router.push('/dashboard');
     }
   }
 
@@ -34,6 +36,7 @@ export default function LoginButtons() {
       <form onSubmit={handleSubmit} className="flex flex-col gap-3">
         <input
           type="email"
+          name="email"
           placeholder="이메일"
           aria-label="이메일"
           value={email}
@@ -43,6 +46,7 @@ export default function LoginButtons() {
         />
         <input
           type="password"
+          name="password"
           placeholder="비밀번호"
           aria-label="비밀번호"
           value={password}

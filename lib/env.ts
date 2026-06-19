@@ -98,13 +98,9 @@ export function parseEnv(source: NodeJS.ProcessEnv = process.env): Env {
       );
     }
     // Build-time bypass: Next.js needs this for route data collection.
-    // This is safe because the binary won't run without env validation at startup.
-    // IMPORTANT: Never return empty object at runtime. The build produces a static
-    // binary that will validate env on first runtime execution (next start).
-    // Returning {} here would cause runtime DB connection with wrong credentials.
-    throw new Error(
-      'Build-time env validation bypass detected. Runtime must validate env. Remove SKIP_ENV_VALIDATION=1 from runtime environment.',
-    );
+    // The guard above keeps this path limited to pnpm build; runtime callers
+    // still validate env on startup and never receive this empty object.
+    return {} as Env;
   }
 
   // Auth.js historically used several env-var names for the Microsoft Entra

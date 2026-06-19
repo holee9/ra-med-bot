@@ -9,7 +9,7 @@
   },
   "scripts": {
     "dev": "echo 'Error: Use pnpm dev:public for validated dev server. Direct pnpm dev bypasses env validation and is forbidden.' && exit 1",
-    "dev:public": "node --experimental-strip-types scripts/validate-runtime-env.ts && next dev --hostname 0.0.0.0 --port 3000",
+    "dev:public": "node --experimental-strip-types scripts/validate-runtime-env.ts && next dev --hostname 0.0.0.0 --port ${PORT:-3000}",
     "dev:bootstrap": "node --experimental-strip-types scripts/dev-bootstrap.ts",
     "admin:create": "pnpm dlx tsx scripts/create-admin.ts",
     "build": "REGULA_ALLOW_ENV_VALIDATION_SKIP=build SKIP_ENV_VALIDATION=1 next build",

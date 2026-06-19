@@ -6,8 +6,7 @@ services:
       POSTGRES_DB: regula_test
       POSTGRES_USER: postgres
       POSTGRES_PASSWORD: test
-    ports:
-      - "5433:5432"
+    network_mode: host
     healthcheck:
       test: ["CMD-SHELL", "pg_isready -U postgres -d regula_test"]
       interval: 5s

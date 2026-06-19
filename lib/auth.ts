@@ -50,13 +50,24 @@ export const { handlers, auth, signIn, signOut } = NextAuth(() => {
           const password = credentials?.password as string | undefined;
           if (!email || !password) return null;
 
+          console.log('[Auth] Attempting credentials login for:', email);
           const [user] = await db.select().from(users).where(eq(users.email, email)).limit(1);
 
-          if (!user?.password_hash) return null;
+          if (!user?.password_hash) {
+            console.log('[Auth] User not found or no password_hash');
+            return null;
+          }
           const valid = await bcrypt.compare(password, user.password_hash);
-          if (!valid) return null;
-          if (user.status !== 'active') return null; // pending or disabled
+          if (!valid) {
+            console.log('[Auth] Password comparison failed');
+            return null;
+          }
+          if (user.status !== 'active') {
+            console.log('[Auth] User status not active:', user.status);
+            return null;
+          }
 
+          console.log('[Auth] Login successful for:', email);
           return { id: user.id, email: user.email, name: user.name, image: user.image };
         },
       }),

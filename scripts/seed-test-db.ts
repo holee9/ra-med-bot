@@ -8,6 +8,7 @@ const ORG_ID = '10000000-0000-4000-8000-000000000001';
 const RA_LEAD_ID = '10000000-0000-4000-8000-000000000101';
 const VIEWER_ID = '10000000-0000-4000-8000-000000000102';
 const ADMIN_ID = '10000000-0000-4000-8000-000000000103';
+const EVALUATOR_ID = '10000000-0000-4000-8000-000000000104';
 const PROJECT_ID = '10000000-0000-4000-8000-000000000201';
 const CONVERSATION_ID = '10000000-0000-4000-8000-000000000301';
 const USER_MESSAGE_ID = '10000000-0000-4000-8000-000000000401';
@@ -54,6 +55,10 @@ async function main(): Promise<void> {
           ),
           (
             ${ADMIN_ID}, 'admin@example.test', 'Admin', 'admin', 'ko', 'system', 'RA',
+            ${passwordHash}, 'active', false
+          ),
+          (
+            ${EVALUATOR_ID}, 'evaluator@example.test', 'Evaluator', 'admin', 'ko', 'system', 'RA',
             ${passwordHash}, 'active', false
           )
         on conflict (id) do update set
@@ -104,7 +109,8 @@ async function main(): Promise<void> {
         values
           (${RA_LEAD_ID}, ${ORG_ID}),
           (${VIEWER_ID}, ${ORG_ID}),
-          (${ADMIN_ID}, ${ORG_ID})
+          (${ADMIN_ID}, ${ORG_ID}),
+          (${EVALUATOR_ID}, ${ORG_ID})
         on conflict do nothing
       `;
 
@@ -113,7 +119,8 @@ async function main(): Promise<void> {
         values
           (${RA_LEAD_ID}, ${PROJECT_ID}),
           (${VIEWER_ID}, ${PROJECT_ID}),
-          (${ADMIN_ID}, ${PROJECT_ID})
+          (${ADMIN_ID}, ${PROJECT_ID}),
+          (${EVALUATOR_ID}, ${PROJECT_ID})
         on conflict do nothing
       `;
 
@@ -188,13 +195,7 @@ async function main(): Promise<void> {
           ${CONVERSATION_ID},
           '{"seededBy":"scripts/seed-test-db.ts","purpose":"local-e2e"}'::jsonb
         )
-        on conflict (id) do update set
-          actor_id = excluded.actor_id,
-          action = excluded.action,
-          resource_type = excluded.resource_type,
-          resource_id = excluded.resource_id,
-          conversation_id = excluded.conversation_id,
-          meta_json = excluded.meta_json
+        on conflict do nothing
       `;
 
       await tx`
@@ -216,13 +217,7 @@ async function main(): Promise<void> {
           ${CONVERSATION_ID},
           '{"seededBy":"scripts/seed-test-db.ts","purpose":"local-e2e-chat-query"}'::jsonb
         )
-        on conflict (id) do update set
-          actor_id = excluded.actor_id,
-          action = excluded.action,
-          resource_type = excluded.resource_type,
-          resource_id = excluded.resource_id,
-          conversation_id = excluded.conversation_id,
-          meta_json = excluded.meta_json
+        on conflict do nothing
       `;
     });
 

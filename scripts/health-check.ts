@@ -15,7 +15,7 @@
  * @MX:REASON Public URL validation requires guaranteed env availability before DB connection
  */
 
-import { parseEnv } from '../lib/env.js';
+import { parseEnv } from '../lib/env.ts';
 
 interface HealthCheckResult {
   status: 'healthy' | 'unhealthy';
@@ -113,6 +113,7 @@ function checkEnvHealth(): HealthCheckResult {
 // Main execution
 const healthResult = checkEnvHealth();
 
+// biome-ignore lint/suspicious/noConsole: Health-check CLI reports machine-readable JSON on stdout.
 console.log(JSON.stringify(healthResult, null, 2));
 
 // Exit with appropriate code
