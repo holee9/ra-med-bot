@@ -1,13 +1,14 @@
 # Regula Implementation Status
 
-Reviewed: 2026-06-20 KST
-Implementation baseline commit: `04b6333` (`main` after PR #192 / Issue #156 typed adapter merge)
+Reviewed: 2026-06-20 KST (updated)
+Implementation baseline commit: `9ef9db2` (`main` after PR #190 / P0 E2E validation merge)
 
 This document includes the 2026-06-18 PR cleanup after PR #184 merge,
 PR #177 superseded closure, the completed Predicate Visualization addendum
 for Issue #185 / PR #186, E2E validation MRD completion for Issue #182,
-the Issue #188 hybrid-ra-saas inbound webhook hardening pass, and the
-Issue #156 hybrid-ra-saas outbound typed adapter merge.
+the Issue #188 hybrid-ra-saas inbound webhook hardening pass,
+the Issue #156 hybrid-ra-saas outbound typed adapter merge,
+and the 2026-06-20 security/quality fixes (#162 RBAC, #164 Predicate E2E, #152 workflow mock audit, #163 onboarding E2E seed).
 
 ## Executive State
 
@@ -37,20 +38,21 @@ types, Bearer + tenant header injection, 30 second timeout handling, and
 classified `HybridRaClientError.kind` values for unconfigured, auth, schema,
 server, timeout, and network failures.
 
-## Verified Repository State
+## Verified Repository State (2026-06-20)
 
 | Area | State | Evidence |
 |---|---|---|
-| Active branch | `main` | no open PRs for current work |
-| Base commit | `04b6333` | PR #192 squash merge on main |
-| Completed PRs/issues | #184, #186, #188, #192/#156 | E2E validation, Predicate Visualization, inbound webhooks, outbound typed adapter complete |
-| E2E Validation | COMPLETE | Smoke Test 8/8 specs passing, MRD complete |
+| Active branch | `main` | baseline commit `9ef9db2` |
+| Completed PRs/issues | #184, #186, #188, #192/#156, #190/#182, #193/#162 | all merged |
+| E2E Validation | COMPLETE | Go/No-Go spec, Smoke Test 8/8 specs, MRD complete |
 | Traceability Integration | COMPLETE | BFF routes, UI, RBAC all implemented |
-| Webhook Integration | COMPLETE | `/api/webhooks/audit`, `ifu`, `knowledge-sync` implemented and hardened |
+| Webhook Integration | COMPLETE | `/api/webhooks/audit`, `ifu`, `knowledge-sync` hardened |
 | hybrid-ra-saas typed adapter | COMPLETE | `createHybridRaClient()` covers 7 upstream endpoint contracts |
-| Tests | 2,386 tests passing | full local Vitest run after PR #192 docs sync |
-| Open PRs | 1 | #190 remains open and unrelated to this docs sync |
-| Work gate | #18 active | #18 remains open and mandatory |
+| RBAC security (#162) | COMPLETE | ra-lead → /403 redirect E2E validated (PR #193) |
+| Predicate E2E stability (#164) | COMPLETE | hydration + RBAC locator fixed (in PR #190) |
+| Mock workflow audit (#152) | COMPLETE | mock_data, workflow_run_id metadata connected (in PR #190) |
+| Onboarding E2E seed (#163) | COMPLETE | globalSetup.ts bootstrapProjects + empty-state CTA in Sidebar |
+| Work gate | #18 active | mandatory before new P0 work |
 
 ## 2026-06-20 hybrid-ra-saas Typed Adapter — Issue #156 / PR #192
 
