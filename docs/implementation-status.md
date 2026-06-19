@@ -1,11 +1,12 @@
 # Regula Implementation Status
 
 Reviewed: 2026-06-19 KST
-Implementation baseline commit: `b775e57` (`origin/main` after PR #184 cleanup docs)
+Implementation baseline commit: `2a3ac67` (`main` after Issue #188 webhook review fixes)
 
 This document includes the 2026-06-18 PR cleanup after PR #184 merge,
 PR #177 superseded closure, the completed Predicate Visualization addendum
-for Issue #185 / PR #186, and E2E validation MRD completion for Issue #182.
+for Issue #185 / PR #186, E2E validation MRD completion for Issue #182,
+and the Issue #188 hybrid-ra-saas inbound webhook hardening pass.
 
 ## Executive State
 
@@ -24,18 +25,52 @@ and comprehensive MRD documentation at `docs/e2e-validation-mrd.md`.
 CI Gates, Playwright chromium/firefox/webkit, LLM Eval Harness, E2E Smoke,
 Vercel preview, and Security Scan all passed for PR #184 before merge.
 
+Issue #188 is closed. The final review pass hardened the inbound webhook
+boundary by returning 400 for malformed JSON, comparing SHA-256 digests via
+`crypto.timingSafeEqual`, removing production no-op logging, and adding focused
+unit coverage for webhook error handling and timing-safe comparison behavior.
+
 ## Verified Repository State
 
 | Area | State | Evidence |
 |---|---|---|
-| Active branch | `main` | all feature branches merged |
-| Base commit | `b775e57` | `origin/main`, latest verified state |
-| Completed PRs | #184, #186 | E2E validation, Predicate Visualization merged |
+| Active branch | `main` | no open PRs for current work |
+| Base commit | `2a3ac67` | Issue #188 review fixes committed locally before docs push |
+| Completed PRs/issues | #184, #186, #188 | E2E validation, Predicate Visualization, inbound webhooks complete |
 | E2E Validation | COMPLETE | Smoke Test 8/8 specs passing, MRD complete |
 | Traceability Integration | COMPLETE | BFF routes, UI, RBAC all implemented |
-| Tests | 45 predicate-focused tests passing | local targeted Vitest run after review fixes |
+| Webhook Integration | COMPLETE | `/api/webhooks/audit`, `ifu`, `knowledge-sync` implemented and hardened |
+| Tests | 2,352 tests passing | full local Vitest run after Issue #188 review fixes |
 | Open PRs | 0 | all active work merged |
 | Work gate | #18 active | #18 remains open and mandatory |
+
+## 2026-06-19 hybrid-ra-saas Webhook Hardening — Issue #188
+
+hybrid-ra-saas now has three inbound push points into Regula:
+`POST /api/webhooks/audit`, `POST /api/webhooks/ifu`, and
+`POST /api/webhooks/knowledge-sync`. The endpoints authenticate with
+shared-secret headers, validate payload shape with Zod, and return explicit
+failure status codes instead of silently accepting bad input.
+
+| Area | State | Evidence |
+|---|---|---|
+| Audit webhook | Complete | `X-Regula-API-Key`, audit payload schema, 202 Accepted |
+| IFU webhook | Complete | `X-Regula-API-Key`, IFU extraction payload schema, 202 Accepted |
+| Knowledge sync webhook | Complete | `X-Crawl-Push-Secret`, document array schema, 200 `{ received: true }` |
+| Auth comparison | Hardened | SHA-256 digest normalization before `crypto.timingSafeEqual` |
+| Bad JSON handling | Hardened | malformed JSON returns 400 `{ "error": "Invalid JSON" }` |
+| Invalid payload handling | Hardened | Zod issues returned with 400 `{ "error": "Invalid payload" }` |
+| Logging | Hardened | removed placeholder production `console.log`/TODO side effects |
+| Regression coverage | Complete | `tests/unit/api/webhooks.test.ts`, `tests/unit/webauth/timing-safe.test.ts` |
+
+Validation evidence:
+
+- `./node_modules/.bin/biome check .` — pass.
+- `./node_modules/.bin/biome format .` — pass.
+- `./node_modules/.bin/tsc --noEmit` — pass.
+- `./node_modules/.bin/vitest run` — 2,352 tests passed, 7 skipped.
+- `./node_modules/.bin/next build` — pass.
+- `node --experimental-strip-types scripts/qa/audit-completeness.ts` — known pre-existing audit gap remains in 4 non-webhook routes.
 
 ## 2026-06-19 E2E Validation & Documentation Update
 
@@ -60,6 +95,7 @@ Verification evidence:
 - `pnpm lint` — pass.
 - `pnpm typecheck` — pass.
 - `pnpm exec vitest run` — 222 files passed, 2,307 tests passed, 7 skipped.
+- Issue #188 review validation — 2,352 tests passed, 7 skipped after webhook hardening.
 - E2E Smoke Test — 8/8 specs passing (auth, consultation, citation, predicate, traceability, export, project, i18n).
 - GitHub PR #186 checks — CI Gates, Lint, Typecheck, Unit tests all success.
 
@@ -199,8 +235,8 @@ Important caveat:
 
 | Priority | Work | Reason |
 |---|---|---|
-| P0 | Push PR #186 review/doc updates | unblock Issue #185 review |
-| P0 | Confirm PR #186 checks after push | merge state currently `UNSTABLE` |
+| P0 | Push Issue #188 review/doc updates | publish webhook hardening and documentation evidence |
+| P0 | Confirm `main` push state | ensure local review fixes and docs are on `origin/main` |
 | P1 | Begin #23 SPEC-REGULA-CER-001 (EU MDR Clinical Evaluation Report) | Wave 3 next SPEC |
 | P1 | Begin #24 SPEC-REGULA-PCCP-001 (FDA PCCP builder) | Wave 3 next SPEC |
 | P2 | Resolve duplicate local `main` commit disposition | Housekeeping after PR #186 lands
@@ -221,7 +257,7 @@ Important caveat:
 - TypeScript files: 377 (stable)
 - API routes: 67 (stable)
 - Database tables: 18 (includes new predicate tables)
-- Test coverage: 2,307 tests passing (220+ test files)
+- Test coverage: 2,352 tests passing, 7 skipped (220+ test files)
 - E2E specs: 8 Smoke Test specs complete, 3 Integration Test specs in progress
 
 **Wave 3 Status**:

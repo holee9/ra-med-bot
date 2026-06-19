@@ -11,7 +11,7 @@
 
 ---
 
-## 구현 현황 대시보드 (2026-06-18 KST 기준)
+## 구현 현황 대시보드 (2026-06-19 KST 기준)
 
 상세 점검 기록: [`docs/implementation-status.md`](docs/implementation-status.md)
 
@@ -21,17 +21,19 @@ Issue #182 — 실사용자 E2E 검증 체계 완료. Smoke Test 8/8 Spec 통과
 Issue #169 — Traceability 통합 PR #177은 동일 변경이 main에 이미 반영되어 stale/superseded로 종료.
 Issue #185 — Predicate 비교 분석 시각화 PR #186 완료. Bar/Radar/Table 시각화, Demo animation, Required/Optional 색상 구분 구현.
 Issue #164, #163 — Evidence/Authoring API BFF+UI 연동 완료. API 라우트 및 UI 통합 완료.
+Issue #188 — hybrid-ra-saas inbound webhook 3종 구현 후 리뷰 보강 완료. invalid JSON 400 응답, SHA-256 digest 기반 timing-safe 인증 비교, webhook 단위 테스트 추가.
 
 | 항목 | 상태 | 근거 |
 |---|---|---|
 | PR #184 | MERGED | squash merge `a79759c` |
 | PR #177 | CLOSED / SUPERSEDED | main 병합 시 실질 코드 diff 없음, stale branch 직접 머지 방지 |
 | PR #186 | MERGED | Predicate 시각화 완료 (Bar/Radar/Table, Demo animation, 필수/선택 색상 구분) |
+| Issue #188 | CLOSED | `POST /api/webhooks/{audit,ifu,knowledge-sync}` 구현 및 리뷰 보강 완료 |
 | Traceability UI | PASS | `/workflows/traceability` 스캔, 그래프, 영향 분석 탭 구현 |
 | BFF 프록시 | PASS | `/api/ra/traceability/{scan,graph,impact}` |
-| 권한 매트릭스 | PASS | `traceability.scan/view/impact`, `checklist.generate/view/update` 포함 23 actions |
+| 권한 매트릭스 | PASS | `traceability.scan/view/impact`, `checklist.generate/view/update` 포함 28 actions |
 | CI 복구 | PASS | CI Gates, Playwright chromium/firefox/webkit, LLM Eval, E2E Smoke, Security Scan success |
-| QA evidence | PASS | 로컬 전체 `vitest run`: 222 files pass, 2,307 tests pass, 7 skipped |
+| QA evidence | PASS | 로컬 전체 `vitest run`: 2,352 tests pass, 7 skipped |
 
 ### 종합 판단
 
@@ -50,7 +52,7 @@ Issue #164, #163 — Evidence/Authoring API BFF+UI 연동 완료. API 라우트 
 | 구현 기준 | PASS | PREDICATE-001 구현 완료 (PR #126, Fixes #22). TypeScript 0 errors, 1,976 테스트 통과 |
 | GitHub Actions | PASS | `CI`, `Deploy`, `Security Scan` 모두 success on `feat/issue-22-predicate` |
 | 구현 표면 | PASS | 19 pages, 33 API route handlers, 36 component files, 200+ lib files |
-| 테스트 자산 | PASS | 220+ test/spec files, 8+ Playwright specs, 2,307 tests passing locally after #184 |
+| 테스트 자산 | PASS | 220+ test/spec files, 8+ Playwright specs, 2,352 tests passing locally after #188 review fixes |
 | CI core gates | PASS | typecheck, lint, format, unit, RBAC, audit, tokens, i18n, glossary, contrast, modules, migrations, build |
 | E2E CI | PASS | E2E Smoke 및 Playwright chromium/firefox/webkit 통과 |
 | RAG 파이프라인 | PASS | hybrid search FTS fallback 동작, 8 citations 정상 반환, LLM 오류 graceful degradation 확인 |
@@ -133,9 +135,10 @@ hybrid-ra-saas (Customer Local Runtime + Cloud Control Plane)에서 ra-med-bot�
 | 영역 | 구현 내용 |
 |------|---------|
 | Webhook 엔드포인트 | `POST /api/webhooks/audit`, `POST /api/webhooks/ifu`, `POST /api/webhooks/knowledge-sync` |
-| 인증 | timing-safe compare (Node.js crypto.timingSafeEqual with SHA256 hash) |
-| 보안 | 401 Unauthorized (silent no-op 금지), Zod payload 검증 |
+| 인증 | SHA-256 digest 정규화 후 `crypto.timingSafeEqual` 비교 |
+| 보안 | 401 Unauthorized (silent no-op 금지), invalid JSON 400, Zod payload 검증, production console logging 제거 |
 | 환경변수 | `REGULA_API_KEY` (audit/ifu), `CRAWL_PUSH_SECRET` (knowledge-sync) |
+| 리뷰 보강 | webhook invalid JSON regression tests, timing-safe helper tests, onboarding lint/type/a11y cleanup |
 
 **발신측 연동 (hybrid-ra-saas 배포 시 설정):**
 - `REGULA_AUDIT_WEBHOOK_URL` → `https://<ra-med-bot-domain>/api/webhooks/audit`
@@ -144,9 +147,12 @@ hybrid-ra-saas (Customer Local Runtime + Cloud Control Plane)에서 ra-med-bot�
 
 검증 결과:
 ```
-pnpm tsc --noEmit                                          PASS (기존 onboarding.ts 에러만 존재)
-pnpm test                                                  68 tests PASS (2 skipped)
-git diff --check                                           PASS
+./node_modules/.bin/biome check .                                  PASS
+./node_modules/.bin/biome format .                                 PASS
+./node_modules/.bin/tsc --noEmit                                   PASS
+./node_modules/.bin/vitest run                                     PASS (2352 passed / 7 skipped)
+./node_modules/.bin/next build                                     PASS
+node --experimental-strip-types scripts/qa/audit-completeness.ts   KNOWN: 기존 non-webhook route 4개 audit gap 유지
 ```
 
 ### RAG 파이프라인 복구 수정 (2026-05-28)

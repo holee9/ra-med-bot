@@ -1,9 +1,11 @@
 # Regula — API Reference
 
-> Version: 1.0.0 | Updated: 2026-05-03  
+> Version: 1.0.0 | Updated: 2026-06-19
 > Base URL: `https://regula.app/api`
 
-All endpoints require a valid Auth.js session cookie. Unauthenticated requests return **401 Unauthorized**.
+Application endpoints require a valid Auth.js session cookie. Public inbound
+webhook endpoints use dedicated shared-secret headers instead of session cookies.
+Unauthenticated requests return **401 Unauthorized**.
 
 ---
 
@@ -332,6 +334,95 @@ System health check endpoint. Does not require authentication.
 
 ---
 
+## Inbound Webhooks
+
+hybrid-ra-saas pushes customer-runtime and cloud-control-plane events into
+Regula through public webhook endpoints. These endpoints do not use Auth.js
+cookies. They require shared-secret headers configured through environment
+variables and compare received secrets with SHA-256 digest normalization plus
+`crypto.timingSafeEqual`.
+
+| Endpoint | Auth header | Secret env | Success |
+|----------|-------------|------------|---------|
+| `POST /api/webhooks/audit` | `X-Regula-API-Key` | `REGULA_API_KEY` | `202 Accepted` |
+| `POST /api/webhooks/ifu` | `X-Regula-API-Key` | `REGULA_API_KEY` | `202 Accepted` |
+| `POST /api/webhooks/knowledge-sync` | `X-Crawl-Push-Secret` | `CRAWL_PUSH_SECRET` | `200 OK` |
+
+### POST /api/webhooks/audit
+
+```http
+POST /api/webhooks/audit
+Content-Type: application/json
+X-Regula-API-Key: <REGULA_API_KEY>
+```
+
+```json
+{
+  "tenant_id": "tenant-001",
+  "event_type": "audit.event.created",
+  "product_id": "product-001",
+  "data": {
+    "actor": "user@example.com",
+    "action": "consult.created"
+  }
+}
+```
+
+### POST /api/webhooks/ifu
+
+```http
+POST /api/webhooks/ifu
+Content-Type: application/json
+X-Regula-API-Key: <REGULA_API_KEY>
+```
+
+```json
+{
+  "tenant_id": "tenant-001",
+  "job_id": "ifu-job-001",
+  "doc_id": "doc-001",
+  "doc_type": "ifu",
+  "confidence": 0.91,
+  "field_candidates": {
+    "intended_use": ["Example intended use"]
+  },
+  "required_missing": []
+}
+```
+
+### POST /api/webhooks/knowledge-sync
+
+```http
+POST /api/webhooks/knowledge-sync
+Content-Type: application/json
+X-Crawl-Push-Secret: <CRAWL_PUSH_SECRET>
+```
+
+```json
+{
+  "job_id": "crawl-job-001",
+  "documents": [
+    {
+      "id": "doc-001",
+      "url": "https://example.com/regulation",
+      "hash": "sha256:abc123",
+      "source": "fda",
+      "content": "Document text..."
+    }
+  ]
+}
+```
+
+### Webhook Error Responses
+
+| Status | Body | Description |
+|--------|------|-------------|
+| 400 | `{ "error": "Invalid JSON" }` | Request body is not valid JSON |
+| 400 | `{ "error": "Invalid payload", "issues": [...] }` | JSON parsed, but Zod schema validation failed |
+| 401 | `Unauthorized` | Missing, wrong, or unconfigured shared secret |
+
+---
+
 ## Rate Limiting
 
 | Endpoint | Limit | Window |
@@ -339,6 +430,7 @@ System health check endpoint. Does not require authentication.
 | `POST /api/ra/consult` | 30 req | 60 seconds |
 | `GET /api/ra/sources/*` | 100 req | 60 seconds |
 | `GET/POST /api/ra/projects` | 60 req | 60 seconds |
+| `POST /api/webhooks/*` | sender-controlled | deploy behind ingress/WAF limits as needed |
 | `GET /api/health` | unlimited | — |
 
 Rate limit responses include:
@@ -359,6 +451,7 @@ X-RateLimit-Reset: 1746269260
 | `UNAUTHORIZED` | 401 | Session missing or expired |
 | `FORBIDDEN` | 403 | Insufficient RBAC role |
 | `INVALID_REQUEST` | 400 | Zod validation failure (see `details` field) |
+| `INVALID_JSON` | 400 | Webhook request body is not valid JSON |
 | `NOT_FOUND` | 404 | Resource does not exist |
 | `RATE_LIMIT_EXCEEDED` | 429 | Request rate limit exceeded |
 | `INTERNAL_ERROR` | 500 | Unexpected server error |
