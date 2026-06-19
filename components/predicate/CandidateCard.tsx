@@ -8,7 +8,7 @@
 // parent via the isSelected prop (defaults to false).
 
 import type { PredicateCandidate } from '@/lib/predicate/types';
-import { useState } from 'react';
+import { useState, useTransition } from 'react';
 
 interface CandidateCardProps {
   candidate: PredicateCandidate;
@@ -40,7 +40,14 @@ export default function CandidateCard({
   isSelected = false,
 }: CandidateCardProps) {
   const [expanded, setExpanded] = useState(false);
+  const [isPending, startTransition] = useTransition();
   const se = isSubstantiallyEquivalent(candidate.decision);
+
+  const handleSelect = () => {
+    startTransition(() => {
+      onSelect(candidate);
+    });
+  };
 
   return (
     <article
@@ -83,10 +90,11 @@ export default function CandidateCard({
 
         <button
           type="button"
-          onClick={() => onSelect(candidate)}
-          className="shrink-0 rounded-md bg-brand-800 px-3 py-2 text-sm font-medium text-white hover:bg-brand-700 focus:outline-none focus:ring-2 focus:ring-brand-400"
+          onClick={handleSelect}
+          disabled={isPending}
+          className="shrink-0 rounded-md bg-brand-800 px-3 py-2 text-sm font-medium text-white hover:bg-brand-700 focus:outline-none focus:ring-2 focus:ring-brand-400 disabled:cursor-not-allowed disabled:opacity-60"
         >
-          Select as Predicate
+          {isPending ? '선택 중...' : 'Select as Predicate'}
         </button>
       </div>
 

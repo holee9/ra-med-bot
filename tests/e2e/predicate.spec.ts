@@ -157,11 +157,23 @@ async function mockPredicateApis(page: import('@playwright/test').Page): Promise
       });
       return;
     }
-    // GET (history list)
+    // GET (history list) - handle sort query param
+    const url = new URL(route.request().url(), 'http://localhost');
+    const sortParam = url.searchParams.get('sort');
+    let historyBody = HISTORY_FIXTURE;
+
+    if (sortParam === 'desc') {
+      // Reverse comparisons array for descending order
+      historyBody = {
+        ...HISTORY_FIXTURE,
+        comparisons: [...HISTORY_FIXTURE.comparisons].reverse(),
+      };
+    }
+
     await route.fulfill({
       status: 200,
       contentType: 'application/json',
-      body: JSON.stringify(HISTORY_FIXTURE),
+      body: JSON.stringify(historyBody),
     });
   });
 
@@ -322,7 +334,7 @@ test.describe('Predicate RBAC (A8, REQ-PRE-029)', () => {
       await searchInput.fill('infusion pump');
       await page.getByRole('button', { name: 'Search' }).click();
       await expect(
-        page.locator('main [role="alert"], #main-content [role="alert"]').first(),
+        page.locator('[data-testid="search-error"], [role="alert"]').first(),
       ).toBeVisible();
       await expect(page.getByTestId('candidate-card')).toHaveCount(0);
     } else {
@@ -380,7 +392,7 @@ test.describe('Predicate RBAC (A8, REQ-PRE-029)', () => {
       await searchInput.fill('infusion pump');
       await page.getByRole('button', { name: 'Search' }).click();
       await expect(
-        page.locator('main [role="alert"], #main-content [role="alert"]').first(),
+        page.locator('[data-testid="search-error"], [role="alert"]').first(),
       ).toBeVisible();
       await expect(page.getByTestId('candidate-card')).toHaveCount(0);
     } else {
