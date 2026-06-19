@@ -17,17 +17,9 @@ import * as crypto from 'node:crypto';
  * const isValid = timingSafeEqual(receivedKey, env.REGULA_API_KEY);
  */
 export function timingSafeEqual(a: string, b: string): boolean {
-  if (a.length !== b.length) {
-    return false;
-  }
+  const aBuffer = crypto.createHash('sha256').update(a, 'utf8').digest();
+  const bBuffer = crypto.createHash('sha256').update(b, 'utf8').digest();
 
-  // Node.js crypto.timingSafeEqual requires Buffer inputs
-  // Use utf-8 encoding to convert strings to buffers
-  const aBuffer = Buffer.from(a, 'utf-8');
-  const bBuffer = Buffer.from(b, 'utf-8');
-
-  // crypto.timingSafeEqual throws if buffers have different lengths
-  // We already checked length, so this is safe
   try {
     return crypto.timingSafeEqual(aBuffer, bBuffer);
   } catch {

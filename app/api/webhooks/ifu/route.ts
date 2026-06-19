@@ -33,19 +33,21 @@ export const POST = async (req: Request) => {
     return new Response('Unauthorized', { status: 401 });
   }
 
-  // Parse and validate payload
-  const body = await req.json();
+  let body: unknown;
+  try {
+    body = await req.json();
+  } catch {
+    return Response.json({ error: 'Invalid JSON' }, { status: 400 });
+  }
+
   const parsed = ifuWebhookSchema.safeParse(body);
 
   if (!parsed.success) {
-    return Response.json({ error: 'Invalid payload', issues: parsed.error.issues }, { status: 400 });
+    return Response.json(
+      { error: 'Invalid payload', issues: parsed.error.issues },
+      { status: 400 },
+    );
   }
-
-  const { tenant_id, job_id, doc_id, doc_type, confidence } = parsed.data;
-
-  // TODO: Process IFU parsing event (store results, trigger QA workflows, etc.)
-  // For now, accept the webhook without processing
-  console.log('[ifu webhook] Received:', { tenant_id, job_id, doc_id, doc_type, confidence });
 
   return new Response(null, { status: 202 });
 };

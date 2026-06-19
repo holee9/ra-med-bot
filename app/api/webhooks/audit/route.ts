@@ -30,19 +30,21 @@ export const POST = async (req: Request) => {
     return new Response('Unauthorized', { status: 401 });
   }
 
-  // Parse and validate payload
-  const body = await req.json();
+  let body: unknown;
+  try {
+    body = await req.json();
+  } catch {
+    return Response.json({ error: 'Invalid JSON' }, { status: 400 });
+  }
+
   const parsed = auditWebhookSchema.safeParse(body);
 
   if (!parsed.success) {
-    return Response.json({ error: 'Invalid payload', issues: parsed.error.issues }, { status: 400 });
+    return Response.json(
+      { error: 'Invalid payload', issues: parsed.error.issues },
+      { status: 400 },
+    );
   }
-
-  const { tenant_id, event_type, product_id, data } = parsed.data;
-
-  // TODO: Process audit event (store in database, trigger notifications, etc.)
-  // For now, accept the webhook without processing
-  console.log('[audit webhook] Received:', { tenant_id, event_type, product_id });
 
   return new Response(null, { status: 202 });
 };

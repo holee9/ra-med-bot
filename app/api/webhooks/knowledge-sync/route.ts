@@ -37,19 +37,21 @@ export const POST = async (req: Request) => {
     return new Response('Unauthorized', { status: 401 });
   }
 
-  // Parse and validate payload
-  const body = await req.json();
+  let body: unknown;
+  try {
+    body = await req.json();
+  } catch {
+    return Response.json({ error: 'Invalid JSON' }, { status: 400 });
+  }
+
   const parsed = knowledgeSyncWebhookSchema.safeParse(body);
 
   if (!parsed.success) {
-    return Response.json({ error: 'Invalid payload', issues: parsed.error.issues }, { status: 400 });
+    return Response.json(
+      { error: 'Invalid payload', issues: parsed.error.issues },
+      { status: 400 },
+    );
   }
-
-  const { job_id, documents } = parsed.data;
-
-  // TODO: Process knowledge sync event (update corpus, trigger embeddings, etc.)
-  // For now, accept the webhook without processing
-  console.log('[knowledge-sync webhook] Received:', { job_id, documentCount: documents.length });
 
   return Response.json({ received: true }, { status: 200 });
 };
