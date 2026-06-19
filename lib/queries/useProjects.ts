@@ -35,5 +35,9 @@ export function useProjects() {
   return useQuery({
     queryKey: ['projects'],
     queryFn: fetchProjects,
+    staleTime: 1000 * 60 * 5, // 5분 동안 데이터는 신선한 것으로 간주
+    gcTime: 1000 * 60 * 10, // 10분 후 캐시에서 제거
+    refetchOnWindowFocus: false, // 윈도우 포커스 시 자동 재요청 비활성화
+    refetchOnMount: false, // 마운트 시 자동 재요청 비활성화
   });
 }

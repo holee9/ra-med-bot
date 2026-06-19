@@ -3,6 +3,8 @@
 import { useDashboardStats } from '@/lib/queries/useDashboardStats';
 import { useProjects } from '@/lib/queries/useProjects';
 import { useUpdates } from '@/lib/queries/useUpdates';
+import { useRouter } from 'next/navigation';
+import { useEffect } from 'react';
 
 function valueFromStats(stats: unknown, key: string): string {
   if (!stats || typeof stats !== 'object') return '0';
@@ -16,11 +18,32 @@ export default function DashboardPage() {
   const dashboard = useDashboardStats();
   const projects = useProjects();
   const updates = useUpdates();
+  const router = useRouter();
   const updateCount = updates.data?.pages.flatMap((page) => page.data).length ?? 0;
+
+  // Project-switch 로직: 프로젝트가 없으면 onboarding으로 이동
+  useEffect(() => {
+    if (!projects.isLoading && (!projects.data || projects.data.length === 0)) {
+      router.push('/onboarding');
+    }
+  }, [projects.isLoading, projects.data, router]);
+
+  if (projects.isLoading) {
+    return (
+      <div className="flex items-center justify-center py-12">
+        <div className="h-8 w-8 animate-spin rounded-full border-4 border-brand-200 border-t-brand-700" />
+      </div>
+    );
+  }
+
+  // 프로젝트가 없으면 onboarding으로 리다이렉트 (빈 상태 렌더링 방지)
+  if (!projects.data || projects.data.length === 0) {
+    return null;
+  }
 
   const cards = [
     { label: '상담', value: valueFromStats(dashboard.data, 'totalConversations') },
-    { label: '프로젝트', value: String(projects.data?.length ?? 0) },
+    { label: '프로젝트', value: String(projects.data.length) },
     { label: '전문가 검토', value: valueFromStats(dashboard.data, 'pendingReviews') },
     { label: '규제 업데이트', value: String(updateCount) },
   ];
