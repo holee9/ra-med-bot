@@ -192,7 +192,7 @@ test.describe('RA Lead Go/No-Go Evaluation', () => {
     // Login as evaluator
     await page.goto('/login');
     await page.fill('[name="email"]', 'evaluator@example.test');
-    await page.fill('[name="password"]', 'test-password');
+    await page.fill('[name="password"]', 'TestE2EPassword123!');
     await page.click('[type="submit"]');
     await page.waitForURL('/dashboard');
   });
@@ -243,7 +243,7 @@ test.describe('RA Specialist Go/No-Go Evaluation', () => {
   test.beforeEach(async ({ page }) => {
     await page.goto('/login');
     await page.fill('[name="email"]', 'evaluator@example.test');
-    await page.fill('[name="password"]', 'test-password');
+    await page.fill('[name="password"]', 'TestE2EPassword123!');
     await page.click('[type="submit"]');
     await page.waitForURL('/dashboard');
   });
@@ -261,7 +261,7 @@ test.describe('Clinical Lead Go/No-Go Evaluation', () => {
   test.beforeEach(async ({ page }) => {
     await page.goto('/login');
     await page.fill('[name="email"]', 'evaluator@example.test');
-    await page.fill('[name="password"]', 'test-password');
+    await page.fill('[name="password"]', 'TestE2EPassword123!');
     await page.click('[type="submit"]');
     await page.waitForURL('/dashboard');
   });
@@ -302,7 +302,7 @@ test.describe('Medical Writer Go/No-Go Evaluation', () => {
   test.beforeEach(async ({ page }) => {
     await page.goto('/login');
     await page.fill('[name="email"]', 'evaluator@example.test');
-    await page.fill('[name="password"]', 'test-password');
+    await page.fill('[name="password"]', 'TestE2EPassword123!');
     await page.click('[type="submit"]');
     await page.waitForURL('/dashboard');
   });
@@ -320,7 +320,7 @@ test.describe('R&D Lead Go/No-Go Evaluation', () => {
   test.beforeEach(async ({ page }) => {
     await page.goto('/login');
     await page.fill('[name="email"]', 'evaluator@example.test');
-    await page.fill('[name="password"]', 'test-password');
+    await page.fill('[name="password"]', 'TestE2EPassword123!');
     await page.click('[type="submit"]');
     await page.waitForURL('/dashboard');
   });
@@ -343,7 +343,7 @@ test.describe('Engineering Specialist Go/No-Go Evaluation', () => {
   test.beforeEach(async ({ page }) => {
     await page.goto('/login');
     await page.fill('[name="email"]', 'evaluator@example.test');
-    await page.fill('[name="password"]', 'test-password');
+    await page.fill('[name="password"]', 'TestE2EPassword123!');
     await page.click('[type="submit"]');
     await page.waitForURL('/dashboard');
   });
@@ -367,7 +367,7 @@ test.describe('QA Lead Go/No-Go Evaluation', () => {
   test.beforeEach(async ({ page }) => {
     await page.goto('/login');
     await page.fill('[name="email"]', 'evaluator@example.test');
-    await page.fill('[name="password"]', 'test-password');
+    await page.fill('[name="password"]', 'TestE2EPassword123!');
     await page.click('[type="submit"]');
     await page.waitForURL('/dashboard');
   });
@@ -390,7 +390,7 @@ test.describe('Documentation Specialist Go/No-Go Evaluation', () => {
   test.beforeEach(async ({ page }) => {
     await page.goto('/login');
     await page.fill('[name="email"]', 'evaluator@example.test');
-    await page.fill('[name="password"]', 'test-password');
+    await page.fill('[name="password"]', 'TestE2EPassword123!');
     await page.click('[type="submit"]');
     await page.waitForURL('/dashboard');
   });
@@ -414,7 +414,7 @@ test.describe('Legal Counsel Go/No-Go Evaluation', () => {
   test.beforeEach(async ({ page }) => {
     await page.goto('/login');
     await page.fill('[name="email"]', 'evaluator@example.test');
-    await page.fill('[name="password"]', 'test-password');
+    await page.fill('[name="password"]', 'TestE2EPassword123!');
     await page.click('[type="submit"]');
     await page.waitForURL('/dashboard');
   });
@@ -437,7 +437,7 @@ test.describe('Risk Manager Go/No-Go Evaluation', () => {
   test.beforeEach(async ({ page }) => {
     await page.goto('/login');
     await page.fill('[name="email"]', 'evaluator@example.test');
-    await page.fill('[name="password"]', 'test-password');
+    await page.fill('[name="password"]', 'TestE2EPassword123!');
     await page.click('[type="submit"]');
     await page.waitForURL('/dashboard');
   });
@@ -455,7 +455,7 @@ test.describe('종합 Go/No-Go 결정 프로세스', () => {
   test.beforeEach(async ({ page }) => {
     await page.goto('/login');
     await page.fill('[name="email"]', 'evaluator@example.test');
-    await page.fill('[name="password"]', 'test-password');
+    await page.fill('[name="password"]', 'TestE2EPassword123!');
     await page.click('[type="submit"]');
     await page.waitForURL('/dashboard');
   });

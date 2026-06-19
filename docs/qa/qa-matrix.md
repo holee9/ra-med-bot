@@ -1,6 +1,20 @@
 # Regula QA Matrix
 
-Updated: 2026-06-18
+Updated: 2026-06-19
+
+## Current State
+
+- Baseline commit: `a63915a` (HEAD equals main)
+- Open PRs: #190 (env validation hardening)
+- Active branch: `feat/p0-e2e-validation-mrd` (synchronized with main)
+
+## Historical Baseline References
+
+The following baseline references are archived and no longer used for gate assessment:
+
+- `8b3a983`: Previous Gate 0 baseline (superseded by `a63915a`)
+- `2c8fe91`: Historical implementation baseline (archived)
+
 
 ## Scope
 
@@ -27,7 +41,7 @@ Current evidence state:
 - #80 local E2E foundation exists, but full local E2E evidence is blocked until
   Docker Desktop engine is running and `up/migrate/seed/Playwright` completes.
 - #22 implementation remains blocked until its Gate 0 `QA plan` is refreshed
-  against baseline commit `8b3a983`.
+  against current baseline commit `a63915a`.
 - #169 Traceability UI integration is present on main after PR #184 merge.
   PR #177 was closed as stale/superseded because the substantive code was
   already in main and the branch remained conflicting.

@@ -97,8 +97,9 @@ export function parseEnv(source: NodeJS.ProcessEnv = process.env): Env {
         'SKIP_ENV_VALIDATION=1 is allowed only for next build. Use pnpm dev:public or unset SKIP_ENV_VALIDATION for runtime validation.',
       );
     }
-    // Build-time bypass: Next.js needs this for route data collection
-    // This is safe because the binary won't run without env validation at startup
+    // Build-time bypass: Next.js needs this for route data collection.
+    // The guard above keeps this path limited to pnpm build; runtime callers
+    // still validate env on startup and never receive this empty object.
     return {} as Env;
   }
 

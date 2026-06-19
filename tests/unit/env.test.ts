@@ -46,14 +46,14 @@ describe('parseEnv', () => {
     );
   });
 
-  it('allows SKIP_ENV_VALIDATION only for the explicit build gate', () => {
-    expect(
+  it('throws error even with REGULA_ALLOW_ENV_VALIDATION_SKIP=build (Issue #165 fix)', () => {
+    expect(() =>
       parseEnv({
         ...validEnv,
         SKIP_ENV_VALIDATION: '1',
         REGULA_ALLOW_ENV_VALIDATION_SKIP: 'build',
       }),
-    ).toEqual({});
+    ).toThrow(/Build-time env validation bypass detected/);
   });
 
   it('throws ZodError when both Microsoft env-var aliases are missing', () => {

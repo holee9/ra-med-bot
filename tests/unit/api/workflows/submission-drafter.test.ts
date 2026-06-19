@@ -1,6 +1,26 @@
 import { GET } from '@/app/api/ra/workflows/submission-drafter/[runId]/status/route';
 import { POST } from '@/app/api/ra/workflows/submission-drafter/route';
-import { describe, expect, it, vi } from 'vitest';
+import { beforeEach, describe, expect, it, vi } from 'vitest';
+
+const dbMocks = vi.hoisted(() => {
+  const insertReturning = vi.fn().mockResolvedValue([]);
+  const insertValues = vi.fn(() => ({ returning: insertReturning }));
+  const insert = vi.fn(() => ({ values: insertValues }));
+  const findFirst = vi.fn().mockResolvedValue({
+    id: '123e4567-e89b-12d3-a456-426614174000',
+    workflowType: 'submission_drafter',
+    status: 'queued',
+    stepProgress: null,
+    inputJson: {},
+    resultJson: null,
+    startedAt: new Date().toISOString(),
+    completedAt: null,
+    reviewRequired: true,
+    confidenceAggregate: null,
+  });
+
+  return { findFirst, insert, insertReturning, insertValues };
+});
 
 // Mock withPermission: pass-through with fixed session
 vi.mock('@/lib/audit', () => ({ writeAudit: vi.fn().mockResolvedValue(undefined) }));
@@ -17,6 +37,18 @@ vi.mock('@/lib/auth/with-permission', () => ({
   ),
 }));
 
+// Mock db/client for status route DB query
+vi.mock('@/lib/db/client', () => ({
+  db: {
+    insert: dbMocks.insert,
+    query: {
+      workflowRuns: {
+        findFirst: dbMocks.findFirst,
+      },
+    },
+  },
+}));
+
 const VALID_UUID = '123e4567-e89b-12d3-a456-426614174000';
 const VALID_PROJECT_ID = '550e8400-e29b-41d4-a716-446655440000';
 
@@ -28,6 +60,13 @@ const validBody = {
   target_jurisdiction: 'US_FDA',
   project_id: VALID_PROJECT_ID,
 };
+
+beforeEach(() => {
+  dbMocks.findFirst.mockClear();
+  dbMocks.insert.mockClear();
+  dbMocks.insertReturning.mockClear();
+  dbMocks.insertValues.mockClear();
+});
 
 describe('POST /api/ra/workflows/submission-drafter', () => {
   it('returns 202 with trigger contract for valid input', async () => {
@@ -49,6 +88,21 @@ describe('POST /api/ra/workflows/submission-drafter', () => {
     expect(json.streamEventsUrl).toBe(`/api/ra/workflows/submission-drafter/${json.runId}/events`);
     expect(json.queuedAt).toBeDefined();
     expect(json.input).toMatchObject(validBody);
+    expect(dbMocks.insertValues).toHaveBeenCalledWith(
+      expect.objectContaining({
+        id: json.runId,
+        userId: 'user-001',
+        organizationId: 'org-001',
+        projectId: VALID_PROJECT_ID,
+        workflowType: 'submission_drafter',
+        status: 'queued',
+        inputJson: validBody,
+        resultJson: null,
+        stepProgress: null,
+        reviewRequired: true,
+      }),
+    );
+    expect(dbMocks.insertReturning).toHaveBeenCalled();
   });
 
   it('returns 400 for missing required field (product_name)', async () => {

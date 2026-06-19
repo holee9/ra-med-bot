@@ -95,7 +95,11 @@ export default function PredicateSearchPage() {
       )}
 
       {error && (
-        <p role="alert" className="mt-4 text-sm text-danger">
+        <p
+          data-testid="search-error"
+          role="alert"
+          className="mt-4 text-sm text-danger"
+        >
           {error}
         </p>
       )}

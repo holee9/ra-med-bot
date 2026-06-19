@@ -25,10 +25,10 @@ export default defineConfig({
   retries: process.env.CI ? 2 : 0,
   workers: process.env.CI ? 4 : undefined,
   webServer: {
-    command: 'pnpm dev',
-    url: process.env.PLAYWRIGHT_BASE_URL ?? 'http://localhost:3000',
-    reuseExistingServer: !process.env.CI,
-    timeout: 120_000,
+    command: 'PORT=36534 DATABASE_URL=postgresql://postgres:test@localhost:5432/regula_test pnpm env:test pnpm dev:public',
+    url: process.env.PLAYWRIGHT_BASE_URL ?? 'http://localhost:36534',
+    reuseExistingServer: false,
+    timeout: 60_000,
   },
   reporter: [
     ['html', { open: 'never' }],

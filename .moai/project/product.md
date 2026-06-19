@@ -122,7 +122,10 @@ Regula는 두 지식 레포의 **소비자이자 사용자 인터페이스**다.
 | Chat Core 구현 | ✅ 완료 (Issue #4, 2026-05-02) |
 | Structured Outputs 구현 | ✅ 완료 (Issue #5, 2026-05-02) |
 | Breadth 구현 | ✅ 완료 (2026-05-03) |
-| Enterprise/Launch | 계획 |
+| Wave 3 (Predicate) | ✅ 완료 (2026-06-19, PR #186, Issue #188) |
+| Traceability Integration | ✅ 완료 (2026-06-19, PR #184) |
+| E2E Validation Framework | ✅ 완료 (2026-06-19, Issue #182) |
+| Enterprise/Launch | 🔄 계획 중 (Wave 4-5) |
 
 ---
 
