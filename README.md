@@ -26,7 +26,7 @@ Issue #164, #163 — Evidence/Authoring API BFF+UI 연동 완료. API 라우트 
 |---|---|---|
 | PR #184 | MERGED | squash merge `a79759c` |
 | PR #177 | CLOSED / SUPERSEDED | main 병합 시 실질 코드 diff 없음, stale branch 직접 머지 방지 |
-| PR #186 | OPEN / REVIEW FIXED | `feat/issue-185-predicate-visualization`에서 lint, demo animation, optional color, session memo 리뷰 반영 |
+| PR #186 | MERGED | Predicate 시각화 완료 (Bar/Radar/Table, Demo animation, 필수/선택 색상 구분) |
 | Traceability UI | PASS | `/workflows/traceability` 스캔, 그래프, 영향 분석 탭 구현 |
 | BFF 프록시 | PASS | `/api/ra/traceability/{scan,graph,impact}` |
 | 권한 매트릭스 | PASS | `traceability.scan/view/impact`, `checklist.generate/view/update` 포함 23 actions |
@@ -43,7 +43,7 @@ Issue #164, #163 — Evidence/Authoring API BFF+UI 연동 완료. API 라우트 
 
 **2026-06-18 PR 정리 완료**: #178(dev DB migration drift), #180(`/api/ra/projects/[id]` RBAC), #181(admin upload PII redaction 3-layer), #184(E2E user validation + Traceability state) 순차 머지 완료. #179와 #177은 main에 대체 반영되어 stale/superseded로 종료. 최신 `main`은 CI Gates, E2E Smoke, Security Scan, Vercel Preview, Playwright E2E, LLM Eval Harness 통과.
 
-**Predicate 시각화 보강 진행** (`feat/issue-185-predicate-visualization`, PR #186). `/predicate/compare` 결과 화면에 Recharts 기반 Bar/Radar/Table 전환, Before-After mode, Demo animation, 필수/선택 dimension 색상 구분, 테이블 상세 패널을 추가. 리뷰 후 명시 타입, design token 색상, row별 optional 색상, session memo 보존을 보강했고 로컬 `pnpm lint`, `pnpm typecheck`, predicate 관련 unit 45 tests가 통과.
+**Predicate 시각화 완료** (`feat/issue-185-predicate-visualization`, PR #186). `/predicate/compare` 결과 화면에 Recharts 기반 Bar/Radar/Table 전환, Before-After mode, Demo animation, 필수/선택 dimension 색상 구분, 테이블 상세 패널 구현 완료. 리뷰 후 명시 타입, design token 색상, row별 optional 색상, session memo 보존을 보강했고 PR #186로 머지 완료.
 
 | 카테고리 | 상태 | 측정 근거 |
 |---------|------|---------|
