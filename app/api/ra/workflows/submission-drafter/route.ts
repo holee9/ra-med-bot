@@ -21,12 +21,22 @@ async function postSubmissionDrafter(request: Request, session: AuthSession): Pr
 
   const data = result.data;
   const runId = crypto.randomUUID();
+
+  // @MX:NOTE Mock disclosure — TASK-003: Beta scaffold returns synthetic outputs.
+  // REQ-HARDEN-028: Every mock workflow response includes _mock: true flag.
+  // @MX:SPEC SPEC-REGULA-RELEASE-HARDENING-001 (REQ-HARDEN-028)
+  const isMock = true; // Beta scaffold: all steps are mock implementations
+
   await writeAudit({
     actor_id: session.user.id,
     action: 'workflow.start',
     resource_type: 'workflow',
     resource_id: runId,
-    meta_json: { workflowType: 'submission_drafter' },
+    meta_json: {
+      workflowType: 'submission_drafter',
+      mock_data: isMock,
+      workflow_run_id: runId,
+    },
   });
 
   return Response.json(
@@ -39,6 +49,7 @@ async function postSubmissionDrafter(request: Request, session: AuthSession): Pr
       message: 'Submission Drafter workflow queued',
       input: data,
       queuedAt: new Date().toISOString(),
+      _mock: isMock, // Mock disclosure flag
     },
     { status: 202 },
   );

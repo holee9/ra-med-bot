@@ -17,6 +17,28 @@ vi.mock('@/lib/auth/with-permission', () => ({
   ),
 }));
 
+// Mock db/client for status route DB query
+vi.mock('@/lib/db/client', () => ({
+  db: {
+    query: {
+      workflowRuns: {
+        findFirst: vi.fn().mockResolvedValue({
+          id: '123e4567-e89b-12d3-a456-426614174000',
+          workflowType: 'submission_drafter',
+          status: 'queued',
+          stepProgress: null,
+          inputJson: {},
+          resultJson: null,
+          startedAt: new Date().toISOString(),
+          completedAt: null,
+          reviewRequired: true,
+          confidenceAggregate: null,
+        }),
+      },
+    },
+  },
+}));
+
 const VALID_UUID = '123e4567-e89b-12d3-a456-426614174000';
 const VALID_PROJECT_ID = '550e8400-e29b-41d4-a716-446655440000';
 
