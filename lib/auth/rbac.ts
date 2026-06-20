@@ -5,10 +5,12 @@
 // REQ-ENTERPRISE-017: Role type and hierarchy for RBAC enforcement.
 // The hierarchy numeric values determine whether a user's role satisfies a
 // minimum-role requirement. Higher value = more privileged.
-export type Role = 'admin' | 'ra-lead' | 'ra-member' | 'viewer';
+// SPEC-REGULA-ESIG-001: 'qa-lead' added at same level as 'ra-lead' (3).
+export type Role = 'admin' | 'qa-lead' | 'ra-lead' | 'ra-member' | 'viewer';
 
 export const ROLE_HIERARCHY: Record<Role, number> = {
   admin: 4,
+  'qa-lead': 3,
   'ra-lead': 3,
   'ra-member': 2,
   viewer: 1,

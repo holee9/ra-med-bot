@@ -40,7 +40,9 @@ export type PermissionAction =
   | 'risk.generate'
   | 'risk.view'
   | 'risk.update'
-  | 'risk.approve';
+  | 'risk.approve'
+  // Electronic signature actions (SPEC-REGULA-ESIG-001, Issue #88)
+  | 'signature.sign';
 
 export interface PermissionSpec {
   minRole: Role;
@@ -120,4 +122,10 @@ export const PERMISSIONS: Record<PermissionAction, PermissionSpec> = {
   'risk.view': { minRole: 'ra-member', scope: 'org', resourceType: 'risk' },
   'risk.update': { minRole: 'ra-member', scope: 'org', resourceType: 'risk' },
   'risk.approve': { minRole: 'ra-lead', scope: 'org', resourceType: 'risk' },
+
+  // @MX:ANCHOR [AUTO] signature.sign — 21 CFR Part 11 signing gate invariant.
+  // @MX:REASON Only qualified roles (ra-lead, qa-lead, admin) may apply electronic signatures.
+  //            Critical RBAC invariant for regulatory compliance (REQ-ESIG-006).
+  // @MX:SPEC SPEC-REGULA-ESIG-001 (REQ-ESIG-006)
+  'signature.sign': { minRole: 'ra-lead', scope: 'org', resourceType: 'signature' },
 };

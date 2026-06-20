@@ -89,7 +89,8 @@ export const expertReviewStatusEnum = pgEnum('expert_review_status', [
 
 // REQ-ENTERPRISE-016: user_role pgEnum replaces TEXT role column on users table.
 // Migration: 0004_user_role_enum.sql (creates type, migrates 'member' → 'ra-member').
-export const userRoleEnum = pgEnum('user_role', ['admin', 'ra-lead', 'ra-member', 'viewer']);
+// SPEC-REGULA-ESIG-001: 'qa-lead' added via 0061_answer_signatures.sql (REQ-ESIG-006).
+export const userRoleEnum = pgEnum('user_role', ['admin', 'qa-lead', 'ra-lead', 'ra-member', 'viewer']);
 export const userStatusEnum = pgEnum('user_status', ['pending', 'active', 'disabled']);
 // REQ-TENANT-001: department pgEnum for secondary RBAC axis (SPEC-REGULA-TENANT-001 Tenant-Lite).
 export const userDepartmentEnum = pgEnum('user_department', ['RA', 'Dev', 'Exec', 'External']);
@@ -217,6 +218,9 @@ export const auditActionEnum = pgEnum('audit_action', [
   'export.pdf',
   'export.email',
   'export.confluence',
+  // SPEC-REGULA-ESIG-001 — added via 0061_answer_signatures.sql:
+  'signature.applied',
+  'signature.revoked',
 ]);
 
 // REQ-WF-049: workflow_type pgEnum — workflow kinds.
@@ -1402,5 +1406,37 @@ export const riskGsprMappings = pgTable(
   },
   (t) => ({
     runIdx: index('idx_risk_gspr_run').on(t.workflowRunId),
+  }),
+);
+
+// SPEC-REGULA-ESIG-001: Electronic signature records (21 CFR Part 11 §11.50/§11.70)
+// Migration: 0061_answer_signatures.sql
+// Each row links one signature to one message (answer) via record_hash (§11.70).
+// At most one active (revoked_at IS NULL) signature per message_id (enforced by partial unique index).
+export const answerSignatures = pgTable(
+  'answer_signatures',
+  {
+    id: uuid('id').defaultRandom().primaryKey(),
+    messageId: uuid('message_id')
+      .notNull()
+      .references(() => messages.id, { onDelete: 'cascade' }),
+    // Signer identity fields (§11.50(a)(1))
+    signerId: text('signer_id').notNull(),
+    signerName: text('signer_name').notNull(),
+    signerTitle: text('signer_title'),
+    // Meaning of signature (§11.50(a)(3))
+    meaning: text('meaning').notNull(),
+    // SHA-256 hash of signed content (§11.70)
+    recordHash: text('record_hash').notNull(),
+    signedAt: timestamp('signed_at', { withTimezone: true, mode: 'date' }).notNull().defaultNow(),
+    // Revocation fields — null means the signature is active
+    revokedAt: timestamp('revoked_at', { withTimezone: true, mode: 'date' }),
+    revokedBy: text('revoked_by'),
+  },
+  (t) => ({
+    // Performance: look up active signature for a given message
+    messageIdx: index('idx_answer_signatures_message').on(t.messageId),
+    // Performance: look up all signatures by signer (audit queries)
+    signerIdx: index('idx_answer_signatures_signer').on(t.signerId),
   }),
 );
