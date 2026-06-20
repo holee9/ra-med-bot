@@ -49,9 +49,7 @@ const TRACE_GRAPH_FIXTURE = {
     { id: 'node-1', type: 'requirement', label: 'REQ-001' },
     { id: 'node-2', type: 'test', label: 'TC-001' },
   ],
-  edges: [
-    { source: 'node-1', target: 'node-2', relationship: 'verified_by' },
-  ],
+  edges: [{ source: 'node-1', target: 'node-2', relationship: 'verified_by' }],
   metadata: {
     total_nodes: 2,
     total_edges: 1,
@@ -60,9 +58,7 @@ const TRACE_GRAPH_FIXTURE = {
 };
 
 const IMPACT_RESULT_FIXTURE = {
-  affected_nodes: [
-    { id: 'node-2', type: 'test', label: 'TC-001', impact_level: 'high' },
-  ],
+  affected_nodes: [{ id: 'node-2', type: 'test', label: 'TC-001', impact_level: 'high' }],
   total_affected: 1,
   analysis_id: 'analysis-001',
   timestamp: '2026-06-20T00:00:00Z',
@@ -126,9 +122,12 @@ describe('POST /api/ra/traceability/scan — contract test', () => {
     });
     await postScan(req, { params: Promise.resolve({}) });
 
-    const [url, init] = (global.fetch as ReturnType<typeof vi.fn>).mock.calls[0] as [string, RequestInit];
+    const [url, init] = (global.fetch as ReturnType<typeof vi.fn>).mock.calls[0] as [
+      string,
+      RequestInit,
+    ];
     expect(url).toContain('/api/v1/traceability/scan');
-    expect((init.headers as Record<string, string>)['Authorization']).toBe('Bearer test-bearer-token');
+    expect((init.headers as Record<string, string>).Authorization).toBe('Bearer test-bearer-token');
     expect((init.headers as Record<string, string>)['X-Tenant-Id']).toBe('tenant-abc');
   });
 

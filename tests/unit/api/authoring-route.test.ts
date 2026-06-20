@@ -132,9 +132,12 @@ describe('POST /api/ra/authoring/sessions — contract test', () => {
     });
     await postSession(req, { params: Promise.resolve({}) });
 
-    const [url, init] = (global.fetch as ReturnType<typeof vi.fn>).mock.calls[0] as [string, RequestInit];
+    const [url, init] = (global.fetch as ReturnType<typeof vi.fn>).mock.calls[0] as [
+      string,
+      RequestInit,
+    ];
     expect(url).toContain('/api/v1/authoring/sessions');
-    expect((init.headers as Record<string, string>)['Authorization']).toBe('Bearer test-bearer-token');
+    expect((init.headers as Record<string, string>).Authorization).toBe('Bearer test-bearer-token');
     expect((init.headers as Record<string, string>)['X-Tenant-Id']).toBe('tenant-abc');
   });
 

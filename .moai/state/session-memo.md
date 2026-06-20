@@ -18,3 +18,10 @@ event: PreCompact
 - Active branch: `main`
 - Duplicate-work gate: Read GitHub Issue #18, updated local `main` to `origin/main` merge commit `04b6333`, and checked open PRs before docs work.
 - Docs scope: README, API reference, implementation status, and env matrix for Issue #156 hybrid-ra-saas typed adapter.
+
+## 2026-06-20 PR #196 Review/Fix/Merge Session
+
+- Active branch: `feat/issue-168-169-171-contract-tests`
+- Active PR: #196 (`test(contract): hybrid-ra-saas UI 연동 컨트랙트 테스트 20개 추가`)
+- Duplicate-work gate: Read GitHub Issue #18, fetched `origin/main`, confirmed PR #196 is the active branch for Issues #168/#169/#171, and verified PR #197 is a separate docs-only branch.
+- Review state: No reviews, comments, or review threads. CI Gates failed on Biome lint/format in the three new contract test files.

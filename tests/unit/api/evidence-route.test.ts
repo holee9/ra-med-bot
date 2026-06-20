@@ -124,14 +124,21 @@ describe('POST /api/ra/evidence/link — contract test', () => {
 
     const req = new Request('http://localhost/api/ra/evidence/link', {
       method: 'POST',
-      body: JSON.stringify({ requirement_id: 'REQ-001', evidence_type: 'clinical', description: 'x' }),
+      body: JSON.stringify({
+        requirement_id: 'REQ-001',
+        evidence_type: 'clinical',
+        description: 'x',
+      }),
     });
 
     await postLink(req, { params: Promise.resolve({}) });
 
-    const [url, init] = (global.fetch as ReturnType<typeof vi.fn>).mock.calls[0] as [string, RequestInit];
+    const [url, init] = (global.fetch as ReturnType<typeof vi.fn>).mock.calls[0] as [
+      string,
+      RequestInit,
+    ];
     expect(url).toContain('/api/v1/evidence/link');
-    expect((init.headers as Record<string, string>)['Authorization']).toBe('Bearer test-bearer-token');
+    expect((init.headers as Record<string, string>).Authorization).toBe('Bearer test-bearer-token');
     expect((init.headers as Record<string, string>)['X-Tenant-Id']).toBe('tenant-abc');
   });
 
@@ -140,7 +147,11 @@ describe('POST /api/ra/evidence/link — contract test', () => {
 
     const req = new Request('http://localhost/api/ra/evidence/link', {
       method: 'POST',
-      body: JSON.stringify({ requirement_id: 'REQ-001', evidence_type: 'clinical', description: 'x' }),
+      body: JSON.stringify({
+        requirement_id: 'REQ-001',
+        evidence_type: 'clinical',
+        description: 'x',
+      }),
     });
 
     const res = await postLink(req, { params: Promise.resolve({}) });
@@ -156,7 +167,7 @@ describe('GET /api/ra/evidence/links/[reqId] — contract test', () => {
 
     const req = new Request('http://localhost/api/ra/evidence/links/req-001');
     const res = await getLinks(req, { params: Promise.resolve({ reqId: 'req-001' }) });
-    const body = await res.json() as unknown[];
+    const body = (await res.json()) as unknown[];
 
     expect(res.status).toBe(200);
     expect(Array.isArray(body)).toBe(true);
