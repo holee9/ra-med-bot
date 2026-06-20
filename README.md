@@ -17,7 +17,7 @@
 
 ### 최신 main 상태 (2026-06-20)
 
-현재 `main`은 PR #195 ISO 14971 Risk Management, PR #196 submission-drafter/build/health-check 보강, PR #197 위험관리 문서 동기화, #166 hydration mismatch 수정, QA Gate/Wave 5 SPEC 문서까지 반영된 상태입니다. 2026-06-20 리뷰에서 #166 후속 날짜 렌더링 파일의 Biome format drift를 발견해 수정했으며, 로컬 기준 `biome check .`와 `pnpm test`가 통과했습니다.
+현재 `main`은 PR #195 ISO 14971 Risk Management, PR #196 submission-drafter/build/health-check 보강, PR #197 위험관리 문서 동기화, #166 hydration mismatch 수정, QA Gate/Wave 5 SPEC 문서까지 반영된 상태입니다. 2026-06-20 리뷰에서 #166 후속 날짜 렌더링 파일의 Biome format drift를 발견해 수정했으며, 로컬 기준 `biome check .`, `pnpm test`, `next build`가 통과했습니다.
 
 | 항목 | 상태 | 근거 |
 |---|---|---|
@@ -27,7 +27,8 @@
 | PR #196 | MERGED | build-time env validation, submission-drafter status contract, health-check source import 보강 |
 | PR #195 | MERGED | `feat(risk): SPEC-REGULA-RISK-001 ISO 14971 위험관리 통합 구현` |
 | PR #194 | MERGED | Issue #46 기반 작업 병합 완료 |
-| CI Gates | PASS | 로컬 `biome check .`, `pnpm test`; push 후 GitHub Actions에서 typecheck, lint, format, unit, build 재검증 |
+| QA Gate 0 helper | PASS | `corepack pnpm qa:gate-0 74`로 체크리스트 생성 검증 |
+| CI Gates | PASS | 로컬 `biome check .`, `pnpm test`, `next build`; push 후 GitHub Actions에서 typecheck, lint, format, unit, build 재검증 |
 | E2E Tests | PASS | CI smoke/browser jobs success; staging URL 미설정 job은 의도적 skip |
 | Security Scan | PASS | Dependency Vulnerability Scan, Secret Detection 통과 |
 | Deploy | PASS | GitHub Actions deploy workflow success |
@@ -1517,6 +1518,50 @@ QA 메타 이슈만 별도로 두는 방식은 실제 구현 흐름에서 놓칠
 | PCCP, SaMD, AI/ML, Model Governance, 답변 품질 | model/prompt/template version metadata, confidence/citation/expert-review 조건 유지 |
 | Risk, DHF, Change Control, Labeling, E-Signature, Auditor View | traceability link, e-signature lock, reviewer role, audit evidence의 우회 불가성 |
 | Source, Corpus License, Standards, DSAR, DLP, Data Residency | source entitlement, privacy, redaction, region routing, export/search/LLM 제한 반영 |
+
+#### QA Gate 0 체크리스트 사용법
+
+QA Gate 0는 구현 시작 전 SPEC 준비도를 검증하는 게이트입니다. 자동 생성 도구를 사용하여 체크리스트를 생성하고 이슈 코멘트 또는 PR 본문에 추가하세요.
+
+**체크리스트 생성:**
+
+```bash
+# Issue #{N}의 QA Gate 0 체크리스트 생성
+pnpm qa:gate-0 {issue-number}
+
+# 생성된 체크리스트를 .moai/specs/_generated/qa-gate-0-issue-{N}.md에도 저장
+```
+
+**이슈 코멘트로 추가:**
+
+```bash
+# 생성된 체크리스트를 이슈 코멘트로 자동 추가
+pnpm qa:gate-0:comment {issue-number}
+```
+
+**수동 추가:**
+
+```bash
+# 생성된 체크리스트를 복사해서 이슈 코멘트에 직접 추가
+pnpm qa:gate-0 {issue-number} | gh issue comment {issue-number} --body-file -
+```
+
+**PR 본문에 추가:**
+
+PR 생성 시 본문에 체크리스트를 포함시켜세요. PR 템플릿이 있다면 자동으로 포함됩니다.
+
+**체크리스트 항목:**
+- Branch Readiness: 최신 `main` 확인, stale conflict 없음
+- Issue-SPEC Alignment: 이슈 본문과 SPEC 범위 일치
+- Requirements Validation: AC 테스트 가능성, 모호한 용어 제거
+- Dependencies & Fixtures: 외부 API mock, seed data, fixture 정의
+- Impact Analysis: schema/API/RBAC/audit/citation 등 영향 축 파악
+- Risk Assessment: 기술적 리스크, QA 리스크 식별
+- Completion Criteria: Gate 0 통과 조건 확인
+
+상세한 내용은 [`.moai/specs/_shared/qa-gate-0-checklist.md`](.moai/specs/_shared/qa-gate-0-checklist.md) 템플릿을 참고하세요.
+
+---
 | Co-edit, E2E, CI, Playwright | 로컬/CI 동일 fixture 또는 mock 재현성, 동시성·실패 복구·artifact/trace 저장 |
 | QMS, Export, Share, Personal Library, ROI, Notification | 사용자 여정, 접근성, 권한별 표시/수정 상태, 생성·공유·알림 audit 및 취소 경로 |
 

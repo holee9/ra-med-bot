@@ -169,6 +169,7 @@ secret-*.*
 .claude/worktrees/
 .claude/scheduled_tasks.lock
 .moai/reports/session-*.md
+.moai/specs/_generated/
 
 # Skill-specific credentials
 .claude/skills/*/.env*

@@ -64,6 +64,7 @@ those files and refreshes the current verification evidence.
 | ISO 14971 Risk Management | COMPLETE | `/workflows/risk`, `/api/ra/risk/*`, `lib/risk/*`, risk DB tables, RA-lead approval |
 | Submission drafter contract (#196) | COMPLETE | build env bypass path, `workflow_runs` status contract, source health-check import fixed |
 | Hydration mismatch (#166) | COMPLETE | date render boundaries plus 2026-06-20 Biome format recovery |
+| QA Gate 0 helper (#74) | COMPLETE | `scripts/qa-gate-0-checklist.ts`, shared checklist template, ignored generated outputs |
 | RBAC security (#162) | COMPLETE | ra-lead → /403 redirect E2E validated (PR #193) |
 | Predicate E2E stability (#164) | COMPLETE | hydration + RBAC locator fixed (in PR #190) |
 | Mock workflow audit (#152) | COMPLETE | mock_data, workflow_run_id metadata connected (in PR #190) |
@@ -257,7 +258,9 @@ Latest reviewed `main` baseline `b2bd5d1` had one blocking CI regression: the
 Local gates after the fix:
 
 - `corepack pnpm exec biome check .` — pass.
+- `corepack pnpm qa:gate-0 74` — pass; generated checklist output is ignored under `.moai/specs/_generated/`.
 - `corepack pnpm test` — 2,556 tests passed, 7 skipped.
+- `SKIP_ENV_VALIDATION=1 REGULA_ALLOW_ENV_VALIDATION_SKIP=build corepack pnpm build` — pass, with existing optional extractor warnings for `mammoth`, `exceljs`, and `pdf-parse`.
 
 Passed in `CI Gates`:
 
