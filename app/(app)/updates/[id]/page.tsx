@@ -53,7 +53,7 @@ export default function UpdateDetailPage({ params }: { params: Promise<{ id: str
             {update.impactTypeHint}
           </span>
         )}
-        <span>{date}</span>
+        <span suppressHydrationWarning>{date}</span>
       </div>
 
       {update.sourceUrl && (

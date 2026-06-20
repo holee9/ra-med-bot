@@ -46,7 +46,7 @@ export default async function PccpDetailPage({ params }: Props) {
         >
           {version.status}
         </span>
-        <span className="text-sm text-ink-500">
+        <span className="text-sm text-ink-500" suppressHydrationWarning>
           Created {new Date(version.createdAt).toLocaleDateString()}
         </span>
       </div>

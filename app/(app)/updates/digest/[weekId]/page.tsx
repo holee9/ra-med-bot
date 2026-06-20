@@ -37,7 +37,7 @@ function UpdateCard({ update }: { update: DigestUpdate }) {
         </span>
       </div>
       <p className="text-xs text-gray-500 mt-1">
-        {update.region} · {new Date(update.published_at).toLocaleDateString('ko-KR')}
+        {update.region} · <span suppressHydrationWarning>{new Date(update.published_at).toLocaleDateString('ko-KR')}</span>
       </p>
       <p className="text-sm text-gray-700 mt-2">{update.impact_summary}</p>
       {update.source_url && (
