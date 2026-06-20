@@ -1,23 +1,26 @@
 # Session Memo
 
-## P1: Session Context
+## 최근 완료 작업 (2026-06-20/21)
 
-session_id: e5f16903-b7e5-498e-88c7-db62e0fe5101
-cwd: /home/abyz-lab/work/workspace-github/holee9/ra-med-bot
-event: PreCompact
+### SPEC-REGULA-ESIG-001 (21 CFR Part 11 Electronic Signature) — COMPLETE
+- Branch: feat/issue-88 (Issue #88 연결)
+- TDD RED-GREEN-REFACTOR 12 tasks 완료
+- 전체 테스트: 2745 passed, 0 failed
 
-## 2026-06-20 PR #203 Review Fix
+**생성된 주요 파일:**
+- `lib/signature/hash.ts` — sha256OfContent (Edge API)
+- `lib/signature/lock.ts` — isAnswerLocked (@MX:ANCHOR)
+- `lib/signature/queries.ts` — getActiveSignature, insertSignature, revokeSignature
+- `lib/signature/pdf-inject.ts` — §11.50 PDF 서명 블록 주입
+- `app/api/ra/messages/[messageId]/signature/route.ts` — POST(sign) / GET(manifestation)
+- `app/api/ra/messages/[messageId]/signature/revoke/route.ts` — POST(revoke)
+- `components/chat/SignatureManifestation.tsx` — §11.50 UI 컴포넌트
+- `lib/db/schema.ts` — answerSignatures 테이블 추가
+- `lib/auth/rbac.ts` — qa-lead role 추가
+- `lib/auth/permissions.ts` — signature.sign permission 추가
+- `lib/audit.ts` — signature.applied / signature.revoked AuditAction 추가
 
-- Duplicate-work gate checked: GitHub Issue #18 is open and active.
-- Current work tracked on branch `feat/issue-87`, PR #203 against `main`.
-- Main fetched before review fixes; PR #203 is currently mergeable.
-- Fixed review regressions for export hub:
-  - Registered `DOCXExporter` in the central export hub.
-  - Replaced placeholder chat export handlers with real `ExportHub` flows.
-  - Passed selected answer/checklist/comparison artifact content into format exporters.
-  - Wired PDF and Email options to concrete exporters.
-- Validation completed locally: `pnpm lint`, `pnpm typecheck`, targeted export tests, full `pnpm test`, and `pnpm build`.
-- Follow-up CI gate fixes:
-  - Added audit logging to checklist, risk control recommendation, and traceability mutation routes.
-  - Renamed export audit migration to `0060_export_audit_actions.sql` to restore sequential migration numbering.
-  - Revalidated `pnpm ci:audit`, `pnpm ci:migrations`, `pnpm lint`, `pnpm typecheck`, full `pnpm test`, and `pnpm build`.
+**다음 작업:**
+- PR 생성: feat/issue-88 → main (Closes #88)
+- 또는 Wave 5 다음 SPEC 진행
+
