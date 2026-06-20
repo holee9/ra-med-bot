@@ -1,0 +1,160 @@
+# ISO 14971 Hazard Identification Quality Eval
+# SPEC-REGULA-RISK-001 — REQ-RISK-001~010, AC7 (pass threshold 85%)
+
+description: ISO 14971 Hazard Identification Quality Eval
+
+providers:
+  - id: http
+    config:
+      url: "{{env.NEXT_PUBLIC_APP_URL}}/api/ra/risk/identify"
+      method: POST
+      headers:
+        Content-Type: "application/json"
+        Cookie: "authjs.session-token={{env.TEST_SESSION_TOKEN}}"
+      body:
+        deviceDescription: "{{deviceDescription}}"
+        deviceClass: "{{deviceClass}}"
+        workflowRunId: "eval-{{deviceClass}}-001"
+
+defaultTest:
+  options:
+    provider: http
+
+# Pass threshold: ≥ 85% of scenarios must pass (AC7)
+threshold: 0.85
+
+tests:
+  - description: "Insulin pump hazard identification — energy delivery hazards"
+    vars:
+      deviceDescription: >
+        An implantable insulin pump that continuously delivers insulin subcutaneously.
+        The device includes a reservoir, infusion set, and programmable controller
+        with a wireless communication interface.
+      deviceClass: "Class III"
+    assert:
+      - type: javascript
+        value: |
+          const body = JSON.parse(output);
+          const items = body.items || [];
+          const categories = items.map(i => (i.hazardCategory || '').toLowerCase());
+          const hasEnergy = categories.some(c => c.includes('energy') || c.includes('over-infusion') || c.includes('dose'));
+          const hasSoftware = categories.some(c => c.includes('software') || c.includes('control') || c.includes('programming'));
+          return items.length >= 3 && hasEnergy && hasSoftware;
+        threshold: 1
+
+  - description: "Insulin pump — biological/sterility hazards present"
+    vars:
+      deviceDescription: >
+        An implantable insulin pump with subcutaneous infusion catheter.
+        Long-term implant with potential for biocompatibility issues.
+      deviceClass: "Class III"
+    assert:
+      - type: javascript
+        value: |
+          const body = JSON.parse(output);
+          const items = body.items || [];
+          const categories = items.map(i => (i.hazardCategory || '').toLowerCase());
+          const hasBio = categories.some(c =>
+            c.includes('biological') || c.includes('sterility') ||
+            c.includes('infection') || c.includes('biocompatibility'));
+          return items.length >= 2 && hasBio;
+        threshold: 1
+
+  - description: "Cardiac monitor hazard identification — false alarm and signal hazards"
+    vars:
+      deviceDescription: >
+        A bedside cardiac monitor that measures ECG, heart rate, SpO2, blood pressure,
+        and respiratory rate. Includes audible and visual alarms for out-of-range values.
+        Connects to central nursing station via hospital network.
+      deviceClass: "Class II"
+    assert:
+      - type: javascript
+        value: |
+          const body = JSON.parse(output);
+          const items = body.items || [];
+          const categories = items.map(i => (i.hazardCategory || '').toLowerCase());
+          const hasAlarm = categories.some(c =>
+            c.includes('alarm') || c.includes('false') || c.includes('missed') ||
+            c.includes('signal') || c.includes('measurement'));
+          return items.length >= 3 && hasAlarm;
+        threshold: 1
+
+  - description: "Cardiac monitor — cybersecurity and connectivity hazards"
+    vars:
+      deviceDescription: >
+        A networked cardiac monitor with wireless ECG telemetry and remote monitoring
+        capability. Includes USB ports for data export and software update interface.
+      deviceClass: "Class II"
+    assert:
+      - type: javascript
+        value: |
+          const body = JSON.parse(output);
+          const items = body.items || [];
+          const categories = items.map(i => (i.hazardCategory || '').toLowerCase());
+          const hasCyber = categories.some(c =>
+            c.includes('cyber') || c.includes('security') ||
+            c.includes('network') || c.includes('software') || c.includes('connectivity'));
+          return items.length >= 2 && hasCyber;
+        threshold: 1
+
+  - description: "Ventilator hazard identification — gas delivery and mechanical hazards"
+    vars:
+      deviceDescription: >
+        An ICU mechanical ventilator providing invasive ventilation via endotracheal tube.
+        Delivers controlled volumes of gas mixtures with adjustable pressure, flow,
+        and FiO2 settings. Includes battery backup and alarms for disconnect and apnea.
+      deviceClass: "Class III"
+    assert:
+      - type: javascript
+        value: |
+          const body = JSON.parse(output);
+          const items = body.items || [];
+          const categories = items.map(i => (i.hazardCategory || '').toLowerCase());
+          const hasGas = categories.some(c =>
+            c.includes('gas') || c.includes('pressure') ||
+            c.includes('ventilation') || c.includes('mechanical') || c.includes('disconnect'));
+          const hasPower = categories.some(c =>
+            c.includes('power') || c.includes('battery') || c.includes('electrical'));
+          return items.length >= 4 && hasGas && hasPower;
+        threshold: 1
+
+  - description: "Ventilator — software and alarm hazards present"
+    vars:
+      deviceDescription: >
+        A ventilator with touch-screen interface, mode selection (AC, SIMV, CPAP, BiPAP),
+        and integrated apnea and disconnect alarm system. Software controls all ventilation modes.
+      deviceClass: "Class III"
+    assert:
+      - type: javascript
+        value: |
+          const body = JSON.parse(output);
+          const items = body.items || [];
+          const categories = items.map(i => (i.hazardCategory || '').toLowerCase());
+          const hasSoftware = categories.some(c =>
+            c.includes('software') || c.includes('alarm') ||
+            c.includes('mode') || c.includes('usability') || c.includes('interface'));
+          return items.length >= 3 && hasSoftware;
+        threshold: 1
+
+  - description: "Response contains required ISO 14971 fields"
+    vars:
+      deviceDescription: >
+        A general-purpose infusion pump for intravenous fluid delivery in hospital settings.
+        Includes dose error reduction software and drug library.
+      deviceClass: "Class II"
+    assert:
+      - type: javascript
+        value: |
+          const body = JSON.parse(output);
+          const items = body.items || [];
+          if (items.length === 0) return false;
+          const firstItem = items[0];
+          // Each hazard item must include these ISO 14971 required fields
+          const hasCategory = 'hazardCategory' in firstItem;
+          const hasSituation = 'hazardousSituation' in firstItem || 'situation' in firstItem;
+          const hasSequence = 'sequenceOfEvents' in firstItem || 'events' in firstItem || 'description' in firstItem;
+          return hasCategory && (hasSituation || hasSequence);
+        threshold: 1
+
+outputPath: tests/eval/results/risk-identification-latest.json
+sharing: false
