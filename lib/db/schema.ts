@@ -387,6 +387,16 @@ export const sources = pgTable(
     type: sourceTypeEnum('type').notNull(),
     region: text('region'),
     url: text('url'),
+    // Provenance fields for source traceability (REQ-INTEGRATION-001)
+    sourceHost: text('source_host'), // github.com, gitea.example.com, local
+    sourceOwner: text('source_owner'), // owner/repo for Git, organization for Gitea
+    sourceRepo: text('source_repo'), // repository name
+    sourceBranch: text('source_branch'), // branch name
+    sourceRef: text('source_ref'), // commit SHA, tag, or reference
+    sourcePath: text('source_path'), // file path within repository
+    contentHash: text('content_hash'), // SHA256 of source content
+    ingestionRunId: uuid('ingestion_run_id'), // links to ingestion job
+    ingestedAt: timestamp('ingested_at', { withTimezone: true, mode: 'date' }), // ingestion timestamp
     // tsvector and vector use raw SQL types via customType / text fallback;
     // Drizzle does not introspect them but the migration creates them correctly.
     fullTextTsv: text('full_text_tsv'),
@@ -400,6 +410,9 @@ export const sources = pgTable(
     typeIdx: index('idx_sources_type').on(t.type),
     // Performance optimization: regional filtering
     regionIdx: index('idx_sources_region').on(t.region),
+    // Provenance queries optimization
+    sourceHostIdx: index('idx_sources_host').on(t.sourceHost),
+    ingestionRunIdx: index('idx_sources_ingestion').on(t.ingestionRunId),
   }),
 );
 
@@ -454,11 +467,18 @@ export const sourceSections = pgTable(
     anchor: text('anchor').notNull(),
     heading: text('heading'),
     text: text('text').notNull(),
+    // Section-level provenance for citation reproducibility (REQ-INTEGRATION-001)
+    chunkHash: text('chunk_hash'), // SHA256 of section text content
+    sectionPath: text('section_path'), // full section path (file path + anchor)
+    ingestionRunId: uuid('ingestion_run_id'), // links to ingestion job
+    ingestedAt: timestamp('ingested_at', { withTimezone: true, mode: 'date' }), // ingestion timestamp
     embedding: vector('embedding'),
     createdAt: timestamp('created_at', { withTimezone: true, mode: 'date' }).notNull().defaultNow(),
   },
   (t) => ({
     anchorUnique: unique('source_sections_source_anchor_idx').on(t.sourceId, t.anchor),
+    // Provenance queries optimization
+    ingestionRunIdx: index('idx_source_sections_ingestion').on(t.ingestionRunId),
   }),
 );
 

@@ -107,7 +107,7 @@ function generateChecklist(issue: Issue, specPath: string | null): string {
 async function main() {
   const args = process.argv.slice(2);
 
-  if (args.length === 0) {
+  if (args.length === 0 || !args[0]) {
     console.error('Usage: tsx qa-gate-1-checklist.ts <issue-number>');
     process.exit(1);
   }

@@ -52,6 +52,7 @@
     "qa:gate-0:comment": "tsx scripts/qa-gate-0-checklist.ts $1 | gh issue comment $1 --body-file -",
     "qa:gate-1": "tsx scripts/qa-gate-1-checklist.ts",
     "qa:gate-1:comment": "tsx scripts/qa-gate-1-checklist.ts $1 | gh issue comment $1 --body-file -",
+    "ingest:gitea-wiki": "tsx scripts/ingest-gitea-wiki.ts",
     "ci:build": "pnpm build",
     "eval:ci": "promptfoo eval --config tests/eval/promptfoo.config.yaml --output tests/eval/results/latest.json",
     "load:staging": "BASE_URL=$STAGING_URL bash scripts/run-load.sh staging",
