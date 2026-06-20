@@ -6,6 +6,8 @@
 
 import { useCallback, useRef, useState } from 'react';
 import type { ChecklistItem } from '../../types/streaming';
+import { ExportButton } from '../export/ExportButton';
+import { useExportState } from '../export/useExportState';
 
 interface ChecklistProps {
   blockId: string;
@@ -23,6 +25,21 @@ export function Checklist({
   const [items, setItems] = useState<ChecklistItem[]>(initialItems);
   const debounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const [toastMessage, setToastMessage] = useState<string | null>(null);
+  const { state: exportState, setLoading, setSuccess, setError } = useExportState();
+
+  const handleExport = async () => {
+    setLoading();
+    try {
+      // TODO: Implement actual export logic via ExportHub
+      const result = {
+        filename: `checklist-${messageId}.txt`,
+        size: JSON.stringify(items).length
+      };
+      setSuccess(result);
+    } catch (err) {
+      setError(err instanceof Error ? err : new Error('Export failed'));
+    }
+  };
 
   const persistItems = useCallback(
     async (updatedItems: ChecklistItem[]) => {
@@ -75,9 +92,16 @@ export function Checklist({
         </div>
       )}
 
-      <p className="text-xs text-ink-500">
-        {completedCount}/{items.length} 완료
-      </p>
+      <div className="flex items-center justify-between">
+        <p className="text-xs text-ink-500">
+          {completedCount}/{items.length} 완료
+        </p>
+        <ExportButton
+          onClick={handleExport}
+          disabled={exportState === 'loading'}
+          isOpen={exportState === 'loading'}
+        />
+      </div>
 
       <ul className="flex flex-col gap-1.5">
         {items.map((item) => (

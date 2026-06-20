@@ -4,6 +4,10 @@
 // Validates row/col length mismatch client-side as secondary defense (Zod is primary).
 // @MX:SPEC SPEC-REGULA-STRUCTURED-001 (REQ-STRUCT-022~023)
 
+import { useState } from 'react';
+import { ExportButton } from '../export/ExportButton';
+import { useExportState } from '../export/useExportState';
+
 interface ComparisonTableProps {
   title: string;
   cols: string[];
@@ -11,8 +15,24 @@ interface ComparisonTableProps {
 }
 
 export function ComparisonTable({ title, cols, rows }: ComparisonTableProps) {
+  const { state: exportState, setLoading, setSuccess, setError } = useExportState();
+
   // Client-side secondary defense — REQ-STRUCT-023
   const hasLengthMismatch = rows.some((row) => row.length !== cols.length);
+
+  const handleExport = async () => {
+    setLoading();
+    try {
+      // TODO: Implement actual export logic via ExportHub
+      const result = {
+        filename: `comparison-${title || 'export'}.txt`,
+        size: JSON.stringify({ cols, rows }).length
+      };
+      setSuccess(result);
+    } catch (err) {
+      setError(err instanceof Error ? err : new Error('Export failed'));
+    }
+  };
 
   if (hasLengthMismatch) {
     return (
@@ -25,6 +45,17 @@ export function ComparisonTable({ title, cols, rows }: ComparisonTableProps) {
   return (
     <div className="flex flex-col gap-2">
       {title && <p className="font-medium text-sm text-ink-800">{title}</p>}
+
+      <div className="flex items-center justify-between">
+        <div className="text-xs text-ink-500">
+          {rows.length}행 × {cols.length}열
+        </div>
+        <ExportButton
+          onClick={handleExport}
+          disabled={exportState === 'loading'}
+          isOpen={exportState === 'loading'}
+        />
+      </div>
 
       <div className="overflow-x-auto rounded-lg border border-surface-3">
         <table className="w-full border-collapse text-sm">

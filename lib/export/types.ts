@@ -9,7 +9,8 @@
 export enum ExportFormat {
   MARKDOWN = 'markdown',
   DOCX = 'docx',
-  PDF = 'pdf'
+  PDF = 'pdf',
+  EMAIL = 'email'
 }
 
 /**

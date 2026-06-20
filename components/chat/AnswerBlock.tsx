@@ -14,6 +14,8 @@ import { useState } from 'react';
 import ReactMarkdown from 'react-markdown';
 import rehypeRaw from 'rehype-raw';
 import rehypeSanitize, { defaultSchema } from 'rehype-sanitize';
+import { ExportButton } from '../export/ExportButton';
+import { useExportState } from '../export/useExportState';
 import type {
   ChecklistEvent,
   ChecklistItem,
@@ -86,6 +88,22 @@ export function AnswerBlock({
   const displayProse = refinedProse ?? prose;
   const sourceCount = sources?.length ?? 0;
   const durationSec = durationMs !== null ? (durationMs / 1000).toFixed(1) : null;
+  const { state: exportState, setLoading, setSuccess, setError } = useExportState();
+
+  const handleExport = async () => {
+    setLoading();
+    try {
+      // TODO: Implement actual export logic via ExportHub
+      // For now, this is a placeholder
+      const result = {
+        filename: `answer-${messageId || 'export'}.txt`,
+        size: prose.length
+      };
+      setSuccess(result);
+    } catch (err) {
+      setError(err instanceof Error ? err : new Error('Export failed'));
+    }
+  };
 
   return (
     <article className="flex flex-col gap-4">
@@ -94,7 +112,7 @@ export function AnswerBlock({
         {confidence && <ConfidenceBadge level={confidence.level} score={confidence.score} />}
         <span>{sourceCount} 출처</span>
         {durationSec && <span>분석 {durationSec}s</span>}
-        {/* Action buttons — copy / regenerate */}
+        {/* Action buttons — copy / export / regenerate */}
         <div className="ml-auto flex gap-2">
           <button
             type="button"
@@ -104,6 +122,11 @@ export function AnswerBlock({
           >
             <Copy size={14} />
           </button>
+          <ExportButton
+            onClick={handleExport}
+            disabled={exportState === 'loading'}
+            isOpen={exportState === 'loading'}
+          />
           <button
             type="button"
             className="rounded p-1 text-ink-400 hover:text-ink-700 transition-colors"

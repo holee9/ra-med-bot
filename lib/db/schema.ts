@@ -211,6 +211,12 @@ export const auditActionEnum = pgEnum('audit_action', [
   'risk.residual_accepted',
   'risk.gspr_mapped',
   'risk.report_approved',
+  // SPEC-REGULA-EXPORT-HUB-001 — export audit actions (REQ-EXP-006):
+  'export.markdown',
+  'export.docx',
+  'export.pdf',
+  'export.email',
+  'export.confluence',
 ]);
 
 // REQ-WF-049: workflow_type pgEnum — workflow kinds.
