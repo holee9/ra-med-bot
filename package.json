@@ -48,6 +48,8 @@
     "ci:contrast": "node --experimental-strip-types scripts/ci/contrast-check.ts",
     "ci:module-boundaries": "node --experimental-strip-types scripts/ci/module-boundaries.ts",
     "ci:migrations": "node --experimental-strip-types scripts/ci/check-migrations.ts",
+    "qa:gate-0": "tsx scripts/qa-gate-0-checklist.ts",
+    "qa:gate-0:comment": "tsx scripts/qa-gate-0-checklist.ts $1 | gh issue comment $1 --body-file -",
     "ci:build": "pnpm build",
     "eval:ci": "promptfoo eval --config tests/eval/promptfoo.config.yaml --output tests/eval/results/latest.json",
     "load:staging": "BASE_URL=$STAGING_URL bash scripts/run-load.sh staging",

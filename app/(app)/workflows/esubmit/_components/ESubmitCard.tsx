@@ -85,9 +85,13 @@ export function ESubmitCard({ pkg, onSelect }: Props) {
             <span>v{pkg.version}</span>
             {pkg.submissionNumber && <span className="font-mono">{pkg.submissionNumber}</span>}
             {pkg.submittedAt && (
-              <span suppressHydrationWarning>제출: {new Date(pkg.submittedAt).toLocaleDateString('ko-KR')}</span>
+              <span suppressHydrationWarning>
+                제출: {new Date(pkg.submittedAt).toLocaleDateString('ko-KR')}
+              </span>
             )}
-            <span suppressHydrationWarning>{new Date(pkg.createdAt).toLocaleDateString('ko-KR')} 생성</span>
+            <span suppressHydrationWarning>
+              {new Date(pkg.createdAt).toLocaleDateString('ko-KR')} 생성
+            </span>
           </div>
         </div>
         <span className={`shrink-0 rounded px-2 py-1 text-xs font-medium ${statusStyle}`}>
