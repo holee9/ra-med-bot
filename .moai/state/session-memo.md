@@ -18,3 +18,10 @@ event: PreCompact
 - Active branch: `main`
 - Duplicate-work gate: Read GitHub Issue #18, updated local `main` to `origin/main` merge commit `04b6333`, and checked open PRs before docs work.
 - Docs scope: README, API reference, implementation status, and env matrix for Issue #156 hybrid-ra-saas typed adapter.
+
+## 2026-06-20 Risk Docs Sync Session
+
+- Active branch: `docs/risk-management-status-20260620`
+- Base branch: `main` at `8065cc8` (`fix(ci): restore gates after risk workflow merge`)
+- Duplicate-work gate: Read GitHub Issue #18, fetched `origin/main`, confirmed PR #196 belongs to `feat/issue-168-169-171-contract-tests`, and separated this docs update from that PR branch.
+- Docs scope: README, API reference, architecture, implementation status, env matrix, compliance/runbook env wording, and SPEC-REGULA-RISK-001 completion notes for Issue #46 / PR #195.

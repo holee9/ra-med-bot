@@ -52,7 +52,7 @@ tests/integration/audit-retention.test.ts
 
 All API endpoints are protected by Auth.js v5 session authentication.
 
-- Sessions use signed HttpOnly cookies (NEXTAUTH_SECRET)
+- Sessions use signed HttpOnly cookies (`AUTH_SECRET`; older runbooks may refer to this as `NEXTAUTH_SECRET`)
 - RBAC enforces Owner/Editor/Viewer roles on project resources
 - Unauthenticated requests return HTTP 401
 

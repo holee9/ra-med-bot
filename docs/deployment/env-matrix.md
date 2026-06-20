@@ -23,15 +23,15 @@ Do **not** commit real secrets. Use Vercel project settings or your secret manag
 | Variable | Description | development | preview | production | Secret |
 |----------|-------------|-------------|---------|------------|--------|
 | `DATABASE_URL` | PostgreSQL 16 connection string | `postgresql://user:pw@localhost:5432/regula` | Vercel Postgres (preview DB) | Vercel Postgres (prod DB) | Yes |
-| `AUTH_SECRET` / `NEXTAUTH_SECRET` | NextAuth v5 signing secret (≥32 chars). Also referenced as `NEXTAUTH_SECRET` in some libraries. | Generated locally | Vercel secret | Vercel secret (rotate quarterly) | Yes |
+| `AUTH_SECRET` | Auth.js v5 signing secret (≥32 chars) | Generated locally | Vercel secret | Vercel secret (rotate quarterly) | Yes |
 | `NEXTAUTH_URL` | Canonical app URL for OAuth callbacks | `http://localhost:3000` | Auto-set by Vercel | `https://regula.example.com` | No |
 | `ANTHROPIC_API_KEY` | Anthropic Claude API key for chat inference | Test/personal key | Preview key | Production key | Yes |
-| `OPENAI_API_KEY` | OpenAI API key (fallback / eval) | Optional | Optional | Optional | Yes |
-| `AUTH_MICROSOFT_ENTRA_ID` | Azure AD / Entra ID client ID | Optional | Optional | Required if SSO enabled | Yes |
+| `OPENAI_API_KEY` | OpenAI API key (embedding/fallback/eval) | Required by runtime validation | Preview key | Production key | Yes |
+| `AUTH_MICROSOFT_ID` | Azure AD / Entra ID client ID. `AUTH_MICROSOFT_ENTRA_ID` and `AZURE_AD_CLIENT_ID` are accepted aliases. | Local/test ID | Preview ID | Required if SSO enabled | Yes |
 | `AUTH_MICROSOFT_SECRET` | Azure AD client secret | Optional | Optional | Required if SSO enabled | Yes |
-| `AUTH_MICROSOFT_TENANT_ID` | Azure AD tenant ID | Optional | Optional | Required if SSO enabled | No |
 | `AUTH_GOOGLE_ID` | Google OAuth client ID | Optional | Optional | Required if Google SSO | Yes |
 | `AUTH_GOOGLE_SECRET` | Google OAuth client secret | Optional | Optional | Required if Google SSO | Yes |
+| `NEXT_PUBLIC_LLM_MODEL_LABEL` | Optional UI label for selected LLM model | Optional | Optional | Optional | No |
 | `NEXT_PUBLIC_SENTRY_DSN` | Sentry DSN for error tracking (public) | Empty / test DSN | Preview DSN | Production DSN | No |
 | `NEXT_PUBLIC_POSTHOG_KEY` | PostHog project API key (public) | Optional | Optional | Required | No |
 | `NEXT_PUBLIC_POSTHOG_HOST` | PostHog ingestion host | `https://eu.i.posthog.com` | Same | Same | No |
@@ -44,6 +44,8 @@ Do **not** commit real secrets. Use Vercel project settings or your secret manag
 | `HYBRID_RA_TENANT_ID` | Tenant scope sent as `X-Tenant-Id` to hybrid-ra-saas | Optional local tenant | Preview tenant ID | Production tenant ID | Yes |
 | `REGULA_API_KEY` | Shared secret for `POST /api/webhooks/audit` and `POST /api/webhooks/ifu` from hybrid-ra-saas customer runtime | Optional local test secret | Preview webhook secret | Production webhook secret | Yes |
 | `CRAWL_PUSH_SECRET` | Shared secret for `POST /api/webhooks/knowledge-sync` from hybrid-ra-saas cloud control plane | Optional local test secret | Preview crawl push secret | Production crawl push secret | Yes |
+| `SKIP_ENV_VALIDATION` | Build-only validation bypass flag. Must be paired with `REGULA_ALLOW_ENV_VALIDATION_SKIP=build`. | Only for `pnpm build` | CI build only | CI build only | No |
+| `REGULA_ALLOW_ENV_VALIDATION_SKIP` | Guard that makes the env validation bypass explicit for Next build route-data collection. | `build` only with `SKIP_ENV_VALIDATION=1` | `build` only | `build` only | No |
 
 ---
 
@@ -67,7 +69,7 @@ Do **not** commit real secrets. Use Vercel project settings or your secret manag
 
 ### Secret rotation
 
-- Rotate `AUTH_SECRET` / `NEXTAUTH_SECRET`, `ANTHROPIC_API_KEY`, `HYBRID_RA_API_TOKEN`, `REGULA_API_KEY`, and `CRAWL_PUSH_SECRET` at least quarterly.
+- Rotate `AUTH_SECRET`, `ANTHROPIC_API_KEY`, `OPENAI_API_KEY`, `HYBRID_RA_API_TOKEN`, `REGULA_API_KEY`, and `CRAWL_PUSH_SECRET` at least quarterly.
 - After rotation: update Vercel env vars, then redeploy.
 - For webhook secret rotation, update the sending hybrid-ra-saas deployment and receiving Regula deployment during the same maintenance window.
 
@@ -77,4 +79,6 @@ Do **not** commit real secrets. Use Vercel project settings or your secret manag
 
 - `NEXT_PUBLIC_*` variables are bundled into the client-side JavaScript. Do **not** use them for secrets.
 - EU data residency (fra1 region) is prepared but **not yet activated**. No additional env vars are needed until activation.
-- `lib/env.ts` validates required variables on startup using Zod (REQ-FND-010a). Missing required vars cause a build error.
+- `lib/env.ts` validates required variables on startup using Zod (REQ-FND-010a).
+- `SKIP_ENV_VALIDATION=1` is allowed only for the explicit Next build path when `REGULA_ALLOW_ENV_VALIDATION_SKIP=build` is also set. Runtime commands must validate env normally.
+- E2E CI can run without a checked-in `.env.test` when all required env vars are supplied by the workflow environment; `scripts/e2e-env.ts` falls back to process env in that case.

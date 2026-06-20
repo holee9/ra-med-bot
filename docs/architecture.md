@@ -1,6 +1,6 @@
 # Regula — System Architecture
 
-> Version: 1.0.0 | Updated: 2026-05-03
+> Version: 1.1.0 | Updated: 2026-06-20
 
 ---
 
@@ -14,6 +14,7 @@ graph TD
     NextJS["Next.js 15 App Router\n(Vercel iad1)"]
     Auth["Auth.js v5\n(SSO / SAML / OIDC)"]
     ConsultAPI["POST /api/ra/consult\n(nodejs runtime, 60s timeout)"]
+    RiskAPI["/api/ra/risk/*\nISO 14971 workflow"]
     RAG["RAG Pipeline\nlib/ai/consult.ts"]
     Intent["Intent Classifier\n(Haiku — 3 classes)"]
     QueryRewrite["Query Rewriter\n(rule-based + LLM)"]
@@ -28,6 +29,7 @@ graph TD
     User -->|HTTPS| NextJS
     NextJS --> Auth
     NextJS --> ConsultAPI
+    NextJS --> RiskAPI
     ConsultAPI --> RAG
     RAG --> Intent
     Intent --> QueryRewrite
@@ -38,6 +40,8 @@ graph TD
     LLM --> CitationEnforce
     ConsultAPI -->|SSE stream| User
     ConsultAPI --> DB
+    RiskAPI --> DB
+    RiskAPI --> RAG
     NextJS --> Sentry
     NextJS --> PostHog
     RAG --> Langfuse
@@ -142,6 +146,43 @@ erDiagram
         jsonb meta_json
         timestamp created_at
     }
+    workflow_runs {
+        uuid id PK
+        string workflow_type
+        string status
+        uuid organization_id FK
+        timestamp created_at
+    }
+    risk_items {
+        uuid id PK
+        uuid workflow_run_id FK
+        text hazard
+        text sequence_of_events
+        text hazardous_situation
+        text harm
+        integer severity
+        integer probability
+        string risk_level
+        jsonb citation
+    }
+    risk_controls {
+        uuid id PK
+        uuid risk_item_id FK
+        string tier
+        text description
+        boolean is_adopted
+        integer residual_severity
+        integer residual_probability
+        text alarp_justification
+    }
+    risk_gspr_mappings {
+        uuid id PK
+        uuid workflow_run_id FK
+        string gspr_clause
+        text requirement
+        text compliance
+        text evidence
+    }
 
     users ||--o{ conversations : "has"
     conversations ||--o{ messages : "contains"
@@ -149,6 +190,9 @@ erDiagram
     sources ||--o{ source_sections : "has"
     message_sources }o--|| sources : "references"
     users ||--o{ audit_logs : "generates"
+    workflow_runs ||--o{ risk_items : "has"
+    risk_items ||--o{ risk_controls : "mitigated_by"
+    workflow_runs ||--o{ risk_gspr_mappings : "maps"
 ```
 
 ### Key Constraints
@@ -156,6 +200,9 @@ erDiagram
 - `audit_logs`: append-only — UPDATE/DELETE/TRUNCATE are blocked at database level
 - `source_sections.embedding`: 1536-dimensional vector (OpenAI `text-embedding-3-small`)
 - `messages.expert_review_required`: set when confidence < 0.6 or query contains high-risk terms
+- `risk_items`: stores ISO 14971 hazard / event sequence / hazardous situation / harm terms with citation metadata
+- `risk_controls`: stores ISO 14971 §7.1 control hierarchy and residual risk evaluation
+- `risk_gspr_mappings`: maps risk file evidence to EU MDR Annex I GSPR clauses
 
 ---
 
@@ -192,7 +239,62 @@ All `/api/ra/*` routes require a valid Auth.js session. Unauthenticated requests
 
 ---
 
-## 6. Deployment Architecture
+## 6. Risk Management Architecture
+
+The ISO 14971 Risk Management workflow is a regulated workflow surface layered on top of the same Auth.js, Drizzle, audit, and hybrid-ra-saas integration primitives used by the rest of Regula.
+
+```mermaid
+sequenceDiagram
+    participant U as RA User
+    participant UI as /workflows/risk
+    participant API as /api/ra/risk/*
+    participant RAG as hybrid-ra-saas RAG
+    participant Risk as lib/risk/*
+    participant DB as PostgreSQL
+    participant Lead as RA Lead
+
+    U->>UI: create risk run
+    UI->>API: POST /risk/runs
+    API->>DB: workflow_runs(workflow_type=risk)
+    U->>API: POST /risk/identify
+    API->>RAG: hazard identification query
+    RAG-->>API: hazards + citations + confidence
+    API->>DB: risk_items + audit_logs
+    U->>API: POST /risk/items/[id]/evaluate
+    API->>Risk: evaluateRiskLevel(severity, probability)
+    Risk-->>API: acc / alarp / unacc
+    API->>DB: risk item update + risk.matrix_evaluated
+    U->>API: POST /risk/controls/recommend
+    API->>Risk: control hierarchy validation
+    API->>DB: risk_controls
+    U->>API: POST /risk/runs/[id]/export
+    API->>Risk: buildRiskReport()
+    API-->>U: DOCX draft
+    Lead->>API: POST /risk/runs/[id]/approve
+    API->>DB: risk.report_approved
+```
+
+### Risk bounded context
+
+| Layer | Module | Responsibility |
+|---|---|---|
+| UI | `components/risk/*` | Matrix, hazard table, control wizard, approval gate |
+| API | `app/api/ra/risk/*` | Session/RBAC, BFF routing, audit writes |
+| Domain | `lib/risk/*` | Matrix classification, residual risk, control hierarchy, report generation |
+| Data | `risk_items`, `risk_controls`, `risk_gspr_mappings` | Workflow-scoped risk file records |
+| Compliance | `audit_logs`, `risk.approve` | 21 CFR Part 11 traceability and RA-lead approval |
+
+### Risk invariants
+
+- `severity` and `probability` are integer scales from 1 to 5.
+- Risk level is one of `acc`, `alarp`, `unacc`.
+- `information` tier controls require rationale.
+- Residual ALARP decisions require justification.
+- Final approval uses server-side `risk.approve` and cannot be granted by RA member roles.
+
+---
+
+## 7. Deployment Architecture
 
 ```mermaid
 graph TD
@@ -215,7 +317,7 @@ graph TD
 
 ---
 
-## 7. Security Architecture
+## 8. Security Architecture
 
 | Layer | Control |
 |-------|---------|
@@ -223,6 +325,8 @@ graph TD
 | Framing | `X-Frame-Options: DENY` |
 | MIME sniffing | `X-Content-Type-Options: nosniff` |
 | Auth | Auth.js v5 session (signed JWT, HttpOnly cookies) |
+| RBAC | `withPermission` matrix, including risk.generate/view/update/approve |
+| Risk approval | `risk.approve` RA-lead-only final report gate |
 | LLM data | Anthropic ZDR (`anthropic-beta: zero-data-retention`) |
 | Error tracking | Sentry `beforeSend` PII redaction (query, user_id, content, email) |
 | Secrets | gitleaks CI scan on every push |
@@ -232,7 +336,7 @@ For full security documentation, see [`docs/security/`](security/).
 
 ---
 
-## 8. Observability
+## 9. Observability
 
 | Tool | Purpose | Data |
 |------|---------|------|
@@ -245,13 +349,13 @@ Observability is strictly separated from `audit_logs` — observability tools ne
 
 ---
 
-## 9. Codebase Analysis (2026-06-17)
+## 10. Codebase Analysis (2026-06-20)
 
 ### 9.1 Project Scale
 
-- **TypeScript files**: 377
-- **API routes**: 67
-- **Database tables**: 18
+- **TypeScript files**: 400+
+- **API routes**: 77+
+- **Database tables**: 21+
 - **lib modules**: 27
 - **components categories**: 11
 

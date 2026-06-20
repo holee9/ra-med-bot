@@ -15,7 +15,48 @@
 
 상세 점검 기록: [`docs/implementation-status.md`](docs/implementation-status.md)
 
-### 최신 PR 정리 상태 (2026-06-19)
+### 최신 main 상태 (2026-06-20)
+
+현재 `main`은 PR #195의 ISO 14971 Risk Management 통합 구현과 후속 CI 복구 커밋 `8065cc8`까지 반영된 상태입니다. GitHub Actions 기준 `CI`, `E2E Tests`, `Security Scan`, `Deploy`가 모두 성공했으며, 로컬 검증에서도 `typecheck`, `biome check`, `lint:hex`, `pnpm test`, `next build`가 통과했습니다.
+
+| 항목 | 상태 | 근거 |
+|---|---|---|
+| main HEAD | PASS | `8065cc8 fix(ci): restore gates after risk workflow merge` |
+| PR #195 | MERGED | `feat(risk): SPEC-REGULA-RISK-001 ISO 14971 위험관리 통합 구현` |
+| PR #194 | MERGED | Issue #46 기반 작업 병합 완료 |
+| CI Gates | PASS | typecheck, lint, format, unit, RBAC, audit, tokens, i18n, glossary, contrast, modules, migrations, build |
+| E2E Tests | PASS | CI smoke/browser jobs success; staging URL 미설정 job은 의도적 skip |
+| Security Scan | PASS | Dependency Vulnerability Scan, Secret Detection 통과 |
+| Deploy | PASS | GitHub Actions deploy workflow success |
+| 로컬 단위 테스트 | PASS | `pnpm test`: 2,536 passed / 7 skipped |
+| 권한 매트릭스 | PASS | 32 actions, risk.generate/view/update/approve 포함 |
+| AuditAction enum | PASS | 91 actions, risk.* 7종 포함 |
+
+### ISO 14971 Risk Management 완료 — Issue #46 / PR #195
+
+Regula는 이제 ISO 14971:2019 위험관리 파일(RMF) 작성 흐름을 지원합니다. 기기 설명 기반 hazard identification, 5×5 severity/probability risk matrix, ISO 14971 §7.1 control hierarchy, residual risk 평가, EU MDR GSPR mapping, RA-lead approval gate, DOCX report export가 하나의 workflow surface로 연결되었습니다.
+
+| 영역 | 구현 내용 |
+|------|---------|
+| UI | `/workflows/risk`, `/workflows/risk/[runId]`, `RiskMatrix`, `HazardTable`, `ControlWizard`, `RiskApprovalGate` |
+| API | `/api/ra/risk/runs`, `/identify`, `/items/[id]`, `/items/[id]/evaluate`, `/controls/recommend`, `/controls/[id]`, `/runs/[id]/gspr`, `/export`, `/approve` |
+| DB | `risk_items`, `risk_controls`, `risk_gspr_mappings`, `workflow_type='risk'`, `risk_level`, `control_tier` |
+| RBAC | `risk.generate`, `risk.view`, `risk.update`는 RA member 이상, `risk.approve`는 RA lead 이상 |
+| Audit | `risk.hazard_identified`, `risk.matrix_evaluated`, `risk.item_deleted`, `risk.control_adopted`, `risk.residual_accepted`, `risk.gspr_mapped`, `risk.report_approved` |
+| 보고서 | ISO 14971 섹션 + GSPR mapping table + approval status + draft watermark 지원 |
+| 문서 | [`docs/risk-management.md`](docs/risk-management.md), [`docs/api-reference.md`](docs/api-reference.md), [`docs/architecture.md`](docs/architecture.md) |
+
+검증 결과:
+
+```bash
+corepack pnpm typecheck              # PASS
+corepack pnpm exec biome check .     # PASS
+corepack pnpm run lint:hex           # PASS
+corepack pnpm test                   # PASS: 2536 passed / 7 skipped
+SKIP_ENV_VALIDATION=1 REGULA_ALLOW_ENV_VALIDATION_SKIP=build corepack pnpm build  # PASS
+```
+
+### 이전 PR 정리 상태 (2026-06-19~2026-06-20)
 
 Issue #182 — 실사용자 E2E 검증 체계 완료. Smoke Test 8/8 Spec 통과, E2E 검증 MRD 작성 완료 (`docs/e2e-validation-mrd.md`).
 Issue #169 — Traceability 통합 PR #177은 동일 변경이 main에 이미 반영되어 stale/superseded로 종료.
@@ -23,6 +64,7 @@ Issue #185 — Predicate 비교 분석 시각화 PR #186 완료. Bar/Radar/Table
 Issue #164, #163 — Evidence/Authoring API BFF+UI 연동 완료. API 라우트 및 UI 통합 완료.
 Issue #156 — hybrid-ra-saas outbound typed adapter PR #192 완료. 7개 upstream endpoint 타입 계약, 30초 timeout, error kind 분류, contract tests 추가.
 Issue #188 — hybrid-ra-saas inbound webhook 3종 구현 후 리뷰 보강 완료. invalid JSON 400 응답, SHA-256 digest 기반 timing-safe 인증 비교, webhook 단위 테스트 추가.
+Issue #46 — ISO 14971 Risk Management 통합 구현 완료. PR #195 merge 후 CI/E2E 실패를 `8065cc8`에서 복구 완료.
 
 | 항목 | 상태 | 근거 |
 |---|---|---|
@@ -33,13 +75,13 @@ Issue #188 — hybrid-ra-saas inbound webhook 3종 구현 후 리뷰 보강 완�
 | Issue #188 | CLOSED | `POST /api/webhooks/{audit,ifu,knowledge-sync}` 구현 및 리뷰 보강 완료 |
 | Traceability UI | PASS | `/workflows/traceability` 스캔, 그래프, 영향 분석 탭 구현 |
 | BFF 프록시 | PASS | `/api/ra/traceability/{scan,graph,impact}` |
-| 권한 매트릭스 | PASS | `traceability.scan/view/impact`, `checklist.generate/view/update` 포함 28 actions |
+| 권한 매트릭스 | PASS | `traceability.scan/view/impact`, `checklist.generate/view/update`, `risk.generate/view/update/approve` 포함 32 actions |
 | CI 복구 | PASS | CI Gates, Playwright chromium/firefox/webkit, LLM Eval, E2E Smoke, Security Scan success |
-| QA evidence | PASS | 로컬 전체 `vitest run`: 2,386 tests pass, 7 skipped |
+| QA evidence | PASS | 로컬 전체 `vitest run`: 2,536 tests pass, 7 skipped |
 
 ### 종합 판단
 
-**Wave 3 PREDICATE-001 구현 완료** (`feat/issue-22-predicate`, PR #126). FDA 510(k) Predicate 검색 엔진 — openFDA 3-tier 캐스케이드 검색, 5-dimension LLM 비교표, PDF/DOCX 내보내기, IDOR 수정 완료. TypeScript 0 errors, 1,976 테스트 통과.
+**Wave 3 PREDICATE-001 구현 완료** (PR #126). FDA 510(k) Predicate 검색 엔진 — openFDA 3-tier 캐스케이드 검색, 5-dimension LLM 비교표, PDF/DOCX 내보내기, IDOR 수정 완료. 해당 PR 기준 TypeScript 0 errors, 1,976 테스트 통과.
 
 **Persona 85% Quality Addendum 완료** (`feat/issue-158-persona-85-overhaul`). 3회 교차검증 완료 — AuditAction enum 불일치 수정, PII redaction path 통합, RBAC 경계 재검토, UI 진입점/신뢰 경계 반영.
 
@@ -51,10 +93,10 @@ Issue #188 — hybrid-ra-saas inbound webhook 3종 구현 후 리뷰 보강 완�
 
 | 카테고리 | 상태 | 측정 근거 |
 |---------|------|---------|
-| 구현 기준 | PASS | PREDICATE-001 구현 완료 (PR #126, Fixes #22). TypeScript 0 errors, 1,976 테스트 통과 |
-| GitHub Actions | PASS | `CI`, `Deploy`, `Security Scan` 모두 success on `feat/issue-22-predicate` |
+| 구현 기준 | PASS | PREDICATE-001, hybrid-ra-saas adapter/webhooks, ISO 14971 Risk Management까지 main 반영 |
+| GitHub Actions | PASS | `CI`, `E2E Tests`, `Security Scan`, `Deploy` 모두 success on `main` (`8065cc8`) |
 | 구현 표면 | PASS | 19 pages, 33 API route handlers, 36 component files, 200+ lib files |
-| 테스트 자산 | PASS | 220+ test/spec files, 8+ Playwright specs, 2,386 tests passing locally after PR #192 docs sync |
+| 테스트 자산 | PASS | 230+ test/spec files, 10+ Playwright specs, 2,536 tests passing locally after risk docs sync |
 | CI core gates | PASS | typecheck, lint, format, unit, RBAC, audit, tokens, i18n, glossary, contrast, modules, migrations, build |
 | E2E CI | PASS | E2E Smoke 및 Playwright chromium/firefox/webkit 통과 |
 | hybrid-ra-saas typed adapter | PASS | `createHybridRaClient()` 7개 endpoint contract tests, auth/schema/timeout/network error kind 분류 |
@@ -266,7 +308,7 @@ GET  /api/auth/session             → {"user":{"name":"Drake Lee","email":"drak
 
 ## 📋 목차
 
-- [구현 현황 대시보드](#구현-현황-대시보드-2026-06-18-kst-기준)
+- [구현 현황 대시보드](#구현-현황-대시보드-2026-06-20-kst-기준)
 - [개요](#개요)
 - [프로젝트 운영 철학](#프로젝트-운영-철학)
 - [아키텍처](#아키텍처)
@@ -277,6 +319,7 @@ GET  /api/auth/session             → {"user":{"name":"Drake Lee","email":"drak
 - [Phase 9 Advanced Workflows 기능](#phase-9-advanced-workflows-기능-2026-05-04-완료)
 - [Phase 10 Regulatory Radar 기능](#phase-10-regulatory-radar-기능-2026-05-04-완료)
 - [Phase 11 Department RBAC 기능](#phase-11-department-rbac-기능-2026-05-04-완료)
+- [ISO 14971 Risk Management 기능](#iso-14971-risk-management-기능-2026-06-20-완료)
 - [시작 방법](#시작-방법)
 - [온프레미스 구축 가이드 (Ubuntu)](#온프레미스-구축-가이드-ubuntu)
 - [프로젝트 문서](#프로젝트-문서)
@@ -840,6 +883,43 @@ Notifier → email / Slack / toast
 
 ---
 
+## ISO 14971 Risk Management 기능 (2026-06-20 완료)
+
+SPEC-REGULA-RISK-001은 Issue #46의 ISO 14971 위험관리 통합 요구사항을 구현한 Wave 4 workflow입니다. 기존 CER/PCCP/Submission workflow 패턴을 재사용하면서, 위험 식별부터 보고서 승인까지 RA lead 검토 가능한 표면으로 제공합니다.
+
+### Workflow Surface
+
+| 영역 | 경로 / 모듈 | 설명 |
+|------|-------------|------|
+| Risk run 목록 | `/workflows/risk` | 위험관리 run 진입점 |
+| Risk run 상세 | `/workflows/risk/[runId]` | hazard table, matrix, control, approval UI |
+| Risk matrix | `components/risk/RiskMatrix.tsx` | 5×5 severity/probability grid, acc/alarp/unacc 표시 |
+| Hazard table | `components/risk/HazardTable.tsx` | hazard, harm, severity, probability, citation, low-confidence 표시 |
+| Control wizard | `components/risk/ControlWizard.tsx` | inherent → protective → information hierarchy 선택 |
+| Approval gate | `components/risk/RiskApprovalGate.tsx` | RA lead 전용 승인 UI |
+
+### API / Domain / Data
+
+| 계층 | 구현 |
+|------|------|
+| BFF API | `/api/ra/risk/runs`, `/identify`, `/items/[id]`, `/items/[id]/evaluate`, `/controls/recommend`, `/controls/[id]`, `/runs/[id]/gspr`, `/runs/[id]/export`, `/runs/[id]/approve` |
+| Domain logic | `lib/risk/risk-evaluation.ts`, `residual-risk.ts`, `hazard-identification.ts`, `control-recommendation.ts`, `report-builder.ts` |
+| DB schema | `risk_items`, `risk_controls`, `risk_gspr_mappings`, `risk_level`, `control_tier`, `workflow_type='risk'` |
+| RBAC | `risk.generate`, `risk.view`, `risk.update`, `risk.approve` |
+| Audit | `risk.hazard_identified`, `risk.matrix_evaluated`, `risk.item_deleted`, `risk.control_adopted`, `risk.residual_accepted`, `risk.gspr_mapped`, `risk.report_approved` |
+
+### Guardrails
+
+- `risk.approve`는 RA lead 이상만 실행할 수 있습니다.
+- information-for-safety 통제는 rationale 없이 채택할 수 없습니다.
+- severity/probability는 1~5 범위 밖 입력을 거부합니다.
+- residual ALARP 판단은 justification을 기록합니다.
+- 미승인 보고서는 draft watermark와 pending approval 상태를 포함합니다.
+
+상세 운영/검증 문서: [`docs/risk-management.md`](docs/risk-management.md)
+
+---
+
 ## 시작 방법
 
 ### 선행 조건
@@ -948,6 +1028,11 @@ pnpm start
 | **Wiki** | 장기 아키텍처 기억, ADR, 도메인 지식 | [GitHub Wiki](https://github.com/holee9/ra-med-bot/wiki) |
 | **Issues** | 작업 이력, 의도 보존 | [Issues](https://github.com/holee9/ra-med-bot/issues) |
 | **SPEC 문서** | 요구사항 정의 (EARS 포맷) | `.moai/specs/` |
+| **Implementation Status** | 최신 main 상태, 완료 PR/이슈, 검증 증거 | [`docs/implementation-status.md`](docs/implementation-status.md) |
+| **API Reference** | Auth.js session API, webhook, hybrid-ra-saas adapter, risk endpoints | [`docs/api-reference.md`](docs/api-reference.md) |
+| **Architecture** | 시스템 구조, RAG/Risk/data/audit 흐름 | [`docs/architecture.md`](docs/architecture.md) |
+| **Risk Management** | ISO 14971 workflow 운영·API·RBAC·audit 상세 | [`docs/risk-management.md`](docs/risk-management.md) |
+| **Environment Matrix** | 배포/로컬 환경변수, build/E2E env guard | [`docs/deployment/env-matrix.md`](docs/deployment/env-matrix.md) |
 | **Design Handoff** | 완전한 스펙 패키지 | `RA-bot-design/design_handoff_regula/README.md` |
 | **Codex Memory** | Codex 전용 최소 컨텍스트 작업 메모 | `.codex/project-memory.md` |
 | **Codemaps** | 아키텍처 다이어그램, 모듈 구조, 데이터 흐름 | `.moai/project/codemaps/` |

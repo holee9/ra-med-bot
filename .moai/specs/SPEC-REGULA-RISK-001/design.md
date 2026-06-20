@@ -45,7 +45,7 @@ export const workflowTypeEnum = pgEnum('workflow_type', [
 ]);
 
 // auditActionEnum에 risk 액션 추가
-// 'risk.identify.generate', 'risk.item.edit', 'risk.analysis.update',
+// 'risk.hazard_identified', 'risk.item_deleted', 'risk.matrix_evaluated',
 // 'risk.control.decide', 'risk.approve', 'risk.export'
 
 // 신규 enum: 위험도 수준
@@ -319,7 +319,7 @@ RagQueryResponse { answer, citations[], confidence }
    │  citation 매핑 (RagCitation → RiskCitation)
    │  confidence<0.6 → lowConfidence 플래그
    ▼
-DB 저장 + audit_logs(risk.identify.generate, confidence)
+DB 저장 + audit_logs(risk.hazard_identified, confidence)
 ```
 
 graceful degradation: RAG 실패/빈 응답 → manual 입력 fallback (REQ-RISK-028). HybridRaClientError는 BFF에서 statusCode 그대로 반환.
@@ -328,7 +328,7 @@ graceful degradation: RAG 실패/빈 응답 → manual 입력 fallback (REQ-RISK
 
 ## 7. 감사 추적 (audit_logs)
 
-모든 위험 판단·변경은 append-only audit_logs 기록 (21 CFR Part 11). 신규 action: `risk.identify.generate`, `risk.item.edit`, `risk.analysis.update`, `risk.control.decide`, `risk.approve`, `risk.export`. metaJson에 변경 전/후, confidence, 사유 포함.
+모든 위험 판단·변경은 append-only audit_logs 기록 (21 CFR Part 11). 신규 action: `risk.hazard_identified`, `risk.matrix_evaluated`, `risk.item_deleted`, `risk.control_adopted`, `risk.residual_accepted`, `risk.gspr_mapped`, `risk.report_approved`. metaJson에 변경 전/후, confidence, 사유 포함.
 
 ---
 

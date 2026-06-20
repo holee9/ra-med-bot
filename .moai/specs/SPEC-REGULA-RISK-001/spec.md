@@ -1,7 +1,7 @@
 ---
 id: SPEC-REGULA-RISK-001
 version: 1.0.0
-status: draft
+status: completed
 phase: wave4
 priority: Medium
 created: 2026-06-20
@@ -28,6 +28,7 @@ labels:
 | Version | Date | Author | Changes |
 |---------|------|--------|---------|
 | 1.0.0 | 2026-06-20 | manager-spec (Regula harness) | 초기 작성. Wave 4 SPEC, Issue #46 기반. 36 REQ (4 group: 위험 식별 / 분석 매트릭스 / 통제 조치 / 보고서·GSPR). CER Builder(SPEC-REGULA-CER-001) workflow 패턴 재사용. |
+| 1.0.1 | 2026-06-20 | Codex | 구현 완료 상태 반영. PR #195 merge 및 `8065cc8` CI 복구 기준 검증 완료. |
 
 ---
 
@@ -145,7 +146,7 @@ The system SHALL 각 위험 항목을 ISO 14971 용어 체계(hazard / sequence 
 - 검증: 위험 항목 스키마 필드 존재 검증.
 
 **REQ-RISK-007** (Event-Driven)
-WHEN 사용자가 자동 생성된 위험 항목을 수정·삭제·추가하면, THEN the system SHALL 변경을 즉시 저장하고 audit_logs에 `risk.item.edit` 액션을 기록한다.
+WHEN 사용자가 자동 생성된 위험 항목을 수정·삭제·추가하면, THEN the system SHALL 변경을 즉시 저장하고 삭제 시 audit_logs에 `risk.item_deleted` 액션을 기록한다.
 - 근거: 21 CFR Part 11 감사 추적. 사용자 override 100% 보장.
 - 검증: 위험 항목 수정 → audit_logs 기록 통합 테스트.
 
@@ -160,7 +161,7 @@ WHILE 위험 식별 결과를 표시하는 동안, the system SHALL 각 항목�
 - 검증: citation 클릭 → source 상세 표시 E2E 테스트.
 
 **REQ-RISK-010** (Ubiquitous)
-The system SHALL 위험 식별 RAG 호출 시 `audit_logs`에 `risk.identify.generate` 액션과 RAG confidence를 기록한다.
+The system SHALL 위험 식별 RAG 호출 시 `audit_logs`에 `risk.hazard_identified` 액션과 RAG confidence를 기록한다.
 - 근거: LLM 호출 추적성.
 - 검증: 식별 생성 → audit 기록 확인 테스트.
 
@@ -212,7 +213,7 @@ WHILE 위험 분석 결과가 미검토 상태인 동안, the system SHALL 매�
 - 검증: 미검토 run → provisional 라벨 표시 E2E 테스트.
 
 **REQ-RISK-020** (Ubiquitous)
-The system SHALL 각 위험 항목의 severity·probability·위험도 수준 변경 이력을 audit_logs에 `risk.analysis.update` 액션으로 기록한다.
+The system SHALL 각 위험 항목의 severity·probability·위험도 수준 변경 이력을 audit_logs에 `risk.matrix_evaluated` 액션으로 기록한다.
 - 근거: 위험 판단 추적성.
 - 검증: severity 변경 → audit 기록 테스트.
 
@@ -324,7 +325,7 @@ Issue #46 completion criteria에 1:1 대응한다. 상세 Given-When-Then 시나
 - **RAG 통합**: `lib/api/hybrid-ra-client.ts`의 `createHybridRaFetch` + `RagQueryRequest/RagQueryResponse` 타입을 재사용한다. 신규 클라이언트 추가 없이 기존 BFF 패턴(`app/api/ra/checklists/*` 참조)을 따른다.
 - **DOCX export**: 기존 `docx@^9.7.1` 패키지를 사용한다 (CER Builder와 동일).
 - **권한**: `lib/auth/with-permission.ts`로 route를 감싼다. 신규 permission: `risk.generate`, `risk.view`, `risk.update`, `risk.approve` (RA-lead 전용).
-- **Audit**: 신규 audit action — `risk.identify.generate`, `risk.item.edit`, `risk.analysis.update`, `risk.control.decide`, `risk.approve`, `risk.export`. `auditActionEnum` 확장 필요.
+- **Audit**: 신규 audit action — `risk.hazard_identified`, `risk.matrix_evaluated`, `risk.item_deleted`, `risk.control_adopted`, `risk.residual_accepted`, `risk.gspr_mapped`, `risk.report_approved`. `auditActionEnum` 확장 필요.
 - **DB 마이그레이션**: `lib/db/migrations/` 다음 번호로 `risk` enum 값 추가 + 3개 신규 테이블 + RLS 정책 + audit action 추가.
 
 ---

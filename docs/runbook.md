@@ -163,7 +163,7 @@ vercel --prod
 |----------|----------|-------------|
 | `DATABASE_URL` | ✅ | Neon PostgreSQL connection string |
 | `ANTHROPIC_API_KEY` | ✅ | Anthropic API key (ZDR mode enabled) |
-| `NEXTAUTH_SECRET` | ✅ | Auth.js session signing secret |
+| `AUTH_SECRET` | ✅ | Auth.js session signing secret |
 | `NEXTAUTH_URL` | ✅ | Public canonical URL |
 | `SENTRY_DSN` | ✅ | Sentry error tracking DSN |
 | `LANGFUSE_PUBLIC_KEY` | ✅ | Langfuse observability public key |
@@ -246,7 +246,7 @@ vercel ls --prod | head -5
 - Temporarily reduce `topK` in RAG config
 
 **Authentication failure:**
-- Verify `NEXTAUTH_SECRET` matches in all environments
+- Verify `AUTH_SECRET` matches in all environments
 - Check `NEXTAUTH_URL` is set correctly (no trailing slash)
 - Verify OAuth provider credentials
 
@@ -346,7 +346,7 @@ See `docs/compliance.md` for full compliance documentation.
 
 If a security incident is suspected:
 
-1. Immediately rotate `NEXTAUTH_SECRET` and `ANTHROPIC_API_KEY`
+1. Immediately rotate `AUTH_SECRET` and `ANTHROPIC_API_KEY`
 2. Check Sentry for PII exposure (beforeSend redaction should prevent this)
 3. Check gitleaks scan results: `.github/workflows/security.yml`
 4. Review `docs/security/pentest-plan.md` for scope and SLAs
