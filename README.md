@@ -1561,6 +1561,49 @@ PR 생성 시 본문에 체크리스트를 포함시켜세요. PR 템플릿이 �
 
 상세한 내용은 [`.moai/specs/_shared/qa-gate-0-checklist.md`](.moai/specs/_shared/qa-gate-0-checklist.md) 템플릿을 참고하세요.
 
+#### QA Gate 1 체크포인트 사용법
+
+QA Gate 1은 구현 중간에 단위 테스트, 계약 검증, 감사 로그, citation 커버리지를 점검하는 체크포인트입니다. 구현 진행 중 최소 1회 이상 통과해야 합니다.
+
+**체크포인트 생성:**
+
+```bash
+# Issue #{N}의 QA Gate 1 체크포인트 생성
+pnpm qa:gate-1 {issue-number}
+
+# 생성된 체크포인트를 .moai/specs/_generated/qa-gate-1-issue-{N}.md에도 저장
+```
+
+**이슈 코멘트로 추가:**
+
+```bash
+# 생성된 체크포인트를 이슈 코멘트로 자동 추가
+pnpm qa:gate-1:comment {issue-number}
+```
+
+**수동 추가:**
+
+```bash
+# 생성된 체크포인트를 복사해서 이슈 코멘트에 직접 추가
+pnpm qa:gate-1 {issue-number} | gh issue comment {issue-number} --body-file -
+```
+
+**PR 본문에 추가:**
+
+PR 생성 시 본문에 체크포인트 결과를 포함시켜세요. PR 템플릿이 있다면 자동으로 포함됩니다.
+
+**체크포인트 항목:**
+- Unit Test Coverage: 새로운 함수 단위 테스트, 경계값 커버리지
+- API Contract Validation: 요청/응답 스키마 검증, 상태 코드 확인
+- Citation Coverage: citation-required 응답의 citation 커버리지 검증
+- Audit Log Verification: audit_logs row 발생 확인, 이벤트 메타데이터 완전성
+- RBAC & Authorization: 긍정/부정 경로 테스트, 권한 확인
+- Database & Schema: migration backward compatibility, rollback 테스트
+- External API Integration: mock 정의, 타임아웃/재시도/회로차단 테스트
+- LLM & RAG Pipeline: 프롬프트 버전 관리, fallback 동작 검증
+
+상세한 내용은 [`.moai/specs/_shared/qa-gate-1-checklist.md`](.moai/specs/_shared/qa-gate-1-checklist.md) 템플릿을 참고하세요.
+
 ---
 | Co-edit, E2E, CI, Playwright | 로컬/CI 동일 fixture 또는 mock 재현성, 동시성·실패 복구·artifact/trace 저장 |
 | QMS, Export, Share, Personal Library, ROI, Notification | 사용자 여정, 접근성, 권한별 표시/수정 상태, 생성·공유·알림 audit 및 취소 경로 |
