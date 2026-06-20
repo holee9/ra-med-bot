@@ -30,7 +30,7 @@ type Ctx = { params?: RouteParams };
 type InnerHandler = (req: Request, ctx: Ctx, session: AuthSession) => Promise<Response>;
 
 // SPEC-REGULA-AUDITOR-VIEW-001 (AC #2): HTTP methods that mutate state.
-// Auditor role is blocked from these regardless of the permission action.
+// Auditor role is blocked from these unless the action is a read-only package build.
 const WRITE_METHODS = new Set(['POST', 'PUT', 'PATCH', 'DELETE']);
 
 /**
@@ -56,9 +56,11 @@ export function withPermission(action: PermissionAction, handler: InnerHandler) 
     const spec = PERMISSIONS[action];
 
     // 2. SPEC-REGULA-AUDITOR-VIEW-001: auditor is strictly read-only.
-    //    Any write method is rejected before the role/membership checks run,
-    //    and the attempt is logged with audit.denied (AC #3).
-    if (user.role === 'auditor' && WRITE_METHODS.has(req.method.toUpperCase())) {
+    //    The 1-click audit package is POST for HTTP transport, but it is an
+    //    explicitly granted read-only evidence export and must reach RBAC.
+    const method = req.method.toUpperCase();
+    const isReadOnlyPackageBuild = action === 'audit.package.generate' && method === 'POST';
+    if (user.role === 'auditor' && WRITE_METHODS.has(method) && !isReadOnlyPackageBuild) {
       await writeAudit({
         action: 'audit.denied',
         actor_id: user.id,
@@ -66,7 +68,7 @@ export function withPermission(action: PermissionAction, handler: InnerHandler) 
         resource_id: action,
         meta_json: {
           attemptedAction: action,
-          method: req.method.toUpperCase(),
+          method,
           reason: 'auditor_read_only',
         },
       });

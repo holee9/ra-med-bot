@@ -134,6 +134,22 @@ describe('SPEC-REGULA-AUDITOR-VIEW-001 — auditor write-block (AC #2, #3)', () 
     expect(handler).toHaveBeenCalledTimes(1);
   });
 
+  it('auditor POST on audit.package.generate reaches the package handler', async () => {
+    authMock.mockResolvedValue(makeSession('auditor'));
+    const handler = vi.fn(() =>
+      Promise.resolve(new Response(JSON.stringify({ ok: true }), { status: 200 })),
+    );
+    const wrapped = withPermission('audit.package.generate' as never, handler);
+
+    const res = await wrapped(makeRequest('POST'), {});
+
+    expect(res.status).toBe(200);
+    expect(handler).toHaveBeenCalledTimes(1);
+    expect(writeAuditMock).not.toHaveBeenCalledWith(
+      expect.objectContaining({ action: 'audit.denied' }),
+    );
+  });
+
   it('non-auditor role is NOT blocked by the auditor write guard (no regression)', async () => {
     authMock.mockResolvedValue(makeSession('ra-member'));
     const handler = vi.fn(() => Promise.resolve(new Response('ok', { status: 200 })));
