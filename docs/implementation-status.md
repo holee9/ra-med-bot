@@ -1,7 +1,7 @@
 # Regula Implementation Status
 
-Reviewed: 2026-06-20 KST (updated)
-Implementation baseline commit: `8065cc8` (`main` after PR #195 and CI recovery)
+Reviewed: 2026-06-20 KST (implementation review/fix pass)
+Implementation review baseline commit: `b2bd5d1` (`main` after PR #196, PR #197, #166, QA Gate/Wave 5 SPEC documentation)
 
 This document includes the 2026-06-18 PR cleanup after PR #184 merge,
 PR #177 superseded closure, the completed Predicate Visualization addendum
@@ -9,7 +9,7 @@ for Issue #185 / PR #186, E2E validation MRD completion for Issue #182,
 the Issue #188 hybrid-ra-saas inbound webhook hardening pass,
 the Issue #156 hybrid-ra-saas outbound typed adapter merge,
 the 2026-06-20 security/quality fixes (#162 RBAC, #164 Predicate E2E, #152 workflow mock audit, #163 onboarding E2E seed),
-and the Issue #46 / PR #195 ISO 14971 Risk Management integration plus the follow-up `8065cc8` CI restoration commit.
+and the Issue #46 / PR #195 ISO 14971 Risk Management integration plus the follow-up `8065cc8` CI restoration commit. This review also covers PR #196, PR #197, the #166 hydration mismatch fixes, and the QA Gate/Wave 5 SPEC documentation commits now present on `main`.
 
 ## Executive State
 
@@ -45,17 +45,25 @@ matrix, control hierarchy, residual risk evaluation, GSPR mapping, DOCX export,
 and RA-lead approval gate. The follow-up commit `8065cc8` restored the build,
 lint, unit, E2E, security, and deploy gates on `main`.
 
+The 2026-06-20 implementation review found one post-merge regression on the
+latest `main`: the #166 hydration mismatch follow-up added correct
+`suppressHydrationWarning` boundaries, but three files were not formatted by
+Biome, causing the `CI Gates` lint/format path to fail. The review fix formats
+those files and refreshes the current verification evidence.
+
 ## Verified Repository State (2026-06-20)
 
 | Area | State | Evidence |
 |---|---|---|
-| Active branch | `main` | baseline commit `8065cc8` |
-| Completed PRs/issues | #184, #186, #188, #192/#156, #190/#182, #193/#162, #194, #195/#46 | all merged |
+| Active branch | `main` | review baseline commit `b2bd5d1` |
+| Completed PRs/issues | #184, #186, #188, #192/#156, #190/#182, #193/#162, #194, #195/#46, #196, #197, #166 | all merged or closed |
 | E2E Validation | COMPLETE | Go/No-Go spec, Smoke Test 8/8 specs, MRD complete |
 | Traceability Integration | COMPLETE | BFF routes, UI, RBAC all implemented |
 | Webhook Integration | COMPLETE | `/api/webhooks/audit`, `ifu`, `knowledge-sync` hardened |
 | hybrid-ra-saas typed adapter | COMPLETE | `createHybridRaClient()` covers 7 upstream endpoint contracts |
 | ISO 14971 Risk Management | COMPLETE | `/workflows/risk`, `/api/ra/risk/*`, `lib/risk/*`, risk DB tables, RA-lead approval |
+| Submission drafter contract (#196) | COMPLETE | build env bypass path, `workflow_runs` status contract, source health-check import fixed |
+| Hydration mismatch (#166) | COMPLETE | date render boundaries plus 2026-06-20 Biome format recovery |
 | RBAC security (#162) | COMPLETE | ra-lead → /403 redirect E2E validated (PR #193) |
 | Predicate E2E stability (#164) | COMPLETE | hydration + RBAC locator fixed (in PR #190) |
 | Mock workflow audit (#152) | COMPLETE | mock_data, workflow_run_id metadata connected (in PR #190) |
@@ -84,9 +92,9 @@ Validation evidence:
 - `corepack pnpm typecheck` — pass.
 - `corepack pnpm exec biome check .` — pass.
 - `corepack pnpm run lint:hex` — pass.
-- `corepack pnpm test` — 2,536 tests passed, 7 skipped.
+- `corepack pnpm test` — PR #195 baseline: 2,536 tests passed, 7 skipped; current review fix baseline: 2,556 tests passed, 7 skipped.
 - `SKIP_ENV_VALIDATION=1 REGULA_ALLOW_ENV_VALIDATION_SKIP=build corepack pnpm build` — pass.
-- GitHub Actions on `8065cc8` — `CI`, `E2E Tests`, `Security Scan`, `Deploy` all success.
+- GitHub Actions on `8065cc8` — `CI`, `E2E Tests`, `Security Scan`, `Deploy` all success. Latest review baseline `b2bd5d1` had a Biome format-only failure, fixed in this pass.
 
 Operational notes:
 
@@ -116,7 +124,7 @@ Validation evidence:
 - `corepack pnpm exec biome check .` — pass.
 - `corepack pnpm lint:hex` — pass.
 - `corepack pnpm ci:format` — pass.
-- `corepack pnpm test` — 2,536 tests passed, 7 skipped on the current risk-sync baseline.
+- `corepack pnpm test` — 2,556 tests passed, 7 skipped on the current review baseline.
 - `corepack pnpm build` — pass.
 - GitHub PR #192 checks — CI Gates, Playwright chromium/firefox/webkit, LLM Eval, E2E Smoke, Security Scan, Vercel Preview all pass.
 
@@ -238,14 +246,25 @@ Validation evidence:
 
 ## CI Gate State
 
-Latest CI run on `main` commit `8065cc8` — all required workflow families passed.
+Latest reviewed `main` baseline `b2bd5d1` had one blocking CI regression: the
+`CI Gates` job failed during `pnpm ci:lint` because three date-render files from
+#166 needed Biome formatting. This review fixed the format drift in:
+
+- `app/(app)/updates/digest/[weekId]/page.tsx`
+- `app/(app)/workflows/esubmit/_components/ESubmitCard.tsx`
+- `app/(app)/workflows/esubmit/_components/ESubmitDetail.tsx`
+
+Local gates after the fix:
+
+- `corepack pnpm exec biome check .` — pass.
+- `corepack pnpm test` — 2,556 tests passed, 7 skipped.
 
 Passed in `CI Gates`:
 
 - Type check (0 errors)
 - Lint (Biome clean)
 - Format check
-- Unit tests (2,536 passing locally; CI unit step success)
+- Unit tests (2,556 passing locally after review fix)
 - RBAC coverage
 - Audit completeness
 - Token symmetry
@@ -331,7 +350,7 @@ Important caveat:
 - TypeScript files: 377 (stable)
 - API routes: 67 (stable)
 - Database tables: 18 (includes new predicate tables)
-- Test coverage: 2,536 tests passing, 7 skipped on the current baseline (230+ test files)
+- Test coverage: 2,556 tests passing, 7 skipped on the current review baseline (239 passed test files, 1 skipped)
 - E2E specs: 8 Smoke Test specs complete, 3 Integration Test specs in progress
 
 **Wave 3 Status**:
