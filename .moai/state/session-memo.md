@@ -29,3 +29,10 @@
 - Issue: #88; duplicate-work prevention checked via Issue #18.
 - Main checked: `origin/main` fetched before review-fix work.
 - Review fix scope: enforce message ownership/tenant authorization for signature sign/manifest/revoke endpoints; restrict `qa-lead` to `signature.sign` instead of all `ra-lead` gates.
+
+## Documentation Sync — 2026-06-21
+
+- Branch: `codex/docs-esig-20260621`
+- Base: `main` at `e51ebc5` after PR #204 merge.
+- Work gate: Issue #18 checked; no open PR for duplicate ESIG documentation work.
+- Scope: README + implementation status + API/compliance/Part 11 docs + ESIG SPEC status updated to reflect Issue #88 completion and PR #204 review fixes.

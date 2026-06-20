@@ -1,6 +1,6 @@
 # Regula — System Architecture
 
-> Version: 1.1.0 | Updated: 2026-06-20
+> Version: 1.2.0 | Updated: 2026-06-21
 
 ---
 
@@ -15,6 +15,7 @@ graph TD
     Auth["Auth.js v5\n(SSO / SAML / OIDC)"]
     ConsultAPI["POST /api/ra/consult\n(nodejs runtime, 60s timeout)"]
     RiskAPI["/api/ra/risk/*\nISO 14971 workflow"]
+    SignatureAPI["/api/ra/messages/[messageId]/signature\n21 CFR Part 11 e-sign"]
     RAG["RAG Pipeline\nlib/ai/consult.ts"]
     Intent["Intent Classifier\n(Haiku — 3 classes)"]
     QueryRewrite["Query Rewriter\n(rule-based + LLM)"]
@@ -30,6 +31,7 @@ graph TD
     NextJS --> Auth
     NextJS --> ConsultAPI
     NextJS --> RiskAPI
+    NextJS --> SignatureAPI
     ConsultAPI --> RAG
     RAG --> Intent
     Intent --> QueryRewrite
@@ -42,6 +44,7 @@ graph TD
     ConsultAPI --> DB
     RiskAPI --> DB
     RiskAPI --> RAG
+    SignatureAPI --> DB
     NextJS --> Sentry
     NextJS --> PostHog
     RAG --> Langfuse
@@ -146,6 +149,18 @@ erDiagram
         jsonb meta_json
         timestamp created_at
     }
+    answer_signatures {
+        uuid id PK
+        uuid message_id FK
+        uuid signer_id FK
+        string signer_name
+        string signer_title
+        text meaning
+        string record_hash
+        timestamp signed_at
+        timestamp revoked_at
+        uuid revoked_by FK
+    }
     workflow_runs {
         uuid id PK
         string workflow_type
@@ -187,6 +202,7 @@ erDiagram
     users ||--o{ conversations : "has"
     conversations ||--o{ messages : "contains"
     messages ||--o{ message_sources : "cites"
+    messages ||--o{ answer_signatures : "signed_by"
     sources ||--o{ source_sections : "has"
     message_sources }o--|| sources : "references"
     users ||--o{ audit_logs : "generates"
@@ -200,6 +216,7 @@ erDiagram
 - `audit_logs`: append-only — UPDATE/DELETE/TRUNCATE are blocked at database level
 - `source_sections.embedding`: 1536-dimensional vector (OpenAI `text-embedding-3-small`)
 - `messages.expert_review_required`: set when confidence < 0.6 or query contains high-risk terms
+- `answer_signatures`: one active non-revoked signature per answer; stores §11.50 manifestation fields and §11.70 record hash
 - `risk_items`: stores ISO 14971 hazard / event sequence / hazardous situation / harm terms with citation metadata
 - `risk_controls`: stores ISO 14971 §7.1 control hierarchy and residual risk evaluation
 - `risk_gspr_mappings`: maps risk file evidence to EU MDR Annex I GSPR clauses
@@ -294,7 +311,52 @@ sequenceDiagram
 
 ---
 
-## 7. Deployment Architecture
+## 7. Electronic Signature Architecture
+
+The electronic signature bounded context implements 21 CFR Part 11 §11.50 manifestation and §11.70 signature/record linking for answer approvals.
+
+```mermaid
+sequenceDiagram
+    participant Lead as RA Lead / QA Lead
+    participant API as /api/ra/messages/[messageId]/signature
+    participant Authz as getAuthorizedSignatureMessage
+    participant Hash as computeAnswerHash
+    participant DB as PostgreSQL
+    participant Audit as writeAudit
+
+    Lead->>API: POST {meaning, signerTitle}
+    API->>API: withPermission(signature.sign)
+    API->>Authz: authorize messageId by conversation/project scope
+    Authz->>DB: messages join conversations/projects
+    DB-->>Authz: authorized message or null
+    API->>DB: load ordered message_blocks
+    API->>Hash: contentProse + ordered blocks
+    Hash-->>API: SHA-256 recordHash
+    API->>DB: insert answer_signatures
+    API->>Audit: signature.applied
+    API-->>Lead: 201 signature row
+```
+
+### Signature bounded context
+
+| Layer | Module | Responsibility |
+|---|---|---|
+| API | `app/api/ra/messages/[messageId]/signature/*` | Sign, manifestation lookup, revoke |
+| Authorization | `lib/signature/authorization.ts` | Tenant/owner boundary for UUID-addressable message IDs |
+| Domain | `lib/signature/hash.ts`, `lock.ts`, `queries.ts` | Hashing, active lock check, signature query helpers |
+| UI/export | `components/chat/SignatureManifestation.tsx`, `lib/signature/pdf-inject.ts` | §11.50 displayed and printed manifestation |
+| Compliance | `answer_signatures`, `audit_logs`, `signature.sign` | §11.50/§11.70 traceability and signing gate |
+
+### Signature invariants
+
+- Signature routes authorize the answer before any signature lookup or mutation.
+- A signed answer is locked until the active signature is revoked.
+- `qa-lead` can sign through `signature.sign.additionalRoles` but does not inherit unrelated `ra-lead` permissions.
+- Signature audit events are append-only: `signature.applied`, `signature.revoked`.
+
+---
+
+## 8. Deployment Architecture
 
 ```mermaid
 graph TD
@@ -317,7 +379,7 @@ graph TD
 
 ---
 
-## 8. Security Architecture
+## 9. Security Architecture
 
 | Layer | Control |
 |-------|---------|
@@ -327,6 +389,7 @@ graph TD
 | Auth | Auth.js v5 session (signed JWT, HttpOnly cookies) |
 | RBAC | `withPermission` matrix, including risk.generate/view/update/approve |
 | Risk approval | `risk.approve` RA-lead-only final report gate |
+| Electronic signature | `signature.sign` RA-lead/admin + signature-specific QA lead gate |
 | LLM data | Anthropic ZDR (`anthropic-beta: zero-data-retention`) |
 | Error tracking | Sentry `beforeSend` PII redaction (query, user_id, content, email) |
 | Secrets | gitleaks CI scan on every push |
@@ -336,7 +399,7 @@ For full security documentation, see [`docs/security/`](security/).
 
 ---
 
-## 9. Observability
+## 10. Observability
 
 | Tool | Purpose | Data |
 |------|---------|------|
@@ -349,9 +412,9 @@ Observability is strictly separated from `audit_logs` — observability tools ne
 
 ---
 
-## 10. Codebase Analysis (2026-06-20)
+## 11. Codebase Analysis (2026-06-21)
 
-### 9.1 Project Scale
+### 11.1 Project Scale
 
 - **TypeScript files**: 400+
 - **API routes**: 77+
@@ -359,7 +422,7 @@ Observability is strictly separated from `audit_logs` — observability tools ne
 - **lib modules**: 27
 - **components categories**: 11
 
-### 9.2 Module Structure
+### 11.2 Module Structure
 
 **12 Core Modules**:
 1. `app/(auth)` - Authentication and login pages
@@ -375,7 +438,7 @@ Observability is strictly separated from `audit_logs` — observability tools ne
 11. `stores` - Client state management
 12. `lib/i18n` - Internationalization
 
-### 9.3 Dependency Breakdown
+### 11.3 Dependency Breakdown
 
 **Frontend (30+)**:
 - Next.js 15, React 18, TypeScript 5.4+
@@ -398,12 +461,12 @@ Observability is strictly separated from `audit_logs` — observability tools ne
 - Biome (lint/format), Vitest (testing)
 - Playwright (E2E), Storybook (components)
 
-### 9.4 Key Architecture Decisions
+### 11.4 Key Architecture Decisions
 
 1. **Backend-first implementation** - API → RAG → UI order
 2. **Multi-LLM strategy** - Sonnet (inference) + Haiku (classification)
 3. **PostgreSQL + pgvector** - ACID transactions + vector search
-4. **21 CFR Part 11 audit logging** - Immutable append-only logs, 7-year retention
+4. **21 CFR Part 11 audit and signatures** - Immutable audit logs plus hash-linked electronic signatures
 5. **SSE streaming** - Real-time UI updates with structured data
 
 For detailed codemaps, see:

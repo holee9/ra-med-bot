@@ -2,7 +2,7 @@
 
 ## Metadata
 - Issue: #88
-- Status: Draft
+- Status: Complete
 - Created: 2026-06-20
 - Priority: High
 - Category: Wave 5 — 21 CFR Part 11 electronic signature
@@ -52,7 +52,7 @@ WHEN the audit log is queried, THE SYSTEM SHALL return signature events with: si
 ## Dependencies
 - Audit log infrastructure (Phase 7 — append-only, cold storage)
 - Expert review / approval workflow (#171 authoring sessions)
-- RBAC: only `ra-lead` and `qa-lead` roles can sign
+- RBAC: only `admin`, `ra-lead`, and signature-specific `qa-lead` users can sign; `qa-lead` does not inherit unrelated `ra-lead` gates
 
 ## Definition of Done
 - Signature capture, linking, display, and lock working
@@ -60,3 +60,10 @@ WHEN the audit log is queried, THE SYSTEM SHALL return signature events with: si
 - §11.50 manifestation in UI and PDF export
 - §11.70 record/signature linkage with hash
 - Integration tests verifying non-repudiation and immutability
+
+## Implementation Notes
+
+- Implemented via PR #204 and merged to `main` at `e51ebc5`.
+- Signature endpoints authorize `messageId` through conversation/project scope before signature lookup or mutation.
+- `signature.sign` uses `minRole: 'ra-lead'` plus `additionalRoles: ['qa-lead']`; `qa-lead` sits below `ra-lead` in the general hierarchy.
+- Validation evidence: local `typecheck`, `lint`, `ci:rbac`, full `pnpm test` (2,766 passed / 7 skipped), `pnpm build`, PR checks, and post-merge main `CI`/`Security Scan`/`E2E Tests`/`Deploy` all passed.

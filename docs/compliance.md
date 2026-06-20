@@ -1,6 +1,6 @@
 # Regula — Compliance Documentation
 
-> Version: 1.0.0 | Updated: 2026-05-03  
+> Version: 1.1.0 | Updated: 2026-06-21
 > Scope: 21 CFR Part 11, GDPR data minimization, OWASP Top 10 2021
 
 ---
@@ -79,6 +79,26 @@ CREATE TABLE audit_logs (
 );
 -- No UPDATE / DELETE / TRUNCATE allowed (enforced via DB policy)
 ```
+
+### 2.6 Electronic Signatures (§11.50, §11.70)
+
+Regula implements electronic signatures for approved answer records through SPEC-REGULA-ESIG-001.
+
+**Implementation:**
+
+- Table: `answer_signatures`
+- API: `POST /api/ra/messages/[messageId]/signature`, `GET /api/ra/messages/[messageId]/signature`, `POST /api/ra/messages/[messageId]/signature/revoke`
+- Record linkage: SHA-256 hash of answer prose plus ordered structured blocks
+- Manifestation: signer name, signer title, timestamp, meaning, record hash, and revocation status
+- Audit events: `signature.applied`, `signature.revoked`
+
+**Controls:**
+
+- Signing is restricted to `ra-lead`, `admin`, and the signature-specific `qa-lead` allowlist via `signature.sign`.
+- `qa-lead` does not inherit unrelated `ra-lead` permissions such as project management, risk approval, or authoring approval.
+- Signature endpoints authorize the `messageId` through conversation/project ownership before loading or mutating signature state.
+- Active signatures lock answer mutation paths; refine and block PATCH handlers return `403 answer_locked`.
+- Revocation soft-revokes the signature row and writes an immutable audit event. Re-signing is required before the answer can be treated as signed again.
 
 ---
 
