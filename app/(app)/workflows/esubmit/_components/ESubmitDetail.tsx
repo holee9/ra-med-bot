@@ -193,7 +193,7 @@ function OverviewTab({
         {pkg.submittedAt && (
           <div>
             <p className="text-xs text-ink-500">제출일</p>
-            <p className="mt-0.5 text-sm">
+            <p className="mt-0.5 text-sm" suppressHydrationWarning>
               {new Date(pkg.submittedAt).toLocaleDateString('ko-KR')}
             </p>
           </div>
@@ -544,9 +544,9 @@ function InteractionsTab({ packageId }: { packageId: string }) {
               <div className="mt-1.5 flex gap-3 text-xs opacity-70">
                 {i.dueDate && <span>마감: {i.dueDate}</span>}
                 {i.resolvedAt && (
-                  <span>해결: {new Date(i.resolvedAt).toLocaleDateString('ko-KR')}</span>
+                  <span suppressHydrationWarning>해결: {new Date(i.resolvedAt).toLocaleDateString('ko-KR')}</span>
                 )}
-                <span>{new Date(i.createdAt).toLocaleDateString('ko-KR')}</span>
+                <span suppressHydrationWarning>{new Date(i.createdAt).toLocaleDateString('ko-KR')}</span>
               </div>
             </div>
           ))}
