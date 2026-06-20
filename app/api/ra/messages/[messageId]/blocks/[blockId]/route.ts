@@ -10,6 +10,7 @@ import { writeAudit } from '../../../../../../../lib/audit';
 import { withPermission } from '../../../../../../../lib/auth/with-permission';
 import { db } from '../../../../../../../lib/db/client';
 import { conversations, messageBlocks, messages } from '../../../../../../../lib/db/schema';
+import { isAnswerLocked } from '../../../../../../../lib/signature/lock';
 
 export const PATCH = withPermission('consult.create', async (req, ctx, session) => {
   // Next.js 15 passes params as a Promise. Resolve it safely.
@@ -22,6 +23,12 @@ export const PATCH = withPermission('consult.create', async (req, ctx, session) 
   ).params;
   const params = rawParams instanceof Promise ? await rawParams : rawParams;
   const { messageId, blockId } = params as { messageId: string; blockId: string };
+
+  // REQ-ESIG-003: Reject modifications on signed (locked) answers (§11.70)
+  const locked = await isAnswerLocked(messageId, db);
+  if (locked) {
+    return Response.json({ error: 'answer_locked' }, { status: 403 });
+  }
 
   // Parse body
   let body: unknown;

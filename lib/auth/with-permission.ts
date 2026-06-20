@@ -5,8 +5,8 @@
 import { writeAudit } from '@/lib/audit';
 import { auth } from '@/lib/auth';
 import { isOrgMember, isProjectMember } from './acl';
-import { PERMISSIONS, type PermissionAction } from './permissions';
-import { type Role, hasRole } from './rbac';
+import { PERMISSIONS, type PermissionAction, roleSatisfiesPermission } from './permissions';
+import type { Role } from './rbac';
 
 // Auth.js v5 does not include custom fields on session.user by default.
 // Cast to this shape — the fields are populated by DrizzleAdapter + session strategy.
@@ -34,7 +34,7 @@ type InnerHandler = (req: Request, ctx: Ctx, session: AuthSession) => Promise<Re
  *
  * Guards in order:
  *   1. Session existence → 401 if missing
- *   2. Role check via hasRole() → 403 + audit if insufficient
+ *   2. Role check via roleSatisfiesPermission() → 403 + audit if insufficient
  *   3. Membership check (org or project scope) → 403 + audit if not a member
  *   4. Delegates to inner handler with (req, ctx, session)
  */
@@ -51,7 +51,7 @@ export function withPermission(action: PermissionAction, handler: InnerHandler) 
     const spec = PERMISSIONS[action];
 
     // 2. Role check
-    if (!hasRole(user.role, spec.minRole)) {
+    if (!roleSatisfiesPermission(user.role, spec)) {
       await writeAudit({
         action: 'rbac.permission_deny',
         actor_id: user.id,

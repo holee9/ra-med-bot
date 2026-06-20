@@ -5,6 +5,8 @@ export const runtime = 'nodejs';
 
 import { writeAudit } from '@/lib/audit';
 import { withPermission } from '@/lib/auth/with-permission';
+import { db } from '@/lib/db/client';
+import { isAnswerLocked } from '@/lib/signature/lock';
 import { z } from 'zod';
 
 export const TONE_LABELS: Record<string, string> = {
@@ -50,6 +52,12 @@ export const POST = withPermission('consult.create', async (req, _ctx, session) 
   }
 
   const { messageId, conversationId, blockContent, tone, customNote } = parsed.data;
+
+  // REQ-ESIG-003: Reject refinement on signed (locked) answers (§11.70)
+  const locked = await isAnswerLocked(messageId, db);
+  if (locked) {
+    return Response.json({ error: 'answer_locked' }, { status: 403 });
+  }
 
   // E2E_TEST_MODE: return deterministic refined content without LLM call.
   const isE2EMode = process.env.E2E_TEST_MODE === 'true' && process.env.NODE_ENV !== 'production';

@@ -172,7 +172,10 @@ export type AuditAction =
   | 'export.docx'
   | 'export.pdf'
   | 'export.email'
-  | 'export.confluence';
+  | 'export.confluence'
+  // SPEC-REGULA-ESIG-001 — electronic signature events via 0061_answer_signatures.sql:
+  | 'signature.applied'
+  | 'signature.revoked';
 
 export interface AuditEvent {
   /** User UUID, or null for system-initiated events. */
