@@ -175,7 +175,14 @@ export type AuditAction =
   | 'export.confluence'
   // SPEC-REGULA-ESIG-001 — electronic signature events via 0061_answer_signatures.sql:
   | 'signature.applied'
-  | 'signature.revoked';
+  | 'signature.revoked'
+  // SPEC-REGULA-AUDITOR-VIEW-001 — external auditor read-only persona events:
+  //   audit.access          — auditor viewed audit log / signed answer / compliance report
+  //   audit.denied          — auditor attempted a write operation (403)
+  //   audit.package.generated — auditor generated a 1-click audit package ZIP
+  | 'audit.access'
+  | 'audit.denied'
+  | 'audit.package.generated';
 
 export interface AuditEvent {
   /** User UUID, or null for system-initiated events. */

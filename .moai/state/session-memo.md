@@ -36,3 +36,12 @@
 - Base: `main` at `e51ebc5` after PR #204 merge.
 - Work gate: Issue #18 checked; no open PR for duplicate ESIG documentation work.
 - Scope: README + implementation status + API/compliance/Part 11 docs + ESIG SPEC status updated to reflect Issue #88 completion and PR #204 review fixes.
+
+## Active Work — 2026-06-21 PR #206 Review Fix
+
+- Branch: `feat/issue-92`
+- PR: #206 `feat(audit): 외부 감사관 읽기 전용 페르소나 및 1-클릭 감사 패키지 (Issue #92)`
+- Issue: #92; duplicate-work prevention checked via Issue #18.
+- Main checked: `origin/main` fetched before review-fix work; only open PR is #206.
+- Review fix scope: allow auditor `POST /api/ra/audit-package` through `withPermission`, add persisted `auditor` `user_role`, and ship `audit.access` / `audit.denied` / `audit.package.generated` enum migration.
+- Local verification: targeted auditor tests PASS, `pnpm typecheck` PASS, `pnpm lint` PASS, `pnpm ci:migrations` PASS, `pnpm audit:check` PASS, full `pnpm test` PASS (2854 passed / 7 skipped).

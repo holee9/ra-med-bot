@@ -90,12 +90,14 @@ export const expertReviewStatusEnum = pgEnum('expert_review_status', [
 // REQ-ENTERPRISE-016: user_role pgEnum replaces TEXT role column on users table.
 // Migration: 0004_user_role_enum.sql (creates type, migrates 'member' → 'ra-member').
 // SPEC-REGULA-ESIG-001: 'qa-lead' added via 0061_answer_signatures.sql (REQ-ESIG-006).
+// SPEC-REGULA-AUDITOR-VIEW-001: 'auditor' added via 0062_auditor_view_enums.sql.
 export const userRoleEnum = pgEnum('user_role', [
   'admin',
   'qa-lead',
   'ra-lead',
   'ra-member',
   'viewer',
+  'auditor',
 ]);
 export const userStatusEnum = pgEnum('user_status', ['pending', 'active', 'disabled']);
 // REQ-TENANT-001: department pgEnum for secondary RBAC axis (SPEC-REGULA-TENANT-001 Tenant-Lite).
@@ -227,6 +229,10 @@ export const auditActionEnum = pgEnum('audit_action', [
   // SPEC-REGULA-ESIG-001 — added via 0061_answer_signatures.sql:
   'signature.applied',
   'signature.revoked',
+  // SPEC-REGULA-AUDITOR-VIEW-001 — added via 0062_auditor_view_enums.sql:
+  'audit.access',
+  'audit.denied',
+  'audit.package.generated',
 ]);
 
 // REQ-WF-049: workflow_type pgEnum — workflow kinds.

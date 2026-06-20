@@ -33,8 +33,9 @@ describe('lib/auth/rbac.ts (REQ-ENTERPRISE-017) — ROLE_HIERARCHY + hasRole', (
       expect(ROLE_HIERARCHY['qa-lead']).toBeGreaterThan(ROLE_HIERARCHY['ra-member']);
     });
 
-    it('hierarchy covers all 5 roles', () => {
-      expect(Object.keys(ROLE_HIERARCHY)).toHaveLength(5);
+    it('hierarchy covers all 6 roles', () => {
+      // SPEC-REGULA-AUDITOR-VIEW-001 added auditor as the 6th role.
+      expect(Object.keys(ROLE_HIERARCHY)).toHaveLength(6);
     });
   });
 

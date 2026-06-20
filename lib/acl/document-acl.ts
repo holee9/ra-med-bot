@@ -86,6 +86,14 @@ const ACL_MATRIX: Record<Role, AclEntry> = {
     writeClasses: [],
     canAdmin: false,
   },
+  // SPEC-REGULA-AUDITOR-VIEW-001: external inspector persona — read-all, write-none.
+  auditor: {
+    readAll: true,
+    readClasses: [],
+    writeAll: false,
+    writeClasses: [],
+    canAdmin: false,
+  },
 };
 
 /**

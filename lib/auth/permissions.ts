@@ -42,7 +42,11 @@ export type PermissionAction =
   | 'risk.update'
   | 'risk.approve'
   // Electronic signature actions (SPEC-REGULA-ESIG-001, Issue #88)
-  | 'signature.sign';
+  | 'signature.sign'
+  // Auditor view actions (SPEC-REGULA-AUDITOR-VIEW-001, Issue #92)
+  // Read-only audit log access and audit package generation.
+  | 'audit.read'
+  | 'audit.package.generate';
 
 export interface PermissionSpec {
   minRole: Role;
@@ -137,5 +141,28 @@ export const PERMISSIONS: Record<PermissionAction, PermissionSpec> = {
     additionalRoles: ['qa-lead'],
     scope: 'org',
     resourceType: 'signature',
+  },
+
+  // @MX:ANCHOR [AUTO] audit.read — auditor + admin read-only audit log access.
+  // @MX:REASON External inspector persona (SPEC-REGULA-AUDITOR-VIEW-001) needs read access
+  //            to audit trail. Auditor is granted via additionalRoles; admin via hierarchy.
+  //            The auditor write-block in withPermission guarantees no mutation.
+  // @MX:SPEC SPEC-REGULA-AUDITOR-VIEW-001 (AC #1, #7)
+  'audit.read': {
+    minRole: 'admin',
+    additionalRoles: ['auditor'],
+    scope: 'org',
+    resourceType: 'auditLogs',
+  },
+
+  // @MX:ANCHOR [AUTO] audit.package.generate — 1-click audit package generation.
+  // @MX:REASON Auditor compiles compliance evidence into a ZIP. Read-only operation
+  //            (no DB mutation), but gated so only auditor + admin can trigger it.
+  // @MX:SPEC SPEC-REGULA-AUDITOR-VIEW-001 (AC #4, #5, #6)
+  'audit.package.generate': {
+    minRole: 'admin',
+    additionalRoles: ['auditor'],
+    scope: 'org',
+    resourceType: 'auditPackage',
   },
 };
