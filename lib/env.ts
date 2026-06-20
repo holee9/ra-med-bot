@@ -72,6 +72,12 @@ const envSchema = z.object({
   // These stay optional so deployments without inbound webhooks still boot cleanly.
   REGULA_API_KEY: z.string().optional(),
   CRAWL_PUSH_SECRET: z.string().optional(),
+
+  // Optional: Gitea wiki ingestion (Issue #155).
+  // These stay optional so deployments without Gitea wiki still boot cleanly.
+  GITEA_URL: z.string().url().optional(),
+  GITEA_TOKEN: z.string().optional(),
+  GITEA_WIKI_REPO: z.string().optional(),
 });
 
 export type Env = z.infer<typeof envSchema>;
@@ -125,6 +131,10 @@ export function parseEnv(source: NodeJS.ProcessEnv = process.env): Env {
     HYBRID_RA_TENANT_ID: source.HYBRID_RA_TENANT_ID,
     REGULA_API_KEY: source.REGULA_API_KEY,
     CRAWL_PUSH_SECRET: source.CRAWL_PUSH_SECRET,
+    // Gitea — ra-llm-wiki (DR_RnD/ra-llm-wiki) read-only ingestion (Issue #155)
+    GITEA_URL: source.GITEA_URL,
+    GITEA_TOKEN: source.GITEA_TOKEN,
+    GITEA_WIKI_REPO: source.GITEA_WIKI_REPO,
   });
 }
 

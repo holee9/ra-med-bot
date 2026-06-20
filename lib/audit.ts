@@ -166,7 +166,13 @@ export type AuditAction =
   | 'risk.control_adopted'
   | 'risk.residual_accepted'
   | 'risk.gspr_mapped'
-  | 'risk.report_approved';
+  | 'risk.report_approved'
+  // SPEC-REGULA-EXPORT-HUB-001 — export audit actions via 0060_export_audit_actions.sql (REQ-EXP-006):
+  | 'export.markdown'
+  | 'export.docx'
+  | 'export.pdf'
+  | 'export.email'
+  | 'export.confluence';
 
 export interface AuditEvent {
   /** User UUID, or null for system-initiated events. */

@@ -2,9 +2,10 @@
 // @MX:SPEC SPEC-INTEGRATION-001, Issue #170
 
 import { HybridRaClientError, createHybridRaFetch } from '@/lib/api/hybrid-ra-client';
+import { writeAudit } from '@/lib/audit';
 import { withPermission } from '@/lib/auth/with-permission';
 
-export const PATCH = withPermission('checklist.update', async (req, ctx) => {
+export const PATCH = withPermission('checklist.update', async (req, ctx, session) => {
   try {
     const rawParams = ctx.params;
     const params = rawParams && 'then' in rawParams ? await rawParams : rawParams;
@@ -12,6 +13,18 @@ export const PATCH = withPermission('checklist.update', async (req, ctx) => {
     const itemId = params?.itemId ?? '';
 
     const body = await req.json();
+    await writeAudit({
+      actor_id: session.user.id,
+      action: 'checklist.toggle',
+      resource_type: 'checklist_item',
+      resource_id: itemId,
+      meta_json: {
+        checklistId: id,
+        updatedFields:
+          body && typeof body === 'object' && !Array.isArray(body) ? Object.keys(body).sort() : [],
+      },
+    });
+
     const hybridFetch = createHybridRaFetch();
     const res = await hybridFetch(`/api/v1/checklists/${id}/items/${itemId}`, {
       method: 'PATCH',

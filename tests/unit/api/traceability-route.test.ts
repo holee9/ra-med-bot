@@ -20,6 +20,10 @@ vi.mock('@/lib/env', () => ({
   getEnv: vi.fn(),
 }));
 
+vi.mock('@/lib/audit', () => ({
+  writeAudit: vi.fn(),
+}));
+
 import { getEnv } from '@/lib/env';
 
 // Top-level imports (required — await inside describe() is not supported by esbuild)

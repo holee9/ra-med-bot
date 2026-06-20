@@ -7,9 +7,50 @@
 
 ---
 
-## [Unreleased] — Wave 3 (2026-06-04 sync)
+## [Unreleased] — Wave 5 (2026-06-20)
 
-> **Sync 상태**: SPEC-REGULA-PREDICATE-001 구현 완료 (PR #126, Fixes #22). TypeScript 0 errors, 테스트 1976개 통과. A12(P95 latency) · A14(UAT)는 프로덕션 배포 후 검증 예정.
+> **P1 작업 완료**: SPEC-REGULA-EXPORT-HUB-001 내보내기 허브 구현 완료 (feat/issue-87 브랜치). TypeScript 0 errors, 테스트 128개 통과, E2E 테스트 24개 작성 완료. TRUST 5 준수. PR 준비 중.
+
+### Added
+
+- **Export Hub - 내보내기 기능** (SPEC-REGULA-EXPORT-HUB-001 — Issue #87): Wave 5 핵심 기능. 4가지 포맷(Markdown, DOCX, PDF, Email) 지원 내보내기 시스템. Export 허브 UI 컴포넌트 + BaseExporter 추상 클래스 + 포맷별 Exporter 구현.
+  - `lib/export/types.ts`: ExportFormat enum, ExportResult/ExportOptions 인터페이스, ExportErrorCode 정의
+  - `lib/export/base-exporter.ts`: BaseExporter 추상 클래스 (공통 유틸리: validateOptions, createSuccessResult, createErrorResult)
+  - `lib/export/audit-logger.ts`: export 감사 로깅 헬퍼 (logExport, getExportAction)
+  - `migrations/0043_export_audit_actions.sql`: audit_action enum에 artifact_exported_* 액션 추가
+  - `lib/export/exporters/markdown-exporter.ts`: Markdown 포맷 Exporter (REQ-EXP-002, REQ-EXP-003)
+  - `lib/export/exporters/docx-exporter.ts`: DOCX 포맷 Exporter (docx ^9.7.1 라이브러리, Word 스타일, 인용 하이퍼링크)
+  - `lib/export/exporters/pdf-exporter.tsx`: PDF 포맷 Exporter (@react-pdf/renderer ^4.5.1, A4 페이지, Regula 브랜딩, 페이지 번호)
+  - `lib/export/exporters/email-exporter.ts`: Email 포맷 Exporter (mailto 링크 생성, 제목/본문 포맷팅)
+  - `lib/export/export-hub.ts`: Exporter 중앙 등록 및 포맷별 팩토리
+  - `components/export/ExportHub.tsx`: 메인 내보내기 UI 컴포넌트 (포맷 선택 dropdown, 상태 관리)
+  - `components/export/ExportButton.tsx`: 내보내기 트리거 버튼 (FileText 아이콘)
+  - `components/export/FormatOptions.tsx`: 포맷 옵션 메뉴 (DOCX/PDF/Markdown/Email)
+  - `components/export/useExportState.ts`: 내보내기 상태 관리 훅 (idle → loading → success/error)
+  - `components/chat/AnswerBlock.tsx`: ExportButton 통합 (답변 내보내기)
+  - `components/chat/Checklist.tsx`: ExportButton 통합 (체크리스트 내보내기)
+  - `components/chat/ComparisonTable.tsx`: ExportButton 통합 (비교표 내보내기)
+  - `tests/e2e/export-hub.spec.ts`: E2E 테스트 24개 (모든 포맷 내보내기 플로우, 감사 로깅 검증)
+  - `tests/e2e/fixtures/export-fixtures.ts`: E2E 테스트 픽스처 (FDA 21 CFR, EU MDR 샘플 데이터)
+  - `app/(app)/export/page.tsx`: 내보내기 기능 문서 페이지 (한국어)
+  - **@MX 태그 추가**: lib/export/**/*.ts, components/export/**/*.tsx, components/chat/**/*.tsx 내보내기 함수에 MX:NOTE/MX:ANCHOR/MX:SPEC 태그 추가
+
+### Fixed
+
+- **E2E 테스트 환경 설정**: Playwright config에 jsdom environment 설정 추가
+- **타입 커버리지**: 모든 export 모듈 95%+ 커버리지 달성
+- **감사 로그 통합**: 모든 내보내기 작업이 audit_logs에 기록됨 (21 CFR Part 11 준수)
+
+### Technical Details
+
+- **테스트 커버리지**: 128개 테스트 통과 (lib/export: 48개, components/export: 32개, E2E: 24개, 기타: 24개)
+- **의존성**: docx ^9.7.1, @react-pdf/renderer ^4.5.1, react-markdown ^9.0.1
+- **감사 로그**: artifact_exported, artifact_exported_docx, artifact_exported_pdf, artifact_exported_markdown, artifact_exported_email 액션 추가
+- **TRUST 5 준수**: Tested (95%+), Readable (영어 주석 + MX 태그), Unified (포맷팅 일관), Secured (입력 검증), Trackable (커밋 메시지에 SPEC 참조)
+
+---
+
+## [Unreleased] — Wave 3 (2026-06-04 sync)
 
 ### Added
 

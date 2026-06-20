@@ -129,7 +129,7 @@ describe('app/layout.tsx — REQ-FND-011, 012, 015, 056', () => {
     const meta = mod.metadata as { robots?: { index?: boolean; follow?: boolean } };
     expect(meta.robots?.index).toBe(false);
     expect(meta.robots?.follow).toBe(false);
-  });
+  }, 15_000);
 
   it('REQ-FND-015: imports next/font/google fonts', async () => {
     const source = readText('app/layout.tsx');

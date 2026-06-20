@@ -6,6 +6,8 @@
 
 import { useCallback, useRef, useState } from 'react';
 import type { ChecklistItem } from '../../types/streaming';
+import { ExportHub } from '../export/ExportHub';
+import type { ExportArtifact } from '../export/FormatOptions';
 
 interface ChecklistProps {
   blockId: string;
@@ -23,6 +25,24 @@ export function Checklist({
   const [items, setItems] = useState<ChecklistItem[]>(initialItems);
   const debounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const [toastMessage, setToastMessage] = useState<string | null>(null);
+  const exportArtifact: ExportArtifact = {
+    title: 'Regula Checklist',
+    content: items
+      .map(
+        (item) =>
+          `- [${item.completed ? 'x' : ' '}] ${item.title}${item.ref ? ` (${item.ref})` : ''}`,
+      )
+      .join('\n'),
+    artifactType: 'checklist',
+    filenameBase: `checklist-${messageId}`,
+    citations: items
+      .filter((item) => item.ref)
+      .map((item) => ({
+        text: item.ref ?? item.title,
+        source: item.ref ?? item.title,
+        offset: item.refSourceIndex ?? 0,
+      })),
+  };
 
   const persistItems = useCallback(
     async (updatedItems: ChecklistItem[]) => {
@@ -75,9 +95,12 @@ export function Checklist({
         </div>
       )}
 
-      <p className="text-xs text-ink-500">
-        {completedCount}/{items.length} 완료
-      </p>
+      <div className="flex items-center justify-between">
+        <p className="text-xs text-ink-500">
+          {completedCount}/{items.length} 완료
+        </p>
+        <ExportHub messageId={messageId} artifact={exportArtifact} />
+      </div>
 
       <ul className="flex flex-col gap-1.5">
         {items.map((item) => (

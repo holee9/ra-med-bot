@@ -2,11 +2,27 @@
 // @MX:SPEC SPEC-INTEGRATION-001, Issue #169
 
 import { HybridRaClientError, createHybridRaFetch } from '@/lib/api/hybrid-ra-client';
+import { writeAudit } from '@/lib/audit';
 import { withPermission } from '@/lib/auth/with-permission';
 
-export const POST = withPermission('traceability.scan', async (req) => {
+export const POST = withPermission('traceability.scan', async (req, _ctx, session) => {
   try {
     const body = await req.json();
+    await writeAudit({
+      actor_id: session.user.id,
+      action: 'workflow.start',
+      resource_type: 'traceability',
+      resource_id:
+        body && typeof body === 'object' && 'projectId' in body
+          ? String(body.projectId)
+          : 'traceability.scan',
+      meta_json: {
+        workflow: 'traceability.scan',
+        requestFields:
+          body && typeof body === 'object' && !Array.isArray(body) ? Object.keys(body).sort() : [],
+      },
+    });
+
     const hybridFetch = createHybridRaFetch();
     const res = await hybridFetch('/api/v1/traceability/scan', {
       method: 'POST',

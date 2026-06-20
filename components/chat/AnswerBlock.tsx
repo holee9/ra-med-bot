@@ -23,6 +23,8 @@ import type {
   TimelineEvent,
 } from '../../types/streaming';
 import { ExpertReviewCallout } from '../expert-review/ExpertReviewCallout';
+import { ExportHub } from '../export/ExportHub';
+import type { ExportArtifact } from '../export/FormatOptions';
 import { RefinePanel } from '../refine/RefinePanel';
 import { Callout } from './Callout';
 import { Checklist } from './Checklist';
@@ -86,6 +88,18 @@ export function AnswerBlock({
   const displayProse = refinedProse ?? prose;
   const sourceCount = sources?.length ?? 0;
   const durationSec = durationMs !== null ? (durationMs / 1000).toFixed(1) : null;
+  const answerExportArtifact: ExportArtifact = {
+    title: 'Regula Answer',
+    content: displayProse,
+    artifactType: 'answer',
+    filenameBase: `answer-${messageId || 'export'}`,
+    citations: sources?.map((source) => ({
+      text: `[${source.citeIndex}] ${source.title}`,
+      url: source.url ?? undefined,
+      source: source.title,
+      offset: source.offset,
+    })),
+  };
 
   return (
     <article className="flex flex-col gap-4">
@@ -94,7 +108,7 @@ export function AnswerBlock({
         {confidence && <ConfidenceBadge level={confidence.level} score={confidence.score} />}
         <span>{sourceCount} 출처</span>
         {durationSec && <span>분석 {durationSec}s</span>}
-        {/* Action buttons — copy / regenerate */}
+        {/* Action buttons — copy / export / regenerate */}
         <div className="ml-auto flex gap-2">
           <button
             type="button"
@@ -104,6 +118,11 @@ export function AnswerBlock({
           >
             <Copy size={14} />
           </button>
+          <ExportHub
+            conversationId={conversationId}
+            messageId={messageId}
+            artifact={answerExportArtifact}
+          />
           <button
             type="button"
             className="rounded p-1 text-ink-400 hover:text-ink-700 transition-colors"
