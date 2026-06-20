@@ -8,6 +8,7 @@ export const runtime = 'nodejs';
 import { writeAudit } from '@/lib/audit';
 import { withPermission } from '@/lib/auth/with-permission';
 import { db } from '@/lib/db/client';
+import { getAuthorizedSignatureMessage } from '@/lib/signature/authorization';
 import { getActiveSignature, revokeSignature } from '@/lib/signature/queries';
 
 type RouteCtx = { params: Promise<{ messageId: string }> };
@@ -23,6 +24,11 @@ export const POST = withPermission('signature.sign', async (_req, ctx, session) 
   const rawParams = ctx.params;
   const resolvedParams = rawParams && 'then' in rawParams ? await rawParams : rawParams;
   const messageId = resolvedParams?.messageId ?? '';
+
+  const message = await getAuthorizedSignatureMessage(messageId, session, db);
+  if (!message) {
+    return Response.json({ error: 'Message not found' }, { status: 404 });
+  }
 
   // Verify active signature exists
   const existing = await getActiveSignature(messageId, db);

@@ -3,11 +3,11 @@
 //            Locking gate for 21 CFR Part 11 §11.70 integrity enforcement.
 // @MX:SPEC SPEC-REGULA-ESIG-001 (REQ-ESIG-003)
 
-import type { PostgresJsDatabase } from 'drizzle-orm/postgres-js';
-import { isNull } from 'drizzle-orm';
-import { eq, and } from 'drizzle-orm';
 import { answerSignatures } from '@/lib/db/schema';
 import type * as schema from '@/lib/db/schema';
+import { isNull } from 'drizzle-orm';
+import { and, eq } from 'drizzle-orm';
+import type { PostgresJsDatabase } from 'drizzle-orm/postgres-js';
 
 type DbClient = PostgresJsDatabase<typeof schema>;
 

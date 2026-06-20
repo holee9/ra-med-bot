@@ -6,7 +6,7 @@
  * REQ-ESIG-006: RBAC — only ra-lead, qa-lead, admin can sign.
  */
 
-import { describe, expect, it, vi, beforeEach } from 'vitest';
+import { beforeEach, describe, expect, it, vi } from 'vitest';
 
 // Mock all external dependencies before importing route
 vi.mock('@/lib/auth', () => ({
@@ -31,16 +31,22 @@ vi.mock('@/lib/signature/queries', () => ({
   insertSignature: vi.fn(),
   revokeSignature: vi.fn(),
 }));
+vi.mock('@/lib/signature/authorization', () => ({
+  getAuthorizedSignatureMessage: vi.fn(),
+}));
 vi.mock('@/lib/signature/lock', () => ({
   isAnswerLocked: vi.fn(),
 }));
 vi.mock('@/lib/signature/hash', () => ({
-  computeAnswerHash: vi.fn().mockResolvedValue('deadbeef1234567890abcdef1234567890abcdef1234567890abcdef12345678'),
+  computeAnswerHash: vi
+    .fn()
+    .mockResolvedValue('deadbeef1234567890abcdef1234567890abcdef1234567890abcdef12345678'),
 }));
 
 import { auth } from '@/lib/auth';
+import { getAuthorizedSignatureMessage } from '@/lib/signature/authorization';
 import { getActiveSignature, insertSignature } from '@/lib/signature/queries';
-import { POST, GET } from '../route';
+import { GET, POST } from '../route';
 
 const mockRaLeadSession = {
   user: {
@@ -81,6 +87,10 @@ const makeCtx = (messageId = 'msg-001') => ({
 describe('POST /api/ra/messages/[messageId]/signature', () => {
   beforeEach(() => {
     vi.clearAllMocks();
+    vi.mocked(getAuthorizedSignatureMessage).mockResolvedValue({
+      id: 'msg-001',
+      contentProse: 'Test answer content',
+    });
   });
 
   it('returns 401 when not authenticated', async () => {
@@ -132,26 +142,30 @@ describe('POST /api/ra/messages/[messageId]/signature', () => {
     expect(res.status).toBe(409);
   });
 
+  it('returns 404 before signing when message is outside caller scope', async () => {
+    vi.mocked(auth).mockResolvedValue(mockRaLeadSession as never);
+    vi.mocked(getAuthorizedSignatureMessage).mockResolvedValue(null);
+
+    const req = makeRequest({ meaning: 'Approved' });
+    const res = await POST(req, makeCtx('foreign-msg'));
+
+    expect(res.status).toBe(404);
+    expect(getActiveSignature).not.toHaveBeenCalled();
+    expect(insertSignature).not.toHaveBeenCalled();
+  });
+
   it('returns 201 with signature data on success', async () => {
     vi.mocked(auth).mockResolvedValue(mockRaLeadSession as never);
     vi.mocked(getActiveSignature).mockResolvedValue(null);
 
-    // Setup db.select chain for message + blocks queries
-    mockSelect
-      .mockReturnValueOnce({
-        from: vi.fn().mockReturnValue({
-          where: vi.fn().mockResolvedValue([
-            { id: 'msg-001', contentProse: 'Test answer content' },
-          ]),
+    // Setup db.select chain for ordered blocks query.
+    mockSelect.mockReturnValueOnce({
+      from: vi.fn().mockReturnValue({
+        where: vi.fn().mockReturnValue({
+          orderBy: vi.fn().mockResolvedValue([]),
         }),
-      })
-      .mockReturnValueOnce({
-        from: vi.fn().mockReturnValue({
-          where: vi.fn().mockReturnValue({
-            orderBy: vi.fn().mockResolvedValue([]),
-          }),
-        }),
-      });
+      }),
+    });
 
     vi.mocked(insertSignature).mockResolvedValue({
       id: 'sig-new-001',
@@ -180,6 +194,10 @@ describe('POST /api/ra/messages/[messageId]/signature', () => {
 describe('GET /api/ra/messages/[messageId]/signature', () => {
   beforeEach(() => {
     vi.clearAllMocks();
+    vi.mocked(getAuthorizedSignatureMessage).mockResolvedValue({
+      id: 'msg-001',
+      contentProse: 'Test answer content',
+    });
   });
 
   it('returns 401 when not authenticated', async () => {
@@ -199,6 +217,17 @@ describe('GET /api/ra/messages/[messageId]/signature', () => {
     const res = await GET(req, makeCtx());
 
     expect(res.status).toBe(404);
+  });
+
+  it('returns 404 before manifestation lookup when message is outside caller scope', async () => {
+    vi.mocked(auth).mockResolvedValue(mockRaLeadSession as never);
+    vi.mocked(getAuthorizedSignatureMessage).mockResolvedValue(null);
+
+    const req = makeGetRequest();
+    const res = await GET(req, makeCtx('foreign-msg'));
+
+    expect(res.status).toBe(404);
+    expect(getActiveSignature).not.toHaveBeenCalled();
   });
 
   it('returns 200 with §11.50 manifestation fields on success', async () => {

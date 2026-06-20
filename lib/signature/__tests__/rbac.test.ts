@@ -4,9 +4,9 @@
  */
 
 import { describe, expect, it } from 'vitest';
+import { PERMISSIONS, roleSatisfiesPermission } from '../../auth/permissions';
 import { hasRole } from '../../auth/rbac';
 import type { Role } from '../../auth/rbac';
-import { PERMISSIONS } from '../../auth/permissions';
 
 describe('signature.sign permission', () => {
   it('exists in PERMISSIONS matrix', () => {
@@ -21,9 +21,14 @@ describe('signature.sign permission', () => {
     expect(hasRole('ra-lead', 'ra-lead')).toBe(true);
   });
 
-  it('qa-lead can sign (hasRole qa-lead >= ra-lead)', () => {
+  it('qa-lead does not inherit all ra-lead permissions through hierarchy', () => {
     const qaLead = 'qa-lead' as Role;
-    expect(hasRole(qaLead, 'ra-lead')).toBe(true);
+    expect(hasRole(qaLead, 'ra-lead')).toBe(false);
+  });
+
+  it('qa-lead can sign via signature-specific additionalRoles', () => {
+    const qaLead = 'qa-lead' as Role;
+    expect(roleSatisfiesPermission(qaLead, PERMISSIONS['signature.sign'])).toBe(true);
   });
 
   it('admin can sign (hasRole admin >= ra-lead)', () => {

@@ -3,7 +3,7 @@
  * REQ-ESIG-003: Post-signature modification MUST return 403 Forbidden.
  */
 
-import { describe, expect, it, vi, beforeEach } from 'vitest';
+import { beforeEach, describe, expect, it, vi } from 'vitest';
 
 vi.mock('@/lib/auth', () => ({
   auth: vi.fn(),

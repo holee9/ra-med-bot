@@ -3,7 +3,7 @@
  * REQ-ESIG-005: Revocation requires re-confirmation + new signature + audit entry.
  */
 
-import { describe, expect, it, vi, beforeEach } from 'vitest';
+import { beforeEach, describe, expect, it, vi } from 'vitest';
 
 vi.mock('@/lib/auth', () => ({
   auth: vi.fn(),
@@ -22,8 +22,12 @@ vi.mock('@/lib/signature/queries', () => ({
   getActiveSignature: vi.fn(),
   revokeSignature: vi.fn(),
 }));
+vi.mock('@/lib/signature/authorization', () => ({
+  getAuthorizedSignatureMessage: vi.fn(),
+}));
 
 import { auth } from '@/lib/auth';
+import { getAuthorizedSignatureMessage } from '@/lib/signature/authorization';
 import { getActiveSignature, revokeSignature } from '@/lib/signature/queries';
 import { POST } from '../route';
 
@@ -51,6 +55,10 @@ const makeCtx = (messageId = 'msg-001') => ({
 describe('POST /api/ra/messages/[messageId]/signature/revoke', () => {
   beforeEach(() => {
     vi.clearAllMocks();
+    vi.mocked(getAuthorizedSignatureMessage).mockResolvedValue({
+      id: 'msg-001',
+      contentProse: 'Test answer content',
+    });
   });
 
   it('returns 401 when not authenticated', async () => {
@@ -75,6 +83,17 @@ describe('POST /api/ra/messages/[messageId]/signature/revoke', () => {
 
     const res = await POST(makeRequest(), makeCtx());
     expect(res.status).toBe(404);
+  });
+
+  it('returns 404 before revocation lookup when message is outside caller scope', async () => {
+    vi.mocked(auth).mockResolvedValue(mockRaLeadSession as never);
+    vi.mocked(getAuthorizedSignatureMessage).mockResolvedValue(null);
+
+    const res = await POST(makeRequest(), makeCtx('foreign-msg'));
+
+    expect(res.status).toBe(404);
+    expect(getActiveSignature).not.toHaveBeenCalled();
+    expect(revokeSignature).not.toHaveBeenCalled();
   });
 
   it('returns 200 with revoked signature on success', async () => {

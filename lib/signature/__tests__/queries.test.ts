@@ -59,7 +59,13 @@ describe('insertSignature', () => {
       recordHash: 'deadbeef1234',
     };
 
-    const inserted = { id: 'sig-new', ...newSig, signedAt: new Date(), revokedAt: null, revokedBy: null };
+    const inserted = {
+      id: 'sig-new',
+      ...newSig,
+      signedAt: new Date(),
+      revokedAt: null,
+      revokedBy: null,
+    };
 
     const mockDb = {
       insert: vi.fn().mockReturnValue({
@@ -81,7 +87,9 @@ describe('revokeSignature', () => {
       update: vi.fn().mockReturnValue({
         set: vi.fn().mockReturnValue({
           where: vi.fn().mockReturnValue({
-            returning: vi.fn().mockResolvedValue([{ id: 'sig-001', revokedAt: new Date(), revokedBy: 'user-002' }]),
+            returning: vi
+              .fn()
+              .mockResolvedValue([{ id: 'sig-001', revokedAt: new Date(), revokedBy: 'user-002' }]),
           }),
         }),
       }),

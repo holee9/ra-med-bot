@@ -1,7 +1,7 @@
 // @MX:NOTE [AUTO] PERMISSIONS matrix — single source of truth for RBAC decisions.
 // @MX:SPEC SPEC-REGULA-ENTERPRISE-001 (REQ-ENTERPRISE-020)
 
-import type { Role } from './rbac';
+import { type Role, hasRole } from './rbac';
 
 // REQ-ENTERPRISE-020: Permission action strings.
 // Each action corresponds to a specific user operation in the Regula system.
@@ -46,8 +46,13 @@ export type PermissionAction =
 
 export interface PermissionSpec {
   minRole: Role;
+  additionalRoles?: Role[];
   scope: 'org' | 'project' | 'user' | 'none';
   resourceType: string;
+}
+
+export function roleSatisfiesPermission(userRole: Role, spec: PermissionSpec): boolean {
+  return hasRole(userRole, spec.minRole) || (spec.additionalRoles?.includes(userRole) ?? false);
 }
 
 /**
@@ -127,5 +132,10 @@ export const PERMISSIONS: Record<PermissionAction, PermissionSpec> = {
   // @MX:REASON Only qualified roles (ra-lead, qa-lead, admin) may apply electronic signatures.
   //            Critical RBAC invariant for regulatory compliance (REQ-ESIG-006).
   // @MX:SPEC SPEC-REGULA-ESIG-001 (REQ-ESIG-006)
-  'signature.sign': { minRole: 'ra-lead', scope: 'org', resourceType: 'signature' },
+  'signature.sign': {
+    minRole: 'ra-lead',
+    additionalRoles: ['qa-lead'],
+    scope: 'org',
+    resourceType: 'signature',
+  },
 };

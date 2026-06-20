@@ -7,19 +7,17 @@ export const runtime = 'nodejs';
 import { writeAudit } from '@/lib/audit';
 import { withPermission } from '@/lib/auth/with-permission';
 import { db } from '@/lib/db/client';
-import { messages, messageBlocks } from '@/lib/db/schema';
+import { messageBlocks } from '@/lib/db/schema';
+import { getAuthorizedSignatureMessage } from '@/lib/signature/authorization';
 import { computeAnswerHash } from '@/lib/signature/hash';
 import { getActiveSignature, insertSignature } from '@/lib/signature/queries';
-import { eq, asc } from 'drizzle-orm';
+import { asc, eq } from 'drizzle-orm';
 import { z } from 'zod';
-import { auth } from '@/lib/auth';
 
 const SignBodySchema = z.object({
   meaning: z.string().min(1).max(500),
   signerTitle: z.string().max(200).optional(),
 });
-
-type RouteCtx = { params: Promise<{ messageId: string }> };
 
 /**
  * POST /api/ra/messages/[messageId]/signature
@@ -43,27 +41,25 @@ export const POST = withPermission('signature.sign', async (req, ctx, session) =
 
   const parsed = SignBodySchema.safeParse(body);
   if (!parsed.success) {
-    return Response.json({ error: 'Validation failed', issues: parsed.error.issues }, { status: 400 });
+    return Response.json(
+      { error: 'Validation failed', issues: parsed.error.issues },
+      { status: 400 },
+    );
   }
   const { meaning, signerTitle } = parsed.data;
 
-  // Check for existing active signature (409 Conflict)
+  const message = await getAuthorizedSignatureMessage(messageId, session, db);
+  if (!message) {
+    return Response.json({ error: 'Message not found' }, { status: 404 });
+  }
+
+  // Check for existing active signature (409 Conflict) after authorization to avoid UUID probing.
   const existing = await getActiveSignature(messageId, db);
   if (existing) {
     return Response.json(
       { error: 'answer_already_signed', signatureId: existing.id },
       { status: 409 },
     );
-  }
-
-  // Fetch message content for hash computation
-  const [message] = await db
-    .select({ id: messages.id, contentProse: messages.contentProse })
-    .from(messages)
-    .where(eq(messages.id, messageId));
-
-  if (!message) {
-    return Response.json({ error: 'Message not found' }, { status: 404 });
   }
 
   // Fetch ordered blocks for hash canonicalization (§11.70)
@@ -87,7 +83,8 @@ export const POST = withPermission('signature.sign', async (req, ctx, session) =
   const recordHash = await computeAnswerHash(message.contentProse, hashableBlocks);
 
   // Insert signature — signerName from session email/id as display identifier
-  const signerName = (session.user as { name?: string }).name ?? session.user.email ?? session.user.id;
+  const signerName =
+    (session.user as { name?: string }).name ?? session.user.email ?? session.user.id;
   const signature = await insertSignature(
     {
       messageId,
@@ -118,13 +115,15 @@ export const POST = withPermission('signature.sign', async (req, ctx, session) =
  *
  * Returns 404 if no active signature exists, 200 with manifestation fields.
  */
-export async function GET(_req: Request, ctx: RouteCtx): Promise<Response> {
-  const session = await auth();
-  if (!session?.user) {
-    return Response.json({ error: 'Unauthorized' }, { status: 401 });
-  }
+export const GET = withPermission('conversation.view', async (_req, ctx, session) => {
+  const rawParams = ctx.params;
+  const resolvedParams = rawParams && 'then' in rawParams ? await rawParams : rawParams;
+  const messageId = resolvedParams?.messageId ?? '';
 
-  const { messageId } = await ctx.params;
+  const message = await getAuthorizedSignatureMessage(messageId, session, db);
+  if (!message) {
+    return Response.json({ error: 'Message not found' }, { status: 404 });
+  }
 
   const signature = await getActiveSignature(messageId, db);
   if (!signature) {
@@ -142,4 +141,4 @@ export async function GET(_req: Request, ctx: RouteCtx): Promise<Response> {
     isRevoked: signature.revokedAt !== null,
     revokedAt: signature.revokedAt,
   });
-}
+});

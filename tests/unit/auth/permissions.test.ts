@@ -39,9 +39,10 @@ const EXPECTED_ACTIONS: PermissionAction[] = [
   'risk.view',
   'risk.update',
   'risk.approve',
+  'signature.sign',
 ];
 
-const VALID_ROLES = ['admin', 'ra-lead', 'ra-member', 'viewer'] as const;
+const VALID_ROLES = ['admin', 'qa-lead', 'ra-lead', 'ra-member', 'viewer'] as const;
 const VALID_SCOPES = ['org', 'project', 'user', 'none'] as const;
 
 describe('lib/auth/permissions.ts (REQ-ENTERPRISE-020) — PERMISSIONS matrix', () => {

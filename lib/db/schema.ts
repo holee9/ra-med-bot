@@ -90,7 +90,13 @@ export const expertReviewStatusEnum = pgEnum('expert_review_status', [
 // REQ-ENTERPRISE-016: user_role pgEnum replaces TEXT role column on users table.
 // Migration: 0004_user_role_enum.sql (creates type, migrates 'member' → 'ra-member').
 // SPEC-REGULA-ESIG-001: 'qa-lead' added via 0061_answer_signatures.sql (REQ-ESIG-006).
-export const userRoleEnum = pgEnum('user_role', ['admin', 'qa-lead', 'ra-lead', 'ra-member', 'viewer']);
+export const userRoleEnum = pgEnum('user_role', [
+  'admin',
+  'qa-lead',
+  'ra-lead',
+  'ra-member',
+  'viewer',
+]);
 export const userStatusEnum = pgEnum('user_status', ['pending', 'active', 'disabled']);
 // REQ-TENANT-001: department pgEnum for secondary RBAC axis (SPEC-REGULA-TENANT-001 Tenant-Lite).
 export const userDepartmentEnum = pgEnum('user_department', ['RA', 'Dev', 'Exec', 'External']);

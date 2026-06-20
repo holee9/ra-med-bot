@@ -35,8 +35,7 @@ export function SignatureManifestation({ signature }: Props) {
   });
 
   return (
-    <div
-      role="region"
+    <section
       aria-label="전자서명 정보"
       className={`rounded-md border px-4 py-3 text-sm ${
         signature.isRevoked
@@ -55,15 +54,11 @@ export function SignatureManifestation({ signature }: Props) {
             <p className="font-semibold uppercase tracking-wide text-red-600">철회됨 / Revoked</p>
           )}
           <p className="font-medium">{signature.signerName}</p>
-          {signature.signerTitle && (
-            <p className="text-xs opacity-80">{signature.signerTitle}</p>
-          )}
+          {signature.signerTitle && <p className="text-xs opacity-80">{signature.signerTitle}</p>}
           <p className="mt-1 italic">{signature.meaning}</p>
-          <p className="mt-1 text-xs opacity-70">
-            서명일시: {signedDate}
-          </p>
+          <p className="mt-1 text-xs opacity-70">서명일시: {signedDate}</p>
         </div>
       </div>
-    </div>
+    </section>
   );
 }

@@ -1,10 +1,10 @@
 // @MX:NOTE [AUTO] Signature query helpers — DB access layer for answer_signatures table.
 // @MX:SPEC SPEC-REGULA-ESIG-001 (REQ-ESIG-001, REQ-ESIG-005)
 
-import { and, eq, isNull } from 'drizzle-orm';
-import type { PostgresJsDatabase } from 'drizzle-orm/postgres-js';
 import { answerSignatures } from '@/lib/db/schema';
 import type * as schema from '@/lib/db/schema';
+import { and, eq, isNull } from 'drizzle-orm';
+import type { PostgresJsDatabase } from 'drizzle-orm/postgres-js';
 
 type DbClient = PostgresJsDatabase<typeof schema>;
 
@@ -48,7 +48,10 @@ export async function getActiveSignature(
 /**
  * Inserts a new signature row and returns the created record.
  */
-export async function insertSignature(data: InsertSignatureData, db: DbClient): Promise<SignatureRow> {
+export async function insertSignature(
+  data: InsertSignatureData,
+  db: DbClient,
+): Promise<SignatureRow> {
   const rows = await db
     .insert(answerSignatures)
     .values({
