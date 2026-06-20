@@ -4,7 +4,7 @@
  * REQ-EXP-002, REQ-EXP-003: Markdown export with citations and headers
  */
 
-import { describe, it, expect } from 'vitest';
+import { describe, it, expect, beforeEach } from 'vitest';
 import { MarkdownExporter } from '../exporters/markdown-exporter';
 import { ExportFormat, ExportOptions } from '../types';
 import { ExportError, ExportErrorCode } from '../types';

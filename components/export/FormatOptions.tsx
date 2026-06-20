@@ -141,17 +141,17 @@ export function FormatOptions({ onClose }: FormatOptionsProps) {
         }
 
         // For DOCX, convert base64 back to blob
-        let content = result.content;
+        let blob: Blob;
         if (format === ExportFormat.DOCX) {
-          const binaryString = atob(content);
+          const binaryString = atob(result.content);
           const bytes = new Uint8Array(binaryString.length);
           for (let i = 0; i < binaryString.length; i++) {
             bytes[i] = binaryString.charCodeAt(i);
           }
-          content = bytes;
+          blob = new Blob([bytes], { type: mimeType });
+        } else {
+          blob = new Blob([result.content], { type: mimeType });
         }
-
-        const blob = new Blob([content], { type: mimeType });
         const url = URL.createObjectURL(blob);
         const a = document.createElement('a');
         a.href = url;

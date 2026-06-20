@@ -17,8 +17,8 @@ describe('EmailExporter', () => {
     mockWindow = {
       location: {},
       open: vi.fn(),
-    } as any;
-    global.window = mockWindow;
+    };
+    global.window = mockWindow as any;
   });
 
   afterEach(() => {

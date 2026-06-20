@@ -14,7 +14,6 @@ import {
   AlignmentType,
   UnderlineType,
  convertInchesToTwip,
-  PackageProperties
 } from 'docx';
 import { BaseExporter } from '../base-exporter';
 import { ExportFormat, ExportOptions, ExportResult } from '../types';
@@ -68,7 +67,7 @@ export class DOCXExporter extends BaseExporter {
       const baseFilename = options.customFilename || `export-${this.getTimestamp()}`;
       const filename = baseFilename.endsWith('.docx') ? baseFilename : `${baseFilename}.docx`;
 
-      const blob = new Blob([buffer], {
+      const blob = new Blob([buffer as BlobPart], {
         type: 'application/vnd.openxmlformats-officedocument.wordprocessingml.document'
       });
 

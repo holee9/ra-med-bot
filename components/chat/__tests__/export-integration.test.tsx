@@ -41,7 +41,7 @@ describe('ExportButton Integration - AnswerBlock', () => {
     const answerProps = {
       prose: 'Test answer content',
       sources: [{ id: '1', title: 'Test Source', url: 'http://test.com' }],
-      confidence: { level: 'high', score: 0.95 },
+      confidence: undefined,
       durationMs: 1500,
     }
 
