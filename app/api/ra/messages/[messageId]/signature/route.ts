@@ -118,7 +118,7 @@ export const POST = withPermission('signature.sign', async (req, ctx, session) =
  *
  * Returns 404 if no active signature exists, 200 with manifestation fields.
  */
-export async function GET(req: Request, ctx: RouteCtx): Promise<Response> {
+export async function GET(_req: Request, ctx: RouteCtx): Promise<Response> {
   const session = await auth();
   if (!session?.user) {
     return Response.json({ error: 'Unauthorized' }, { status: 401 });

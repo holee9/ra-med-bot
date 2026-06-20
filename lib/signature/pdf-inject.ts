@@ -49,7 +49,7 @@ export function injectSignatureToPDFData(data: PDFData, signature: PDFSignatureD
   ];
 
   if (isRevoked) {
-    const revokedDate = signature.revokedAt!.toISOString().replace('T', ' ').slice(0, 19) + ' UTC';
+    const revokedDate = (signature.revokedAt as Date).toISOString().replace('T', ' ').slice(0, 19) + ' UTC';
     lines.push(`상태 / Status: 철회됨 (Revoked) at ${revokedDate}`);
   }
 

@@ -49,6 +49,21 @@ const ACL_MATRIX: Record<Role, AclEntry> = {
     ],
     canAdmin: false,
   },
+  'qa-lead': {
+    readAll: true,
+    readClasses: [],
+    writeAll: false,
+    writeClasses: [
+      DocClass.issued_certificate,
+      DocClass.submission_success,
+      DocClass.submission_inprogress,
+      DocClass.clinical_report,
+      DocClass.checklist_template,
+      DocClass.surveillance_report,
+      DocClass.internal_sop,
+    ],
+    canAdmin: false,
+  },
   'ra-member': {
     readAll: false,
     readClasses: [
