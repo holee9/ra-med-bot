@@ -34,6 +34,11 @@ vi.mock('@/lib/auth/acl', () => ({
   isProjectMember: vi.fn().mockResolvedValue(true),
 }));
 
+// Mock signature lock — answers are NOT locked in these tests.
+vi.mock('@/lib/signature/lock', () => ({
+  isAnswerLocked: vi.fn().mockResolvedValue(false),
+}));
+
 describe('PATCH /api/ra/messages/:messageId/blocks/:blockId — checklist toggle audit', () => {
   const SESSION = {
     user: {

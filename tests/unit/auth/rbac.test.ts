@@ -28,8 +28,8 @@ describe('lib/auth/rbac.ts (REQ-ENTERPRISE-017) — ROLE_HIERARCHY + hasRole', (
       expect(ROLE_HIERARCHY.viewer).toBe(1);
     });
 
-    it('hierarchy covers all 4 roles', () => {
-      expect(Object.keys(ROLE_HIERARCHY)).toHaveLength(4);
+    it('hierarchy covers all 5 roles', () => {
+      expect(Object.keys(ROLE_HIERARCHY)).toHaveLength(5); // +qa-lead (SPEC-REGULA-ESIG-001)
     });
   });
 
