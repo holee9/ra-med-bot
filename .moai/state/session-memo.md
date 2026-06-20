@@ -17,3 +17,7 @@ event: PreCompact
   - Passed selected answer/checklist/comparison artifact content into format exporters.
   - Wired PDF and Email options to concrete exporters.
 - Validation completed locally: `pnpm lint`, `pnpm typecheck`, targeted export tests, full `pnpm test`, and `pnpm build`.
+- Follow-up CI gate fixes:
+  - Added audit logging to checklist, risk control recommendation, and traceability mutation routes.
+  - Renamed export audit migration to `0060_export_audit_actions.sql` to restore sequential migration numbering.
+  - Revalidated `pnpm ci:audit`, `pnpm ci:migrations`, `pnpm lint`, `pnpm typecheck`, full `pnpm test`, and `pnpm build`.

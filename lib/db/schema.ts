@@ -211,7 +211,7 @@ export const auditActionEnum = pgEnum('audit_action', [
   'risk.residual_accepted',
   'risk.gspr_mapped',
   'risk.report_approved',
-  // SPEC-REGULA-EXPORT-HUB-001 — export audit actions (REQ-EXP-006):
+  // SPEC-REGULA-EXPORT-HUB-001 — added via 0060_export_audit_actions.sql (REQ-EXP-006):
   'export.markdown',
   'export.docx',
   'export.pdf',
