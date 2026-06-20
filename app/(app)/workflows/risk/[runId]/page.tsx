@@ -1,4 +1,6 @@
 // @MX:SPEC SPEC-REGULA-RISK-001 (T5.4, REQ-RISK-001~020)
+import { redirect } from 'next/navigation';
+import { auth } from '@/lib/auth';
 import { RiskMatrix } from '@/components/risk/RiskMatrix';
 import { HazardTable } from '@/components/risk/HazardTable';
 import { RiskApprovalGate } from '@/components/risk/RiskApprovalGate';
@@ -8,7 +10,11 @@ interface RiskRunPageProps {
 }
 
 export default async function RiskRunPage({ params }: RiskRunPageProps) {
+  const session = await auth();
+  if (!session?.user?.id) redirect('/login');
+
   const { runId } = await params;
+  const currentUserRole = (session.user as { role?: string }).role ?? 'viewer';
 
   return (
     <section className="mx-auto flex max-w-content flex-col gap-8">
@@ -29,12 +35,12 @@ export default async function RiskRunPage({ params }: RiskRunPageProps) {
         <HazardTable items={[]} />
       </div>
 
-      {/* Approval gate — only ra-lead can approve */}
+      {/* Approval gate — only ra-lead can approve (RBAC enforced at BFF layer too) */}
       <RiskApprovalGate
         runId={runId}
         isApproved={false}
         approvedBy={null}
-        currentUserRole="ra-member"
+        currentUserRole={currentUserRole}
       />
     </section>
   );
