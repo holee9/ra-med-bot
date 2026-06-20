@@ -766,6 +766,34 @@ graph TB
 - **SPEC 문서**: [`.moai/specs/SPEC-REGULA-DOCINGEST-001/spec.md`](.moai/specs/SPEC-REGULA-DOCINGEST-001/spec.md)
 - **GitHub Issue**: [#10 SPEC-REGULA-DOCINGEST-001](https://github.com/holee9/ra-med-bot/issues/10)
 
+### Gitea Wiki Ingestion (Issue #155)
+
+Gitea 위키를 읽기 전용으로 ingestion하여 RA 지식베이스를 확장합니다. Provenance tracking으로 출처 추적을 지원합니다.
+
+**환경변수 설정** (`.env.local`):
+```bash
+GITEA_URL="https://gitea.example.com"
+GITEA_TOKEN="your-read-only-token"
+GITEA_WIKI_REPO="owner/repo-name"
+```
+
+**실행**:
+```bash
+# Gitea wiki ingestion
+pnpm ingest:gitea-wiki
+
+# Local docs ingestion (provenance tracking 포함)
+# DATABASE_URL이 필요합니다
+tsx scripts/seed-local-docs.ts
+```
+
+**Provenance 필드**:
+- `sources`: `sourceHost`, `sourceOwner`, `sourceRepo`, `sourceBranch`, `sourceRef`, `sourcePath`, `contentHash`, `ingestionRunId`, `ingestedAt`
+- `sourceSections`: `chunkHash`, `sectionPath`, `ingestionRunId`, `ingestedAt`
+
+- **SPEC 문서**: Issue #155 (Integration - Gitea Wiki Read-Only Ingestion)
+- **구현 파일**: `scripts/ingest-gitea-wiki.ts`, `lib/env.ts`, `lib/db/schema.ts`
+
 ---
 
 ## Phase 9 Advanced Workflows 기능 (2026-05-04 완료)
