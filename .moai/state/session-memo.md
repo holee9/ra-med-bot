@@ -2,40 +2,39 @@
 
 ## P1: Session Context
 
-session_id: 04ebf34f-00d3-41cb-ac7e-43bb1dcfabe7
+session_id: 37907fc8-8d00-492f-bc5e-3fd14188fc6c
 cwd: /home/abyz-lab/work/workspace-github/holee9/ra-med-bot
-event: PreCompact
+branch: main
+last_updated: 2026-06-20
 
-## 2026-06-20 PR #192 Review/Fix/Merge Session
+## P2: 세션 완료 사항
 
-- Active branch: `feat/issue-156-typed-adapter`
-- Active PR: #192 (`feat(integration): Issue #156 hybrid-ra-saas typed adapter 및 contract tests`)
-- Duplicate-work gate: Read GitHub Issue #18, fetched `origin/main`, and confirmed this branch is the active PR branch before fixing CI/review state.
-- Review state: GitHub PR review threads/comments are empty; merge is blocked by CI Gates typecheck failure.
+### 이슈 일괄 처리 완료
 
-## 2026-06-20 PR #192 Docs Push Session
+| 이슈 | 상태 | 커밋 |
+|------|------|------|
+| #175 | 종료 | — |
+| #160 Cloudflare Tunnel | 완료+종료 | T3610 자동 설치 완료 |
+| #166 Hydration mismatch | 완료+종료 | ba8fe91, 4eb3cd8 |
+| #74-79 QA Gate SPEC | 작성 완료 | d6b34f9 |
+| #86-92 Wave 5 SPEC | 작성 완료 | 2f3aeaa |
 
-- Active branch: `main`
-- Duplicate-work gate: Read GitHub Issue #18, updated local `main` to `origin/main` merge commit `04b6333`, and checked open PRs before docs work.
-- Docs scope: README, API reference, implementation status, and env matrix for Issue #156 hybrid-ra-saas typed adapter.
+### SPEC 파일 생성 (10개)
 
-## 2026-06-20 Risk Docs Sync Session
+- .moai/specs/SPEC-REGULA-QA-SPEC-READINESS-001/spec.md
+- .moai/specs/SPEC-REGULA-QA-IMPLEMENTATION-CHECKPOINT-001/spec.md
+- .moai/specs/SPEC-REGULA-QA-PR-ACCEPTANCE-001/spec.md
+- .moai/specs/SPEC-REGULA-QA-WAVE-INTEGRATION-001/spec.md
+- .moai/specs/SPEC-REGULA-QA-DOMAIN-UAT-001/spec.md
+- .moai/specs/SPEC-REGULA-QA-OPERATIONS-001/spec.md
+- .moai/specs/SPEC-REGULA-PERSONAL-LIB-001/spec.md
+- .moai/specs/SPEC-REGULA-EXPORT-HUB-001/spec.md
+- .moai/specs/SPEC-REGULA-ESIG-001/spec.md
+- .moai/specs/SPEC-REGULA-AUDITOR-VIEW-001/spec.md
 
-- Active branch: `docs/risk-management-status-20260620`
-- Base branch: `main` at `8065cc8` (`fix(ci): restore gates after risk workflow merge`)
-- Duplicate-work gate: Read GitHub Issue #18, fetched `origin/main`, confirmed PR #196 belongs to `feat/issue-168-169-171-contract-tests`, and separated this docs update from that PR branch.
-- Docs scope: README, API reference, architecture, implementation status, env matrix, compliance/runbook env wording, and SPEC-REGULA-RISK-001 completion notes for Issue #46 / PR #195.
+## P3: 다음 세션 시작점
 
-## 2026-06-20 PR #196 Review/Fix/Merge Session
-
-- Active branch: `feat/issue-168-169-171-contract-tests`
-- Active PR: #196 (`test(contract): hybrid-ra-saas UI 연동 컨트랙트 테스트 20개 추가`)
-- Duplicate-work gate: Read GitHub Issue #18, fetched `origin/main`, confirmed PR #196 is the active branch for Issues #168/#169/#171, and verified PR #197 is a separate docs-only branch.
-- Review state: No reviews, comments, or review threads. CI Gates failed on Biome lint/format in the three new contract test files.
-
-## 2026-06-20 PR #197 Review/Fix/Merge Session
-
-- Active branch: `docs/risk-management-status-20260620`
-- Active PR: #197 (`[codex] docs: update risk workflow documentation`)
-- Duplicate-work gate: Read GitHub Issue #18, fetched `origin/main` at merge commit `4995eb0`, confirmed #197 is the only open PR, and merged latest main into the docs branch after PR #196 landed.
-- Review state: No reviews, comments, or review threads. Merge conflict was limited to `.moai/state/session-memo.md` and was resolved by preserving both branch histories.
+- main 브랜치 최신 상태 (4eb3cd8)
+- QA Gate SPEC #74-79 구현 필요 (SPEC 작성만 완료)
+- Wave 5 SPEC #86-92 구현 필요 (SPEC 작성만 완료)
+- TraceabilityShell.tsx, authoring-workspace.tsx, evidence-form.tsx에도 toLocaleDateString 패턴 잔류 가능성 — 확인 필요
