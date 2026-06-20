@@ -17,12 +17,13 @@
 
 ### 최신 main 상태 (2026-06-21)
 
-현재 `main`은 PR #204 21 CFR Part 11 전자서명 구현까지 반영된 상태입니다. PR #204는 Issue #88 / SPEC-REGULA-ESIG-001을 닫았고, 전자서명 적용/조회/철회 API, 답변 잠금, SHA-256 record hash linkage, §11.50 UI/PDF manifestation, signature-specific `qa-lead` 권한을 포함합니다. 2026-06-21 기준 PR 체크와 merge 후 main의 `CI`, `Security Scan`, `E2E Tests`, `Deploy`가 모두 통과했습니다.
+현재 `main`은 PR #206 외부 감사관 read-only 페르소나 및 1-클릭 감사 패키지 구현까지 반영된 상태입니다. PR #206은 Issue #92 / SPEC-REGULA-AUDITOR-VIEW-001을 닫았고, `auditor` RBAC role(hierarchy 0.5), 중앙 쓰기 차단(`withPermission` 내 `WRITE_METHODS` 블록 → 403 + `audit.denied`), 1-클릭 감사 패키지 ZIP(5섹션 + SHA-256 manifest), `AuditorWatermark` UI를 포함합니다. 직전 PR #204(전자서명 #88)와 함께 Wave 5 규제 준수 축이 완성되었습니다. 2026-06-21 기준 PR 체크와 merge 후 main의 `CI`, `Security Scan`, `E2E Tests`, `Deploy`가 모두 통과했습니다.
 
 | 항목 | 상태 | 근거 |
 |---|---|---|
-| main 리뷰 기준 | PASS | `e51ebc5 feat(esig): implement 21 CFR Part 11 signatures` |
-| 리뷰 후 수정 | PASS | PR #204 reviewer 지적 2건 해소: signature message authorization, `qa-lead` 권한 범위 축소 |
+| main 리뷰 기준 | PASS | `0e6c479 feat(audit): external auditor read-only package flow` |
+| PR #206 | MERGED | Issue #92 auditor 페르소나 / 중앙 쓰기 차단 / 1-click 감사 패키지 / SHA-256 manifest |
+| PR #205 | MERGED | ESIG Part 11 서명 워크플로우 문서화 (`docs/esig`) |
 | PR #204 | MERGED | Issue #88 전자서명 / 답변 잠금 / §11.50·§11.70 구현 |
 | PR #197 | MERGED | `docs(risk): synchronize ISO 14971 implementation docs` |
 | PR #196 | MERGED | build-time env validation, submission-drafter status contract, health-check source import 보강 |
@@ -34,8 +35,8 @@
 | Security Scan | PASS | Dependency Vulnerability Scan, Secret Detection 통과 |
 | Deploy | PASS | GitHub Actions deploy workflow success |
 | 로컬 단위 테스트 | PASS | `pnpm test`: 2,766 passed / 7 skipped |
-| 권한 매트릭스 | PASS | 33 actions, `signature.sign` 포함 |
-| AuditAction enum | PASS | `signature.applied`, `signature.revoked` 포함 |
+| 권한 매트릭스 | PASS | `audit.read`, `audit.package.generate`, `signature.sign` 포함 — auditor role은 `additionalRoles` 경유로만 audit endpoint 접근 |
+| AuditAction enum | PASS | `signature.applied`, `signature.revoked`, `audit.denied`, `audit.package.generated` 포함 |
 
 ### 21 CFR Part 11 Electronic Signature 완료 — Issue #88 / PR #204
 
@@ -59,6 +60,39 @@ corepack pnpm typecheck              # PASS
 corepack pnpm lint                   # PASS
 corepack pnpm ci:rbac                # PASS
 corepack pnpm test                   # PASS: 2766 passed / 7 skipped
+SKIP_ENV_VALIDATION=1 REGULA_ALLOW_ENV_VALIDATION_SKIP=build corepack pnpm build  # PASS
+```
+
+### External Auditor Read-Only View 완료 — Issue #92 / PR #206
+
+Regula는 이제 외부 감사관(FDA inspector, MFDS 심사관, BSI/TÜV 등)을 위한 read-only 페르소나와 1-클릭 감사 패키지를 제공합니다. `auditor` role은 감사 로그·서명된 답변·compliance report를 읽을 수 있지만, 모든 쓰기 작업은 중앙에서 차단되어 시스템 전체에 우회 불가한 read-only 보장을 제공합니다.
+
+| 영역 | 구현 내용 |
+|------|---------|
+| RBAC | `auditor` role(hierarchy 0.5, 기존 minRole 체인 불만족) + `audit.read` / `audit.package.generate` 권한(`additionalRoles` 경유) |
+| 중앙 쓰기 차단 | `withPermission` 내 `WRITE_METHODS`(POST/PUT/PATCH/DELETE) 블록 — auditor 세션은 모든 쓰기 라우트에서 403 + `audit.denied` 로깅. per-route guard 대신 단일 통제점 |
+| 감사 로그 뷰 | `GET /api/ra/audit-log` 페이지네이션(50/page) + 날짜/이벤트/actor 필터, `app/(app)/audit/page.tsx` 읽기 전용 UI |
+| 1-Click 감사 패키지 | `POST /api/ra/audit-package` — ZIP 5섹션(audit-log / signed-answers / citations / expert-reviews / compliance-reports), 12개월 범위 60초 이내 생성 |
+| 무결성 | `lib/audit-package/manifest.ts` SHA-256 per-file manifest + `verifyManifest`, `lib/audit-package/zip.ts` STORE-mode ZIP writer(의존성 없음, node:zlib crc32) |
+| UI | `AuditorWatermark` 컴포넌트 — auditor 세션 시 모든 화면에 read-only 표시 |
+| DB | migration `0062_auditor_view_enums.sql` — `user_role.auditor`, `audit_action.audit.denied` / `audit.package.generated` enum 확장 |
+| 문서 | [`docs/qa/qa-matrix.md`](docs/qa/qa-matrix.md), [`docs/security/threat-model.md`](docs/security/threat-model.md) |
+
+설계 결정:
+
+1. **중앙 쓰기 차단**: per-route guard 대신 `withPermission` 내부 통제 → 기존 모든 라우트가 자동 보호되어 우회 경로 원천 차단
+2. **ZIP 의존성 없음**: 150줄 STORE-mode writer로 외부 패키지 추가 없이 무결성 보장(TRUST 5 Readable/Secured)
+3. **auditor hierarchy 0.5**: 기존 minRole 체인으로는 접근 불가, `additionalRoles`로만 audit endpoint 허용 → 권한 상승 경로 차단
+
+Follow-ups(별도 이슈): 24h 다운로드 링크 만료(presigned URL 도입 시), citations/compliance-reports 실데이터 연결(타 SPEC 테이블 의존).
+
+검증 결과:
+
+```bash
+corepack pnpm typecheck              # PASS
+corepack pnpm lint                   # PASS
+corepack pnpm ci:rbac                # PASS
+corepack pnpm test                   # PASS: 2847 passed / 7 skipped (신규 46개)
 SKIP_ENV_VALIDATION=1 REGULA_ALLOW_ENV_VALIDATION_SKIP=build corepack pnpm build  # PASS
 ```
 
@@ -1519,7 +1553,7 @@ Wave 3/4까지 완료되면 Regula는 분류, 근거 수집, 전략, 문서 생�
 | [#89](https://github.com/holee9/ra-med-bot/issues/89) | SPEC-REGULA-DSAR-001 | GDPR/PIPA 데이터 주체 요청 자동화 워크플로우 | High |
 | [#90](https://github.com/holee9/ra-med-bot/issues/90) | SPEC-REGULA-DATA-RESIDENCY-001 | 데이터 거주성 기반 LLM/임베딩 라우팅 강제·증빙 | High |
 | [#91](https://github.com/holee9/ra-med-bot/issues/91) | SPEC-REGULA-DLP-001 | DLP·자동 redaction·외부 공유 sanitize | High |
-| [#92](https://github.com/holee9/ra-med-bot/issues/92) | SPEC-REGULA-AUDITOR-VIEW-001 | 외부 감사관 read-only 페르소나·1-click 감사 패키지 | High |
+| [#92](https://github.com/holee9/ra-med-bot/issues/92) | SPEC-REGULA-AUDITOR-VIEW-001 | 외부 감사관 read-only 페르소나·1-click 감사 패키지 | Complete — PR #206 |
 
 ---
 
@@ -1844,4 +1878,4 @@ MIT License - [LICENSE](LICENSE) 파일 참조
 
 **Built with ❤️ using [abyz-lab](https://abyz-lab.work)**
 
-_마지막 업데이트: 2026-06-21 (PR #204 / Issue #88 21 CFR Part 11 전자서명 구현 완료 — message-level authorization, signature-specific `qa-lead`, answer lock, §11.50 UI/PDF manifestation, §11.70 SHA-256 record linkage 반영)_
+_마지막 업데이트: 2026-06-21 (PR #206 / Issue #92 외부 감사관 read-only 페르소나 + 1-클릭 감사 패키지 완료 — auditor RBAC role, `withPermission` 중앙 쓰기 차단, SHA-256 manifest ZIP, `AuditorWatermark` 반영. 직전 PR #204 전자서명에 이어 Wave 5 규제 준수 축 완성)_

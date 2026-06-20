@@ -7,13 +7,30 @@
 
 ---
 
-## [Unreleased] — Wave 5 (2026-06-20)
+## [Unreleased] — Wave 5 (2026-06-20~21)
 
-> **P1 작업 완료**: SPEC-REGULA-EXPORT-HUB-001 내보내기 허브 구현 완료 (feat/issue-87 브랜치). TypeScript 0 errors, 테스트 128개 통과, E2E 테스트 24개 작성 완료. TRUST 5 준수. PR 준비 중.
+> **Wave 5 규제 준수 축 완성**: Issue #88 전자서명(PR #204), Issue #87 Export Hub(PR #203), Issue #92 외부 감사관 뷰(PR #206)가 main에 머지되었습니다. 21 CFR Part 11 §11.50/§11.70 전자서명, 다중 포맷 내보내기, 외부 감사관 read-only 페르소나 + 1-클릭 감사 패키지가 통합되었습니다.
 
 ### Added
 
-- **Export Hub - 내보내기 기능** (SPEC-REGULA-EXPORT-HUB-001 — Issue #87): Wave 5 핵심 기능. 4가지 포맷(Markdown, DOCX, PDF, Email) 지원 내보내기 시스템. Export 허브 UI 컴포넌트 + BaseExporter 추상 클래스 + 포맷별 Exporter 구현.
+- **External Auditor Read-Only View** (SPEC-REGULA-AUDITOR-VIEW-001 — Issue #92, PR #206): 외부 감사관(FDA/MFDS/BSI·TÜV) read-only 페르소나 + 1-클릭 감사 패키지.
+  - `auditor` RBAC role(hierarchy 0.5) + `audit.read` / `audit.package.generate` 권한(`lib/auth/permissions.ts`, `lib/auth/rbac.ts`)
+  - **중앙 쓰기 차단**: `withPermission` 내 `WRITE_METHODS` 블록 → auditor 세션의 모든 POST/PUT/PATCH/DELETE 403 + `audit.denied` 로깅(`lib/auth/with-permission.ts`)
+  - 감사 로그 뷰: `GET /api/ra/audit-log` 페이지네이션(50/page) + 날짜/이벤트/actor 필터, `app/(app)/audit/page.tsx` 읽기 전용 UI
+  - 1-Click 감사 패키지: `POST /api/ra/audit-package` ZIP 5섹션(audit-log/signed-answers/citations/expert-reviews/compliance-reports), 12개월 60초 이내
+  - `lib/audit-package/manifest.ts` SHA-256 per-file manifest + `verifyManifest`, `lib/audit-package/zip.ts` STORE-mode ZIP writer(의존성 없음), `lib/audit-package/builder.ts` in-memory 조립
+  - `AuditorWatermark` 컴포넌트, migration `0062_auditor_view_enums.sql`
+  - 신규 테스트 46개(6 파일), 총 2,847 passed / 7 skipped
+
+- **21 CFR Part 11 Electronic Signatures** (SPEC-REGULA-ESIG-001 — Issue #88, PR #204): 답변 승인 기록 전자서명 + §11.70 답변 잠금.
+  - `answer_signatures` 테이블, `signature.applied` / `signature.revoked` audit actions
+  - API: `POST/GET/POST /api/ra/messages/[messageId]/signature{,/revoke}`
+  - `lib/signature/hash.ts` canonical JSON SHA-256 record hash, `answer_locked` 403 mutation gate
+  - RBAC: `signature.sign` = `ra-lead` 이상 + signature-specific `qa-lead`(일반 gate 상속 안 함), message-level authorization(`conversations`/`projects` 경유 tenant scope)
+  - `SignatureManifestation` UI + PDF §11.50 manifestation
+  - 문서: `docs/electronic-signatures.md`, `docs/compliance/part-11-extended.md`
+
+- **Export Hub - 내보내기 기능** (SPEC-REGULA-EXPORT-HUB-001 — Issue #87, PR #203): Wave 5 핵심 기능. 4가지 포맷(Markdown, DOCX, PDF, Email) 지원 내보내기 시스템. Export 허브 UI 컴포넌트 + BaseExporter 추상 클래스 + 포맷별 Exporter 구현.
   - `lib/export/types.ts`: ExportFormat enum, ExportResult/ExportOptions 인터페이스, ExportErrorCode 정의
   - `lib/export/base-exporter.ts`: BaseExporter 추상 클래스 (공통 유틸리: validateOptions, createSuccessResult, createErrorResult)
   - `lib/export/audit-logger.ts`: export 감사 로깅 헬퍼 (logExport, getExportAction)
