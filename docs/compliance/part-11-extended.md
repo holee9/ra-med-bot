@@ -1,7 +1,7 @@
 # 21 CFR Part 11 Extended Compliance — Phase 7 Cloudflare Integration
 
 SPEC: SPEC-REGULA-CLOUDFLARE-001
-Last Updated: 2026-04-22
+Last Updated: 2026-06-21
 Status: Active
 
 This document extends the Phase 1 21 CFR Part 11 compliance baseline with Phase 7 Cloudflare storage and audit controls.
@@ -105,9 +105,63 @@ The `audit.cold_query` action value is added to the `audit_action_enum` in migra
 
 ---
 
+## 6. Electronic Signature Controls — SPEC-REGULA-ESIG-001
+
+Issue #88 / PR #204 adds the Part 11 electronic signature layer on top of the existing append-only audit and retention controls.
+
+### 6.1 Signature Manifestation (§11.50)
+
+Signed answers expose the required manifestation fields through both the API and user-visible output:
+
+- signer name
+- signer title
+- signing meaning
+- signed timestamp
+- SHA-256 record hash
+- revocation status
+
+Implementation:
+
+- API: `GET /api/ra/messages/[messageId]/signature`
+- UI: `components/chat/SignatureManifestation.tsx`
+- PDF output: `lib/signature/pdf-inject.ts`
+
+### 6.2 Signature/Record Linking (§11.70)
+
+`lib/signature/hash.ts` canonicalizes answer content as:
+
+- `messages.contentProse`
+- ordered `message_blocks` content and block type
+
+The resulting SHA-256 hex digest is persisted as `answer_signatures.record_hash`. This links the signature to the exact answer state that was approved.
+
+### 6.3 Answer Locking
+
+`lib/signature/lock.ts` returns true when an active signature exists. Mutation paths that can change signed answer content must reject edits while locked. The current guards cover:
+
+- answer refine route
+- structured block PATCH route
+
+If the active signature is revoked, the answer is unlocked for changes and must be signed again before use as a signed record.
+
+### 6.4 Authorization and RBAC Boundary
+
+Signature endpoints must not load signatures solely by UUID. They first authorize the requested message through `messages -> conversations -> projects` and return `404` for both "not found" and "not allowed" to avoid UUID probing.
+
+Signing and revocation use `signature.sign`:
+
+- `admin`: allowed through hierarchy
+- `ra-lead`: allowed through `minRole`
+- `qa-lead`: allowed only through `additionalRoles`
+
+`qa-lead` is intentionally below `ra-lead` in the general role hierarchy so it does not inherit unrelated gates such as project management, authoring approval, conversation deletion, or risk approval.
+
+---
+
 ## References
 
 - 21 CFR Part 11: https://www.ecfr.gov/current/title-21/chapter-I/subchapter-A/part-11
 - Cloudflare R2 Object Lock: https://developers.cloudflare.com/r2/buckets/object-lock/
 - Migration files: `migrations/0001_audit_append_only.sql`, `migrations/0011_organizations_data_region.sql`
-- Implementation: `lib/audit/cold-storage.ts`, `lib/audit/cold-query.ts`, `lib/storage/r2.ts`
+- Electronic signature migration: `migrations/0061_answer_signatures.sql`
+- Implementation: `lib/audit/cold-storage.ts`, `lib/audit/cold-query.ts`, `lib/storage/r2.ts`, `lib/signature/*`

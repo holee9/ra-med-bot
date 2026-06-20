@@ -1,7 +1,7 @@
 # Regula Implementation Status
 
-Reviewed: 2026-06-20 KST (implementation review/fix pass)
-Implementation review baseline commit: `b2bd5d1` (`main` after PR #196, PR #197, #166, QA Gate/Wave 5 SPEC documentation)
+Reviewed: 2026-06-21 KST (implementation review/fix pass)
+Implementation review baseline commit: `e51ebc5` (`main` after PR #204 / Issue #88 electronic signature merge)
 
 This document includes the 2026-06-18 PR cleanup after PR #184 merge,
 PR #177 superseded closure, the completed Predicate Visualization addendum
@@ -9,7 +9,7 @@ for Issue #185 / PR #186, E2E validation MRD completion for Issue #182,
 the Issue #188 hybrid-ra-saas inbound webhook hardening pass,
 the Issue #156 hybrid-ra-saas outbound typed adapter merge,
 the 2026-06-20 security/quality fixes (#162 RBAC, #164 Predicate E2E, #152 workflow mock audit, #163 onboarding E2E seed),
-and the Issue #46 / PR #195 ISO 14971 Risk Management integration plus the follow-up `8065cc8` CI restoration commit. This review also covers PR #196, PR #197, the #166 hydration mismatch fixes, and the QA Gate/Wave 5 SPEC documentation commits now present on `main`.
+the Issue #46 / PR #195 ISO 14971 Risk Management integration plus the follow-up `8065cc8` CI restoration commit, and PR #204 / Issue #88 21 CFR Part 11 electronic signatures. This review also covers PR #196, PR #197, the #166 hydration mismatch fixes, and the QA Gate/Wave 5 SPEC documentation commits now present on `main`.
 
 ## Executive State
 
@@ -51,17 +51,20 @@ latest `main`: the #166 hydration mismatch follow-up added correct
 Biome, causing the `CI Gates` lint/format path to fail. The review fix formats
 those files and refreshes the current verification evidence.
 
-## Verified Repository State (2026-06-20)
+The 2026-06-21 review of PR #204 found and fixed two signature-specific security regressions before merge: signature endpoints now authorize the requested `messageId` through the caller's conversation/project scope before signing, manifestation lookup, or revocation; `qa-lead` no longer inherits every `ra-lead` permission and is instead allowlisted only for `signature.sign`.
+
+## Verified Repository State (2026-06-21)
 
 | Area | State | Evidence |
 |---|---|---|
-| Active branch | `main` | review baseline commit `b2bd5d1` |
-| Completed PRs/issues | #184, #186, #188, #192/#156, #190/#182, #193/#162, #194, #195/#46, #196, #197, #166 | all merged or closed |
+| Active branch | `main` | review baseline commit `e51ebc5` |
+| Completed PRs/issues | #184, #186, #188, #192/#156, #190/#182, #193/#162, #194, #195/#46, #196, #197, #204/#88, #166 | all merged or closed |
 | E2E Validation | COMPLETE | Go/No-Go spec, Smoke Test 8/8 specs, MRD complete |
 | Traceability Integration | COMPLETE | BFF routes, UI, RBAC all implemented |
 | Webhook Integration | COMPLETE | `/api/webhooks/audit`, `ifu`, `knowledge-sync` hardened |
 | hybrid-ra-saas typed adapter | COMPLETE | `createHybridRaClient()` covers 7 upstream endpoint contracts |
 | ISO 14971 Risk Management | COMPLETE | `/workflows/risk`, `/api/ra/risk/*`, `lib/risk/*`, risk DB tables, RA-lead approval |
+| 21 CFR Part 11 Electronic Signature | COMPLETE | `/api/ra/messages/[messageId]/signature`, `answer_signatures`, answer lock, §11.50/§11.70 linkage |
 | Submission drafter contract (#196) | COMPLETE | build env bypass path, `workflow_runs` status contract, source health-check import fixed |
 | Hydration mismatch (#166) | COMPLETE | date render boundaries plus 2026-06-20 Biome format recovery |
 | QA Gate 0 helper (#74) | COMPLETE | `scripts/qa-gate-0-checklist.ts`, shared checklist template, ignored generated outputs |
@@ -70,6 +73,32 @@ those files and refreshes the current verification evidence.
 | Mock workflow audit (#152) | COMPLETE | mock_data, workflow_run_id metadata connected (in PR #190) |
 | Onboarding E2E seed (#163) | COMPLETE | globalSetup.ts bootstrapProjects + empty-state CTA in Sidebar |
 | Work gate | #18 active | mandatory before new P0 work |
+
+## 2026-06-21 Electronic Signature — Issue #88 / PR #204
+
+SPEC-REGULA-ESIG-001 is implemented and merged. The feature adds 21 CFR Part 11 electronic signatures for answer approval records and ties each signature to the exact answer content by hash.
+
+| Area | State | Evidence |
+|---|---|---|
+| Signature API | Complete | `POST`/`GET /api/ra/messages/[messageId]/signature`, `POST /signature/revoke` |
+| Message authorization | Complete | `lib/signature/authorization.ts` validates `messages` through `conversations` and `projects` before lookup side effects |
+| RBAC | Complete | `signature.sign` uses `minRole: ra-lead` plus `additionalRoles: ['qa-lead']`; `qa-lead` is below `ra-lead` in general hierarchy |
+| Record linkage | Complete | `computeAnswerHash()` hashes answer prose + ordered blocks with SHA-256 |
+| Locking | Complete | `isAnswerLocked()` blocks refine and block PATCH mutation paths while a signature is active |
+| Manifestation | Complete | `SignatureManifestation` component and PDF injection include signer, title, meaning, signed timestamp, record hash, revocation state |
+| Audit | Complete | `signature.applied` and `signature.revoked` are written through append-only `writeAudit()` |
+| Documentation | Complete | README, API reference, Part 11 docs, SPEC progress/tasks updated |
+
+Validation evidence:
+
+- `corepack pnpm typecheck` — pass.
+- `corepack pnpm lint` — pass.
+- `corepack pnpm ci:rbac` — pass.
+- Targeted regression tests — 320 tests passed across signature and auth/RBAC suites.
+- `corepack pnpm test` — 2,766 tests passed, 7 skipped.
+- `SKIP_ENV_VALIDATION=1 REGULA_ALLOW_ENV_VALIDATION_SKIP=build corepack pnpm build` — pass.
+- PR #204 checks — CI Gates, E2E Smoke, Playwright chromium/firefox/webkit, LLM Eval Harness, Vercel Preview, Security Scan all pass.
+- Main after merge — CI, Security Scan, E2E Tests, Deploy all success.
 
 ## 2026-06-20 ISO 14971 Risk Management — Issue #46 / PR #195
 

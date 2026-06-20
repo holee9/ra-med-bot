@@ -1,6 +1,6 @@
 # Regula — API Reference
 
-> Version: 1.1.0 | Updated: 2026-06-20
+> Version: 1.2.0 | Updated: 2026-06-21
 > Base URL: `https://regula.app/api`
 
 Application endpoints require a valid Auth.js session cookie. Public inbound
@@ -765,6 +765,105 @@ X-RateLimit-Reset: 1746269260
 ```
 
 ---
+
+## Electronic Signature API
+
+Electronic signature endpoints implement SPEC-REGULA-ESIG-001 for 21 CFR Part 11 §11.50 and §11.70 controls.
+
+All endpoints require an Auth.js session and message-level authorization. A caller must be able to access the answer through the owning conversation or project; unauthorized message IDs return `404` to avoid UUID probing.
+
+### POST /api/ra/messages/[messageId]/signature
+
+Applies an electronic signature to an answer.
+
+Permission: `signature.sign` (`admin`, `ra-lead`, and signature-specific `qa-lead`).
+
+```http
+POST /api/ra/messages/8a8d0f2d-1d6a-4d74-9c4a-3f2b1a64f111/signature
+Content-Type: application/json
+Authorization: session cookie
+
+{
+  "meaning": "Approved for regulatory submission",
+  "signerTitle": "QA Lead"
+}
+```
+
+Response `201 Created`:
+
+```json
+{
+  "id": "sig-001",
+  "messageId": "8a8d0f2d-1d6a-4d74-9c4a-3f2b1a64f111",
+  "signerId": "user-001",
+  "signerName": "Alice Lead",
+  "signerTitle": "QA Lead",
+  "meaning": "Approved for regulatory submission",
+  "recordHash": "64-char-sha256-hex",
+  "signedAt": "2026-06-21T00:00:00.000Z",
+  "revokedAt": null,
+  "revokedBy": null
+}
+```
+
+Error behavior:
+
+- `400` invalid JSON or validation failure.
+- `401` missing session.
+- `403` missing `signature.sign`.
+- `404` message not found or not authorized.
+- `409 answer_already_signed` when an active signature already exists.
+
+Side effects:
+
+- Computes SHA-256 hash over answer prose and ordered structured blocks.
+- Inserts an `answer_signatures` row.
+- Writes append-only audit event `signature.applied`.
+
+### GET /api/ra/messages/[messageId]/signature
+
+Returns the active §11.50 signature manifestation for a signed answer.
+
+Permission: `conversation.view` plus message-level authorization.
+
+Response `200 OK`:
+
+```json
+{
+  "id": "sig-001",
+  "signerName": "Alice Lead",
+  "signerTitle": "QA Lead",
+  "meaning": "Approved for regulatory submission",
+  "signedAt": "2026-06-21T00:00:00.000Z",
+  "recordHash": "64-char-sha256-hex",
+  "isRevoked": false,
+  "revokedAt": null
+}
+```
+
+Error behavior:
+
+- `401` missing session.
+- `403` missing `conversation.view`.
+- `404` message not found, not authorized, or no active signature exists.
+
+### POST /api/ra/messages/[messageId]/signature/revoke
+
+Revokes the active electronic signature. Revocation unlocks the answer for edits, and the answer must be signed again before it is treated as an active signed record.
+
+Permission: `signature.sign`.
+
+```http
+POST /api/ra/messages/8a8d0f2d-1d6a-4d74-9c4a-3f2b1a64f111/signature/revoke
+Authorization: session cookie
+```
+
+Response `200 OK`: revoked signature row with `revokedAt` and `revokedBy` populated.
+
+Side effects:
+
+- Soft-revokes the active signature.
+- Writes append-only audit event `signature.revoked`.
 
 ## Common Error Codes
 

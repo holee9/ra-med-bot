@@ -11,18 +11,19 @@
 
 ---
 
-## 구현 현황 대시보드 (2026-06-20 KST 기준)
+## 구현 현황 대시보드 (2026-06-21 KST 기준)
 
 상세 점검 기록: [`docs/implementation-status.md`](docs/implementation-status.md)
 
-### 최신 main 상태 (2026-06-20)
+### 최신 main 상태 (2026-06-21)
 
-현재 `main`은 PR #195 ISO 14971 Risk Management, PR #196 submission-drafter/build/health-check 보강, PR #197 위험관리 문서 동기화, #166 hydration mismatch 수정, QA Gate/Wave 5 SPEC 문서까지 반영된 상태입니다. 2026-06-20 리뷰에서 #166 후속 날짜 렌더링 파일의 Biome format drift를 발견해 수정했으며, 로컬 기준 `biome check .`, `pnpm test`, `next build`가 통과했습니다.
+현재 `main`은 PR #204 21 CFR Part 11 전자서명 구현까지 반영된 상태입니다. PR #204는 Issue #88 / SPEC-REGULA-ESIG-001을 닫았고, 전자서명 적용/조회/철회 API, 답변 잠금, SHA-256 record hash linkage, §11.50 UI/PDF manifestation, signature-specific `qa-lead` 권한을 포함합니다. 2026-06-21 기준 PR 체크와 merge 후 main의 `CI`, `Security Scan`, `E2E Tests`, `Deploy`가 모두 통과했습니다.
 
 | 항목 | 상태 | 근거 |
 |---|---|---|
-| main 리뷰 기준 | PASS | `b2bd5d1 chore(state): 세션 메모 업데이트 (2026-06-20 일괄 처리 완료)` |
-| 리뷰 후 수정 | PASS | #166 hydration mismatch 후속 파일 3개 Biome format gate 복구 |
+| main 리뷰 기준 | PASS | `e51ebc5 feat(esig): implement 21 CFR Part 11 signatures` |
+| 리뷰 후 수정 | PASS | PR #204 reviewer 지적 2건 해소: signature message authorization, `qa-lead` 권한 범위 축소 |
+| PR #204 | MERGED | Issue #88 전자서명 / 답변 잠금 / §11.50·§11.70 구현 |
 | PR #197 | MERGED | `docs(risk): synchronize ISO 14971 implementation docs` |
 | PR #196 | MERGED | build-time env validation, submission-drafter status contract, health-check source import 보강 |
 | PR #195 | MERGED | `feat(risk): SPEC-REGULA-RISK-001 ISO 14971 위험관리 통합 구현` |
@@ -32,9 +33,34 @@
 | E2E Tests | PASS | CI smoke/browser jobs success; staging URL 미설정 job은 의도적 skip |
 | Security Scan | PASS | Dependency Vulnerability Scan, Secret Detection 통과 |
 | Deploy | PASS | GitHub Actions deploy workflow success |
-| 로컬 단위 테스트 | PASS | `pnpm test`: 2,556 passed / 7 skipped |
-| 권한 매트릭스 | PASS | 32 actions, risk.generate/view/update/approve 포함 |
-| AuditAction enum | PASS | 91 actions, risk.* 7종 포함 |
+| 로컬 단위 테스트 | PASS | `pnpm test`: 2,766 passed / 7 skipped |
+| 권한 매트릭스 | PASS | 33 actions, `signature.sign` 포함 |
+| AuditAction enum | PASS | `signature.applied`, `signature.revoked` 포함 |
+
+### 21 CFR Part 11 Electronic Signature 완료 — Issue #88 / PR #204
+
+Regula는 이제 답변 승인 기록에 전자서명을 적용하고, 서명된 답변을 변경 불가 상태로 잠그며, 표시·출력 양식에 §11.50 서명 manifestation을 포함합니다. 서명은 답변 prose와 ordered structured blocks를 canonical JSON으로 묶어 SHA-256 hash를 계산하고 `answer_signatures.record_hash`에 저장해 §11.70 signature/record linkage를 제공합니다.
+
+| 영역 | 구현 내용 |
+|------|---------|
+| API | `POST /api/ra/messages/[messageId]/signature`, `GET /api/ra/messages/[messageId]/signature`, `POST /api/ra/messages/[messageId]/signature/revoke` |
+| DB | `answer_signatures` 테이블, `signature.applied` / `signature.revoked` audit actions, active signature partial unique index |
+| RBAC | `signature.sign`은 `ra-lead` 이상 + signature-specific `qa-lead`; `qa-lead`는 일반 `ra-lead` gate를 상속하지 않음 |
+| Authorization | signature routes는 `messageId` 단독 조회를 금지하고 `conversations`/`projects` 경유 tenant/owner scope를 먼저 확인 |
+| Record linkage | `lib/signature/hash.ts`의 `computeAnswerHash()`가 answer prose + ordered blocks를 SHA-256으로 canonical hashing |
+| Locking | active signature가 있는 답변은 refine/block mutation path에서 `403 answer_locked` 반환 |
+| Manifestation | `SignatureManifestation` UI와 PDF export에 signer, title, meaning, signedAt, recordHash, revocation status 표시 |
+| 문서 | [`docs/electronic-signatures.md`](docs/electronic-signatures.md), [`docs/compliance/part-11-extended.md`](docs/compliance/part-11-extended.md), [`docs/api-reference.md`](docs/api-reference.md) |
+
+검증 결과:
+
+```bash
+corepack pnpm typecheck              # PASS
+corepack pnpm lint                   # PASS
+corepack pnpm ci:rbac                # PASS
+corepack pnpm test                   # PASS: 2766 passed / 7 skipped
+SKIP_ENV_VALIDATION=1 REGULA_ALLOW_ENV_VALIDATION_SKIP=build corepack pnpm build  # PASS
+```
 
 ### ISO 14971 Risk Management 완료 — Issue #46 / PR #195
 
@@ -468,7 +494,7 @@ graph TB
 
 **프로젝트 규모**:
 - TypeScript 파일: 377개
-- API 라우트: 67개  
+- API 라우트: 67개
 - 데이터베이스 테이블: 18개
 - lib 모듈: 27개
 - components 카테고리: 11개
@@ -1062,8 +1088,9 @@ pnpm start
 | **Issues** | 작업 이력, 의도 보존 | [Issues](https://github.com/holee9/ra-med-bot/issues) |
 | **SPEC 문서** | 요구사항 정의 (EARS 포맷) | `.moai/specs/` |
 | **Implementation Status** | 최신 main 상태, 완료 PR/이슈, 검증 증거 | [`docs/implementation-status.md`](docs/implementation-status.md) |
-| **API Reference** | Auth.js session API, webhook, hybrid-ra-saas adapter, risk endpoints | [`docs/api-reference.md`](docs/api-reference.md) |
-| **Architecture** | 시스템 구조, RAG/Risk/data/audit 흐름 | [`docs/architecture.md`](docs/architecture.md) |
+| **API Reference** | Auth.js session API, webhook, hybrid-ra-saas adapter, risk/signature endpoints | [`docs/api-reference.md`](docs/api-reference.md) |
+| **Architecture** | 시스템 구조, RAG/Risk/signature/data/audit 흐름 | [`docs/architecture.md`](docs/architecture.md) |
+| **Electronic Signatures** | 21 CFR Part 11 §11.50/§11.70 전자서명 운영·API·RBAC·audit 상세 | [`docs/electronic-signatures.md`](docs/electronic-signatures.md) |
 | **Risk Management** | ISO 14971 workflow 운영·API·RBAC·audit 상세 | [`docs/risk-management.md`](docs/risk-management.md) |
 | **Environment Matrix** | 배포/로컬 환경변수, build/E2E env guard | [`docs/deployment/env-matrix.md`](docs/deployment/env-matrix.md) |
 | **Design Handoff** | 완전한 스펙 패키지 | `RA-bot-design/design_handoff_regula/README.md` |
@@ -1488,7 +1515,7 @@ Wave 3/4까지 완료되면 Regula는 분류, 근거 수집, 전략, 문서 생�
 | [#85](https://github.com/holee9/ra-med-bot/issues/85) | SPEC-REGULA-CONFIDENCE-EXPLAIN-001 | Confidence 점수 근거 표시·대안 답변 비교 | High |
 | [#86](https://github.com/holee9/ra-med-bot/issues/86) | SPEC-REGULA-PERSONAL-LIB-001 | 개인 RA 라이브러리·북마크·태깅·치트시트 | Medium |
 | [#87](https://github.com/holee9/ra-med-bot/issues/87) | SPEC-REGULA-EXPORT-HUB-001 | 답변 다중 포맷 Export·메일 포워드·외부 공유 허브 | High |
-| [#88](https://github.com/holee9/ra-med-bot/issues/88) | SPEC-REGULA-ESIG-001 | 21 CFR Part 11 전자서명·답변 잠금 | High |
+| [#88](https://github.com/holee9/ra-med-bot/issues/88) | SPEC-REGULA-ESIG-001 | 21 CFR Part 11 전자서명·답변 잠금 | Complete — PR #204 |
 | [#89](https://github.com/holee9/ra-med-bot/issues/89) | SPEC-REGULA-DSAR-001 | GDPR/PIPA 데이터 주체 요청 자동화 워크플로우 | High |
 | [#90](https://github.com/holee9/ra-med-bot/issues/90) | SPEC-REGULA-DATA-RESIDENCY-001 | 데이터 거주성 기반 LLM/임베딩 라우팅 강제·증빙 | High |
 | [#91](https://github.com/holee9/ra-med-bot/issues/91) | SPEC-REGULA-DLP-001 | DLP·자동 redaction·외부 공유 sanitize | High |
@@ -1817,4 +1844,4 @@ MIT License - [LICENSE](LICENSE) 파일 참조
 
 **Built with ❤️ using [abyz-lab](https://abyz-lab.work)**
 
-_마지막 업데이트: 2026-06-15 (Persona 85% Quality Addendum 완료 — RBAC 경계 재검토, PII redaction 통합, UI 진입점 반영, Cloudflare Tunnel 복구. Guest E2E validation 준비 완료. 제품 헌장 `.moai/specs/CHARTER.md` 추가. 주 사용자 RA Lead로 정정)_
+_마지막 업데이트: 2026-06-21 (PR #204 / Issue #88 21 CFR Part 11 전자서명 구현 완료 — message-level authorization, signature-specific `qa-lead`, answer lock, §11.50 UI/PDF manifestation, §11.70 SHA-256 record linkage 반영)_
