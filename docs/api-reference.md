@@ -1,6 +1,6 @@
 # Regula — API Reference
 
-> Version: 1.0.0 | Updated: 2026-06-19
+> Version: 1.1.0 | Updated: 2026-06-20
 > Base URL: `https://regula.app/api`
 
 Application endpoints require a valid Auth.js session cookie. Public inbound
@@ -479,6 +479,271 @@ X-Crawl-Push-Secret: <CRAWL_PUSH_SECRET>
 
 ---
 
+## ISO 14971 Risk Management API
+
+Risk Management endpoints support SPEC-REGULA-RISK-001. All endpoints require an Auth.js session and RBAC permission through `withPermission`.
+
+### Permissions
+
+| Permission | Minimum role | Scope | Used by |
+|---|---|---|---|
+| `risk.generate` | `ra-member` | `org` | create runs, identify hazards, recommend controls, export report |
+| `risk.view` | `ra-member` | `org` | read run aggregate |
+| `risk.update` | `ra-member` | `org` | update/delete risk items, evaluate matrix, adopt controls, map GSPR |
+| `risk.approve` | `ra-lead` | `org` | approve final risk report |
+
+### POST /api/ra/risk/runs
+
+Create a risk workflow run.
+
+```http
+POST /api/ra/risk/runs
+Content-Type: application/json
+```
+
+```json
+{
+  "deviceDescription": "Ambulatory insulin pump with BLE mobile app",
+  "deviceClass": "Class II",
+  "targetMarkets": ["US", "EU"]
+}
+```
+
+Success:
+
+```json
+{
+  "id": "risk-run-001",
+  "workflowType": "risk",
+  "status": "running"
+}
+```
+
+Audit: `workflow.start` with `resource_type=risk_run`.
+
+### GET /api/ra/risk/runs/[id]
+
+Load a risk run aggregate including hazard items, controls, and GSPR mappings.
+
+```http
+GET /api/ra/risk/runs/risk-run-001
+```
+
+Success:
+
+```json
+{
+  "id": "risk-run-001",
+  "items": [],
+  "controls": [],
+  "gsprMappings": []
+}
+```
+
+### POST /api/ra/risk/identify
+
+Generate hazard candidates from a device description.
+
+```json
+{
+  "deviceDescription": "Ventilator with pressure control mode",
+  "deviceClass": "Class IIb",
+  "workflowRunId": "risk-run-001"
+}
+```
+
+Each generated item must include ISO 14971 terms:
+
+```json
+{
+  "items": [
+    {
+      "hazard": "Excessive airway pressure",
+      "sequenceOfEvents": "Pressure sensor drift leads to incorrect pressure control",
+      "hazardousSituation": "Patient receives excessive ventilation pressure",
+      "harm": "Barotrauma",
+      "severity": 4,
+      "probability": 2,
+      "riskLevel": "alarp",
+      "lowConfidence": false,
+      "citation": [{ "source": "ISO 14971", "id": "7.1" }]
+    }
+  ]
+}
+```
+
+Audit: `risk.hazard_identified`.
+
+### POST /api/ra/risk/items/[id]/evaluate
+
+Evaluate severity/probability against the configured 5×5 risk matrix.
+
+```json
+{
+  "severity": 5,
+  "probability": 4
+}
+```
+
+Success:
+
+```json
+{
+  "id": "risk-item-001",
+  "severity": 5,
+  "probability": 4,
+  "riskLevel": "unacc"
+}
+```
+
+Validation:
+
+- `severity` and `probability` must be integers from 1 to 5.
+- Invalid scale values return HTTP 400.
+
+Audit: `risk.matrix_evaluated`.
+
+### PATCH /api/ra/risk/items/[id]
+
+Update a hazard item. Supports user override of generated content.
+
+```json
+{
+  "hazard": "Incorrect dose delivery",
+  "severity": 4,
+  "probability": 3,
+  "riskLevel": "unacc"
+}
+```
+
+### DELETE /api/ra/risk/items/[id]
+
+Delete a hazard item.
+
+Audit: `risk.item_deleted`.
+
+### POST /api/ra/risk/controls/recommend
+
+Recommend ISO 14971 §7.1 control measures.
+
+```json
+{
+  "riskItemId": "risk-item-001"
+}
+```
+
+Success:
+
+```json
+{
+  "candidates": [
+    {
+      "id": "control-001",
+      "tier": "inherent",
+      "description": "Add dose limit logic in firmware",
+      "rationale": null
+    },
+    {
+      "id": "control-002",
+      "tier": "protective",
+      "description": "Alarm on pressure threshold breach",
+      "rationale": null
+    },
+    {
+      "id": "control-003",
+      "tier": "information",
+      "description": "IFU warning for maximum pressure setting",
+      "rationale": "Use only after inherent/protective measures are insufficient"
+    }
+  ]
+}
+```
+
+### PATCH /api/ra/risk/controls/[id]
+
+Adopt or update a control measure and optionally evaluate residual risk.
+
+```json
+{
+  "tier": "information",
+  "rationale": "Inherent design and protective alarm are already implemented; IFU warning addresses residual use error.",
+  "isAdopted": true,
+  "residualSeverity": 3,
+  "residualProbability": 2,
+  "alarpJustification": "Residual risk is ALARP after alarm and labeling controls."
+}
+```
+
+Validation:
+
+- `tier=information` requires `rationale`.
+- Residual severity/probability must be integers from 1 to 5 when provided.
+- ALARP residual risk requires `alarpJustification`.
+
+Audit: `risk.control_adopted`; residual acceptance is recorded when residual risk is accepted.
+
+### POST /api/ra/risk/runs/[id]/gspr
+
+Create EU MDR GSPR mappings for the risk run.
+
+```json
+{
+  "mappings": [
+    {
+      "gsprClause": "Annex I, Chapter I, 3",
+      "requirement": "Risk management system shall be established and maintained",
+      "compliance": "Implemented through ISO 14971 RMF",
+      "evidence": "Risk run risk-run-001"
+    }
+  ]
+}
+```
+
+Audit: `risk.gspr_mapped`.
+
+### POST /api/ra/risk/runs/[id]/export
+
+Generate an ISO 14971 risk management report.
+
+Response is a DOCX-compatible binary payload when report generation succeeds. Draft reports include pending approval state and draft watermark.
+
+Audit: report generation path records export/generation metadata through the risk workflow audit path.
+
+### POST /api/ra/risk/runs/[id]/approve
+
+Approve a risk management report. Requires `risk.approve` and therefore RA lead or higher.
+
+```json
+{
+  "comment": "Reviewed and approved for design history file inclusion."
+}
+```
+
+Success:
+
+```json
+{
+  "id": "risk-run-001",
+  "approved": true,
+  "approvedBy": "user-001"
+}
+```
+
+Audit: `risk.report_approved`.
+
+### Risk API Error Responses
+
+| Status | Body | Description |
+|---|---|---|
+| 400 | `{ "error": "Invalid severity/probability" }` | Matrix scale outside 1~5 |
+| 401 | `{ "error": "Unauthorized" }` | Missing Auth.js session |
+| 403 | `{ "error": "Forbidden" }` | User lacks required risk permission |
+| 404 | `{ "error": "Not found" }` | Risk run/item/control not found |
+| 422 | `{ "error": "Rationale required" }` | Information-for-safety control lacks rationale |
+| 500 | `{ "error": "Internal error" }` | Unexpected server failure |
+
+---
+
 ## Rate Limiting
 
 | Endpoint | Limit | Window |
@@ -486,6 +751,7 @@ X-Crawl-Push-Secret: <CRAWL_PUSH_SECRET>
 | `POST /api/ra/consult` | 30 req | 60 seconds |
 | `GET /api/ra/sources/*` | 100 req | 60 seconds |
 | `GET/POST /api/ra/projects` | 60 req | 60 seconds |
+| `/api/ra/risk/*` | inherited app/API limits | deploy behind org-level API/WAF limits |
 | `POST /api/webhooks/*` | sender-controlled | deploy behind ingress/WAF limits as needed |
 | `GET /api/health` | unlimited | — |
 

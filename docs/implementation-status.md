@@ -1,14 +1,15 @@
 # Regula Implementation Status
 
 Reviewed: 2026-06-20 KST (updated)
-Implementation baseline commit: `9ef9db2` (`main` after PR #190 / P0 E2E validation merge)
+Implementation baseline commit: `8065cc8` (`main` after PR #195 and CI recovery)
 
 This document includes the 2026-06-18 PR cleanup after PR #184 merge,
 PR #177 superseded closure, the completed Predicate Visualization addendum
 for Issue #185 / PR #186, E2E validation MRD completion for Issue #182,
 the Issue #188 hybrid-ra-saas inbound webhook hardening pass,
 the Issue #156 hybrid-ra-saas outbound typed adapter merge,
-and the 2026-06-20 security/quality fixes (#162 RBAC, #164 Predicate E2E, #152 workflow mock audit, #163 onboarding E2E seed).
+the 2026-06-20 security/quality fixes (#162 RBAC, #164 Predicate E2E, #152 workflow mock audit, #163 onboarding E2E seed),
+and the Issue #46 / PR #195 ISO 14971 Risk Management integration plus the follow-up `8065cc8` CI restoration commit.
 
 ## Executive State
 
@@ -38,21 +39,60 @@ types, Bearer + tenant header injection, 30 second timeout handling, and
 classified `HybridRaClientError.kind` values for unconfigured, auth, schema,
 server, timeout, and network failures.
 
+Issue #46 is complete via PR #195. Regula now includes an ISO 14971 Risk
+Management workflow with hazard identification, severity/probability risk
+matrix, control hierarchy, residual risk evaluation, GSPR mapping, DOCX export,
+and RA-lead approval gate. The follow-up commit `8065cc8` restored the build,
+lint, unit, E2E, security, and deploy gates on `main`.
+
 ## Verified Repository State (2026-06-20)
 
 | Area | State | Evidence |
 |---|---|---|
-| Active branch | `main` | baseline commit `9ef9db2` |
-| Completed PRs/issues | #184, #186, #188, #192/#156, #190/#182, #193/#162 | all merged |
+| Active branch | `main` | baseline commit `8065cc8` |
+| Completed PRs/issues | #184, #186, #188, #192/#156, #190/#182, #193/#162, #194, #195/#46 | all merged |
 | E2E Validation | COMPLETE | Go/No-Go spec, Smoke Test 8/8 specs, MRD complete |
 | Traceability Integration | COMPLETE | BFF routes, UI, RBAC all implemented |
 | Webhook Integration | COMPLETE | `/api/webhooks/audit`, `ifu`, `knowledge-sync` hardened |
 | hybrid-ra-saas typed adapter | COMPLETE | `createHybridRaClient()` covers 7 upstream endpoint contracts |
+| ISO 14971 Risk Management | COMPLETE | `/workflows/risk`, `/api/ra/risk/*`, `lib/risk/*`, risk DB tables, RA-lead approval |
 | RBAC security (#162) | COMPLETE | ra-lead → /403 redirect E2E validated (PR #193) |
 | Predicate E2E stability (#164) | COMPLETE | hydration + RBAC locator fixed (in PR #190) |
 | Mock workflow audit (#152) | COMPLETE | mock_data, workflow_run_id metadata connected (in PR #190) |
 | Onboarding E2E seed (#163) | COMPLETE | globalSetup.ts bootstrapProjects + empty-state CTA in Sidebar |
 | Work gate | #18 active | mandatory before new P0 work |
+
+## 2026-06-20 ISO 14971 Risk Management — Issue #46 / PR #195
+
+SPEC-REGULA-RISK-001 is implemented and merged. The feature introduces a
+regulated workflow for ISO 14971 risk management file creation, with an explicit
+human approval boundary for final legal/quality decisions.
+
+| Area | State | Evidence |
+|---|---|---|
+| Workflow UI | Complete | `/workflows/risk`, `/workflows/risk/[runId]`, `components/risk/*` |
+| BFF routes | Complete | `/api/ra/risk/runs`, `/identify`, `/items/[id]`, `/items/[id]/evaluate`, `/controls/recommend`, `/controls/[id]`, `/runs/[id]/gspr`, `/export`, `/approve` |
+| Domain logic | Complete | `lib/risk/risk-evaluation.ts`, `residual-risk.ts`, `hazard-identification.ts`, `control-recommendation.ts`, `report-builder.ts` |
+| DB schema | Complete | `risk_items`, `risk_controls`, `risk_gspr_mappings`, `risk_level`, `control_tier`, `workflow_type='risk'` |
+| RBAC | Complete | `risk.generate`, `risk.view`, `risk.update`, `risk.approve`; approve is RA-lead only |
+| Audit | Complete | `risk.hazard_identified`, `risk.matrix_evaluated`, `risk.item_deleted`, `risk.control_adopted`, `risk.residual_accepted`, `risk.gspr_mapped`, `risk.report_approved` |
+| Report export | Complete | DOCX builder with ISO 14971 sections, GSPR mapping table, approval status, draft watermark |
+| Documentation | Complete | `docs/risk-management.md`, API reference, architecture, env matrix, README |
+
+Validation evidence:
+
+- `corepack pnpm typecheck` — pass.
+- `corepack pnpm exec biome check .` — pass.
+- `corepack pnpm run lint:hex` — pass.
+- `corepack pnpm test` — 2,536 tests passed, 7 skipped.
+- `SKIP_ENV_VALIDATION=1 REGULA_ALLOW_ENV_VALIDATION_SKIP=build corepack pnpm build` — pass.
+- GitHub Actions on `8065cc8` — `CI`, `E2E Tests`, `Security Scan`, `Deploy` all success.
+
+Operational notes:
+
+- E2E smoke jobs skip browser execution when no staging URL is configured; this is an intended CI branch behavior.
+- Local Playwright browser execution requires installing Playwright browsers with `corepack pnpm exec playwright install chromium`.
+- Build emits non-blocking optional extractor warnings for missing `mammoth`/`exceljs` and `pdf-parse` import shape in document extraction paths; `next build` still exits successfully.
 
 ## 2026-06-20 hybrid-ra-saas Typed Adapter — Issue #156 / PR #192
 
@@ -76,7 +116,7 @@ Validation evidence:
 - `corepack pnpm exec biome check .` — pass.
 - `corepack pnpm lint:hex` — pass.
 - `corepack pnpm ci:format` — pass.
-- `corepack pnpm test` — 2,386 tests passed, 7 skipped.
+- `corepack pnpm test` — 2,536 tests passed, 7 skipped on the current risk-sync baseline.
 - `corepack pnpm build` — pass.
 - GitHub PR #192 checks — CI Gates, Playwright chromium/firefox/webkit, LLM Eval, E2E Smoke, Security Scan, Vercel Preview all pass.
 
@@ -104,7 +144,7 @@ Validation evidence:
 - `./node_modules/.bin/biome check .` — pass.
 - `./node_modules/.bin/biome format .` — pass.
 - `./node_modules/.bin/tsc --noEmit` — pass.
-- `./node_modules/.bin/vitest run` — 2,352 tests passed, 7 skipped.
+- `./node_modules/.bin/vitest run` — 2,352 tests passed, 7 skipped at the Issue #188 hardening baseline.
 - `./node_modules/.bin/next build` — pass.
 - `node --experimental-strip-types scripts/qa/audit-completeness.ts` — known pre-existing audit gap remains in 4 non-webhook routes.
 
@@ -130,7 +170,7 @@ Verification evidence:
 
 - `pnpm lint` — pass.
 - `pnpm typecheck` — pass.
-- `pnpm exec vitest run` — 222 files passed, 2,307 tests passed, 7 skipped.
+- `pnpm exec vitest run` — 222 files passed, 2,307 tests passed, 7 skipped at the PR #186 baseline.
 - Issue #188 review validation — 2,352 tests passed, 7 skipped after webhook hardening.
 - E2E Smoke Test — 8/8 specs passing (auth, consultation, citation, predicate, traceability, export, project, i18n).
 - GitHub PR #186 checks — CI Gates, Lint, Typecheck, Unit tests all success.
@@ -152,7 +192,7 @@ Verification evidence:
 
 - `biome check .` — pass.
 - `node scripts/no-hex-colors.mjs` — pass.
-- `vitest run` — 222 files passed, 2,307 tests passed, 7 skipped.
+- `vitest run` — 222 files passed, 2,307 tests passed, 7 skipped at the 2026-06-18 cleanup baseline.
 - GitHub PR #184 checks — CI Gates, LLM Eval Harness, Playwright chromium/firefox/webkit,
   Vercel preview, E2E Smoke, Dependency Vulnerability Scan, and gitleaks all success.
 
@@ -188,24 +228,24 @@ Validation evidence:
 
 | Surface | Count | Delta | Notes |
 |---|---:|---:|---|
-| App pages | 19 | +3 | Added: predicate/search, predicate/compare, predicate/history |
-| API route handlers | 33 | +5 | Added: predicate search, comparison, comparison/[id]/approve, export, admin/cache/clear |
-| Component files | 37 | +4 | Added: CandidateCard, ComparisonTable, SubjectDeviceForm, PredicateVisualization |
-| Library files | 200+ | +50+ | Added: predicate cascade-search, comparison-builder, openfda-client, cache, pdf-builder, docx-builder |
-| Test/spec files | 200+ | +16 | Predicate unit + integration tests |
-| Playwright specs | 8 | 0 | No new E2E specs added |
-| DB migrations | 36 | +4 | 0029–0032: predicate_comparisons, comparison_cells, comparison_exports, cache_entries |
+| App pages | 21+ | +2 risk | Added: `/workflows/risk`, `/workflows/risk/[runId]` |
+| API route handlers | 44+ | +10 risk | Added: risk runs, identify, items, evaluate, controls, gspr, export, approve |
+| Component files | 41+ | +4 risk | Added: RiskMatrix, HazardTable, ControlWizard, RiskApprovalGate |
+| Library files | 200+ | +5 risk | Added: `lib/risk/*` domain modules |
+| Test/spec files | 230+ | +8 risk | Risk unit/schema/BFF/E2E shape coverage |
+| Playwright specs | 10+ | +2 risk | Added risk flow and risk RBAC specs |
+| DB migrations | 58+ | +2 risk | 0057~0058 risk tables + enum/audit/permission alignment |
 
 ## CI Gate State
 
-Latest CI run on `feat/issue-22-predicate` — all gates passed.
+Latest CI run on `main` commit `8065cc8` — all required workflow families passed.
 
 Passed in `CI Gates`:
 
 - Type check (0 errors)
 - Lint (Biome clean)
 - Format check
-- Unit tests (1,976 passing)
+- Unit tests (2,536 passing locally; CI unit step success)
 - RBAC coverage
 - Audit completeness
 - Token symmetry
@@ -216,10 +256,17 @@ Passed in `CI Gates`:
 - Migration sequence (0029–0032)
 - Build
 
+Passed workflow families:
+
+- `CI`
+- `E2E Tests`
+- `Security Scan`
+- `Deploy`
+
 Important caveat:
 
-- Playwright E2E jobs completed, but `Run E2E tests` skipped (staging URL missing).
-- LLM Eval Harness skipped.
+- Some browser E2E child jobs skip actual browser execution when no staging URL is present. The skip is intentional and the workflow exits successfully.
+- Local E2E execution requires Playwright browser installation.
 
 ## Wave 3 PREDICATE-001 Feature State
 
@@ -247,7 +294,7 @@ Important caveat:
 | Governance | 2 | #1, #18 |
 | Wave 3 — next | 2 | #23 (CER-001), #24 (PCCP-001) |
 | Wave 3 — remaining | 21 | #35~#43, #47, #48, #50, #51, #52, #55, #58~#62 |
-| Wave 4 | 12 | #25, #44~#46, #49, #53, #54, #56, #57, #63~#65 |
+| Wave 4 | 11 | #25, #44, #45, #49, #53, #54, #56, #57, #63~#65; #46 complete |
 | Wave 5 | 16 | #66~#72, #84~#92 |
 | Pending PRs | 0 | all active work completed |
 
@@ -265,17 +312,8 @@ Important caveat:
 | P1 | Begin #23 SPEC-REGULA-CER-001 (EU MDR Clinical Evaluation Report) | Wave 3 next SPEC |
 | P1 | Begin #24 SPEC-REGULA-PCCP-001 (FDA PCCP builder) | Wave 3 next SPEC |
 | P2 | Execute Level 2 Integration Tests | validate RA Lead daily workflow |
+| P2 | Monitor Customer Local Runtime rollout (#191) | hybrid-ra-saas deployment dependency |
 | P3 | Begin Wave 3 remaining SPECs | #35~#43, #47, #48, #50~#62 |
-
----
-
-| Priority | Work | Reason |
-|---|---|---|
-| P0 | Push Issue #188 review/doc updates | publish webhook hardening and documentation evidence |
-| P0 | Confirm `main` push state | ensure local review fixes and docs are on `origin/main` |
-| P1 | Begin #23 SPEC-REGULA-CER-001 (EU MDR Clinical Evaluation Report) | Wave 3 next SPEC |
-| P1 | Begin #24 SPEC-REGULA-PCCP-001 (FDA PCCP builder) | Wave 3 next SPEC |
-| P2 | Resolve duplicate local `main` commit disposition | Housekeeping after PR #186 lands
 
 ---
 
@@ -293,7 +331,7 @@ Important caveat:
 - TypeScript files: 377 (stable)
 - API routes: 67 (stable)
 - Database tables: 18 (includes new predicate tables)
-- Test coverage: 2,352 tests passing, 7 skipped (220+ test files)
+- Test coverage: 2,536 tests passing, 7 skipped on the current baseline (230+ test files)
 - E2E specs: 8 Smoke Test specs complete, 3 Integration Test specs in progress
 
 **Wave 3 Status**:
