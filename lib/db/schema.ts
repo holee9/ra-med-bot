@@ -227,6 +227,10 @@ export const auditActionEnum = pgEnum('audit_action', [
   // SPEC-REGULA-ESIG-001 — added via 0061_answer_signatures.sql:
   'signature.applied',
   'signature.revoked',
+  // SPEC-REGULA-AUDITOR-VIEW-001 — external auditor read-only persona events:
+  'audit.access',
+  'audit.denied',
+  'audit.package.generated',
 ]);
 
 // REQ-WF-049: workflow_type pgEnum — workflow kinds.

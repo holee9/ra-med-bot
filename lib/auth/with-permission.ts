@@ -29,14 +29,19 @@ type Ctx = { params?: RouteParams };
 
 type InnerHandler = (req: Request, ctx: Ctx, session: AuthSession) => Promise<Response>;
 
+// SPEC-REGULA-AUDITOR-VIEW-001 (AC #2): HTTP methods that mutate state.
+// Auditor role is blocked from these regardless of the permission action.
+const WRITE_METHODS = new Set(['POST', 'PUT', 'PATCH', 'DELETE']);
+
 /**
  * REQ-ENTERPRISE-019: Wraps a Route Handler with RBAC enforcement.
  *
  * Guards in order:
  *   1. Session existence → 401 if missing
- *   2. Role check via roleSatisfiesPermission() → 403 + audit if insufficient
- *   3. Membership check (org or project scope) → 403 + audit if not a member
- *   4. Delegates to inner handler with (req, ctx, session)
+ *   2. SPEC-REGULA-AUDITOR-VIEW-001: auditor write-block → 403 + audit.denied
+ *   3. Role check via roleSatisfiesPermission() → 403 + audit if insufficient
+ *   4. Membership check (org or project scope) → 403 + audit if not a member
+ *   5. Delegates to inner handler with (req, ctx, session)
  */
 export function withPermission(action: PermissionAction, handler: InnerHandler) {
   return async (req: Request, ctx: Ctx = {}): Promise<Response> => {
@@ -50,7 +55,32 @@ export function withPermission(action: PermissionAction, handler: InnerHandler) 
     const session: AuthSession = { user };
     const spec = PERMISSIONS[action];
 
-    // 2. Role check
+    // 2. SPEC-REGULA-AUDITOR-VIEW-001: auditor is strictly read-only.
+    //    Any write method is rejected before the role/membership checks run,
+    //    and the attempt is logged with audit.denied (AC #3).
+    if (user.role === 'auditor' && WRITE_METHODS.has(req.method.toUpperCase())) {
+      await writeAudit({
+        action: 'audit.denied',
+        actor_id: user.id,
+        resource_type: spec.resourceType,
+        resource_id: action,
+        meta_json: {
+          attemptedAction: action,
+          method: req.method.toUpperCase(),
+          reason: 'auditor_read_only',
+        },
+      });
+      return Response.json(
+        {
+          error: 'auditor_read_only',
+          required: action,
+          read_only_role: true,
+        },
+        { status: 403 },
+      );
+    }
+
+    // 3. Role check
     if (!roleSatisfiesPermission(user.role, spec)) {
       await writeAudit({
         action: 'rbac.permission_deny',
@@ -69,7 +99,7 @@ export function withPermission(action: PermissionAction, handler: InnerHandler) 
       );
     }
 
-    // 3. Membership check (scope-dependent)
+    // 4. Membership check (scope-dependent)
     if (spec.scope === 'org') {
       const orgId = user.organizationId ?? '';
       const member = await isOrgMember(user.id, orgId);
@@ -116,7 +146,7 @@ export function withPermission(action: PermissionAction, handler: InnerHandler) 
     }
     // 'user' and 'none' scopes: no membership check needed.
 
-    // 4. Delegate to inner handler
+    // 5. Delegate to inner handler
     return handler(req, ctx, session);
   };
 }
