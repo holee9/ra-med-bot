@@ -23,14 +23,13 @@ export const POST = withPermission('risk.generate', async (req, ctx, session) =>
     const docxBuffer = await buildRiskReport(runData);
 
     await writeAudit({
-      userId: session.user.id,
+      actor_id: session.user.id,
       action: 'workflow.download',
-      resourceType: 'risk_run',
-      resourceId: id,
-      organizationId: session.user.organizationId,
+      resource_type: 'risk_run',
+      resource_id: id,
     });
 
-    return new Response(docxBuffer, {
+    return new Response(docxBuffer as unknown as BodyInit, {
       status: 200,
       headers: {
         'Content-Type': 'application/vnd.openxmlformats-officedocument.wordprocessingml.document',

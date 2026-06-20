@@ -60,7 +60,8 @@ describe('evaluateRiskLevel — 25-cell exhaustive', () => {
 
   for (let s = 1; s <= 5; s++) {
     for (let p = 1; p <= 5; p++) {
-      const cell = expected[s - 1][p - 1];
+      // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
+      const cell = expected[s - 1]![p - 1]!;
       it(`S${s}×P${p} → ${cell}`, () => {
         expect(evaluateRiskLevel(s, p)).toBe(cell);
       });

@@ -16,11 +16,10 @@ export const POST = withPermission('risk.generate', async (req, _ctx, session) =
     const data = await res.json();
 
     await writeAudit({
-      userId: session.user.id,
+      actor_id: session.user.id,
       action: 'workflow.start',
-      resourceType: 'risk_run',
-      resourceId: (data as Record<string, unknown>)['id'] as string | undefined,
-      organizationId: session.user.organizationId,
+      resource_type: 'risk_run',
+      resource_id: ((data as Record<string, unknown>)['id'] as string | undefined) ?? 'unknown',
     });
 
     return Response.json(data, { status: 201 });

@@ -33,12 +33,11 @@ export const PATCH = withPermission('risk.update', async (req, ctx, session) => 
   }
 
   await writeAudit({
-    userId: session.user.id,
+    actor_id: session.user.id,
     action: 'risk.control_adopted',
-    resourceType: 'risk_control',
-    resourceId: id,
-    organizationId: session.user.organizationId,
-    metadata: { tier: body.tier, isAdopted: body.isAdopted, residualResult },
+    resource_type: 'risk_control',
+    resource_id: id,
+    meta_json: { tier: body.tier, isAdopted: body.isAdopted },
   });
 
   return Response.json({ id, ...body, residualResult });

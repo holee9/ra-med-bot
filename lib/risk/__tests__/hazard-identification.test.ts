@@ -65,8 +65,10 @@ describe('parseHazardResponse', () => {
 
   it('maps fields correctly', () => {
     const result = parseHazardResponse(validResponse);
-    expect(result.items[0].hazard).toBe('Electrical failure');
-    expect(result.items[0].citation).toHaveLength(1);
+    // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
+    expect(result.items[0]!.hazard).toBe('Electrical failure');
+    // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
+    expect(result.items[0]!.citation).toHaveLength(1);
   });
 
   it('lowConfidenceCount is 0 for all high-confidence items', () => {
@@ -89,7 +91,8 @@ describe('parseHazardResponse', () => {
     });
     const result = parseHazardResponse(lowConfResponse);
     expect(result.lowConfidenceCount).toBe(1);
-    expect(result.items[0].lowConfidence).toBe(true);
+    // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
+    expect(result.items[0]!.lowConfidence).toBe(true);
   });
 
   it('sets lowConfidence=true for items without citation', () => {
@@ -106,7 +109,8 @@ describe('parseHazardResponse', () => {
       ],
     });
     const result = parseHazardResponse(noCiteResponse);
-    expect(result.items[0].lowConfidence).toBe(true);
+    // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
+    expect(result.items[0]!.lowConfidence).toBe(true);
   });
 
   it('throws on invalid JSON', () => {

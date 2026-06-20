@@ -13,12 +13,11 @@ export const POST = withPermission('risk.update', async (req, ctx, session) => {
   const riskLevel = evaluateRiskLevel(severity, probability);
 
   await writeAudit({
-    userId: session.user.id,
+    actor_id: session.user.id,
     action: 'risk.matrix_evaluated',
-    resourceType: 'risk_item',
-    resourceId: id,
-    organizationId: session.user.organizationId,
-    metadata: { severity, probability, riskLevel },
+    resource_type: 'risk_item',
+    resource_id: id,
+    meta_json: { severity, probability, riskLevel },
   });
 
   return Response.json({ id, severity, probability, riskLevel });

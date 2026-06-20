@@ -18,11 +18,10 @@ export const POST = withPermission('risk.update', async (req, ctx, session) => {
   const data = await res.json();
 
   await writeAudit({
-    userId: session.user.id,
+    actor_id: session.user.id,
     action: 'risk.gspr_mapped',
-    resourceType: 'risk_run',
-    resourceId: id,
-    organizationId: session.user.organizationId,
+    resource_type: 'risk_run',
+    resource_id: id,
   });
 
   return Response.json(data, { status: 201 });

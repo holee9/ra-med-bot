@@ -18,12 +18,11 @@ export const POST = withPermission('risk.generate', async (req, _ctx, session) =
     const result = await identifyHazards(deviceDescription, deviceClass, hybridFetch);
 
     await writeAudit({
-      userId: session.user.id,
+      actor_id: session.user.id,
       action: 'risk.hazard_identified',
-      resourceType: 'risk_run',
-      resourceId: workflowRunId,
-      organizationId: session.user.organizationId,
-      metadata: { itemCount: result.items.length, lowConfidenceCount: result.lowConfidenceCount },
+      resource_type: 'risk_run',
+      resource_id: workflowRunId,
+      meta_json: { itemCount: result.items.length, lowConfidenceCount: result.lowConfidenceCount },
     });
 
     return Response.json(result, { status: 201 });

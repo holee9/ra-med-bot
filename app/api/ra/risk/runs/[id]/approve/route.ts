@@ -22,12 +22,11 @@ export const POST = withPermission('risk.approve', async (req, ctx, session) => 
   const data = await res.json();
 
   await writeAudit({
-    userId: session.user.id,
+    actor_id: session.user.id,
     action: 'risk.report_approved',
-    resourceType: 'risk_run',
-    resourceId: id,
-    organizationId: session.user.organizationId,
-    metadata: { comment },
+    resource_type: 'risk_run',
+    resource_id: id,
+    meta_json: { comment },
   });
 
   return Response.json(data);

@@ -18,11 +18,10 @@ async function handlePatch(req: Request, ctx: { params?: unknown }, session: { u
   const data = await res.json();
 
   await writeAudit({
-    userId: session.user.id,
+    actor_id: session.user.id,
     action: 'risk.matrix_evaluated',
-    resourceType: 'risk_item',
-    resourceId: id,
-    organizationId: session.user.organizationId,
+    resource_type: 'risk_item',
+    resource_id: id,
   });
 
   return Response.json(data);
@@ -39,11 +38,10 @@ export const DELETE = withPermission('risk.update', async (_req, ctx, session) =
   await hybridFetch(`/api/v1/risk/items/${id}`, { method: 'DELETE' });
 
   await writeAudit({
-    userId: session.user.id,
+    actor_id: session.user.id,
     action: 'risk.matrix_evaluated',
-    resourceType: 'risk_item',
-    resourceId: id,
-    organizationId: session.user.organizationId,
+    resource_type: 'risk_item',
+    resource_id: id,
   });
 
   return new Response(null, { status: 204 });
