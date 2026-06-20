@@ -158,7 +158,15 @@ export type AuditAction =
   // SPEC-REGULA-ESUBMIT-001 audit actions — added via 0056_submission_packages.sql:
   | 'submission_package_created'
   | 'submission_package_submitted'
-  | 'submission_validation_completed';
+  | 'submission_validation_completed'
+  // SPEC-REGULA-RISK-001 — risk management audit actions (REQ-RISK-028~038):
+  | 'risk.hazard_identified'
+  | 'risk.matrix_evaluated'
+  | 'risk.item_deleted'
+  | 'risk.control_adopted'
+  | 'risk.residual_accepted'
+  | 'risk.gspr_mapped'
+  | 'risk.report_approved';
 
 export interface AuditEvent {
   /** User UUID, or null for system-initiated events. */

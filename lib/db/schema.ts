@@ -203,6 +203,14 @@ export const auditActionEnum = pgEnum('audit_action', [
   'submission_package_created',
   'submission_package_submitted',
   'submission_validation_completed',
+  // SPEC-REGULA-RISK-001 — risk management audit actions (7):
+  'risk.hazard_identified',
+  'risk.matrix_evaluated',
+  'risk.item_deleted',
+  'risk.control_adopted',
+  'risk.residual_accepted',
+  'risk.gspr_mapped',
+  'risk.report_approved',
 ]);
 
 // REQ-WF-049: workflow_type pgEnum — workflow kinds.
@@ -212,6 +220,7 @@ export const auditActionEnum = pgEnum('audit_action', [
 // (SPEC-REGULA-PREDICATE-001). Enum values must each be in their own migration.
 // REQ-CER-012: cer added via 0035_cer_workflow_type.sql.
 // REQ-PCCP-025: 'pccp' added via 0038_pccp_workflow_type.sql (SPEC-REGULA-PCCP-001).
+// SPEC-REGULA-RISK-001: 'risk' added via 0057_risk_workflow_type.sql.
 export const workflowTypeEnum = pgEnum('workflow_type', [
   'submission_drafter',
   'audit_response',
@@ -220,6 +229,7 @@ export const workflowTypeEnum = pgEnum('workflow_type', [
   'cer',
   'pccp',
   'vigilance',
+  'risk',
 ]);
 
 // REQ-WF-049: workflow_status pgEnum — lifecycle states for workflow_runs.
@@ -1282,5 +1292,93 @@ export const submissionInteractions = pgTable(
   },
   (t) => ({
     pkgIdx: index('idx_submission_interactions_pkg').on(t.packageId),
+  }),
+);
+
+// ---------------------------------------------------------------------------
+// SPEC-REGULA-RISK-001 — ISO 14971 Risk Management tables
+// Migration: 0057_risk_workflow_type.sql (workflowType 'risk')
+//            0058_risk_tables.sql (riskLevelEnum, controlTierEnum, tables)
+// ---------------------------------------------------------------------------
+
+// Risk level classification per ISO 14971 Annex E
+export const riskLevelEnum = pgEnum('risk_level', ['acc', 'alarp', 'unacc']);
+
+// ISO 14971 §7.1 risk control option hierarchy
+export const controlTierEnum = pgEnum('control_tier', [
+  'inherent',
+  'protective',
+  'information',
+]);
+
+// @MX:ANCHOR [AUTO] riskItems — central risk analysis record.
+// @MX:REASON Referenced by riskControls, riskGsprMappings, BFF routes, and report builder. fan_in >= 3.
+// @MX:SPEC SPEC-REGULA-RISK-001 (T0.3, REQ-RISK-001~010)
+export const riskItems = pgTable(
+  'risk_items',
+  {
+    id: uuid('id').defaultRandom().primaryKey(),
+    workflowRunId: uuid('workflow_run_id')
+      .notNull()
+      .references(() => workflowRuns.id, { onDelete: 'cascade' }),
+    hazard: text('hazard').notNull(),
+    sequenceOfEvents: text('sequence_of_events').notNull(),
+    hazardousSituation: text('hazardous_situation').notNull(),
+    harm: text('harm').notNull(),
+    citation: jsonb('citation').notNull().default(sql`'[]'::jsonb`),
+    severity: integer('severity').notNull(),
+    probability: integer('probability').notNull(),
+    riskLevel: riskLevelEnum('risk_level').notNull(),
+    lowConfidence: boolean('low_confidence').notNull().default(false),
+    editedBy: uuid('edited_by').references(() => users.id),
+    createdAt: timestamp('created_at', { withTimezone: true, mode: 'date' }).notNull().defaultNow(),
+    updatedAt: timestamp('updated_at', { withTimezone: true, mode: 'date' }).notNull().defaultNow(),
+  },
+  (t) => ({
+    runIdx: index('idx_risk_items_run').on(t.workflowRunId),
+  }),
+);
+
+// Risk control measures per ISO 14971 §7.1
+export const riskControls = pgTable(
+  'risk_controls',
+  {
+    id: uuid('id').defaultRandom().primaryKey(),
+    riskItemId: uuid('risk_item_id')
+      .notNull()
+      .references(() => riskItems.id, { onDelete: 'cascade' }),
+    tier: controlTierEnum('tier').notNull(),
+    description: text('description').notNull(),
+    rationale: text('rationale'),
+    isAdopted: boolean('is_adopted').notNull().default(false),
+    residualSeverity: integer('residual_severity'),
+    residualProbability: integer('residual_probability'),
+    residualRiskLevel: riskLevelEnum('residual_risk_level'),
+    alarpJustification: text('alarp_justification'),
+    createdAt: timestamp('created_at', { withTimezone: true, mode: 'date' }).notNull().defaultNow(),
+    updatedAt: timestamp('updated_at', { withTimezone: true, mode: 'date' }).notNull().defaultNow(),
+  },
+  (t) => ({
+    itemIdx: index('idx_risk_controls_item').on(t.riskItemId),
+  }),
+);
+
+// EU MDR Annex I (GSPR) clause mappings
+export const riskGsprMappings = pgTable(
+  'risk_gspr_mappings',
+  {
+    id: uuid('id').defaultRandom().primaryKey(),
+    workflowRunId: uuid('workflow_run_id')
+      .notNull()
+      .references(() => workflowRuns.id, { onDelete: 'cascade' }),
+    riskItemId: uuid('risk_item_id').references(() => riskItems.id, { onDelete: 'cascade' }),
+    gsprClause: text('gspr_clause').notNull(),
+    requirement: text('requirement').notNull(),
+    compliance: text('compliance').notNull(),
+    evidence: text('evidence').notNull(),
+    createdAt: timestamp('created_at', { withTimezone: true, mode: 'date' }).notNull().defaultNow(),
+  },
+  (t) => ({
+    runIdx: index('idx_risk_gspr_run').on(t.workflowRunId),
   }),
 );
