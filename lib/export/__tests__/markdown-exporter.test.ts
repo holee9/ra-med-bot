@@ -4,9 +4,9 @@
  * REQ-EXP-002, REQ-EXP-003: Markdown export with citations and headers
  */
 
-import { describe, it, expect, beforeEach } from 'vitest';
+import { beforeEach, describe, expect, it } from 'vitest';
 import { MarkdownExporter } from '../exporters/markdown-exporter';
-import { ExportFormat, ExportOptions } from '../types';
+import { ExportFormat, type ExportOptions } from '../types';
 import { ExportError, ExportErrorCode } from '../types';
 
 describe('MarkdownExporter', () => {
@@ -97,8 +97,11 @@ describe('MarkdownExporter', () => {
       const data = {
         content: 'Test with citation',
         citations: [
-          { text: '21 CFR 820', url: 'https://www.accessdata.fda.gov/scripts/cdrh/cfdocs/cfcfr/cfrsearch.cfm?cfrpart=820' }
-        ]
+          {
+            text: '21 CFR 820',
+            url: 'https://www.accessdata.fda.gov/scripts/cdrh/cfdocs/cfcfr/cfrsearch.cfm?cfrpart=820',
+          },
+        ],
       };
       const options: ExportOptions = {
         format: ExportFormat.MARKDOWN,
@@ -108,7 +111,9 @@ describe('MarkdownExporter', () => {
       const result = await exporter.export(data, options);
 
       expect(result.success).toBe(true);
-      expect(result.content).toContain('[21 CFR 820](https://www.accessdata.fda.gov/scripts/cdrh/cfdocs/cfcfr/cfrsearch.cfm?cfrpart=820)');
+      expect(result.content).toContain(
+        '[21 CFR 820](https://www.accessdata.fda.gov/scripts/cdrh/cfdocs/cfcfr/cfrsearch.cfm?cfrpart=820)',
+      );
     });
 
     it('should format multiple citations', async () => {
@@ -116,8 +121,8 @@ describe('MarkdownExporter', () => {
         content: 'Test with multiple citations',
         citations: [
           { text: '21 CFR 820', url: 'https://example.com/820' },
-          { text: 'ISO 13485', url: 'https://example.com/iso13485' }
-        ]
+          { text: 'ISO 13485', url: 'https://example.com/iso13485' },
+        ],
       };
       const options: ExportOptions = {
         format: ExportFormat.MARKDOWN,
@@ -134,9 +139,7 @@ describe('MarkdownExporter', () => {
     it('should handle missing citation url gracefully', async () => {
       const data = {
         content: 'Test with incomplete citation',
-        citations: [
-          { text: 'Missing URL' }
-        ]
+        citations: [{ text: 'Missing URL' }],
       };
       const options: ExportOptions = {
         format: ExportFormat.MARKDOWN,
@@ -152,7 +155,7 @@ describe('MarkdownExporter', () => {
     it('should handle empty citations array', async () => {
       const data = {
         content: 'Test content',
-        citations: []
+        citations: [],
       };
       const options: ExportOptions = {
         format: ExportFormat.MARKDOWN,
@@ -170,7 +173,7 @@ describe('MarkdownExporter', () => {
     it('should convert h1 to markdown #', async () => {
       const data = {
         content: '<h1>Main Title</h1>',
-        html: true
+        html: true,
       };
       const options: ExportOptions = {
         format: ExportFormat.MARKDOWN,
@@ -185,7 +188,7 @@ describe('MarkdownExporter', () => {
     it('should convert h2 to markdown ##', async () => {
       const data = {
         content: '<h2>Subtitle</h2>',
-        html: true
+        html: true,
       };
       const options: ExportOptions = {
         format: ExportFormat.MARKDOWN,
@@ -200,7 +203,7 @@ describe('MarkdownExporter', () => {
     it('should convert h3 to markdown ###', async () => {
       const data = {
         content: '<h3>Section</h3>',
-        html: true
+        html: true,
       };
       const options: ExportOptions = {
         format: ExportFormat.MARKDOWN,
@@ -215,7 +218,7 @@ describe('MarkdownExporter', () => {
     it('should preserve header hierarchy', async () => {
       const data = {
         content: '<h1>Title</h1><h2>Subtitle</h2><h3>Section</h3>',
-        html: true
+        html: true,
       };
       const options: ExportOptions = {
         format: ExportFormat.MARKDOWN,
@@ -232,7 +235,7 @@ describe('MarkdownExporter', () => {
     it('should handle nested sections', async () => {
       const data = {
         content: '<h1>Chapter 1</h1><p>Content</p><h2>Section 1.1</h2><p>More content</p>',
-        html: true
+        html: true,
       };
       const options: ExportOptions = {
         format: ExportFormat.MARKDOWN,
@@ -325,9 +328,9 @@ describe('MarkdownExporter', () => {
         content: '<h1>Regulatory Overview</h1><p>This document covers key regulations.</p>',
         citations: [
           { text: '21 CFR 820', url: 'https://example.com/820' },
-          { text: 'ISO 13485', url: 'https://example.com/iso13485' }
+          { text: 'ISO 13485', url: 'https://example.com/iso13485' },
         ],
-        html: true
+        html: true,
       };
       const options: ExportOptions = {
         format: ExportFormat.MARKDOWN,

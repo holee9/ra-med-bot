@@ -299,7 +299,7 @@ describe('lib/db/schema.ts Phase 5 additions', () => {
     const values = extractAuditActionEnumValues(src);
     const typeValues = extractAuditActionTypeValues(auditSrc);
     expect(values).toEqual(typeValues);
-    expect(values).toHaveLength(91);
+    expect(values).toHaveLength(96);
   });
 
   it.each(REQUIRED_RECOVERY_TABLES)(
@@ -341,9 +341,14 @@ describe('lib/audit.ts Phase 5 AuditAction type additions', () => {
         'dhf_created',
         'submission_validation_completed',
         'risk.report_approved',
+        'export.markdown',
+        'export.docx',
+        'export.pdf',
+        'export.email',
+        'export.confluence',
       ]),
     );
-    expect(values).toHaveLength(91);
+    expect(values).toHaveLength(96);
   });
 
   it.each(REQUIRED_RECOVERY_AUDIT_ACTIONS)(

@@ -6,7 +6,7 @@
  */
 
 import { BaseExporter } from '../base-exporter';
-import { ExportFormat, ExportOptions, ExportResult } from '../types';
+import { ExportErrorCode, ExportFormat, type ExportOptions, type ExportResult } from '../types';
 
 /**
  * Email exporter interface
@@ -37,7 +37,7 @@ export class EmailExporter extends BaseExporter {
   /**
    * Validate email export data
    */
-  async validate(data: unknown, options: ExportOptions): Promise<boolean> {
+  async validate(data: unknown, _options: ExportOptions): Promise<boolean> {
     try {
       const emailData = data as EmailData;
 
@@ -54,7 +54,7 @@ export class EmailExporter extends BaseExporter {
       }
 
       return true;
-    } catch (error) {
+    } catch {
       return false;
     }
   }
@@ -70,8 +70,8 @@ export class EmailExporter extends BaseExporter {
       if (!isValid) {
         return this.createErrorResult(
           ExportFormat.EMAIL,
-          'VALIDATION_ERROR',
-          'Invalid email data: title, content, and artifactType are required'
+          ExportErrorCode.VALIDATION_ERROR,
+          'Invalid email data: title, content, and artifactType are required',
         );
       }
 
@@ -100,13 +100,13 @@ export class EmailExporter extends BaseExporter {
       return this.createSuccessResult(
         ExportFormat.EMAIL,
         mailtoUrl,
-        `email-${emailData.artifactType}-${emailData.title}.mailto`
+        `email-${emailData.artifactType}-${emailData.title}.mailto`,
       );
     } catch (error) {
       return this.createErrorResult(
         ExportFormat.EMAIL,
-        'GENERATION_FAILED',
-        (error as Error).message
+        ExportErrorCode.GENERATION_FAILED,
+        (error as Error).message,
       );
     }
   }
@@ -130,9 +130,9 @@ export class EmailExporter extends BaseExporter {
     // Add citations if present and metadata requested
     if (data.citations && data.citations.length > 0) {
       body += '\n\nCitations:\n';
-      data.citations.forEach((citation) => {
+      for (const citation of data.citations) {
         body += `- ${citation.source}\n`;
-      });
+      }
     }
 
     return body;
@@ -145,10 +145,7 @@ export class EmailExporter extends BaseExporter {
   private formatAttachmentNotice(format?: 'docx' | 'pdf'): string {
     const formatText = format ? format.toUpperCase() : 'DOCX or PDF';
 
-    return `\n\n---\n` +
-      `File attachments not supported via mailto protocol.\n` +
-      `Browser security limitation: Cannot attach files directly.\n` +
-      `Alternative: Export to ${formatText} first, then attach in email client.\n`;
+    return `\n\n---\nFile attachments not supported via mailto protocol.\nBrowser security limitation: Cannot attach files directly.\nAlternative: Export to ${formatText} first, then attach in email client.\n`;
   }
 
   /**

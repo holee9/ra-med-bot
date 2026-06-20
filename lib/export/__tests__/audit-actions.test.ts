@@ -3,7 +3,7 @@
  * REQ-EXP-006: Export operations must be audited
  */
 
-import { describe, it, expect } from 'vitest';
+import { describe, expect, it } from 'vitest';
 import type { AuditAction } from '../../audit';
 
 describe('Export Audit Action Types', () => {

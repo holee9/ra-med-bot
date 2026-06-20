@@ -3,13 +3,13 @@
  * REQ-EXP-001: Export type system must support multiple formats
  */
 
-import { describe, it, expect } from 'vitest';
+import { describe, expect, it } from 'vitest';
 import {
-  ExportFormat,
-  ExportResult,
-  ExportOptions,
   ExportError,
-  ExportErrorCode
+  ExportErrorCode,
+  ExportFormat,
+  type ExportOptions,
+  type ExportResult,
 } from '../types';
 
 describe('ExportFormat', () => {
@@ -33,7 +33,7 @@ describe('ExportResult', () => {
       content: '# Test Content',
       filename: 'test.md',
       size: 15,
-      timestamp: new Date('2024-01-01T00:00:00Z')
+      timestamp: new Date('2024-01-01T00:00:00Z'),
     };
 
     expect(result.success).toBe(true);
@@ -47,10 +47,7 @@ describe('ExportResult', () => {
     const result: ExportResult = {
       success: false,
       format: ExportFormat.PDF,
-      error: new ExportError(
-        ExportErrorCode.GENERATION_FAILED,
-        'PDF generation failed'
-      )
+      error: new ExportError(ExportErrorCode.GENERATION_FAILED, 'PDF generation failed'),
     };
 
     expect(result.success).toBe(false);
@@ -63,7 +60,7 @@ describe('ExportOptions', () => {
   it('should accept minimal options', () => {
     const options: ExportOptions = {
       format: ExportFormat.MARKDOWN,
-      includeMetadata: true
+      includeMetadata: true,
     };
 
     expect(options.format).toBe(ExportFormat.MARKDOWN);
@@ -76,7 +73,7 @@ describe('ExportOptions', () => {
       includeMetadata: false,
       includeTimestamp: true,
       customFilename: 'custom.docx',
-      template: 'standard'
+      template: 'standard',
     };
 
     expect(options.format).toBe(ExportFormat.DOCX);
@@ -89,10 +86,7 @@ describe('ExportOptions', () => {
 
 describe('ExportError', () => {
   it('should create error with code and message', () => {
-    const error = new ExportError(
-      ExportErrorCode.GENERATION_FAILED,
-      'Generation failed'
-    );
+    const error = new ExportError(ExportErrorCode.GENERATION_FAILED, 'Generation failed');
 
     expect(error.code).toBe(ExportErrorCode.GENERATION_FAILED);
     expect(error.message).toBe('Generation failed');
@@ -104,13 +98,13 @@ describe('ExportError', () => {
       ExportErrorCode.INVALID_FORMAT,
       ExportErrorCode.GENERATION_FAILED,
       ExportErrorCode.FILE_WRITE_ERROR,
-      ExportErrorCode.VALIDATION_ERROR
+      ExportErrorCode.VALIDATION_ERROR,
     ];
 
-    codes.forEach(code => {
+    for (const code of codes) {
       const error = new ExportError(code, `Test ${code}`);
       expect(error.code).toBe(code);
       expect(error).toBeInstanceOf(ExportError);
-    });
+    }
   });
 });

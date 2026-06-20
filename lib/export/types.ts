@@ -10,7 +10,7 @@ export enum ExportFormat {
   MARKDOWN = 'markdown',
   DOCX = 'docx',
   PDF = 'pdf',
-  EMAIL = 'email'
+  EMAIL = 'email',
 }
 
 /**
@@ -20,7 +20,7 @@ export enum ExportErrorCode {
   INVALID_FORMAT = 'INVALID_FORMAT',
   GENERATION_FAILED = 'GENERATION_FAILED',
   FILE_WRITE_ERROR = 'FILE_WRITE_ERROR',
-  VALIDATION_ERROR = 'VALIDATION_ERROR'
+  VALIDATION_ERROR = 'VALIDATION_ERROR',
 }
 
 /**
@@ -29,7 +29,7 @@ export enum ExportErrorCode {
 export class ExportError extends Error {
   constructor(
     public code: ExportErrorCode,
-    message: string
+    message: string,
   ) {
     super(message);
     this.name = 'ExportError';

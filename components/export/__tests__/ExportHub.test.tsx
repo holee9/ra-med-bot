@@ -10,21 +10,34 @@ import { describe, expect, it } from 'vitest';
 import '@testing-library/jest-dom';
 import { ExportHub } from '../ExportHub';
 
+const artifact = {
+  title: 'Test Answer',
+  content: 'Actual selected answer content',
+  artifactType: 'answer' as const,
+  filenameBase: 'test-answer',
+};
+
 describe('ExportHub', () => {
   it('renders export button trigger', () => {
-    render(<ExportHub conversationId="test-conv-123" messageId="test-msg-456" />);
+    render(
+      <ExportHub conversationId="test-conv-123" messageId="test-msg-456" artifact={artifact} />,
+    );
     expect(screen.getByRole('button', { name: /내보내기/i })).toBeInTheDocument();
   });
 
   it('renders format selection menu when export button is clicked', () => {
-    render(<ExportHub conversationId="test-conv-123" messageId="test-msg-456" />);
+    render(
+      <ExportHub conversationId="test-conv-123" messageId="test-msg-456" artifact={artifact} />,
+    );
     const button = screen.getByRole('button', { name: /내보내기/i });
     fireEvent.click(button);
     expect(screen.getByRole('menu')).toBeInTheDocument();
   });
 
   it('renders all four format options: DOCX, PDF, Markdown, Email', () => {
-    render(<ExportHub conversationId="test-conv-123" messageId="test-msg-456" />);
+    render(
+      <ExportHub conversationId="test-conv-123" messageId="test-msg-456" artifact={artifact} />,
+    );
     const button = screen.getByRole('button', { name: /내보내기/i });
     fireEvent.click(button);
 
@@ -35,19 +48,21 @@ describe('ExportHub', () => {
   });
 
   it('disables export button when conversationId is missing', () => {
-    render(<ExportHub conversationId="" messageId="test-msg-456" />);
+    render(<ExportHub conversationId="" messageId="test-msg-456" artifact={artifact} />);
     const button = screen.getByRole('button', { name: /내보내기/i });
     expect(button).toBeDisabled();
   });
 
   it('disables export button when messageId is missing', () => {
-    render(<ExportHub conversationId="test-conv-123" messageId="" />);
+    render(<ExportHub conversationId="test-conv-123" messageId="" artifact={artifact} />);
     const button = screen.getByRole('button', { name: /내보내기/i });
     expect(button).toBeDisabled();
   });
 
   it('closes menu when clicking outside', () => {
-    render(<ExportHub conversationId="test-conv-123" messageId="test-msg-456" />);
+    render(
+      <ExportHub conversationId="test-conv-123" messageId="test-msg-456" artifact={artifact} />,
+    );
     const button = screen.getByRole('button', { name: /내보내기/i });
     fireEvent.click(button);
 
@@ -62,7 +77,9 @@ describe('ExportHub', () => {
   });
 
   it('closes menu when ESC key is pressed', () => {
-    render(<ExportHub conversationId="test-conv-123" messageId="test-msg-456" />);
+    render(
+      <ExportHub conversationId="test-conv-123" messageId="test-msg-456" artifact={artifact} />,
+    );
     const button = screen.getByRole('button', { name: /내보내기/i });
     fireEvent.click(button);
 
@@ -77,7 +94,9 @@ describe('ExportHub', () => {
   });
 
   it('toggles menu open/close when button is clicked multiple times', () => {
-    render(<ExportHub conversationId="test-conv-123" messageId="test-msg-456" />);
+    render(
+      <ExportHub conversationId="test-conv-123" messageId="test-msg-456" artifact={artifact} />,
+    );
     const button = screen.getByRole('button', { name: /내보내기/i });
 
     // First click - menu opens

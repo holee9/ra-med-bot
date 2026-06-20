@@ -7,14 +7,34 @@
  * @MX:SPEC SPEC-REGULA-EXPORT-HUB-001 (REQ-EXP-001, REQ-EXP-002)
  */
 
-import { FileText, File, Mail, Send } from 'lucide-react';
-import { useEffect, useRef, useState } from 'react';
-import { ExportFormat, ExportOptions } from '@/lib/export/types';
-import { MarkdownExporter } from '@/lib/export/exporters/markdown-exporter';
 import { DOCXExporter } from '@/lib/export/exporters/docx-exporter';
+import { EmailExporter } from '@/lib/export/exporters/email-exporter';
+import { MarkdownExporter } from '@/lib/export/exporters/markdown-exporter';
+import { PDFExporter } from '@/lib/export/exporters/pdf-exporter';
+import { ExportFormat, type ExportOptions, type ExportResult } from '@/lib/export/types';
+import { File, FileText, Mail } from 'lucide-react';
+import { useEffect, useRef, useState } from 'react';
+
+export interface ExportCitation {
+  text: string;
+  url?: string;
+  source?: string;
+  offset?: number;
+}
+
+export interface ExportArtifact {
+  title: string;
+  content: string;
+  artifactType: 'answer' | 'checklist' | 'comparison' | 'artifact';
+  citations?: ExportCitation[];
+  filenameBase?: string;
+}
 
 interface FormatOptionsProps {
+  artifact: ExportArtifact;
   onClose: () => void;
+  onExported?: (result: ExportResult) => void;
+  onError?: (error: Error) => void;
 }
 
 const formats = [
@@ -37,14 +57,14 @@ const formats = [
     icon: FileText,
   },
   {
-    format: 'email' as const,
+    format: ExportFormat.EMAIL,
     label: '이메일',
     description: '이메일로 전송',
     icon: Mail,
   },
 ];
 
-export function FormatOptions({ onClose }: FormatOptionsProps) {
+export function FormatOptions({ artifact, onClose, onExported, onError }: FormatOptionsProps) {
   const menuRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
@@ -71,14 +91,7 @@ export function FormatOptions({ onClose }: FormatOptionsProps) {
 
   const [isExporting, setIsExporting] = useState(false);
 
-  const handleExport = async (format: ExportFormat | 'email') => {
-    if (format === 'email') {
-      // TODO: Implement email export in Phase 6
-      console.log('Email export: Coming in Phase 6');
-      onClose();
-      return;
-    }
-
+  const handleExport = async (format: ExportFormat) => {
     setIsExporting(true);
 
     try {
@@ -86,63 +99,102 @@ export function FormatOptions({ onClose }: FormatOptionsProps) {
         format,
         includeMetadata: true,
         includeTimestamp: true,
+        customFilename: artifact.filenameBase,
       };
 
       // Select appropriate exporter
-      let result;
+      let result: ExportResult;
       switch (format) {
-        case ExportFormat.MARKDOWN:
+        case ExportFormat.MARKDOWN: {
           const markdownExporter = new MarkdownExporter();
           result = await markdownExporter.export(
             {
-              content: 'Regula Answer Export', // TODO: Get actual content from message
-              citations: [
-                // TODO: Get actual citations from message
-              ],
+              content: artifact.content,
+              citations: artifact.citations?.map((citation) => ({
+                text: citation.text,
+                url: citation.url,
+              })),
             },
-            options
+            options,
           );
           break;
+        }
 
-        case ExportFormat.DOCX:
+        case ExportFormat.DOCX: {
           const docxExporter = new DOCXExporter();
           result = await docxExporter.export(
             {
-              content: 'Regula Answer Export', // TODO: Get actual content from message
-              title: 'Regula Regulatory Analysis',
+              content: artifact.content,
+              title: artifact.title,
               author: 'RA Lead',
-              citations: [
-                // TODO: Get actual citations from message
-              ],
+              citations: artifact.citations?.map((citation) => ({
+                text: citation.text,
+                url: citation.url,
+              })),
               convertHeaders: true,
               addBranding: true,
             },
-            options
+            options,
           );
           break;
+        }
 
-        case ExportFormat.PDF:
-          // TODO: Implement in Phase 5
-          console.log(`${format} export: Coming in Phase 5`);
-          onClose();
-          return;
+        case ExportFormat.PDF: {
+          const pdfExporter = new PDFExporter();
+          result = await pdfExporter.export(
+            {
+              content: artifact.content,
+              title: artifact.title,
+              metadata: {
+                author: 'Regula',
+                subject: `${artifact.artifactType} export`,
+              },
+            },
+            options,
+          );
+          break;
+        }
+
+        case ExportFormat.EMAIL: {
+          const emailExporter = new EmailExporter();
+          result = await emailExporter.export(
+            {
+              title: artifact.title,
+              content: artifact.content,
+              artifactType: artifact.artifactType,
+              citations: artifact.citations?.map((citation) => ({
+                source: citation.source ?? citation.text,
+                offset: citation.offset ?? 0,
+              })),
+            },
+            options,
+          );
+          break;
+        }
 
         default:
           throw new Error(`Unsupported format: ${format}`);
       }
 
-      if (result?.success && result.content) {
+      if (result.success && result.content) {
         // Download the file
         let mimeType = 'text/plain';
         if (format === ExportFormat.MARKDOWN) {
           mimeType = 'text/markdown';
         } else if (format === ExportFormat.DOCX) {
           mimeType = 'application/vnd.openxmlformats-officedocument.wordprocessingml.document';
+        } else if (format === ExportFormat.PDF) {
+          mimeType = 'application/pdf';
         }
 
-        // For DOCX, convert base64 back to blob
+        if (format === ExportFormat.EMAIL) {
+          onExported?.(result);
+          return;
+        }
+
+        // For binary exports, convert base64 back to blob.
         let blob: Blob;
-        if (format === ExportFormat.DOCX) {
+        if (format === ExportFormat.DOCX || format === ExportFormat.PDF) {
           const binaryString = atob(result.content);
           const bytes = new Uint8Array(binaryString.length);
           for (let i = 0; i < binaryString.length; i++) {
@@ -160,13 +212,16 @@ export function FormatOptions({ onClose }: FormatOptionsProps) {
         a.click();
         document.body.removeChild(a);
         URL.revokeObjectURL(url);
+        onExported?.(result);
       } else {
-        console.error('Export failed:', result?.error);
-        alert('내보내기 실패: ' + (result?.error?.message || '알 수 없는 오류'));
+        const error = result.error ?? new Error('알 수 없는 오류');
+        onError?.(error);
+        alert(`내보내기 실패: ${error.message}`);
       }
     } catch (error) {
-      console.error('Export error:', error);
-      alert('내보내기 오류: ' + (error instanceof Error ? error.message : '알 수 없는 오류'));
+      const normalized = error instanceof Error ? error : new Error('알 수 없는 오류');
+      onError?.(normalized);
+      alert(`내보내기 오류: ${normalized.message}`);
     } finally {
       setIsExporting(false);
       onClose();

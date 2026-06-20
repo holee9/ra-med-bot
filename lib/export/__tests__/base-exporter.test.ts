@@ -3,9 +3,9 @@
  * REQ-EXP-001: Base exporter interface must be implemented
  */
 
-import { describe, it, expect } from 'vitest';
+import { describe, expect, it } from 'vitest';
 import { BaseExporter } from '../base-exporter';
-import { ExportFormat, ExportOptions, ExportResult } from '../types';
+import { ExportErrorCode, ExportFormat, type ExportOptions, type ExportResult } from '../types';
 
 describe('BaseExporter', () => {
   it('should be defined as abstract class', () => {
@@ -79,11 +79,7 @@ describe('BaseExporter', () => {
       }
 
       async export(_data: unknown, _options: ExportOptions): Promise<ExportResult> {
-        return this.createSuccessResult(
-          ExportFormat.PDF,
-          'PDF content',
-          'test.pdf'
-        );
+        return this.createSuccessResult(ExportFormat.PDF, 'PDF content', 'test.pdf');
       }
     }
 
@@ -111,8 +107,8 @@ describe('BaseExporter', () => {
       async export(_data: unknown, _options: ExportOptions): Promise<ExportResult> {
         return this.createErrorResult(
           ExportFormat.MARKDOWN,
-          'GENERATION_FAILED',
-          'Test error'
+          ExportErrorCode.GENERATION_FAILED,
+          'Test error',
         );
       }
     }
@@ -156,13 +152,11 @@ describe('BaseExporter', () => {
     const exporter = new TestExporter();
 
     // Valid options should not throw
-    expect(
-      exporter.validate({}, { format: ExportFormat.MARKDOWN })
-    ).resolves.toBe(true);
+    expect(exporter.validate({}, { format: ExportFormat.MARKDOWN })).resolves.toBe(true);
 
     // Invalid options should throw
-    expect(
-      exporter.validate({}, { format: undefined as any })
-    ).rejects.toThrow('Export format is required');
+    expect(exporter.validate({}, { format: undefined as unknown as ExportFormat })).rejects.toThrow(
+      'Export format is required',
+    );
   });
 });

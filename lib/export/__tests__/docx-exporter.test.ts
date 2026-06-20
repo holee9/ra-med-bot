@@ -4,10 +4,10 @@
  * RED Phase: Write failing tests first
  */
 
-import { describe, it, expect, beforeEach } from 'vitest';
-import { DOCXExporter } from '../exporters/docx-exporter';
-import { ExportFormat, ExportOptions } from '../types';
 import { Document, Packer, Paragraph, TextRun } from 'docx';
+import { beforeEach, describe, expect, it } from 'vitest';
+import { DOCXExporter } from '../exporters/docx-exporter';
+import { ExportFormat, type ExportOptions } from '../types';
 
 describe('DOCXExporter', () => {
   let exporter: DOCXExporter;
@@ -31,11 +31,11 @@ describe('DOCXExporter', () => {
     it('should generate valid DOCX content', async () => {
       const data = {
         content: 'Test content',
-        title: 'Test Document'
+        title: 'Test Document',
       };
       const options: ExportOptions = {
         format: ExportFormat.DOCX,
-        includeMetadata: true
+        includeMetadata: true,
       };
 
       const result = await exporter.export(data, options);
@@ -50,10 +50,10 @@ describe('DOCXExporter', () => {
     it('should validate DOCX data successfully', async () => {
       const data = {
         content: 'Test content',
-        title: 'Test Document'
+        title: 'Test Document',
       };
       const options: ExportOptions = {
-        format: ExportFormat.DOCX
+        format: ExportFormat.DOCX,
       };
 
       const isValid = await exporter.validate(data, options);
@@ -63,7 +63,7 @@ describe('DOCXExporter', () => {
     it('should reject invalid data', async () => {
       const data = { invalid: 'data' };
       const options: ExportOptions = {
-        format: ExportFormat.DOCX
+        format: ExportFormat.DOCX,
       };
 
       const isValid = await exporter.validate(data, options);
@@ -76,12 +76,15 @@ describe('DOCXExporter', () => {
       const data = {
         content: 'Test content with citation',
         citations: [
-          { text: '21 CFR Part 11', url: 'https://www.accessdata.fda.gov/scripts/cdrh/cfdocs/cfcfr/CFRPartSearch.cfm?CFRPart=11' }
-        ]
+          {
+            text: '21 CFR Part 11',
+            url: 'https://www.accessdata.fda.gov/scripts/cdrh/cfdocs/cfcfr/CFRPartSearch.cfm?CFRPart=11',
+          },
+        ],
       };
       const options: ExportOptions = {
         format: ExportFormat.DOCX,
-        includeMetadata: true
+        includeMetadata: true,
       };
 
       const result = await exporter.export(data, options);
@@ -98,12 +101,12 @@ describe('DOCXExporter', () => {
         citations: [
           { text: 'Citation 1', url: 'https://example.com/1' },
           { text: 'Citation 2', url: 'https://example.com/2' },
-          { text: 'Citation 3', url: 'https://example.com/3' }
-        ]
+          { text: 'Citation 3', url: 'https://example.com/3' },
+        ],
       };
       const options: ExportOptions = {
         format: ExportFormat.DOCX,
-        includeMetadata: true
+        includeMetadata: true,
       };
 
       const result = await exporter.export(data, options);
@@ -117,13 +120,11 @@ describe('DOCXExporter', () => {
     it('should handle citations without URLs gracefully', async () => {
       const data = {
         content: 'Test content',
-        citations: [
-          { text: 'Citation without URL' }
-        ]
+        citations: [{ text: 'Citation without URL' }],
       };
       const options: ExportOptions = {
         format: ExportFormat.DOCX,
-        includeMetadata: true
+        includeMetadata: true,
       };
 
       const result = await exporter.export(data, options);
@@ -137,10 +138,10 @@ describe('DOCXExporter', () => {
     it('should use Heading1 style for h1 headers', async () => {
       const data = {
         content: '# Main Title',
-        convertHeaders: true
+        convertHeaders: true,
       };
       const options: ExportOptions = {
-        format: ExportFormat.DOCX
+        format: ExportFormat.DOCX,
       };
 
       const result = await exporter.export(data, options);
@@ -154,10 +155,10 @@ describe('DOCXExporter', () => {
     it('should use Heading2 style for h2 headers', async () => {
       const data = {
         content: '## Section Title',
-        convertHeaders: true
+        convertHeaders: true,
       };
       const options: ExportOptions = {
-        format: ExportFormat.DOCX
+        format: ExportFormat.DOCX,
       };
 
       const result = await exporter.export(data, options);
@@ -171,10 +172,10 @@ describe('DOCXExporter', () => {
     it('should use Heading3 style for h3 headers', async () => {
       const data = {
         content: '### Subsection Title',
-        convertHeaders: true
+        convertHeaders: true,
       };
       const options: ExportOptions = {
-        format: ExportFormat.DOCX
+        format: ExportFormat.DOCX,
       };
 
       const result = await exporter.export(data, options);
@@ -190,11 +191,11 @@ describe('DOCXExporter', () => {
     it('should include document title', async () => {
       const data = {
         content: 'Test content',
-        title: 'Regulatory Analysis Document'
+        title: 'Regulatory Analysis Document',
       };
       const options: ExportOptions = {
         format: ExportFormat.DOCX,
-        includeMetadata: true
+        includeMetadata: true,
       };
 
       const result = await exporter.export(data, options);
@@ -208,11 +209,11 @@ describe('DOCXExporter', () => {
     it('should include author field', async () => {
       const data = {
         content: 'Test content',
-        author: 'RA Lead'
+        author: 'RA Lead',
       };
       const options: ExportOptions = {
         format: ExportFormat.DOCX,
-        includeMetadata: true
+        includeMetadata: true,
       };
 
       const result = await exporter.export(data, options);
@@ -225,11 +226,11 @@ describe('DOCXExporter', () => {
 
     it('should include creation date', async () => {
       const data = {
-        content: 'Test content'
+        content: 'Test content',
       };
       const options: ExportOptions = {
         format: ExportFormat.DOCX,
-        includeMetadata: true
+        includeMetadata: true,
       };
 
       const result = await exporter.export(data, options);
@@ -242,11 +243,11 @@ describe('DOCXExporter', () => {
     it('should add Regula branding when enabled', async () => {
       const data = {
         content: 'Test content',
-        addBranding: true
+        addBranding: true,
       };
       const options: ExportOptions = {
         format: ExportFormat.DOCX,
-        includeMetadata: true
+        includeMetadata: true,
       };
 
       const result = await exporter.export(data, options);
@@ -262,7 +263,7 @@ describe('DOCXExporter', () => {
     it('should handle missing content gracefully', async () => {
       const data = {};
       const options: ExportOptions = {
-        format: ExportFormat.DOCX
+        format: ExportFormat.DOCX,
       };
 
       const result = await exporter.export(data, options);
@@ -273,10 +274,10 @@ describe('DOCXExporter', () => {
 
     it('should handle docx generation errors', async () => {
       const data = {
-        content: null // Invalid content that will cause error
+        content: null, // Invalid content that will cause error
       };
       const options: ExportOptions = {
-        format: ExportFormat.DOCX
+        format: ExportFormat.DOCX,
       };
 
       const result = await exporter.export(data, options);
@@ -293,16 +294,19 @@ describe('DOCXExporter', () => {
         title: '510(k) Submission - Device X',
         author: 'RA Lead',
         citations: [
-          { text: '21 CFR 807', url: 'https://www.ecfr.gov/cgi-bin/text-idx?SID=7b1c...&node=pt21.5.807' },
-          { text: 'IEC 60601-1', url: 'https://webstore.iec.ch/publication/6134' }
+          {
+            text: '21 CFR 807',
+            url: 'https://www.ecfr.gov/cgi-bin/text-idx?SID=7b1c...&node=pt21.5.807',
+          },
+          { text: 'IEC 60601-1', url: 'https://webstore.iec.ch/publication/6134' },
         ],
         convertHeaders: true,
-        addBranding: true
+        addBranding: true,
       };
       const options: ExportOptions = {
         format: ExportFormat.DOCX,
         includeMetadata: true,
-        customFilename: '510k-submission-device-x'
+        customFilename: '510k-submission-device-x',
       };
 
       const result = await exporter.export(data, options);

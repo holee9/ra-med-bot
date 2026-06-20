@@ -6,17 +6,17 @@
  */
 
 import {
+  AlignmentType,
   Document,
+  HeadingLevel,
   Packer,
   Paragraph,
   TextRun,
-  HeadingLevel,
-  AlignmentType,
   UnderlineType,
- convertInchesToTwip,
+  convertInchesToTwip,
 } from 'docx';
 import { BaseExporter } from '../base-exporter';
-import { ExportFormat, ExportOptions, ExportResult } from '../types';
+import { ExportFormat, type ExportOptions, type ExportResult } from '../types';
 import { ExportErrorCode } from '../types';
 
 /**
@@ -48,7 +48,7 @@ export class DOCXExporter extends BaseExporter {
         return this.createErrorResult(
           options.format,
           ExportErrorCode.VALIDATION_ERROR,
-          'Invalid data for DOCX export'
+          'Invalid data for DOCX export',
         );
       }
 
@@ -60,30 +60,27 @@ export class DOCXExporter extends BaseExporter {
       // Generate DOCX buffer
       const buffer = await Packer.toBuffer(doc);
 
-      // Convert buffer to base64 string for download
-      const content = buffer.toString('base64');
+      // Convert bytes to base64 string for download.
+      const bytes = new Uint8Array(buffer as Uint8Array);
+      const content = this.encodeBase64(bytes);
 
       // Ensure .docx extension
       const baseFilename = options.customFilename || `export-${this.getTimestamp()}`;
       const filename = baseFilename.endsWith('.docx') ? baseFilename : `${baseFilename}.docx`;
-
-      const blob = new Blob([buffer as BlobPart], {
-        type: 'application/vnd.openxmlformats-officedocument.wordprocessingml.document'
-      });
 
       return {
         success: true,
         format: options.format,
         content,
         filename,
-        size: blob.size,
+        size: bytes.byteLength,
         timestamp: new Date(),
       };
     } catch (error) {
       return this.createErrorResult(
         options.format,
         ExportErrorCode.GENERATION_FAILED,
-        error instanceof Error ? error.message : 'Unknown error'
+        error instanceof Error ? error.message : 'Unknown error',
       );
     }
   }
@@ -97,7 +94,7 @@ export class DOCXExporter extends BaseExporter {
     }
 
     const docxData = data as DOCXData;
-    return !!(docxData && docxData.content);
+    return !!docxData?.content;
   }
 
   /**
@@ -105,6 +102,20 @@ export class DOCXExporter extends BaseExporter {
    */
   getFormat(): ExportFormat {
     return ExportFormat.DOCX;
+  }
+
+  private encodeBase64(bytes: Uint8Array): string {
+    if (typeof Buffer !== 'undefined') {
+      return Buffer.from(bytes).toString('base64');
+    }
+
+    let binary = '';
+    const chunkSize = 0x8000;
+    for (let i = 0; i < bytes.length; i += chunkSize) {
+      const chunk = bytes.subarray(i, i + chunkSize);
+      binary += String.fromCharCode(...chunk);
+    }
+    return btoa(binary);
   }
 
   /**
@@ -123,7 +134,7 @@ export class DOCXExporter extends BaseExporter {
           spacing: {
             after: convertInchesToTwip(0.2),
           },
-        })
+        }),
       );
     }
 
@@ -143,7 +154,7 @@ export class DOCXExporter extends BaseExporter {
           spacing: {
             after: convertInchesToTwip(0.3),
           },
-        })
+        }),
       );
     }
 
@@ -161,10 +172,10 @@ export class DOCXExporter extends BaseExporter {
             before: convertInchesToTwip(0.2),
             after: convertInchesToTwip(0.1),
           },
-        })
+        }),
       );
 
-      data.citations.forEach((citation) => {
+      for (const citation of data.citations) {
         if (citation.url) {
           // Add citation as hyperlink
           paragraphs.push(
@@ -181,7 +192,7 @@ export class DOCXExporter extends BaseExporter {
               spacing: {
                 after: convertInchesToTwip(0.1),
               },
-            })
+            }),
           );
         } else {
           // Add citation as plain text
@@ -191,10 +202,10 @@ export class DOCXExporter extends BaseExporter {
               spacing: {
                 after: convertInchesToTwip(0.1),
               },
-            })
+            }),
           );
         }
-      });
+      }
     }
 
     // Create document with metadata
@@ -242,10 +253,12 @@ export class DOCXExporter extends BaseExporter {
                 before: convertInchesToTwip(0.1),
                 after: convertInchesToTwip(0.1),
               },
-            })
+            }),
           );
           continue;
-        } else if (trimmedLine.startsWith('## ')) {
+        }
+
+        if (trimmedLine.startsWith('## ')) {
           paragraphs.push(
             new Paragraph({
               text: trimmedLine.substring(3),
@@ -254,10 +267,12 @@ export class DOCXExporter extends BaseExporter {
                 before: convertInchesToTwip(0.1),
                 after: convertInchesToTwip(0.1),
               },
-            })
+            }),
           );
           continue;
-        } else if (trimmedLine.startsWith('### ')) {
+        }
+
+        if (trimmedLine.startsWith('### ')) {
           paragraphs.push(
             new Paragraph({
               text: trimmedLine.substring(4),
@@ -266,7 +281,7 @@ export class DOCXExporter extends BaseExporter {
                 before: convertInchesToTwip(0.1),
                 after: convertInchesToTwip(0.1),
               },
-            })
+            }),
           );
           continue;
         }
@@ -279,7 +294,7 @@ export class DOCXExporter extends BaseExporter {
           spacing: {
             after: convertInchesToTwip(0.1),
           },
-        })
+        }),
       );
     }
 

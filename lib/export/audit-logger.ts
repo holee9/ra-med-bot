@@ -3,7 +3,7 @@
  * REQ-EXP-006: Export operations must be logged to audit trail
  */
 
-import { writeAudit } from '../audit';
+import { type AuditAction, writeAudit } from '../audit';
 import { ExportFormat } from './types';
 
 /**
@@ -39,8 +39,8 @@ export interface ExportAuditParams {
  */
 function getExportAction(
   format: ExportFormat,
-  integrationType?: 'email' | 'confluence'
-): string {
+  integrationType?: 'email' | 'confluence',
+): AuditAction {
   if (integrationType === 'email') {
     return 'export.email';
   }
@@ -71,7 +71,16 @@ function getExportAction(
  * @returns Promise that resolves when audit log is written
  */
 export async function logExport(params: ExportAuditParams): Promise<void> {
-  const { actorId, format, resourceType, resourceId, conversationId, options, integrationType, integrationMeta } = params;
+  const {
+    actorId,
+    format,
+    resourceType,
+    resourceId,
+    conversationId,
+    options,
+    integrationType,
+    integrationMeta,
+  } = params;
 
   // Build metadata JSON
   const metaJson: Record<string, unknown> = {
@@ -87,7 +96,7 @@ export async function logExport(params: ExportAuditParams): Promise<void> {
   // Write audit log
   await writeAudit({
     actor_id: actorId,
-    action: getExportAction(format, integrationType) as any,
+    action: getExportAction(format, integrationType),
     resource_type: resourceType,
     resource_id: resourceId,
     conversation_id: conversationId,

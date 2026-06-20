@@ -8,15 +8,15 @@
 //
 // Requires: GITEA_URL, GITEA_TOKEN, GITEA_WIKI_REPO in environment
 
-import { getEnv } from '../lib/env';
-import { db } from '../lib/db/client';
-import { sources, sourceSections } from '../lib/db/schema';
+import { randomUUID } from 'node:crypto';
 import { eq } from 'drizzle-orm';
+import { db } from '../lib/db/client';
+import { sourceSections, sources } from '../lib/db/schema';
+import { getEnv } from '../lib/env';
 import { makeGenericChunker } from '../lib/ingest/chunkers/generic';
+import { DocClass } from '../lib/ingest/doc-class';
 import { logger } from '../lib/observability/logger';
 import { computeHash } from './seed-local-docs';
-import { randomUUID } from 'node:crypto';
-import { DocClass } from '../lib/ingest/doc-class';
 
 interface GiteaWikiPage {
   path: string; // e.g., "path/to/page.md"
@@ -171,11 +171,10 @@ async function ingestGiteaWiki(): Promise<void> {
       if (chunks.length === 0) continue;
 
       // Use the first chunk's metadata for the section
-      const chunk = chunks[0]!;
+      const chunk = chunks[0];
+      if (!chunk) continue;
       const heading =
-        chunk.metadata.sectionPath !== 'Document'
-          ? chunk.metadata.sectionPath
-          : page.path;
+        chunk.metadata.sectionPath !== 'Document' ? chunk.metadata.sectionPath : page.path;
 
       // Anchor: wiki path + chunk index (unique per page)
       const anchor = `${page.path}#${0}`;
@@ -200,7 +199,10 @@ async function ingestGiteaWiki(): Promise<void> {
       logger.info(`Ingested wiki page: ${page.path}`);
     } catch (err) {
       const msg = err instanceof Error ? err.message : String(err);
-      const cause = (err as any)?.cause;
+      const cause =
+        err instanceof Error && typeof err.cause === 'object' && err.cause !== null
+          ? (err.cause as { code?: unknown })
+          : undefined;
       const isUnique =
         msg.includes('source_sections_source_anchor_idx') ||
         msg.includes('unique constraint') ||
@@ -215,9 +217,7 @@ async function ingestGiteaWiki(): Promise<void> {
     }
   }
 
-  logger.info(
-    `Gitea wiki ingestion complete: ${totalInserted} inserted, ${totalSkipped} skipped`,
-  );
+  logger.info(`Gitea wiki ingestion complete: ${totalInserted} inserted, ${totalSkipped} skipped`);
 }
 
 // CLI entrypoint

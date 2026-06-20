@@ -6,7 +6,7 @@
  */
 
 import { BaseExporter } from '../base-exporter';
-import { ExportFormat, ExportOptions, ExportResult } from '../types';
+import { ExportFormat, type ExportOptions, type ExportResult } from '../types';
 import { ExportErrorCode } from '../types';
 
 /**
@@ -35,7 +35,7 @@ export class MarkdownExporter extends BaseExporter {
         return this.createErrorResult(
           options.format,
           ExportErrorCode.VALIDATION_ERROR,
-          'Invalid data for Markdown export'
+          'Invalid data for Markdown export',
         );
       }
 
@@ -61,7 +61,7 @@ export class MarkdownExporter extends BaseExporter {
       return this.createErrorResult(
         options.format,
         ExportErrorCode.GENERATION_FAILED,
-        error instanceof Error ? error.message : 'Unknown error'
+        error instanceof Error ? error.message : 'Unknown error',
       );
     }
   }
@@ -75,7 +75,7 @@ export class MarkdownExporter extends BaseExporter {
     }
 
     const markdownData = data as MarkdownData;
-    return !!(markdownData && markdownData.content);
+    return !!markdownData?.content;
   }
 
   /**
@@ -113,7 +113,7 @@ export class MarkdownExporter extends BaseExporter {
   private addCitations(content: string, citations: Array<{ text: string; url?: string }>): string {
     let markdown = content;
 
-    citations.forEach((citation) => {
+    for (const citation of citations) {
       if (citation.url) {
         // Format as markdown link: [text](url)
         const link = `[${citation.text}](${citation.url})`;
@@ -122,7 +122,7 @@ export class MarkdownExporter extends BaseExporter {
         // Just add text if no URL
         markdown += `\n\n${citation.text}`;
       }
-    });
+    }
 
     return markdown;
   }

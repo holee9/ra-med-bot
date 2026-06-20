@@ -7,7 +7,7 @@
  */
 
 import { BaseExporter } from '../base-exporter';
-import { ExportFormat, ExportOptions, ExportResult } from '../types';
+import { ExportFormat, type ExportOptions, type ExportResult } from '../types';
 import { ExportErrorCode } from '../types';
 
 /**
@@ -22,6 +22,11 @@ interface PDFData {
   };
 }
 
+type PDFRenderer = Pick<
+  typeof import('@react-pdf/renderer'),
+  'Document' | 'Page' | 'Text' | 'View' | 'pdf'
+>;
+
 /**
  * PDFExporter - Export data to PDF format
  * Uses @react-pdf/renderer for PDF generation
@@ -29,7 +34,7 @@ interface PDFData {
  * @MX:NOTE T-022: Basic PDF generation, components will be added in T-023-T-025
  */
 export class PDFExporter extends BaseExporter {
-  private pdfRenderer: any;
+  private pdfRenderer: PDFRenderer | null;
 
   constructor() {
     super();
@@ -48,7 +53,7 @@ export class PDFExporter extends BaseExporter {
         return this.createErrorResult(
           options.format,
           ExportErrorCode.VALIDATION_ERROR,
-          'Invalid data for PDF export'
+          'Invalid data for PDF export',
         );
       }
 
@@ -57,8 +62,8 @@ export class PDFExporter extends BaseExporter {
       // Generate PDF
       const pdfBytes = await this.generatePDF(pdfData);
 
-      // Convert bytes to base64 string for storage
-      const base64Content = Buffer.from(pdfBytes).toString('base64');
+      // Convert bytes to base64 string for storage/download.
+      const base64Content = this.encodeBase64(pdfBytes);
 
       // Ensure .pdf extension
       const baseFilename = options.customFilename || `export-${this.getTimestamp()}`;
@@ -79,7 +84,7 @@ export class PDFExporter extends BaseExporter {
       return this.createErrorResult(
         options.format,
         ExportErrorCode.GENERATION_FAILED,
-        error instanceof Error ? error.message : 'Unknown error'
+        error instanceof Error ? error.message : 'Unknown error',
       );
     }
   }
@@ -93,7 +98,7 @@ export class PDFExporter extends BaseExporter {
     }
 
     const pdfData = data as PDFData;
-    return !!(pdfData && pdfData.content && pdfData.content.length > 0);
+    return !!pdfData?.content;
   }
 
   /**
@@ -101,6 +106,20 @@ export class PDFExporter extends BaseExporter {
    */
   getFormat(): ExportFormat {
     return ExportFormat.PDF;
+  }
+
+  private encodeBase64(bytes: Uint8Array): string {
+    if (typeof Buffer !== 'undefined') {
+      return Buffer.from(bytes).toString('base64');
+    }
+
+    let binary = '';
+    const chunkSize = 0x8000;
+    for (let i = 0; i < bytes.length; i += chunkSize) {
+      const chunk = bytes.subarray(i, i + chunkSize);
+      binary += String.fromCharCode(...chunk);
+    }
+    return btoa(binary);
   }
 
   /**
@@ -140,16 +159,17 @@ export class PDFExporter extends BaseExporter {
 
           {/* Footer with page numbers */}
           <View style={styles.footer} fixed>
-            <Text style={styles.footerText} render={({ pageNumber }: { pageNumber: number }) =>
-              `Page ${pageNumber}`
-            } />
+            <Text
+              style={styles.footerText}
+              render={({ pageNumber }: { pageNumber: number }) => `Page ${pageNumber}`}
+            />
           </View>
         </Page>
       </Document>
     );
 
     // Generate PDF blob
-    const pdfInstance = await pdf(MyDocument).toBlob();
+    const pdfInstance = await pdf(<MyDocument />).toBlob();
     const arrayBuffer = await pdfInstance.arrayBuffer();
     return new Uint8Array(arrayBuffer);
   }
@@ -176,21 +196,21 @@ export class PDFExporter extends BaseExporter {
  * @MX:NOTE Basic styling for print-ready PDF
  * @MX:TODO T-025: Enhance layout and styling
  */
-const styles: Record<string, any> = {
+const styles = {
   page: {
     flexDirection: 'column',
-    backgroundColor: '#FFFFFF',
+    backgroundColor: 'white',
     padding: 30,
   },
   header: {
     marginBottom: 20,
-    borderBottom: '1 solid #E0E0E0',
+    borderBottom: '1 solid rgb(224, 224, 224)',
     paddingBottom: 10,
   },
   headerText: {
     fontSize: 14,
     fontWeight: 'bold',
-    color: '#2C5282',
+    color: 'rgb(44, 82, 130)',
   },
   content: {
     flexGrow: 1,
@@ -199,22 +219,22 @@ const styles: Record<string, any> = {
     fontSize: 24,
     fontWeight: 'bold',
     marginBottom: 20,
-    color: '#1A202C',
+    color: 'rgb(26, 32, 44)',
   },
   body: {
     fontSize: 12,
     lineHeight: 1.5,
-    color: '#2D3748',
+    color: 'rgb(45, 55, 72)',
     marginBottom: 10,
   },
   footer: {
     marginTop: 20,
-    borderTop: '1 solid #E0E0E0',
+    borderTop: '1 solid rgb(224, 224, 224)',
     paddingTop: 10,
     textAlign: 'center',
   },
   footerText: {
     fontSize: 10,
-    color: '#718096',
+    color: 'rgb(113, 128, 150)',
   },
-};
+} as const;

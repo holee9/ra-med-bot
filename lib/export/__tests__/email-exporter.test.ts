@@ -4,26 +4,31 @@
  * REQ-EXP-007: Email export with mailto link generation
  */
 
-import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { EmailExporter } from '../exporters/email-exporter';
-import { ExportFormat, ExportOptions } from '../types';
+import { ExportFormat, type ExportOptions } from '../types';
 
 describe('EmailExporter', () => {
   let exporter: EmailExporter;
-  let mockWindow: Window;
+  let mockWindow: { open: ReturnType<typeof vi.fn> };
 
   beforeEach(() => {
     exporter = new EmailExporter();
     mockWindow = {
-      location: {},
       open: vi.fn(),
     };
-    global.window = mockWindow as any;
+    vi.stubGlobal('window', mockWindow);
   });
 
   afterEach(() => {
     vi.restoreAllMocks();
   });
+
+  const getMailtoCall = (): string => {
+    const mailtoCall = mockWindow.open.mock.calls[0]?.[0];
+    expect(mailtoCall).toEqual(expect.stringContaining('mailto:'));
+    return mailtoCall as string;
+  };
 
   describe('T-028: Basic mailto link generation', () => {
     it('should generate mailto link with basic artifact data', async () => {
@@ -40,10 +45,7 @@ describe('EmailExporter', () => {
 
       await exporter.export(data, options);
 
-      expect(mockWindow.open).toHaveBeenCalledWith(
-        expect.stringContaining('mailto:'),
-        '_blank'
-      );
+      expect(mockWindow.open).toHaveBeenCalledWith(expect.stringContaining('mailto:'), '_blank');
     });
 
     it('should get format as EMAIL', () => {
@@ -80,7 +82,7 @@ describe('EmailExporter', () => {
 
       await exporter.export(data, options);
 
-      const mailtoCall = (mockWindow.open as any).mock.calls[0][0];
+      const mailtoCall = getMailtoCall();
       expect(mailtoCall).toMatch(/subject=Regula%20Answer%3A%20My%20Regulatory%20Answer/);
     });
 
@@ -97,7 +99,7 @@ describe('EmailExporter', () => {
 
       await exporter.export(data, options);
 
-      const mailtoCall = (mockWindow.open as any).mock.calls[0][0];
+      const mailtoCall = getMailtoCall();
       expect(mailtoCall).toMatch(/subject=/);
       // Special characters should be URL encoded
       expect(mailtoCall).not.toContain('<');
@@ -117,7 +119,7 @@ describe('EmailExporter', () => {
 
       await exporter.export(data, options);
 
-      const mailtoCall = (mockWindow.open as any).mock.calls[0][0];
+      const mailtoCall = getMailtoCall();
       expect(mailtoCall).toMatch(/subject=/);
       // Spaces should be encoded as %20
       expect(mailtoCall).toContain('%20');
@@ -138,7 +140,7 @@ describe('EmailExporter', () => {
 
       await exporter.export(data, options);
 
-      const mailtoCall = (mockWindow.open as any).mock.calls[0][0];
+      const mailtoCall = getMailtoCall();
       expect(mailtoCall).toMatch(/body=/);
       expect(mailtoCall).toContain('Line%201');
       expect(mailtoCall).toContain('Line%202');
@@ -163,7 +165,7 @@ describe('EmailExporter', () => {
 
       await exporter.export(data, options);
 
-      const mailtoCall = (mockWindow.open as any).mock.calls[0][0];
+      const mailtoCall = getMailtoCall();
       expect(mailtoCall).toMatch(/body=/);
       // Citations should be included
       expect(mailtoCall).toMatch(/21%20CFR%20820.30/);
@@ -182,7 +184,7 @@ describe('EmailExporter', () => {
 
       await exporter.export(data, options);
 
-      const mailtoCall = (mockWindow.open as any).mock.calls[0][0];
+      const mailtoCall = getMailtoCall();
       // Double newline should be preserved
       expect(mailtoCall).toContain('%0A%0A');
     });
@@ -200,7 +202,7 @@ describe('EmailExporter', () => {
 
       await exporter.export(data, options);
 
-      const mailtoCall = (mockWindow.open as any).mock.calls[0][0];
+      const mailtoCall = getMailtoCall();
       // Special characters should be encoded
       expect(mailtoCall).not.toContain('<');
       expect(mailtoCall).not.toContain('>');

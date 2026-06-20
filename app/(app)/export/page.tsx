@@ -1,4 +1,4 @@
-import { Metadata } from 'next';
+import type { Metadata } from 'next';
 
 export const metadata: Metadata = {
   title: 'Export - Regula',
@@ -13,14 +13,22 @@ export default function ExportPage() {
       <section className="mb-8">
         <h2 className="text-2xl font-semibold mb-4">개요</h2>
         <p className="mb-4">
-          Regula는 다양한 포맷으로 아티팩트를 내보내는 기능을 제공합니다. 현재
-          지원되는 포맷은 다음과 같습니다:
+          Regula는 다양한 포맷으로 아티팩트를 내보내는 기능을 제공합니다. 현재 지원되는 포맷은
+          다음과 같습니다:
         </p>
         <ul className="list-disc pl-6 mb-4">
-          <li><strong>Markdown</strong>: 복사/붙여넣기용 텍스트 포맷</li>
-          <li><strong>DOCX</strong>: Microsoft Word 문서</li>
-          <li><strong>PDF</strong>: 인쇄용 PDF 문서</li>
-          <li><strong>Email</strong>: 이메일 전송 (mailto 링크)</li>
+          <li>
+            <strong>Markdown</strong>: 복사/붙여넣기용 텍스트 포맷
+          </li>
+          <li>
+            <strong>DOCX</strong>: Microsoft Word 문서
+          </li>
+          <li>
+            <strong>PDF</strong>: 인쇄용 PDF 문서
+          </li>
+          <li>
+            <strong>Email</strong>: 이메일 전송 (mailto 링크)
+          </li>
         </ul>
         <p className="text-sm text-gray-600">
           이 기능은 SPEC-REGULA-EXPORT-HUB-001 (#87)로 구현되었습니다.
@@ -34,8 +42,8 @@ export default function ExportPage() {
           <div>
             <h3 className="text-xl font-medium mb-2">Markdown</h3>
             <p className="mb-2">
-              Markdown 포맷은 일반 텍스트 편집기에서 바로 사용할 수 있는 형식입니다.
-              인용 출처가 하이퍼링크로 포함됩니다.
+              Markdown 포맷은 일반 텍스트 편집기에서 바로 사용할 수 있는 형식입니다. 인용 출처가
+              하이퍼링크로 포함됩니다.
             </p>
             <ul className="list-disc pl-6 text-sm text-gray-700">
               <li>섹션 헤더 변환 (h1 → #, h2 → ##, h3 → ###)</li>
@@ -47,8 +55,8 @@ export default function ExportPage() {
           <div>
             <h3 className="text-xl font-medium mb-2">DOCX</h3>
             <p className="mb-2">
-              Microsoft Word 호환 문서를 생성합니다. 인용 출처가 클릭 가능한
-              하이퍼링크로 포함됩니다.
+              Microsoft Word 호환 문서를 생성합니다. 인용 출처가 클릭 가능한 하이퍼링크로
+              포함됩니다.
             </p>
             <ul className="list-disc pl-6 text-sm text-gray-700">
               <li>Word 스타일 (Heading1, Heading2, Heading3)</li>
@@ -60,9 +68,7 @@ export default function ExportPage() {
 
           <div>
             <h3 className="text-xl font-medium mb-2">PDF</h3>
-            <p className="mb-2">
-              인쇄용 PDF 문서를 생성합니다. A4 페이지 사이즈를 사용합니다.
-            </p>
+            <p className="mb-2">인쇄용 PDF 문서를 생성합니다. A4 페이지 사이즈를 사용합니다.</p>
             <ul className="list-disc pl-6 text-sm text-gray-700">
               <li>Regula 헤더 (모든 페이지)</li>
               <li>페이지 번호 (푸터)</li>
@@ -74,8 +80,7 @@ export default function ExportPage() {
           <div>
             <h3 className="text-xl font-medium mb-2">Email</h3>
             <p className="mb-2">
-              기본 이메일 클라이언트를 열어 이메일을 전송할 수 있는 mailto 링크를
-              생성합니다.
+              기본 이메일 클라이언트를 열어 이메일을 전송할 수 있는 mailto 링크를 생성합니다.
             </p>
             <ul className="list-disc pl-6 text-sm text-gray-700">
               <li>미리 채워진 제목 줄</li>
@@ -83,8 +88,8 @@ export default function ExportPage() {
               <li>인용 출처 포함</li>
             </ul>
             <p className="text-sm text-yellow-600 mt-2">
-              ⚠️ 브라우저 보안 제약으로 인해 파일 첨부는 지원되지 않습니다. DOCX
-              또는 PDF로 먼저 내보낸 후 이메일 클라이언트에서 첨부해주세요.
+              ⚠️ 브라우저 보안 제약으로 인해 파일 첨부는 지원되지 않습니다. DOCX 또는 PDF로 먼저
+              내보낸 후 이메일 클라이언트에서 첨부해주세요.
             </p>
           </div>
         </div>
@@ -97,29 +102,35 @@ export default function ExportPage() {
           <div>
             <h3 className="text-lg font-medium mb-2">1. Export 버튼 클릭</h3>
             <p className="text-gray-700">
-              답변, 체크리스트, 비교표 컴포넌트의 메타데이터 영역에 있는 Export
-              버튼(📄 아이콘)을 클릭합니다.
+              답변, 체크리스트, 비교표 컴포넌트의 메타데이터 영역에 있는 Export 버튼(📄 아이콘)을
+              클릭합니다.
             </p>
           </div>
 
           <div>
             <h3 className="text-lg font-medium mb-2">2. 포맷 선택</h3>
-            <p className="text-gray-700">
-              드롭다운 메뉴에서 원하는 포맷을 선택합니다:
-            </p>
+            <p className="text-gray-700">드롭다운 메뉴에서 원하는 포맷을 선택합니다:</p>
             <ul className="list-disc pl-6 text-sm text-gray-700">
-              <li><strong>DOCX (다운로드)</strong>: Word 문서 다운로드</li>
-              <li><strong>PDF (인쇄용)</strong>: PDF 문서 다운로드</li>
-              <li><strong>Markdown (복사/붙여넣기)</strong>: 클립보드에 복사</li>
-              <li><strong>Email (이메일 전달)</strong>: 이메일 클라이언트 열기</li>
+              <li>
+                <strong>DOCX (다운로드)</strong>: Word 문서 다운로드
+              </li>
+              <li>
+                <strong>PDF (인쇄용)</strong>: PDF 문서 다운로드
+              </li>
+              <li>
+                <strong>Markdown (복사/붙여넣기)</strong>: 클립보드에 복사
+              </li>
+              <li>
+                <strong>Email (이메일 전달)</strong>: 이메일 클라이언트 열기
+              </li>
             </ul>
           </div>
 
           <div>
             <h3 className="text-lg font-medium mb-2">3. 내보내기</h3>
             <p className="text-gray-700">
-              선택한 포맷에 따라 파일이 다운로드되거나, 클립보드에 복사되거나,
-              이메일 클라이언트가 열립니다.
+              선택한 포맷에 따라 파일이 다운로드되거나, 클립보드에 복사되거나, 이메일 클라이언트가
+              열립니다.
             </p>
           </div>
         </div>
@@ -128,8 +139,7 @@ export default function ExportPage() {
       <section className="mb-8">
         <h2 className="text-2xl font-semibold mb-4">감사 로깅</h2>
         <p className="text-gray-700 mb-4">
-          모든 내보내기 작업은 21 CFR Part 11 준수를 위해 감사 로그에 기록됩니다.
-          기록되는 정보:
+          모든 내보내기 작업은 21 CFR Part 11 준수를 위해 감사 로그에 기록됩니다. 기록되는 정보:
         </p>
         <ul className="list-disc pl-6 text-sm text-gray-700">
           <li>아티팩트 타입 (answer, checklist, comparison)</li>

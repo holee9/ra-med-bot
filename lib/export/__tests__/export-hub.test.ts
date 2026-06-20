@@ -5,21 +5,23 @@
  * @MX:SPEC SPEC-REGULA-EXPORT-HUB-001
  */
 
-import { describe, it, expect, beforeEach, vi } from 'vitest';
+import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { ExportHub } from '../export-hub';
-import { ExportFormat, ExportOptions } from '../types';
 import { PDFExporter } from '../exporters/pdf-exporter';
+import { ExportFormat, type ExportOptions } from '../types';
 
 /**
  * @vitest-environment jsdom
  */
 
 // Mock @react-pdf/renderer globally for all tests
+type RendererProps = { children?: unknown };
+
 vi.mock('@react-pdf/renderer', () => ({
-  Document: ({ children }: any) => children,
-  Page: ({ children }: any) => children,
-  Text: ({ children }: any) => ({ type: 'text', content: children }),
-  View: ({ children }: any) => ({ type: 'view', children }),
+  Document: ({ children }: RendererProps) => children,
+  Page: ({ children }: RendererProps) => children,
+  Text: ({ children }: RendererProps) => ({ type: 'text', content: children }),
+  View: ({ children }: RendererProps) => ({ type: 'view', children }),
   Font: { register: vi.fn() },
   pdf: () => ({
     toBlob: async () => ({
@@ -27,7 +29,7 @@ vi.mock('@react-pdf/renderer', () => ({
     }),
   }),
   StyleSheet: {
-    create: (styles: any) => styles,
+    create: (styles: Record<string, unknown>) => styles,
   },
 }));
 
@@ -159,11 +161,6 @@ describe('ExportHub', () => {
       };
 
       const result = await hub.export(data, customOptions);
-
-      // Debug: print result if failed
-      if (!result.success) {
-        console.log('Export failed:', result.error);
-      }
 
       expect(result.success).toBe(true);
       expect(result.filename).toBe('hub-test-export.pdf');

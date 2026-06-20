@@ -3,10 +3,10 @@
  * REQ-EXP-006: Export operations must be audited
  */
 
-import { describe, it, expect, beforeEach, vi } from 'vitest';
+import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { writeAudit } from '../../audit';
-import { ExportFormat, ExportOptions } from '../types';
 import { logExport } from '../audit-logger';
+import { ExportFormat, ExportOptions } from '../types';
 
 // Mock writeAudit
 vi.mock('../../audit', () => ({

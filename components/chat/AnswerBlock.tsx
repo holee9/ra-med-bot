@@ -14,8 +14,6 @@ import { useState } from 'react';
 import ReactMarkdown from 'react-markdown';
 import rehypeRaw from 'rehype-raw';
 import rehypeSanitize, { defaultSchema } from 'rehype-sanitize';
-import { ExportButton } from '../export/ExportButton';
-import { useExportState } from '../export/useExportState';
 import type {
   ChecklistEvent,
   ChecklistItem,
@@ -25,6 +23,8 @@ import type {
   TimelineEvent,
 } from '../../types/streaming';
 import { ExpertReviewCallout } from '../expert-review/ExpertReviewCallout';
+import { ExportHub } from '../export/ExportHub';
+import type { ExportArtifact } from '../export/FormatOptions';
 import { RefinePanel } from '../refine/RefinePanel';
 import { Callout } from './Callout';
 import { Checklist } from './Checklist';
@@ -88,21 +88,17 @@ export function AnswerBlock({
   const displayProse = refinedProse ?? prose;
   const sourceCount = sources?.length ?? 0;
   const durationSec = durationMs !== null ? (durationMs / 1000).toFixed(1) : null;
-  const { state: exportState, setLoading, setSuccess, setError } = useExportState();
-
-  const handleExport = async () => {
-    setLoading();
-    try {
-      // TODO: Implement actual export logic via ExportHub
-      // For now, this is a placeholder
-      const result = {
-        filename: `answer-${messageId || 'export'}.txt`,
-        size: prose.length
-      };
-      setSuccess(result);
-    } catch (err) {
-      setError(err instanceof Error ? err : new Error('Export failed'));
-    }
+  const answerExportArtifact: ExportArtifact = {
+    title: 'Regula Answer',
+    content: displayProse,
+    artifactType: 'answer',
+    filenameBase: `answer-${messageId || 'export'}`,
+    citations: sources?.map((source) => ({
+      text: `[${source.citeIndex}] ${source.title}`,
+      url: source.url ?? undefined,
+      source: source.title,
+      offset: source.offset,
+    })),
   };
 
   return (
@@ -122,10 +118,10 @@ export function AnswerBlock({
           >
             <Copy size={14} />
           </button>
-          <ExportButton
-            onClick={handleExport}
-            disabled={exportState === 'loading'}
-            isOpen={exportState === 'loading'}
+          <ExportHub
+            conversationId={conversationId}
+            messageId={messageId}
+            artifact={answerExportArtifact}
           />
           <button
             type="button"

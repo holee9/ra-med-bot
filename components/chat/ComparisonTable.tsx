@@ -5,8 +5,8 @@
 // @MX:SPEC SPEC-REGULA-STRUCTURED-001 (REQ-STRUCT-022~023)
 
 import { useState } from 'react';
-import { ExportButton } from '../export/ExportButton';
-import { useExportState } from '../export/useExportState';
+import { ExportHub } from '../export/ExportHub';
+import type { ExportArtifact } from '../export/FormatOptions';
 
 interface ComparisonTableProps {
   title: string;
@@ -15,23 +15,19 @@ interface ComparisonTableProps {
 }
 
 export function ComparisonTable({ title, cols, rows }: ComparisonTableProps) {
-  const { state: exportState, setLoading, setSuccess, setError } = useExportState();
-
   // Client-side secondary defense — REQ-STRUCT-023
   const hasLengthMismatch = rows.some((row) => row.length !== cols.length);
-
-  const handleExport = async () => {
-    setLoading();
-    try {
-      // TODO: Implement actual export logic via ExportHub
-      const result = {
-        filename: `comparison-${title || 'export'}.txt`,
-        size: JSON.stringify({ cols, rows }).length
-      };
-      setSuccess(result);
-    } catch (err) {
-      setError(err instanceof Error ? err : new Error('Export failed'));
-    }
+  const exportArtifact: ExportArtifact = {
+    title: title || 'Regula Comparison',
+    content: [
+      `# ${title || 'Regula Comparison'}`,
+      '',
+      `| ${cols.join(' | ')} |`,
+      `| ${cols.map(() => '---').join(' | ')} |`,
+      ...rows.map((row) => `| ${row.join(' | ')} |`),
+    ].join('\n'),
+    artifactType: 'comparison',
+    filenameBase: `comparison-${(title || 'export').toLowerCase().replace(/[^a-z0-9가-힣]+/gi, '-')}`,
   };
 
   if (hasLengthMismatch) {
@@ -50,11 +46,7 @@ export function ComparisonTable({ title, cols, rows }: ComparisonTableProps) {
         <div className="text-xs text-ink-500">
           {rows.length}행 × {cols.length}열
         </div>
-        <ExportButton
-          onClick={handleExport}
-          disabled={exportState === 'loading'}
-          isOpen={exportState === 'loading'}
-        />
+        <ExportHub artifact={exportArtifact} />
       </div>
 
       <div className="overflow-x-auto rounded-lg border border-surface-3">

@@ -64,9 +64,14 @@ describe('lib/audit.ts (REQ-BREADTH-057) — extended AuditAction type', () => {
         'dhf_created',
         'submission_validation_completed',
         'risk.report_approved',
+        'export.markdown',
+        'export.docx',
+        'export.pdf',
+        'export.email',
+        'export.confluence',
       ]),
     );
-    expect(values).toHaveLength(91);
+    expect(values).toHaveLength(96);
   });
 
   it.each([

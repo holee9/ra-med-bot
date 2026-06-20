@@ -5,20 +5,22 @@
  * @MX:SPEC SPEC-REGULA-EXPORT-HUB-001
  */
 
-import { describe, it, expect, vi, beforeEach } from 'vitest';
+import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { PDFExporter } from '../exporters/pdf-exporter';
-import { ExportFormat, ExportOptions } from '../types';
+import { ExportFormat, type ExportOptions } from '../types';
 
 /**
  * @vitest-environment jsdom
  */
 
 // Mock @react-pdf/renderer
+type RendererProps = { children?: unknown };
+
 vi.mock('@react-pdf/renderer', () => ({
-  Document: ({ children }: any) => children,
-  Page: ({ children }: any) => children,
-  Text: ({ children }: any) => ({ type: 'text', content: children }),
-  View: ({ children }: any) => ({ type: 'view', children }),
+  Document: ({ children }: RendererProps) => children,
+  Page: ({ children }: RendererProps) => children,
+  Text: ({ children }: RendererProps) => ({ type: 'text', content: children }),
+  View: ({ children }: RendererProps) => ({ type: 'view', children }),
   Font: { register: vi.fn() },
   pdf: () => ({
     toBlob: async () => ({
@@ -26,7 +28,7 @@ vi.mock('@react-pdf/renderer', () => ({
     }),
   }),
   StyleSheet: {
-    create: (styles: any) => styles,
+    create: (styles: Record<string, unknown>) => styles,
   },
 }));
 
@@ -61,10 +63,7 @@ describe('PDFExporter', () => {
     });
 
     it('should accept valid data with content', async () => {
-      const result = await exporter.validate(
-        { content: 'Test content' },
-        mockOptions
-      );
+      const result = await exporter.validate({ content: 'Test content' }, mockOptions);
       expect(result).toBe(true);
     });
 
@@ -83,11 +82,6 @@ describe('PDFExporter', () => {
       };
 
       const result = await exporter.export(data, mockOptions);
-
-      // Debug: print error if failed
-      if (!result.success) {
-        console.log('Export failed:', result.error);
-      }
 
       expect(result.success).toBe(true);
       expect(result.format).toBe(ExportFormat.PDF);
@@ -123,7 +117,7 @@ describe('PDFExporter', () => {
     });
 
     it('should handle multi-page content with page breaks', async () => {
-      const longContent = 'Page 1\n\n'.repeat(50) + 'Page 2';
+      const longContent = `${'Page 1\n\n'.repeat(50)}Page 2`;
 
       const data = {
         content: longContent,
@@ -226,8 +220,9 @@ describe('PDFExporter', () => {
       };
 
       // Mock PDF renderer to throw error by manipulating internal renderer
-      const originalRenderer = (exporter as any).pdfRenderer;
-      (exporter as any).pdfRenderer = {
+      const testExporter = exporter as unknown as { pdfRenderer: unknown };
+      const originalRenderer = testExporter.pdfRenderer;
+      testExporter.pdfRenderer = {
         Document: () => {
           throw new Error('PDF generation failed');
         },
@@ -247,7 +242,7 @@ describe('PDFExporter', () => {
       expect(result.error?.code).toBe('GENERATION_FAILED');
 
       // Restore original
-      (exporter as any).pdfRenderer = originalRenderer;
+      testExporter.pdfRenderer = originalRenderer;
     });
   });
 

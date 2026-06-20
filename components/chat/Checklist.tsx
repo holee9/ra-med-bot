@@ -6,8 +6,8 @@
 
 import { useCallback, useRef, useState } from 'react';
 import type { ChecklistItem } from '../../types/streaming';
-import { ExportButton } from '../export/ExportButton';
-import { useExportState } from '../export/useExportState';
+import { ExportHub } from '../export/ExportHub';
+import type { ExportArtifact } from '../export/FormatOptions';
 
 interface ChecklistProps {
   blockId: string;
@@ -25,20 +25,23 @@ export function Checklist({
   const [items, setItems] = useState<ChecklistItem[]>(initialItems);
   const debounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const [toastMessage, setToastMessage] = useState<string | null>(null);
-  const { state: exportState, setLoading, setSuccess, setError } = useExportState();
-
-  const handleExport = async () => {
-    setLoading();
-    try {
-      // TODO: Implement actual export logic via ExportHub
-      const result = {
-        filename: `checklist-${messageId}.txt`,
-        size: JSON.stringify(items).length
-      };
-      setSuccess(result);
-    } catch (err) {
-      setError(err instanceof Error ? err : new Error('Export failed'));
-    }
+  const exportArtifact: ExportArtifact = {
+    title: 'Regula Checklist',
+    content: items
+      .map(
+        (item) =>
+          `- [${item.completed ? 'x' : ' '}] ${item.title}${item.ref ? ` (${item.ref})` : ''}`,
+      )
+      .join('\n'),
+    artifactType: 'checklist',
+    filenameBase: `checklist-${messageId}`,
+    citations: items
+      .filter((item) => item.ref)
+      .map((item) => ({
+        text: item.ref ?? item.title,
+        source: item.ref ?? item.title,
+        offset: item.refSourceIndex ?? 0,
+      })),
   };
 
   const persistItems = useCallback(
@@ -96,11 +99,7 @@ export function Checklist({
         <p className="text-xs text-ink-500">
           {completedCount}/{items.length} 완료
         </p>
-        <ExportButton
-          onClick={handleExport}
-          disabled={exportState === 'loading'}
-          isOpen={exportState === 'loading'}
-        />
+        <ExportHub messageId={messageId} artifact={exportArtifact} />
       </div>
 
       <ul className="flex flex-col gap-1.5">

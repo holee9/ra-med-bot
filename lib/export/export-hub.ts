@@ -5,11 +5,18 @@
  * @MX:SPEC SPEC-REGULA-EXPORT-HUB-001
  */
 
-import { ExportFormat, ExportOptions, ExportResult } from './types';
-import { BaseExporter } from './base-exporter';
+import type { BaseExporter } from './base-exporter';
+import { DOCXExporter } from './exporters/docx-exporter';
+import { EmailExporter } from './exporters/email-exporter';
 import { MarkdownExporter } from './exporters/markdown-exporter';
 import { PDFExporter } from './exporters/pdf-exporter';
-import { EmailExporter } from './exporters/email-exporter';
+import {
+  ExportError,
+  ExportErrorCode,
+  type ExportFormat,
+  type ExportOptions,
+  type ExportResult,
+} from './types';
 
 /**
  * ExportHub - Central registry for all export formats
@@ -34,15 +41,7 @@ export class ExportHub {
     this.register(new PDFExporter());
     this.register(new EmailExporter());
 
-    // DOCX exporter requires 'docx' package - register if available
-    try {
-      // eslint-disable-next-line @typescript-eslint/no-var-requires
-      const { DocxExporter } = require('./exporters/docx-exporter');
-      this.register(new DocxExporter());
-    } catch (error) {
-      // DOCX package not available, skip registration
-      console.warn('DOCX exporter not available:', (error as Error).message);
-    }
+    this.register(new DOCXExporter());
   }
 
   /**
@@ -78,11 +77,10 @@ export class ExportHub {
       return {
         success: false,
         format: options.format,
-        error: {
-          code: 'INVALID_FORMAT' as any,
-          message: `Unsupported export format: ${options.format}`,
-          name: 'ExportError',
-        },
+        error: new ExportError(
+          ExportErrorCode.INVALID_FORMAT,
+          `Unsupported export format: ${options.format}`,
+        ),
       };
     }
 

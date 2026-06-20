@@ -3,7 +3,7 @@
  * REQ-EXP-001: All exporters must extend this base class
  */
 
-import { ExportFormat, ExportOptions, ExportResult, Exporter } from './types';
+import type { ExportErrorCode, ExportFormat, ExportOptions, ExportResult, Exporter } from './types';
 
 /**
  * Abstract base class for all exporters
@@ -45,7 +45,7 @@ export abstract class BaseExporter implements Exporter {
   protected createSuccessResult(
     format: ExportFormat,
     content: string,
-    filename: string
+    filename: string,
   ): ExportResult {
     const blob = new Blob([content], { type: 'text/plain' });
     return {
@@ -64,14 +64,14 @@ export abstract class BaseExporter implements Exporter {
    */
   protected createErrorResult(
     format: ExportFormat,
-    code: string,
-    message: string
+    code: ExportErrorCode,
+    message: string,
   ): ExportResult {
     return {
       success: false,
       format,
       error: {
-        code: code as any,
+        code,
         message,
         name: 'ExportError',
       },

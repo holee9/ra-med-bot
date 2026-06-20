@@ -10,14 +10,21 @@ import { describe, expect, it, vi } from 'vitest';
 import '@testing-library/jest-dom';
 import { FormatOptions } from '../FormatOptions';
 
+const artifact = {
+  title: 'Test Answer',
+  content: 'Actual selected answer content',
+  artifactType: 'answer' as const,
+  filenameBase: 'test-answer',
+};
+
 describe('FormatOptions', () => {
   it('renders menu with role="menu"', () => {
-    render(<FormatOptions onClose={() => {}} />);
+    render(<FormatOptions artifact={artifact} onClose={() => {}} />);
     expect(screen.getByRole('menu')).toBeInTheDocument();
   });
 
   it('renders four format menu items: DOCX, PDF, Markdown, 이메일', () => {
-    render(<FormatOptions onClose={() => {}} />);
+    render(<FormatOptions artifact={artifact} onClose={() => {}} />);
     expect(screen.getByRole('menuitem', { name: /DOCX/i })).toBeInTheDocument();
     expect(screen.getByRole('menuitem', { name: /PDF/i })).toBeInTheDocument();
     expect(screen.getByRole('menuitem', { name: /Markdown/i })).toBeInTheDocument();
@@ -26,20 +33,20 @@ describe('FormatOptions', () => {
 
   it('calls onClose when ESC key is pressed', () => {
     const handleClose = vi.fn();
-    render(<FormatOptions onClose={handleClose} />);
+    render(<FormatOptions artifact={artifact} onClose={handleClose} />);
     fireEvent.keyDown(document, { key: 'Escape' });
-    // ESC key listener needs to be added to the implementation
+    expect(handleClose).toHaveBeenCalled();
   });
 
   it('calls onClose when clicking outside', () => {
     const handleClose = vi.fn();
     render(
       <div>
-        <FormatOptions onClose={handleClose} />
+        <FormatOptions artifact={artifact} onClose={handleClose} />
         <div data-testid="outside">Outside</div>
-      </div>
+      </div>,
     );
-    fireEvent.click(screen.getByTestId('outside'));
-    // Click outside listener needs to be added to the implementation
+    fireEvent.mouseDown(screen.getByTestId('outside'));
+    expect(handleClose).toHaveBeenCalled();
   });
 });
