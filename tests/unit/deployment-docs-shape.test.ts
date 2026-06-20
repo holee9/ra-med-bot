@@ -27,7 +27,7 @@ describe('Deployment documentation (REQ-LAUNCH-039)', () => {
     const content = readDoc('env-matrix.md');
     expect(content).toContain('DATABASE_URL');
     expect(content).toContain('ANTHROPIC_API_KEY');
-    expect(content).toContain('NEXTAUTH_SECRET');
+    expect(content).toContain('AUTH_SECRET');
   });
 
   it('dns-setup.md exists', () => {
