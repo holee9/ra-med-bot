@@ -8,7 +8,7 @@ import { evaluateRiskLevel, validateScale } from '@/lib/risk/risk-evaluation';
 export const POST = withPermission('risk.update', async (req, ctx, session) => {
   const params = await (ctx.params as Promise<Record<string, string>>);
   const id = params?.id as string;
-  const { severity, probability } = await req.json() as { severity: number; probability: number };
+  const { severity, probability } = (await req.json()) as { severity: number; probability: number };
 
   if (!validateScale(severity) || !validateScale(probability)) {
     return Response.json(

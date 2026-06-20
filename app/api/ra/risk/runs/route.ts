@@ -7,7 +7,7 @@ import { withPermission } from '@/lib/auth/with-permission';
 export const POST = withPermission('risk.generate', async (req, _ctx, session) => {
   try {
     const body = await req.json();
-    const { HybridRaClientError, createHybridRaFetch } = await import('@/lib/api/hybrid-ra-client');
+    const { createHybridRaFetch } = await import('@/lib/api/hybrid-ra-client');
     const hybridFetch = createHybridRaFetch();
     const res = await hybridFetch('/api/v1/risk/runs', {
       method: 'POST',
@@ -19,7 +19,7 @@ export const POST = withPermission('risk.generate', async (req, _ctx, session) =
       actor_id: session.user.id,
       action: 'workflow.start',
       resource_type: 'risk_run',
-      resource_id: ((data as Record<string, unknown>)['id'] as string | undefined) ?? 'unknown',
+      resource_id: ((data as Record<string, unknown>).id as string | undefined) ?? 'unknown',
     });
 
     return Response.json(data, { status: 201 });

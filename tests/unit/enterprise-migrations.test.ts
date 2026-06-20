@@ -293,13 +293,13 @@ describe('lib/db/schema.ts Phase 5 additions', () => {
     expect(src).toMatch(/export const projectMembers\s*=/);
   });
 
-  it('auditActionEnum stays in lock-step with AuditAction through the latest regulated workflows', () => {
+  it('auditActionEnum stays in lock-step with AuditAction through risk management', () => {
     const src = readText('lib/db/schema.ts');
     const auditSrc = readText('lib/audit.ts');
     const values = extractAuditActionEnumValues(src);
     const typeValues = extractAuditActionTypeValues(auditSrc);
     expect(values).toEqual(typeValues);
-    expect(values).toHaveLength(84);
+    expect(values).toHaveLength(91);
   });
 
   it.each(REQUIRED_RECOVERY_TABLES)(
@@ -329,7 +329,7 @@ describe('lib/audit.ts Phase 5 AuditAction type additions', () => {
     expect(src).toMatch(new RegExp(`'${escaped}'`));
   });
 
-  it('AuditAction type includes post-enterprise regulated workflow actions through 0056', () => {
+  it('AuditAction type includes post-enterprise regulated workflow actions through risk management', () => {
     const src = readText('lib/audit.ts');
     const values = extractAuditActionTypeValues(src);
     expect(values).toEqual(
@@ -340,9 +340,10 @@ describe('lib/audit.ts Phase 5 AuditAction type additions', () => {
         'samd_assessment_created',
         'dhf_created',
         'submission_validation_completed',
+        'risk.report_approved',
       ]),
     );
-    expect(values).toHaveLength(84);
+    expect(values).toHaveLength(91);
   });
 
   it.each(REQUIRED_RECOVERY_AUDIT_ACTIONS)(

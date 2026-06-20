@@ -5,20 +5,20 @@
 // @MX:SPEC SPEC-REGULA-RISK-001 (T3.1~T3.4, REQ-RISK-034~036)
 
 import {
+  AlignmentType,
+  BorderStyle,
   Document,
+  HeadingLevel,
+  Packer,
   Paragraph,
   Table,
   TableCell,
   TableRow,
   TextRun,
-  HeadingLevel,
-  BorderStyle,
-  AlignmentType,
   WidthType,
-  Packer,
 } from 'docx';
-import type { RiskLevel } from './risk-evaluation';
 import type { ControlTier } from './control-recommendation';
+import type { RiskLevel } from './risk-evaluation';
 
 // ---------------------------------------------------------------------------
 // Public types
@@ -98,17 +98,18 @@ function makeTableCell(text: string, width = 2000): TableCell {
 
 function makeHeaderRow(labels: string[]): TableRow {
   return new TableRow({
-    children: labels.map((l) =>
-      new TableCell({
-        children: [new Paragraph({ children: [new TextRun({ text: l, bold: true, size: 18 })] })],
-        shading: { fill: '4472C4' },
-        borders: {
-          top: { style: BorderStyle.SINGLE, size: 1 },
-          bottom: { style: BorderStyle.SINGLE, size: 1 },
-          left: { style: BorderStyle.SINGLE, size: 1 },
-          right: { style: BorderStyle.SINGLE, size: 1 },
-        },
-      }),
+    children: labels.map(
+      (l) =>
+        new TableCell({
+          children: [new Paragraph({ children: [new TextRun({ text: l, bold: true, size: 18 })] })],
+          shading: { fill: '4472C4' },
+          borders: {
+            top: { style: BorderStyle.SINGLE, size: 1 },
+            bottom: { style: BorderStyle.SINGLE, size: 1 },
+            left: { style: BorderStyle.SINGLE, size: 1 },
+            right: { style: BorderStyle.SINGLE, size: 1 },
+          },
+        }),
     ),
   });
 }
@@ -140,24 +141,31 @@ function buildRiskItemsTable(items: RiskItemPayload[]): Table {
     });
   });
 
-  return new Table({ rows: [headerRow, ...dataRows], width: { size: 100, type: WidthType.PERCENTAGE } });
+  return new Table({
+    rows: [headerRow, ...dataRows],
+    width: { size: 100, type: WidthType.PERCENTAGE },
+  });
 }
 
 function buildGsprTable(mappings: GsprMappingPayload[]): Table {
   const headerRow = makeHeaderRow(['GSPR Clause', 'Requirement', 'Compliance', 'Evidence']);
 
-  const dataRows = mappings.map((m) =>
-    new TableRow({
-      children: [
-        makeTableCell(m.gsprClause, 1500),
-        makeTableCell(m.requirement, 3000),
-        makeTableCell(m.compliance, 1500),
-        makeTableCell(m.evidence, 3500),
-      ],
-    }),
+  const dataRows = mappings.map(
+    (m) =>
+      new TableRow({
+        children: [
+          makeTableCell(m.gsprClause, 1500),
+          makeTableCell(m.requirement, 3000),
+          makeTableCell(m.compliance, 1500),
+          makeTableCell(m.evidence, 3500),
+        ],
+      }),
   );
 
-  return new Table({ rows: [headerRow, ...dataRows], width: { size: 100, type: WidthType.PERCENTAGE } });
+  return new Table({
+    rows: [headerRow, ...dataRows],
+    width: { size: 100, type: WidthType.PERCENTAGE },
+  });
 }
 
 // ---------------------------------------------------------------------------
@@ -194,7 +202,11 @@ export async function buildRiskReport(run: RiskRunPayload): Promise<Uint8Array> 
   sections.push(makeText(`Device Description: ${run.deviceDescription}`));
   sections.push(makeText(`Device Classification: ${run.deviceClass}`));
   sections.push(makeText(`Report Date: ${run.createdAt}`));
-  sections.push(makeText(`Approval Status: ${run.approvedBy ? `Approved by ${run.approvedBy}` : 'Pending RA-Lead Approval'}`));
+  sections.push(
+    makeText(
+      `Approval Status: ${run.approvedBy ? `Approved by ${run.approvedBy}` : 'Pending RA-Lead Approval'}`,
+    ),
+  );
   sections.push(new Paragraph({ text: '', spacing: { after: 200 } }));
 
   // Section 2: Risk Analysis Summary

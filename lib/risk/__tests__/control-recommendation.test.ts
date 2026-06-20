@@ -62,13 +62,13 @@ describe('validateControlHierarchy', () => {
   });
 
   it('information tier with rationale → valid', () => {
-    expect(() => validateControlHierarchy('information', 'Safety label as last resort')).not.toThrow();
+    expect(() =>
+      validateControlHierarchy('information', 'Safety label as last resort'),
+    ).not.toThrow();
   });
 
   it('information tier without rationale → throws (ISO 14971 §7.1 hierarchy violation)', () => {
-    expect(() => validateControlHierarchy('information')).toThrow(
-      /rationale.*required/i,
-    );
+    expect(() => validateControlHierarchy('information')).toThrow(/rationale.*required/i);
   });
 
   it('information tier with empty rationale → throws', () => {

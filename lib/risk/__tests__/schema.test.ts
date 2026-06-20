@@ -136,18 +136,14 @@ describe('T0.8 — Permissions matrix includes risk actions', () => {
 
   it("risk.approve requires minRole 'ra-lead'", () => {
     // Find the risk.approve entry and verify minRole
-    const approveMatch = permissionsSource.match(
-      /'risk\.approve':\s*\{[^}]*minRole:\s*'([^']+)'/
-    );
+    const approveMatch = permissionsSource.match(/'risk\.approve':\s*\{[^}]*minRole:\s*'([^']+)'/);
     expect(approveMatch).not.toBeNull();
-    expect(approveMatch![1]).toBe('ra-lead');
+    expect(approveMatch?.[1]).toBe('ra-lead');
   });
 
   it("risk.generate requires minRole 'ra-member'", () => {
-    const genMatch = permissionsSource.match(
-      /'risk\.generate':\s*\{[^}]*minRole:\s*'([^']+)'/
-    );
+    const genMatch = permissionsSource.match(/'risk\.generate':\s*\{[^}]*minRole:\s*'([^']+)'/);
     expect(genMatch).not.toBeNull();
-    expect(genMatch![1]).toBe('ra-member');
+    expect(genMatch?.[1]).toBe('ra-member');
   });
 });

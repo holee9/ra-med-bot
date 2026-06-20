@@ -71,18 +71,25 @@ export function HazardTable({ items, onEdit, onDelete, loading = false }: Hazard
         </thead>
         <tbody className="divide-y">
           {items.map((item) => (
-            <tr key={item.id} className={item.lowConfidence ? 'bg-orange-50' : 'bg-white hover:bg-gray-50'}>
+            <tr
+              key={item.id}
+              className={item.lowConfidence ? 'bg-orange-50' : 'bg-white hover:bg-gray-50'}
+            >
               <td className="px-3 py-2">
                 {item.hazard}
                 {item.lowConfidence && (
-                  <span className="ml-1 text-[10px] text-orange-600 font-medium">[low confidence]</span>
+                  <span className="ml-1 text-[10px] text-orange-600 font-medium">
+                    [low confidence]
+                  </span>
                 )}
               </td>
               <td className="px-3 py-2 text-gray-700">{item.harm}</td>
               <td className="px-3 py-2 text-center font-mono">{item.severity}</td>
               <td className="px-3 py-2 text-center font-mono">{item.probability}</td>
               <td className="px-3 py-2 text-center">
-                <span className={`px-2 py-0.5 rounded-full text-xs font-medium ${RISK_BADGE[item.riskLevel]}`}>
+                <span
+                  className={`px-2 py-0.5 rounded-full text-xs font-medium ${RISK_BADGE[item.riskLevel]}`}
+                >
                   {RISK_TEXT[item.riskLevel]}
                 </span>
               </td>
@@ -96,6 +103,7 @@ export function HazardTable({ items, onEdit, onDelete, loading = false }: Hazard
                   <div className="flex items-center justify-center gap-2">
                     {onEdit && (
                       <button
+                        type="button"
                         onClick={() => onEdit(item)}
                         className="text-xs text-blue-600 hover:underline"
                       >
@@ -104,6 +112,7 @@ export function HazardTable({ items, onEdit, onDelete, loading = false }: Hazard
                     )}
                     {onDelete && (
                       <button
+                        type="button"
                         onClick={() => onDelete(item.id)}
                         className="text-xs text-red-500 hover:underline"
                       >

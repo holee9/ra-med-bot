@@ -12,7 +12,10 @@ export interface ControlCandidate {
   rationale: string | null;
 }
 
-type FetchFn = (endpoint: string, options?: RequestInit) => Promise<{ json: () => Promise<unknown> }>;
+type FetchFn = (
+  endpoint: string,
+  options?: RequestInit,
+) => Promise<{ json: () => Promise<unknown> }>;
 
 /**
  * Validate ISO 14971 §7.1 control tier hierarchy constraint.

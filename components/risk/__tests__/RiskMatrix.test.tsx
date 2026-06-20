@@ -1,9 +1,9 @@
 // @MX:NOTE [AUTO] RiskMatrix component tests — SPEC-REGULA-RISK-001 Phase 4 (T4.1~T4.2).
 // @MX:SPEC SPEC-REGULA-RISK-001 (T4.1~T4.2, REQ-RISK-011~015)
 
-import { describe, expect, it } from 'vitest';
 import fs from 'node:fs';
 import path from 'node:path';
+import { describe, expect, it } from 'vitest';
 
 const componentDir = path.resolve(__dirname, '..');
 

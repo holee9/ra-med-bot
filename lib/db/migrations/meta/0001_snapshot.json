@@ -81,12 +81,8 @@
           "name": "accounts_user_id_users_id_fk",
           "tableFrom": "accounts",
           "tableTo": "users",
-          "columnsFrom": [
-            "user_id"
-          ],
-          "columnsTo": [
-            "id"
-          ],
+          "columnsFrom": ["user_id"],
+          "columnsTo": ["id"],
           "onDelete": "cascade",
           "onUpdate": "no action"
         }
@@ -94,10 +90,7 @@
       "compositePrimaryKeys": {
         "accounts_provider_provider_account_id_pk": {
           "name": "accounts_provider_provider_account_id_pk",
-          "columns": [
-            "provider",
-            "provider_account_id"
-          ]
+          "columns": ["provider", "provider_account_id"]
         }
       },
       "uniqueConstraints": {},
@@ -196,12 +189,8 @@
           "name": "adverse_events_workflow_run_id_workflow_runs_id_fk",
           "tableFrom": "adverse_events",
           "tableTo": "workflow_runs",
-          "columnsFrom": [
-            "workflow_run_id"
-          ],
-          "columnsTo": [
-            "id"
-          ],
+          "columnsFrom": ["workflow_run_id"],
+          "columnsTo": ["id"],
           "onDelete": "cascade",
           "onUpdate": "no action"
         }
@@ -339,12 +328,8 @@
           "name": "audit_logs_actor_id_users_id_fk",
           "tableFrom": "audit_logs",
           "tableTo": "users",
-          "columnsFrom": [
-            "actor_id"
-          ],
-          "columnsTo": [
-            "id"
-          ],
+          "columnsFrom": ["actor_id"],
+          "columnsTo": ["id"],
           "onDelete": "set null",
           "onUpdate": "no action"
         },
@@ -352,12 +337,8 @@
           "name": "audit_logs_conversation_id_conversations_id_fk",
           "tableFrom": "audit_logs",
           "tableTo": "conversations",
-          "columnsFrom": [
-            "conversation_id"
-          ],
-          "columnsTo": [
-            "id"
-          ],
+          "columnsFrom": ["conversation_id"],
+          "columnsTo": ["id"],
           "onDelete": "restrict",
           "onUpdate": "no action"
         }
@@ -448,12 +429,8 @@
           "name": "cer_literature_cer_run_id_workflow_runs_id_fk",
           "tableFrom": "cer_literature",
           "tableTo": "workflow_runs",
-          "columnsFrom": [
-            "cer_run_id"
-          ],
-          "columnsTo": [
-            "id"
-          ],
+          "columnsFrom": ["cer_run_id"],
+          "columnsTo": ["id"],
           "onDelete": "cascade",
           "onUpdate": "no action"
         }
@@ -572,12 +549,8 @@
           "name": "conversations_project_id_projects_id_fk",
           "tableFrom": "conversations",
           "tableTo": "projects",
-          "columnsFrom": [
-            "project_id"
-          ],
-          "columnsTo": [
-            "id"
-          ],
+          "columnsFrom": ["project_id"],
+          "columnsTo": ["id"],
           "onDelete": "set null",
           "onUpdate": "no action"
         },
@@ -585,12 +558,8 @@
           "name": "conversations_user_id_users_id_fk",
           "tableFrom": "conversations",
           "tableTo": "users",
-          "columnsFrom": [
-            "user_id"
-          ],
-          "columnsTo": [
-            "id"
-          ],
+          "columnsFrom": ["user_id"],
+          "columnsTo": ["id"],
           "onDelete": "restrict",
           "onUpdate": "no action"
         }
@@ -702,12 +671,8 @@
           "name": "crawler_runs_org_id_organizations_id_fk",
           "tableFrom": "crawler_runs",
           "tableTo": "organizations",
-          "columnsFrom": [
-            "org_id"
-          ],
-          "columnsTo": [
-            "id"
-          ],
+          "columnsFrom": ["org_id"],
+          "columnsTo": ["id"],
           "onDelete": "cascade",
           "onUpdate": "no action"
         }
@@ -830,12 +795,8 @@
           "name": "design_history_files_org_id_organizations_id_fk",
           "tableFrom": "design_history_files",
           "tableTo": "organizations",
-          "columnsFrom": [
-            "org_id"
-          ],
-          "columnsTo": [
-            "id"
-          ],
+          "columnsFrom": ["org_id"],
+          "columnsTo": ["id"],
           "onDelete": "cascade",
           "onUpdate": "no action"
         },
@@ -843,12 +804,8 @@
           "name": "design_history_files_created_by_users_id_fk",
           "tableFrom": "design_history_files",
           "tableTo": "users",
-          "columnsFrom": [
-            "created_by"
-          ],
-          "columnsTo": [
-            "id"
-          ],
+          "columnsFrom": ["created_by"],
+          "columnsTo": ["id"],
           "onDelete": "no action",
           "onUpdate": "no action"
         }
@@ -944,12 +901,8 @@
           "name": "design_inputs_dhf_id_design_history_files_id_fk",
           "tableFrom": "design_inputs",
           "tableTo": "design_history_files",
-          "columnsFrom": [
-            "dhf_id"
-          ],
-          "columnsTo": [
-            "id"
-          ],
+          "columnsFrom": ["dhf_id"],
+          "columnsTo": ["id"],
           "onDelete": "cascade",
           "onUpdate": "no action"
         }
@@ -1050,12 +1003,8 @@
           "name": "design_reviews_dhf_id_design_history_files_id_fk",
           "tableFrom": "design_reviews",
           "tableTo": "design_history_files",
-          "columnsFrom": [
-            "dhf_id"
-          ],
-          "columnsTo": [
-            "id"
-          ],
+          "columnsFrom": ["dhf_id"],
+          "columnsTo": ["id"],
           "onDelete": "cascade",
           "onUpdate": "no action"
         }
@@ -1155,12 +1104,8 @@
           "name": "design_verifications_dhf_id_design_history_files_id_fk",
           "tableFrom": "design_verifications",
           "tableTo": "design_history_files",
-          "columnsFrom": [
-            "dhf_id"
-          ],
-          "columnsTo": [
-            "id"
-          ],
+          "columnsFrom": ["dhf_id"],
+          "columnsTo": ["id"],
           "onDelete": "cascade",
           "onUpdate": "no action"
         },
@@ -1168,12 +1113,8 @@
           "name": "design_verifications_design_input_id_design_inputs_id_fk",
           "tableFrom": "design_verifications",
           "tableTo": "design_inputs",
-          "columnsFrom": [
-            "design_input_id"
-          ],
-          "columnsTo": [
-            "id"
-          ],
+          "columnsFrom": ["design_input_id"],
+          "columnsTo": ["id"],
           "onDelete": "no action",
           "onUpdate": "no action"
         }
@@ -1327,12 +1268,8 @@
           "name": "device_classifications_org_id_organizations_id_fk",
           "tableFrom": "device_classifications",
           "tableTo": "organizations",
-          "columnsFrom": [
-            "org_id"
-          ],
-          "columnsTo": [
-            "id"
-          ],
+          "columnsFrom": ["org_id"],
+          "columnsTo": ["id"],
           "onDelete": "cascade",
           "onUpdate": "no action"
         },
@@ -1340,12 +1277,8 @@
           "name": "device_classifications_user_id_users_id_fk",
           "tableFrom": "device_classifications",
           "tableTo": "users",
-          "columnsFrom": [
-            "user_id"
-          ],
-          "columnsTo": [
-            "id"
-          ],
+          "columnsFrom": ["user_id"],
+          "columnsTo": ["id"],
           "onDelete": "no action",
           "onUpdate": "no action"
         }
@@ -1445,12 +1378,8 @@
           "name": "evidence_syntheses_search_id_literature_searches_id_fk",
           "tableFrom": "evidence_syntheses",
           "tableTo": "literature_searches",
-          "columnsFrom": [
-            "search_id"
-          ],
-          "columnsTo": [
-            "id"
-          ],
+          "columnsFrom": ["search_id"],
+          "columnsTo": ["id"],
           "onDelete": "cascade",
           "onUpdate": "no action"
         }
@@ -1552,12 +1481,8 @@
           "name": "expert_reviews_conversation_id_conversations_id_fk",
           "tableFrom": "expert_reviews",
           "tableTo": "conversations",
-          "columnsFrom": [
-            "conversation_id"
-          ],
-          "columnsTo": [
-            "id"
-          ],
+          "columnsFrom": ["conversation_id"],
+          "columnsTo": ["id"],
           "onDelete": "restrict",
           "onUpdate": "no action"
         },
@@ -1565,12 +1490,8 @@
           "name": "expert_reviews_message_id_messages_id_fk",
           "tableFrom": "expert_reviews",
           "tableTo": "messages",
-          "columnsFrom": [
-            "message_id"
-          ],
-          "columnsTo": [
-            "id"
-          ],
+          "columnsFrom": ["message_id"],
+          "columnsTo": ["id"],
           "onDelete": "cascade",
           "onUpdate": "no action"
         },
@@ -1578,12 +1499,8 @@
           "name": "expert_reviews_requested_by_users_id_fk",
           "tableFrom": "expert_reviews",
           "tableTo": "users",
-          "columnsFrom": [
-            "requested_by"
-          ],
-          "columnsTo": [
-            "id"
-          ],
+          "columnsFrom": ["requested_by"],
+          "columnsTo": ["id"],
           "onDelete": "restrict",
           "onUpdate": "no action"
         },
@@ -1591,12 +1508,8 @@
           "name": "expert_reviews_assigned_to_users_id_fk",
           "tableFrom": "expert_reviews",
           "tableTo": "users",
-          "columnsFrom": [
-            "assigned_to"
-          ],
-          "columnsTo": [
-            "id"
-          ],
+          "columnsFrom": ["assigned_to"],
+          "columnsTo": ["id"],
           "onDelete": "set null",
           "onUpdate": "no action"
         }
@@ -1687,12 +1600,8 @@
           "name": "impact_action_items_assessment_id_regulatory_impact_assessments_id_fk",
           "tableFrom": "impact_action_items",
           "tableTo": "regulatory_impact_assessments",
-          "columnsFrom": [
-            "assessment_id"
-          ],
-          "columnsTo": [
-            "id"
-          ],
+          "columnsFrom": ["assessment_id"],
+          "columnsTo": ["id"],
           "onDelete": "cascade",
           "onUpdate": "no action"
         },
@@ -1700,12 +1609,8 @@
           "name": "impact_action_items_project_id_projects_id_fk",
           "tableFrom": "impact_action_items",
           "tableTo": "projects",
-          "columnsFrom": [
-            "project_id"
-          ],
-          "columnsTo": [
-            "id"
-          ],
+          "columnsFrom": ["project_id"],
+          "columnsTo": ["id"],
           "onDelete": "cascade",
           "onUpdate": "no action"
         },
@@ -1713,12 +1618,8 @@
           "name": "impact_action_items_assigned_to_users_id_fk",
           "tableFrom": "impact_action_items",
           "tableTo": "users",
-          "columnsFrom": [
-            "assigned_to"
-          ],
-          "columnsTo": [
-            "id"
-          ],
+          "columnsFrom": ["assigned_to"],
+          "columnsTo": ["id"],
           "onDelete": "set null",
           "onUpdate": "no action"
         }
@@ -1835,12 +1736,8 @@
           "name": "literature_references_search_id_literature_searches_id_fk",
           "tableFrom": "literature_references",
           "tableTo": "literature_searches",
-          "columnsFrom": [
-            "search_id"
-          ],
-          "columnsTo": [
-            "id"
-          ],
+          "columnsFrom": ["search_id"],
+          "columnsTo": ["id"],
           "onDelete": "cascade",
           "onUpdate": "no action"
         }
@@ -1967,12 +1864,8 @@
           "name": "literature_searches_cer_run_id_workflow_runs_id_fk",
           "tableFrom": "literature_searches",
           "tableTo": "workflow_runs",
-          "columnsFrom": [
-            "cer_run_id"
-          ],
-          "columnsTo": [
-            "id"
-          ],
+          "columnsFrom": ["cer_run_id"],
+          "columnsTo": ["id"],
           "onDelete": "cascade",
           "onUpdate": "no action"
         }
@@ -2057,12 +1950,8 @@
           "name": "message_blocks_message_id_messages_id_fk",
           "tableFrom": "message_blocks",
           "tableTo": "messages",
-          "columnsFrom": [
-            "message_id"
-          ],
-          "columnsTo": [
-            "id"
-          ],
+          "columnsFrom": ["message_id"],
+          "columnsTo": ["id"],
           "onDelete": "cascade",
           "onUpdate": "no action"
         }
@@ -2134,12 +2023,8 @@
           "name": "message_sources_message_id_messages_id_fk",
           "tableFrom": "message_sources",
           "tableTo": "messages",
-          "columnsFrom": [
-            "message_id"
-          ],
-          "columnsTo": [
-            "id"
-          ],
+          "columnsFrom": ["message_id"],
+          "columnsTo": ["id"],
           "onDelete": "cascade",
           "onUpdate": "no action"
         },
@@ -2147,12 +2032,8 @@
           "name": "message_sources_source_id_sources_id_fk",
           "tableFrom": "message_sources",
           "tableTo": "sources",
-          "columnsFrom": [
-            "source_id"
-          ],
-          "columnsTo": [
-            "id"
-          ],
+          "columnsFrom": ["source_id"],
+          "columnsTo": ["id"],
           "onDelete": "restrict",
           "onUpdate": "no action"
         }
@@ -2162,10 +2043,7 @@
         "message_sources_message_cite_idx": {
           "name": "message_sources_message_cite_idx",
           "nullsNotDistinct": false,
-          "columns": [
-            "message_id",
-            "cite_index"
-          ]
+          "columns": ["message_id", "cite_index"]
         }
       },
       "policies": {},
@@ -2310,12 +2188,8 @@
           "name": "messages_conversation_id_conversations_id_fk",
           "tableFrom": "messages",
           "tableTo": "conversations",
-          "columnsFrom": [
-            "conversation_id"
-          ],
-          "columnsTo": [
-            "id"
-          ],
+          "columnsFrom": ["conversation_id"],
+          "columnsTo": ["id"],
           "onDelete": "cascade",
           "onUpdate": "no action"
         }
@@ -2413,12 +2287,8 @@
           "name": "org_digest_preferences_org_id_organizations_id_fk",
           "tableFrom": "org_digest_preferences",
           "tableTo": "organizations",
-          "columnsFrom": [
-            "org_id"
-          ],
-          "columnsTo": [
-            "id"
-          ],
+          "columnsFrom": ["org_id"],
+          "columnsTo": ["id"],
           "onDelete": "cascade",
           "onUpdate": "no action"
         }
@@ -2428,9 +2298,7 @@
         "org_digest_preferences_org_id_unique": {
           "name": "org_digest_preferences_org_id_unique",
           "nullsNotDistinct": false,
-          "columns": [
-            "org_id"
-          ]
+          "columns": ["org_id"]
         }
       },
       "policies": {},
@@ -2483,12 +2351,8 @@
           "name": "org_members_user_id_users_id_fk",
           "tableFrom": "org_members",
           "tableTo": "users",
-          "columnsFrom": [
-            "user_id"
-          ],
-          "columnsTo": [
-            "id"
-          ],
+          "columnsFrom": ["user_id"],
+          "columnsTo": ["id"],
           "onDelete": "cascade",
           "onUpdate": "no action"
         },
@@ -2496,12 +2360,8 @@
           "name": "org_members_org_id_organizations_id_fk",
           "tableFrom": "org_members",
           "tableTo": "organizations",
-          "columnsFrom": [
-            "org_id"
-          ],
-          "columnsTo": [
-            "id"
-          ],
+          "columnsFrom": ["org_id"],
+          "columnsTo": ["id"],
           "onDelete": "cascade",
           "onUpdate": "no action"
         }
@@ -2568,12 +2428,8 @@
           "name": "org_notification_settings_org_id_organizations_id_fk",
           "tableFrom": "org_notification_settings",
           "tableTo": "organizations",
-          "columnsFrom": [
-            "org_id"
-          ],
-          "columnsTo": [
-            "id"
-          ],
+          "columnsFrom": ["org_id"],
+          "columnsTo": ["id"],
           "onDelete": "cascade",
           "onUpdate": "no action"
         }
@@ -2583,9 +2439,7 @@
         "org_notification_settings_org_id_unique": {
           "name": "org_notification_settings_org_id_unique",
           "nullsNotDistinct": false,
-          "columns": [
-            "org_id"
-          ]
+          "columns": ["org_id"]
         }
       },
       "policies": {},
@@ -2685,12 +2539,8 @@
           "name": "org_update_relevance_org_id_organizations_id_fk",
           "tableFrom": "org_update_relevance",
           "tableTo": "organizations",
-          "columnsFrom": [
-            "org_id"
-          ],
-          "columnsTo": [
-            "id"
-          ],
+          "columnsFrom": ["org_id"],
+          "columnsTo": ["id"],
           "onDelete": "cascade",
           "onUpdate": "no action"
         },
@@ -2698,12 +2548,8 @@
           "name": "org_update_relevance_update_id_regulatory_updates_id_fk",
           "tableFrom": "org_update_relevance",
           "tableTo": "regulatory_updates",
-          "columnsFrom": [
-            "update_id"
-          ],
-          "columnsTo": [
-            "id"
-          ],
+          "columnsFrom": ["update_id"],
+          "columnsTo": ["id"],
           "onDelete": "cascade",
           "onUpdate": "no action"
         }
@@ -2713,10 +2559,7 @@
         "org_update_relevance_org_update_key": {
           "name": "org_update_relevance_org_update_key",
           "nullsNotDistinct": false,
-          "columns": [
-            "org_id",
-            "update_id"
-          ]
+          "columns": ["org_id", "update_id"]
         }
       },
       "policies": {},
@@ -2820,12 +2663,8 @@
           "name": "pccp_components_pccp_version_id_pccp_versions_id_fk",
           "tableFrom": "pccp_components",
           "tableTo": "pccp_versions",
-          "columnsFrom": [
-            "pccp_version_id"
-          ],
-          "columnsTo": [
-            "id"
-          ],
+          "columnsFrom": ["pccp_version_id"],
+          "columnsTo": ["id"],
           "onDelete": "cascade",
           "onUpdate": "no action"
         }
@@ -2835,10 +2674,7 @@
         "pccp_components_pccp_version_id_component_type_unique": {
           "name": "pccp_components_pccp_version_id_component_type_unique",
           "nullsNotDistinct": false,
-          "columns": [
-            "pccp_version_id",
-            "component_type"
-          ]
+          "columns": ["pccp_version_id", "component_type"]
         }
       },
       "policies": {},
@@ -2988,12 +2824,8 @@
           "name": "project_members_user_id_users_id_fk",
           "tableFrom": "project_members",
           "tableTo": "users",
-          "columnsFrom": [
-            "user_id"
-          ],
-          "columnsTo": [
-            "id"
-          ],
+          "columnsFrom": ["user_id"],
+          "columnsTo": ["id"],
           "onDelete": "cascade",
           "onUpdate": "no action"
         },
@@ -3001,12 +2833,8 @@
           "name": "project_members_project_id_projects_id_fk",
           "tableFrom": "project_members",
           "tableTo": "projects",
-          "columnsFrom": [
-            "project_id"
-          ],
-          "columnsTo": [
-            "id"
-          ],
+          "columnsFrom": ["project_id"],
+          "columnsTo": ["id"],
           "onDelete": "cascade",
           "onUpdate": "no action"
         }
@@ -3117,12 +2945,8 @@
           "name": "projects_organization_id_organizations_id_fk",
           "tableFrom": "projects",
           "tableTo": "organizations",
-          "columnsFrom": [
-            "organization_id"
-          ],
-          "columnsTo": [
-            "id"
-          ],
+          "columnsFrom": ["organization_id"],
+          "columnsTo": ["id"],
           "onDelete": "cascade",
           "onUpdate": "no action"
         }
@@ -3238,12 +3062,8 @@
           "name": "regulatory_impact_assessments_regulatory_update_id_regulatory_updates_id_fk",
           "tableFrom": "regulatory_impact_assessments",
           "tableTo": "regulatory_updates",
-          "columnsFrom": [
-            "regulatory_update_id"
-          ],
-          "columnsTo": [
-            "id"
-          ],
+          "columnsFrom": ["regulatory_update_id"],
+          "columnsTo": ["id"],
           "onDelete": "cascade",
           "onUpdate": "no action"
         },
@@ -3251,12 +3071,8 @@
           "name": "regulatory_impact_assessments_project_id_projects_id_fk",
           "tableFrom": "regulatory_impact_assessments",
           "tableTo": "projects",
-          "columnsFrom": [
-            "project_id"
-          ],
-          "columnsTo": [
-            "id"
-          ],
+          "columnsFrom": ["project_id"],
+          "columnsTo": ["id"],
           "onDelete": "cascade",
           "onUpdate": "no action"
         },
@@ -3264,12 +3080,8 @@
           "name": "regulatory_impact_assessments_created_by_users_id_fk",
           "tableFrom": "regulatory_impact_assessments",
           "tableTo": "users",
-          "columnsFrom": [
-            "created_by"
-          ],
-          "columnsTo": [
-            "id"
-          ],
+          "columnsFrom": ["created_by"],
+          "columnsTo": ["id"],
           "onDelete": "set null",
           "onUpdate": "no action"
         }
@@ -3279,10 +3091,7 @@
         "ria_update_project_key": {
           "name": "ria_update_project_key",
           "nullsNotDistinct": false,
-          "columns": [
-            "regulatory_update_id",
-            "project_id"
-          ]
+          "columns": ["regulatory_update_id", "project_id"]
         }
       },
       "policies": {},
@@ -3481,12 +3290,8 @@
           "name": "reportability_assessments_adverse_event_id_adverse_events_id_fk",
           "tableFrom": "reportability_assessments",
           "tableTo": "adverse_events",
-          "columnsFrom": [
-            "adverse_event_id"
-          ],
-          "columnsTo": [
-            "id"
-          ],
+          "columnsFrom": ["adverse_event_id"],
+          "columnsTo": ["id"],
           "onDelete": "cascade",
           "onUpdate": "no action"
         }
@@ -3602,12 +3407,8 @@
           "name": "risk_controls_risk_item_id_risk_items_id_fk",
           "tableFrom": "risk_controls",
           "tableTo": "risk_items",
-          "columnsFrom": [
-            "risk_item_id"
-          ],
-          "columnsTo": [
-            "id"
-          ],
+          "columnsFrom": ["risk_item_id"],
+          "columnsTo": ["id"],
           "onDelete": "cascade",
           "onUpdate": "no action"
         }
@@ -3695,12 +3496,8 @@
           "name": "risk_gspr_mappings_workflow_run_id_workflow_runs_id_fk",
           "tableFrom": "risk_gspr_mappings",
           "tableTo": "workflow_runs",
-          "columnsFrom": [
-            "workflow_run_id"
-          ],
-          "columnsTo": [
-            "id"
-          ],
+          "columnsFrom": ["workflow_run_id"],
+          "columnsTo": ["id"],
           "onDelete": "cascade",
           "onUpdate": "no action"
         },
@@ -3708,12 +3505,8 @@
           "name": "risk_gspr_mappings_risk_item_id_risk_items_id_fk",
           "tableFrom": "risk_gspr_mappings",
           "tableTo": "risk_items",
-          "columnsFrom": [
-            "risk_item_id"
-          ],
-          "columnsTo": [
-            "id"
-          ],
+          "columnsFrom": ["risk_item_id"],
+          "columnsTo": ["id"],
           "onDelete": "cascade",
           "onUpdate": "no action"
         }
@@ -3841,12 +3634,8 @@
           "name": "risk_items_workflow_run_id_workflow_runs_id_fk",
           "tableFrom": "risk_items",
           "tableTo": "workflow_runs",
-          "columnsFrom": [
-            "workflow_run_id"
-          ],
-          "columnsTo": [
-            "id"
-          ],
+          "columnsFrom": ["workflow_run_id"],
+          "columnsTo": ["id"],
           "onDelete": "cascade",
           "onUpdate": "no action"
         },
@@ -3854,12 +3643,8 @@
           "name": "risk_items_edited_by_users_id_fk",
           "tableFrom": "risk_items",
           "tableTo": "users",
-          "columnsFrom": [
-            "edited_by"
-          ],
-          "columnsTo": [
-            "id"
-          ],
+          "columnsFrom": ["edited_by"],
+          "columnsTo": ["id"],
           "onDelete": "no action",
           "onUpdate": "no action"
         }
@@ -4018,12 +3803,8 @@
           "name": "samd_assessments_org_id_organizations_id_fk",
           "tableFrom": "samd_assessments",
           "tableTo": "organizations",
-          "columnsFrom": [
-            "org_id"
-          ],
-          "columnsTo": [
-            "id"
-          ],
+          "columnsFrom": ["org_id"],
+          "columnsTo": ["id"],
           "onDelete": "cascade",
           "onUpdate": "no action"
         },
@@ -4031,12 +3812,8 @@
           "name": "samd_assessments_created_by_users_id_fk",
           "tableFrom": "samd_assessments",
           "tableTo": "users",
-          "columnsFrom": [
-            "created_by"
-          ],
-          "columnsTo": [
-            "id"
-          ],
+          "columnsFrom": ["created_by"],
+          "columnsTo": ["id"],
           "onDelete": "no action",
           "onUpdate": "no action"
         }
@@ -4076,12 +3853,8 @@
           "name": "sessions_user_id_users_id_fk",
           "tableFrom": "sessions",
           "tableTo": "users",
-          "columnsFrom": [
-            "user_id"
-          ],
-          "columnsTo": [
-            "id"
-          ],
+          "columnsFrom": ["user_id"],
+          "columnsTo": ["id"],
           "onDelete": "cascade",
           "onUpdate": "no action"
         }
@@ -4147,12 +3920,8 @@
           "name": "source_sections_source_id_sources_id_fk",
           "tableFrom": "source_sections",
           "tableTo": "sources",
-          "columnsFrom": [
-            "source_id"
-          ],
-          "columnsTo": [
-            "id"
-          ],
+          "columnsFrom": ["source_id"],
+          "columnsTo": ["id"],
           "onDelete": "cascade",
           "onUpdate": "no action"
         }
@@ -4162,10 +3931,7 @@
         "source_sections_source_anchor_idx": {
           "name": "source_sections_source_anchor_idx",
           "nullsNotDistinct": false,
-          "columns": [
-            "source_id",
-            "anchor"
-          ]
+          "columns": ["source_id", "anchor"]
         }
       },
       "policies": {},
@@ -4298,12 +4064,8 @@
           "name": "sources_organization_id_organizations_id_fk",
           "tableFrom": "sources",
           "tableTo": "organizations",
-          "columnsFrom": [
-            "organization_id"
-          ],
-          "columnsTo": [
-            "id"
-          ],
+          "columnsFrom": ["organization_id"],
+          "columnsTo": ["id"],
           "onDelete": "cascade",
           "onUpdate": "no action"
         }
@@ -4370,12 +4132,8 @@
           "name": "standards_applicability_standard_id_standards_catalog_id_fk",
           "tableFrom": "standards_applicability",
           "tableTo": "standards_catalog",
-          "columnsFrom": [
-            "standard_id"
-          ],
-          "columnsTo": [
-            "id"
-          ],
+          "columnsFrom": ["standard_id"],
+          "columnsTo": ["id"],
           "onDelete": "cascade",
           "onUpdate": "no action"
         }
@@ -4385,11 +4143,7 @@
         "standards_applicability_device_type_key_standard_id_regulatory_pathway_unique": {
           "name": "standards_applicability_device_type_key_standard_id_regulatory_pathway_unique",
           "nullsNotDistinct": false,
-          "columns": [
-            "device_type_key",
-            "standard_id",
-            "regulatory_pathway"
-          ]
+          "columns": ["device_type_key", "standard_id", "regulatory_pathway"]
         }
       },
       "policies": {},
@@ -4493,9 +4247,7 @@
         "standards_catalog_standard_number_unique": {
           "name": "standards_catalog_standard_number_unique",
           "nullsNotDistinct": false,
-          "columns": [
-            "standard_number"
-          ]
+          "columns": ["standard_number"]
         }
       },
       "policies": {},
@@ -4579,12 +4331,8 @@
           "name": "submission_interactions_package_id_submission_packages_id_fk",
           "tableFrom": "submission_interactions",
           "tableTo": "submission_packages",
-          "columnsFrom": [
-            "package_id"
-          ],
-          "columnsTo": [
-            "id"
-          ],
+          "columnsFrom": ["package_id"],
+          "columnsTo": ["id"],
           "onDelete": "cascade",
           "onUpdate": "no action"
         }
@@ -4713,12 +4461,8 @@
           "name": "submission_packages_org_id_organizations_id_fk",
           "tableFrom": "submission_packages",
           "tableTo": "organizations",
-          "columnsFrom": [
-            "org_id"
-          ],
-          "columnsTo": [
-            "id"
-          ],
+          "columnsFrom": ["org_id"],
+          "columnsTo": ["id"],
           "onDelete": "cascade",
           "onUpdate": "no action"
         },
@@ -4726,12 +4470,8 @@
           "name": "submission_packages_created_by_users_id_fk",
           "tableFrom": "submission_packages",
           "tableTo": "users",
-          "columnsFrom": [
-            "created_by"
-          ],
-          "columnsTo": [
-            "id"
-          ],
+          "columnsFrom": ["created_by"],
+          "columnsTo": ["id"],
           "onDelete": "no action",
           "onUpdate": "no action"
         }
@@ -4953,9 +4693,7 @@
         "users_email_unique": {
           "name": "users_email_unique",
           "nullsNotDistinct": false,
-          "columns": [
-            "email"
-          ]
+          "columns": ["email"]
         }
       },
       "policies": {},
@@ -4990,10 +4728,7 @@
       "compositePrimaryKeys": {
         "verification_tokens_identifier_token_pk": {
           "name": "verification_tokens_identifier_token_pk",
-          "columns": [
-            "identifier",
-            "token"
-          ]
+          "columns": ["identifier", "token"]
         }
       },
       "uniqueConstraints": {},
@@ -5078,12 +4813,8 @@
           "name": "vigilance_reports_adverse_event_id_adverse_events_id_fk",
           "tableFrom": "vigilance_reports",
           "tableTo": "adverse_events",
-          "columnsFrom": [
-            "adverse_event_id"
-          ],
-          "columnsTo": [
-            "id"
-          ],
+          "columnsFrom": ["adverse_event_id"],
+          "columnsTo": ["id"],
           "onDelete": "cascade",
           "onUpdate": "no action"
         }
@@ -5185,12 +4916,8 @@
           "name": "weekly_digests_org_id_organizations_id_fk",
           "tableFrom": "weekly_digests",
           "tableTo": "organizations",
-          "columnsFrom": [
-            "org_id"
-          ],
-          "columnsTo": [
-            "id"
-          ],
+          "columnsFrom": ["org_id"],
+          "columnsTo": ["id"],
           "onDelete": "cascade",
           "onUpdate": "no action"
         }
@@ -5200,9 +4927,7 @@
         "weekly_digests_share_token_unique": {
           "name": "weekly_digests_share_token_unique",
           "nullsNotDistinct": false,
-          "columns": [
-            "share_token"
-          ]
+          "columns": ["share_token"]
         }
       },
       "policies": {},
@@ -5436,12 +5161,8 @@
           "name": "workflow_runs_user_id_users_id_fk",
           "tableFrom": "workflow_runs",
           "tableTo": "users",
-          "columnsFrom": [
-            "user_id"
-          ],
-          "columnsTo": [
-            "id"
-          ],
+          "columnsFrom": ["user_id"],
+          "columnsTo": ["id"],
           "onDelete": "no action",
           "onUpdate": "no action"
         },
@@ -5449,12 +5170,8 @@
           "name": "workflow_runs_organization_id_organizations_id_fk",
           "tableFrom": "workflow_runs",
           "tableTo": "organizations",
-          "columnsFrom": [
-            "organization_id"
-          ],
-          "columnsTo": [
-            "id"
-          ],
+          "columnsFrom": ["organization_id"],
+          "columnsTo": ["id"],
           "onDelete": "no action",
           "onUpdate": "no action"
         },
@@ -5462,12 +5179,8 @@
           "name": "workflow_runs_project_id_projects_id_fk",
           "tableFrom": "workflow_runs",
           "tableTo": "projects",
-          "columnsFrom": [
-            "project_id"
-          ],
-          "columnsTo": [
-            "id"
-          ],
+          "columnsFrom": ["project_id"],
+          "columnsTo": ["id"],
           "onDelete": "no action",
           "onUpdate": "no action"
         },
@@ -5475,12 +5188,8 @@
           "name": "workflow_runs_reviewer_user_id_users_id_fk",
           "tableFrom": "workflow_runs",
           "tableTo": "users",
-          "columnsFrom": [
-            "reviewer_user_id"
-          ],
-          "columnsTo": [
-            "id"
-          ],
+          "columnsFrom": ["reviewer_user_id"],
+          "columnsTo": ["id"],
           "onDelete": "no action",
           "onUpdate": "no action"
         }
@@ -5605,117 +5314,62 @@
     "public.confidence_level": {
       "name": "confidence_level",
       "schema": "public",
-      "values": [
-        "high",
-        "med",
-        "low"
-      ]
+      "values": ["high", "med", "low"]
     },
     "public.control_tier": {
       "name": "control_tier",
       "schema": "public",
-      "values": [
-        "inherent",
-        "protective",
-        "information"
-      ]
+      "values": ["inherent", "protective", "information"]
     },
     "public.expert_review_status": {
       "name": "expert_review_status",
       "schema": "public",
-      "values": [
-        "pending",
-        "in_progress",
-        "resolved"
-      ]
+      "values": ["pending", "in_progress", "resolved"]
     },
     "public.locale": {
       "name": "locale",
       "schema": "public",
-      "values": [
-        "ko",
-        "en"
-      ]
+      "values": ["ko", "en"]
     },
     "public.message_role": {
       "name": "message_role",
       "schema": "public",
-      "values": [
-        "user",
-        "assistant",
-        "system"
-      ]
+      "values": ["user", "assistant", "system"]
     },
     "public.risk_level": {
       "name": "risk_level",
       "schema": "public",
-      "values": [
-        "acc",
-        "alarp",
-        "unacc"
-      ]
+      "values": ["acc", "alarp", "unacc"]
     },
     "public.source_type": {
       "name": "source_type",
       "schema": "public",
-      "values": [
-        "Regulation",
-        "Guidance",
-        "Standard",
-        "Industry",
-        "Internal"
-      ]
+      "values": ["Regulation", "Guidance", "Standard", "Industry", "Internal"]
     },
     "public.theme_pref": {
       "name": "theme_pref",
       "schema": "public",
-      "values": [
-        "light",
-        "dark",
-        "system"
-      ]
+      "values": ["light", "dark", "system"]
     },
     "public.user_department": {
       "name": "user_department",
       "schema": "public",
-      "values": [
-        "RA",
-        "Dev",
-        "Exec",
-        "External"
-      ]
+      "values": ["RA", "Dev", "Exec", "External"]
     },
     "public.user_role": {
       "name": "user_role",
       "schema": "public",
-      "values": [
-        "admin",
-        "ra-lead",
-        "ra-member",
-        "viewer"
-      ]
+      "values": ["admin", "ra-lead", "ra-member", "viewer"]
     },
     "public.user_status": {
       "name": "user_status",
       "schema": "public",
-      "values": [
-        "pending",
-        "active",
-        "disabled"
-      ]
+      "values": ["pending", "active", "disabled"]
     },
     "public.workflow_status": {
       "name": "workflow_status",
       "schema": "public",
-      "values": [
-        "queued",
-        "running",
-        "paused",
-        "pending_review",
-        "approved",
-        "rejected",
-        "failed"
-      ]
+      "values": ["queued", "running", "paused", "pending_review", "approved", "rejected", "failed"]
     },
     "public.workflow_type": {
       "name": "workflow_type",

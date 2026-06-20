@@ -15,6 +15,9 @@ const resolvedStorageState: string | undefined =
     : fs.existsSync(AUTH_STATE_PATH)
       ? AUTH_STATE_PATH
       : undefined;
+const playwrightBaseUrl = process.env.PLAYWRIGHT_BASE_URL ?? 'http://localhost:36534';
+const webServerUrl = new URL(playwrightBaseUrl);
+const webServerPort = webServerUrl.port || (webServerUrl.protocol === 'https:' ? '443' : '80');
 
 export default defineConfig({
   testDir: './tests/e2e',
@@ -25,8 +28,8 @@ export default defineConfig({
   retries: process.env.CI ? 2 : 0,
   workers: process.env.CI ? 4 : undefined,
   webServer: {
-    command: 'PORT=36534 DATABASE_URL=postgresql://postgres:test@localhost:5432/regula_test pnpm env:test pnpm dev:public',
-    url: process.env.PLAYWRIGHT_BASE_URL ?? 'http://localhost:36534',
+    command: `PORT=${webServerPort} corepack pnpm env:test corepack pnpm dev:public`,
+    url: playwrightBaseUrl,
     reuseExistingServer: false,
     timeout: 60_000,
   },
@@ -35,7 +38,7 @@ export default defineConfig({
     ['junit', { outputFile: 'test-results/e2e-junit.xml' }],
   ],
   use: {
-    baseURL: process.env.PLAYWRIGHT_BASE_URL ?? 'http://localhost:3000',
+    baseURL: playwrightBaseUrl,
     storageState: resolvedStorageState,
     trace: 'on-first-retry',
     screenshot: 'only-on-failure',

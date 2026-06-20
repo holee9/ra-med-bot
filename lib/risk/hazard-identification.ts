@@ -24,7 +24,10 @@ export interface ParsedHazardResponse {
   lowConfidenceCount: number;
 }
 
-type FetchFn = (endpoint: string, options?: RequestInit) => Promise<{ json: () => Promise<unknown> }>;
+type FetchFn = (
+  endpoint: string,
+  options?: RequestInit,
+) => Promise<{ json: () => Promise<unknown> }>;
 
 /**
  * Build a structured prompt for ISO 14971 hazard identification via RAG.
@@ -61,7 +64,9 @@ export function parseHazardResponse(rawResponse: string): ParsedHazardResponse {
   try {
     parsed = JSON.parse(rawResponse) as { items: Array<Record<string, unknown>> };
   } catch {
-    throw new SyntaxError(`Invalid JSON from hazard identification response: ${rawResponse.slice(0, 100)}`);
+    throw new SyntaxError(
+      `Invalid JSON from hazard identification response: ${rawResponse.slice(0, 100)}`,
+    );
   }
 
   if (!Array.isArray(parsed.items)) {

@@ -3,8 +3,8 @@
 // Enforces: information tier requires rationale before adoption.
 // @MX:SPEC SPEC-REGULA-RISK-001 (T4.3, REQ-RISK-021~027)
 
+import { type ControlTier, validateControlHierarchy } from '@/lib/risk/control-recommendation';
 import { useState } from 'react';
-import { validateControlHierarchy, type ControlTier } from '@/lib/risk/control-recommendation';
 
 interface ControlCandidate {
   id: string;
@@ -16,7 +16,9 @@ interface ControlCandidate {
 interface ControlWizardProps {
   riskItemId: string;
   candidates: ControlCandidate[];
-  onAdopt: (control: ControlCandidate & { rationale: string | null; alarpJustification?: string }) => void;
+  onAdopt: (
+    control: ControlCandidate & { rationale: string | null; alarpJustification?: string },
+  ) => void;
   disabled?: boolean;
 }
 
@@ -34,7 +36,12 @@ const TIER_DESCRIPTIONS: Record<ControlTier, string> = {
   information: 'Warn users via labels, IFU, or training (last resort — requires rationale)',
 };
 
-export function ControlWizard({ riskItemId, candidates, onAdopt, disabled = false }: ControlWizardProps) {
+export function ControlWizard({
+  riskItemId,
+  candidates,
+  onAdopt,
+  disabled = false,
+}: ControlWizardProps) {
   const [selected, setSelected] = useState<string | null>(null);
   const [rationale, setRationale] = useState('');
   const [error, setError] = useState<string | null>(null);
@@ -114,10 +121,14 @@ export function ControlWizard({ riskItemId, candidates, onAdopt, disabled = fals
 
       {selectedControl?.tier === 'information' && (
         <div>
-          <label className="block text-sm font-medium text-gray-700 mb-1">
+          <label
+            htmlFor="control-rationale"
+            className="block text-sm font-medium text-gray-700 mb-1"
+          >
             Rationale (required for information controls — ISO 14971 §7.1)
           </label>
           <textarea
+            id="control-rationale"
             className="w-full border rounded p-2 text-sm min-h-[80px] focus:ring-1 focus:ring-blue-400"
             placeholder="Explain why inherent safety design and protective measures are insufficient..."
             value={rationale}
@@ -137,6 +148,7 @@ export function ControlWizard({ riskItemId, candidates, onAdopt, disabled = fals
       )}
 
       <button
+        type="button"
         onClick={handleAdopt}
         disabled={!selected || disabled}
         className="px-4 py-2 bg-blue-600 text-white rounded text-sm font-medium disabled:opacity-50 hover:bg-blue-700"

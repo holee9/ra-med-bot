@@ -7,6 +7,17 @@ import path from 'node:path';
 
 const ROOT = path.resolve(import.meta.dirname ?? __dirname, '..');
 const ENV_PATH = path.join(ROOT, '.env.test');
+const REQUIRED_E2E_ENV = [
+  'DATABASE_URL',
+  'AUTH_SECRET',
+  'NEXTAUTH_URL',
+  'AUTH_MICROSOFT_ID',
+  'AUTH_MICROSOFT_SECRET',
+  'AUTH_GOOGLE_ID',
+  'AUTH_GOOGLE_SECRET',
+  'ANTHROPIC_API_KEY',
+  'OPENAI_API_KEY',
+] as const;
 
 function unquote(value: string): string {
   const trimmed = value.trim();
@@ -21,6 +32,11 @@ function unquote(value: string): string {
 
 function loadEnvTest(): void {
   if (!fs.existsSync(ENV_PATH)) {
+    const missing = REQUIRED_E2E_ENV.filter((key) => process.env[key] === undefined);
+    if (missing.length === 0) {
+      return;
+    }
+
     process.stderr.write(
       '.env.test not found. Copy .env.test.example to .env.test before running E2E commands.\n',
     );

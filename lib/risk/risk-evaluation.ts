@@ -33,10 +33,13 @@ export function evaluateRiskLevel(
   probability: number,
   matrix: RiskMatrix = DEFAULT_RISK_MATRIX,
 ): RiskLevel {
-  // Non-null assertions safe here: callers must pass severity/probability in [1,5].
-  // validateScale() guards upstream; direct access without check is intentional for hot-path.
-  // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
-  return matrix[severity - 1]![probability - 1]!;
+  const level = matrix[severity - 1]?.[probability - 1];
+  if (!level) {
+    throw new RangeError(
+      `Invalid risk matrix coordinates: severity=${severity}, probability=${probability}`,
+    );
+  }
+  return level;
 }
 
 /**

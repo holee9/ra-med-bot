@@ -3,12 +3,12 @@
 
 import { withPermission } from '@/lib/auth/with-permission';
 
-export const GET = withPermission('risk.view', async (req, ctx) => {
+export const GET = withPermission('risk.view', async (_req, ctx) => {
   const params = await ctx.params;
   const id = params?.id as string;
 
   try {
-    const { HybridRaClientError, createHybridRaFetch } = await import('@/lib/api/hybrid-ra-client');
+    const { createHybridRaFetch } = await import('@/lib/api/hybrid-ra-client');
     const hybridFetch = createHybridRaFetch();
     const res = await hybridFetch(`/api/v1/risk/runs/${id}`, { method: 'GET' });
     const data = await res.json();

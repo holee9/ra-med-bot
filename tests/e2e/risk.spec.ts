@@ -158,7 +158,8 @@ test.describe('Risk Management Workflow (SPEC-REGULA-RISK-001)', () => {
 
     if (exportResp.status() === 200 || exportResp.status() === 201) {
       const contentType = exportResp.headers()['content-type'] ?? '';
-      const isDocx = contentType.includes('wordprocessingml') ||
+      const isDocx =
+        contentType.includes('wordprocessingml') ||
         contentType.includes('octet-stream') ||
         contentType.includes('application/json');
       expect(isDocx).toBeTruthy();

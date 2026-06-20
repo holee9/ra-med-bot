@@ -4,7 +4,11 @@
 import { writeAudit } from '@/lib/audit';
 import { withPermission } from '@/lib/auth/with-permission';
 
-async function handlePatch(req: Request, ctx: { params?: unknown }, session: { user: { id: string; organizationId?: string } }) {
+async function handlePatch(
+  req: Request,
+  ctx: { params?: unknown },
+  session: { user: { id: string; organizationId?: string } },
+) {
   const params = await (ctx.params as Promise<Record<string, string>>);
   const id = params?.id as string;
   const body = await req.json();

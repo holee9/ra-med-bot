@@ -30,7 +30,7 @@ test.describe('Risk RBAC (SPEC-REGULA-RISK-001 REQ-RISK-019~020)', () => {
     // ra-member does not have risk.approve permission → 403
     expect(resp.status()).toBe(403);
 
-    const body = await resp.json().catch(() => ({})) as Record<string, unknown>;
+    const body = (await resp.json().catch(() => ({}))) as Record<string, unknown>;
     // Error must indicate permission denial
     const errMsg = String(body.error ?? body.message ?? '').toLowerCase();
     expect(errMsg).toMatch(/forbidden|permission|unauthorized|not_allowed/);

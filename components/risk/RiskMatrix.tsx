@@ -16,8 +16,21 @@ const RISK_LABELS: Record<RiskLevel, string> = {
   unacc: 'Unacc',
 };
 
-const SEVERITY_LABELS = ['Negligible', 'Marginal', 'Serious', 'Critical', 'Catastrophic'];
-const PROBABILITY_LABELS = ['Incredible', 'Remote', 'Occasional', 'Probable', 'Frequent'];
+const SEVERITY_LABELS = [
+  { value: 1, label: 'Negligible' },
+  { value: 2, label: 'Marginal' },
+  { value: 3, label: 'Serious' },
+  { value: 4, label: 'Critical' },
+  { value: 5, label: 'Catastrophic' },
+];
+
+const PROBABILITY_LABELS = [
+  { value: 1, label: 'Incredible' },
+  { value: 2, label: 'Remote' },
+  { value: 3, label: 'Occasional' },
+  { value: 4, label: 'Probable' },
+  { value: 5, label: 'Frequent' },
+];
 
 interface RiskMatrixProps {
   /** Optional highlighted cell (severity 1-5, probability 1-5) */
@@ -32,39 +45,48 @@ export function RiskMatrix({ highlight, className = '' }: RiskMatrixProps) {
         <thead>
           <tr>
             <th className="p-1 border text-left text-gray-500 min-w-[80px]">S \ P</th>
-            {PROBABILITY_LABELS.map((label, pi) => (
-              <th key={pi} className="p-1 border text-center min-w-[70px] text-gray-700">
-                P{pi + 1}
+            {PROBABILITY_LABELS.map((probability) => (
+              <th
+                key={probability.value}
+                className="p-1 border text-center min-w-[70px] text-gray-700"
+              >
+                P{probability.value}
                 <br />
-                <span className="text-[10px] font-normal">{label}</span>
+                <span className="text-[10px] font-normal">{probability.label}</span>
               </th>
             ))}
           </tr>
         </thead>
         <tbody>
-          {DEFAULT_RISK_MATRIX.map((row, si) => (
-            <tr key={si}>
-              <td className="p-1 border text-gray-700 font-semibold">
-                S{si + 1}
-                <br />
-                <span className="text-[10px] font-normal">{SEVERITY_LABELS[si]}</span>
-              </td>
-              {row.map((level, pi) => {
-                const isHighlighted =
-                  highlight?.severity === si + 1 && highlight?.probability === pi + 1;
-                return (
-                  <td
-                    key={pi}
-                    className={`p-1 border text-center font-semibold ${RISK_COLORS[level]} ${
-                      isHighlighted ? 'ring-2 ring-blue-500 ring-inset' : ''
-                    }`}
-                  >
-                    {RISK_LABELS[level]}
-                  </td>
-                );
-              })}
-            </tr>
-          ))}
+          {SEVERITY_LABELS.map((severity) => {
+            const row = DEFAULT_RISK_MATRIX[severity.value - 1] ?? [];
+
+            return (
+              <tr key={severity.value}>
+                <td className="p-1 border text-gray-700 font-semibold">
+                  S{severity.value}
+                  <br />
+                  <span className="text-[10px] font-normal">{severity.label}</span>
+                </td>
+                {PROBABILITY_LABELS.map((probability) => {
+                  const level = row[probability.value - 1] ?? 'acc';
+                  const isHighlighted =
+                    highlight?.severity === severity.value &&
+                    highlight?.probability === probability.value;
+                  return (
+                    <td
+                      key={probability.value}
+                      className={`p-1 border text-center font-semibold ${RISK_COLORS[level]} ${
+                        isHighlighted ? 'ring-2 ring-blue-500 ring-inset' : ''
+                      }`}
+                    >
+                      {RISK_LABELS[level]}
+                    </td>
+                  );
+                })}
+              </tr>
+            );
+          })}
         </tbody>
       </table>
       <div className="mt-2 flex gap-3 text-xs">

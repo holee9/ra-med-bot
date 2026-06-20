@@ -19,7 +19,11 @@ describe('evaluateResidualRisk', () => {
   });
 
   it('alarp with justification → valid', () => {
-    const result = evaluateResidualRisk(2, 3, 'ALARP justified: cost-benefit analysis shows further reduction impractical');
+    const result = evaluateResidualRisk(
+      2,
+      3,
+      'ALARP justified: cost-benefit analysis shows further reduction impractical',
+    );
     expect(result.level).toBe('alarp');
     expect(result.requiresFurtherAction).toBe(false);
     expect(result.isValid).toBe(true);

@@ -8,7 +8,7 @@ import { writeAudit } from '@/lib/audit';
 import { withPermission } from '@/lib/auth/with-permission';
 import { buildRiskReport } from '@/lib/risk/report-builder';
 
-export const POST = withPermission('risk.generate', async (req, ctx, session) => {
+export const POST = withPermission('risk.generate', async (_req, ctx, session) => {
   const params = await (ctx.params as Promise<Record<string, string>>);
   const id = params?.id as string;
 
@@ -18,7 +18,7 @@ export const POST = withPermission('risk.generate', async (req, ctx, session) =>
 
     // Fetch run aggregate (items + controls + GSPR mappings)
     const runRes = await hybridFetch(`/api/v1/risk/runs/${id}`, { method: 'GET' });
-    const runData = await runRes.json() as Parameters<typeof buildRiskReport>[0];
+    const runData = (await runRes.json()) as Parameters<typeof buildRiskReport>[0];
 
     const docxBuffer = await buildRiskReport(runData);
 

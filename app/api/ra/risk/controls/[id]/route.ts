@@ -4,13 +4,13 @@
 import { writeAudit } from '@/lib/audit';
 import { withPermission } from '@/lib/auth/with-permission';
 import { validateControlHierarchy } from '@/lib/risk/control-recommendation';
-import { evaluateResidualRisk } from '@/lib/risk/residual-risk';
 import type { ControlTier } from '@/lib/risk/control-recommendation';
+import { type ResidualRiskResult, evaluateResidualRisk } from '@/lib/risk/residual-risk';
 
 export const PATCH = withPermission('risk.update', async (req, ctx, session) => {
   const params = await (ctx.params as Promise<Record<string, string>>);
   const id = params?.id as string;
-  const body = await req.json() as {
+  const body = (await req.json()) as {
     tier: ControlTier;
     rationale?: string;
     isAdopted: boolean;
@@ -23,7 +23,7 @@ export const PATCH = withPermission('risk.update', async (req, ctx, session) => 
   validateControlHierarchy(body.tier, body.rationale);
 
   // Evaluate residual risk if provided
-  let residualResult;
+  let residualResult: ResidualRiskResult | undefined;
   if (body.residualSeverity !== undefined && body.residualProbability !== undefined) {
     residualResult = evaluateResidualRisk(
       body.residualSeverity,

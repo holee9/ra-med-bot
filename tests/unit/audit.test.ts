@@ -52,7 +52,7 @@ describe('lib/audit.ts (REQ-BREADTH-057) — extended AuditAction type', () => {
     expect(src).toMatch(new RegExp(`'${escaped}'`));
   });
 
-  it('AuditAction type includes current regulated workflow actions through 0056', () => {
+  it('AuditAction type includes current regulated workflow actions through risk management', () => {
     const src = readText('lib/audit.ts');
     const values = extractAuditActionTypeValues(src);
     expect(values).toEqual(
@@ -63,9 +63,10 @@ describe('lib/audit.ts (REQ-BREADTH-057) — extended AuditAction type', () => {
         'samd_assessment_created',
         'dhf_created',
         'submission_validation_completed',
+        'risk.report_approved',
       ]),
     );
-    expect(values).toHaveLength(84);
+    expect(values).toHaveLength(91);
   });
 
   it.each([

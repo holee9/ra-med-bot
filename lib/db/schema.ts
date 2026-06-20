@@ -1305,11 +1305,7 @@ export const submissionInteractions = pgTable(
 export const riskLevelEnum = pgEnum('risk_level', ['acc', 'alarp', 'unacc']);
 
 // ISO 14971 §7.1 risk control option hierarchy
-export const controlTierEnum = pgEnum('control_tier', [
-  'inherent',
-  'protective',
-  'information',
-]);
+export const controlTierEnum = pgEnum('control_tier', ['inherent', 'protective', 'information']);
 
 // @MX:ANCHOR [AUTO] riskItems — central risk analysis record.
 // @MX:REASON Referenced by riskControls, riskGsprMappings, BFF routes, and report builder. fan_in >= 3.

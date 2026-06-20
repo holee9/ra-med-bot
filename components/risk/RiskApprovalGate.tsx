@@ -53,9 +53,7 @@ export function RiskApprovalGate({
   if (isApproved) {
     return (
       <div className="rounded-md bg-green-50 border border-green-200 p-4">
-        <p className="text-sm text-green-800 font-semibold">
-          Report Approved
-        </p>
+        <p className="text-sm text-green-800 font-semibold">Report Approved</p>
         <p className="text-xs text-green-600 mt-1">
           Approved by RA-Lead (ID: {approvedBy}) per ISO 14971 §10
         </p>
@@ -66,12 +64,10 @@ export function RiskApprovalGate({
   if (!isRaLead) {
     return (
       <div className="rounded-md bg-yellow-50 border border-yellow-200 p-4">
-        <p className="text-sm text-yellow-800 font-semibold">
-          Pending RA-Lead Approval
-        </p>
+        <p className="text-sm text-yellow-800 font-semibold">Pending RA-Lead Approval</p>
         <p className="text-xs text-yellow-600 mt-1">
-          This risk management report requires sign-off from an RA-Lead before distribution.
-          Only users with the ra-lead role can approve.
+          This risk management report requires sign-off from an RA-Lead before distribution. Only
+          users with the ra-lead role can approve.
         </p>
       </div>
     );
@@ -81,15 +77,19 @@ export function RiskApprovalGate({
     <div className="rounded-md border p-4 space-y-3">
       <p className="text-sm font-semibold text-gray-800">RA-Lead Approval</p>
       <p className="text-xs text-gray-500">
-        By approving, you confirm this risk management report complies with ISO 14971:2019 §10
-        and all identified risks have been evaluated, controlled, and accepted (ALARP where applicable).
+        By approving, you confirm this risk management report complies with ISO 14971:2019 §10 and
+        all identified risks have been evaluated, controlled, and accepted (ALARP where applicable).
       </p>
 
       <div>
-        <label className="block text-xs font-medium text-gray-700 mb-1">
+        <label
+          htmlFor="risk-approval-comment"
+          className="block text-xs font-medium text-gray-700 mb-1"
+        >
           Approval comment (optional)
         </label>
         <textarea
+          id="risk-approval-comment"
           className="w-full border rounded p-2 text-sm min-h-[64px] focus:ring-1 focus:ring-blue-400"
           placeholder="Add any approval notes or conditions..."
           value={comment}
@@ -99,10 +99,13 @@ export function RiskApprovalGate({
       </div>
 
       {error && (
-        <div className="text-sm text-red-600 bg-red-50 border border-red-200 rounded p-2">{error}</div>
+        <div className="text-sm text-red-600 bg-red-50 border border-red-200 rounded p-2">
+          {error}
+        </div>
       )}
 
       <button
+        type="button"
         onClick={handleApprove}
         disabled={loading}
         className="px-4 py-2 bg-green-600 text-white rounded text-sm font-medium hover:bg-green-700 disabled:opacity-50"

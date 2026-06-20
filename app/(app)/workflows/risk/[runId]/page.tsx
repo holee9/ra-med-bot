@@ -1,9 +1,9 @@
-// @MX:SPEC SPEC-REGULA-RISK-001 (T5.4, REQ-RISK-001~020)
-import { redirect } from 'next/navigation';
-import { auth } from '@/lib/auth';
-import { RiskMatrix } from '@/components/risk/RiskMatrix';
 import { HazardTable } from '@/components/risk/HazardTable';
 import { RiskApprovalGate } from '@/components/risk/RiskApprovalGate';
+import { RiskMatrix } from '@/components/risk/RiskMatrix';
+import { auth } from '@/lib/auth';
+// @MX:SPEC SPEC-REGULA-RISK-001 (T5.4, REQ-RISK-001~020)
+import { redirect } from 'next/navigation';
 
 interface RiskRunPageProps {
   params: Promise<{ runId: string }>;

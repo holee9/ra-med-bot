@@ -21,7 +21,6 @@ export default function LoginButtons() {
       redirect: false,
       callbackUrl: '/',
     });
-    console.log('[LoginButtons] signIn result:', result);
     setLoading(false);
     if (result?.error) {
       setError('이메일/비밀번호가 올바르지 않거나 아직 승인 대기 중입니다');

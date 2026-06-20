@@ -37,7 +37,8 @@ export function evaluateResidualRisk(
 
   // 'alarp' residual risk requires explicit ALARP justification before acceptance.
   if (level === 'alarp') {
-    const hasJustification = typeof alarpJustification === 'string' && alarpJustification.trim().length > 0;
+    const hasJustification =
+      typeof alarpJustification === 'string' && alarpJustification.trim().length > 0;
     return {
       level,
       requiresFurtherAction: false,

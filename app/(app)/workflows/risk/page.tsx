@@ -4,7 +4,8 @@ import Link from 'next/link';
 
 export const metadata = {
   title: 'Risk Management — Regula',
-  description: 'ISO 14971 Risk Management workflow — hazard identification, risk evaluation, and control measures',
+  description:
+    'ISO 14971 Risk Management workflow — hazard identification, risk evaluation, and control measures',
 };
 
 export default function RiskWorkflowPage() {
@@ -16,7 +17,8 @@ export default function RiskWorkflowPage() {
           <BetaBadge />
         </div>
         <p className="mt-2 text-sm text-ink-600">
-          ISO 14971 Risk Management — Hazard Identification · Risk Evaluation · Control Measures · Residual Risk
+          ISO 14971 Risk Management — Hazard Identification · Risk Evaluation · Control Measures ·
+          Residual Risk
         </p>
       </header>
 

@@ -2,7 +2,7 @@
 // @MX:SPEC SPEC-REGULA-RISK-001 (T3.1~T3.4, REQ-RISK-034~036)
 
 import { describe, expect, it } from 'vitest';
-import { buildRiskReport, type RiskRunPayload } from '../report-builder';
+import { type RiskRunPayload, buildRiskReport } from '../report-builder';
 
 const sampleRun: RiskRunPayload = {
   id: 'run-abc-123',

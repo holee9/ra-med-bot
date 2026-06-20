@@ -35,14 +35,18 @@ const EXPECTED_ACTIONS: PermissionAction[] = [
   'authoring.create',
   'authoring.view',
   'authoring.approve',
+  'risk.generate',
+  'risk.view',
+  'risk.update',
+  'risk.approve',
 ];
 
 const VALID_ROLES = ['admin', 'ra-lead', 'ra-member', 'viewer'] as const;
 const VALID_SCOPES = ['org', 'project', 'user', 'none'] as const;
 
 describe('lib/auth/permissions.ts (REQ-ENTERPRISE-020) — PERMISSIONS matrix', () => {
-  it('PERMISSIONS contains exactly 28 entries', () => {
-    expect(Object.keys(PERMISSIONS)).toHaveLength(28);
+  it('PERMISSIONS contains exactly 32 entries', () => {
+    expect(Object.keys(PERMISSIONS)).toHaveLength(32);
   });
 
   it.each(EXPECTED_ACTIONS)('PERMISSIONS contains action: %s', (action) => {
