@@ -35,7 +35,12 @@ export type PermissionAction =
   // Authoring API (hybrid-ra-saas integration — Issue #171)
   | 'authoring.create'
   | 'authoring.view'
-  | 'authoring.approve';
+  | 'authoring.approve'
+  // Risk management actions (SPEC-REGULA-RISK-001, Issue #46)
+  | 'risk.generate'
+  | 'risk.view'
+  | 'risk.update'
+  | 'risk.approve';
 
 export interface PermissionSpec {
   minRole: Role;
@@ -106,4 +111,13 @@ export const PERMISSIONS: Record<PermissionAction, PermissionSpec> = {
   'authoring.create': { minRole: 'ra-member', scope: 'org', resourceType: 'authoring' },
   'authoring.view': { minRole: 'ra-member', scope: 'org', resourceType: 'authoring' },
   'authoring.approve': { minRole: 'ra-lead', scope: 'org', resourceType: 'authoring' },
+
+  // @MX:ANCHOR [AUTO] risk.approve — RA-lead ONLY approval gate invariant.
+  // @MX:REASON ISO 14971 legal responsibility: only qualified RA-lead may approve risk management report. Critical RBAC invariant.
+  // @MX:SPEC SPEC-REGULA-RISK-001 (T0.8, REQ-RISK-034)
+  // Risk management actions (SPEC-REGULA-RISK-001, Issue #46)
+  'risk.generate': { minRole: 'ra-member', scope: 'org', resourceType: 'risk' },
+  'risk.view': { minRole: 'ra-member', scope: 'org', resourceType: 'risk' },
+  'risk.update': { minRole: 'ra-member', scope: 'org', resourceType: 'risk' },
+  'risk.approve': { minRole: 'ra-lead', scope: 'org', resourceType: 'risk' },
 };
