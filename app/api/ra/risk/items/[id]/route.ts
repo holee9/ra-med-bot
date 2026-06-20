@@ -39,7 +39,7 @@ export const DELETE = withPermission('risk.update', async (_req, ctx, session) =
 
   await writeAudit({
     actor_id: session.user.id,
-    action: 'risk.matrix_evaluated',
+    action: 'risk.item_deleted',
     resource_type: 'risk_item',
     resource_id: id,
   });

@@ -203,9 +203,10 @@ export const auditActionEnum = pgEnum('audit_action', [
   'submission_package_created',
   'submission_package_submitted',
   'submission_validation_completed',
-  // SPEC-REGULA-RISK-001 — risk management audit actions (6):
+  // SPEC-REGULA-RISK-001 — risk management audit actions (7):
   'risk.hazard_identified',
   'risk.matrix_evaluated',
+  'risk.item_deleted',
   'risk.control_adopted',
   'risk.residual_accepted',
   'risk.gspr_mapped',

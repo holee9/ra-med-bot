@@ -3,12 +3,19 @@
 
 import { writeAudit } from '@/lib/audit';
 import { withPermission } from '@/lib/auth/with-permission';
-import { evaluateRiskLevel } from '@/lib/risk/risk-evaluation';
+import { evaluateRiskLevel, validateScale } from '@/lib/risk/risk-evaluation';
 
 export const POST = withPermission('risk.update', async (req, ctx, session) => {
   const params = await (ctx.params as Promise<Record<string, string>>);
   const id = params?.id as string;
   const { severity, probability } = await req.json() as { severity: number; probability: number };
+
+  if (!validateScale(severity) || !validateScale(probability)) {
+    return Response.json(
+      { error: 'severity and probability must be integers 1–5' },
+      { status: 400 },
+    );
+  }
 
   const riskLevel = evaluateRiskLevel(severity, probability);
 

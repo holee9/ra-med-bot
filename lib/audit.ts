@@ -162,6 +162,7 @@ export type AuditAction =
   // SPEC-REGULA-RISK-001 — risk management audit actions (REQ-RISK-028~038):
   | 'risk.hazard_identified'
   | 'risk.matrix_evaluated'
+  | 'risk.item_deleted'
   | 'risk.control_adopted'
   | 'risk.residual_accepted'
   | 'risk.gspr_mapped'
