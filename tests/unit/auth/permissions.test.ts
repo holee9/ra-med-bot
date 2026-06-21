@@ -42,14 +42,15 @@ const EXPECTED_ACTIONS: PermissionAction[] = [
   'signature.sign',
   'audit.read',
   'audit.package.generate',
+  'personal.view',
 ];
 
 const VALID_ROLES = ['admin', 'qa-lead', 'ra-lead', 'ra-member', 'viewer', 'auditor'] as const;
 const VALID_SCOPES = ['org', 'project', 'user', 'none'] as const;
 
 describe('lib/auth/permissions.ts (REQ-ENTERPRISE-020) — PERMISSIONS matrix', () => {
-  it('PERMISSIONS contains exactly 35 entries', () => {
-    expect(Object.keys(PERMISSIONS)).toHaveLength(35); // +audit.read, audit.package.generate (SPEC-REGULA-AUDITOR-VIEW-001)
+  it('PERMISSIONS contains exactly 36 entries', () => {
+    expect(Object.keys(PERMISSIONS)).toHaveLength(36); // +audit.read, audit.package.generate (AUDITOR-VIEW-001) +personal.view (PERSONAL-LIB-001)
   });
 
   it.each(EXPECTED_ACTIONS)('PERMISSIONS contains action: %s', (action) => {

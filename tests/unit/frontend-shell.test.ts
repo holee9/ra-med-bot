@@ -208,7 +208,7 @@ describe('app/(auth)/login/page.tsx — REQ-FND-018, 058', () => {
 });
 
 describe('components/shell/Sidebar.tsx — REQ-FND-019', () => {
-  it('renders all 8 navigation links in correct order', async () => {
+  it('renders all 9 navigation links in correct order', async () => {
     const mod = await import('../../components/shell/Sidebar');
     const { container } = render(React.createElement(mod.default));
     // Scope to the <nav> region so the primary "새 상담" action button
@@ -223,6 +223,7 @@ describe('components/shell/Sidebar.tsx — REQ-FND-019', () => {
       ['홈', '/'],
       ['채팅', '/chat'], // ko locale label (CHAT_LABELS.ko = '채팅')
       ['히스토리', '/history'],
+      ['내 라이브러리', '/library'], // SPEC-REGULA-PERSONAL-LIB-001
       ['템플릿', '/templates'],
       ['지식 베이스', '/knowledge'],
       ['규제 업데이트', '/updates'],

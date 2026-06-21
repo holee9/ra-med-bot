@@ -33,11 +33,12 @@ describe('FOUNDATION regression', () => {
   });
 
   // ---------------------------------------------------------------------------
-  // Permissions matrix has exactly 35 actions (32 base + signature.sign — SPEC-REGULA-ESIG-001
-  // + audit.read, audit.package.generate — SPEC-REGULA-AUDITOR-VIEW-001)
+  // Permissions matrix has exactly 36 actions (32 base + signature.sign — SPEC-REGULA-ESIG-001
+  // + audit.read, audit.package.generate — SPEC-REGULA-AUDITOR-VIEW-001
+  // + personal.view — SPEC-REGULA-PERSONAL-LIB-001)
   // ---------------------------------------------------------------------------
-  it('has 35 permission actions defined', () => {
-    expect(Object.keys(PERMISSIONS).length).toBe(35);
+  it('has 36 permission actions defined', () => {
+    expect(Object.keys(PERMISSIONS).length).toBe(36);
   });
 
   it('profile.edit permission exists with user scope', () => {
