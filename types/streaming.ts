@@ -115,7 +115,15 @@ export interface ErrorEvent {
   message: string;
 }
 
-// StreamEvent union — 12 types total (8 Phase 2 + 4 Phase 3 reserve).
+// Issue #200 — RAG routing source event (emitted by hybrid-router; undefined when local-only).
+export interface RagRouteEvent {
+  type: 'rag_route';
+  path: 'local' | 'hybrid' | 'regula';
+  fallback?: boolean;
+  fallback_reason?: 'timeout' | 'unavailable' | 'degraded';
+}
+
+// StreamEvent union — 13 types total (8 Phase 2 + 4 Phase 3 reserve + 1 Issue #200).
 export type StreamEvent =
   | MetaEvent
   | TraceEvent
@@ -128,7 +136,8 @@ export type StreamEvent =
   | RelatedEvent
   | ExpertReviewRequiredEvent
   | DoneEvent
-  | ErrorEvent;
+  | ErrorEvent
+  | RagRouteEvent;
 
 // Known event type values for runtime guard.
 const KNOWN_TYPES = new Set<string>([
@@ -144,6 +153,7 @@ const KNOWN_TYPES = new Set<string>([
   'expert_review_required',
   'done',
   'error',
+  'rag_route',
 ]);
 
 /**

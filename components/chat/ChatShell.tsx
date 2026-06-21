@@ -39,6 +39,7 @@ export function ChatShell() {
     structured,
     error,
     duration_ms: durationMs,
+    ragRoute,
     start,
     abort,
   } = useStreamingAnswer();
@@ -135,6 +136,7 @@ export function ChatShell() {
             expertReviewReason={structured.expertReviewReason}
             conversationId={meta?.conversationId}
             messageId={meta?.messageId}
+            ragRoute={ragRoute}
           />
         </div>
       )}

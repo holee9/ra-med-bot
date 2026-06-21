@@ -16,6 +16,7 @@ import type { ConsultRequest } from '../types/consult';
 import {
   type ConfidenceEvent,
   type MetaEvent,
+  type RagRouteEvent,
   type SourceItem,
   type StreamEvent,
   type TraceEvent,
@@ -37,6 +38,7 @@ export interface StreamingState {
     related?: string[];
     expertReviewRequired?: boolean;
     expertReviewReason?: string;
+    ragRoute?: RagRouteEvent;
   };
   error: string | null;
   duration_ms: number | null;
@@ -138,6 +140,10 @@ function applyEvent(state: StreamingState, ev: StreamEvent): StreamingState {
     case 'related':
       return { ...state, structured: { ...state.structured, related: ev.items } };
 
+    // Issue #200 — RAG routing path badge.
+    case 'rag_route':
+      return { ...state, structured: { ...state.structured, ragRoute: ev } };
+
     default:
       return state;
   }
@@ -151,6 +157,7 @@ export interface UseStreamingAnswerReturn {
   meta: MetaEvent | undefined;
   error: StreamingState['error'];
   duration_ms: StreamingState['duration_ms'];
+  ragRoute: RagRouteEvent | undefined;
   start: (input: ConsultRequest) => void;
   abort: () => void;
 }
@@ -253,6 +260,7 @@ export function useStreamingAnswer(): UseStreamingAnswerReturn {
     meta: state.structured.meta,
     error: state.error,
     duration_ms: state.duration_ms,
+    ragRoute: state.structured.ragRoute,
     start,
     abort,
   };
