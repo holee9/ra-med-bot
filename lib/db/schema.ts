@@ -238,6 +238,10 @@ export const auditActionEnum = pgEnum('audit_action', [
   'deadline.created',
   'deadline.updated',
   'deadline.deleted',
+  // SPEC-REGULA-DELTA-SYNC-001 — added via 0065_delta_sync.sql (Issue #45):
+  'corpus.sync_started',
+  'corpus.sync_completed',
+  'corpus.sync_failed',
 ]);
 
 // REQ-WF-049: workflow_type pgEnum — workflow kinds.
@@ -501,11 +505,45 @@ export const sourceSections = pgTable(
     ingestedAt: timestamp('ingested_at', { withTimezone: true, mode: 'date' }), // ingestion timestamp
     embedding: vector('embedding'),
     createdAt: timestamp('created_at', { withTimezone: true, mode: 'date' }).notNull().defaultNow(),
+    // SPEC-REGULA-DELTA-SYNC-001 — supersession tracking for incremental updates (Issue #45)
+    updated_at: timestamp('updated_at', { withTimezone: true, mode: 'date' })
+      .notNull()
+      .defaultNow(),
+    superseded_by: uuid('superseded_by'),
   },
   (t) => ({
     anchorUnique: unique('source_sections_source_anchor_idx').on(t.sourceId, t.anchor),
     // Provenance queries optimization
     ingestionRunIdx: index('idx_source_sections_ingestion').on(t.ingestionRunId),
+    // Delta-sync queries (REQ-DELTA-002)
+    supersededByIdx: index('idx_source_sections_superseded_by').on(t.superseded_by),
+    updatedAtIdx: index('idx_source_sections_updated_at').on(t.updated_at),
+  }),
+);
+
+// SPEC-REGULA-DELTA-SYNC-001 — corpus_sync_runs (Issue #45, migration 0065)
+// Tracks each incremental sync execution: changed/unchanged/failed chunk counts.
+export const corpusSyncRuns = pgTable(
+  'corpus_sync_runs',
+  {
+    id: uuid('id').defaultRandom().primaryKey(),
+    crawlerName: text('crawler_name').notNull(),
+    sourceUrl: text('source_url').notNull(),
+    contentHash: text('content_hash').notNull(),
+    status: text('status').notNull().default('pending'),
+    chunksAdded: integer('chunks_added').notNull().default(0),
+    chunksOutdated: integer('chunks_outdated').notNull().default(0),
+    chunksUnchanged: integer('chunks_unchanged').notNull().default(0),
+    errorMessage: text('error_message'),
+    retryCount: integer('retry_count').notNull().default(0),
+    startedAt: timestamp('started_at', { withTimezone: true, mode: 'date' }).notNull().defaultNow(),
+    completedAt: timestamp('completed_at', { withTimezone: true, mode: 'date' }),
+    createdAt: timestamp('created_at', { withTimezone: true, mode: 'date' }).notNull().defaultNow(),
+  },
+  (t) => ({
+    crawlerStartedIdx: index('idx_corpus_sync_runs_crawler_started').on(t.crawlerName, t.startedAt),
+    statusIdx: index('idx_corpus_sync_runs_status').on(t.status),
+    sourceHashIdx: index('idx_corpus_sync_runs_source_hash').on(t.sourceUrl, t.contentHash),
   }),
 );
 

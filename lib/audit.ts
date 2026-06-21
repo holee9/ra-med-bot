@@ -58,6 +58,10 @@ import { auditLogs } from './db/schema';
 // SPEC-REGULA-DHF-001 values added via 0055_design_history_files.sql (4):
 //   dhf_created, dhf_updated, dhf_design_freeze, dhf_review_approved
 // Total: 68 values.
+//
+// SPEC-REGULA-DELTA-SYNC-001 values added via 0065_delta_sync.sql (3):
+//   corpus.sync_started, corpus.sync_completed, corpus.sync_failed
+// Total: 71 values.
 export type AuditAction =
   | 'llm.call'
   | 'source.access'
@@ -194,7 +198,14 @@ export type AuditAction =
   //   deadline.deleted — deadline removed
   | 'deadline.created'
   | 'deadline.updated'
-  | 'deadline.deleted';
+  | 'deadline.deleted'
+  // SPEC-REGULA-DELTA-SYNC-001 — corpus delta-sync events (Issue #45):
+  //   corpus.sync_started   — delta-sync run began (new/changed document detected)
+  //   corpus.sync_completed — chunk embedding + vector store upsert finished
+  //   corpus.sync_failed    — sync failed after max retries
+  | 'corpus.sync_started'
+  | 'corpus.sync_completed'
+  | 'corpus.sync_failed';
 
 export interface AuditEvent {
   /** User UUID, or null for system-initiated events. */
