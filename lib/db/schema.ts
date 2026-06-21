@@ -233,6 +233,8 @@ export const auditActionEnum = pgEnum('audit_action', [
   'audit.access',
   'audit.denied',
   'audit.package.generated',
+  'personal_bookmark.created',
+  'personal_bookmark.deleted',
 ]);
 
 // REQ-WF-049: workflow_type pgEnum — workflow kinds.
@@ -1450,5 +1452,45 @@ export const answerSignatures = pgTable(
     messageIdx: index('idx_answer_signatures_message').on(t.messageId),
     // Performance: look up all signatures by signer (audit queries)
     signerIdx: index('idx_answer_signatures_signer').on(t.signerId),
+  }),
+);
+
+// ---------------------------------------------------------------------------
+// SPEC-REGULA-PERSONAL-LIB-001 — Personal RA Library (Issue #86)
+// Migration: 0064_personal_bookmarks.sql
+// User-scoped bookmarks for fast re-reference of answers/blocks.
+// Private layer — every query MUST filter by userId (row-level isolation).
+// ---------------------------------------------------------------------------
+
+// @MX:ANCHOR [AUTO] personalBookmarks — user-private answer bookmark records.
+// @MX:REASON Referenced by /api/ra/personal/* routes and the library view.
+//            Privacy invariant: rows are isolated by userId at the query layer.
+// @MX:SPEC SPEC-REGULA-PERSONAL-LIB-001 (REQ-PERSONAL-001..008)
+export const personalBookmarks = pgTable(
+  'personal_bookmarks',
+  {
+    id: uuid('id').defaultRandom().primaryKey(),
+    userId: uuid('user_id')
+      .notNull()
+      .references(() => users.id, { onDelete: 'cascade' }),
+    messageId: uuid('message_id')
+      .notNull()
+      .references(() => messages.id, { onDelete: 'cascade' }),
+    // Nullable — NULL means whole-message bookmark; non-null pins a specific answer block.
+    blockId: uuid('block_id'),
+    // Derived from the message prose at creation time (snapshot for fast listing).
+    title: text('title').notNull(),
+    // Optional user override; displayed when present (falls back to title).
+    customTitle: text('custom_title'),
+    note: text('note').notNull().default(''),
+    tags: text('tags').array().notNull().default(sql`'{}'::text[]`),
+    createdAt: timestamp('created_at', { withTimezone: true, mode: 'date' }).notNull().defaultNow(),
+    updatedAt: timestamp('updated_at', { withTimezone: true, mode: 'date' }).notNull().defaultNow(),
+  },
+  (t) => ({
+    // Primary access pattern: list bookmarks for a user.
+    userIdx: index('idx_personal_bookmarks_user').on(t.userId, t.createdAt),
+    // Tag filter acceleration.
+    userTagsIdx: index('idx_personal_bookmarks_user_tags').on(t.userId, t.tags),
   }),
 );

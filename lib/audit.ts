@@ -182,7 +182,12 @@ export type AuditAction =
   //   audit.package.generated — auditor generated a 1-click audit package ZIP
   | 'audit.access'
   | 'audit.denied'
-  | 'audit.package.generated';
+  | 'audit.package.generated'
+  // SPEC-REGULA-PERSONAL-LIB-001 — personal library bookmark events (Issue #86):
+  //   personal_bookmark.created — user bookmarked a message/answer block
+  //   personal_bookmark.deleted — user removed a personal bookmark
+  | 'personal_bookmark.created'
+  | 'personal_bookmark.deleted';
 
 export interface AuditEvent {
   /** User UUID, or null for system-initiated events. */
