@@ -94,8 +94,9 @@ describe('dispatch — email channel (SendGrid wiring, REQ-NOTIFY-004)', () => {
     expect(result.email).toBe('error');
   });
 
-  it('returns email "error" when SENDGRID_API_KEY is unset (misconfigured production)', async () => {
-    // No env set — sendEmail throws synchronously, caught by dispatcher.
+  it('returns email "skipped" (not error) when SENDGRID_API_KEY is unset (dev/test)', async () => {
+    // Env unset is a dev-environment signal, not a dispatch failure.
+    // Matches radar/notifier-channels/email.ts skip behavior.
     process.env.SENDGRID_API_KEY = '';
     const result = await dispatch({
       eventType: 'batch_query.completed',
@@ -104,7 +105,7 @@ describe('dispatch — email channel (SendGrid wiring, REQ-NOTIFY-004)', () => {
       recipientEmail: 'user@example.test',
     });
 
-    expect(result.email).toBe('error');
+    expect(result.email).toBe('skipped');
   });
 
   it('skips email channel when recipientEmail is absent', async () => {

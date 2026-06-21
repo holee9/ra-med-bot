@@ -149,15 +149,22 @@ export async function dispatch(payload: NotificationPayload): Promise<DispatchRe
     }
   }
 
-  // Email: SendGrid v3 REST API. Failures are logged but non-blocking
-  // (fire-and-forget per channel, consistent with Slack/Teams handling).
+  // Email: SendGrid v3 REST API. Skipped silently when SENDGRID_API_KEY is
+  // unset (dev/test environments) to avoid surfacing env misconfiguration as a
+  // hard error — matches radar/notifier-channels/email.ts skip behavior.
+  // Actual API failures (auth, network, non-2xx) are logged as 'error'.
   if (payload.recipientEmail) {
-    try {
-      await sendEmail(payload.recipientEmail, payload.title, payload.body, payload.actionUrl);
-      result.email = 'sent';
-    } catch (err) {
-      logger.error('[notifications] Email dispatch failed:', err);
-      result.email = 'error';
+    if (!process.env.SENDGRID_API_KEY) {
+      logger.info('[notifications] Email skipped — SENDGRID_API_KEY not set');
+      result.email = 'skipped';
+    } else {
+      try {
+        await sendEmail(payload.recipientEmail, payload.title, payload.body, payload.actionUrl);
+        result.email = 'sent';
+      } catch (err) {
+        logger.error('[notifications] Email dispatch failed:', err);
+        result.email = 'error';
+      }
     }
   }
 
