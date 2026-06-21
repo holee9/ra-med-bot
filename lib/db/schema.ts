@@ -1457,7 +1457,7 @@ export const answerSignatures = pgTable(
 
 // ---------------------------------------------------------------------------
 // SPEC-REGULA-PERSONAL-LIB-001 — Personal RA Library (Issue #86)
-// Migration: 0063_personal_bookmarks.sql
+// Migration: 0064_personal_bookmarks.sql
 // User-scoped bookmarks for fast re-reference of answers/blocks.
 // Private layer — every query MUST filter by userId (row-level isolation).
 // ---------------------------------------------------------------------------
