@@ -14,6 +14,7 @@
 
 - 2026-06-20: Draft created — basic EARS scaffold (5 REQs).
 - 2026-06-21: Promoted Draft → Active. Expanded EARS to 8 REQs covering all PASS rows of `qa-gate-definitions.md` §Gate 5 (5 canonical synthetic queries, rollback drill, latency/error/cost baseline). Added Application Scope, Evidence Artifacts, SSoT Alignment sections.
+- 2026-06-21: Application scope reconciled via #213 — 13-issue list corrected to 9 (#49, #57, #67, #71, #72, #80, #88, #89, #90). #45/#52/#83/#91 reassigned to Gate 2. SSoT alignment and conflict policy notes updated.
 
 ## Purpose
 
@@ -29,10 +30,13 @@ Validate production deployment readiness and ongoing regression monitoring: synt
 
 Gate 5 applies to infra/ops issues per `docs/qa/qa-gate-definitions.md` §Gate 5 Application scope.
 
-Authoritative list from `qa-gate-definitions.md`:
-**#45, #49, #52, #57, #67, #71, #72, #80, #83, #88, #89, #90, #91.**
+Authoritative list from `qa-gate-definitions.md` (reconciled via #213):
+**#49, #57, #67, #71, #72, #80, #88, #89, #90.**
 
-`docs/qa/qa-matrix.md` §Gate Assignment Summary reports Gate 5 issue count as 11, while `qa-gate-definitions.md` enumerates 13. This is an SSoT-internal discrepancy and is **not resolved here** — per the conflict policy below, `qa-gate-definitions.md` §Gate 5 is the authoritative application-scope source. The matrix summary count should be reconciled in a separate Plan/Sync pass.
+The earlier 13-issue list was reconciled to 9 in #213: #45, #52, #83, #91 are
+covered by Gate 2 per `qa-matrix.md` per-row assignments (delivery/audit/CI/leakage
+scope fits PR-acceptance better than operations monitoring). `qa-gate-definitions.md`
+and `qa-matrix.md` now agree on Gate 5 scope.
 
 Reference: `docs/qa/qa-gate-definitions.md` §Gate 5 — "Applies to: production operations and ongoing regression monitoring."
 
@@ -71,7 +75,7 @@ The Ops evidence level is defined in `docs/qa/qa-matrix.md` §Evidence Levels as
 
 - **Primary SSoT**: `docs/qa/qa-gate-definitions.md` §Gate 5 (PASS conditions table, Application scope).
 - **Roadmap SSoT**: `.moai/specs/_shared/qa-gate-roadmap.md` §4 (Gate 5 PASS summary).
-- **Conflict policy**: On conflict between this SPEC and either SSoT file, **the SSoT wins**. Where `qa-gate-definitions.md` and `qa-matrix.md` disagree on the Gate 5 application-scope issue list, `qa-gate-definitions.md` §Gate 5 is authoritative per its role as the canonical gate definition document; the matrix summary count discrepancy should be reconciled separately.
+- **Conflict policy**: On conflict between this SPEC and either SSoT file, **the SSoT wins**. (Gate 5 application-scope discrepancy between `qa-gate-definitions.md` and `qa-matrix.md` was resolved in #213 — both now list #49, #57, #67, #71, #72, #80, #88, #89, #90.)
 
 ## Acceptance Criteria
 
