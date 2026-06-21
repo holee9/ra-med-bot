@@ -57,11 +57,11 @@ export function parseAxeViolations(axeOutput: string): string[] {
     if (Array.isArray(parsed)) {
       const violations: string[] = [];
       for (const page of parsed) {
-        const pageViolations: unknown = (page as Record<string, unknown>)['violations'];
+        const pageViolations: unknown = (page as Record<string, unknown>).violations;
         if (Array.isArray(pageViolations)) {
           for (const v of pageViolations) {
-            const id: unknown = (v as Record<string, unknown>)['id'];
-            const description: unknown = (v as Record<string, unknown>)['description'];
+            const id: unknown = (v as Record<string, unknown>).id;
+            const description: unknown = (v as Record<string, unknown>).description;
             const label = id ? String(id) : description ? String(description) : 'unknown';
             violations.push(label);
           }
@@ -71,11 +71,11 @@ export function parseAxeViolations(axeOutput: string): string[] {
     }
 
     // Single page result object.
-    const pageViolations: unknown = (parsed as Record<string, unknown>)['violations'];
+    const pageViolations: unknown = (parsed as Record<string, unknown>).violations;
     if (Array.isArray(pageViolations)) {
       return pageViolations.map((v: unknown) => {
-        const id: unknown = (v as Record<string, unknown>)['id'];
-        const description: unknown = (v as Record<string, unknown>)['description'];
+        const id: unknown = (v as Record<string, unknown>).id;
+        const description: unknown = (v as Record<string, unknown>).description;
         return id ? String(id) : description ? String(description) : 'unknown';
       });
     }
@@ -118,9 +118,9 @@ export function parseGitleaksFindings(gitleaksOutput: string): string[] {
     const parsed: unknown = JSON.parse(trimmed);
     if (Array.isArray(parsed)) {
       return parsed.map((item: unknown) => {
-        const desc: unknown = (item as Record<string, unknown>)['Description'];
-        const rule: unknown = (item as Record<string, unknown>)['RuleID'];
-        const secret: unknown = (item as Record<string, unknown>)['Secret'];
+        const desc: unknown = (item as Record<string, unknown>).Description;
+        const rule: unknown = (item as Record<string, unknown>).RuleID;
+        const secret: unknown = (item as Record<string, unknown>).Secret;
         if (desc) return String(desc);
         if (rule) return String(rule);
         if (secret) return `secret detected: ${String(secret).slice(0, 20)}...`;
