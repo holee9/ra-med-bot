@@ -17,7 +17,7 @@ describe('getPersonaJourneys (SPEC-REGULA-QA-WAVE-INTEGRATION-001)', () => {
 
   it('each journey has id, persona, and steps fields', () => {
     const journeys = getPersonaJourneys();
-    journeys.forEach((j: PersonaJourney) => {
+    for (const j of journeys as PersonaJourney[]) {
       expect(j).toHaveProperty('id');
       expect(typeof j.id).toBe('string');
       expect(j.id.length).toBeGreaterThan(0);
@@ -29,7 +29,7 @@ describe('getPersonaJourneys (SPEC-REGULA-QA-WAVE-INTEGRATION-001)', () => {
       expect(j).toHaveProperty('steps');
       expect(Array.isArray(j.steps)).toBe(true);
       expect(j.steps.length).toBeGreaterThan(0);
-    });
+    }
   });
 
   it('journey ids are unique', () => {

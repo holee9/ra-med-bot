@@ -109,19 +109,19 @@ export function generateWaveIntegrationReport(opts: WaveIntegrationReportOptions
 
   if (passedScenarios.length > 0) {
     lines.push('### Passed');
-    passedScenarios.forEach((s) => lines.push(`- [x] ${s}`));
+    for (const s of passedScenarios) lines.push(`- [x] ${s}`);
     lines.push('');
   }
 
   if (failedScenarios.length > 0) {
     lines.push('### Failed');
-    failedScenarios.forEach((s) => lines.push(`- [ ] ${s}`));
+    for (const s of failedScenarios) lines.push(`- [ ] ${s}`);
     lines.push('');
   }
 
   if (skippedScenarios.length > 0) {
     lines.push('### Skipped');
-    skippedScenarios.forEach((s) => lines.push(`- [-] ${s}`));
+    for (const s of skippedScenarios) lines.push(`- [-] ${s}`);
     lines.push('');
   }
 
