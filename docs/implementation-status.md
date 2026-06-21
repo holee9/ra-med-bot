@@ -76,7 +76,7 @@ during an auditor session.
 | Submission drafter contract (#196) | COMPLETE | build env bypass path, `workflow_runs` status contract, source health-check import fixed |
 | Hydration mismatch (#166) | COMPLETE | date render boundaries plus 2026-06-20 Biome format recovery |
 | QA Gate 0 helper (#74) | COMPLETE | `scripts/qa-gate-0-checklist.ts`, shared checklist template, ignored generated outputs |
-| QA Gate 1–5 SPEC promotion (#75–#79) | COMPLETE | 5 gate SPECs promoted Draft → Active with expanded EARS REQs, Application Scope, Evidence Artifacts, SSoT Alignment sections (PR #212); `docs/qa/qa-gate-definitions.md` Owner SPEC markers synced from `(planned)` to actual status |
+| QA Gate 0–5 SPEC promotion (#74–#79) | COMPLETE | All 6 gate SPECs promoted Draft → Active with expanded EARS REQs, Application Scope, Evidence Artifacts, SSoT Alignment sections (PR #212 Gate 1–5, PR #218 Gate 0); `docs/qa/qa-gate-definitions.md` Owner SPEC markers synced from `(planned)` to actual status |
 | RBAC security (#162) | COMPLETE | ra-lead → /403 redirect E2E validated (PR #193) |
 | Predicate E2E stability (#164) | COMPLETE | hydration + RBAC locator fixed (in PR #190) |
 | Mock workflow audit (#152) | COMPLETE | mock_data, workflow_run_id metadata connected (in PR #190) |
