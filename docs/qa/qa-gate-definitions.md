@@ -154,8 +154,9 @@ Mandatory for citation-producing issues (marked `Domain UAT` in the matrix):
 
 ### Application scope
 
-Applies to infra/ops issues (#45, #49, #52, #57, #67, #71, #72, #80, #83, #88,
-#89, #90, #91) and tracks the v0.2 operational readiness surface.
+Applies to infra/ops issues (#49, #57, #67, #71, #72, #80, #88, #89, #90) and
+tracks the v0.2 operational readiness surface. (#45, #52, #83, #91 are covered
+by Gate 2 per the matrix — see #213.)
 
 ## Relationship to issue lifecycle
 
