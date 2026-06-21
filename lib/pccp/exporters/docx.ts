@@ -5,6 +5,7 @@
 
 import { AlignmentType, Document, HeadingLevel, Packer, Paragraph, TextRun } from 'docx';
 import type { PccpComponentRecord, PccpComponentType, PccpVersion } from '../types';
+import { flattenContent } from './content-flatten';
 
 export interface PccpDocxExportOptions {
   includeDraftWatermark: boolean;
@@ -18,33 +19,6 @@ const COMPONENT_LABELS: Record<PccpComponentType, string> = {
   impact_assessment: 'Impact Assessment',
   performance_testing: 'Performance Testing',
 };
-
-/** Flatten content_jsonb to [key, value] pairs (single-level recursion). */
-function flattenContent(
-  content: Record<string, unknown>,
-  prefix = '',
-): Array<{ key: string; value: string }> {
-  const out: Array<{ key: string; value: string }> = [];
-  for (const [k, v] of Object.entries(content)) {
-    const label = prefix ? `${prefix} · ${k}` : k;
-    if (v === null || v === undefined) continue;
-    if (Array.isArray(v)) {
-      const items = v.map((item) =>
-        typeof item === 'object' && item !== null
-          ? Object.entries(item as Record<string, unknown>)
-              .map(([ik, iv]) => `${ik}: ${iv}`)
-              .join(', ')
-          : String(item),
-      );
-      out.push({ key: label, value: items.join('; ') });
-    } else if (typeof v === 'object') {
-      out.push(...flattenContent(v as Record<string, unknown>, label));
-    } else {
-      out.push({ key: label, value: String(v) });
-    }
-  }
-  return out;
-}
 
 /**
  * Generates a DOCX buffer for the given PCCP version and its components.
