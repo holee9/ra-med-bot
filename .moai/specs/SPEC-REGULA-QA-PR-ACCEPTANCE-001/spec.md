@@ -13,7 +13,7 @@
 ## HISTORY
 
 - 2026-06-20: Draft created — basic EARS scaffold (4 REQs).
-- 2026-06-21: Promoted Draft → Active. Expanded EARS to 8 REQs covering all PASS rows of `qa-gate-definitions.md` §Gate 2 (added explicit a11y/axe-core and security/gitleaks requirements). Added Application Scope, Evidence Artifacts, SSoT Alignment sections.
+- 2026-06-21: Promoted Draft → Active. Expanded EARS to 8 REQs covering all PASS rows of `qa-gate-definitions.md` §Gate 2 (added explicit a11y/axe-core and security/gitleaks requirements). Added Application Scope, Evidence Artifacts, SSoT Alignment sections. Clarified that Gate 2 applies to every PR into `main`; the matrix `Gate` column describes issue closure ownership, not PR-acceptance scope.
 
 ## Purpose
 
@@ -21,17 +21,17 @@ Define acceptance criteria that every PR must satisfy before merge into `main`. 
 
 ## Scope
 
-- **Applied**: Before merging any feature PR into `main`.
+- **Applied**: Before merging any PR into `main`.
 - **Covers**: CI green, typecheck, lint, tests with baseline, accessibility (axe-core), security (gitleaks + dependency scan), evidence package, SPEC AC coverage, reviewer sign-off, regression in existing E2E or eval baselines.
 - **Out of scope**: Production smoke test (Gate 5), domain UAT (Gate 4), cross-feature integration (Gate 3).
 
 ## Application Scope
 
-Gate 2 applies to **38 PR-acceptance scope issues** per `docs/qa/qa-matrix.md` §Gate Assignment Summary. These are the issues whose `Gate` column reads `Gate 2` in the per-issue gate assignment table (rows spanning #22–#92, excluding the infra/E2E/UAT/ops rows assigned to Gates 3–5).
+Gate 2 applies to **every PR that merges into `main`**, regardless of the issue's highest closure gate in `docs/qa/qa-matrix.md`.
 
 Reference: `docs/qa/qa-gate-definitions.md` §Gate 2 — "Applies to: every PR that merges into `main`."
 
-For the authoritative per-issue list, grep `docs/qa/qa-matrix.md` for `| Gate 2 |`. This SPEC must not duplicate the list because the matrix is the SSoT for issue-to-gate assignment.
+The matrix `Gate` column is the highest gate that owns issue closure and follow-up evidence. It does **not** exempt Gate 3, Gate 4, Gate 5, infra, E2E, UAT, or ops PRs from Gate 2 PR acceptance checks. This SPEC must not duplicate the matrix rows because the matrix remains the SSoT for issue-to-gate assignment, while `qa-gate-definitions.md` remains the SSoT for PR-acceptance scope.
 
 ## Requirements (EARS format)
 
