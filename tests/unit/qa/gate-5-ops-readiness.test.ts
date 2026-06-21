@@ -3,9 +3,9 @@
 
 import { describe, expect, it } from 'vitest';
 import {
-  parseHealthCheckResults,
   checkSyntheticQueries,
   generateOpsReadinessReport,
+  parseHealthCheckResults,
 } from '../../../scripts/qa/gate-5-ops-readiness';
 
 // ---------------------------------------------------------------------------
@@ -123,7 +123,9 @@ describe('generateOpsReadinessReport', () => {
   });
 
   it('contains the deploy timestamp', () => {
-    const report = generateOpsReadinessReport(makeOpts({ deployTimestamp: '2026-06-21T09:00:00Z' }));
+    const report = generateOpsReadinessReport(
+      makeOpts({ deployTimestamp: '2026-06-21T09:00:00Z' }),
+    );
     expect(report).toContain('2026-06-21T09:00:00Z');
   });
 
@@ -184,7 +186,9 @@ describe('generateOpsReadinessReport', () => {
   });
 
   it('includes quality metrics baseline section', () => {
-    const report = generateOpsReadinessReport(makeOpts({ latencyP95Ms: 1200, errorRate: 0.005, costPerQuery: 0.03 }));
+    const report = generateOpsReadinessReport(
+      makeOpts({ latencyP95Ms: 1200, errorRate: 0.005, costPerQuery: 0.03 }),
+    );
     expect(report).toContain('## Quality Metrics Baseline');
     expect(report).toContain('1200');
     expect(report).toContain('0.50%');

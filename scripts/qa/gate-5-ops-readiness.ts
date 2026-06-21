@@ -123,8 +123,7 @@ export function generateOpsReadinessReport(opts: OpsReadinessReportOpts): string
     auditRetentionVerified,
   } = opts;
 
-  const syntheticAllPass =
-    syntheticQueryResults.total === 5 && syntheticQueryResults.passed === 5;
+  const syntheticAllPass = syntheticQueryResults.total === 5 && syntheticQueryResults.passed === 5;
   const latencyOk = latencyP95Ms <= QUALITY_THRESHOLDS.latencyP95MaxMs;
   const errorRateOk = errorRate <= QUALITY_THRESHOLDS.errorRateMax;
   const costOk = costPerQuery <= QUALITY_THRESHOLDS.costPerQueryMax;
@@ -202,11 +201,11 @@ export function generateOpsReadinessReport(opts: OpsReadinessReportOpts): string
   return lines.join('\n');
 }
 
+import path from 'node:path';
 // ---------------------------------------------------------------------------
 // CLI entry point
 // ---------------------------------------------------------------------------
 import { fileURLToPath } from 'node:url';
-import path from 'node:path';
 
 const isDirectRun =
   typeof process.argv[1] === 'string' &&
