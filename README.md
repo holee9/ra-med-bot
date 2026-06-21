@@ -17,11 +17,18 @@
 
 ### 최신 main 상태 (2026-06-21)
 
-현재 `main`은 PR #206 외부 감사관 read-only 페르소나 및 1-클릭 감사 패키지 구현까지 반영된 상태입니다. PR #206은 Issue #92 / SPEC-REGULA-AUDITOR-VIEW-001을 닫았고, `auditor` RBAC role(hierarchy 0.5), 중앙 쓰기 차단(`withPermission` 내 `WRITE_METHODS` 블록 → 403 + `audit.denied`), 1-클릭 감사 패키지 ZIP(5섹션 + SHA-256 manifest), `AuditorWatermark` UI를 포함합니다. 직전 PR #204(전자서명 #88)와 함께 Wave 5 규제 준수 축이 완성되었습니다. 2026-06-21 기준 PR 체크와 merge 후 main의 `CI`, `Security Scan`, `E2E Tests`, `Deploy`가 모두 통과했습니다.
+현재 `main`은 PR #218(Gate 0 SPEC 승격)까지 반영된 상태입니다. Wave 5 규제 준수 축(ESIG #88 / Export Hub #87 / Auditor View #92) 완성에 이어 개인 RA 라이브러리(#86), 규제 캘린더(#44), 코퍼스 증분 동기화(#45)가 머지되었고, QA 게이트 프레임워크가 정비되어 **Gate 0~5 SPEC 6개가 모두 Active**로 승격되었습니다(#212 Gate 1-5, #217 Gate 5 SSoT 정합, #218 Gate 0). 2026-06-21 기준 main의 `CI`, `Security Scan`, `E2E Tests`, `Deploy`가 모두 통과했습니다.
 
 | 항목 | 상태 | 근거 |
 |---|---|---|
-| main 리뷰 기준 | PASS | `0e6c479 feat(audit): external auditor read-only package flow` |
+| main 리뷰 기준 | PASS | `4f17b51 docs(qa): Gate 0 SPEC 승격 Draft→Active (#74)` |
+| PR #218 | MERGED | Gate 0 SPEC #74 Draft→Active — Gate 0~5 패밀리 전부 Active 통일 |
+| PR #217 | MERGED | Gate 5 SSoT 범위 정합 #213 (13→9건, per-row+summary 일치) |
+| PR #212 | MERGED | Gate 1-5 SPEC #75-79 Draft→Active 승격 + 문서 동기화 |
+| PR #211 | MERGED | 코퍼스 증분 동기화 SPEC-REGULA-DELTA-SYNC-001 (#45) |
+| PR #210 | MERGED | 전체 이슈 QA 매트릭스 + Gate 0~5 정의 (#73) |
+| PR #209 | MERGED | 규제 캘린더 & 데드라인 관리 MVP (#44) |
+| PR #208 | MERGED | 개인 RA 라이브러리 — 북마크·태그·메모·검색 (#86) |
 | PR #206 | MERGED | Issue #92 auditor 페르소나 / 중앙 쓰기 차단 / 1-click 감사 패키지 / SHA-256 manifest |
 | PR #205 | MERGED | ESIG Part 11 서명 워크플로우 문서화 (`docs/esig`) |
 | PR #204 | MERGED | Issue #88 전자서명 / 답변 잠금 / §11.50·§11.70 구현 |
@@ -30,6 +37,7 @@
 | PR #195 | MERGED | `feat(risk): SPEC-REGULA-RISK-001 ISO 14971 위험관리 통합 구현` |
 | PR #194 | MERGED | Issue #46 기반 작업 병합 완료 |
 | QA Gate 0 helper | PASS | `corepack pnpm qa:gate-0 74`로 체크리스트 생성 검증 |
+| QA Gate SPEC | PASS | Gate 0~5 SPEC 6개 전부 Active (PR #212/#217/#218) — `docs/qa/qa-gate-definitions.md`, `qa-matrix.md` per-row/summary 정합 |
 | CI Gates | PASS | 로컬 `biome check .`, `pnpm test`, `next build`; push 후 GitHub Actions에서 typecheck, lint, format, unit, build 재검증 |
 | E2E Tests | PASS | CI smoke/browser jobs success; staging URL 미설정 job은 의도적 skip |
 | Security Scan | PASS | Dependency Vulnerability Scan, Secret Detection 통과 |
@@ -1880,4 +1888,4 @@ MIT License - [LICENSE](LICENSE) 파일 참조
 
 **Built with ❤️ using [abyz-lab](https://abyz-lab.work)**
 
-_마지막 업데이트: 2026-06-21 (PR #206 / Issue #92 외부 감사관 read-only 페르소나 + 1-클릭 감사 패키지 완료 — auditor RBAC role, `withPermission` 중앙 쓰기 차단, SHA-256 manifest ZIP, `AuditorWatermark` 반영. 직전 PR #204 전자서명에 이어 Wave 5 규제 준수 축 완성)_
+_마지막 업데이트: 2026-06-21 (main `4f17b51`, PR #218 / Issue #74 Gate 0 SPEC 승격까지 반영 — Gate 0~5 SPEC 6개 전부 Active, PR #217 Gate 5 SSoT 9건 정합, PR #212 Gate 1-5 승격, PR #211/#209/#208 Wave 5 후속 기능 포함)_

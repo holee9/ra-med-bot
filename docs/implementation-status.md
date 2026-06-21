@@ -1,7 +1,7 @@
 # Regula Implementation Status
 
-Reviewed: 2026-06-21 KST (implementation review/fix pass)
-Implementation review baseline commit: `0e6c479` (`main` after PR #206 / Issue #92 external auditor read-only view merge)
+Reviewed: 2026-06-21 KST (post-PR #218 documentation sync)
+Implementation review baseline commit: `4f17b51` (`main` after PR #218 / Issue #74 Gate 0 SPEC promotion merge)
 
 This document includes the 2026-06-18 PR cleanup after PR #184 merge,
 PR #177 superseded closure, the completed Predicate Visualization addendum
@@ -9,7 +9,7 @@ for Issue #185 / PR #186, E2E validation MRD completion for Issue #182,
 the Issue #188 hybrid-ra-saas inbound webhook hardening pass,
 the Issue #156 hybrid-ra-saas outbound typed adapter merge,
 the 2026-06-20 security/quality fixes (#162 RBAC, #164 Predicate E2E, #152 workflow mock audit, #163 onboarding E2E seed),
-the Issue #46 / PR #195 ISO 14971 Risk Management integration plus the follow-up `8065cc8` CI restoration commit, PR #204 / Issue #88 21 CFR Part 11 electronic signatures, PR #205 ESIG Part 11 signature workflow documentation, and PR #206 / Issue #92 external auditor read-only view with 1-click audit package. This review also covers PR #196, PR #197, the #166 hydration mismatch fixes, and the QA Gate/Wave 5 SPEC documentation commits now present on `main`.
+the Issue #46 / PR #195 ISO 14971 Risk Management integration plus the follow-up `8065cc8` CI restoration commit, PR #204 / Issue #88 21 CFR Part 11 electronic signatures, PR #205 ESIG Part 11 signature workflow documentation, PR #206 / Issue #92 external auditor read-only view with 1-click audit package, PR #208 / Issue #86 personal RA library, PR #209 / Issue #44 regulatory calendar, PR #211 / Issue #45 corpus delta sync, and the QA Gate 0-5 documentation/SPEC sync through PR #218. This review also covers PR #196, PR #197, the #166 hydration mismatch fixes, and the QA Gate/Wave 5 SPEC documentation commits now present on `main`.
 
 ## Executive State
 
@@ -60,12 +60,20 @@ an `audit.denied` record), the audit package is assembled as an in-memory ZIP
 with a SHA-256 per-file manifest, and a watermark component marks every screen
 during an auditor session.
 
+After PR #206, main continued through the Wave 5 and QA meta loop: PR #208
+merged the personal RA library, PR #209 merged the regulatory calendar, PR #211
+merged corpus delta sync, PR #212 promoted Gate 1-5 SPECs from Draft to Active,
+PR #217 reconciled the Gate 5 SSoT scope from 13 to 9 tracked items, and PR
+#218 promoted the Gate 0 SPEC. As of commit `4f17b51`, all Gate 0-5 SPECs are
+Active and the README dashboard, changelog, QA matrix, and gate definitions use
+that post-PR #218 main baseline.
+
 ## Verified Repository State (2026-06-21)
 
 | Area | State | Evidence |
 |---|---|---|
-| Active branch | `main` | review baseline commit `0e6c479` |
-| Completed PRs/issues | #184, #186, #188, #192/#156, #190/#182, #193/#162, #194, #195/#46, #196, #197, #204/#88, #205, #206/#92, #166 | all merged or closed |
+| Active branch | `main` | review baseline commit `4f17b51` |
+| Completed PRs/issues | #184, #186, #188, #192/#156, #190/#182, #193/#162, #194, #195/#46, #196, #197, #204/#88, #205, #206/#92, #208/#86, #209/#44, #210/#73, #211/#45, #212/#75-#79, #217/#213, #218/#74, #166 | all merged or closed |
 | E2E Validation | COMPLETE | Go/No-Go spec, Smoke Test 8/8 specs, MRD complete |
 | Traceability Integration | COMPLETE | BFF routes, UI, RBAC all implemented |
 | Webhook Integration | COMPLETE | `/api/webhooks/audit`, `ifu`, `knowledge-sync` hardened |
@@ -73,6 +81,9 @@ during an auditor session.
 | ISO 14971 Risk Management | COMPLETE | `/workflows/risk`, `/api/ra/risk/*`, `lib/risk/*`, risk DB tables, RA-lead approval |
 | 21 CFR Part 11 Electronic Signature | COMPLETE | `/api/ra/messages/[messageId]/signature`, `answer_signatures`, answer lock, §11.50/§11.70 linkage |
 | External Auditor Read-Only View | COMPLETE | `auditor` role, central write-block, `/api/ra/audit-log`, `/api/ra/audit-package` ZIP + SHA-256 manifest |
+| Personal RA Library (#86) | COMPLETE | bookmarks, tags, notes, search, `personal_bookmarks`, `personal.view` |
+| Regulatory Calendar (#44) | COMPLETE | deadlines table, calendar view, deadline API, deadline permissions |
+| Corpus delta sync (#45) | COMPLETE | Radar delta sync, retrying upsert, `source_sections` and `corpus_sync_runs` persistence |
 | Submission drafter contract (#196) | COMPLETE | build env bypass path, `workflow_runs` status contract, source health-check import fixed |
 | Hydration mismatch (#166) | COMPLETE | date render boundaries plus 2026-06-20 Biome format recovery |
 | QA Gate 0 helper (#74) | COMPLETE | `scripts/qa-gate-0-checklist.ts`, shared checklist template, ignored generated outputs |

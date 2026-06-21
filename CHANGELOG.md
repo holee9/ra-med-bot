@@ -73,6 +73,16 @@
 - **감사 로그**: artifact_exported, artifact_exported_docx, artifact_exported_pdf, artifact_exported_markdown, artifact_exported_email 액션 추가
 - **TRUST 5 준수**: Tested (95%+), Readable (영어 주석 + MX 태그), Unified (포맷팅 일관), Secured (입력 검증), Trackable (커밋 메시지에 SPEC 참조)
 
+### Added (2026-06-21 추가 병합)
+
+- **개인 RA 라이브러리** (SPEC-REGULA-PERSONAL-LIB-001 — Issue #86, PR #208): 북마크·태그·메모·검색. `personal_bookmarks` 테이블(migration 0064), `personal.view` 권한(user scope), API 3종, library 뷰, 17 테스트.
+- **규제 캘린더 & 데드라인 관리** (SPEC-REGULA-CALENDAR-001 — Issue #44, PR #209): `regulatory_deadlines` 테이블(migration 0063), `deadline.view/manage` 권한, API 2종, calendar 뷰, 15 테스트.
+- **코퍼스 증분 동기화** (SPEC-REGULA-DELTA-SYNC-001 — Issue #45, PR #211): Radar → pgvector 자동 업데이트. `upsertWithRetry` 백오프, source_sections 컬럼 + corpus_sync_runs 테이블(migration 0065), `lib/radar/delta-sync/{detector,ingest,vectorstore,gap-replay,index}.ts`. gap-replay는 stub(#35 연동 follow-up).
+
+### Changed
+
+- **QA 게이트 프레임워크 완결** (Issues #73~#79, PR #210/#212/#217/#218): 전체 이슈 QA 매트릭스 구축 + Gate 0~5 SPEC 6개를 Draft → Active로 승격. SSoT 체계 정비(`docs/qa/qa-gate-definitions.md`, `qa-matrix.md`, `_shared/qa-gate-roadmap.md`). Gate 5 적용 범위 per-row/summary/definitions 모두 9건으로 정합(#213). Gate 0 helper 스크립트 `scripts/qa-gate-0-checklist.ts`. 각 게이트 SPEC은 EARS REQ + Application Scope + Evidence Artifacts + SSoT Alignment 구조로 `qa-gate-definitions.md` PASS 조건을 operationalize.
+
 ---
 
 ## [Unreleased] — Wave 3 (2026-06-04 sync)
