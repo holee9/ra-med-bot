@@ -3,10 +3,10 @@
 
 import { describe, expect, it } from 'vitest';
 import {
-  parseAxeViolations,
-  parseGitleaksFindings,
   generateQaEvidenceSection,
   generateQaSignoffComment,
+  parseAxeViolations,
+  parseGitleaksFindings,
 } from '../../../scripts/qa/gate-2-pr-acceptance';
 
 // ---------------------------------------------------------------------------
@@ -23,9 +23,7 @@ describe('parseAxeViolations (REQ-G2-001, REQ-G2-002)', () => {
   });
 
   it('returns empty array for JSON array with zero violations', () => {
-    const axeJson = JSON.stringify([
-      { url: 'http://localhost:3000', violations: [] },
-    ]);
+    const axeJson = JSON.stringify([{ url: 'http://localhost:3000', violations: [] }]);
     expect(parseAxeViolations(axeJson)).toEqual([]);
   });
 
@@ -47,9 +45,7 @@ describe('parseAxeViolations (REQ-G2-001, REQ-G2-002)', () => {
 
   it('returns violation ids from single page JSON object format', () => {
     const axeJson = JSON.stringify({
-      violations: [
-        { id: 'aria-required-attr', description: 'Required ARIA attributes' },
-      ],
+      violations: [{ id: 'aria-required-attr', description: 'Required ARIA attributes' }],
     });
     const result = parseAxeViolations(axeJson);
     expect(result).toHaveLength(1);
@@ -59,9 +55,7 @@ describe('parseAxeViolations (REQ-G2-001, REQ-G2-002)', () => {
   it('falls back to description when id is missing', () => {
     const axeJson = JSON.stringify([
       {
-        violations: [
-          { description: 'Missing label element' },
-        ],
+        violations: [{ description: 'Missing label element' }],
       },
     ]);
     const result = parseAxeViolations(axeJson);
@@ -119,9 +113,7 @@ describe('parseGitleaksFindings (REQ-G2-003, REQ-G2-004)', () => {
   });
 
   it('falls back to RuleID when Description is missing', () => {
-    const gitleaksJson = JSON.stringify([
-      { RuleID: 'github-pat', Secret: 'ghp_xxxxxxxxxxxx' },
-    ]);
+    const gitleaksJson = JSON.stringify([{ RuleID: 'github-pat', Secret: 'ghp_xxxxxxxxxxxx' }]);
     const result = parseGitleaksFindings(gitleaksJson);
     expect(result[0]).toBe('github-pat');
   });

@@ -9,8 +9,8 @@
 //
 // Exit code 1 if axe violations or gitleaks findings are detected.
 
-import { fileURLToPath } from 'node:url';
 import path from 'node:path';
+import { fileURLToPath } from 'node:url';
 
 // ---------------------------------------------------------------------------
 // Types
@@ -156,13 +156,13 @@ export function parseGitleaksFindings(gitleaksOutput: string): string[] {
 export function generateQaEvidenceSection(opts: QaEvidenceSectionOpts): string {
   const { prNumber, commitSha, commands, results, hasArtifacts } = opts;
 
-  const commandLines = commands.length > 0
-    ? commands.map((cmd) => `- \`${cmd}\``).join('\n')
-    : '- _No commands recorded_';
+  const commandLines =
+    commands.length > 0
+      ? commands.map((cmd) => `- \`${cmd}\``).join('\n')
+      : '- _No commands recorded_';
 
-  const resultLines = results.length > 0
-    ? results.map((r) => `- ${r}`).join('\n')
-    : '- _No results recorded_';
+  const resultLines =
+    results.length > 0 ? results.map((r) => `- ${r}`).join('\n') : '- _No results recorded_';
 
   const artifactsLine = hasArtifacts
     ? '- Artifacts attached to this PR (see Checks tab)'
@@ -194,9 +194,10 @@ export function generateQaEvidenceSection(opts: QaEvidenceSectionOpts): string {
 export function generateQaSignoffComment(opts: QaSignoffCommentOpts): string {
   const { gateStatus, approver, evidenceLinks, closureDecision } = opts;
 
-  const linkLines = evidenceLinks.length > 0
-    ? evidenceLinks.map((link) => `- ${link}`).join('\n')
-    : '- _No evidence links provided_';
+  const linkLines =
+    evidenceLinks.length > 0
+      ? evidenceLinks.map((link) => `- ${link}`).join('\n')
+      : '- _No evidence links provided_';
 
   return [
     '### QA signoff',
@@ -224,7 +225,7 @@ if (isDirectRun) {
   const prNumberIdx = args.indexOf('--pr-number');
   const commitIdx = args.indexOf('--commit');
 
-  const prNumber = prNumberIdx >= 0 ? parseInt(args[prNumberIdx + 1] ?? '0', 10) : 0;
+  const prNumber = prNumberIdx >= 0 ? Number.parseInt(args[prNumberIdx + 1] ?? '0', 10) : 0;
   const commitSha = commitIdx >= 0 ? (args[commitIdx + 1] ?? 'unknown') : 'unknown';
 
   process.stdout.write('Gate 2 PR Acceptance Helper\n');
