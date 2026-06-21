@@ -83,6 +83,42 @@ during an auditor session.
 | Onboarding E2E seed (#163) | COMPLETE | globalSetup.ts bootstrapProjects + empty-state CTA in Sidebar |
 | Work gate | #18 active | mandatory before new P0 work |
 
+## 2026-06-21 Backend Tech Debt Batch — Issues #214/#215/#216 (PRs Pending Review)
+
+Three backend tech-debt gaps surfaced by the production-readiness audit. Each is
+on its own branch off `origin/main` (`4f17b51`) with independent file scope (no
+merge-order coupling). All pass typecheck, biome, audit:check, and full regression.
+
+| Issue / PR | Scope | Decision | Tests |
+|---|---|---|---|
+| #214 / PR #220 `fix/issue-214-email-sendgrid` | Email dispatcher real wiring | **SendGrid** — already the project standard (RADAR digest, digest/email-sender). The `RESEND_API_KEY` reference in `dispatcher.ts` was a mislabeled stub. | +11 (mock fetch + mock DB) |
+| #215 / PR #221 `fix/issue-215-document-rendering` | PCCP PDF/DOCX real rendering + Export-Hub TODO cleanup | **react-pdf + docx** — both already in `package.json`. PCCP exporters were pure placeholder buffers. Export-Hub pdf-exporter T-023~T-25 components were already implemented (stale `@MX:TODO` tags removed). | +8 (PDF/DOCX magic-bytes verification) |
+| #216 / PR #222 `fix/issue-216-inngest-wiring` | Inngest client + serve endpoint + function registration | **Inngest SDK v4** — the 5 `lib/inngest/*` stubs were already written in Inngest API shape. Cloudflare Cron (#9) is Workers-scoped and out of band for this Next.js/Vercel compute layer. | +6 (client + registry + serve handlers) |
+
+Key implementation notes:
+
+1. **#214 skip semantics**: when `SENDGRID_API_KEY` is unset the dispatcher now
+   returns `email: 'skipped'` (not `'error'`) — an unconfigured dev environment is
+   not a dispatch failure. `'error'` is reserved for actual SendGrid API failures
+   (auth/network/non-2xx). Matches `radar/notifier-channels/email.ts`.
+2. **#215 content rendering**: `content_jsonb` is flattened via a shared util
+   (`lib/pccp/exporters/content-flatten.ts`) consumed by both PDF and DOCX
+   renderers. The export route now maps DB rows into `PccpComponentRecord[]`
+   instead of the previous incorrect `as unknown as PccpComponentType[]` cast.
+3. **#216 dynamic imports**: the docingest upload-processed pipeline modules
+   are imported dynamically inside the handler so module load does not eagerly
+   pull the `ingest/embed` (openai) dependency chain — this also fixes a latent
+   test-isolation issue.
+
+Follow-ups (separate issues recommended):
+
+- `lib/inngest/docingest/upload-processed.ts` helper stubs (`insertChunks`,
+  `updateDocumentStatus`) need real DB wiring — DOCINGEST Phase 3.
+- CER PDF rich-layout (currently minimal hand-rolled PDF, still a valid binary —
+  not a placeholder).
+- Manual trigger API routes should call `inngest.send()` to enqueue events
+  (currently only the serve endpoint is wired).
+
 ## 2026-06-21 External Auditor Read-Only View — Issue #92 / PR #206
 
 SPEC-REGULA-AUDITOR-VIEW-001 is implemented and merged. Regula now exposes a

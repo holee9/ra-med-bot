@@ -11,6 +11,14 @@
 
 > **Wave 5 규제 준수 축 완성**: Issue #88 전자서명(PR #204), Issue #87 Export Hub(PR #203), Issue #92 외부 감사관 뷰(PR #206)가 main에 머지되었습니다. 21 CFR Part 11 §11.50/§11.70 전자서명, 다중 포맷 내보내기, 외부 감사관 read-only 페르소나 + 1-클릭 감사 패키지가 통합되었습니다.
 
+### Backend Tech Debt Batch (2026-06-21) — PRs Pending Review
+
+> 프로덕션 준비도 감사에서 발견된 3건의 백엔드 기술 부채 일괄 처리. 각 PR은 `origin/main`에서 독립 분기되어 리뷰 대기 중.
+
+- **Email dispatcher SendGrid wiring** (Issue #214, PR #220): `lib/notifications/dispatcher.ts`의 RESEND stub → SendGrid v3 REST API 실발송. `SENDGRID_API_KEY` 미설정 시 `error`가 아닌 `skipped` 반환 (dev 환경 정상 처리, `radar/notifier-channels/email.ts` 일관성). radar 이메일 채널의 placeholder 주소 → `orgDigestPreferences.recipientEmails` DB 조회 (lazy import). 테스트 +11.
+- **Real document rendering** (Issue #215, PR #221): PCCP PDF/DOCX exporter placeholder 제거 — `@react-pdf/renderer`·`docx` 라이브러리(기존 의존성) 기반 실구현. `PccpComponentRecord` 타입 도입, export route의 잘못된 cast 수정, `content_jsonb` 구조화 렌더링 공유 유틸(`lib/pccp/exporters/content-flatten.ts`). Export-Hub pdf-exporter stale `@MX:TODO T-023~T-025` 정리 (컴포넌트는 이미 구현됨). 테스트 +8 (PDF/DOCX magic bytes 검증).
+- **Inngest background job infrastructure** (Issue #216, PR #222): `inngest@^4.7.0` 의존성 추가. 클라이언트 싱글톤(`lib/inngest/client.ts`) + 함수 레지스트리(`lib/inngest/functions.ts`) + serve endpoint(`app/api/inngest/route.ts` GET/POST/PUT) 신규. weekly-digest cron(매주 월 00:00 UTC) + docingest upload-processed 6단계 파이프라인을 `inngest.createFunction`으로 실등록. 파이프라인 모듈 dynamic import 전환으로 side-effect 제거. 테스트 +6.
+
 ### Added
 
 - **External Auditor Read-Only View** (SPEC-REGULA-AUDITOR-VIEW-001 — Issue #92, PR #206): 외부 감사관(FDA/MFDS/BSI·TÜV) read-only 페르소나 + 1-클릭 감사 패키지.
