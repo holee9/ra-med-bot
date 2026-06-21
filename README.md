@@ -1888,4 +1888,4 @@ MIT License - [LICENSE](LICENSE) 파일 참조
 
 **Built with ❤️ using [abyz-lab](https://abyz-lab.work)**
 
-_마지막 업데이트: 2026-06-21 (PR #206 / Issue #92 외부 감사관 read-only 페르소나 + 1-클릭 감사 패키지 완료 — auditor RBAC role, `withPermission` 중앙 쓰기 차단, SHA-256 manifest ZIP, `AuditorWatermark` 반영. 직전 PR #204 전자서명에 이어 Wave 5 규제 준수 축 완성)_
+_마지막 업데이트: 2026-06-21 (main `4f17b51`, PR #218 / Issue #74 Gate 0 SPEC 승격까지 반영 — Gate 0~5 SPEC 6개 전부 Active, PR #217 Gate 5 SSoT 9건 정합, PR #212 Gate 1-5 승격, PR #211/#209/#208 Wave 5 후속 기능 포함)_
