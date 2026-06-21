@@ -4,9 +4,9 @@
 import { describe, expect, it } from 'vitest';
 
 import {
+  type PersonaJourney,
   generateWaveIntegrationReport,
   getPersonaJourneys,
-  type PersonaJourney,
 } from '../../../scripts/qa/gate-3-wave-integration';
 
 describe('getPersonaJourneys (SPEC-REGULA-QA-WAVE-INTEGRATION-001)', () => {
