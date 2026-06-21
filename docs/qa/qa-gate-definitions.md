@@ -29,7 +29,7 @@ v0.2 operations phase, consistent with `qa-gate-roadmap.md` §2.
 
 ## Gate 0 — SPEC Readiness (#74)
 
-**Owner SPEC**: SPEC-REGULA-QA-SPEC-READINESS-001 (Draft, #74)
+**Owner SPEC**: SPEC-REGULA-QA-SPEC-READINESS-001 (Active, #74)
 **Applies to**: every implementation issue in the QA matrix before code starts.
 
 ### PASS conditions
