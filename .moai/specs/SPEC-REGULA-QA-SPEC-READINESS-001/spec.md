@@ -67,7 +67,7 @@ Template fields (reference only — do not duplicate; see `qa-matrix.md`):
 3. All REQ/AC are testable statements using SHALL/MUST wording, with each AC mapped to a verification method.
 4. Out-of-scope and deferred items explicitly listed.
 5. Required fixtures, seed data, and mock external APIs defined.
-6. Impact axes tagged: schema/API/RBAC/audit/citation/export/i18n/a11y/security/performance (Yes/No each).
+6. Impact axes tagged per the SSoT 9-axis list (API, DB, RBAC, audit, citation, export, i18n, a11y, security) with Yes/No each; schema and performance may be tagged as supplementary axes beyond the SSoT minimum.
 7. Prerequisite issues, external API/mocks, seed data, env/Docker/CI conditions identified.
 8. `QA plan` comment posted on the issue before implementation starts.
 
@@ -76,7 +76,7 @@ Template fields (reference only — do not duplicate; see `qa-matrix.md`):
 - [ ] Latest `main` pulled, no stale branch conflicts
 - [ ] Issue body, SPEC, README roadmap, and `#73` QA Matrix scope/priority aligned
 - [ ] Prerequisite issues, external APIs/mocks, seed data, env/Docker/CI conditions identified
-- [ ] Impact axes tagged: schema/API/RBAC/audit/citation/export/i18n/a11y/security/performance
+- [ ] Impact axes tagged: API, DB, RBAC, audit, citation, export, i18n, a11y, security (SSoT 9-axis; schema/performance optional supplementary)
 - [ ] Untestable AC and ambiguous terms removed or deferred to separate issues
 - [ ] `QA plan` comment posted
 
