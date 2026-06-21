@@ -1,7 +1,7 @@
 # Regula Implementation Status
 
 Reviewed: 2026-06-21 KST (implementation review/fix pass)
-Implementation review baseline commit: `e51ebc5` (`main` after PR #204 / Issue #88 electronic signature merge)
+Implementation review baseline commit: `0e6c479` (`main` after PR #206 / Issue #92 external auditor read-only view merge)
 
 This document includes the 2026-06-18 PR cleanup after PR #184 merge,
 PR #177 superseded closure, the completed Predicate Visualization addendum
@@ -9,7 +9,7 @@ for Issue #185 / PR #186, E2E validation MRD completion for Issue #182,
 the Issue #188 hybrid-ra-saas inbound webhook hardening pass,
 the Issue #156 hybrid-ra-saas outbound typed adapter merge,
 the 2026-06-20 security/quality fixes (#162 RBAC, #164 Predicate E2E, #152 workflow mock audit, #163 onboarding E2E seed),
-the Issue #46 / PR #195 ISO 14971 Risk Management integration plus the follow-up `8065cc8` CI restoration commit, and PR #204 / Issue #88 21 CFR Part 11 electronic signatures. This review also covers PR #196, PR #197, the #166 hydration mismatch fixes, and the QA Gate/Wave 5 SPEC documentation commits now present on `main`.
+the Issue #46 / PR #195 ISO 14971 Risk Management integration plus the follow-up `8065cc8` CI restoration commit, PR #204 / Issue #88 21 CFR Part 11 electronic signatures, PR #205 ESIG Part 11 signature workflow documentation, and PR #206 / Issue #92 external auditor read-only view with 1-click audit package. This review also covers PR #196, PR #197, the #166 hydration mismatch fixes, and the QA Gate/Wave 5 SPEC documentation commits now present on `main`.
 
 ## Executive State
 
@@ -53,18 +53,26 @@ those files and refreshes the current verification evidence.
 
 The 2026-06-21 review of PR #204 found and fixed two signature-specific security regressions before merge: signature endpoints now authorize the requested `messageId` through the caller's conversation/project scope before signing, manifestation lookup, or revocation; `qa-lead` no longer inherits every `ra-lead` permission and is instead allowlisted only for `signature.sign`.
 
+Issue #92 is complete via PR #206. Regula now ships a read-only `auditor`
+persona plus a 1-click audit package builder. The read-only guarantee is
+enforced centrally inside `withPermission` (all write methods return 403 with
+an `audit.denied` record), the audit package is assembled as an in-memory ZIP
+with a SHA-256 per-file manifest, and a watermark component marks every screen
+during an auditor session.
+
 ## Verified Repository State (2026-06-21)
 
 | Area | State | Evidence |
 |---|---|---|
-| Active branch | `main` | review baseline commit `e51ebc5` |
-| Completed PRs/issues | #184, #186, #188, #192/#156, #190/#182, #193/#162, #194, #195/#46, #196, #197, #204/#88, #166 | all merged or closed |
+| Active branch | `main` | review baseline commit `0e6c479` |
+| Completed PRs/issues | #184, #186, #188, #192/#156, #190/#182, #193/#162, #194, #195/#46, #196, #197, #204/#88, #205, #206/#92, #166 | all merged or closed |
 | E2E Validation | COMPLETE | Go/No-Go spec, Smoke Test 8/8 specs, MRD complete |
 | Traceability Integration | COMPLETE | BFF routes, UI, RBAC all implemented |
 | Webhook Integration | COMPLETE | `/api/webhooks/audit`, `ifu`, `knowledge-sync` hardened |
 | hybrid-ra-saas typed adapter | COMPLETE | `createHybridRaClient()` covers 7 upstream endpoint contracts |
 | ISO 14971 Risk Management | COMPLETE | `/workflows/risk`, `/api/ra/risk/*`, `lib/risk/*`, risk DB tables, RA-lead approval |
 | 21 CFR Part 11 Electronic Signature | COMPLETE | `/api/ra/messages/[messageId]/signature`, `answer_signatures`, answer lock, §11.50/§11.70 linkage |
+| External Auditor Read-Only View | COMPLETE | `auditor` role, central write-block, `/api/ra/audit-log`, `/api/ra/audit-package` ZIP + SHA-256 manifest |
 | Submission drafter contract (#196) | COMPLETE | build env bypass path, `workflow_runs` status contract, source health-check import fixed |
 | Hydration mismatch (#166) | COMPLETE | date render boundaries plus 2026-06-20 Biome format recovery |
 | QA Gate 0 helper (#74) | COMPLETE | `scripts/qa-gate-0-checklist.ts`, shared checklist template, ignored generated outputs |
@@ -73,6 +81,41 @@ The 2026-06-21 review of PR #204 found and fixed two signature-specific security
 | Mock workflow audit (#152) | COMPLETE | mock_data, workflow_run_id metadata connected (in PR #190) |
 | Onboarding E2E seed (#163) | COMPLETE | globalSetup.ts bootstrapProjects + empty-state CTA in Sidebar |
 | Work gate | #18 active | mandatory before new P0 work |
+
+## 2026-06-21 External Auditor Read-Only View — Issue #92 / PR #206
+
+SPEC-REGULA-AUDITOR-VIEW-001 is implemented and merged. Regula now exposes a
+read-only `auditor` persona (FDA inspector, MFDS 심사관, BSI/TÜV) with a
+1-click audit package builder, and every write path is centrally blocked so the
+read-only guarantee cannot be bypassed by a missing per-route guard.
+
+| Area | State | Evidence |
+|---|---|---|
+| RBAC role | Complete | `auditor` role (hierarchy 0.5, `lib/auth/rbac.ts`); `audit.read` + `audit.package.generate` granted via `additionalRoles` only (`lib/auth/permissions.ts`) |
+| Central write-block | Complete | `withPermission` rejects POST/PUT/PATCH/DELETE for auditor sessions with 403 + `audit.denied` log (`lib/auth/with-permission.ts`); supersedes per-route guards |
+| Audit log view | Complete | `GET /api/ra/audit-log` pagination (50/page) with date/event/actor filters; `app/(app)/audit/page.tsx` read-only UI |
+| 1-click audit package | Complete | `POST /api/ra/audit-package` assembles ZIP with 5 sections (audit-log / signed-answers / citations / expert-reviews / compliance-reports), 12-month window under 60s |
+| Integrity | Complete | `lib/audit-package/manifest.ts` SHA-256 per-file manifest + `verifyManifest`; `lib/audit-package/zip.ts` STORE-mode ZIP writer (no external deps, `node:zlib` crc32) |
+| Watermark UI | Complete | `AuditorWatermark` component displayed on every screen during auditor sessions |
+| DB migration | Complete | `migrations/0062_auditor_view_enums.sql` extends `user_role.auditor`, `audit_action.audit.denied` / `audit.package.generated` |
+| Documentation | Complete | README, QA matrix, threat model, SPEC progress updated |
+
+Design decisions:
+
+1. **Central write-block over per-route guards**: enforcing inside `withPermission` means every existing and future route is automatically protected — there is no bypass surface from a forgotten guard.
+2. **Zero-dependency ZIP writer**: a 150-line STORE-mode writer (Enforce Simplicity) avoids adding a packaging dependency while still producing a verifiable manifest.
+3. **`auditor` hierarchy 0.5**: the role intentionally sits below the existing `minRole` chain and is reachable only through `additionalRoles`, so it can never escalate into a general RA/admin path.
+
+Follow-ups (separate issues): 24h download-link expiry (presigned URL), wiring real data into the `citations` / `compliance-reports` package sections once their backing SPEC tables land.
+
+Validation evidence:
+
+- `corepack pnpm typecheck` — pass.
+- `corepack pnpm lint` (biome) — pass.
+- `corepack pnpm ci:rbac` — pass.
+- `corepack pnpm test` — 2,847 tests passed, 7 skipped (46 new tests across 6 files).
+- `SKIP_ENV_VALIDATION=1 REGULA_ALLOW_ENV_VALIDATION_SKIP=build corepack pnpm build` — pass.
+- PR #206 checks — CI Gates, E2E Smoke, Playwright, Security Scan, Deploy all pass.
 
 ## 2026-06-21 Electronic Signature — Issue #88 / PR #204
 
