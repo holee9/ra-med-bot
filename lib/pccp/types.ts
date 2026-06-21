@@ -85,3 +85,13 @@ export interface PccpCompletenessResult {
   missingComponents: PccpComponentType[];
   completionPercentage: number;
 }
+
+/**
+ * PCCP component record as stored in pccp_components.content_jsonb.
+ * Consumed by exporters to render real document content (REQ-PCCP-018/019).
+ */
+export interface PccpComponentRecord {
+  componentType: PccpComponentType;
+  contentJsonb: Record<string, unknown>;
+  completedAt: Date | null;
+}
