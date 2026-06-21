@@ -6,7 +6,7 @@ import { db } from '@/lib/db/client';
 import { pccpComponents, pccpVersions } from '@/lib/db/schema';
 import { exportPccpToDocx, getDocxFilename } from '@/lib/pccp/exporters/docx';
 import { exportPccpToPdf, getPdfFilename } from '@/lib/pccp/exporters/pdf';
-import type { PccpComponentType, PccpVersion } from '@/lib/pccp/types';
+import type { PccpComponentRecord, PccpComponentType, PccpVersion } from '@/lib/pccp/types';
 import { eq } from 'drizzle-orm';
 import { z } from 'zod';
 
@@ -49,7 +49,11 @@ async function postExport(
     .where(eq(pccpComponents.pccpVersionId, id));
 
   const versionTyped = version as unknown as PccpVersion;
-  const componentsTyped = components as unknown as PccpComponentType[];
+  const componentsTyped: PccpComponentRecord[] = components.map((c) => ({
+    componentType: c.componentType as PccpComponentType,
+    contentJsonb: (c.contentJsonb as Record<string, unknown>) ?? {},
+    completedAt: c.completedAt,
+  }));
   const { format, include_draft_watermark } = parsed.data;
 
   if (format === 'docx') {

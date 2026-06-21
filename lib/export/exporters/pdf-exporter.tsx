@@ -1,9 +1,8 @@
 /**
  * PDFExporter class
- * SPEC-REGULA-EXPORT-HUB-001 Phase 5 (T-022)
+ * SPEC-REGULA-EXPORT-HUB-001 Phase 5 (T-022..T-025)
  * REQ-EXP-005: PDF export with branding, headers, footers, and layout
  * @MX:SPEC SPEC-REGULA-EXPORT-HUB-001
- * @MX:TODO Implement full PDF layout with React components (T-023 to T-025)
  */
 
 import { BaseExporter } from '../base-exporter';
@@ -125,8 +124,10 @@ export class PDFExporter extends BaseExporter {
   /**
    * Generate PDF using @react-pdf/renderer
    * T-022: Basic PDF generation
+   * T-023: Header with Regula branding
+   * T-024: Footer with fixed page numbers
+   * T-025: Page layout & print-ready styles
    * @MX:NOTE Part of REQ-EXP-005 implementation
-   * @MX:TODO T-023-T-025: Add header, footer, and layout components
    */
   private async generatePDF(data: PDFData): Promise<Uint8Array> {
     // Lazy import to avoid React initialization issues in tests
@@ -193,8 +194,7 @@ export class PDFExporter extends BaseExporter {
 
 /**
  * PDF styles
- * @MX:NOTE Basic styling for print-ready PDF
- * @MX:TODO T-025: Enhance layout and styling
+ * @MX:NOTE Print-ready styling (REQ-EXP-005)
  */
 const styles = {
   page: {
