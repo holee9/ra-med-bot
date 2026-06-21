@@ -72,7 +72,7 @@ export async function upsertWithRetry<T>(
   upsertFn: () => Promise<T>,
   errorMessage: string,
   currentRetryCount: number,
-  retryDelayMs: (attempt: number) => number,
+  _retryDelayMs: (attempt: number) => number,
 ): Promise<{ result: T | null; nextRetryCount: number; exhausted: boolean }> {
   if (!shouldRetry(errorMessage, currentRetryCount)) {
     return { result: null, nextRetryCount: currentRetryCount, exhausted: true };
