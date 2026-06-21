@@ -29,7 +29,7 @@ v0.2 operations phase, consistent with `qa-gate-roadmap.md` §2.
 
 ## Gate 0 — SPEC Readiness (#74)
 
-**Owner SPEC**: SPEC-REGULA-QA-SPEC-READINESS-001 (planned)
+**Owner SPEC**: SPEC-REGULA-QA-SPEC-READINESS-001 (Draft, #74)
 **Applies to**: every implementation issue in the QA matrix before code starts.
 
 ### PASS conditions
@@ -59,7 +59,7 @@ preflight checklist.
 
 ## Gate 1 — Implementation Checkpoint (#75)
 
-**Owner SPEC**: SPEC-REGULA-QA-IMPLEMENTATION-CHECKPOINT-001 (planned)
+**Owner SPEC**: SPEC-REGULA-QA-IMPLEMENTATION-CHECKPOINT-001 (Active, #75)
 **Applies to**: every implementation issue during the RUN phase.
 
 ### PASS conditions
@@ -79,7 +79,7 @@ at least once per implementation session and before PR open.
 
 ## Gate 2 — PR Acceptance (#76)
 
-**Owner SPEC**: SPEC-REGULA-RELEASE-GATE-001, SPEC-REGULA-QA-PR-ACCEPTANCE-001 (planned)
+**Owner SPEC**: SPEC-REGULA-RELEASE-GATE-001, SPEC-REGULA-QA-PR-ACCEPTANCE-001 (Active, #76)
 **Applies to**: every PR that merges into `main`.
 
 ### PASS conditions
@@ -102,7 +102,7 @@ Release blockers require explicit PASS / WAIVED / BLOCKED status.
 
 ## Gate 3 — Wave Integration (#77)
 
-**Owner SPEC**: SPEC-REGULA-QA-WAVE-INTEGRATION-001 (planned)
+**Owner SPEC**: SPEC-REGULA-QA-WAVE-INTEGRATION-001 (Active, #77)
 **Applies to**: cross-feature integration scenarios after the first RC.
 
 ### PASS conditions
@@ -121,7 +121,7 @@ on integrated behavior.
 
 ## Gate 4 — RA Domain UAT (#78)
 
-**Owner SPEC**: SPEC-REGULA-QA-DOMAIN-UAT-001 (planned)
+**Owner SPEC**: SPEC-REGULA-QA-DOMAIN-UAT-001 (Active, #78)
 **Applies to**: issues that produce user-facing RA claims, citations, or
 expert-reviewed artifacts.
 
@@ -141,7 +141,7 @@ Mandatory for citation-producing issues (marked `Domain UAT` in the matrix):
 
 ## Gate 5 — Operations & Regression (#79)
 
-**Owner SPEC**: SPEC-REGULA-QA-OPERATIONS-001 (planned)
+**Owner SPEC**: SPEC-REGULA-QA-OPERATIONS-001 (Active, #79)
 **Applies to**: production operations and ongoing regression monitoring.
 
 ### PASS conditions
