@@ -2,7 +2,18 @@
 // Weekly regulatory intelligence digest: enumerates orgs with frequency != disabled,
 // generates the payload, and dispatches email via the digest sender.
 
+import { and, eq, ne } from 'drizzle-orm';
+import { orgDigestPreferences } from '../../db/schema';
 import { INNGEST_EVENTS, inngest } from '../client';
+
+type DigestWeeklyTriggerData = { orgId?: string; weekId?: string };
+
+export function buildDigestPreferencesPredicate(data: DigestWeeklyTriggerData) {
+  const enabledPreference = ne(orgDigestPreferences.frequency, 'disabled');
+  return data.orgId
+    ? and(eq(orgDigestPreferences.orgId, data.orgId), enabledPreference)
+    : enabledPreference;
+}
 
 /** Cron schedule: every Monday at 00:00 UTC. Orgs apply their own tz offset. */
 export const DIGEST_CRON_SCHEDULE = '0 0 * * 1';
@@ -21,22 +32,17 @@ export const weeklyDigestFn = inngest.createFunction(
     const { generateWeeklyDigest } = await import('../../digest/digest-generator');
     const { sendDigestEmail } = await import('../../digest/email-sender');
     const { db } = await import('../../db/client');
-    const { orgDigestPreferences } = await import('../../db/schema');
-    const { ne } = await import('drizzle-orm');
 
     // Cron trigger passes no data; manual event may pass { orgId?, weekId? }.
-    const data = (event.data ?? {}) as { orgId?: string; weekId?: string };
+    const data = (event.data ?? {}) as DigestWeeklyTriggerData;
 
     const prefs = data.orgId
       ? await db
           .select()
           .from(orgDigestPreferences)
-          .where(ne(orgDigestPreferences.frequency, 'disabled'))
+          .where(buildDigestPreferencesPredicate(data))
           .limit(1)
-      : await db
-          .select()
-          .from(orgDigestPreferences)
-          .where(ne(orgDigestPreferences.frequency, 'disabled'));
+      : await db.select().from(orgDigestPreferences).where(buildDigestPreferencesPredicate(data));
 
     let processed = 0;
     for (const pref of prefs) {
