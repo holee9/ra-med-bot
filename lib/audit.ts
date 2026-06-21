@@ -182,7 +182,14 @@ export type AuditAction =
   //   audit.package.generated — auditor generated a 1-click audit package ZIP
   | 'audit.access'
   | 'audit.denied'
-  | 'audit.package.generated';
+  | 'audit.package.generated'
+  // SPEC-REGULA-CALENDAR-001 — regulatory deadline events (Issue #44):
+  //   deadline.created — ra-lead created a regulatory deadline
+  //   deadline.updated — deadline fields (status, due date, notes) changed
+  //   deadline.deleted — deadline removed
+  | 'deadline.created'
+  | 'deadline.updated'
+  | 'deadline.deleted';
 
 export interface AuditEvent {
   /** User UUID, or null for system-initiated events. */

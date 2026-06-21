@@ -233,6 +233,9 @@ export const auditActionEnum = pgEnum('audit_action', [
   'audit.access',
   'audit.denied',
   'audit.package.generated',
+  'deadline.created',
+  'deadline.updated',
+  'deadline.deleted',
 ]);
 
 // REQ-WF-049: workflow_type pgEnum — workflow kinds.
@@ -1450,5 +1453,42 @@ export const answerSignatures = pgTable(
     messageIdx: index('idx_answer_signatures_message').on(t.messageId),
     // Performance: look up all signatures by signer (audit queries)
     signerIdx: index('idx_answer_signatures_signer').on(t.signerId),
+  }),
+);
+
+// ---------------------------------------------------------------------------
+// SPEC-REGULA-CALENDAR-001 — Regulatory Calendar & Deadline Management (Issue #44)
+// Migration: 0063_regulatory_deadlines.sql
+// Project-scoped deadline tracker for FDA clocks, EU MDR renewals, ISO surveillance.
+// ---------------------------------------------------------------------------
+
+// @MX:NOTE [AUTO] regulatoryDeadlines — project-scoped regulatory deadline records.
+// @MX:SPEC SPEC-REGULA-CALENDAR-001 (REQ-CAL-001..006)
+export const regulatoryDeadlines = pgTable(
+  'regulatory_deadlines',
+  {
+    id: uuid('id').defaultRandom().primaryKey(),
+    projectId: uuid('project_id')
+      .notNull()
+      .references(() => projects.id, { onDelete: 'cascade' }),
+    title: text('title').notNull(),
+    // deadline_type: fda_510k_clock | eu_mdr_cert_expiry | iso13485_surveillance | pmda_reexam | custom
+    deadlineType: text('deadline_type').notNull(),
+    // jurisdiction: FDA | EU_MDR | MFDS | PMDA | NMPA | GLOBAL
+    jurisdiction: text('jurisdiction').notNull(),
+    dueDate: date('due_date', { mode: 'date' }).notNull(),
+    // status: upcoming | due_soon | overdue | completed | cancelled (user-set in MVP)
+    status: text('status').notNull().default('upcoming'),
+    reference: text('reference'),
+    notes: text('notes').notNull().default(''),
+    createdBy: uuid('created_by').references(() => users.id),
+    createdAt: timestamp('created_at', { withTimezone: true, mode: 'date' }).notNull().defaultNow(),
+    updatedAt: timestamp('updated_at', { withTimezone: true, mode: 'date' }).notNull().defaultNow(),
+  },
+  (t) => ({
+    // Primary access pattern: list deadlines for a project, ordered by due date.
+    projectIdx: index('idx_regulatory_deadlines_project').on(t.projectId, t.dueDate),
+    // Filter by jurisdiction.
+    jurisdictionIdx: index('idx_regulatory_deadlines_jurisdiction').on(t.jurisdiction),
   }),
 );

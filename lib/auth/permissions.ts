@@ -46,7 +46,10 @@ export type PermissionAction =
   // Auditor view actions (SPEC-REGULA-AUDITOR-VIEW-001, Issue #92)
   // Read-only audit log access and audit package generation.
   | 'audit.read'
-  | 'audit.package.generate';
+  | 'audit.package.generate'
+  // Regulatory calendar actions (SPEC-REGULA-CALENDAR-001, Issue #44)
+  | 'deadline.view'
+  | 'deadline.manage';
 
 export interface PermissionSpec {
   minRole: Role;
@@ -165,4 +168,12 @@ export const PERMISSIONS: Record<PermissionAction, PermissionSpec> = {
     scope: 'org',
     resourceType: 'auditPackage',
   },
+
+  // @MX:NOTE [AUTO] deadline.view/manage — regulatory deadline RBAC.
+  // @MX:SPEC SPEC-REGULA-CALENDAR-001 (REQ-CAL-004, Issue #44)
+  // scope: org — projectId arrives via query/body (not route param), so project
+  // membership is enforced inside each handler via isProjectMember().
+  // ra-member can view; ra-lead required to manage.
+  'deadline.view': { minRole: 'ra-member', scope: 'org', resourceType: 'deadline' },
+  'deadline.manage': { minRole: 'ra-lead', scope: 'org', resourceType: 'deadline' },
 };
