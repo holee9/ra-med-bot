@@ -59,7 +59,7 @@ export const GET = withPermission('deadline.view', async (_req, ctx, session) =>
 export const PATCH = withPermission('deadline.manage', async (req, ctx, session) => {
   const params = ctx.params && 'then' in ctx.params ? await ctx.params : (ctx.params ?? {});
   const id = params.id ?? '';
-  const { row, allowed, notFound } = await resolveAndCheck(id, session.user.id);
+  const { allowed, notFound } = await resolveAndCheck(id, session.user.id);
   if (notFound) return NextResponse.json({ error: 'not_found' }, { status: 404 });
   if (!allowed)
     return NextResponse.json({ error: 'not_a_member', resource_type: 'project' }, { status: 403 });
