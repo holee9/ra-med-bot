@@ -183,6 +183,11 @@ export type AuditAction =
   | 'audit.access'
   | 'audit.denied'
   | 'audit.package.generated'
+  // SPEC-REGULA-PERSONAL-LIB-001 — personal library bookmark events (Issue #86):
+  //   personal_bookmark.created — user bookmarked a message/answer block
+  //   personal_bookmark.deleted — user removed a personal bookmark
+  | 'personal_bookmark.created'
+  | 'personal_bookmark.deleted'
   // SPEC-REGULA-CALENDAR-001 — regulatory deadline events (Issue #44):
   //   deadline.created — ra-lead created a regulatory deadline
   //   deadline.updated — deadline fields (status, due date, notes) changed

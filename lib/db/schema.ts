@@ -233,6 +233,8 @@ export const auditActionEnum = pgEnum('audit_action', [
   'audit.access',
   'audit.denied',
   'audit.package.generated',
+  'personal_bookmark.created',
+  'personal_bookmark.deleted',
   'deadline.created',
   'deadline.updated',
   'deadline.deleted',
@@ -1457,6 +1459,41 @@ export const answerSignatures = pgTable(
 );
 
 // ---------------------------------------------------------------------------
+// SPEC-REGULA-PERSONAL-LIB-001 — Personal RA Library (Issue #86)
+// Migration: 0064_personal_bookmarks.sql
+// User-scoped bookmarks for fast re-reference of answers/blocks.
+// Private layer — every query MUST filter by userId (row-level isolation).
+// ---------------------------------------------------------------------------
+
+// @MX:ANCHOR [AUTO] personalBookmarks — user-private answer bookmark records.
+// @MX:REASON Referenced by /api/ra/personal/* routes and the library view.
+//            Privacy invariant: rows are isolated by userId at the query layer.
+// @MX:SPEC SPEC-REGULA-PERSONAL-LIB-001 (REQ-PERSONAL-001..008)
+export const personalBookmarks = pgTable(
+  'personal_bookmarks',
+  {
+    id: uuid('id').defaultRandom().primaryKey(),
+    userId: uuid('user_id')
+      .notNull()
+      .references(() => users.id, { onDelete: 'cascade' }),
+    messageId: uuid('message_id')
+      .notNull()
+      .references(() => messages.id, { onDelete: 'cascade' }),
+    blockId: uuid('block_id'),
+    title: text('title').notNull(),
+    customTitle: text('custom_title'),
+    note: text('note').notNull().default(''),
+    tags: text('tags').array().notNull().default(sql`'{}'::text[]`),
+    createdAt: timestamp('created_at', { withTimezone: true, mode: 'date' }).notNull().defaultNow(),
+    updatedAt: timestamp('updated_at', { withTimezone: true, mode: 'date' }).notNull().defaultNow(),
+  },
+  (t) => ({
+    userIdx: index('idx_personal_bookmarks_user').on(t.userId, t.createdAt),
+    userTagsIdx: index('idx_personal_bookmarks_user_tags').on(t.userId, t.tags),
+  }),
+);
+
+// ---------------------------------------------------------------------------
 // SPEC-REGULA-CALENDAR-001 — Regulatory Calendar & Deadline Management (Issue #44)
 // Migration: 0063_regulatory_deadlines.sql
 // Project-scoped deadline tracker for FDA clocks, EU MDR renewals, ISO surveillance.
@@ -1472,12 +1509,9 @@ export const regulatoryDeadlines = pgTable(
       .notNull()
       .references(() => projects.id, { onDelete: 'cascade' }),
     title: text('title').notNull(),
-    // deadline_type: fda_510k_clock | eu_mdr_cert_expiry | iso13485_surveillance | pmda_reexam | custom
     deadlineType: text('deadline_type').notNull(),
-    // jurisdiction: FDA | EU_MDR | MFDS | PMDA | NMPA | GLOBAL
     jurisdiction: text('jurisdiction').notNull(),
     dueDate: date('due_date', { mode: 'date' }).notNull(),
-    // status: upcoming | due_soon | overdue | completed | cancelled (user-set in MVP)
     status: text('status').notNull().default('upcoming'),
     reference: text('reference'),
     notes: text('notes').notNull().default(''),
@@ -1486,9 +1520,7 @@ export const regulatoryDeadlines = pgTable(
     updatedAt: timestamp('updated_at', { withTimezone: true, mode: 'date' }).notNull().defaultNow(),
   },
   (t) => ({
-    // Primary access pattern: list deadlines for a project, ordered by due date.
     projectIdx: index('idx_regulatory_deadlines_project').on(t.projectId, t.dueDate),
-    // Filter by jurisdiction.
     jurisdictionIdx: index('idx_regulatory_deadlines_jurisdiction').on(t.jurisdiction),
   }),
 );

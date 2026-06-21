@@ -47,6 +47,9 @@ export type PermissionAction =
   // Read-only audit log access and audit package generation.
   | 'audit.read'
   | 'audit.package.generate'
+  // Personal library actions (SPEC-REGULA-PERSONAL-LIB-001, Issue #86)
+  // User-scoped bookmarks/tags/notes — private to each user.
+  | 'personal.view'
   // Regulatory calendar actions (SPEC-REGULA-CALENDAR-001, Issue #44)
   | 'deadline.view'
   | 'deadline.manage';
@@ -168,6 +171,11 @@ export const PERMISSIONS: Record<PermissionAction, PermissionSpec> = {
     scope: 'org',
     resourceType: 'auditPackage',
   },
+
+  // @MX:NOTE [AUTO] personal.view — user-scoped personal library (bookmarks/tags/notes).
+  // @MX:SPEC SPEC-REGULA-PERSONAL-LIB-001 (Issue #86)
+  // Private layer — no org membership check; row-level userId isolation enforces privacy.
+  'personal.view': { minRole: 'ra-member', scope: 'user', resourceType: 'personalBookmark' },
 
   // @MX:NOTE [AUTO] deadline.view/manage — regulatory deadline RBAC.
   // @MX:SPEC SPEC-REGULA-CALENDAR-001 (REQ-CAL-004, Issue #44)

@@ -299,7 +299,7 @@ describe('lib/db/schema.ts Phase 5 additions', () => {
     const values = extractAuditActionEnumValues(src);
     const typeValues = extractAuditActionTypeValues(auditSrc);
     expect(values).toEqual(typeValues);
-    expect(values).toHaveLength(104); // +2 signature.* (ESIG-001) +3 audit.* (AUDITOR-VIEW-001) +3 deadline.* (CALENDAR-001)
+    expect(values).toHaveLength(106); // +2 signature.* (ESIG-001) +3 audit.* (AUDITOR-VIEW-001) +2 personal_bookmark.* (PERSONAL-LIB-001) +3 deadline.* (CALENDAR-001)
   });
 
   it.each(REQUIRED_RECOVERY_TABLES)(
@@ -348,7 +348,7 @@ describe('lib/audit.ts Phase 5 AuditAction type additions', () => {
         'export.confluence',
       ]),
     );
-    expect(values).toHaveLength(104); // +2 signature.* (ESIG-001) +3 audit.* (AUDITOR-VIEW-001) +3 deadline.* (CALENDAR-001)
+    expect(values).toHaveLength(106); // +2 signature.* (ESIG-001) +3 audit.* (AUDITOR-VIEW-001) +2 personal_bookmark.* (PERSONAL-LIB-001) +3 deadline.* (CALENDAR-001)
   });
 
   it.each(REQUIRED_RECOVERY_AUDIT_ACTIONS)(
