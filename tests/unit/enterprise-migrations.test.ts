@@ -97,6 +97,7 @@ const REQUIRED_RECOVERY_TABLES = [
   ['adverse_events', 'adverseEvents'],
   ['reportability_assessments', 'reportabilityAssessments'],
   ['vigilance_reports', 'vigilanceReports'],
+  ['corpus_sync_runs', 'corpusSyncRuns'],
 ] as const;
 
 const REQUIRED_RECOVERY_AUDIT_ACTIONS = [
@@ -299,7 +300,7 @@ describe('lib/db/schema.ts Phase 5 additions', () => {
     const values = extractAuditActionEnumValues(src);
     const typeValues = extractAuditActionTypeValues(auditSrc);
     expect(values).toEqual(typeValues);
-    expect(values).toHaveLength(106); // +2 signature.* (ESIG-001) +3 audit.* (AUDITOR-VIEW-001) +2 personal_bookmark.* (PERSONAL-LIB-001) +3 deadline.* (CALENDAR-001)
+    expect(values).toHaveLength(109); // +2 signature.* (ESIG-001) +3 audit.* (AUDITOR-VIEW-001) +2 personal_bookmark.* (PERSONAL-LIB-001) +3 deadline.* (CALENDAR-001) +3 corpus.* (DELTA-SYNC-001)
   });
 
   it.each(REQUIRED_RECOVERY_TABLES)(
@@ -348,7 +349,7 @@ describe('lib/audit.ts Phase 5 AuditAction type additions', () => {
         'export.confluence',
       ]),
     );
-    expect(values).toHaveLength(106); // +2 signature.* (ESIG-001) +3 audit.* (AUDITOR-VIEW-001) +2 personal_bookmark.* (PERSONAL-LIB-001) +3 deadline.* (CALENDAR-001)
+    expect(values).toHaveLength(109); // +2 signature.* (ESIG-001) +3 audit.* (AUDITOR-VIEW-001) +2 personal_bookmark.* (PERSONAL-LIB-001) +3 deadline.* (CALENDAR-001) +3 corpus.* (DELTA-SYNC-001)
   });
 
   it.each(REQUIRED_RECOVERY_AUDIT_ACTIONS)(
@@ -375,5 +376,66 @@ describe('lib/audit.ts Phase 5 AuditAction type additions', () => {
     expect(typeMatch, 'AuditAction type not found').toBeTruthy();
     const typeBody = (typeMatch as RegExpMatchArray)[1] as string;
     expect(typeBody).not.toMatch(/auth\.mfa_fail/);
+  });
+});
+
+// ---------------------------------------------------------------------------
+// SPEC-REGULA-DELTA-SYNC-001 — corpus delta-sync (Issue #45, migration 0065)
+// ---------------------------------------------------------------------------
+describe('SPEC-REGULA-DELTA-SYNC-001 (Issue #45) — migration 0065', () => {
+  const DELTA_SYNC_AUDIT_ACTIONS = [
+    'corpus.sync_started',
+    'corpus.sync_completed',
+    'corpus.sync_failed',
+  ] as const;
+
+  it('migration file 0065_delta_sync.sql exists', () => {
+    expect(fileExists('migrations/0065_delta_sync.sql')).toBe(true);
+  });
+
+  it('adds updated_at and superseded_by columns to source_sections', () => {
+    const sql = readText('migrations/0065_delta_sync.sql');
+    expect(sql).toMatch(/ALTER TABLE source_sections[\s\S]*updated_at/i);
+    expect(sql).toMatch(/ALTER TABLE source_sections[\s\S]*superseded_by/i);
+  });
+
+  it('creates corpus_sync_runs table with required columns', () => {
+    const sql = readText('migrations/0065_delta_sync.sql');
+    expect(sql).toMatch(/CREATE TABLE[\s\S]*corpus_sync_runs/i);
+    expect(sql).toMatch(/crawler_name/i);
+    expect(sql).toMatch(/content_hash/i);
+    expect(sql).toMatch(/status/i);
+    expect(sql).toMatch(/chunks_added/i);
+    expect(sql).toMatch(/chunks_outdated/i);
+  });
+
+  it('adds 3 corpus.* audit_action enum values', () => {
+    const sql = readText('migrations/0065_delta_sync.sql');
+    for (const action of DELTA_SYNC_AUDIT_ACTIONS) {
+      expect(sql).toContain(action);
+    }
+  });
+
+  it.each(DELTA_SYNC_AUDIT_ACTIONS)('AuditAction type includes delta-sync action: %s', (action) => {
+    const src = readText('lib/audit.ts');
+    const escaped = action.replace(/\./g, '\\.');
+    expect(src).toMatch(new RegExp(`'${escaped}'`));
+  });
+
+  it.each(DELTA_SYNC_AUDIT_ACTIONS)('auditActionEnum includes delta-sync action: %s', (action) => {
+    const src = readText('lib/db/schema.ts');
+    expect(src).toContain(`'${action}'`);
+  });
+
+  it('schema.ts exports corpusSyncRuns table', () => {
+    const src = readText('lib/db/schema.ts');
+    expect(src).toMatch(/export const corpusSyncRuns\s*=\s*pgTable/);
+    expect(src).toContain("'corpus_sync_runs'");
+  });
+
+  it('schema.ts adds updated_at and superseded_by to sourceSections', () => {
+    const src = readText('lib/db/schema.ts');
+    expect(src).toMatch(/updated_at:\s*timestamp/);
+    expect(src).toMatch(/superseded_by:\s*uuid/);
   });
 });
