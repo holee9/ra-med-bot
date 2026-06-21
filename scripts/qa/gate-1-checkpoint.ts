@@ -78,8 +78,7 @@ export function formatCheckpointComment(opts: CheckpointCommentOpts): string {
     changeDescription,
   } = opts;
 
-  const overallPass =
-    typecheckPassed && lintPassed && testsPassed && violations.length === 0;
+  const overallPass = typecheckPassed && lintPassed && testsPassed && violations.length === 0;
 
   const statusBadge = overallPass ? 'PASS' : 'FAIL';
 
