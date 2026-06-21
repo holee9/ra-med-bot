@@ -24,6 +24,7 @@ const NAV_ITEMS: NavItem[] = [
   { label: '새 상담', href: '/chat', testId: 'nav-chat' },
   { label: '히스토리', href: '/history' },
   { label: '내 라이브러리', href: '/library', testId: 'nav-library' },
+  { label: '규제 캘린더', href: '/calendar', testId: 'nav-calendar' },
   { label: '템플릿', href: '/templates' },
   { label: '지식 베이스', href: '/knowledge' },
   { label: '규제 업데이트', href: '/updates' },

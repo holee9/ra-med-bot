@@ -49,7 +49,10 @@ export type PermissionAction =
   | 'audit.package.generate'
   // Personal library actions (SPEC-REGULA-PERSONAL-LIB-001, Issue #86)
   // User-scoped bookmarks/tags/notes — private to each user.
-  | 'personal.view';
+  | 'personal.view'
+  // Regulatory calendar actions (SPEC-REGULA-CALENDAR-001, Issue #44)
+  | 'deadline.view'
+  | 'deadline.manage';
 
 export interface PermissionSpec {
   minRole: Role;
@@ -173,4 +176,12 @@ export const PERMISSIONS: Record<PermissionAction, PermissionSpec> = {
   // @MX:SPEC SPEC-REGULA-PERSONAL-LIB-001 (Issue #86)
   // Private layer — no org membership check; row-level userId isolation enforces privacy.
   'personal.view': { minRole: 'ra-member', scope: 'user', resourceType: 'personalBookmark' },
+
+  // @MX:NOTE [AUTO] deadline.view/manage — regulatory deadline RBAC.
+  // @MX:SPEC SPEC-REGULA-CALENDAR-001 (REQ-CAL-004, Issue #44)
+  // scope: org — projectId arrives via query/body (not route param), so project
+  // membership is enforced inside each handler via isProjectMember().
+  // ra-member can view; ra-lead required to manage.
+  'deadline.view': { minRole: 'ra-member', scope: 'org', resourceType: 'deadline' },
+  'deadline.manage': { minRole: 'ra-lead', scope: 'org', resourceType: 'deadline' },
 };

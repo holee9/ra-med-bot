@@ -235,6 +235,9 @@ export const auditActionEnum = pgEnum('audit_action', [
   'audit.package.generated',
   'personal_bookmark.created',
   'personal_bookmark.deleted',
+  'deadline.created',
+  'deadline.updated',
+  'deadline.deleted',
 ]);
 
 // REQ-WF-049: workflow_type pgEnum — workflow kinds.
@@ -1476,11 +1479,8 @@ export const personalBookmarks = pgTable(
     messageId: uuid('message_id')
       .notNull()
       .references(() => messages.id, { onDelete: 'cascade' }),
-    // Nullable — NULL means whole-message bookmark; non-null pins a specific answer block.
     blockId: uuid('block_id'),
-    // Derived from the message prose at creation time (snapshot for fast listing).
     title: text('title').notNull(),
-    // Optional user override; displayed when present (falls back to title).
     customTitle: text('custom_title'),
     note: text('note').notNull().default(''),
     tags: text('tags').array().notNull().default(sql`'{}'::text[]`),
@@ -1488,9 +1488,39 @@ export const personalBookmarks = pgTable(
     updatedAt: timestamp('updated_at', { withTimezone: true, mode: 'date' }).notNull().defaultNow(),
   },
   (t) => ({
-    // Primary access pattern: list bookmarks for a user.
     userIdx: index('idx_personal_bookmarks_user').on(t.userId, t.createdAt),
-    // Tag filter acceleration.
     userTagsIdx: index('idx_personal_bookmarks_user_tags').on(t.userId, t.tags),
+  }),
+);
+
+// ---------------------------------------------------------------------------
+// SPEC-REGULA-CALENDAR-001 — Regulatory Calendar & Deadline Management (Issue #44)
+// Migration: 0063_regulatory_deadlines.sql
+// Project-scoped deadline tracker for FDA clocks, EU MDR renewals, ISO surveillance.
+// ---------------------------------------------------------------------------
+
+// @MX:NOTE [AUTO] regulatoryDeadlines — project-scoped regulatory deadline records.
+// @MX:SPEC SPEC-REGULA-CALENDAR-001 (REQ-CAL-001..006)
+export const regulatoryDeadlines = pgTable(
+  'regulatory_deadlines',
+  {
+    id: uuid('id').defaultRandom().primaryKey(),
+    projectId: uuid('project_id')
+      .notNull()
+      .references(() => projects.id, { onDelete: 'cascade' }),
+    title: text('title').notNull(),
+    deadlineType: text('deadline_type').notNull(),
+    jurisdiction: text('jurisdiction').notNull(),
+    dueDate: date('due_date', { mode: 'date' }).notNull(),
+    status: text('status').notNull().default('upcoming'),
+    reference: text('reference'),
+    notes: text('notes').notNull().default(''),
+    createdBy: uuid('created_by').references(() => users.id),
+    createdAt: timestamp('created_at', { withTimezone: true, mode: 'date' }).notNull().defaultNow(),
+    updatedAt: timestamp('updated_at', { withTimezone: true, mode: 'date' }).notNull().defaultNow(),
+  },
+  (t) => ({
+    projectIdx: index('idx_regulatory_deadlines_project').on(t.projectId, t.dueDate),
+    jurisdictionIdx: index('idx_regulatory_deadlines_jurisdiction').on(t.jurisdiction),
   }),
 );
