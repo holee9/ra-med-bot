@@ -71,12 +71,21 @@ export interface UatSignoffOptions {
  * Generates a formatted UAT sign-off document from the given options.
  */
 export function generateUatSignoffDocument(opts: UatSignoffOptions): string {
-  const { testers, date, scenariosRun, defectsFound, citationAccuracy, sourceLicenseReviewed, decision } = opts;
+  const {
+    testers,
+    date,
+    scenariosRun,
+    defectsFound,
+    citationAccuracy,
+    sourceLicenseReviewed,
+    decision,
+  } = opts;
 
   const decisionLabel = decision === 'accept' ? 'ACCEPT' : 'REJECT';
   const testerList = testers.map((t) => `- ${t}`).join('\n');
   const scenarioList = scenariosRun.map((s) => `- [x] ${s}`).join('\n');
-  const defectList = defectsFound.length > 0 ? defectsFound.map((d) => `- ${d}`).join('\n') : '- None';
+  const defectList =
+    defectsFound.length > 0 ? defectsFound.map((d) => `- ${d}`).join('\n') : '- None';
 
   return `# Gate 4 — RA Domain UAT Sign-off Document
 
@@ -128,7 +137,10 @@ export interface CitationAccuracyResult {
  * @param totalSamples - Total number of citation samples reviewed (should be 50)
  * @param correctSamples - Number of citations verified as correct
  */
-export function checkUatCitationAccuracy(totalSamples: number, correctSamples: number): CitationAccuracyResult {
+export function checkUatCitationAccuracy(
+  totalSamples: number,
+  correctSamples: number,
+): CitationAccuracyResult {
   const accuracy = correctSamples / totalSamples;
   const meetsThreshold = accuracy >= 0.95;
   return { accuracy, meetsThreshold };

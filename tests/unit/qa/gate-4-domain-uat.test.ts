@@ -1,8 +1,8 @@
-import { describe, it, expect } from 'vitest';
+import { describe, expect, it } from 'vitest';
 import {
-  getUatScenarioScript,
-  generateUatSignoffDocument,
   checkUatCitationAccuracy,
+  generateUatSignoffDocument,
+  getUatScenarioScript,
 } from '../../../scripts/qa/gate-4-domain-uat';
 
 describe('gate-4-domain-uat', () => {
@@ -50,7 +50,7 @@ describe('gate-4-domain-uat', () => {
         date: '2026-06-21',
         scenariosRun: ['Query Validation'],
         defectsFound: ['Critical: Citation mismatch on methotrexate dosage'],
-        citationAccuracy: 0.90,
+        citationAccuracy: 0.9,
         sourceLicenseReviewed: false,
         decision: 'reject',
       });
