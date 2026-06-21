@@ -179,7 +179,7 @@ if (isDirectRun) {
     changeDescription: changeDesc,
   });
 
-  process.stdout.write('\n' + comment + '\n');
+  process.stdout.write(`\n${comment}\n`);
 
   const allPassed = typecheck.passed && lint.passed && tests.passed;
   if (!allPassed) {
