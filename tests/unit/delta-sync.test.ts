@@ -18,7 +18,9 @@ import { type ChunkDelta, buildOutdateOperations } from '../../lib/radar/delta-s
 import {
   MAX_RETRY_COUNT,
   buildVectorizeUpsertPayload,
+  defaultRetryDelay,
   shouldRetry,
+  upsertWithRetry,
 } from '../../lib/radar/delta-sync/vectorstore';
 
 // ---------------------------------------------------------------------------
@@ -170,6 +172,28 @@ describe('delta-sync vectorstore — C. vector store sync', () => {
 
   it('MAX_RETRY_COUNT is 3 per SPEC requirement', () => {
     expect(MAX_RETRY_COUNT).toBe(3);
+  });
+
+  it('upsertWithRetry applies retry delay before a repeated attempt', async () => {
+    const attempts: number[] = [];
+    const result = await upsertWithRetry(
+      async () => 'synced',
+      'network timeout',
+      1,
+      (attempt) => {
+        attempts.push(attempt);
+        return 0;
+      },
+    );
+
+    expect(attempts).toEqual([1]);
+    expect(result).toEqual({ result: 'synced', nextRetryCount: 0, exhausted: false });
+  });
+
+  it('defaultRetryDelay uses exponential backoff in milliseconds', () => {
+    expect(defaultRetryDelay(0)).toBe(1000);
+    expect(defaultRetryDelay(1)).toBe(2000);
+    expect(defaultRetryDelay(2)).toBe(4000);
   });
 });
 
