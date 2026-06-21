@@ -228,13 +228,14 @@ review (Gate 4). `Blocker / follow-up` lists dependencies.
 ## Gate Assignment Summary
 
 Aggregated view of which gates apply to how many issues. Use this to size gate
-ownership effort.
+ownership effort. Counts are derived from the per-row `Gate` column above; if
+they drift, fix them here to match the per-row table.
 
 | Gate | Issue count | RC-blocking? |
 |---|---|---|
-| Gate 2 (PR Acceptance, #76) | 38 | yes |
+| Gate 2 (PR Acceptance, #76) | 34 | yes |
 | Gate 4 (RA Domain UAT, #78) | 11 | post-RC |
-| Gate 5 (Operations, #79) | 11 | post-RC |
+| Gate 5 (Operations, #79) | 9 | post-RC |
 | Gate 3 (Wave Integration, #77) | 2 | post-RC |
 
 Gate 0 (#74) and Gate 1 (#75) apply to every row and are not counted here.
