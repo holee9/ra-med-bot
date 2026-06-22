@@ -1,7 +1,10 @@
-import { render, screen } from '@testing-library/react';
-import { describe, expect, it } from 'vitest';
+/** @vitest-environment jsdom */
+
+import '@testing-library/jest-dom';
 import { RagRouteBadge } from '@/components/chat/RagRouteBadge';
 import type { RagRouteEvent } from '@/types/streaming';
+import { render, screen } from '@testing-library/react';
+import { describe, expect, it } from 'vitest';
 
 describe('RagRouteBadge', () => {
   it('renders local path label', () => {
@@ -23,7 +26,12 @@ describe('RagRouteBadge', () => {
   });
 
   it('shows fallback indicator when fallback=true', () => {
-    const route: RagRouteEvent = { type: 'rag_route', path: 'local', fallback: true, fallback_reason: 'timeout' };
+    const route: RagRouteEvent = {
+      type: 'rag_route',
+      path: 'local',
+      fallback: true,
+      fallback_reason: 'timeout',
+    };
     render(<RagRouteBadge route={route} />);
     const badge = screen.getByRole('status');
     expect(badge).toHaveTextContent('폴백');
@@ -33,7 +41,10 @@ describe('RagRouteBadge', () => {
   it('has aria-label with path name', () => {
     const route: RagRouteEvent = { type: 'rag_route', path: 'hybrid' };
     render(<RagRouteBadge route={route} />);
-    expect(screen.getByRole('status')).toHaveAttribute('aria-label', expect.stringContaining('하이브리드'));
+    expect(screen.getByRole('status')).toHaveAttribute(
+      'aria-label',
+      expect.stringContaining('하이브리드'),
+    );
   });
 
   it('no title when no fallback_reason', () => {
