@@ -30,11 +30,17 @@ export function HybridAuditStatus() {
     void (async () => {
       try {
         const res = await fetch('/api/ra/hybrid/audit-status');
-        const data = (await res.json()) as { status: string; health?: { status: string; version?: string } };
+        const data = (await res.json()) as {
+          status: string;
+          health?: { status: string; version?: string };
+        };
         if (data.status === 'unconfigured') {
           setHealth({ status: 'unconfigured' });
         } else if (data.status === 'ok' && data.health) {
-          setHealth({ status: data.health.status as HealthState['status'], version: data.health.version });
+          setHealth({
+            status: data.health.status as HealthState['status'],
+            version: data.health.version,
+          });
         } else {
           setHealth({ status: 'error' });
         }
@@ -112,7 +118,10 @@ export function HybridAuditStatus() {
         {health.status === 'ok' && (
           <button
             type="button"
-            onClick={() => { setExportOpen((o) => !o); setExportState({ status: 'idle' }); }}
+            onClick={() => {
+              setExportOpen((o) => !o);
+              setExportState({ status: 'idle' });
+            }}
             className="rounded border border-brand-300 px-3 py-1 text-xs text-brand-700 hover:bg-brand-50 transition-colors"
           >
             {exportOpen ? '닫기' : 'Audit 내보내기'}
@@ -133,7 +142,12 @@ export function HybridAuditStatus() {
       )}
 
       {exportOpen && (
-        <form onSubmit={(e) => { void handleExport(e); }} className="mt-4 flex flex-col gap-3 border-t border-ink-100 pt-4">
+        <form
+          onSubmit={(e) => {
+            void handleExport(e);
+          }}
+          className="mt-4 flex flex-col gap-3 border-t border-ink-100 pt-4"
+        >
           <div className="flex flex-wrap gap-3">
             <label className="flex flex-col text-xs text-ink-600">
               시작일
@@ -190,7 +204,11 @@ export function HybridAuditStatus() {
               </a>
               {exportState.expiresAt && (
                 <p className="mt-1 text-xs text-ink-500">
-                  만료: {new Intl.DateTimeFormat('ko-KR', { dateStyle: 'short', timeStyle: 'short' }).format(new Date(exportState.expiresAt))}
+                  만료:{' '}
+                  {new Intl.DateTimeFormat('ko-KR', {
+                    dateStyle: 'short',
+                    timeStyle: 'short',
+                  }).format(new Date(exportState.expiresAt))}
                 </p>
               )}
             </div>

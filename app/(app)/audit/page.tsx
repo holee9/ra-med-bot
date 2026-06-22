@@ -82,7 +82,7 @@ export default function AuditPage() {
 
       <AuditPackageBuilder />
 
-      {/* Issue #201 — Hybrid RA audit status and export entry point */}
+      {/* Issue 201 — Hybrid RA audit status and export entry point */}
       <HybridAuditStatus />
 
       <form

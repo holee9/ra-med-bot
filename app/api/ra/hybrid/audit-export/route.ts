@@ -3,6 +3,7 @@
 export const runtime = 'nodejs';
 
 import { HybridRaClientError, createHybridRaClient } from '@/lib/api/hybrid-ra-client';
+import { withPermission } from '@/lib/auth/with-permission';
 import { z } from 'zod';
 
 const ExportSchema = z.object({
@@ -11,7 +12,7 @@ const ExportSchema = z.object({
   format: z.enum(['csv', 'json']).optional(),
 });
 
-export async function POST(request: Request) {
+export const POST = withPermission('audit.package.generate', async (request) => {
   let body: unknown;
   try {
     body = (await request.json()) as unknown;
@@ -21,7 +22,10 @@ export async function POST(request: Request) {
 
   const parsed = ExportSchema.safeParse(body);
   if (!parsed.success) {
-    return Response.json({ error: 'Invalid request', details: parsed.error.issues }, { status: 400 });
+    return Response.json(
+      { error: 'Invalid request', details: parsed.error.issues },
+      { status: 400 },
+    );
   }
 
   try {
@@ -41,4 +45,4 @@ export async function POST(request: Request) {
       { status: 502 },
     );
   }
-}
+});

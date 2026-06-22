@@ -3,8 +3,9 @@
 export const runtime = 'nodejs';
 
 import { HybridRaClientError, createHybridRaClient } from '@/lib/api/hybrid-ra-client';
+import { withPermission } from '@/lib/auth/with-permission';
 
-export async function GET() {
+export const GET = withPermission('audit.read', async () => {
   try {
     const data = await createHybridRaClient().health();
     return Response.json({ status: 'ok', health: data });
@@ -22,4 +23,4 @@ export async function GET() {
       { status: 502 },
     );
   }
-}
+});
