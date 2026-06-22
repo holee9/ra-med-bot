@@ -1,6 +1,6 @@
 // @MX:SPEC Issue #199 (Hybrid RA sync status BFF route tests)
 
-import { describe, expect, it, vi, beforeEach } from 'vitest';
+import { beforeEach, describe, expect, it, vi } from 'vitest';
 
 // Mock must be declared before imports that use the module
 vi.mock('@/lib/api/hybrid-ra-client', () => {
@@ -18,10 +18,35 @@ vi.mock('@/lib/api/hybrid-ra-client', () => {
   return { HybridRaClientError, createHybridRaClient: vi.fn() };
 });
 
-import { HybridRaClientError, createHybridRaClient } from '@/lib/api/hybrid-ra-client';
+const { withPermissionMock } = vi.hoisted(() => ({
+  withPermissionMock: vi.fn(
+    (
+      _action: string,
+      handler: (req: Request, ctx: unknown, session: unknown) => Promise<Response>,
+    ) =>
+      (req: Request, ctx: unknown) =>
+        handler(req, ctx, {
+          user: {
+            id: 'user-ra-1',
+            role: 'ra-member',
+            organizationId: 'org-1',
+          },
+        }),
+  ),
+}));
+
+vi.mock('@/lib/auth/with-permission', () => ({
+  withPermission: withPermissionMock,
+}));
+
 import { GET } from '@/app/api/ra/hybrid/sync-status/route';
+import { HybridRaClientError, createHybridRaClient } from '@/lib/api/hybrid-ra-client';
 
 const mockSyncManifest = vi.fn();
+
+function makeReq(): Request {
+  return new Request('https://example.com/api/ra/hybrid/sync-status');
+}
 
 beforeEach(() => {
   vi.mocked(createHybridRaClient).mockReturnValue({
@@ -36,11 +61,15 @@ beforeEach(() => {
 });
 
 describe('GET /api/ra/hybrid/sync-status', () => {
+  it('is gated by dashboard read RBAC before proxying', () => {
+    expect(withPermissionMock).toHaveBeenCalledWith('dashboard.view', expect.any(Function));
+  });
+
   it('returns unconfigured when env vars are missing', async () => {
     mockSyncManifest.mockRejectedValue(
       new HybridRaClientError('not configured', 503, '/sync/manifest', 'unconfigured'),
     );
-    const res = await GET();
+    const res = await GET(makeReq(), {});
     const body = await res.json();
     expect(body).toEqual({ status: 'unconfigured' });
     expect(res.status).toBe(200);
@@ -54,7 +83,7 @@ describe('GET /api/ra/hybrid/sync-status', () => {
       tenant_id: 'tenant-001',
     };
     mockSyncManifest.mockResolvedValue(syncData);
-    const res = await GET();
+    const res = await GET(makeReq(), {});
     const body = await res.json();
     expect(body).toEqual({ status: 'ok', sync: syncData });
   });
@@ -63,7 +92,7 @@ describe('GET /api/ra/hybrid/sync-status', () => {
     mockSyncManifest.mockRejectedValue(
       new HybridRaClientError('Request timed out', 504, '/sync/manifest', 'timeout'),
     );
-    const res = await GET();
+    const res = await GET(makeReq(), {});
     const body = await res.json();
     expect(body.status).toBe('error');
     expect(body.kind).toBe('timeout');
@@ -71,7 +100,7 @@ describe('GET /api/ra/hybrid/sync-status', () => {
 
   it('returns error for unexpected exceptions', async () => {
     mockSyncManifest.mockRejectedValue(new Error('Network failure'));
-    const res = await GET();
+    const res = await GET(makeReq(), {});
     const body = await res.json();
     expect(body.status).toBe('error');
     expect(body.kind).toBe('server_error');

@@ -43,7 +43,7 @@ export interface HealthResponse {
 export interface SyncManifestResponse {
   last_sync: string; // ISO-8601
   total_documents: number;
-  sync_status: 'synced' | 'stale' | 'unknown';
+  sync_status: 'synced' | 'stale' | 'unknown' | 'failed' | 'pending' | 'retry-needed';
   tenant_id: string;
 }
 

@@ -8,9 +8,11 @@ import { useEffect, useState } from 'react';
 interface SyncData {
   last_sync: string;
   total_documents: number;
-  sync_status: 'synced' | 'stale' | 'unknown';
+  sync_status: SyncStatus;
   tenant_id: string;
 }
+
+type SyncStatus = 'synced' | 'stale' | 'unknown' | 'failed' | 'pending' | 'retry-needed';
 
 type ViewState =
   | { kind: 'loading' }
@@ -18,16 +20,29 @@ type ViewState =
   | { kind: 'ok'; sync: SyncData }
   | { kind: 'error'; message: string };
 
-const STATUS_DOT: Record<'synced' | 'stale' | 'unknown', string> = {
+const STATUS_DOT: Record<SyncStatus, string> = {
   synced: 'bg-success-500',
   stale: 'bg-amber-500',
   unknown: 'bg-ink-400',
+  failed: 'bg-red-500',
+  pending: 'bg-blue-500',
+  'retry-needed': 'bg-amber-600',
 };
 
-const STATUS_LABEL: Record<'synced' | 'stale' | 'unknown', string> = {
+const STATUS_LABEL: Record<SyncStatus, string> = {
   synced: '동기화됨',
   stale: '동기화 오래됨',
   unknown: '상태 알 수 없음',
+  failed: '동기화 실패',
+  pending: '동기화 대기 중',
+  'retry-needed': '재시도 필요',
+};
+
+const STATUS_MESSAGE: Partial<Record<SyncStatus, string>> = {
+  stale: '동기화가 오래되었습니다. 관리자에게 재동기화를 요청하거나 잠시 후 새로고침하세요.',
+  failed: '마지막 동기화가 실패했습니다. 재시도 또는 관리자 확인이 필요합니다.',
+  pending: '동기화 작업이 대기열에 있습니다. 완료 후 새로고침하면 최신 상태가 표시됩니다.',
+  'retry-needed': '동기화 재시도 조건이 감지되었습니다. 관리자에게 재동기화를 요청하세요.',
 };
 
 function formatDate(iso: string) {
@@ -89,8 +104,10 @@ export function HybridSyncStatus() {
   }
 
   const { sync } = view;
-  const dot = STATUS_DOT[sync.sync_status];
-  const label = STATUS_LABEL[sync.sync_status];
+  const status = sync.sync_status in STATUS_LABEL ? sync.sync_status : 'unknown';
+  const dot = STATUS_DOT[status];
+  const label = STATUS_LABEL[status];
+  const message = STATUS_MESSAGE[status];
 
   return (
     <div className="flex flex-col gap-1 rounded-lg border border-ink-150 bg-surface px-4 py-3">
@@ -103,11 +120,7 @@ export function HybridSyncStatus() {
         <span>마지막 동기화: {formatDate(sync.last_sync)}</span>
         <span>문서 수: {sync.total_documents.toLocaleString()}개</span>
       </div>
-      {sync.sync_status === 'stale' && (
-        <p className="mt-1 text-xs text-amber-700">
-          동기화가 오래되었습니다. 관리자에게 재동기화를 요청하거나 잠시 후 새로고침하세요.
-        </p>
-      )}
+      {message && <p className="mt-1 text-xs text-amber-700">{message}</p>}
     </div>
   );
 }

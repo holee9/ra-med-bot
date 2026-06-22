@@ -2,9 +2,9 @@
 // @MX:SPEC SPEC-REGULA-RELEASE-HARDENING-001 (TASK-002)
 // @MX:SPEC Issue #199 (Hybrid RA sync status section added)
 
+import { HybridSyncStatus } from '@/components/knowledge/HybridSyncStatus';
 import { headers } from 'next/headers';
 import { Suspense } from 'react';
-import { HybridSyncStatus } from '@/components/knowledge/HybridSyncStatus';
 
 export const dynamic = 'force-dynamic';
 

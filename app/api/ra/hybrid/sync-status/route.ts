@@ -5,8 +5,9 @@
 export const runtime = 'nodejs';
 
 import { HybridRaClientError, createHybridRaClient } from '@/lib/api/hybrid-ra-client';
+import { withPermission } from '@/lib/auth/with-permission';
 
-export async function GET() {
+export const GET = withPermission('dashboard.view', async () => {
   try {
     const data = await createHybridRaClient().syncManifest();
     return Response.json({ status: 'ok', sync: data });
@@ -21,4 +22,4 @@ export async function GET() {
       kind: e?.kind ?? 'server_error',
     });
   }
-}
+});
