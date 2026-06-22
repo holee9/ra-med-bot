@@ -1,18 +1,55 @@
 // @MX:SPEC SPEC-REGULA-DIGEST-001 (Phase 2 — Inngest cron wiring)
-// Weekly regulatory intelligence digest: enumerates orgs with frequency != disabled,
+// Weekly regulatory intelligence digest: enumerates weekly org preferences,
 // generates the payload, and dispatches email via the digest sender.
 
 import { and, eq, ne } from 'drizzle-orm';
 import { orgDigestPreferences } from '../../db/schema';
+import type { DigestPayload } from '../../digest/digest-generator';
 import { INNGEST_EVENTS, inngest } from '../client';
 
 type DigestWeeklyTriggerData = { orgId?: string; weekId?: string };
+type DigestPreference = Pick<typeof orgDigestPreferences.$inferSelect, 'orgId' | 'recipientEmails'>;
+type DigestLogger = { error: (message: string, err?: unknown) => void };
 
 export function buildDigestPreferencesPredicate(data: DigestWeeklyTriggerData) {
-  const enabledPreference = ne(orgDigestPreferences.frequency, 'disabled');
   return data.orgId
-    ? and(eq(orgDigestPreferences.orgId, data.orgId), enabledPreference)
-    : enabledPreference;
+    ? and(
+        eq(orgDigestPreferences.orgId, data.orgId),
+        ne(orgDigestPreferences.frequency, 'disabled'),
+      )
+    : eq(orgDigestPreferences.frequency, 'weekly');
+}
+
+export async function processDigestPreference({
+  generateWeeklyDigest,
+  logger,
+  pref,
+  sendDigestEmail,
+  weekId,
+}: {
+  generateWeeklyDigest: (orgId: string, weekId?: string) => Promise<DigestPayload>;
+  logger: DigestLogger;
+  pref: DigestPreference;
+  sendDigestEmail: (
+    orgId: string,
+    payload: DigestPayload,
+    recipientEmails: string[],
+  ) => Promise<boolean>;
+  weekId?: string;
+}): Promise<1> {
+  try {
+    const payload = await generateWeeklyDigest(pref.orgId, weekId);
+    if (pref.recipientEmails.length > 0) {
+      const sent = await sendDigestEmail(pref.orgId, payload, pref.recipientEmails);
+      if (!sent) {
+        throw new Error(`Digest email send failed for org ${pref.orgId}`);
+      }
+    }
+    return 1;
+  } catch (err) {
+    logger.error(`[digest-cron] Failed for org ${pref.orgId}:`, err);
+    throw err;
+  }
 }
 
 /** Cron schedule: every Monday at 00:00 UTC. Orgs apply their own tz offset. */
@@ -46,18 +83,15 @@ export const weeklyDigestFn = inngest.createFunction(
 
     let processed = 0;
     for (const pref of prefs) {
-      const count = await step.run(`digest-org-${pref.orgId}`, async () => {
-        try {
-          const payload = await generateWeeklyDigest(pref.orgId, data.weekId);
-          if (pref.recipientEmails.length > 0) {
-            await sendDigestEmail(pref.orgId, payload, pref.recipientEmails);
-          }
-          return 1;
-        } catch (err) {
-          logger.error(`[digest-cron] Failed for org ${pref.orgId}:`, err);
-          return 0;
-        }
-      });
+      const count = await step.run(`digest-org-${pref.orgId}`, () =>
+        processDigestPreference({
+          generateWeeklyDigest,
+          logger,
+          pref,
+          sendDigestEmail,
+          weekId: data.weekId,
+        }),
+      );
       processed += count;
     }
 
