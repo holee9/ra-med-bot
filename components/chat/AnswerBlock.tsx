@@ -19,6 +19,7 @@ import type {
   ChecklistItem,
   ComparisonEvent,
   ConfidenceEvent,
+  RagRouteEvent,
   SourceItem,
   TimelineEvent,
 } from '../../types/streaming';
@@ -30,6 +31,7 @@ import { Callout } from './Callout';
 import { Checklist } from './Checklist';
 import { ComparisonTable } from './ComparisonTable';
 import { ConfidenceBadge } from './ConfidenceBadge';
+import { RagRouteBadge } from './RagRouteBadge';
 import { SourcesGrid } from './SourcesGrid';
 import { SuggestionPill } from './SuggestionPill';
 import { Timeline } from './Timeline';
@@ -65,6 +67,7 @@ interface AnswerBlockProps {
   comparison?: ComparisonEvent | undefined;
   timeline?: TimelineEvent | undefined;
   related?: string[] | undefined;
+  ragRoute?: RagRouteEvent | undefined;
   onSuggestionClick?: (text: string) => void;
 }
 
@@ -82,6 +85,7 @@ export function AnswerBlock({
   comparison,
   timeline,
   related,
+  ragRoute,
   onSuggestionClick,
 }: AnswerBlockProps) {
   const [refinedProse, setRefinedProse] = useState<string | null>(null);
@@ -106,6 +110,7 @@ export function AnswerBlock({
       {/* Section 1: Meta row */}
       <div className="flex flex-wrap items-center gap-3 text-xs text-ink-500">
         {confidence && <ConfidenceBadge level={confidence.level} score={confidence.score} />}
+        {ragRoute && <RagRouteBadge route={ragRoute} />}
         <span>{sourceCount} 출처</span>
         {durationSec && <span>분석 {durationSec}s</span>}
         {/* Action buttons — copy / export / regenerate */}
