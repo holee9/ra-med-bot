@@ -6,6 +6,7 @@
 'use client';
 
 import { AuditorWatermark } from '@/components/audit/AuditorWatermark';
+import { HybridAuditStatus } from '@/components/audit/HybridAuditStatus';
 import { useCallback, useEffect, useState } from 'react';
 import { AuditPackageBuilder } from './AuditPackageBuilder';
 
@@ -80,6 +81,9 @@ export default function AuditPage() {
       </header>
 
       <AuditPackageBuilder />
+
+      {/* Issue 201 — Hybrid RA audit status and export entry point */}
+      <HybridAuditStatus />
 
       <form
         className="flex flex-wrap gap-3 rounded-lg border border-ink-150 bg-surface p-4"
