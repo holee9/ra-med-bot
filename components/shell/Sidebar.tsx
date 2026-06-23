@@ -42,6 +42,9 @@ interface SidebarProps {
   // SPEC-REGULA-KNOWLEDGE-GAP-001 (Issue #35): Knowledge Gap queue is visible to
   // roles with knowledgegap.view (ra-member+). Gated server-side and passed down.
   showKnowledgeGap?: boolean;
+  // SPEC-REGULA-CLASSIFY-001 (Issue #59): Device Classification wizard is visible
+  // to roles with classify.view (ra-member+). Gated server-side and passed down.
+  showClassify?: boolean;
   initialLocale?: string;
 }
 
@@ -49,6 +52,7 @@ export default function Sidebar(props?: SidebarProps) {
   const showExpertReview = props?.showExpertReview ?? false;
   const showPredicate = props?.showPredicate ?? false;
   const showKnowledgeGap = props?.showKnowledgeGap ?? false;
+  const showClassify = props?.showClassify ?? false;
   const currentProjectId = useUIStore((s) => s.currentProjectId);
   const setCurrentProjectId = useUIStore((s) => s.setCurrentProjectId);
   const { data = [] } = useProjects();
@@ -157,6 +161,19 @@ export default function Sidebar(props?: SidebarProps) {
             className="rounded-md px-3 py-2 text-sm text-ink-700 hover:bg-ink-50 block"
           >
             미답변 큐
+          </Link>
+        </nav>
+      )}
+
+      {/* SPEC-REGULA-CLASSIFY-001 (Issue #59): Device Classification wizard link. */}
+      {showClassify && (
+        <nav className="px-2 py-1">
+          <Link
+            href="/workflows/classification"
+            data-testid="sidebar-classify-link"
+            className="rounded-md px-3 py-2 text-sm text-ink-700 hover:bg-ink-50 block"
+          >
+            기기 분류
           </Link>
         </nav>
       )}
