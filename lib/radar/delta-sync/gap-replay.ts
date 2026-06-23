@@ -1,13 +1,18 @@
-// @MX:NOTE [AUTO] Knowledge gap replay hook — #35 Knowledge Gap Ops integration.
+// @MX:NOTE [AUTO] Knowledge gap replay hook — SPEC-REGULA-KNOWLEDGE-GAP-001 (#35) implementation.
 // @MX:SPEC SPEC-REGULA-DELTA-SYNC-001 (REQ-DELTA-012, REQ-DELTA-013)
+//          SPEC-REGULA-KNOWLEDGE-GAP-001 (REQ-KNOWLEDGE-GAP-014, REQ-KNOWLEDGE-GAP-015)
 //
 // When a delta-sync ingests a document that resolves a known knowledge gap,
-// the failed eval scenario should be re-run. If the replay passes, the gap is
-// closed and audit_logs is updated.
+// the previously-failed consult scenario is re-run. If the replay now passes
+// (all 4 detection conditions cleared), the gap is closed and the audit trail
+// records the resolution.
 //
-// Implementation status: STUB. #35 Knowledge Gap Ops is not yet implemented.
-// This module exposes the trigger interface so delta-sync can call it when #35
-// lands. Follow-up: wire to actual gap resolution logic in #35.
+// Implementation status: COMPLETE (#35 Phase 3). The exported interface is
+// unchanged from the original stub; only the body of triggerGapReplay() was
+// filled in to call replayGapTest() + markGapResolved().
+
+import { markGapResolved, replayGapTest } from '@/lib/knowledge-gap/replay';
+import { logger } from '@/lib/observability/logger';
 
 export interface GapReplayInput {
   crawlerName: string;
@@ -20,25 +25,29 @@ export interface GapReplayInput {
 export interface GapReplayResult {
   triggered: boolean;
   gapIds: string[];
-  /** Placeholder — #35 will return replay pass/fail per gap. */
+  /** Aggregate outcome across all replayed gaps. */
   replayOutcome?: 'pending' | 'passed' | 'failed';
 }
 
 /**
  * Decide whether to trigger a knowledge-gap replay after a delta-sync.
  * Returns true only when at least one gap was matched (REQ-DELTA-012).
- *
- * NOTE: The actual replay execution (failed eval re-run + gap closure) is
- * deferred to #35. This function only decides whether the trigger fires.
  */
 export function shouldTriggerGapReplay(input: GapReplayInput): boolean {
   return (input.matchedGapIds?.length ?? 0) > 0;
 }
 
 /**
- * Trigger gap replay for each matched gap.
- * Stub — logs the trigger and returns a pending result per gap.
- * When #35 ships, this will enqueue replay jobs and update audit_logs.
+ * Trigger gap replay for each matched gap (REQ-KNOWLEDGE-GAP-014).
+ *
+ * For every gap id, re-run the original (redacted) question through the RAG
+ * pipeline. On pass: mark the gap resolved (status='resolved', GitHub comment,
+ * audit_logs entry — REQ-KNOWLEDGE-GAP-015). On fail: leave the gap open so the
+ * next ingestion can retry.
+ *
+ * `replayOutcome` is the aggregate: 'passed' only if every gap passed, 'failed'
+ * if any gap failed or errored. Individual errors are logged but non-fatal so a
+ * single broken gap does not block resolution of the others.
  */
 export async function triggerGapReplay(input: GapReplayInput): Promise<GapReplayResult> {
   const gapIds = input.matchedGapIds ?? [];
@@ -46,13 +55,42 @@ export async function triggerGapReplay(input: GapReplayInput): Promise<GapReplay
     return { triggered: false, gapIds: [] };
   }
 
-  // STUB: when #35 lands, enqueue:
-  //   1. Re-run failed eval scenarios for each gap
-  //   2. On pass: mark gap resolved + writeAudit('corpus.sync_completed')
-  //   3. On fail: leave gap open, log retry in corpus_sync_runs
+  let allPassed = true;
+
+  await Promise.all(
+    gapIds.map(async (gapId) => {
+      try {
+        const result = await replayGapTest(gapId);
+        if (result.passed) {
+          await markGapResolved(gapId, {
+            answerWithCitations: result.answerWithCitations,
+            sources: result.sources,
+          });
+        } else {
+          allPassed = false;
+          logger.info('[gap-replay] gap not yet resolved', {
+            gapId,
+            reason: result.reasonSummary,
+            crawler: input.crawlerName,
+            ingestionRunId: input.ingestionRunId,
+          });
+        }
+      } catch (err) {
+        allPassed = false;
+        // Non-fatal: one bad gap must not block sibling resolutions.
+        logger.error('[gap-replay] replay failed for gap', {
+          gapId,
+          crawler: input.crawlerName,
+          ingestionRunId: input.ingestionRunId,
+          error: err instanceof Error ? err.message : String(err),
+        });
+      }
+    }),
+  );
+
   return {
     triggered: true,
     gapIds,
-    replayOutcome: 'pending',
+    replayOutcome: allPassed ? 'passed' : 'failed',
   };
 }

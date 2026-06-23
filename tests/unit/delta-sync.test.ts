@@ -7,7 +7,24 @@
 //   C. Vector store sync (pgvector upsert contract, Vectorize stub, retry queue)
 //   D. Gap replay hook (#35 integration stub)
 
-import { describe, expect, it } from 'vitest';
+import { describe, expect, it, vi } from 'vitest';
+
+// Mock the DB/audit/replay layer so importing gap-replay.ts (which now imports
+// @/lib/knowledge-gap/replay → @/lib/ai/consult → env-validated db client) does
+// not trigger ZodError on missing DATABASE_URL in the test runner. Same pattern
+// as tests/unit/knowledge-gap-detector.test.ts. SPEC-REGULA-KNOWLEDGE-GAP-001 #35.
+vi.mock('@/lib/db/client', () => ({ db: {} }));
+vi.mock('@/lib/audit', () => ({ writeAudit: vi.fn().mockResolvedValue(undefined) }));
+vi.mock('@/lib/observability/logger', () => ({
+  logger: { info: vi.fn(), error: vi.fn(), warn: vi.fn(), debug: vi.fn() },
+}));
+// Stub the replay side-effects so gap-replay.ts can be imported without loading
+// the full consult pipeline. shouldTriggerGapReplay() is pure and unaffected.
+vi.mock('@/lib/knowledge-gap/replay', () => ({
+  replayGapTest: vi.fn(),
+  markGapResolved: vi.fn(),
+}));
+
 import {
   type ChangeDetectionResult,
   computeContentHash,
