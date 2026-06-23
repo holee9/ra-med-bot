@@ -17,6 +17,7 @@ import type { SourceItem, StreamEvent, TraceEvent } from '../../types/streaming'
 import { writeAudit } from '../audit';
 import { db } from '../db/client';
 import { conversations, messageBlocks, messages } from '../db/schema';
+import { captureKnowledgeGap, detectKnowledgeGap } from '../knowledge-gap/detector';
 import { enforceCitations } from './citation-enforce';
 import { calculateConfidence, getConfidenceLevel } from './confidence';
 import { shouldAutoFlag } from './expert-review-gating';
@@ -416,6 +417,41 @@ export async function* consult(
         confidence_score: confidenceScore,
       },
     });
+  }
+
+  // ---- Knowledge gap detection (SPEC-REGULA-KNOWLEDGE-GAP-001, Issue #35) ----
+  // REQ-KNOWLEDGE-GAP-001: evaluate the 4 gap conditions from design.md §2.1.
+  // Non-fatal: a gap-capture failure MUST NOT break the SSE stream — the user
+  // still receives their answer. Log and continue.
+  const gapReason = detectKnowledgeGap({
+    confidenceScore: Number(confidenceScore),
+    confidenceLevel: confidenceLevel ?? 'low',
+    citationCoverageBelow80,
+    topChunksLength: topChunks.length,
+    llmFailed,
+  });
+  if (gapReason !== null && orgId !== undefined) {
+    try {
+      await captureKnowledgeGap({
+        orgId,
+        conversationId,
+        messageId,
+        originalQuestion: input.question,
+        reason: gapReason,
+        actorId: session.user?.id ?? null,
+      });
+      // REQ-KNOWLEDGE-GAP-003: mark the message row (separate from expertReviewRequired).
+      await db
+        .update(messages)
+        .set({ knowledgeGapRequired: true })
+        .where(eq(messages.id, messageId));
+    } catch (gapErr) {
+      logger.error('[consult] knowledge gap capture failed (non-fatal):', {
+        error: gapErr instanceof Error ? gapErr.message : String(gapErr),
+        messageId,
+        gapReason,
+      });
+    }
   }
 
   // ---- Stage 8: Persist ----
