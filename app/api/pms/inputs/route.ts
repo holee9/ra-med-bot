@@ -8,6 +8,7 @@ import { withPermission } from '@/lib/auth/with-permission';
 import { db } from '@/lib/db/client';
 import { pmsInputs } from '@/lib/db/schema';
 import { normalizePmsInput, validatePmsInput } from '@/lib/pms/inputs';
+import { assertPmsProjectAccess } from '@/lib/pms/project-ownership';
 import { z } from 'zod';
 
 const PmsInputSchema = z.object({
@@ -42,6 +43,9 @@ async function postInputs(
       { status: 400 },
     );
   }
+
+  const accessDenied = await assertPmsProjectAccess(parsed.data.projectId, organizationId);
+  if (accessDenied) return accessDenied;
 
   // Normalize + validate (REQ-PMS-012).
   const normalized = normalizePmsInput(parsed.data);

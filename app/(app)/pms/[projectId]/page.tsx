@@ -46,6 +46,8 @@ export default async function PmsProjectPage({ params }: ProjectPageProps) {
   let projectName = 'Unknown Project';
   let cerRefId: string | null = null;
   let cerDeviceName: string | null = null;
+  let projectVisible = false;
+  let projectLookupFailed = false;
 
   if (canView && orgId) {
     try {
@@ -54,29 +56,38 @@ export default async function PmsProjectPage({ params }: ProjectPageProps) {
         .from(projects)
         .where(and(eq(projects.id, projectId), eq(projects.organizationId, orgId)))
         .limit(1);
-      if (projectRow.length === 0) {
-        notFound();
-      }
+      projectVisible = projectRow.length > 0;
       projectName = projectRow[0]?.name ?? projectName;
-
-      // Find CER document for this project (REQ-PMS-004 auto-linkage).
-      const cerDocs = await db
-        .select({ id: pmsDocuments.id })
-        .from(pmsDocuments)
-        .where(
-          and(
-            eq(pmsDocuments.projectId, projectId),
-            eq(pmsDocuments.orgId, orgId),
-            eq(pmsDocuments.workflowType, 'cer'),
-          ),
-        )
-        .limit(1);
-      if (cerDocs.length > 0 && cerDocs[0]) {
-        cerRefId = cerDocs[0].id;
-        cerDeviceName = projectName;
-      }
     } catch {
-      // DB unavailable in test environments — fall through with defaults.
+      // DB unavailable in test/build environments.
+      projectLookupFailed = true;
+    }
+
+    if (!projectLookupFailed && !projectVisible) {
+      notFound();
+    }
+
+    if (projectVisible) {
+      // Find CER document for this project (REQ-PMS-004 auto-linkage).
+      try {
+        const cerDocs = await db
+          .select({ id: pmsDocuments.id })
+          .from(pmsDocuments)
+          .where(
+            and(
+              eq(pmsDocuments.projectId, projectId),
+              eq(pmsDocuments.orgId, orgId),
+              eq(pmsDocuments.workflowType, 'cer'),
+            ),
+          )
+          .limit(1);
+        if (cerDocs.length > 0 && cerDocs[0]) {
+          cerRefId = cerDocs[0].id;
+          cerDeviceName = projectName;
+        }
+      } catch {
+        // DB unavailable in test environments — fall through with defaults.
+      }
     }
   }
 

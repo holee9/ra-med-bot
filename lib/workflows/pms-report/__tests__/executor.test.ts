@@ -121,6 +121,20 @@ describe('executePmsReport — MDCG 2022-21 section generation', () => {
     expect(result.confidence).toBe('verified');
   });
 
+  it('downgrades section text with missing citations to pending/unverified', async () => {
+    const sources: PmsRetrievedSource[] = [{ source: 'EU MDR', section: 'Article 85' }];
+    const result = await executePmsReport(baseOptions, {
+      fetchFn: makeFetchFn({
+        executive_summary: 'PMS reports must summarize surveillance findings.',
+      }),
+      retrieveFn: makeRetriever(sources),
+      cerData: null,
+    });
+    expect(result.citations).toHaveLength(0);
+    expect(result.confidence).toBe('unverified');
+    expect(result.status).toBe('pending');
+  });
+
   it('downgrades to pending when ALL citations are hallucinated', async () => {
     const sources: PmsRetrievedSource[] = [{ source: 'EU MDR', section: 'Article 85' }];
     const result = await executePmsReport(baseOptions, {

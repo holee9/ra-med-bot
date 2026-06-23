@@ -1,12 +1,18 @@
 // @MX:NOTE [AUTO] POST /api/workflows/pms-report/run — generate PMS report (MDCG 2022-21).
 // @MX:SPEC SPEC-REGULA-PMS-001 (REQ-PMS-002, REQ-PMS-004, REQ-PMS-008, REQ-PMS-010, AC-02)
 
+import { hybridSearch } from '@/lib/ai/retrievers/hybrid-search';
 import { writeAudit } from '@/lib/audit';
 import { withPermission } from '@/lib/auth/with-permission';
 import { db } from '@/lib/db/client';
 import { pmsDocuments, workflowRuns } from '@/lib/db/schema';
 import { resolveCerLinkage } from '@/lib/pms/cer-linkage';
-import { executePmsReport } from '@/lib/workflows/pms-report/executor';
+import { assertPmsProjectAccess } from '@/lib/pms/project-ownership';
+import {
+  type PmsFetchFn,
+  type PmsRetriever,
+  executePmsReport,
+} from '@/lib/workflows/pms-report/executor';
 import { z } from 'zod';
 
 const PmsReportRunSchema = z.object({
@@ -23,6 +29,25 @@ const PmsReportRunSchema = z.object({
     .nullable()
     .default(null),
 });
+
+const retrievePmsReportSources: PmsRetriever = async (query) => {
+  const chunks = await hybridSearch(query, 'all', 8, 'regs');
+  return chunks.map((chunk) => ({
+    source: [chunk.orgLabel, chunk.title].filter(Boolean).join(' - '),
+    section: chunk.anchor || chunk.title,
+  }));
+};
+
+function createRouteFetch(request: Request): PmsFetchFn {
+  const origin = new URL(request.url).origin;
+  return async (endpoint, options) => {
+    const res = await fetch(new URL(endpoint, origin), options);
+    if (!res.ok) {
+      throw new Error(`PMS report LLM endpoint failed with ${res.status}`);
+    }
+    return { json: () => res.json() };
+  };
+}
 
 async function postRun(
   request: Request,
@@ -42,28 +67,35 @@ async function postRun(
   }
   const body = parsed.data;
 
+  const accessDenied = await assertPmsProjectAccess(body.projectId, organizationId);
+  if (accessDenied) return accessDenied;
+
   // REQ-PMS-004 AC-04: CER linkage. Manual cerData (caller-provided) is the
   // functional path today. Auto-discovery returns null gracefully in production
   // (CER results not yet persisted locally — hybrid-ra-saas BFF). See
   // lib/pms/cer-linkage.ts DEFERRED note. PMS draft still created, cerLinked=false.
   const cerData = await resolveCerLinkage(body.projectId, organizationId, body.cerData);
 
-  // Execute PMS report. LLM + retriever are stubbed (no live network in this
-  // scaffold — the executor accepts injected deps). The route provides null
-  // fetchFn so the executor produces a structural draft with SUSAR template.
-  const result = await executePmsReport(
-    {
-      orgId: organizationId,
-      userId: session.user.id,
-      projectId: body.projectId,
-      deviceName: body.deviceName,
-      deviceClass: body.deviceClass,
-    },
-    {
-      retrieveFn: async () => [], // No live retrieval in scaffold; UI calls BFF for real RAG.
-      cerData,
-    },
-  );
+  let result: Awaited<ReturnType<typeof executePmsReport>>;
+  try {
+    result = await executePmsReport(
+      {
+        orgId: organizationId,
+        userId: session.user.id,
+        projectId: body.projectId,
+        deviceName: body.deviceName,
+        deviceClass: body.deviceClass,
+      },
+      {
+        retrieveFn: retrievePmsReportSources,
+        fetchFn: createRouteFetch(request),
+        cerData,
+      },
+    );
+  } catch (err) {
+    console.error('pms.report generation dependency failed', err);
+    return Response.json({ error: 'PMS report generation service unavailable' }, { status: 503 });
+  }
 
   // Mutation + audit in one transaction (H2 atomicity).
   let runId: string;

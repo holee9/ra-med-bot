@@ -44,12 +44,13 @@ function findInsert(predicate: (values: Row) => boolean): InsertRecord | undefin
 }
 const pmsInputsStore: Row[] = [];
 const pmsDocumentsStore: Row[] = [];
+let projectVisibleToOrg = true;
 
 // Transaction callback receives the same mock (tx === db mock).
 let transactionShouldFail = false;
 
 interface SelectChain extends Promise<Row[]> {
-  from: ReturnType<typeof vi.fn<[], SelectChain>>;
+  from: ReturnType<typeof vi.fn<[unknown?], SelectChain>>;
   where: ReturnType<typeof vi.fn<[], SelectChain>>;
   orderBy: ReturnType<typeof vi.fn<[], SelectChain>>;
   limit: ReturnType<typeof vi.fn<[number?], Promise<Row[]>>>;
@@ -57,7 +58,7 @@ interface SelectChain extends Promise<Row[]> {
 
 const makeSelectChain = (rows: Row[]): SelectChain => {
   const promise = Promise.resolve(rows) as unknown as SelectChain;
-  promise.from = vi.fn(() => makeSelectChain(rows));
+  promise.from = vi.fn((table?: unknown) => makeSelectChain(resolveRowsForTable(table, rows)));
   promise.where = vi.fn(() => makeSelectChain(rows));
   promise.orderBy = vi.fn(() => makeSelectChain(rows));
   promise.limit = vi.fn(async () => rows);
@@ -74,6 +75,23 @@ const makeCountChain = (count: number): SelectChain => {
   promise.limit = vi.fn(async () => rows);
   return promise;
 };
+
+function getDrizzleTableName(table: unknown): string | undefined {
+  if (!table || typeof table !== 'object') return undefined;
+  for (const symbol of Object.getOwnPropertySymbols(table)) {
+    if (String(symbol) === 'Symbol(drizzle:Name)') {
+      return (table as Record<symbol, unknown>)[symbol] as string | undefined;
+    }
+  }
+  return undefined;
+}
+
+function resolveRowsForTable(table: unknown, fallback: Row[]): Row[] {
+  if (getDrizzleTableName(table) === 'projects') {
+    return projectVisibleToOrg ? [{ id: '00000000-0000-0000-0000-000000000001' }] : [];
+  }
+  return fallback;
+}
 
 interface InsertChain {
   values: (v: Row | Row[]) => InsertChain;
@@ -165,6 +183,10 @@ vi.mock('@/lib/audit', () => ({
   }),
 }));
 
+vi.mock('@/lib/ai/retrievers/hybrid-search', () => ({
+  hybridSearch: vi.fn(async () => []),
+}));
+
 // ---------------------------------------------------------------------------
 // withPermission mock — bypass RBAC, inject the session we control.
 // ---------------------------------------------------------------------------
@@ -209,6 +231,7 @@ function resetStores() {
   pmsInputsStore.length = 0;
   pmsDocumentsStore.length = 0;
   auditRecords.length = 0;
+  projectVisibleToOrg = true;
   transactionShouldFail = false;
   auditShouldFail = false;
 }
@@ -505,6 +528,24 @@ describe('POST /api/workflows/pms-report/run — IDOR + audit runtime', () => {
     ) as Row;
     expect(runValues.organizationId).toBe('org-A');
     expect(docValues.orgId).toBe('org-A');
+  });
+
+  it('rejects a projectId that is not owned by the caller org before writing', async () => {
+    setSession('org-A');
+    projectVisibleToOrg = false;
+    const req = new Request('http://localhost/api/workflows/pms-report/run', {
+      method: 'POST',
+      body: JSON.stringify({
+        projectId: '00000000-0000-0000-0000-00000000000b',
+        deviceName: 'OtherOrgDevice',
+        deviceClass: 'IIa',
+      }),
+    });
+
+    const res = await postPmsReport(req, {});
+    expect(res.status).toBe(404);
+    expect(insertRecords).toHaveLength(0);
+    expect(auditRecords).toHaveLength(0);
   });
 
   it('writes pms.report_created audit inside the transaction', async () => {

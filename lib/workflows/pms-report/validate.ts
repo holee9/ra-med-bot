@@ -98,12 +98,13 @@ export function validatePmsCitations(
     return matched;
   });
 
-  const allUnmatched = raw.length > 0 && matchedCount === 0;
+  const missingCitations = raw.length === 0;
+  const allUnmatched = missingCitations || matchedCount === 0;
 
   return {
     citations: filtered,
-    hadUnmatched,
+    hadUnmatched: hadUnmatched || missingCitations,
     allUnmatched,
-    confidence: hadUnmatched || allUnmatched ? 'unverified' : 'verified',
+    confidence: hadUnmatched || allUnmatched || missingCitations ? 'unverified' : 'verified',
   };
 }

@@ -5,6 +5,7 @@ import { writeAudit } from '@/lib/audit';
 import { withPermission } from '@/lib/auth/with-permission';
 import { db } from '@/lib/db/client';
 import { pmsDocuments, workflowRuns } from '@/lib/db/schema';
+import { assertPmsProjectAccess } from '@/lib/pms/project-ownership';
 import { executePmcfPlan } from '@/lib/workflows/pmcf-plan/executor';
 import { z } from 'zod';
 
@@ -31,6 +32,9 @@ async function postRun(
     );
   }
   const body = parsed.data;
+
+  const accessDenied = await assertPmsProjectAccess(body.projectId, organizationId);
+  if (accessDenied) return accessDenied;
 
   const result = await executePmcfPlan(
     {

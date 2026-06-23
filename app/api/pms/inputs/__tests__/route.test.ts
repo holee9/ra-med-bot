@@ -40,6 +40,13 @@ describe('PMS inputs route — security structure (H2, IDOR, REQ-PMS-010/012)', 
     expect(src).toMatch(/Organization context required/);
   });
 
+  it('validates project ownership before inserting PMS input', () => {
+    const accessIdx = src.indexOf('assertPmsProjectAccess');
+    const insertIdx = src.indexOf('.insert(pmsInputs)');
+    expect(accessIdx).toBeGreaterThanOrEqual(0);
+    expect(insertIdx).toBeGreaterThan(accessIdx);
+  });
+
   it('wraps the transaction in try/catch (audit failure = 500)', () => {
     const txIdx = src.indexOf('db.transaction');
     const catchIdx = src.indexOf('} catch (err)');
@@ -73,7 +80,17 @@ describe('PMS report route — citation + CER linkage + audit (REQ-PMS-002/004/0
 
   it('calls executePmsReport with a retriever (citation grounding path)', () => {
     expect(src).toMatch(/executePmsReport/);
-    expect(src).toMatch(/retrieveFn/);
+    expect(src).toMatch(/retrieveFn: retrievePmsReportSources/);
+    expect(src).toMatch(/hybridSearch/);
+  });
+
+  it('validates project ownership before report execution and inserts', () => {
+    const accessIdx = src.indexOf('assertPmsProjectAccess');
+    const executeIdx = src.indexOf('executePmsReport');
+    const insertIdx = src.indexOf('.insert(workflowRuns)');
+    expect(accessIdx).toBeGreaterThanOrEqual(0);
+    expect(executeIdx).toBeGreaterThan(accessIdx);
+    expect(insertIdx).toBeGreaterThan(accessIdx);
   });
 
   it('writes pms.report_created audit inside the transaction', () => {
@@ -112,6 +129,15 @@ describe('PMCF plan route — checklist + audit (REQ-PMS-003/010)', () => {
   it('enforces organizationId (IDOR)', () => {
     expect(src).toMatch(/Organization context required/);
   });
+
+  it('validates project ownership before PMCF plan execution and inserts', () => {
+    const accessIdx = src.indexOf('assertPmsProjectAccess');
+    const executeIdx = src.indexOf('executePmcfPlan');
+    const insertIdx = src.indexOf('.insert(workflowRuns)');
+    expect(accessIdx).toBeGreaterThanOrEqual(0);
+    expect(executeIdx).toBeGreaterThan(accessIdx);
+    expect(insertIdx).toBeGreaterThan(accessIdx);
+  });
 });
 
 describe('PMCF evaluation route — assessment + audit (REQ-PMS-011/010)', () => {
@@ -124,6 +150,15 @@ describe('PMCF evaluation route — assessment + audit (REQ-PMS-011/010)', () =>
   it('writes pmcf.evaluation_drafted audit inside the transaction', () => {
     expect(src).toMatch(/db\.transaction/);
     expect(src).toMatch(/action: 'pmcf.evaluation_drafted'/);
+  });
+
+  it('validates project ownership before PMCF evaluation execution and inserts', () => {
+    const accessIdx = src.indexOf('assertPmsProjectAccess');
+    const executeIdx = src.indexOf('executePmcfEvaluation');
+    const insertIdx = src.indexOf('.insert(workflowRuns)');
+    expect(accessIdx).toBeGreaterThanOrEqual(0);
+    expect(executeIdx).toBeGreaterThan(accessIdx);
+    expect(insertIdx).toBeGreaterThan(accessIdx);
   });
 });
 
@@ -141,6 +176,19 @@ describe('Compliance route — Article 83-86 check + audit (REQ-PMS-007/010)', (
   it('enforces org-scoped query (IDOR via RLS + double-check)', () => {
     expect(src).toMatch(/eq\(pmsDocuments\.orgId, organizationId\)/);
     expect(src).toMatch(/eq\(pmsInputs\.orgId, organizationId\)/);
+  });
+});
+
+describe('PMS project page — notFound control flow (IDOR)', () => {
+  const src = readRoute('../../../../(app)/pms/[projectId]/page.tsx');
+
+  it('does not call notFound inside the DB-unavailable catch block', () => {
+    const lookupStart = src.indexOf('const projectRow = await db');
+    const guardIdx = src.indexOf('if (!projectLookupFailed && !projectVisible)');
+    expect(lookupStart).toBeGreaterThanOrEqual(0);
+    expect(guardIdx).toBeGreaterThan(lookupStart);
+    expect(src.slice(lookupStart, guardIdx)).not.toMatch(/notFound\(\)/);
+    expect(src.slice(guardIdx)).toMatch(/notFound\(\)/);
   });
 });
 
