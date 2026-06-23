@@ -23,8 +23,8 @@
 
 ## 🎯 다음 세션 시작 지점
 
-### 보류 (post-merge 문서 동기화 — 미수행)
-- README/implementation-status "pending merge"→"merged" 갱신 + SPEC spec.md `status: completed` + Implementation Notes(#243-245). 차기 세션에서 `/moai sync` 권장.
+### ✅ post-merge 문서 동기화 완료 (`6852317`, main_direct)
+- spec.md status completed + §5 Implementation Notes + §6 Follow-up(#243-245) · README Wave 5 카탈로그 마킹 · CHANGELOG · implementation-status PMS 섹션 신규 · structure/product PMS 도메인 증분 · api-reference 엔드포인트 6종.
 
 ### 다음 tier1 착수
 1. **CHANGE-CONTROL #54**(Medium) — 해금 2(CAPA#68·LABELING#66).
