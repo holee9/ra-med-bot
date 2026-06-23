@@ -50,6 +50,8 @@ const auditStore: Array<{
   meta_json: Record<string, unknown>;
 }> = [];
 
+const dispatchMock = vi.fn();
+
 const writeAuditMock = vi.fn(
   async (params: {
     actor_id: string | null;
@@ -67,6 +69,7 @@ const writeAuditMock = vi.fn(
   },
 );
 vi.mock('@/lib/audit', () => ({ writeAudit: writeAuditMock }));
+vi.mock('@/lib/notifications/dispatcher', () => ({ dispatch: dispatchMock }));
 
 vi.mock('@/lib/db/client', () => {
   // The mock chain mirrors Drizzle's query builder shape:
@@ -199,6 +202,7 @@ beforeEach(() => {
   queueSeq = 0;
   auditStore.length = 0;
   consultEventsForReplay = [];
+  dispatchMock.mockReset();
   vi.clearAllMocks();
 });
 
@@ -456,6 +460,17 @@ describe('AC-05: daily digest', () => {
 
     const audit = auditStore.find((a) => a.action === 'knowledge_gap_digest_sent');
     expect(audit?.meta_json.status).toBe('sent');
+  });
+
+  it('dispatchDailyDigest writes failed audit when default dispatch skips every channel', async () => {
+    const { dispatchDailyDigest } = await import('@/lib/knowledge-gap/digest');
+    dispatchMock.mockResolvedValue({ slack: 'skipped', teams: 'skipped', email: 'skipped' });
+
+    await dispatchDailyDigest({ now: new Date('2026-06-23T08:00:00Z') });
+
+    const audit = auditStore.find((a) => a.action === 'knowledge_gap_digest_sent');
+    expect(audit?.meta_json.status).toBe('failed');
+    expect(audit?.meta_json.error).toContain('no notification channel delivered');
   });
 });
 

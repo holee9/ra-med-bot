@@ -52,11 +52,12 @@ const MAX_PAGE_SIZE = 50;
  * authenticated server-side (page).
  */
 export async function listQueueItems(filters: QueueFilters = {}): Promise<QueueItem[]> {
+  if (!filters.orgId) return [];
+
   const page = filters.page ?? 1;
   const pageSize = Math.min(filters.pageSize ?? DEFAULT_PAGE_SIZE, MAX_PAGE_SIZE);
 
-  const clauses: SQL[] = [];
-  if (filters.orgId) clauses.push(eq(unansweredQueue.orgId, filters.orgId));
+  const clauses: SQL[] = [eq(unansweredQueue.orgId, filters.orgId)];
   if (filters.status) clauses.push(eq(unansweredQueue.status, filters.status));
   if (filters.reason) clauses.push(eq(unansweredQueue.gapReason, filters.reason));
   if (filters.classification) {

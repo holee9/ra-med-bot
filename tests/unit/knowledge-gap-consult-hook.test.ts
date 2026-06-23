@@ -68,6 +68,11 @@ describe('consult.ts knowledge-gap hook — DDD PRESERVE characterization (T1.3)
     expect(SOURCE).toMatch(/knowledgeGapRequired:\s*true/);
   });
 
+  it('suppresses structured block persistence and expert-review side effects in replay mode', () => {
+    expect(SOURCE).toMatch(/if\s*\(!signal\?\.aborted\s*&&\s*!isReplay\)\s*\{/);
+    expect(SOURCE).toMatch(/if\s*\(requiresExpertReview\)\s*\{[\s\S]*?if\s*\(!isReplay\)\s*\{/);
+  });
+
   it('does NOT introduce a new StreamEvent type (SSE contract preserved)', () => {
     // The hook must not yield any new event type — it is a silent side effect.
     const streamingTypes = readFileSync(path.join(ROOT, 'types/streaming.ts'), 'utf8');

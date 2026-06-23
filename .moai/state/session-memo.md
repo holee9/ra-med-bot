@@ -2,6 +2,12 @@
 
 > 세션 연결용. 상세 작업 맥락은 auto-memory `project-state.md`(~/.claude/projects/.../memory/)가 1차 진실원 — 항상 로드됨. 본 파일은 빠른 시작 요약.
 
+## 현재 세션 (2026-06-23) — PR #237 knowledge-gap 리뷰 픽스
+
+- Duplicate-work prevention: GitHub Issue #18 확인 완료. `origin/main` fetch 완료. 현재 브랜치 `feat/issue-59-classify`, 열린 PR #237 (`feat(classify): SPEC-REGULA-CLASSIFY-001 (#59)`).
+- Review fix scope: PR #237에 포함된 knowledge-gap 공통 코드 P2 3건 수정 — missing org scope fail-closed, digest dispatch result 기반 audit, replay consult side-effect suppression.
+- Verification target: `tests/unit/knowledge-gap-queue-query.test.ts`, `tests/unit/knowledge-gap-consult-hook.test.ts`, `tests/integration/knowledge-gap.test.ts`, `tests/integration/knowledge-gap-replay-real.test.ts`, `tests/unit/knowledge-gap-phase23.test.ts`.
+
 ## 현재 세션 (2026-06-23) — PR #234 리뷰 픽스
 
 - Duplicate-work prevention: GitHub Issue #18 확인 완료. 동일 작업은 현재 브랜치 `feat/issue-35-knowledge-gap` / PR #234 / Issue #35 범위로 진행 중이며, 새 브랜치 생성 없음.

@@ -17,6 +17,7 @@
 import { writeAudit } from '@/lib/audit';
 import { db } from '@/lib/db/client';
 import { unansweredQueue } from '@/lib/db/schema';
+import type { DispatchResult } from '@/lib/notifications/dispatcher';
 import { logger } from '@/lib/observability/logger';
 import { and, count, desc, eq, gte, inArray } from 'drizzle-orm';
 
@@ -66,6 +67,18 @@ export interface DailyDigest {
 
 /** Injectable email sender — production resolves SendGrid via notifications/dispatcher. */
 export type DigestEmailSender = (digest: DailyDigest) => Promise<void>;
+
+function assertDispatchDelivered(result: DispatchResult): void {
+  const statuses = [result.slack, result.teams, result.email];
+  if (statuses.includes('sent')) return;
+
+  const errorChannels = Object.entries(result)
+    .filter(([, status]) => status === 'error')
+    .map(([channel]) => channel);
+  const errorSuffix =
+    errorChannels.length > 0 ? `; failed channels: ${errorChannels.join(', ')}` : '';
+  throw new Error(`no notification channel delivered knowledge gap digest${errorSuffix}`);
+}
 
 /**
  * Aggregate the last 24h of unresolved knowledge gaps into a structured digest
@@ -206,12 +219,13 @@ export async function dispatchDailyDigest(
       // Default dispatch path: reuse the notifications dispatcher's email
       // channel so SENDGRID_API_KEY + recipient resolution live in one place.
       const { dispatch } = await import('@/lib/notifications/dispatcher');
-      await dispatch({
+      const result = await dispatch({
         eventType: 'knowledge_gap.detected',
         title: `Regula Knowledge Gap Digest — ${digest.totalUnresolved} unresolved`,
         body: renderDigestText(digest),
         actionUrl: `${process.env.NEXT_PUBLIC_APP_URL ?? 'https://app.regula.ai'}/knowledge-gap`,
       });
+      assertDispatchDelivered(result);
     }
 
     await writeAudit({

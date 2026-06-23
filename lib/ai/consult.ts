@@ -50,10 +50,11 @@ function sha256Hex(input: string): string {
  *
  * `mode: 'replay'` (REQ-KNOWLEDGE-GAP-014, Issue #35 security fix C1):
  *   Used by knowledge-gap replay to re-run a redacted question WITHOUT
- *   persisting a phantom message row and WITHOUT re-capturing the (already
- *   known) gap. Stage 8 `persistMessage` and Stage 9 `captureKnowledgeGap`
- *   are both skipped. The pipeline still produces the real answer + sources
- *   + confidence so the caller can re-evaluate the 4 gap conditions.
+ *   running normal consult side effects against sentinel ids. Structured block
+ *   persistence, expert-review enqueue/audit/update, Stage 8 `persistMessage`,
+ *   and Stage 9 `captureKnowledgeGap` are skipped. The pipeline still produces
+ *   the real answer + sources + confidence so the caller can re-evaluate the
+ *   4 gap conditions.
  *
  *   Rationale: replay runs under a synthetic system session with a
  *   non-uuid messageId and a sentinel conversationId. Allowing persist or
@@ -67,8 +68,8 @@ function sha256Hex(input: string): string {
  */
 export type ConsultOptions = {
   /**
-   * `'replay'` skips Stage 8 persist and Stage 9 gap-capture. Any other
-   * value (or undefined) runs the full pipeline with all side-effects.
+   * `'replay'` skips DB-writing side effects that require durable chat ids.
+   * Any other value (or undefined) runs the full pipeline with all side-effects.
    */
   mode?: 'replay';
 };
@@ -200,24 +201,26 @@ export async function* consult(
   if (signal?.aborted) return;
 
   // Audit: LLM call — before starting consult (REQ-CHAT-053).
-  await writeAudit({
-    actor_id: session.user?.id ?? null,
-    action: 'llm.call',
-    resource_type: 'message',
-    resource_id: messageId,
-    conversation_id: conversationId,
-    meta_json: {
-      model:
-        process.env.OLLAMA_MODEL ??
-        process.env.OPENAI_MODEL ??
-        process.env.ANTHROPIC_MODEL ??
-        'unknown',
-      question_hash: sha256Hex(input.question),
-      locale: input.locale,
-      source_filter: input.sourceFilter,
-      project_id: input.projectId ?? null,
-    },
-  });
+  if (!isReplay) {
+    await writeAudit({
+      actor_id: session.user?.id ?? null,
+      action: 'llm.call',
+      resource_type: 'message',
+      resource_id: messageId,
+      conversation_id: conversationId,
+      meta_json: {
+        model:
+          process.env.OLLAMA_MODEL ??
+          process.env.OPENAI_MODEL ??
+          process.env.ANTHROPIC_MODEL ??
+          'unknown',
+        question_hash: sha256Hex(input.question),
+        locale: input.locale,
+        source_filter: input.sourceFilter,
+        project_id: input.projectId ?? null,
+      },
+    });
+  }
 
   // @MX:NOTE Cast bridges the v3 provider → v1-typed `ai` SDK. Runtime is fine.
   // ---- Phase B: Stream prose_delta ----
@@ -288,23 +291,25 @@ export async function* consult(
         .filter((c) => citedIndices.has(c.citeIndex));
 
   // Audit: source access per unique sourceId in cited chunks (REQ-CHAT-054).
-  const auditedSources = new Set<string>();
-  for (const chunk of citedChunks) {
-    if (!auditedSources.has(chunk.sourceId)) {
-      auditedSources.add(chunk.sourceId);
-      const sameSourceChunks = citedChunks.filter((c) => c.sourceId === chunk.sourceId);
-      await writeAudit({
-        actor_id: session.user?.id ?? null,
-        action: 'source.access',
-        resource_type: 'source',
-        resource_id: chunk.sourceId,
-        conversation_id: conversationId,
-        meta_json: {
-          cite_indices: sameSourceChunks.map((c) => c.citeIndex),
-          org_label: chunk.orgLabel,
-          section_anchors: sameSourceChunks.map((c) => c.anchor),
-        },
-      });
+  if (!isReplay) {
+    const auditedSources = new Set<string>();
+    for (const chunk of citedChunks) {
+      if (!auditedSources.has(chunk.sourceId)) {
+        auditedSources.add(chunk.sourceId);
+        const sameSourceChunks = citedChunks.filter((c) => c.sourceId === chunk.sourceId);
+        await writeAudit({
+          actor_id: session.user?.id ?? null,
+          action: 'source.access',
+          resource_type: 'source',
+          resource_id: chunk.sourceId,
+          conversation_id: conversationId,
+          meta_json: {
+            cite_indices: sameSourceChunks.map((c) => c.citeIndex),
+            org_label: chunk.orgLabel,
+            section_anchors: sameSourceChunks.map((c) => c.anchor),
+          },
+        });
+      }
     }
   }
 
@@ -338,7 +343,7 @@ export async function* consult(
   const prose_done = true; // set after fullProse is assembled and sources emitted
   if (!prose_done) throw new OrderViolationError('structured');
 
-  if (!signal?.aborted) {
+  if (!signal?.aborted && !isReplay) {
     const topSourceMeta = citedChunks.slice(0, 3).map((c) => ({
       title: c.title,
       orgLabel: c.orgLabel,
@@ -411,42 +416,47 @@ export async function* consult(
 
     yield* emit({ type: 'expert_review_required', reason });
 
-    await writeAudit({
-      actor_id: session.user?.id ?? null,
-      action: 'expert_review.flag',
-      resource_type: 'message',
-      resource_id: messageId,
-      conversation_id: conversationId,
-      meta_json: {
+    if (!isReplay) {
+      await writeAudit({
+        actor_id: session.user?.id ?? null,
+        action: 'expert_review.flag',
+        resource_type: 'message',
+        resource_id: messageId,
+        conversation_id: conversationId,
+        meta_json: {
+          reason,
+          confidence_score: confidenceScore,
+          trigger: 'auto',
+        },
+      });
+
+      // REQ-ENTERPRISE-009: enqueue for reviewer assignment (idempotent)
+      await enqueueExpertReview({
+        conversationId,
+        messageId,
         reason,
-        confidence_score: confidenceScore,
-        trigger: 'auto',
-      },
-    });
+        requestedBy: '00000000-0000-0000-0000-000000000001', // SYSTEM_USER_UUID
+      });
 
-    // REQ-ENTERPRISE-009: enqueue for reviewer assignment (idempotent)
-    await enqueueExpertReview({
-      conversationId,
-      messageId,
-      reason,
-      requestedBy: '00000000-0000-0000-0000-000000000001', // SYSTEM_USER_UUID
-    });
+      // REQ-ENTERPRISE-010: mark message as requiring expert review
+      await db
+        .update(messages)
+        .set({ expertReviewRequired: true })
+        .where(eq(messages.id, messageId));
 
-    // REQ-ENTERPRISE-010: mark message as requiring expert review
-    await db.update(messages).set({ expertReviewRequired: true }).where(eq(messages.id, messageId));
-
-    // REQ-ENTERPRISE-010: audit the auto-flag event
-    await writeAudit({
-      actor_id: '00000000-0000-0000-0000-000000000001',
-      action: 'consult.expert_review_auto_flag',
-      resource_type: 'message',
-      resource_id: messageId,
-      conversation_id: conversationId,
-      meta_json: {
-        reason,
-        confidence_score: confidenceScore,
-      },
-    });
+      // REQ-ENTERPRISE-010: audit the auto-flag event
+      await writeAudit({
+        actor_id: '00000000-0000-0000-0000-000000000001',
+        action: 'consult.expert_review_auto_flag',
+        resource_type: 'message',
+        resource_id: messageId,
+        conversation_id: conversationId,
+        meta_json: {
+          reason,
+          confidence_score: confidenceScore,
+        },
+      });
+    }
   }
 
   // ---- Knowledge gap detection (SPEC-REGULA-KNOWLEDGE-GAP-001, Issue #35) ----
