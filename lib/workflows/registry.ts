@@ -71,4 +71,26 @@ export const WORKFLOW_REGISTRY: WorkflowEntry[] = [
     stepCount: 4,
     href: '/workflows/esubmit',
   },
+  // SPEC-REGULA-PMS-001 (Issue #53): EU MDR Article 83-86 PMS/PMCF workflows.
+  {
+    id: 'pms-report',
+    title: 'PMS Report',
+    description: 'EU MDR Article 83-86 PMS report (MDCG 2022-21) with SUSAR/trend templates',
+    stepCount: 4,
+    href: '/workflows/pms-report',
+  },
+  {
+    id: 'pmcf-plan',
+    title: 'PMCF Plan Builder',
+    description: 'EU MDR Annex XIV Part B PMCF plan with checklist + AI drafting support',
+    stepCount: 4,
+    href: '/workflows/pmcf-plan',
+  },
+  {
+    id: 'pmcf-evaluation',
+    title: 'PMCF Evaluation',
+    description: 'PMCF plan vs collected clinical data evaluation report draft',
+    stepCount: 3,
+    href: '/workflows/pmcf-evaluation',
+  },
 ];

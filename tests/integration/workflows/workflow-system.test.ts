@@ -18,6 +18,10 @@ describe('Workflow System — cross-workflow validation', () => {
       samd: 5,
       dhf: 4,
       esubmit: 4,
+      // SPEC-REGULA-PMS-001: 3 PMS workflows (no steps module — section-based).
+      'pms-report': 4,
+      'pmcf-plan': 4,
+      'pmcf-evaluation': 3,
     };
 
     for (const entry of WORKFLOW_REGISTRY) {

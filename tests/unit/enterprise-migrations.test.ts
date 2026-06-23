@@ -300,7 +300,7 @@ describe('lib/db/schema.ts Phase 5 additions', () => {
     const values = extractAuditActionEnumValues(src);
     const typeValues = extractAuditActionTypeValues(auditSrc);
     expect(values).toEqual(typeValues);
-    expect(values).toHaveLength(118); // +2 signature.* (ESIG-001) +3 audit.* (AUDITOR-VIEW-001) +2 personal_bookmark.* (PERSONAL-LIB-001) +3 deadline.* (CALENDAR-001) +3 corpus.* (DELTA-SYNC-001) +4 knowledge_gap_* (KNOWLEDGE-GAP-001) +1 classification_exported (CLASSIFY-001) +4 traceability.* (TRACEABILITY-001)
+    expect(values).toHaveLength(127); // +2 signature.* (ESIG-001) +3 audit.* (AUDITOR-VIEW-001) +2 personal_bookmark.* (PERSONAL-LIB-001) +3 deadline.* (CALENDAR-001) +3 corpus.* (DELTA-SYNC-001) +4 knowledge_gap_* (KNOWLEDGE-GAP-001) +1 classification_exported (CLASSIFY-001) +4 traceability.* (TRACEABILITY-001) +7 pms.*/pmcf.* (PMS-001) +2 pms.report_export_denied/pms.report_closed (PMS-001 AC-07)
   });
 
   it.each(REQUIRED_RECOVERY_TABLES)(
@@ -349,7 +349,7 @@ describe('lib/audit.ts Phase 5 AuditAction type additions', () => {
         'export.confluence',
       ]),
     );
-    expect(values).toHaveLength(118); // +2 signature.* (ESIG-001) +3 audit.* (AUDITOR-VIEW-001) +2 personal_bookmark.* (PERSONAL-LIB-001) +3 deadline.* (CALENDAR-001) +3 corpus.* (DELTA-SYNC-001) +4 knowledge_gap_* (KNOWLEDGE-GAP-001) +1 classification_exported (CLASSIFY-001) +4 traceability.* (TRACEABILITY-001)
+    expect(values).toHaveLength(127); // +2 signature.* (ESIG-001) +3 audit.* (AUDITOR-VIEW-001) +2 personal_bookmark.* (PERSONAL-LIB-001) +3 deadline.* (CALENDAR-001) +3 corpus.* (DELTA-SYNC-001) +4 knowledge_gap_* (KNOWLEDGE-GAP-001) +1 classification_exported (CLASSIFY-001) +4 traceability.* (TRACEABILITY-001) +7 pms.*/pmcf.* (PMS-001) +2 pms.report_export_denied/pms.report_closed (PMS-001 AC-07)
   });
 
   it.each(REQUIRED_RECOVERY_AUDIT_ACTIONS)(
@@ -760,5 +760,127 @@ describe('SPEC-REGULA-TRACEABILITY-001 (Issue #47) — migration 0068', () => {
     const src = readText('lib/auth/permissions.ts');
     expect(src).toMatch(/'traceability.manage'/);
     expect(src).toMatch(/'traceability.manage':\s*\{[^}]*minRole:\s*'ra-lead'/);
+  });
+});
+
+// SPEC-REGULA-PMS-001 (Issue #53) — EU MDR Article 83-86 PMS/PMCF workflows.
+// Adds 3 workflow_type values (pms_report, pmcf_plan, pmcf_evaluation), 7
+// audit_action values, and 2 tables (pms_inputs, pms_documents) with org RLS.
+describe('SPEC-REGULA-PMS-001 (Issue #53) — migration 0069', () => {
+  const PMS_AUDIT_ACTIONS = [
+    'pms.report_created',
+    'pms.compliance_checked',
+    'pms.report_exported',
+    'pms.input_uploaded',
+    'pmcf.plan_created',
+    'pmcf.evaluation_drafted',
+    'pms.cer_linked',
+  ] as const;
+
+  it('migration file 0069_pms.sql exists', () => {
+    expect(fileExists('migrations/0069_pms.sql')).toBe(true);
+  });
+
+  it('adds the 3 PMS workflow_type values', () => {
+    const sql = readText('migrations/0069_pms.sql');
+    expect(sql).toMatch(/ALTER TYPE workflow_type ADD VALUE IF NOT EXISTS 'pms_report'/);
+    expect(sql).toMatch(/ALTER TYPE workflow_type ADD VALUE IF NOT EXISTS 'pmcf_plan'/);
+    expect(sql).toMatch(/ALTER TYPE workflow_type ADD VALUE IF NOT EXISTS 'pmcf_evaluation'/);
+  });
+
+  it.each(PMS_AUDIT_ACTIONS)('adds ALTER TYPE audit_action ADD VALUE for: %s', (action) => {
+    const sql = readText('migrations/0069_pms.sql');
+    const escaped = action.replace(/\./g, '\\.');
+    expect(sql).toMatch(
+      new RegExp(`ALTER TYPE audit_action ADD VALUE\\s+IF NOT EXISTS\\s+'${escaped}'`),
+    );
+  });
+
+  it('has exactly 7 ALTER TYPE audit_action statements', () => {
+    const sql = readText('migrations/0069_pms.sql');
+    const matches = sql.match(/ALTER TYPE audit_action ADD VALUE/g) ?? [];
+    expect(matches.length).toBe(PMS_AUDIT_ACTIONS.length);
+  });
+
+  it('creates pms_inputs table with complaint/vigilance columns + org RLS', () => {
+    const sql = readText('migrations/0069_pms.sql');
+    expect(sql).toMatch(/CREATE TABLE pms_inputs/);
+    expect(sql).toMatch(/org_id\s+UUID NOT NULL REFERENCES organizations/);
+    expect(sql).toMatch(/project_id\s+UUID NOT NULL REFERENCES projects/);
+    expect(sql).toMatch(/source\s+TEXT NOT NULL/);
+    expect(sql).toMatch(/severity\s+TEXT/);
+    expect(sql).toMatch(/susar_flag\s+BOOLEAN/);
+    expect(sql).toMatch(/trend_category\s+TEXT/);
+    expect(sql).toMatch(/uploaded_by\s+UUID REFERENCES users/);
+  });
+
+  it('creates pms_documents table with CER linkage + compliance/review status', () => {
+    const sql = readText('migrations/0069_pms.sql');
+    expect(sql).toMatch(/CREATE TABLE pms_documents/);
+    expect(sql).toMatch(/org_id\s+UUID NOT NULL REFERENCES organizations/);
+    expect(sql).toMatch(/project_id\s+UUID NOT NULL REFERENCES projects/);
+    expect(sql).toMatch(/workflow_type\s+workflow_type NOT NULL/);
+    expect(sql).toMatch(/cer_ref\s+UUID/);
+    expect(sql).toMatch(/compliance_status\s+TEXT/);
+    expect(sql).toMatch(/review_status\s+TEXT/);
+    expect(sql).toMatch(/created_by\s+UUID NOT NULL REFERENCES users/);
+  });
+
+  it('enables RLS with org isolation on both PMS tables', () => {
+    const sql = readText('migrations/0069_pms.sql');
+    expect(sql).toMatch(/ALTER TABLE pms_inputs ENABLE ROW LEVEL SECURITY/);
+    expect(sql).toMatch(/ALTER TABLE pms_documents ENABLE ROW LEVEL SECURITY/);
+    expect(sql).toMatch(/current_setting\('app.current_org_id'/g);
+    const inputPolicies = sql.match(/CREATE POLICY "tenant_isolation_pms_inputs/g) ?? [];
+    expect(inputPolicies.length).toBe(1);
+    const docPolicies = sql.match(/CREATE POLICY "tenant_isolation_pms_documents/g) ?? [];
+    expect(docPolicies.length).toBe(1);
+  });
+
+  it('PMS RLS policies include WITH CHECK (INSERT/UPDATE guard)', () => {
+    // RLS USING alone protects SELECT/DELETE; WITH CHECK protects INSERT/UPDATE.
+    // Without WITH CHECK, a cross-org INSERT bypasses tenant isolation.
+    const sql = readText('migrations/0069_pms.sql');
+    const inputPolicyBlock = sql.match(/CREATE POLICY "tenant_isolation_pms_inputs"[\s\S]*?;/)?.[0];
+    const docPolicyBlock = sql.match(
+      /CREATE POLICY "tenant_isolation_pms_documents"[\s\S]*?;/,
+    )?.[0];
+    expect(inputPolicyBlock).toBeTruthy();
+    expect(docPolicyBlock).toBeTruthy();
+    expect(inputPolicyBlock).toMatch(/WITH CHECK/);
+    expect(docPolicyBlock).toMatch(/WITH CHECK/);
+  });
+
+  it('creates indexes for PMS tables (project, org, unique)', () => {
+    const sql = readText('migrations/0069_pms.sql');
+    expect(sql).toMatch(/idx_pms_inputs_project/);
+    expect(sql).toMatch(/idx_pms_documents_project/);
+  });
+
+  it('schema.ts workflowTypeEnum includes the 3 PMS values', () => {
+    const src = readText('lib/db/schema.ts');
+    expect(src).toContain("'pms_report'");
+    expect(src).toContain("'pmcf_plan'");
+    expect(src).toContain("'pmcf_evaluation'");
+  });
+
+  it('schema.ts auditActionEnum includes the 7 PMS values', () => {
+    const src = readText('lib/db/schema.ts');
+    for (const v of PMS_AUDIT_ACTIONS) {
+      expect(src).toContain(`'${v}'`);
+    }
+  });
+
+  it('schema.ts defines pmsInputs and pmsDocuments tables', () => {
+    const src = readText('lib/db/schema.ts');
+    expect(src).toMatch(/export const pmsInputs\s*=\s*pgTable/);
+    expect(src).toMatch(/export const pmsDocuments\s*=\s*pgTable/);
+  });
+
+  it('AuditAction type in audit.ts includes the 7 PMS values', () => {
+    const src = readText('lib/audit.ts');
+    for (const v of PMS_AUDIT_ACTIONS) {
+      expect(src).toContain(`'${v}'`);
+    }
   });
 });
