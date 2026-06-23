@@ -53,8 +53,8 @@ const VALID_ROLES = ['admin', 'qa-lead', 'ra-lead', 'ra-member', 'viewer', 'audi
 const VALID_SCOPES = ['org', 'project', 'user', 'none'] as const;
 
 describe('lib/auth/permissions.ts (REQ-ENTERPRISE-020) — PERMISSIONS matrix', () => {
-  it('PERMISSIONS contains exactly 43 entries', () => {
-    expect(Object.keys(PERMISSIONS)).toHaveLength(43); // +personal.view (PERSONAL-LIB-001) +deadline.view/manage (CALENDAR-001) +knowledgegap.classify/view/replay (KNOWLEDGE-GAP-001) +classify.generate/view (CLASSIFY-001)
+  it('PERMISSIONS contains exactly 44 entries', () => {
+    expect(Object.keys(PERMISSIONS)).toHaveLength(44); // +personal.view (PERSONAL-LIB-001) +deadline.view/manage (CALENDAR-001) +knowledgegap.classify/view/replay (KNOWLEDGE-GAP-001) +classify.generate/view (CLASSIFY-001) +traceability.manage (TRACEABILITY-001)
   });
 
   it.each(EXPECTED_ACTIONS)('PERMISSIONS contains action: %s', (action) => {
