@@ -196,6 +196,8 @@ export const auditActionEnum = pgEnum('audit_action', [
   'standards_compliance_updated',
   // SPEC-REGULA-CLASSIFY-001 — added via 0051_classification_audit_actions.sql:
   'device_classified',
+  // SPEC-REGULA-CLASSIFY-001 — added via 0067_classify.sql (report export, REQ-CLASSIFY-017):
+  'classification_exported',
   // SPEC-REGULA-DIGEST-001 — added via 0053_digest_audit_actions.sql:
   'digest_generated',
   'digest_emailed',
@@ -283,6 +285,8 @@ export const gapClassificationEnum = pgEnum('gap_classification', [
 // REQ-CER-012: cer added via 0035_cer_workflow_type.sql.
 // REQ-PCCP-025: 'pccp' added via 0038_pccp_workflow_type.sql (SPEC-REGULA-PCCP-001).
 // SPEC-REGULA-RISK-001: 'risk' added via 0057_risk_workflow_type.sql.
+// SPEC-REGULA-CLASSIFY-001: 'classification' added via 0051_classification_audit_actions.sql;
+// 'classify' added via 0067_classify.sql (tasks.md canonical value, mirrors 'risk' naming).
 export const workflowTypeEnum = pgEnum('workflow_type', [
   'submission_drafter',
   'audit_response',
@@ -292,6 +296,8 @@ export const workflowTypeEnum = pgEnum('workflow_type', [
   'pccp',
   'vigilance',
   'risk',
+  'classification',
+  'classify',
 ]);
 
 // REQ-WF-049: workflow_status pgEnum — lifecycle states for workflow_runs.
@@ -1257,36 +1263,51 @@ export const samdAssessments = pgTable('samd_assessments', {
 });
 
 // SPEC-REGULA-CLASSIFY-001 — device classification results.
-// Migration: 0050_device_classifications.sql
-export const deviceClassifications = pgTable('device_classifications', {
-  id: uuid('id').defaultRandom().primaryKey(),
-  orgId: uuid('org_id')
-    .notNull()
-    .references(() => organizations.id, { onDelete: 'cascade' }),
-  userId: uuid('user_id')
-    .notNull()
-    .references(() => users.id),
-  deviceDescription: text('device_description').notNull(),
-  // deviceType CHECK: 'active'|'non_active'|'software_only'|'ivd'|'implantable'
-  deviceType: text('device_type').notNull(),
-  // contactType CHECK: 'no_contact'|'external'|'internal'|'implant'
-  contactType: text('contact_type').notNull(),
-  hasSoftware: boolean('has_software').notNull().default(false),
-  hasAiMl: boolean('has_ai_ml').notNull().default(false),
-  isSterile: boolean('is_sterile').notNull().default(false),
-  fdaClass: text('fda_class'),
-  fdaPathway: text('fda_pathway'),
-  fdaProductCode: text('fda_product_code'),
-  fdaRegulationNumber: text('fda_regulation_number'),
-  euClass: text('eu_class'),
-  euPathway: text('eu_pathway'),
-  euRule: text('eu_rule'),
-  mfdsClass: text('mfds_class'),
-  nmpaClass: text('nmpa_class'),
-  pmdaClass: text('pmda_class'),
-  classificationRationale: jsonb('classification_rationale').notNull().default({}),
-  createdAt: timestamp('created_at', { withTimezone: true, mode: 'date' }).notNull().defaultNow(),
-});
+// Migration: 0050_device_classifications.sql (flat columns) +
+//            0067_classify.sql (workflow_run_id FK, input/result JSONB, status, RLS).
+export const deviceClassifications = pgTable(
+  'device_classifications',
+  {
+    id: uuid('id').defaultRandom().primaryKey(),
+    orgId: uuid('org_id')
+      .notNull()
+      .references(() => organizations.id, { onDelete: 'cascade' }),
+    userId: uuid('user_id')
+      .notNull()
+      .references(() => users.id),
+    // 0067: optional link to the workflow_runs row for this classification.
+    workflowRunId: uuid('workflow_run_id').references(() => workflowRuns.id, {
+      onDelete: 'set null',
+    }),
+    deviceDescription: text('device_description').notNull(),
+    // deviceType CHECK: 'active'|'non_active'|'software_only'|'ivd'|'implantable'
+    deviceType: text('device_type').notNull(),
+    // contactType CHECK: 'no_contact'|'external'|'internal'|'implant'
+    contactType: text('contact_type').notNull(),
+    hasSoftware: boolean('has_software').notNull().default(false),
+    hasAiMl: boolean('has_ai_ml').notNull().default(false),
+    isSterile: boolean('is_sterile').notNull().default(false),
+    fdaClass: text('fda_class'),
+    fdaPathway: text('fda_pathway'),
+    fdaProductCode: text('fda_product_code'),
+    fdaRegulationNumber: text('fda_regulation_number'),
+    euClass: text('eu_class'),
+    euPathway: text('eu_pathway'),
+    euRule: text('eu_rule'),
+    mfdsClass: text('mfds_class'),
+    nmpaClass: text('nmpa_class'),
+    pmdaClass: text('pmda_class'),
+    classificationRationale: jsonb('classification_rationale').notNull().default({}),
+    // 0067: full wizard input + structured 5-jurisdiction result (citations, nextSteps).
+    input: jsonb('input').notNull().default({}),
+    result: jsonb('result'),
+    status: text('status').notNull().default('completed'),
+    createdAt: timestamp('created_at', { withTimezone: true, mode: 'date' }).notNull().defaultNow(),
+  },
+  (t) => ({
+    runIdx: index('idx_device_classifications_run').on(t.workflowRunId),
+  }),
+);
 
 // ---------------------------------------------------------------------------
 // SPEC-REGULA-DHF-001 — Design History File (DHF) tables.

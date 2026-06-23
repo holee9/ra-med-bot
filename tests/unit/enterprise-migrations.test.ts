@@ -300,7 +300,7 @@ describe('lib/db/schema.ts Phase 5 additions', () => {
     const values = extractAuditActionEnumValues(src);
     const typeValues = extractAuditActionTypeValues(auditSrc);
     expect(values).toEqual(typeValues);
-    expect(values).toHaveLength(113); // +2 signature.* (ESIG-001) +3 audit.* (AUDITOR-VIEW-001) +2 personal_bookmark.* (PERSONAL-LIB-001) +3 deadline.* (CALENDAR-001) +3 corpus.* (DELTA-SYNC-001) +4 knowledge_gap_* (KNOWLEDGE-GAP-001)
+    expect(values).toHaveLength(114); // +2 signature.* (ESIG-001) +3 audit.* (AUDITOR-VIEW-001) +2 personal_bookmark.* (PERSONAL-LIB-001) +3 deadline.* (CALENDAR-001) +3 corpus.* (DELTA-SYNC-001) +4 knowledge_gap_* (KNOWLEDGE-GAP-001) +1 classification_exported (CLASSIFY-001)
   });
 
   it.each(REQUIRED_RECOVERY_TABLES)(
@@ -349,7 +349,7 @@ describe('lib/audit.ts Phase 5 AuditAction type additions', () => {
         'export.confluence',
       ]),
     );
-    expect(values).toHaveLength(113); // +2 signature.* (ESIG-001) +3 audit.* (AUDITOR-VIEW-001) +2 personal_bookmark.* (PERSONAL-LIB-001) +3 deadline.* (CALENDAR-001) +3 corpus.* (DELTA-SYNC-001) +4 knowledge_gap_* (KNOWLEDGE-GAP-001)
+    expect(values).toHaveLength(114); // +2 signature.* (ESIG-001) +3 audit.* (AUDITOR-VIEW-001) +2 personal_bookmark.* (PERSONAL-LIB-001) +3 deadline.* (CALENDAR-001) +3 corpus.* (DELTA-SYNC-001) +4 knowledge_gap_* (KNOWLEDGE-GAP-001) +1 classification_exported (CLASSIFY-001)
   });
 
   it.each(REQUIRED_RECOVERY_AUDIT_ACTIONS)(
@@ -550,5 +550,69 @@ describe('SPEC-REGULA-KNOWLEDGE-GAP-001 (Issue #35) — migration 0066', () => {
   it('schema.ts adds knowledgeGapRequired to messages table', () => {
     const src = readText('lib/db/schema.ts');
     expect(src).toMatch(/knowledgeGapRequired:\s*boolean\('knowledge_gap_required'\)/);
+  });
+});
+
+// ---------------------------------------------------------------------------
+// SPEC-REGULA-CLASSIFY-001 (Issue #59) — MVP backend classification wizard
+// (migration 0067). Augments the existing device_classifications table from
+// 0050 with workflow_run_id FK, input/result JSONB, status, and RLS org
+// isolation; adds the 'classify' workflow_type and 'classification_exported'
+// audit_action.
+// ---------------------------------------------------------------------------
+describe('SPEC-REGULA-CLASSIFY-001 (Issue #59) — migration 0067', () => {
+  it('migration file 0067_classify.sql exists', () => {
+    expect(fileExists('migrations/0067_classify.sql')).toBe(true);
+  });
+
+  it("adds 'classify' to workflow_type", () => {
+    const sql = readText('migrations/0067_classify.sql');
+    expect(sql).toMatch(/ALTER TYPE workflow_type ADD VALUE IF NOT EXISTS 'classify'/);
+  });
+
+  it("adds 'classification_exported' to audit_action", () => {
+    const sql = readText('migrations/0067_classify.sql');
+    expect(sql).toMatch(
+      /ALTER TYPE audit_action ADD VALUE IF NOT EXISTS 'classification_exported'/,
+    );
+  });
+
+  it('augments device_classifications with workflow_run_id, input, result, status', () => {
+    const sql = readText('migrations/0067_classify.sql');
+    expect(sql).toMatch(/ALTER TABLE device_classifications/i);
+    expect(sql).toMatch(/workflow_run_id/i);
+    expect(sql).toMatch(/input JSONB/i);
+    expect(sql).toMatch(/result JSONB/i);
+    expect(sql).toMatch(/status TEXT/i);
+  });
+
+  it('enables RLS with org isolation policy on device_classifications', () => {
+    const sql = readText('migrations/0067_classify.sql');
+    expect(sql).toMatch(/ALTER TABLE device_classifications ENABLE ROW LEVEL SECURITY/i);
+    expect(sql).toMatch(/CREATE POLICY[\s\S]*device_classifications/i);
+    expect(sql).toMatch(/current_setting\('app.current_org_id'/i);
+  });
+
+  it("workflowTypeEnum in schema.ts includes 'classify'", () => {
+    const src = readText('lib/db/schema.ts');
+    expect(src).toMatch(/export const workflowTypeEnum[\s\S]*'classify'/);
+  });
+
+  it("auditActionEnum in schema.ts includes 'classification_exported'", () => {
+    const src = readText('lib/db/schema.ts');
+    expect(src).toContain("'classification_exported'");
+  });
+
+  it("AuditAction type in audit.ts includes 'classification_exported'", () => {
+    const src = readText('lib/audit.ts');
+    expect(src).toContain("'classification_exported'");
+  });
+
+  it('schema.ts deviceClassifications defines workflowRunId, input, result, status columns', () => {
+    const src = readText('lib/db/schema.ts');
+    expect(src).toMatch(/workflowRunId:\s*uuid\('workflow_run_id'\)/);
+    expect(src).toMatch(/input:\s*jsonb\('input'\)/);
+    expect(src).toMatch(/result:\s*jsonb\('result'\)/);
+    expect(src).toMatch(/status:\s*text\('status'\)/);
   });
 });
