@@ -83,7 +83,7 @@ and closed-loop replay verification. Awaiting security review and merge.
 | Traceability Integration | COMPLETE | BFF routes, UI, RBAC all implemented |
 | Webhook Integration | COMPLETE | `/api/webhooks/audit`, `ifu`, `knowledge-sync` hardened |
 | hybrid-ra-saas typed adapter | COMPLETE | `createHybridRaClient()` covers 7 upstream endpoint contracts |
-| hybrid-ra-saas 운영 배포 상태 | ⚠️ 확인 필요 | 코드 구현 완료, 백엔드(Azure Container Apps api-prod) 배포됨. **Vercel 프로덕션 환경변수 3개(`HYBRID_RA_API_BASE_URL`, `HYBRID_RA_TENANT_ID`, `HYBRID_RA_API_TOKEN`) 실제 등록 미확정** — 코드가 optional+fallback이어 미등록 시 silent degradation(에러 없이 hybrid 비활성). Vercel 대시보드(Settings → Environment Variables) 또는 `vercel env ls` 확인 필요. |
+| hybrid-ra-saas 운영 배포 상태 | ✅ 정상 | 코드 구현 완료 · 백엔드 Azure Container Apps 배포 · 실제 프로덕션(T3610 로컬+CF Tunnel) `.env.local`에 `HYBRID_RA_*` 3개 SET → hybrid 활성. GitHub Actions Vercel/CF 배포는 Secrets 미설정으로 스킵 중(별개 이슈). 남은: #202 E2E. |
 | ISO 14971 Risk Management | COMPLETE | `/workflows/risk`, `/api/ra/risk/*`, `lib/risk/*`, risk DB tables, RA-lead approval |
 | 21 CFR Part 11 Electronic Signature | COMPLETE | `/api/ra/messages/[messageId]/signature`, `answer_signatures`, answer lock, §11.50/§11.70 linkage |
 | External Auditor Read-Only View | COMPLETE | `auditor` role, central write-block, `/api/ra/audit-log`, `/api/ra/audit-package` ZIP + SHA-256 manifest |

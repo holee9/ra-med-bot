@@ -39,9 +39,9 @@ Do **not** commit real secrets. Use Vercel project settings or your secret manag
 | `LANGFUSE_PUBLIC_KEY` | Langfuse public key | Optional | Optional | Required | No |
 | `LANGFUSE_BASEURL` | Langfuse API base URL | `https://cloud.langfuse.com` | Same | Same | No |
 | `ANTHROPIC_API_KEY_EVAL` | Separate Anthropic key for eval harness | Test key | Test key | Eval pipeline key | Yes |
-| `HYBRID_RA_API_BASE_URL` | Base URL for outbound hybrid-ra-saas API calls from `createHybridRaClient()` | Optional local hybrid runtime URL | Preview hybrid API URL | Production hybrid API URL — **등록 상태 미확정** (silent degradation 의심, Vercel 대시보드 확인 필요) | No |
-| `HYBRID_RA_API_TOKEN` | Bearer token for outbound hybrid-ra-saas API calls | Optional local token | Preview integration token | Production integration token — **등록 상태 미확정** (silent degradation 의심, Vercel 대시보드 확인 필요) | Yes |
-| `HYBRID_RA_TENANT_ID` | Tenant scope sent as `X-Tenant-Id` to hybrid-ra-saas | Optional local tenant | Preview tenant ID | Production tenant ID — **등록 상태 미확정** (silent degradation 의심, Vercel 대시보드 확인 필요) | Yes |
+| `HYBRID_RA_API_BASE_URL` | Base URL for outbound hybrid-ra-saas API calls from `createHybridRaClient()` | Optional local hybrid runtime URL | Preview hybrid API URL | Production hybrid API URL — T3610 로컬(.env.local)에 SET됨(실제 프로덕션). GitHub Actions Vercel 배포는 현재 Secrets 미설정으로 스킵. | No |
+| `HYBRID_RA_API_TOKEN` | Bearer token for outbound hybrid-ra-saas API calls | Optional local token | Preview integration token | Production integration token — T3610 로컬(.env.local)에 SET됨(실제 프로덕션). GitHub Actions Vercel 배포는 현재 Secrets 미설정으로 스킵. | Yes |
+| `HYBRID_RA_TENANT_ID` | Tenant scope sent as `X-Tenant-Id` to hybrid-ra-saas | Optional local tenant | Preview tenant ID | Production tenant ID — T3610 로컬(.env.local)에 SET됨(실제 프로덕션). GitHub Actions Vercel 배포는 현재 Secrets 미설정으로 스킵. | Yes |
 | `REGULA_API_KEY` | Shared secret for `POST /api/webhooks/audit` and `POST /api/webhooks/ifu` from hybrid-ra-saas customer runtime | Optional local test secret | Preview webhook secret | Production webhook secret | Yes |
 | `CRAWL_PUSH_SECRET` | Shared secret for `POST /api/webhooks/knowledge-sync` from hybrid-ra-saas cloud control plane | Optional local test secret | Preview crawl push secret | Production crawl push secret | Yes |
 | `SKIP_ENV_VALIDATION` | Build-only validation bypass flag. Must be paired with `REGULA_ALLOW_ENV_VALIDATION_SKIP=build`. | Only for `pnpm build` | CI build only | CI build only | No |

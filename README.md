@@ -320,7 +320,7 @@ corepack pnpm build                                                            P
 GitHub PR #192 checks                                                          PASS
 ```
 
-> **운영 배포 노트**: Vercel 프로덕션 환경변수 등록 미확정(silent degradation 의심) → 상세는 [`docs/implementation-status.md`](docs/implementation-status.md) 참조.
+> **운영 배포 노트**: 실제 프로덕션은 T3610 로컬 Next.js + Cloudflare Tunnel(`regula.abyz-lab.work`). GitHub Actions Vercel/Cloudflare 배포는 Secrets 미설정(+ release 태그 필요)으로 현재 스킵 중. `HYBRID_RA_*`는 `.env.local`(T3610)에 이미 SET → 블로커 없음. 상세는 [`docs/implementation-status.md`](docs/implementation-status.md) 참조.
 
 ### hybrid-ra-saas inbound webhook 연동 완료 — Issue #188 (2026-06-19 완료)
 

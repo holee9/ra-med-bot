@@ -53,10 +53,10 @@
 - #233(26 SPEC) 머지 → #234 base 자동 갱신 → #234 머지 → #35 자동 close.
 - 머지 후: README/implementation-status "pending merge" → "merged"로 갱신.
 
-### hybrid-ra-saas 연동 — 사실상 완료, Vercel 프로덕션 env 미확정 (2026-06-23 정정)
+### hybrid-ra-saas 연동 — 사실상 완료, T3610 로컬 실제 프로덕션 (2026-06-23 재정정)
 - ✅ 백엔드 배포됨(Azure Container Apps `api-prod`, /health 200), 코드 양측 완료, UI 연동 #168/#169/#171 · #199/#200/#201 CLOSED.
-- ⚠️ **Vercel 프로덕션 환경변수 3개 실제 등록 미확정**: #191 클로저 코멘트는 "로컬 `.env.local` 업데이트"로만 마무리 → 후속 이슈(#202 등)가 이를 "Vercel 완료"로 재해석(기록 모순). 코드 `optional + ?? ''` fallback이라 미등록 시 silent degradation(에러 없이 hybrid 비활성). 확인 필요(Vercel 대시보드 Settings→Env 또는 `vercel env ls`).
-- ⏸️ #202(유일 OPEN) E2E: Vercel env 확인 후 착수 전제. 기록 모순 정정 코멘트 #202에 등록.
+- ✅ **실제 프로덕션 = T3610 로컬 Next.js + Cloudflare Tunnel**(`regula.abyz-lab.work`). GitHub Actions Vercel/CF 배포는 Secrets 미설정(VERCEL_*/CLOUDFLARE_* 없음) + vercel-production은 release 태그 필요 → deploy run 전부 스킵, 실배포 없음. **`HYBRID_RA_*`는 `.env.local`(T3610)에 이미 3개 SET → 블로커 없음.** (2026-06-23 재정정: 이전 "Vercel 미확정"은 L-006 위반으로 Vercel을 프로덕션으로 잘못 전제한 오류. 외부 점검 리포트 인용 memory/integration-protocol.md도 존재 안 함.)
+- ⏸️ #202(유일 OPEN) E2E: 로컬 .env.local 기반 사용자 여정 검증만 남음.
 
 ## 이전 세션 히스토리 (상세는 git log + project-state.md)
 - 2026-06-22: 26개 SPEC-REGULA 일괄 작성 (PR #233, OPEN).
