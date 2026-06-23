@@ -424,15 +424,26 @@ function JurisdictionCard({ label, pathLabel, result }: JurisdictionCardProps) {
     >
       <div className="flex items-start justify-between gap-2">
         <span className="text-sm font-medium text-ink-700">{label}</span>
-        <span
-          className={[
-            'rounded px-2 py-0.5 text-xs font-bold',
-            isHighRisk ? 'bg-amber-200 text-amber-800' : 'bg-brand-100 text-brand-700',
-          ].join(' ')}
-          data-testid={`classify-class-${label}`}
-        >
-          {result.class}
-        </span>
+        <div className="flex items-center gap-1">
+          {result.confidence === 'unverified' && (
+            <span
+              className="rounded bg-danger/10 px-1.5 py-0.5 text-[10px] font-semibold text-danger"
+              title="LLM이 생성한 인용이 검색된 소스와 일치하지 않아 검증되지 않았습니다."
+              data-testid={`classify-unverified-${label}`}
+            >
+              미검증
+            </span>
+          )}
+          <span
+            className={[
+              'rounded px-2 py-0.5 text-xs font-bold',
+              isHighRisk ? 'bg-amber-200 text-amber-800' : 'bg-brand-100 text-brand-700',
+            ].join(' ')}
+            data-testid={`classify-class-${label}`}
+          >
+            {result.class}
+          </span>
+        </div>
       </div>
 
       {result.path && (

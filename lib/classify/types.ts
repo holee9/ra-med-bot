@@ -25,6 +25,26 @@ export interface ClassificationCitation {
   id: string;
 }
 
+/**
+ * Per-jurisdiction verification state (C1 — citation hallucination defense).
+ * - 'verified': every emitted rule number / citation source is grounded in retrieved sources.
+ * - 'unverified': at least one emitted identifier could NOT be matched against retrieved chunks.
+ */
+export type JurisdictionConfidence = 'verified' | 'unverified';
+
+/**
+ * Structured per-chunk metadata returned by the retriever path. Used by
+ * `validateCitations` to ground LLM-emitted ruleNumbers/citations against
+ * what was actually retrieved (C1). The joined string is still produced for
+ * the prompt — this structured list drives post-LLM verification.
+ */
+export interface RetrievedSourceRef {
+  /** Document / corpus identifier (maps to ClassificationCitation.source). */
+  source: string;
+  /** Section / rule / clause identifier within the source. */
+  section: string;
+}
+
 /** Result for a single jurisdiction. `path` / `grade` naming varies by jurisdiction. */
 export interface JurisdictionResult {
   /** Headline class/grade string, e.g. 'Class II', 'Class IIb', '2등급'. */
@@ -39,6 +59,12 @@ export interface JurisdictionResult {
   rationale: string;
   /** Suggested next-step workflow entry points for this jurisdiction. */
   nextSteps: string[];
+  /**
+   * Verification state of the emitted citations/ruleNumbers against retrieved
+   * sources (C1). Absent on legacy/stub results is treated as 'unverified'
+   * by consumers that care.
+   */
+  confidence?: JurisdictionConfidence;
 }
 
 /** Aggregated output across all 5 jurisdictions. */

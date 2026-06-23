@@ -12,8 +12,10 @@ import type {
   ClassificationOutput,
   Jurisdiction,
   JurisdictionResult,
+  RetrievedSourceRef,
   WizardAnswers,
 } from './types';
+import { applyHeuristicGuardrail, validateCitations } from './validate';
 
 /**
  * Injectable fetch function for the LLM endpoint. Mirrors the FetchFn pattern from
@@ -62,13 +64,28 @@ export interface ClassifyDeviceOptions {
   retrieveFn: RuleRetriever;
 }
 
+/** Pending result returned when retrieval yields no sources (C2 — no general-knowledge path). */
+function pendingNoSources(jurisdiction: Jurisdiction): JurisdictionResult {
+  return {
+    class: 'pending',
+    citations: [],
+    rationale: `no regulatory sources retrieved — cannot classify (${jurisdiction})`,
+    nextSteps: ['expert_review'],
+    confidence: 'unverified',
+  };
+}
+
 /**
  * Classify a device across all 5 jurisdictions in parallel (REQ-CLASSIFY-019: 3s SLA).
  *
  * Flow per jurisdiction:
  *   1. RAG-retrieve jurisdiction-specific classification rules via internalDocsRetrieve.
- *   2. Build an LLM prompt with the device characteristics + retrieved rule hints.
- *   3. Call the LLM (fetchFn) and parse the structured JSON response.
+ *   2. If retrieval yields NO sources → class='pending', confidence='unverified'
+ *      (C2: the LLM is NOT asked to reason from general knowledge).
+ *   3. Otherwise build an LLM prompt with the device characteristics + retrieved rule hints.
+ *   4. Call the LLM (fetchFn) and parse the structured JSON response.
+ *   5. validateCitations (C1): strip hallucinated ruleNumbers/citations; set confidence.
+ *   6. applyHeuristicGuardrail (C2): downgrade implausible class/contact combinations.
  *
  * The LLM + retriever are injectable so tests never hit the network.
  */
@@ -81,16 +98,29 @@ export async function classifyDevice(
 
   const results = await Promise.all(
     JURISDICTIONS.map(async (jurisdiction) => {
-      const ruleHints = await retrieveRuleHints(
+      const { ruleHints, sources } = await retrieveRuleHints(
         jurisdiction,
         options.orgId,
         options.userId,
         retrieveFn,
       );
+
+      // C2: retrieval-empty → pending. Never ask the LLM to hallucinate.
+      if (sources.length === 0) {
+        return [jurisdiction, pendingNoSources(jurisdiction)] as const;
+      }
+
       const result = fetchFn
         ? await classifyViaLLM(jurisdiction, answers, ruleHints, fetchFn)
-        : stubResult(jurisdiction, answers, ruleHints);
-      return [jurisdiction, result] as const;
+        : stubResult(jurisdiction, answers);
+
+      // C1: ground emitted citations/ruleNumbers against retrieved sources.
+      const { result: validated } = validateCitations(jurisdiction, result, sources);
+
+      // C2: heuristic guardrail — block impossible class/contact combinations.
+      const guarded = applyHeuristicGuardrail(jurisdiction, validated, answers);
+
+      return [jurisdiction, guarded] as const;
     }),
   );
 
@@ -106,23 +136,47 @@ export async function classifyDevice(
   };
 }
 
-/** Retrieve rule hints for a jurisdiction (empty string if retrieval yields nothing). */
+/**
+ * Retrieve rule hints for a jurisdiction. Returns BOTH the joined-string prompt
+ * body AND a structured per-chunk `{ source, section }[]` list for post-LLM
+ * citation validation (C1). Empty arrays on retrieval failure (C2: that path
+ * routes to pending, never to general-knowledge hallucination).
+ */
 async function retrieveRuleHints(
   jurisdiction: Jurisdiction,
   orgId: string,
   userId: string,
   retrieveFn: RuleRetriever,
-): Promise<string> {
+): Promise<{ ruleHints: string; sources: RetrievedSourceRef[] }> {
   try {
     const { results } = await retrieveFn(RULE_QUERIES[jurisdiction], {
       topK: 5,
       orgId,
       userId,
     });
-    return results.map((r) => r.content).join('\n---\n');
+    const sources: RetrievedSourceRef[] = results.map((r) => {
+      const meta = (r.metadata ?? {}) as Record<string, unknown>;
+      const source =
+        typeof meta.source === 'string'
+          ? meta.source
+          : typeof meta.documentId === 'string'
+            ? meta.documentId
+            : r.docClass || r.documentId || 'unknown';
+      const section =
+        typeof meta.section === 'string'
+          ? meta.section
+          : typeof meta.sectionId === 'string'
+            ? meta.sectionId
+            : '';
+      return { source, section };
+    });
+    return {
+      ruleHints: results.map((r) => r.content).join('\n---\n'),
+      sources,
+    };
   } catch {
-    // Retrieval failure must not block classification — fall back to LLM general knowledge.
-    return '';
+    // Retrieval failure → no sources. The caller routes to pending (C2).
+    return { ruleHints: '', sources: [] };
   }
 }
 
@@ -145,39 +199,16 @@ async function classifyViaLLM(
 }
 
 /**
- * Deterministic stub used when no fetchFn is injected. This lets the engine run in
- * environments without an LLM endpoint (e.g. dev bootstrap) while still producing a
- * sensible 5-jurisdiction result derived from the wizard answers. The real LLM path
- * (classifyViaLLM) overrides this when fetchFn is provided.
+ * Deterministic stub used when no fetchFn is injected. Returns class='pending'
+ * for every jurisdiction (L1) so the stub output can never be mistaken for a
+ * grounded classification. The real LLM path (classifyViaLLM) overrides this.
  */
-function stubResult(
-  jurisdiction: Jurisdiction,
-  answers: WizardAnswers,
-  _ruleHints: string,
-): JurisdictionResult {
-  const invasive = answers.contactType === 'internal' || answers.contactType === 'implant';
-  const base: JurisdictionResult = {
+function stubResult(jurisdiction: Jurisdiction, _answers: WizardAnswers): JurisdictionResult {
+  return {
     class: 'pending',
     citations: [],
-    rationale: `No LLM endpoint configured; stub classification for ${jurisdiction}.`,
+    rationale: `stub — no LLM configured (${jurisdiction})`,
     nextSteps: [],
+    confidence: 'unverified',
   };
-  // Very rough heuristic so the stub returns distinct values per jurisdiction.
-  if (jurisdiction === 'FDA') {
-    base.class = invasive || answers.hasAiMl ? 'Class III' : 'Class II';
-    base.path = base.class === 'Class III' ? 'PMA' : '510(k)';
-  } else if (jurisdiction === 'EU_MDR') {
-    base.class = invasive ? 'Class IIb' : 'Class IIa';
-    base.ruleNumbers = ['Rule 5', 'Rule 12'];
-    base.path = 'notified_body';
-  } else if (jurisdiction === 'MFDS') {
-    base.class = invasive ? '3등급' : '2등급';
-    base.path = '등가심사';
-  } else if (jurisdiction === 'NMPA') {
-    base.class = invasive ? 'III' : 'II';
-    base.path = '비교 인증';
-  } else if (jurisdiction === 'PMDA') {
-    base.class = invasive ? 'Class III' : 'Class II';
-  }
-  return base;
 }

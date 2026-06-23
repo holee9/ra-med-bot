@@ -67,64 +67,82 @@ export const POST = withPermission('classify.generate', async (req, _ctx, sessio
   // Run the engine. createHybridRaFetch provides the LLM endpoint fetcher; the
   // engine falls back to its deterministic stub when the endpoint is unavailable.
   const hybridFetch = createHybridRaFetch();
-  const result = await classifyDevice(wizardAnswers, {
-    orgId: organizationId,
-    userId: session.user.id,
-    retrieveFn: internalDocsRetrieve,
-    fetchFn: async (endpoint, init) => {
-      const res = await hybridFetch(endpoint, init);
-      return { json: async () => res };
-    },
-  });
+  try {
+    const result = await classifyDevice(wizardAnswers, {
+      orgId: organizationId,
+      userId: session.user.id,
+      retrieveFn: internalDocsRetrieve,
+      fetchFn: async (endpoint, init) => {
+        const res = await hybridFetch(endpoint, init);
+        return { json: async () => res };
+      },
+    });
 
-  // Persist the classification result (mirror headline class/path into flat columns).
-  await db.insert(deviceClassifications).values({
-    orgId: organizationId,
-    userId: session.user.id,
-    workflowRunId: runId,
-    deviceDescription: body.deviceDescription,
-    deviceType: body.deviceType,
-    contactType: body.contactType,
-    hasSoftware: body.hasSoftware,
-    hasAiMl: body.hasAiMl,
-    isSterile: body.isSterile,
-    fdaClass: result.fda.class,
-    fdaPathway: result.fda.path,
-    euClass: result.euMdr.class,
-    euRule: result.euMdr.ruleNumbers?.join(', '),
-    mfdsClass: result.mfds.class,
-    nmpaClass: result.nmpa.class,
-    pmdaClass: result.pmda.class,
-    input: wizardAnswers as unknown as Record<string, unknown>,
-    result: result as unknown as Record<string, unknown>,
-    status: 'completed',
-  });
-
-  // Mark the workflow run complete.
-  await db
-    .update(workflowRuns)
-    .set({
-      status: 'approved',
-      resultJson: result as unknown as Record<string, unknown>,
-      completedAt: new Date(),
-    })
-    .where(sql`${workflowRuns.id} = ${runId}`);
-
-  // Audit — 21 CFR Part 11. Non-PII context only.
-  await writeAudit({
-    actor_id: session.user.id,
-    action: 'device_classified',
-    resource_type: 'deviceClassification',
-    resource_id: runId,
-    meta_json: {
+    // Persist the classification result (mirror headline class/path into flat columns).
+    await db.insert(deviceClassifications).values({
+      orgId: organizationId,
+      userId: session.user.id,
+      workflowRunId: runId,
+      deviceDescription: body.deviceDescription,
       deviceType: body.deviceType,
       contactType: body.contactType,
+      hasSoftware: body.hasSoftware,
       hasAiMl: body.hasAiMl,
+      isSterile: body.isSterile,
       fdaClass: result.fda.class,
+      fdaPathway: result.fda.path,
       euClass: result.euMdr.class,
-      samdFlag: result.samdFlag,
-    },
-  });
+      euRule: result.euMdr.ruleNumbers?.join(', '),
+      mfdsClass: result.mfds.class,
+      nmpaClass: result.nmpa.class,
+      pmdaClass: result.pmda.class,
+      input: wizardAnswers as unknown as Record<string, unknown>,
+      result: result as unknown as Record<string, unknown>,
+      status: 'completed',
+    });
 
-  return Response.json({ workflowRunId: runId, result }, { status: 201 });
+    // Mark the workflow run complete.
+    await db
+      .update(workflowRuns)
+      .set({
+        status: 'approved',
+        resultJson: result as unknown as Record<string, unknown>,
+        completedAt: new Date(),
+      })
+      .where(sql`${workflowRuns.id} = ${runId}`);
+
+    // Audit — 21 CFR Part 11. Non-PII context only.
+    await writeAudit({
+      actor_id: session.user.id,
+      action: 'device_classified',
+      resource_type: 'deviceClassification',
+      resource_id: runId,
+      meta_json: {
+        deviceType: body.deviceType,
+        contactType: body.contactType,
+        hasAiMl: body.hasAiMl,
+        fdaClass: result.fda.class,
+        euClass: result.euMdr.class,
+        samdFlag: result.samdFlag,
+      },
+    });
+
+    return Response.json({ workflowRunId: runId, result }, { status: 201 });
+  } catch (err) {
+    // H1 — fail closed: mark the run failed, audit the failure (error message only,
+    // never deviceDescription), return a structured 502.
+    const message = err instanceof Error ? err.message : 'unknown_error';
+    await db
+      .update(workflowRuns)
+      .set({ status: 'failed', completedAt: new Date() })
+      .where(sql`${workflowRuns.id} = ${runId}`);
+    await writeAudit({
+      actor_id: session.user.id,
+      action: 'device_classified',
+      resource_type: 'deviceClassification',
+      resource_id: runId,
+      meta_json: { error: message },
+    });
+    return Response.json({ error: 'classification_failed' }, { status: 502 });
+  }
 });
