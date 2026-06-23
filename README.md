@@ -57,7 +57,7 @@
 | `SPEC-REGULA-BATCH-001` | #43 | 배치 질의 모드 (사전 미팅 준비·대량 규제 Q&A) |
 | `SPEC-REGULA-CLASSIFY-001` | #59 | 의료기기 분류 자동화 마법사 (FDA/EU/MFDS/NMPA/PMDA 통합) |
 | `SPEC-REGULA-CROSSMARKET-001` | #42 | 멀티 관할권 갭 분석기 (기존 허가 → 신규 시장 진출 요건) |
-| `SPEC-REGULA-KNOWLEDGE-GAP-001` | #35 | 미답변 자동 이슈화 및 지식베이스 보강 루프 |
+| `SPEC-REGULA-KNOWLEDGE-GAP-001` | #35 | 미답변 자동 이슈화 및 지식베이스 보강 루프 (PR #234 리뷰/머지 대기) |
 | `SPEC-REGULA-KNOWLEDGE-PROMO-001` | #50 | 대화 시맨틱 검색 & 우수 답변 팀 지식 승격 |
 | `SPEC-REGULA-PROJECT-MEMORY-001` | #51 | 프로젝트 지속 컨텍스트 메모리 (의사결정 누적 & 크로스 세션 기억) |
 | `SPEC-REGULA-ROI-001` | #55 | 비즈니스 가치 대시보드: RA 업무 효율화 ROI 정량화 |
