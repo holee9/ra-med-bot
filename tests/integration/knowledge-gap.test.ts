@@ -42,6 +42,7 @@ type QueueRow = {
 };
 
 const queueStore: QueueRow[] = [];
+let queueSeq = 0;
 const auditStore: Array<{
   actor_id: string | null;
   action: string;
@@ -114,10 +115,49 @@ vi.mock('@/lib/db/client', () => {
   const client = {
     insert(_table: unknown) {
       return {
-        values(rows: QueueRow | QueueRow[]) {
+        values(rows: Partial<QueueRow> | Partial<QueueRow>[]) {
           const arr = Array.isArray(rows) ? rows : [rows];
-          queueStore.push(...arr);
-          return Promise.resolve();
+          const inserted = arr.map((row) => {
+            queueSeq++;
+            const fullRow: QueueRow = {
+              id: typeof row.id === 'string' ? row.id : `q-${queueSeq}`,
+              orgId: typeof row.orgId === 'string' ? row.orgId : 'org-1',
+              conversationId:
+                typeof row.conversationId === 'string' ? row.conversationId : 'conv-1',
+              messageId: typeof row.messageId === 'string' ? row.messageId : `msg-${queueSeq}`,
+              redactedQuestion:
+                typeof row.redactedQuestion === 'string' ? row.redactedQuestion : 'gap',
+              redactionHash: typeof row.redactionHash === 'string' ? row.redactionHash : 'hash',
+              gapReason:
+                row.gapReason === 'low_confidence' ||
+                row.gapReason === 'low_citation' ||
+                row.gapReason === 'no_results' ||
+                row.gapReason === 'policy_blocked'
+                  ? row.gapReason
+                  : 'no_results',
+              clusterId: typeof row.clusterId === 'string' ? row.clusterId : null,
+              githubIssueNumber:
+                typeof row.githubIssueNumber === 'number' ? row.githubIssueNumber : null,
+              classification:
+                row.classification === 'ra_project_gap' ||
+                row.classification === 'md_process_gap' ||
+                row.classification === 'external_regulation_needed' ||
+                row.classification === 'bug'
+                  ? row.classification
+                  : null,
+              status:
+                row.status === 'open' || row.status === 'classified' || row.status === 'resolved'
+                  ? row.status
+                  : 'open',
+              createdAt: row.createdAt instanceof Date ? row.createdAt : new Date(),
+              resolvedAt: row.resolvedAt instanceof Date ? row.resolvedAt : null,
+            };
+            queueStore.push(fullRow);
+            return fullRow;
+          });
+          return {
+            returning: async () => inserted.map((row) => ({ id: row.id })),
+          };
         },
       };
     },
@@ -156,6 +196,7 @@ vi.mock('@/lib/ingest/embed', () => ({
 
 beforeEach(() => {
   queueStore.length = 0;
+  queueSeq = 0;
   auditStore.length = 0;
   consultEventsForReplay = [];
   vi.clearAllMocks();

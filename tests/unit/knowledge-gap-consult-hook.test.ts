@@ -3,7 +3,8 @@
 // @MX:REASON Before hooking detectKnowledgeGap into the RAG pipeline (IMPROVE phase),
 //          we capture the structural invariants the hook MUST NOT break:
 //          1. The consult generator still imports and calls detectKnowledgeGap.
-//          2. The hook is wired AFTER expert review gating, BEFORE persist (Stage 7→8).
+//          2. The hook is wired AFTER message persistence so unanswered_queue.message_id
+//             can satisfy its FK to messages.id.
 //          3. Gap capture is non-fatal — wrapped in try/catch (stream never throws on gap failure).
 //          4. SSE event types union is unchanged (no new event type introduced).
 //          5. messages.knowledgeGapRequired is set (REQ-KNOWLEDGE-GAP-003).
@@ -46,6 +47,15 @@ describe('consult.ts knowledge-gap hook — DDD PRESERVE characterization (T1.3)
     expect(SOURCE).toMatch(/captureKnowledgeGap\(\{[\s\S]*?messageId/);
     expect(SOURCE).toMatch(/captureKnowledgeGap\(\{[\s\S]*?originalQuestion/);
     expect(SOURCE).toMatch(/captureKnowledgeGap\(\{[\s\S]*?reason:\s*gapReason/);
+  });
+
+  it('persists the assistant message before inserting the FK-dependent gap row', () => {
+    const persistIndex = SOURCE.indexOf('await persistMessage({');
+    const captureIndex = SOURCE.indexOf('await captureKnowledgeGap({');
+
+    expect(persistIndex).toBeGreaterThanOrEqual(0);
+    expect(captureIndex).toBeGreaterThanOrEqual(0);
+    expect(persistIndex).toBeLessThan(captureIndex);
   });
 
   it('wraps gap capture in try/catch so stream is never broken by gap failure', () => {

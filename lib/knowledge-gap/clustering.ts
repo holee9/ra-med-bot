@@ -68,6 +68,7 @@ export function computeClusterId(redactionHash: string): string {
 export async function findSimilarOpenCluster(
   orgId: string,
   redactedQuestion: string,
+  excludeGapId?: string,
 ): Promise<string | null> {
   const openGaps = await db
     .select({
@@ -79,10 +80,13 @@ export async function findSimilarOpenCluster(
     .from(unansweredQueue)
     .where(and(eq(unansweredQueue.orgId, orgId), eq(unansweredQueue.status, 'open')));
 
-  if (openGaps.length === 0) return null;
+  const candidateGaps =
+    excludeGapId === undefined ? openGaps : openGaps.filter((gap) => gap.id !== excludeGapId);
+
+  if (candidateGaps.length === 0) return null;
 
   // Batch-embed candidate + all open gap questions together (single API call).
-  const texts = [redactedQuestion, ...openGaps.map((g) => g.redactedQuestion)];
+  const texts = [redactedQuestion, ...candidateGaps.map((g) => g.redactedQuestion)];
   const embeddings = await embedChunks(texts);
   const candidateEmb = embeddings[0];
   if (!candidateEmb) return null;
@@ -90,9 +94,9 @@ export async function findSimilarOpenCluster(
   let bestSim = -1;
   let bestClusterId: string | null = null;
 
-  for (let i = 0; i < openGaps.length; i++) {
+  for (let i = 0; i < candidateGaps.length; i++) {
     const emb = embeddings[i + 1];
-    const gap = openGaps[i];
+    const gap = candidateGaps[i];
     if (!emb || !gap) continue;
     const sim = cosineSimilarity(candidateEmb, emb);
     if (sim > bestSim) {
@@ -120,7 +124,7 @@ export async function assignCluster(
   redactionHash: string,
 ): Promise<ClusterAssignment> {
   const newClusterId = computeClusterId(redactionHash);
-  const existingClusterId = await findSimilarOpenCluster(orgId, redactedQuestion);
+  const existingClusterId = await findSimilarOpenCluster(orgId, redactedQuestion, gapId);
 
   const clusterId = existingClusterId ?? newClusterId;
   await db.update(unansweredQueue).set({ clusterId }).where(eq(unansweredQueue.id, gapId));
