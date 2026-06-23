@@ -205,7 +205,16 @@ export type AuditAction =
   //   corpus.sync_failed    — sync failed after max retries
   | 'corpus.sync_started'
   | 'corpus.sync_completed'
-  | 'corpus.sync_failed';
+  | 'corpus.sync_failed'
+  // SPEC-REGULA-KNOWLEDGE-GAP-001 — knowledge gap lifecycle (Issue #35, REQ-KNOWLEDGE-GAP-016):
+  //   knowledge_gap_created     — detector captured an unanswered question into unanswered_queue
+  //   knowledge_gap_classified  — RA-lead assigned a gap_classification category
+  //   knowledge_gap_digest_sent — daily digest delivery attempted (success or failure)
+  //   knowledge_gap_resolved    — closed-loop replay passed, queue item closed
+  | 'knowledge_gap_created'
+  | 'knowledge_gap_classified'
+  | 'knowledge_gap_digest_sent'
+  | 'knowledge_gap_resolved';
 
 export interface AuditEvent {
   /** User UUID, or null for system-initiated events. */

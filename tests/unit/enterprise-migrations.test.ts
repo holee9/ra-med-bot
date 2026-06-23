@@ -300,7 +300,7 @@ describe('lib/db/schema.ts Phase 5 additions', () => {
     const values = extractAuditActionEnumValues(src);
     const typeValues = extractAuditActionTypeValues(auditSrc);
     expect(values).toEqual(typeValues);
-    expect(values).toHaveLength(109); // +2 signature.* (ESIG-001) +3 audit.* (AUDITOR-VIEW-001) +2 personal_bookmark.* (PERSONAL-LIB-001) +3 deadline.* (CALENDAR-001) +3 corpus.* (DELTA-SYNC-001)
+    expect(values).toHaveLength(113); // +2 signature.* (ESIG-001) +3 audit.* (AUDITOR-VIEW-001) +2 personal_bookmark.* (PERSONAL-LIB-001) +3 deadline.* (CALENDAR-001) +3 corpus.* (DELTA-SYNC-001) +4 knowledge_gap_* (KNOWLEDGE-GAP-001)
   });
 
   it.each(REQUIRED_RECOVERY_TABLES)(
@@ -349,7 +349,7 @@ describe('lib/audit.ts Phase 5 AuditAction type additions', () => {
         'export.confluence',
       ]),
     );
-    expect(values).toHaveLength(109); // +2 signature.* (ESIG-001) +3 audit.* (AUDITOR-VIEW-001) +2 personal_bookmark.* (PERSONAL-LIB-001) +3 deadline.* (CALENDAR-001) +3 corpus.* (DELTA-SYNC-001)
+    expect(values).toHaveLength(113); // +2 signature.* (ESIG-001) +3 audit.* (AUDITOR-VIEW-001) +2 personal_bookmark.* (PERSONAL-LIB-001) +3 deadline.* (CALENDAR-001) +3 corpus.* (DELTA-SYNC-001) +4 knowledge_gap_* (KNOWLEDGE-GAP-001)
   });
 
   it.each(REQUIRED_RECOVERY_AUDIT_ACTIONS)(
@@ -437,5 +437,118 @@ describe('SPEC-REGULA-DELTA-SYNC-001 (Issue #45) — migration 0065', () => {
     const src = readText('lib/db/schema.ts');
     expect(src).toMatch(/updated_at:\s*timestamp/);
     expect(src).toMatch(/superseded_by:\s*uuid/);
+  });
+});
+
+// ---------------------------------------------------------------------------
+// SPEC-REGULA-KNOWLEDGE-GAP-001 — 미답변 자동 이슈화 (Issue #35, migration 0066)
+// ---------------------------------------------------------------------------
+describe('SPEC-REGULA-KNOWLEDGE-GAP-001 (Issue #35) — migration 0066', () => {
+  const KNOWLEDGE_GAP_AUDIT_ACTIONS = [
+    'knowledge_gap_created',
+    'knowledge_gap_classified',
+    'knowledge_gap_digest_sent',
+    'knowledge_gap_resolved',
+  ] as const;
+
+  it('migration file 0066_knowledge_gap.sql exists', () => {
+    expect(fileExists('migrations/0066_knowledge_gap.sql')).toBe(true);
+  });
+
+  it('creates 3 gap_* enum types with required values', () => {
+    const sql = readText('migrations/0066_knowledge_gap.sql');
+    // gap_reason
+    expect(sql).toMatch(/CREATE TYPE gap_reason AS ENUM/);
+    expect(sql).toMatch(/'low_confidence'/);
+    expect(sql).toMatch(/'low_citation'/);
+    expect(sql).toMatch(/'no_results'/);
+    expect(sql).toMatch(/'policy_blocked'/);
+    // gap_status
+    expect(sql).toMatch(/CREATE TYPE gap_status AS ENUM/);
+    expect(sql).toMatch(/'open'/);
+    expect(sql).toMatch(/'classified'/);
+    expect(sql).toMatch(/'resolved'/);
+    // gap_classification
+    expect(sql).toMatch(/CREATE TYPE gap_classification AS ENUM/);
+    expect(sql).toMatch(/'ra_project_gap'/);
+    expect(sql).toMatch(/'md_process_gap'/);
+    expect(sql).toMatch(/'external_regulation_needed'/);
+    expect(sql).toMatch(/'bug'/);
+  });
+
+  it('adds knowledge_gap_required boolean column to messages', () => {
+    const sql = readText('migrations/0066_knowledge_gap.sql');
+    expect(sql).toMatch(/ALTER TABLE messages[\s\S]*knowledge_gap_required/i);
+    expect(sql).toMatch(/BOOLEAN NOT NULL DEFAULT FALSE/i);
+  });
+
+  it('creates unanswered_queue table with required columns', () => {
+    const sql = readText('migrations/0066_knowledge_gap.sql');
+    expect(sql).toMatch(/CREATE TABLE[\s\S]*unanswered_queue/i);
+    expect(sql).toMatch(/org_id/i);
+    expect(sql).toMatch(/conversation_id/i);
+    expect(sql).toMatch(/message_id/i);
+    expect(sql).toMatch(/redacted_question/i);
+    expect(sql).toMatch(/redaction_hash/i);
+    expect(sql).toMatch(/gap_reason/i);
+    expect(sql).toMatch(/cluster_id/i);
+    expect(sql).toMatch(/github_issue_number/i);
+    expect(sql).toMatch(/classification/i);
+    expect(sql).toMatch(/status/i);
+  });
+
+  it('enables RLS with org isolation policy on unanswered_queue', () => {
+    const sql = readText('migrations/0066_knowledge_gap.sql');
+    expect(sql).toMatch(/ALTER TABLE unanswered_queue ENABLE ROW LEVEL SECURITY/i);
+    expect(sql).toMatch(/CREATE POLICY[\s\S]*unanswered_queue/i);
+    expect(sql).toMatch(/current_setting\('app.current_org_id'/i);
+  });
+
+  it.each(KNOWLEDGE_GAP_AUDIT_ACTIONS)(
+    'adds ALTER TYPE audit_action ADD VALUE for: %s',
+    (action) => {
+      const sql = readText('migrations/0066_knowledge_gap.sql');
+      expect(sql, `missing ALTER TYPE for '${action}'`).toContain(action);
+    },
+  );
+
+  it('has exactly 4 ALTER TYPE audit_action statements', () => {
+    const sql = readText('migrations/0066_knowledge_gap.sql');
+    const matches = sql.match(/ALTER TYPE audit_action ADD VALUE/g) ?? [];
+    expect(matches).toHaveLength(4);
+  });
+
+  it.each(KNOWLEDGE_GAP_AUDIT_ACTIONS)(
+    'AuditAction type includes knowledge-gap action: %s',
+    (action) => {
+      const src = readText('lib/audit.ts');
+      expect(src).toContain(`'${action}'`);
+    },
+  );
+
+  it.each(KNOWLEDGE_GAP_AUDIT_ACTIONS)(
+    'auditActionEnum includes knowledge-gap action: %s',
+    (action) => {
+      const src = readText('lib/db/schema.ts');
+      expect(src).toContain(`'${action}'`);
+    },
+  );
+
+  it('schema.ts exports the 3 gap_* enums', () => {
+    const src = readText('lib/db/schema.ts');
+    expect(src).toMatch(/export const gapReasonEnum\s*=\s*pgEnum/);
+    expect(src).toMatch(/export const gapStatusEnum\s*=\s*pgEnum/);
+    expect(src).toMatch(/export const gapClassificationEnum\s*=\s*pgEnum/);
+  });
+
+  it('schema.ts exports unansweredQueue table', () => {
+    const src = readText('lib/db/schema.ts');
+    expect(src).toMatch(/export const unansweredQueue\s*=\s*pgTable/);
+    expect(src).toContain("'unanswered_queue'");
+  });
+
+  it('schema.ts adds knowledgeGapRequired to messages table', () => {
+    const src = readText('lib/db/schema.ts');
+    expect(src).toMatch(/knowledgeGapRequired:\s*boolean\('knowledge_gap_required'\)/);
   });
 });

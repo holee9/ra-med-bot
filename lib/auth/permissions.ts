@@ -52,7 +52,12 @@ export type PermissionAction =
   | 'personal.view'
   // Regulatory calendar actions (SPEC-REGULA-CALENDAR-001, Issue #44)
   | 'deadline.view'
-  | 'deadline.manage';
+  | 'deadline.manage'
+  // Knowledge gap actions (SPEC-REGULA-KNOWLEDGE-GAP-001, Issue #35)
+  // RA-lead classifies and triggers replay; ra-member+ can view the queue.
+  | 'knowledgegap.classify'
+  | 'knowledgegap.view'
+  | 'knowledgegap.replay';
 
 export interface PermissionSpec {
   minRole: Role;
@@ -184,4 +189,13 @@ export const PERMISSIONS: Record<PermissionAction, PermissionSpec> = {
   // ra-member can view; ra-lead required to manage.
   'deadline.view': { minRole: 'ra-member', scope: 'org', resourceType: 'deadline' },
   'deadline.manage': { minRole: 'ra-lead', scope: 'org', resourceType: 'deadline' },
+
+  // @MX:NOTE [AUTO] knowledgegap.* — SPEC-REGULA-KNOWLEDGE-GAP-001 (Issue #35, REQ-KNOWLEDGE-GAP-008).
+  // @MX:SPEC SPEC-REGULA-KNOWLEDGE-GAP-001
+  // view: ra-member+ can see the unanswered queue (transparency across the RA team).
+  // classify + replay: ra-lead only — classification is a judgment call that drives
+  // KB augmentation, and replay triggers resolution that closes GitHub issues.
+  'knowledgegap.view': { minRole: 'ra-member', scope: 'org', resourceType: 'knowledgeGap' },
+  'knowledgegap.classify': { minRole: 'ra-lead', scope: 'org', resourceType: 'knowledgeGap' },
+  'knowledgegap.replay': { minRole: 'ra-lead', scope: 'org', resourceType: 'knowledgeGap' },
 };
