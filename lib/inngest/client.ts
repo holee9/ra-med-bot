@@ -25,4 +25,6 @@ export const INNGEST_EVENTS = {
   DOCINGEST_DOCUMENT_CREATED: 'docingest/document.created',
   /** Fires weekly to generate + dispatch the regulatory intelligence digest. */
   DIGEST_WEEKLY_TRIGGER: 'digest/weekly.trigger',
+  /** Fires daily (or on manual replay) to dispatch the knowledge-gap digest. */
+  KNOWLEDGE_GAP_DIGEST_TRIGGER: 'knowledge-gap/digest.trigger',
 } as const;
