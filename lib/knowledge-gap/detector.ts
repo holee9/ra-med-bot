@@ -14,6 +14,9 @@
 import { writeAudit } from '@/lib/audit';
 import { db } from '@/lib/db/client';
 import { unansweredQueue } from '@/lib/db/schema';
+import { and, eq, isNotNull } from 'drizzle-orm';
+import { assignCluster } from './clustering';
+import { appendGitHubIssue, createGitHubIssue } from './github-issue';
 import { redactQuestion } from './redaction';
 
 /** Input to the pure detection function — all 4 signal dimensions. */
@@ -77,32 +80,47 @@ export interface CaptureContext {
   actorId: string | null;
 }
 
+export interface CaptureKnowledgeGapResult {
+  queueId: string;
+  clusterId: string;
+  githubIssueNumber: number | null;
+}
+
 /**
  * Persist a detected knowledge gap: redact the question, insert into
- * unanswered_queue, write the knowledge_gap_created audit log, and mark the
- * source message row with knowledge_gap_required=true (REQ-KNOWLEDGE-GAP-002/003/004/016).
+ * unanswered_queue, write the knowledge_gap_created audit log, assign a cluster,
+ * and create/append the GitHub issue when configured (REQ-KNOWLEDGE-GAP-002/004/005/006/016).
  *
  * Failures propagate — the caller MUST fail closed if the audit write fails
  * (21 CFR Part 11, see lib/audit.ts writeAudit contract).
  */
-export async function captureKnowledgeGap(ctx: CaptureContext): Promise<void> {
+export async function captureKnowledgeGap(ctx: CaptureContext): Promise<CaptureKnowledgeGapResult> {
   const { redacted, hash, redactionCount } = redactQuestion(ctx.originalQuestion);
 
-  await db.insert(unansweredQueue).values({
-    orgId: ctx.orgId,
-    conversationId: ctx.conversationId,
-    messageId: ctx.messageId,
-    redactedQuestion: redacted,
-    redactionHash: hash,
-    gapReason: ctx.reason,
-    status: 'open',
-  });
+  const [inserted] = await db
+    .insert(unansweredQueue)
+    .values({
+      orgId: ctx.orgId,
+      conversationId: ctx.conversationId,
+      messageId: ctx.messageId,
+      redactedQuestion: redacted,
+      redactionHash: hash,
+      gapReason: ctx.reason,
+      status: 'open',
+    })
+    .returning({ id: unansweredQueue.id });
+
+  if (!inserted) {
+    throw new Error('captureKnowledgeGap: queue insert returned no id');
+  }
+
+  const queueId = inserted.id;
 
   await writeAudit({
     actor_id: ctx.actorId,
     action: 'knowledge_gap_created',
     resource_type: 'unanswered_queue',
-    resource_id: ctx.messageId,
+    resource_id: queueId,
     conversation_id: ctx.conversationId,
     meta_json: {
       reason: ctx.reason,
@@ -110,4 +128,54 @@ export async function captureKnowledgeGap(ctx: CaptureContext): Promise<void> {
       redaction_hash: hash,
     },
   });
+
+  const assignment = await assignCluster(ctx.orgId, queueId, redacted, hash);
+  const clusterId = assignment.existingClusterId ?? assignment.newClusterId;
+  const issueCtx = {
+    redactedQuestion: redacted,
+    redactionHash: hash,
+    reason: ctx.reason,
+    clusterId,
+    conversationId: ctx.conversationId,
+    messageId: ctx.messageId,
+  };
+
+  let githubIssueNumber: number | null = null;
+  if (assignment.matched && assignment.existingClusterId !== null) {
+    const [existingIssue] = await db
+      .select({ githubIssueNumber: unansweredQueue.githubIssueNumber })
+      .from(unansweredQueue)
+      .where(
+        and(
+          eq(unansweredQueue.orgId, ctx.orgId),
+          eq(unansweredQueue.clusterId, assignment.existingClusterId),
+          isNotNull(unansweredQueue.githubIssueNumber),
+        ),
+      )
+      .limit(1);
+
+    githubIssueNumber = existingIssue?.githubIssueNumber ?? null;
+    if (githubIssueNumber !== null) {
+      await appendGitHubIssue(githubIssueNumber, issueCtx);
+    } else {
+      const created = await createGitHubIssue(issueCtx);
+      githubIssueNumber = created?.number ?? null;
+    }
+  } else {
+    const created = await createGitHubIssue(issueCtx);
+    githubIssueNumber = created?.number ?? null;
+  }
+
+  if (githubIssueNumber !== null) {
+    await db
+      .update(unansweredQueue)
+      .set({ githubIssueNumber })
+      .where(eq(unansweredQueue.id, queueId));
+  }
+
+  return {
+    queueId,
+    clusterId,
+    githubIssueNumber,
+  };
 }

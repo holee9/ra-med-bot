@@ -2,6 +2,13 @@
 
 > 세션 연결용. 상세 작업 맥락은 auto-memory `project-state.md`(~/.claude/projects/.../memory/)가 1차 진실원 — 항상 로드됨. 본 파일은 빠른 시작 요약.
 
+## 현재 세션 (2026-06-23) — PR #234 리뷰 픽스
+
+- Duplicate-work prevention: GitHub Issue #18 확인 완료. 동일 작업은 현재 브랜치 `feat/issue-35-knowledge-gap` / PR #234 / Issue #35 범위로 진행 중이며, 새 브랜치 생성 없음.
+- Main state: `origin/main` fetch 완료. PR #234는 stacked PR로 base `docs/specs-regula-2026-06-22` (#233), head `feat/issue-35-knowledge-gap`.
+- Review fix scope: `consult()` 지식 갭 캡처가 `messages` FK 생성 전 `unanswered_queue`를 insert하던 순서 수정, `captureKnowledgeGap()` 이후 clustering + GitHub issue create/append wiring 복구.
+- Verification target: 신규 회귀 테스트 `tests/unit/knowledge-gap-capture-automation.test.ts`, 기존 consult hook/order test, knowledge-gap integration/phase23 tests.
+
 ## 현재 세션 (2026-06-23) — tier0 KNOWLEDGE-GAP-001 (#35) 구현 + sync + 보안 수정
 
 **브랜치: `feat/issue-35-knowledge-gap`** (stacked on `docs/specs-regula-2026-06-22` = PR #233). 커밋 6개(`56f9054`→`b10a9e2`). 작업 트리 clean.
