@@ -35,6 +35,11 @@ regula/
 │   │   ├── traceability/
 │   │   │   ├── page.tsx                 # Traceability Matrix (PR #242)
 │   │   │   └── [deliverableId]/page.tsx # Evidence Packet
+│   │   ├── pms/
+│   │   │   ├── page.tsx                 # PMS 워크벤치 메인 (PR #246)
+│   │   │   ├── report/page.tsx           # PMS 보고서 생성
+│   │   │   ├── pmcf-plan/page.tsx       # PMCF 계획 작성
+│   │   │   └── evaluation/page.tsx      # PMCF 평가 보고서
 │   │   └── settings/page.tsx
 │   ├── api/
 │   │   ├── traceability/
@@ -42,6 +47,14 @@ regula/
 │   │   │   ├── edges/route.ts           # Edge 생성/수정
 │   │   │   ├── [deliverableId]/packet/route.ts
 │   │   │   └── [deliverableId]/export/route.ts
+│   │   ├── pms/
+│   │   │   ├── inputs/route.ts          # complaint/vigilance 데이터 입력·업로드 (PR #246)
+│   │   │   ├── [projectId]/compliance/route.ts  # Article 83-86 체크 결과
+│   │   │   └── [projectId]/documents/[documentId]/close/route.ts  # expert review 게이팅
+│   │   ├── workflows/
+│   │   │   ├── pms-report/route.ts      # PMS 보고서 생성 (PR #246)
+│   │   │   ├── pmcf-plan/route.ts       # PMCF 계획 생성
+│   │   │   └── pmcf-evaluation/route.ts # PMCF 평가 보고서 생성
 │   │   ├── ra/consult/route.ts          # 메인 RAG 엔드포인트 (streaming)
 │   │   ├── ra/conversations/route.ts
 │   │   ├── ra/sources/route.ts
@@ -54,6 +67,11 @@ regula/
 ├── components/
 │   ├── shell/                           # 앱 셸 — Sidebar, Topbar
 │   ├── chat/                            # 채팅 관련 컴포넌트
+│   ├── pms/                             # PMS/PMCF UI 컴포넌트 (PR #246)
+│   │   ├── PmsSidebar.tsx               # 사이드바 네비게이션(조건부 15→16)
+│   │   ├── ComplianceChecklist.tsx       # 컴플라이언스 체크리스트(Article 83-86)
+│   │   ├── CerLinkageCard.tsx            # CER 데이터 연계 카드
+│   │   └── ExpertReviewGating.tsx        # expert review 게이팅 UI
 │   ├── views/                           # 각 View 컴포넌트
 │   ├── onboarding/
 │   ├── primitives/                      # Radix 래핑 기본 요소
@@ -161,6 +179,11 @@ regula/
 | `lib/ai/` | RAG 오케스트레이션, 리트리버, 프롬프트, confidence, expert-review | DB 쿼리, auth |
 | `lib/db/` | Drizzle 스키마, 쿼리, 클라이언트 | AI/LLM 로직 |
 | `lib/traceability/` | Evidence graph, matrix, stale propagation, packet export (8 modules) | AI/LLM 로직 |
+| `lib/pms/` | PMS inputs, CER linkage, export gating (3 modules) | DB 쿼리, auth |
+| `lib/workflows/pms-report/` | PMS 보고서 executor+sections+validate+checklist (4 modules) | AI/LLM 로직 |
+| `lib/workflows/pmcf-plan/` | PMCF 계획 executor+sections+validate+checklist (4 modules) | AI/LLM 로직 |
+| `lib/workflows/pmcf-evaluation/` | PMCF 평가 executor+sections+validate+checklist (4 modules) | AI/LLM 로직 |
+| `lib/workflows/_shared/compliance-check.ts` | Article 83-86 자동 컴플라이언스 체크 | DB 쿼리, auth |
 | `lib/auth.ts` | Auth.js 설정, 세션 헬퍼 | 앱 비즈니스 로직 |
 | `hooks/` | `useStreamingAnswer`, `useConversation`, `useProject`, `useTheme` | 서버 사이드 로직 |
 | `stores/` | Zustand — `ui.ts`(테마, 사이드바), `conversation.ts` | 서버 상태(TanStack Query 담당) |
@@ -205,6 +228,12 @@ regula/
    - Evidence Packet: 산출물별 근거 패킷, PDF/Markdown export
    - Stale propagation: BFS 멱등성 보장 전파 (hook 구현 완료, wiring 이월)
    - Migration 0068, permissions (traceability.manage/view)
+
+6. **Phase 5 — PMS/PMCF** (완료, 2026-06-24, PR #246)
+   - PMS 보고서(MDCG 2022-21), PMCF 계획(Annex XIV Part B), PMCF 평가 보고서
+   - CER 데이터 자동 연계, complaint/vigilance 데이터 입력 통합
+   - Article 83-86 자동 컴플라이언스 체크, expert review 게이팅
+   - Migration 0069/0070, permissions (pms.view/manage), enum 확장 (+3 workflow_type, +7 audit_action)
 
 ### Prototype vs. Production 경계
 

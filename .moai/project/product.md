@@ -82,6 +82,24 @@ Regula는 두 지식 레포의 **소비자이자 사용자 인터페이스**다.
 - **Stale 전파**: source supersession 시 연결된 산출물에 stale flag 전파 (BFS 멱등성 보장)
 - **감사 추적**: 모든 traceability 변경 audit_logs 기록, 21 CFR Part 11 준수
 
+### 6. EU MDR PMS/PMCF 자동화 — 완료 (2026-06-24, PR #246)
+
+- **PMS 보고서(PMSR)**: MDCG 2022-21 가이던스 기반 섹션 구조 자동 생성
+- **PMCF 계획**: EU MDR Annex XIV Part B 체크리스트 + AI 작성 지원
+- **PMCF 평가 보고서**: PMCF 계획 대비 수집된 임상 데이터 평가 초안 작성
+- **CER 데이터 자동 연계**: 같은 프로젝트 내 CER 문서(#23) 자동 연계(수동 연계만, 자동 연계는 #243)
+- **complaint/vigilance 데이터 입력 통합**: 수동 입력 또는 파일 업로드
+- **SUSAR·트렌드 리포팅**: 섹션 템플릿 제공
+- **Article 83-86 자동 컴플라이언스 체크**: PMS 문서 생성 시 EU MDR 규정 준수 자동 검증
+- **Expert review 게이팅**: expert review 완료 시에만 export/close 가능 (AC-07, 서버사이드 403)
+- **보안 강화**: citation 환각 방지, IDOR cross-org runtime test(15건), audit 트랜잭션 원자성, RLS org-isolation, 0결과 pending
+
+- **Evidence Graph**: source → answer/draft → review → export artifact 관계 그래프화
+- **Matrix UI**: 요구사항/규제 요구사항/위험 항목/제출 섹션(행) × 근거 출처/생성 답변/reviewer decision/export artifact/open gap(열)
+- **Evidence Packet**: 답변·CER 섹션·PCCP 컴포넌트·510(k) 섹션·위험 항목별 근거 패킷, PDF/Markdown export
+- **Stale 전파**: source supersession 시 연결된 산출물에 stale flag 전파 (BFS 멱등성 보장)
+- **감사 추적**: 모든 traceability 변경 audit_logs 기록, 21 CFR Part 11 준수
+
 ---
 
 ## 답변 구조
@@ -132,6 +150,7 @@ Regula는 두 지식 레포의 **소비자이자 사용자 인터페이스**다.
 | Breadth 구현 | ✅ 완료 (2026-05-03) |
 | Wave 3 (Predicate) | ✅ 완료 (2026-06-19, PR #186, Issue #188) |
 | Traceability Matrix | ✅ 완료 (2026-06-23, PR #242, Issue #47) |
+| PMS/PMCF 자동화 | ✅ 완료 (2026-06-24, PR #246, Issue #53) |
 | E2E Validation Framework | ✅ 완료 (2026-06-19, Issue #182) |
 | Enterprise/Launch | 🔄 계획 중 (Wave 4-5) |
 

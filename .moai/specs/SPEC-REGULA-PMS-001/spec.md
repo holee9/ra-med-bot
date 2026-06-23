@@ -1,11 +1,11 @@
 ---
 id: SPEC-REGULA-PMS-001
 version: 1.0.0
-status: draft
+status: completed
 phase: wave5
 priority: High
 created: 2026-06-22
-updated: 2026-06-22
+updated: 2026-06-24
 author: manager-spec (batch-2026-06-22)
 issue_number: 53
 depends_on:
@@ -138,3 +138,131 @@ lib/db/schema/pms.ts                 # complaint/vigilance 입력 테이블
 - #23 CER Builder (완료 후 연계)
 - #46 ISO 14971 Risk Management (위험 데이터 공유)
 - SPEC-REGULA-BREADTH-001 (projects 테이블)
+
+---
+
+## §5 Implementation Notes (Post-Merge)
+
+### 5.1 구현 요약
+
+PR #246 (commit `8a513cc`)로 main 머지 완료. **3443 passed | 7 skipped | 0 failed**.
+
+**구현 파일 구조**:
+- `lib/workflows/pms-report/`: executor.ts, sections.ts, validate.ts, checklist.ts
+- `lib/workflows/pmcf-plan/`: executor.ts, sections.ts, validate.ts, checklist.ts
+- `lib/workflows/pmcf-evaluation/`: executor.ts, sections.ts, validate.ts, checklist.ts
+- `lib/workflows/_shared/compliance-check.ts`: Article 83-86 자동 컴플라이언스 체크
+- `lib/pms/inputs.ts`: complaint/vigilance 데이터 입력 처리
+- `lib/pms/cer-linkage.ts`: CER 데이터 자동 연계 모듈
+
+**API 라우트** (5개):
+- `POST /api/workflows/pms-report/run`
+- `POST /api/workflows/pmcf-plan/run`
+- `POST /api/workflows/pmcf-evaluation/run`
+- `POST /api/pms/inputs`
+- `GET /api/pms/[projectId]/compliance`
+- `POST /api/pms/[projectId]/documents/[documentId]/close` (expert review 게이팅)
+
+**UI 컴포넌트** (8개):
+- `app/(app)/pms/page.tsx`: PMS 워크벤치 메인
+- `app/(app)/pms/report/page.tsx`: PMS 보고서 생성
+- `app/(app)/pms/pmcf-plan/page.tsx`: PMCF 계획 작성
+- `app/(app)/pms/evaluation/page.tsx`: PMCF 평가 보고서
+- `components/pms/PmsSidebar.tsx`: 사이드바 네비게이션
+- `components/pms/ComplianceChecklist.tsx`: 컴플라이언스 체크리스트
+- `components/pms/CerLinkageCard.tsx`: CER 데이터 연계 카드
+- `components/pms/ExpertReviewGating.tsx`: expert review 게이팅 UI
+
+**권한** (2개 신규):
+- `pms.view`: ra-member 이상
+- `pms.manage`: ra-lead 이상
+- Sidebar 조건부 네비: 15→16개 항목 (PMS 추가)
+
+### 5.2 Acceptance Criteria 상태
+
+| AC# | 상태 | 비고 |
+|-----|------|------|
+| AC-01 | ✅ 구현 완료 | `workflow_type` enum에 3개 신규 타입 추가 |
+| AC-02 | ✅ 구현 완료 | MDCG 2022-21 섹션 구조로 생성 |
+| AC-03 | ✅ 구현 완료 | Annex XIV Part B 체크리스트 100% 포함 |
+| AC-04 | ⏸️ DEFERRED | REQ-PMS-004 자동 CER 연계 — CER 로컬 영속화 아키텍처 블로커로 수동 연계만 동작 |
+| AC-05 | ✅ 구현 완료 | complaint/vigilance 데이터 입력·업로드 통합 |
+| AC-06 | ✅ 구현 완료 | Article 83-86 컴플라이언스 체크 결과 표시 |
+| AC-07 | ✅ 구현 완료 | expert review 없이 close 시도 시 403 차단 |
+| AC-08 | ✅ 구현 완료 | 상태 전이 audit_logs 100% 기록 |
+
+### 5.3 보안 강화 (run 단계 expert-security + evaluator-active 검증)
+
+**Citation 환각 방지**:
+- `validatePmsCitations` 함수: 모든 PMS/PMCF 판단의 근거 citation이 실제 claim을 지지하는지 강제 검증
+- 0결과 pending 방지 (null safety)
+
+**IDOR cross-org runtime test**:
+- 15건 테스트 케이스로 타 org 접근 차단 검증
+- `withOrgAccessControl` 데코레이터로 모든 PMS API 라우트 보호
+
+**Audit 트랜잭션 원자성**:
+- `db.transaction()`으로 상태 전이와 audit log 기록 원자성 보장
+- 21 CFR Part 11 §11.10 감사 무결성 준수
+
+**RLS org-isolation**:
+- `WITH CHECK` 옵션으로 pms_inputs/pms_documents 테이블 org_id 기반 격리 강화
+- Row-Level Security 정책 자동 검증
+
+**Expert review 서버사이드 게이팅** (AC-07):
+- close 라우트에 `review_status: 'approved'` 체크 추가
+- 미승인 상태에서 403 반환 (evaluator가 누락 BLOCKER로 포착 → fix)
+
+**0결과 pending**:
+- compliance check에서 0결과 발생 시 pending 상태로 자동 전환
+- 재시도 메커니즘 추가
+
+### 5.4 Enum & Migration 변경
+
+**workflow_type enum** (11→14):
+- 신규: `pms_report`, `pmcf_plan`, `pmcf_evaluation`
+
+**audit_action enum** (119→127):
+- 신규: `pms_report_created`, `pmcf_plan_created`, `pmcf_evaluation_created`
+- 신규: `pms_inputs_submitted`, `pms_compliance_checked`
+- 신규: `pms_document_closed`, `pmcf_plan_approved`, `pmcf_evaluation_approved`
+- 신규: `pms_export_triggered`, `pms_export_blocked`
+
+**Migration files**:
+- `migrations/0069_pms.sql`: PMS 기본 테이블 및 권한
+- `migrations/0070_pms_export_gating.sql`: export 게이팅 정책
+
+### 5.5 게이트 결과
+
+```bash
+corepack pnpm typecheck              # 0 에러
+corepack pnpm exec biome check .     # 0 에러
+corepack pnpm run lint:hex           # 0 에러
+corepack pnpm test                   # 3443 passed | 7 skipped | 0 failed
+corepack pnpm build                  # PASS
+```
+
+### 5.6 교훈 반영
+
+**evaluator AC-07 서버 게이팅 누락 BLOCKER 포착 → fix**:
+- evaluator가 expert review 서버사이드 게이팅 누락을 BLOCKER로 포착
+- close 라우트에 `review_status` 체크 추가하여 수정
+
+**typecheck 오탐 직접 실행으로 정정**:
+- TS7022 에러가 실제 구현 문제가 아님을 확인
+- typecheck 직접 실행으로 오탐 제거
+
+---
+
+## §6 Follow-up Issues
+
+PMS #53 완료로 해제된 후속 이슈들:
+
+1. **#243 (AC-04 DEFERRED)**: CER 로컬 영속화 아키텍처 구현 — REQ-PMS-004 자동 CER 연계 완성
+2. **#244**: PMCF 평가 보고서 UI 탭 추가 — 현재 단일 페이지, 탭 구조로 개선
+3. **#245**: PMS E2E 테스트 및 통합 테스트 확대 — 현재 단위 테스트만, E2E 필요
+
+### §2/§3 as-implemented 주석
+
+- REQ-PMS-004: "⏸️ PARTIAL — 수동 CER 연계만 동작 (자동 연계는 #243 DEFERRED)"
+- AC-04: "⏸️ DEFERRED — CER 로컬 영속화 아키텍처 블로커"

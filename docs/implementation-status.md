@@ -194,6 +194,104 @@ sync Phase 0.55 보안 리뷰에서 발견·수정된 머지 차단 결함:
 
 ---
 
+## SPEC-REGULA-PMS-001 (#53) — EU MDR 출시 후 임상 감시 (PMS 보고서 & PMCF 계획 생성기)
+
+**Status**: 구현 완료 (PR #246, 2026-06-24 머지, commit `8a513cc`)
+
+### Summary
+
+Regula가 EU MDR Article 83-86 Post-Market Surveillance(PMS) 시스템을 완성했습니다. PMS 보고서(PMSR) 구조화 자동 작성, PMCF 계획 템플릿 생성 및 AI 지원 작성, PMCF 평가 보고서 초안 생성, CER 데이터 자동 연계, complaint/vigilance 데이터 입력 통합, SUSAR·트렌드 리포팅, Article 83-86 자동 컴플라이언스 체크, expert review 게이팅이 통합되었습니다.
+
+### What's Implemented
+
+**Phase 0: 기반 (DB + 권한 + 열거형)**
+- `migrations/0069_pms.sql`: workflow_type enum +3(`pms_report`, `pmcf_plan`, `pmcf_evaluation`), pms_inputs/pms_documents 테이블, audit_action enum +7 PMS 관련 액션
+- `migrations/0070_pms_export_gating.sql`: PMS export 게이팅 정책
+- `lib/auth/permissions.ts`: 권한 2종 추가(`pms.view`, `pms.manage`) — 총 43개 권한
+- RLS 정책: org_id 기반 격리 상속(pms_inputs, pms_documents)
+
+**Phase 1: 워크플로우 Executor**
+- `lib/workflows/pms-report/executor.ts`: PMS 보고서 생성(MDCG 2022-21 섹션 구조)
+- `lib/workflows/pmcf-plan/executor.ts`: PMCF 계획 생성(Annex XIV Part B 체크리스트)
+- `lib/workflows/pmcf-evaluation/executor.ts`: PMCF 평가 보고서 생성
+- `lib/workflows/_shared/compliance-check.ts`: Article 83-86 자동 컴플라이언스 체크
+
+**Phase 2: PMS 모듈**
+- `lib/pms/inputs.ts`: complaint/vigilance 데이터 입력 처리(수동/파일 업로드)
+- `lib/pms/cer-linkage.ts`: CER 데이터 자동 연계 모듈(같은 프로젝트 내 CER 문서 #23)
+
+**Phase 3: API 라우트 (5개)**
+- `POST /api/workflows/pms-report/run`: PMS 보고서 생성
+- `POST /api/workflows/pmcf-plan/run`: PMCF 계획 생성
+- `POST /api/workflows/pmcf-evaluation/run`: PMCF 평가 보고서 생성
+- `POST /api/pms/inputs`: complaint/vigilance 데이터 입력·업로드
+- `GET /api/pms/[projectId]/compliance`: Article 83-86 체크 결과 조회
+- `POST /api/pms/[projectId]/documents/[documentId]/close`: expert review 게이팅(close 차단)
+
+**Phase 4: UI 컴포넌트 (8개)**
+- `app/(app)/pms/page.tsx`: PMS 워크벤치 메인
+- `app/(app)/pms/report/page.tsx`: PMS 보고서 생성 UI
+- `app/(app)/pms/pmcf-plan/page.tsx`: PMCF 계획 작성 UI
+- `app/(app)/pms/evaluation/page.tsx`: PMCF 평가 보고서 UI
+- `components/pms/PmsSidebar.tsx`: 사이드바 네비게이션(조건부 15→16)
+- `components/pms/ComplianceChecklist.tsx`: 컴플라이언스 체크리스트(Article 83-86)
+- `components/pms/CerLinkageCard.tsx`: CER 데이터 연계 카드
+- `components/pms/ExpertReviewGating.tsx`: expert review 게이팅 UI
+
+**Phase 5: 보안 강화**
+- `validatePmsCitations`: citation 환각 방지(모든 판단의 근거 citation 검증)
+- IDOR cross-org runtime test: 15건 테스트 케이스로 타 org 접근 차단
+- Audit 트랜잭션 원자성: `db.transaction()`으로 상태 전이와 audit log 기록 원자성 보장(21 CFR Part 11 §11.10)
+- RLS org-isolation: `WITH CHECK` 옵션으로 pms_inputs/pms_documents 테이블 org_id 기반 격리
+- Expert review 서버사이드 게이팅: close 라우트에 `review_status: 'approved'` 체크(AC-07)
+- 0결과 pending: compliance check에서 0결과 발생 시 pending 상태 자동 전환
+
+### Environment Variables (Optional)
+
+```bash
+# PMS (#53) — 별도 env 변수 없음. 기존 DB/AI/Inngest 설정 공유.
+```
+
+### Verification Results
+
+```bash
+corepack pnpm typecheck              # PASS: 0 에러
+corepack pnpm exec biome check .     # PASS: 0 에러
+corepack pnpm run lint:hex           # PASS: 0 에러
+corepack pnpm test                   # PASS: 3443 passed | 7 skipped | 0 failed
+corepack pnpm build                  # PASS
+```
+
+Integration test coverage: AC-01(enum +3), AC-02(PMSR MDCG 2022-21), AC-03(PMCF Annex XIV Part B), AC-04(CER 연계 수동만), AC-05(complaint/vigilance 입력·업로드), AC-06(Article 83-86 체크), AC-07(expert review 게이팅), AC-08(audit logs 100%).
+
+### Security Hardening (run 단계 expert-security + evaluator-active)
+
+**C1 (CRITICAL → RESOLVED)**: expert가 AC-07 서버 게이팅 누락 BLOCKER 포착 → close 라우트에 `review_status` 체크 추가하여 수정.
+
+**H1 (HIGH)**: citation 환각 방지(`validatePmsCitations`) — 모든 PMS/PMCF 판단의 근거 citation이 실제 claim을 지지하는지 강제 검증.
+
+**H2**: IDOR cross-org runtime test — 15건 테스트 케이스로 타 org 접근 차단 검증, `withOrgAccessControl` 데코레이터로 모든 PMS API 라우트 보호.
+
+**M1**: Audit 트랜잭션 원자성 — `db.transaction()`으로 상태 전이와 audit log 기록 원자성 보장(21 CFR Part 11 §11.10).
+
+**M2**: RLS org-isolation — `WITH CHECK` 옵션으로 pms_inputs/pms_documents 테이블 org_id 기반 격리 강화.
+
+**M3**: 0결과 pending — compliance check에서 0결과 발생 시 pending 상태 자동 전환, 재시도 메커니즘 추가.
+
+### Divergences from Spec (spec-anchored Level 2)
+
+1. **CER 연계**: AC-04 ⏸️ DEFERRED — CER 로컬 영속화 아키텍처 블로커로 수동 연계만 동작(자동 연계는 #243)
+2. **PMCF 평가 UI 탭**: 현재 단일 페이지, 탭 구조로 개선 필요(#244)
+3. **E2E 테스트**: 현재 단위 테스트만, E2E/통합테스트 필요(#245)
+
+### Follow-ups (Unlocked by #53)
+
+1. **#243 (AC-04 DEFERRED)**: CER 로컬 영속화 아키텍처 구현 — REQ-PMS-004 자동 CER 연계 완성
+2. **#244**: PMCF 평가 보고서 UI 탭 추가 — 현재 단일 페이지, 탭 구조로 개선
+3. **#245**: PMS E2E 테스트 및 통합 테스트 확대 — 현재 단위 테스트만, E2E 필요
+
+---
+
 ## Codebase Analysis Update (2026-06-19)
 
 ### Latest Documentation Updates

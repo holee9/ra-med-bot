@@ -955,6 +955,234 @@ Side effects:
 - Updates `unanswered_queue.classification` and `status` to `classified`
 - Writes append-only audit event `knowledge_gap_classified`
 
+### POST /api/workflows/pms-report/run
+
+Generate a PMS Report (PMSR) based on MDCG 2022-21 guidance section structure.
+
+Permission: `pms.manage` (ra-lead+).
+
+```http
+POST /api/workflows/pms-report/run
+Content-Type: application/json
+Authorization: session cookie
+
+{
+  "projectId": "uuid",
+  "options": {
+    "includeSUSAR": true,
+    "includeTrends": true
+  }
+}
+```
+
+**Response `200 OK`**:
+
+```json
+{
+  "documentId": "uuid",
+  "sections": [
+    {
+      "title": "Executive Summary",
+      "content": "..."
+    },
+    {
+      "title": "PMS Data Overview",
+      "content": "..."
+    }
+  ],
+  "complianceStatus": {
+    "article83": true,
+    "article84": true,
+    "article85": false,
+    "article86": true
+  },
+  "reviewStatus": "pending"
+}
+```
+
+### POST /api/workflows/pmcf-plan/run
+
+Generate a PMCF Plan based on EU MDR Annex XIV Part B checklist with AI-assisted writing.
+
+Permission: `pms.manage` (ra-lead+).
+
+```http
+POST /api/workflows/pmcf-plan/run
+Content-Type: application/json
+Authorization: session cookie
+
+{
+  "projectId": "uuid",
+  "deviceClass": "Class IIa",
+  "intendedUse": "...",
+  "indications": ["...", "..."]
+}
+```
+
+**Response `200 OK`**:
+
+```json
+{
+  "documentId": "uuid",
+  "checklist": [
+    {
+      "requirement": "Annex XIV Part B.1",
+      "status": "addressed",
+      "evidence": "..."
+    }
+  ],
+  "sections": [
+    {
+      "title": "PMCF Strategy",
+      "content": "..."
+    }
+  ],
+  "reviewStatus": "pending"
+}
+```
+
+### POST /api/workflows/pmcf-evaluation/run
+
+Generate a PMCF Evaluation Report draft comparing collected clinical data against PMCF plan.
+
+Permission: `pms.manage` (ra-lead+).
+
+```http
+POST /api/workflows/pmcf-evaluation/run
+Content-Type: application/json
+Authorization: session cookie
+
+{
+  "projectId": "uuid",
+  "pmcfPlanId": "uuid"
+}
+```
+
+**Response `200 OK`**:
+
+```json
+{
+  "documentId": "uuid",
+  "evaluation": {
+    "dataCollected": "...",
+    "planAdherence": "partial",
+    "findings": "..."
+  },
+  "sections": [
+    {
+      "title": "Evaluation Summary",
+      "content": "..."
+    }
+  ],
+  "reviewStatus": "pending"
+}
+```
+
+### POST /api/pms/inputs
+
+Submit complaint/vigilance data (manual entry or file upload) for PMS reporting.
+
+Permission: `pms.view` (ra-member+).
+
+```http
+POST /api/pms/inputs
+Content-Type: application/json
+Authorization: session cookie
+
+{
+  "projectId": "uuid",
+  "source": "vigilance_database",
+  "severity": "serious",
+  "susarFlag": true,
+  "trendCategory": "increasing_frequency",
+  "description": "...",
+  "fileUrl": "https://s3.../upload.pdf"
+}
+```
+
+**Response `200 OK`**:
+
+```json
+{
+  "inputId": "uuid",
+  "status": "submitted",
+  "processedAt": "2026-06-24T03:00:00Z"
+}
+```
+
+### GET /api/pms/[projectId]/compliance
+
+Get EU MDR Article 83-86 compliance check results for a PMS document.
+
+Permission: `pms.view` (ra-member+).
+
+```http
+GET /api/pms/uuid/compliance
+Authorization: session cookie
+```
+
+**Response `200 OK`**:
+
+```json
+{
+  "compliance": {
+    "article83": {
+      "compliant": true,
+      "findings": []
+    },
+    "article84": {
+      "compliant": true,
+      "findings": []
+    },
+    "article85": {
+      "compliant": false,
+      "findings": ["SUSAR reporting timeline exceeds 7 days"]
+    },
+    "article86": {
+      "compliant": true,
+      "findings": []
+    }
+  },
+  "overallCompliant": false
+}
+```
+
+### POST /api/pms/[projectId]/documents/[documentId]/close
+
+Close a PMS document with expert review gating. Only documents with `reviewStatus: 'approved'` can be closed.
+
+Permission: `pms.manage` (ra-lead+).
+
+```http
+POST /api/pms/uuid/documents/uuid/close
+Content-Type: application/json
+Authorization: session cookie
+
+{
+  "reviewerId": "uuid",
+  "rationale": "Expert review completed, all findings addressed"
+}
+```
+
+**Response `200 OK`**:
+
+```json
+{
+  "documentId": "uuid",
+  "status": "closed",
+  "closedAt": "2026-06-24T04:00:00Z"
+}
+```
+
+**Response `403 Forbidden`** (when expert review not approved):
+
+```json
+{
+  "error": "expert_review_required",
+  "message": "Document cannot be closed without expert review approval"
+}
+```
+
 ### POST /api/knowledge-gap/replay/[queueId]
 
 Execute replay test for a resolved gap after KB augmentation. Verifies if the question now passes with citations.

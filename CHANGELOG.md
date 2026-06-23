@@ -7,9 +7,9 @@
 
 ---
 
-## [Unreleased] — Wave 5 (2026-06-20~21)
+## [Unreleased] — Wave 5 (2026-06-20~24)
 
-> **Wave 5 규제 준수 축 완성**: Issue #88 전자서명(PR #204), Issue #87 Export Hub(PR #203), Issue #92 외부 감사관 뷰(PR #206)가 main에 머지되었습니다. 21 CFR Part 11 §11.50/§11.70 전자서명, 다중 포맷 내보내기, 외부 감사관 read-only 페르소나 + 1-클릭 감사 패키지가 통합되었습니다.
+> **Wave 5 규제 준수 축 완성**: Issue #88 전자서명(PR #204), Issue #87 Export Hub(PR #203), Issue #92 외부 감사관 뷰(PR #206), Issue #53 PMS(PR #246)가 main에 머지되었습니다. 21 CFR Part 11 §11.50/§11.70 전자서명, 다중 포맷 내보내기, 외부 감사관 read-only 페르소나 + 1-클릭 감사 패키지, EU MDR PMS/PMCF 자동화가 통합되었습니다.
 
 ### Backend Tech Debt Batch (2026-06-21) — PRs Pending Review
 
@@ -55,6 +55,21 @@
   - `components/chat/AnswerBlock.tsx`: ExportButton 통합 (답변 내보내기)
   - `components/chat/Checklist.tsx`: ExportButton 통합 (체크리스트 내보내기)
   - `components/chat/ComparisonTable.tsx`: ExportButton 통합 (비교표 내보내기)
+
+- **EU MDR Post-Market Surveillance (PMS)** (SPEC-REGULA-PMS-001 — Issue #53, PR #246): PMS 보고서 & PMCF 계획 생성기. EU MDR Article 83-86 자동 컴플라이언스 체크, CER 데이터 자동 연계, expert review 게이팅.
+  - `workflow_type` enum 확장: `pms_report`, `pmcf_plan`, `pmcf_evaluation` (11→14)
+  - `audit_action` enum 확장: +7 PMS/PMCF/Export 관련 액션 (119→127)
+  - **Migration**: `migrations/0069_pms.sql`, `migrations/0070_pms_export_gating.sql`
+  - **워크플로우 Executor**: `lib/workflows/pms-report/`, `lib/workflows/pmcf-plan/`, `lib/workflows/pmcf-evaluation/` (executor+sections+validate+checklist)
+  - **공유 모듈**: `lib/workflows/_shared/compliance-check.ts` (Article 83-86 체크)
+  - **PMS 모듈**: `lib/pms/inputs.ts`, `lib/pms/cer-linkage.ts`
+  - **API 라우트** (5개): POST /api/workflows/{pms-report,pmcf-plan,pmcf-evaluation}/run, POST /api/pms/inputs, GET /api/pms/[projectId]/compliance, POST /api/pms/[projectId]/documents/[documentId]/close (expert review 게이팅)
+  - **UI 컴포넌트** (8개): `app/(app)/pms/page.tsx`, `app/(app)/pms/report/page.tsx`, `app/(app)/pms/pmcf-plan/page.tsx`, `app/(app)/pms/evaluation/page.tsx`, `components/pms/` (5개)
+  - **권한**: `pms.view` (ra-member+), `pms.manage` (ra-lead), Sidebar 조건부 네비 15→16
+  - **보안 강화**: citation 환각 방지 (`validatePmsCitations`), IDOR cross-org runtime test (15건), audit 트랜잭션 원자성 (`db.transaction`), RLS org-isolation (WITH CHECK), expert review 서버사이드 게이팅 (AC-07 close 라우트 403), 0결과 pending
+  - **게이트 결과**: typecheck 0에러 · biome 0에러 · build PASS · **3443 passed | 7 skipped | 0 failed**
+  - **AC 상태**: AC-01/02/03/05/06/07/08 ✅ 구현 완료 · **AC-04 ⏸️ DEFERRED** (REQ-PMS-004 자동 CER 연계 — CER 로컬 영속화 아키텍처 블로커, 수동 연계만 동작)
+  - **Follow-ups**: #243(AC-04 CER 자동 연계), #244(PMCF Eval UI 탭), #245(E2E/통합테스트)
   - `tests/e2e/export-hub.spec.ts`: E2E 테스트 24개 (모든 포맷 내보내기 플로우, 감사 로깅 검증)
   - `tests/e2e/fixtures/export-fixtures.ts`: E2E 테스트 픽스처 (FDA 21 CFR, EU MDR 샘플 데이터)
   - `app/(app)/export/page.tsx`: 내보내기 기능 문서 페이지 (한국어)

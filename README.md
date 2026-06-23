@@ -48,7 +48,7 @@
 
 ### 신규 SPEC Batch (2026-06-22) — Wave 3/4/5·시스템 26개 스펙 일괄 작성
 
-2026-06-22에 `manager-spec` 배치 작업으로 **26개 `SPEC-REGULA-*`** 가 신규 작성되었습니다 (모두 `status: draft`, 기존 이슈 #35~#72에 1:1 매핑). 각 SPEC은 `.moai/specs/SPEC-REGULA-*/spec.md`에 위치하며, 멀티 관할권 규제 전략(STRATEGY #40, 킬러 기능)을 필두로 채택·검증·PMS·거버넌스 축이 한 번에 정의되었습니다. 구현 진행은 각 SPEC의 이슈에서 추적합니다.
+2026-06-22에 `manager-spec` 배치 작업으로 **26개 `SPEC-REGULA-*`** 가 신규 작성되었습니다 (대부분 `status: draft`이나, SPEC-REGULA-KNOWLEDGE-GAP-001과 SPEC-REGULA-PMS-001은 completed로 전환). 기존 이슈 #35~#72에 1:1 매핑되며, 각 SPEC은 `.moai/specs/SPEC-REGULA-*/spec.md`에 위치합니다. 멀티 관할권 규제 전략(STRATEGY #40, 킬러 기능)을 필두로 채택·검증·PMS·거버넌스 축이 한 번에 정의되었습니다. 구현 진행은 각 SPEC의 이슈에서 추적합니다.
 
 **Wave 3 — 전략·분류·지식 루프 (11개)**
 
@@ -85,7 +85,7 @@
 | `SPEC-REGULA-CLINICAL-INVESTIGATION-001` | #69 | 임상시험·임상조사 계획기 (FDA IDE·EU MDR Clinical Investigation·IRB 패키지) |
 | `SPEC-REGULA-CYBERDEVICE-001` | #67 | 의료기기 사이버보안·SBOM 제출 증거 (FDA Cybersecurity·EU MDR GSPR 대응) |
 | `SPEC-REGULA-LABELING-001` | #66 | 라벨링·IFU·클레임 검토 워크벤치 (표시문구·사용목적·번역 일관성 관리) |
-| `SPEC-REGULA-PMS-001` | #53 | EU MDR 출시 후 임상 감시 (PMS 보고서 & PMCF 계획 생성기) |
+| `SPEC-REGULA-PMS-001` | #53 | ✅ 구현 완료 EU MDR 출시 후 임상 감시 (PMS 보고서 & PMCF 계획 생성기) |
 | `SPEC-REGULA-REIMBURSEMENT-001` | #70 | 보험·상환 경로 분석기 (CPT/HCPCS·DRG·수가·시장접근 근거 생성) |
 
 **시스템 — 검증·코퍼스 라이선스·모델 거버넌스 (3개)**
