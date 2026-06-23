@@ -27,6 +27,7 @@ import { consult } from '@/lib/ai/consult';
 import { writeAudit } from '@/lib/audit';
 import { db } from '@/lib/db/client';
 import { unansweredQueue } from '@/lib/db/schema';
+import { type VerifyEdgesResult, verifyAnswerEdges } from '@/lib/traceability/verify-edges';
 import type { SourceItem, StreamEvent } from '@/types/streaming';
 import { and, eq } from 'drizzle-orm';
 import type { Session } from 'next-auth';
@@ -44,6 +45,13 @@ export interface ReplayGapTestResult {
   remainingReason: ReturnType<typeof detectKnowledgeGap>;
   /** Human-readable trace of why passed/failed — for audit meta (PII-free). */
   reasonSummary: string;
+  /**
+   * REQ-011 edge-integrity verification result. Verifies that every cited
+   * message_source has a corresponding evidence_node and none are stale.
+   * `intact=true` means the evidence graph is consistent with the replay's
+   * citations. When the org has no traceability data the result defaults intact.
+   */
+  edgeIntegrity: VerifyEdgesResult;
 }
 
 /** Synthetic session for replay (system-initiated, not tied to a user). */
@@ -145,6 +153,18 @@ export async function replayGapTest(queueId: string, orgId?: string): Promise<Re
 
   const passed = remainingReason === null;
 
+  // C1 fix (REQ-TRACEABILITY-011): verify answer edge integrity. The cited
+  // message_sources from the replay must have corresponding evidence_nodes and
+  // none should be stale-flagged. When the org has no traceability data yet,
+  // the verifier returns intact=true (empty refIds). The result is observable
+  // on the ReplayGapTestResult so callers (HTTP route, delta-sync) can gate
+  // resolution on evidence-graph consistency.
+  const messageSourceRefIds = collected.sources.map((s) => s.id);
+  const edgeIntegrity = await verifyAnswerEdges(db, {
+    orgId: orgId ?? '',
+    messageSourceRefIds,
+  });
+
   return {
     passed,
     answerWithCitations: collected.prose,
@@ -153,6 +173,7 @@ export async function replayGapTest(queueId: string, orgId?: string): Promise<Re
     reasonSummary: passed
       ? 'all 4 gap conditions cleared after replay'
       : `gap still present: ${remainingReason}`,
+    edgeIntegrity,
   };
 }
 

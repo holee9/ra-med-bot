@@ -250,6 +250,13 @@ export const auditActionEnum = pgEnum('audit_action', [
   'knowledge_gap_classified',
   'knowledge_gap_digest_sent',
   'knowledge_gap_resolved',
+  // SPEC-REGULA-TRACEABILITY-001 — added via 0068_traceability.sql (Issue #47,
+  // REQ-TRACEABILITY-010): 4 traceability graph audit actions for the local
+  // evidence-graph layer (separate from Issue 169 BFF proxy).
+  'traceability.edge_created',
+  'traceability.edge_deleted',
+  'traceability.packet_exported',
+  'traceability.stale_propagated',
 ]);
 
 // @MX:NOTE [AUTO] Knowledge gap enums — SPEC-REGULA-KNOWLEDGE-GAP-001 (Issue #35).
@@ -1654,5 +1661,105 @@ export const regulatoryDeadlines = pgTable(
   (t) => ({
     projectIdx: index('idx_regulatory_deadlines_project').on(t.projectId, t.dueDate),
     jurisdictionIdx: index('idx_regulatory_deadlines_jurisdiction').on(t.jurisdiction),
+  }),
+);
+
+// ---------------------------------------------------------------------------
+// SPEC-REGULA-TRACEABILITY-001 (Issue #47) — local evidence graph layer.
+// Thin abstract graph over the existing tables: nodes reference rows via
+// (ref_table, ref_id), edges encode typed relations, stale_flags propagate
+// when a source/regulation is superseded. Drizzle mirrors of the SQL types
+// created in 0068_traceability.sql — keep in lock-step or runtime inserts fail.
+// @MX:SPEC SPEC-REGULA-TRACEABILITY-001 (REQ-TRACEABILITY-001~003, REQ-TRACEABILITY-009)
+// ---------------------------------------------------------------------------
+
+export const evidenceNodeTypeEnum = pgEnum('evidence_node_type', [
+  'source_section',
+  'message_source',
+  'message',
+  'workflow_run',
+  'expert_review',
+  'submission_package',
+  'risk_item',
+  'regulatory_update',
+]);
+
+export const evidenceEdgeRelationEnum = pgEnum('evidence_edge_relation', [
+  'derived_from',
+  'cites',
+  'reviewed_by',
+  'exported_in',
+  'mitigates',
+  'satisfies',
+]);
+
+export const staleReasonEnum = pgEnum('stale_reason', [
+  'superseded_source',
+  'superseded_regulation',
+]);
+
+export const evidenceNodes = pgTable(
+  'evidence_nodes',
+  {
+    id: uuid('id').defaultRandom().primaryKey(),
+    orgId: uuid('org_id').notNull(),
+    projectId: uuid('project_id'),
+    nodeType: evidenceNodeTypeEnum('node_type').notNull(),
+    refTable: text('ref_table').notNull(),
+    refId: text('ref_id').notNull(),
+    authority: text('authority'),
+    version: text('version'),
+    effectiveDate: timestamp('effective_date', { withTimezone: true, mode: 'date' }),
+    reviewerId: uuid('reviewer_id'),
+    artifactHash: text('artifact_hash'),
+    createdAt: timestamp('created_at', { withTimezone: true, mode: 'date' }).notNull().defaultNow(),
+    createdBy: uuid('created_by').notNull(),
+  },
+  (t) => ({
+    refIdx: index('idx_evidence_nodes_ref').on(t.refTable, t.refId),
+    projectIdx: index('idx_evidence_nodes_project').on(t.projectId),
+    orgIdx: index('idx_evidence_nodes_org').on(t.orgId),
+    refUnique: unique('uq_evidence_nodes_ref').on(t.orgId, t.nodeType, t.refTable, t.refId),
+  }),
+);
+
+export const evidenceEdges = pgTable(
+  'evidence_edges',
+  {
+    id: uuid('id').defaultRandom().primaryKey(),
+    orgId: uuid('org_id').notNull(),
+    fromNodeId: uuid('from_node_id').notNull(),
+    toNodeId: uuid('to_node_id').notNull(),
+    relation: evidenceEdgeRelationEnum('relation').notNull(),
+    createdBy: uuid('created_by').notNull(),
+    createdAt: timestamp('created_at', { withTimezone: true, mode: 'date' }).notNull().defaultNow(),
+  },
+  (t) => ({
+    fromIdx: index('idx_evidence_edges_from').on(t.fromNodeId),
+    toIdx: index('idx_evidence_edges_to').on(t.toNodeId),
+    relationIdx: index('idx_evidence_edges_relation').on(t.relation),
+    relationUnique: unique('uq_evidence_edges_relation').on(
+      t.orgId,
+      t.fromNodeId,
+      t.toNodeId,
+      t.relation,
+    ),
+  }),
+);
+
+export const staleFlags = pgTable(
+  'stale_flags',
+  {
+    id: uuid('id').defaultRandom().primaryKey(),
+    orgId: uuid('org_id').notNull(),
+    nodeId: uuid('node_id').notNull(),
+    reason: staleReasonEnum('reason').notNull(),
+    propagatedFromNodeId: uuid('propagated_from_node_id'),
+    createdAt: timestamp('created_at', { withTimezone: true, mode: 'date' }).notNull().defaultNow(),
+  },
+  (t) => ({
+    nodeIdx: index('idx_stale_flags_node').on(t.nodeId),
+    orgIdx: index('idx_stale_flags_org').on(t.orgId),
+    nodeReasonUnique: unique('uq_stale_flags_node_reason').on(t.nodeId, t.reason),
   }),
 );

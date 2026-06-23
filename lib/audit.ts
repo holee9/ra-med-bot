@@ -216,7 +216,13 @@ export type AuditAction =
   | 'knowledge_gap_created'
   | 'knowledge_gap_classified'
   | 'knowledge_gap_digest_sent'
-  | 'knowledge_gap_resolved';
+  | 'knowledge_gap_resolved'
+  // SPEC-REGULA-TRACEABILITY-001 (Issue #47, REQ-TRACEABILITY-010).
+  // Four edge lifecycle actions for the local evidence graph layer.
+  | 'traceability.edge_created'
+  | 'traceability.edge_deleted'
+  | 'traceability.packet_exported'
+  | 'traceability.stale_propagated';
 
 export interface AuditEvent {
   /** User UUID, or null for system-initiated events. */
@@ -236,12 +242,28 @@ export interface AuditEvent {
 }
 
 /**
+ * Minimal transaction-handle type compatible with both the db singleton and a
+ * tx-scoped clone. Uses the structural `insert` signature so both the db and a
+ * Drizzle PgTransaction satisfy this without a hard import of the tx type.
+ */
+type AuditDbHandle = {
+  insert: (typeof db)['insert'];
+};
+
+/**
  * Insert an immutable audit row. Failures propagate to the caller — the
  * regulated workflow MUST fail closed if the audit write fails. Do NOT
  * swallow this error.
+ *
+ * H2 fix (21 CFR Part 11 atomicity): accepts an optional `tx` transaction
+ * handle so the audit insert rides the same transaction boundary as the
+ * mutation it records. Callers that wrap mutation + audit in `db.transaction`
+ * pass the `tx` here so a transient failure between the two rolls back both.
+ * Omitting `tx` uses the singleton `db` (autocommit) — the historical path.
  */
-export async function writeAudit(params: AuditEvent): Promise<void> {
-  await db.insert(auditLogs).values({
+export async function writeAudit(params: AuditEvent, tx?: AuditDbHandle): Promise<void> {
+  const client = tx ?? db;
+  await client.insert(auditLogs).values({
     actorId: params.actor_id,
     action: params.action,
     resourceType: params.resource_type,

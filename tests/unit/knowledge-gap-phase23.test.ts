@@ -349,6 +349,7 @@ describe('triggerGapReplay — closed loop', () => {
       ],
       remainingReason: null,
       reasonSummary: 'cleared',
+      edgeIntegrity: { intact: true, brokenEdges: [], staleNodes: [] },
     });
     const markGapResolvedSpy = vi.spyOn(replayMod, 'markGapResolved').mockResolvedValue(undefined);
     try {

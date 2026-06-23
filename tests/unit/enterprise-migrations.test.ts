@@ -300,7 +300,7 @@ describe('lib/db/schema.ts Phase 5 additions', () => {
     const values = extractAuditActionEnumValues(src);
     const typeValues = extractAuditActionTypeValues(auditSrc);
     expect(values).toEqual(typeValues);
-    expect(values).toHaveLength(114); // +2 signature.* (ESIG-001) +3 audit.* (AUDITOR-VIEW-001) +2 personal_bookmark.* (PERSONAL-LIB-001) +3 deadline.* (CALENDAR-001) +3 corpus.* (DELTA-SYNC-001) +4 knowledge_gap_* (KNOWLEDGE-GAP-001) +1 classification_exported (CLASSIFY-001)
+    expect(values).toHaveLength(118); // +2 signature.* (ESIG-001) +3 audit.* (AUDITOR-VIEW-001) +2 personal_bookmark.* (PERSONAL-LIB-001) +3 deadline.* (CALENDAR-001) +3 corpus.* (DELTA-SYNC-001) +4 knowledge_gap_* (KNOWLEDGE-GAP-001) +1 classification_exported (CLASSIFY-001) +4 traceability.* (TRACEABILITY-001)
   });
 
   it.each(REQUIRED_RECOVERY_TABLES)(
@@ -349,7 +349,7 @@ describe('lib/audit.ts Phase 5 AuditAction type additions', () => {
         'export.confluence',
       ]),
     );
-    expect(values).toHaveLength(114); // +2 signature.* (ESIG-001) +3 audit.* (AUDITOR-VIEW-001) +2 personal_bookmark.* (PERSONAL-LIB-001) +3 deadline.* (CALENDAR-001) +3 corpus.* (DELTA-SYNC-001) +4 knowledge_gap_* (KNOWLEDGE-GAP-001) +1 classification_exported (CLASSIFY-001)
+    expect(values).toHaveLength(118); // +2 signature.* (ESIG-001) +3 audit.* (AUDITOR-VIEW-001) +2 personal_bookmark.* (PERSONAL-LIB-001) +3 deadline.* (CALENDAR-001) +3 corpus.* (DELTA-SYNC-001) +4 knowledge_gap_* (KNOWLEDGE-GAP-001) +1 classification_exported (CLASSIFY-001) +4 traceability.* (TRACEABILITY-001)
   });
 
   it.each(REQUIRED_RECOVERY_AUDIT_ACTIONS)(
@@ -614,5 +614,151 @@ describe('SPEC-REGULA-CLASSIFY-001 (Issue #59) — migration 0067', () => {
     expect(src).toMatch(/input:\s*jsonb\('input'\)/);
     expect(src).toMatch(/result:\s*jsonb\('result'\)/);
     expect(src).toMatch(/status:\s*text\('status'\)/);
+  });
+});
+
+// ---------------------------------------------------------------------------
+// SPEC-REGULA-TRACEABILITY-001 (Issue #47) — local evidence graph layer
+// (migration 0068). Adds evidence_nodes / evidence_edges / stale_flags tables,
+// 3 new pgEnums (evidence_node_type, evidence_edge_relation, stale_reason),
+// 4 traceability audit_action values, and RLS org isolation. STRICTLY separate
+// from Issue #169's /api/ra/traceability/* BFF proxy — local graph namespace.
+// ---------------------------------------------------------------------------
+describe('SPEC-REGULA-TRACEABILITY-001 (Issue #47) — migration 0068', () => {
+  it('migration file 0068_traceability.sql exists', () => {
+    expect(fileExists('migrations/0068_traceability.sql')).toBe(true);
+  });
+
+  it('creates the 3 new pgEnums', () => {
+    const sql = readText('migrations/0068_traceability.sql');
+    expect(sql).toMatch(/CREATE TYPE evidence_node_type AS ENUM/);
+    expect(sql).toMatch(/CREATE TYPE evidence_edge_relation AS ENUM/);
+    expect(sql).toMatch(/CREATE TYPE stale_reason AS ENUM/);
+  });
+
+  it('evidence_node_type enum includes the 8 node kinds', () => {
+    const sql = readText('migrations/0068_traceability.sql');
+    for (const v of [
+      'source_section',
+      'message_source',
+      'message',
+      'workflow_run',
+      'expert_review',
+      'submission_package',
+      'risk_item',
+      'regulatory_update',
+    ]) {
+      expect(sql).toContain(`'${v}'`);
+    }
+  });
+
+  it('evidence_edge_relation enum includes the 6 relations', () => {
+    const sql = readText('migrations/0068_traceability.sql');
+    for (const v of [
+      'derived_from',
+      'cites',
+      'reviewed_by',
+      'exported_in',
+      'mitigates',
+      'satisfies',
+    ]) {
+      expect(sql).toContain(`'${v}'`);
+    }
+  });
+
+  it('adds the 4 traceability audit_action values', () => {
+    const sql = readText('migrations/0068_traceability.sql');
+    expect(sql).toMatch(
+      /ALTER TYPE audit_action ADD VALUE IF NOT EXISTS 'traceability.edge_created'/,
+    );
+    expect(sql).toMatch(
+      /ALTER TYPE audit_action ADD VALUE IF NOT EXISTS 'traceability.edge_deleted'/,
+    );
+    expect(sql).toMatch(
+      /ALTER TYPE audit_action ADD VALUE IF NOT EXISTS 'traceability.packet_exported'/,
+    );
+    expect(sql).toMatch(
+      /ALTER TYPE audit_action ADD VALUE IF NOT EXISTS 'traceability.stale_propagated'/,
+    );
+  });
+
+  it('creates evidence_nodes with org_id, project_id, node metadata columns', () => {
+    const sql = readText('migrations/0068_traceability.sql');
+    expect(sql).toMatch(/CREATE TABLE evidence_nodes/);
+    expect(sql).toMatch(/org_id\s+UUID NOT NULL REFERENCES organizations/);
+    expect(sql).toMatch(/project_id\s+UUID REFERENCES projects/);
+    expect(sql).toMatch(/authority\s+TEXT/);
+    expect(sql).toMatch(/version\s+TEXT/);
+    expect(sql).toMatch(/effective_date\s+TIMESTAMPTZ/);
+    expect(sql).toMatch(/reviewer_id\s+UUID REFERENCES users/);
+    expect(sql).toMatch(/artifact_hash\s+TEXT/);
+  });
+
+  it('creates evidence_edges with no-self CHECK and org_id', () => {
+    const sql = readText('migrations/0068_traceability.sql');
+    expect(sql).toMatch(/CREATE TABLE evidence_edges/);
+    expect(sql).toMatch(/evidence_edges_no_self CHECK \(from_node_id <> to_node_id\)/);
+    expect(sql).toMatch(/org_id\s+UUID NOT NULL REFERENCES organizations/);
+  });
+
+  it('creates stale_flags with propagated_from_node_id', () => {
+    const sql = readText('migrations/0068_traceability.sql');
+    expect(sql).toMatch(/CREATE TABLE stale_flags/);
+    expect(sql).toMatch(/propagated_from_node_id\s+UUID REFERENCES evidence_nodes/);
+    expect(sql).toMatch(/node_id\s+UUID NOT NULL REFERENCES evidence_nodes/);
+  });
+
+  it('creates the required indexes on all 3 tables', () => {
+    const sql = readText('migrations/0068_traceability.sql');
+    expect(sql).toMatch(/idx_evidence_nodes_ref/);
+    expect(sql).toMatch(/idx_evidence_nodes_project/);
+    expect(sql).toMatch(/idx_evidence_edges_from/);
+    expect(sql).toMatch(/idx_evidence_edges_to/);
+    expect(sql).toMatch(/idx_stale_flags_node/);
+  });
+
+  it('enables RLS with org isolation on all 3 tables', () => {
+    const sql = readText('migrations/0068_traceability.sql');
+    expect(sql).toMatch(/ALTER TABLE evidence_nodes ENABLE ROW LEVEL SECURITY/);
+    expect(sql).toMatch(/ALTER TABLE evidence_edges ENABLE ROW LEVEL SECURITY/);
+    expect(sql).toMatch(/ALTER TABLE stale_flags ENABLE ROW LEVEL SECURITY/);
+    expect(sql).toMatch(/current_setting\('app.current_org_id'/g);
+    // Three org-isolation policies (one per table).
+    const policies = sql.match(/CREATE POLICY "tenant_isolation_evidence/g) ?? [];
+    expect(policies.length).toBeGreaterThanOrEqual(2);
+    const stalePolicies = sql.match(/CREATE POLICY "tenant_isolation_stale_flags/g) ?? [];
+    expect(stalePolicies.length).toBe(1);
+  });
+
+  it('schema.ts defines the 3 new pgEnums + 3 new tables (lock-step)', () => {
+    const src = readText('lib/db/schema.ts');
+    expect(src).toMatch(/export const evidenceNodeTypeEnum\s*=\s*pgEnum/);
+    expect(src).toMatch(/export const evidenceEdgeRelationEnum\s*=\s*pgEnum/);
+    expect(src).toMatch(/export const staleReasonEnum\s*=\s*pgEnum/);
+    expect(src).toMatch(/export const evidenceNodes\s*=\s*pgTable/);
+    expect(src).toMatch(/export const evidenceEdges\s*=\s*pgTable/);
+    expect(src).toMatch(/export const staleFlags\s*=\s*pgTable/);
+  });
+
+  it('auditActionEnum in schema.ts includes the 4 traceability values', () => {
+    const src = readText('lib/db/schema.ts');
+    expect(src).toContain("'traceability.edge_created'");
+    expect(src).toContain("'traceability.edge_deleted'");
+    expect(src).toContain("'traceability.packet_exported'");
+    expect(src).toContain("'traceability.stale_propagated'");
+  });
+
+  it('AuditAction type in audit.ts includes the 4 traceability values', () => {
+    const src = readText('lib/audit.ts');
+    expect(src).toContain("'traceability.edge_created'");
+    expect(src).toContain("'traceability.edge_deleted'");
+    expect(src).toContain("'traceability.packet_exported'");
+    expect(src).toContain("'traceability.stale_propagated'");
+  });
+
+  it('permissions.ts adds traceability.manage (ra-lead only)', () => {
+    const src = readText('lib/auth/permissions.ts');
+    expect(src).toMatch(/'traceability.manage'/);
+    expect(src).toMatch(/'traceability.manage':\s*\{[^}]*minRole:\s*'ra-lead'/);
   });
 });

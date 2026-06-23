@@ -62,7 +62,12 @@ export type PermissionAction =
   // generate: ra-lead only — classification drives regulatory pathway decisions.
   // view: ra-member+ — transparent across the RA team.
   | 'classify.generate'
-  | 'classify.view';
+  | 'classify.view'
+  // Evidence graph management actions (SPEC-REGULA-TRACEABILITY-001, Issue #47)
+  // manage: ra-lead ONLY — edge writes are audit-material regulatory records
+  // (21 CFR Part 11). The existing 'traceability.view' (hybrid-ra-saas #169
+  // BFF proxy scope) is reused for matrix/packet/export reads.
+  | 'traceability.manage';
 
 export interface PermissionSpec {
   minRole: Role;
@@ -211,4 +216,11 @@ export const PERMISSIONS: Record<PermissionAction, PermissionSpec> = {
   // view: ra-member+ — classification results are shared across the RA team.
   'classify.generate': { minRole: 'ra-lead', scope: 'org', resourceType: 'deviceClassification' },
   'classify.view': { minRole: 'ra-member', scope: 'org', resourceType: 'deviceClassification' },
+
+  // @MX:ANCHOR [AUTO] traceability.manage — ra-lead ONLY edge-write gate.
+  // @MX:REASON Edge writes are 21 CFR Part 11 audit-material regulatory records.
+  //            Only qualified RA-lead may create/modify/delete evidence edges.
+  //            IDOR defense is layered on top in the route (org_id double-gate).
+  // @MX:SPEC SPEC-REGULA-TRACEABILITY-001 (REQ-TRACEABILITY-010, Issue #47)
+  'traceability.manage': { minRole: 'ra-lead', scope: 'org', resourceType: 'traceability' },
 };
