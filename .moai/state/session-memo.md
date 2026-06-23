@@ -53,8 +53,10 @@
 - #233(26 SPEC) 머지 → #234 base 자동 갱신 → #234 머지 → #35 자동 close.
 - 머지 후: README/implementation-status "pending merge" → "merged"로 갱신.
 
-### 블로커 (외부 의존, 대기)
-- hybrid-ra-saas 배포 대기: #191, #168/#169/#171, #199~#202 (env: HYBRID_RA_API_BASE_URL/TOKEN/TENANT_ID).
+### hybrid-ra-saas 연동 — 사실상 완료, Vercel 프로덕션 env 미확정 (2026-06-23 정정)
+- ✅ 백엔드 배포됨(Azure Container Apps `api-prod`, /health 200), 코드 양측 완료, UI 연동 #168/#169/#171 · #199/#200/#201 CLOSED.
+- ⚠️ **Vercel 프로덕션 환경변수 3개 실제 등록 미확정**: #191 클로저 코멘트는 "로컬 `.env.local` 업데이트"로만 마무리 → 후속 이슈(#202 등)가 이를 "Vercel 완료"로 재해석(기록 모순). 코드 `optional + ?? ''` fallback이라 미등록 시 silent degradation(에러 없이 hybrid 비활성). 확인 필요(Vercel 대시보드 Settings→Env 또는 `vercel env ls`).
+- ⏸️ #202(유일 OPEN) E2E: Vercel env 확인 후 착수 전제. 기록 모순 정정 코멘트 #202에 등록.
 
 ## 이전 세션 히스토리 (상세는 git log + project-state.md)
 - 2026-06-22: 26개 SPEC-REGULA 일괄 작성 (PR #233, OPEN).
