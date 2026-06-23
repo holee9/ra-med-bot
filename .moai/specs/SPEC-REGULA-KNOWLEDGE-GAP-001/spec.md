@@ -141,3 +141,101 @@ Regula는 질의응답, 문서 ingestion, 워크플로우, Predicate/CER/PCCP �
 - 외부: GitHub API (이슈 생성/append/댓글), 이메일/알림 채널, 스케줄러(cron)
 - 기존 SPEC: SPEC-REGULA-FOUNDATION-001(audit_logs, RBAC), SPEC-REGULA-CHAT-001(conversation/message), SPEC-REGULA-DOCINGEST-001(ingestion 완료 이벤트), SPEC-REGULA-RELEASE-HARDENING-001
 - 보완 관계: SPEC-REGULA-KNOWLEDGE-PROMO-001(#50, 우수답변 승격 — 미답변과 반대 방향), SPEC-REGULA-SOURCE-GOVERNANCE-001(#48, source 변경 시 gap 영향 표시)
+
+---
+
+## Implementation Notes (as-implemented, sync 2026-06-23)
+
+### Actual Implementation
+
+PR #234 implements all requirements with the following architecture:
+
+**Database (migrations/0066_knowledge_gap.sql)**
+- ENUM 3종: `gap_reason` (low_confidence/low_citation/no_results/policy_blocked), `gap_status` (open/classified/resolved), `gap_classification` (ra_project_gap/md_process_gap/external_regulation_needed/bug)
+- `unanswered_queue` 테이블: 13컬럼 (id, org_id, conversation_id, message_id, redacted_question, redaction_hash, gap_reason, cluster_id, github_issue_number, classification, status, created_at, resolved_at)
+- `messages.knowledge_gap_required` 컬럼 추가 (BOOLEAN, NOT NULL DEFAULT FALSE)
+- `audit_action` enum +4 values: `knowledge_gap_created`, `knowledge_gap_classified`, `knowledge_gap_digest_sent`, `knowledge_gap_resolved`
+- RLS: org_id 기반 격리 상속 (`current_setting('app.current_org_id')` 패턴 따름)
+
+**Detection (lib/knowledge-gap/detector.ts, lib/ai/consult.ts)**
+- 4-condition 감지 hooks at consult.ts Stage 7 post-process
+- `detectKnowledgeGap()`: confidence <0.5 OR citation coverage <80% OR chunk count 0 OR LLM failed
+- `redactQuestion()`: PII/영업비밀 redaction 래퍼 → SHA-256 hash
+- `unanswered_queue.insert()` with redacted content + hash
+
+**Clustering & GitHub Automation (lib/knowledge-gap/clustering.ts, github-issue.ts)**
+- Embedding-based cosine similarity clustering (threshold ≥0.85)
+- `clusterSimilarGaps()`: batch embeddings → similarity matrix → cluster_id TEXT hash
+- GitHub client: plain `fetch` with injectable interface (mockable, no @octokit/rest dependency)
+- `createGitHubIssue()`: new cluster → create issue with labels/body/metadata
+- `appendGitHubIssue()`: existing cluster → comment append
+- Labels: `knowledge-gap`, `ra-auto`, `needs-classification`
+- Body: 질문 요약, 실패 원인, 누락 출처 후보, conversation_id, message_id, redaction_hash
+
+**RA Classification (app/api/knowledge-gap/classify/route.ts, app/(app)/knowledge-gap/page.tsx)**
+- `POST /api/knowledge-gap/classify`: body `{queueId, classification, note?}` → status='classified', audit log
+- `GET /api/knowledge-gap/queue`: pagination + filters (gap_reason, status, classification)
+- KnowledgeGapPage: 큐 목록 테이블 + 분류 드롭다운 + notes 입력
+- QueueActions.tsx: classify/replay 액션 버튼
+- QueueFilters.tsx: 필터 dropdown (gap_reason, status, classification)
+- 4 categories: ra_project_gap, md_process_gap, external_regulation_needed, bug
+
+**Daily Digest (lib/knowledge-gap/digest.ts)**
+- Inngest function: `knowledge-gap-daily-digest` (cron 08:00 UTC)
+- `generateDailyDigest()`: top topics, 긴급도, SLA 집계
+- Email dispatch: SendGrid via `lib/notifications/dispatcher.ts`
+- Failure mode: audit log `knowledge_gap_digest_sent` with error meta (no crash)
+
+**Closed-Loop Replay (lib/knowledge-gap/replay.ts, lib/radar/delta-sync/gap-replay.ts)**
+- `replayGapTest(queueId)`: re-run failed scenario → citation 포함 답변 검증
+- `triggerGapReplay()`: stub completed → calls replayGapTest for matchedGapIds[]
+- `markGapResolved()`: status='resolved', resolved_at=NOW(), GitHub Issue comment
+- Reuse `detectKnowledgeGap()` for `passed` verdict (avoids duplicate logic)
+
+**Permissions (lib/auth/permissions.ts)**
+- `knowledgegap.classify`: ra-lead, admin (ra-member blocked)
+- `knowledgegap.view`: ra-member, ra-lead, admin (user scope)
+- `knowledgegap.replay`: ra-lead, admin (ra-member blocked)
+- Total permissions now 41, audit actions now 113, Inngest functions now 3
+
+**Environment Variables (Optional)**
+- `KNOWLEDGE_GAP_GITHUB_TOKEN`: GitHub PAT for issue automation (unset → skip GitHub, queue still works)
+- `KNOWLEDGE_GAP_GITHUB_REPO`: Target repo (e.g., `owner/repo`)
+- `SENDGRID_API_KEY`: Shared email dispatcher key for digest (unset → audit log + no crash)
+
+### Divergences from Spec (Rationale)
+
+**(a) GitHub client**: Plain `fetch` + injectable interface (not @octokit/rest)
+- Rationale: Only 2 endpoints needed (create issue, comment). Adding @octokit/rest introduces unnecessary dependency for ~200 LOC saved. Plain fetch with typed interface is mockable and maintains testability.
+
+**(b) Clustering storage**: No pgvector column on unanswered_queue by design
+- Rationale: Clustering uses pure-TS cosine similarity over batched embeddings in memory. cluster_id stored as TEXT hash. Avoids pgvector dependency while maintaining ≥0.85 threshold accuracy.
+
+**(c) RLS convention**: Follows existing `current_setting('app.current_org_id')` pattern
+- Rationale: Maintains consistency with existing RLS policies across the codebase. No new RLS policy added; inherits org isolation from org_members table.
+
+**(d) GitHub unconfigured**: Returns null sentinel (no crash)
+- Rationale: `KNOWLEDGE_GAP_GITHUB_TOKEN` unset → GitHub automation gracefully degrades. Queue continues to operate; classification/replay still work. Allows incremental rollout without full configuration.
+
+**(e) Replay verdict**: Reuses `detectKnowledgeGap()` for `passed` verdict
+- Rationale: After KB augmentation, re-running the same detection logic verifies if the question now passes. Avoids duplicate verification code and ensures consistency with Phase-1 detection criteria.
+
+### Verification Status
+
+**Implementation**: PR #234 (branch: `feat/issue-35-knowledge-gap`, stacked on #233)
+
+**Status**: OPEN (리뷰/머지 대기)
+
+**Test Results**:
+- Typecheck: PASS
+- Biome check: PASS
+- Lint (hex): PASS
+- Unit tests: 3165 passed / 7 skipped
+- Build: PASS (SKIP_ENV_VALIDATION=1 REGULA_ALLOW_ENV_VALIDATION_SKIP=build)
+- Integration tests: AC-01~08全覆盖 (4-condition detection, redaction+hash, clustering, classify+audit, digest 08:00, replay→resolved, audit 4종, RBAC reject)
+- Security hardening (sync review): consult() non-persisting `mode:'replay'` (C1), org-scoped classify/replay/markGapResolved + delta-sync (H1/H2 IDOR), audit-after-resolve (M1), apiBase https enforcement (M2). Real-replay regression test added (fails on pre-fix code).
+
+**Follow-ups Unlocked**:
+1. KNOWLEDGE-PROMO-001 (#50): Excellent answer promotion (opposite direction of gap detection)
+2. RLHF-001 (#56): Answer Quality RLHF Loop (user feedback → RAG quality improvement)
+3. SOURCE-GOVERNANCE-001 (#48): Source metadata (authority/version/validity/retirement) linked to gap-replay evidence documents

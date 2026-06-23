@@ -1,101 +1,56 @@
 # Session Memo
 
-## 현재 세션 (2026-06-21) — 백엔드 Tech debt 3종 일괄 + 리뷰 픽스
+> 세션 연결용. 상세 작업 맥락은 auto-memory `project-state.md`(~/.claude/projects/.../memory/)가 1차 진실원 — 항상 로드됨. 본 파일은 빠른 시작 요약.
 
-**베이스: `origin/main` (`4f17b51`)**. 3 PR 모두 main에서 독립 분기 (서로 다른 파일 영역, 충돌 없음). 모두 리뷰 대기 중.
+## 현재 세션 (2026-06-23) — PR #234 리뷰 픽스
 
-### PR #220 — #214 이메일 디스패처 SendGrid 연동 (priority/medium)
-- 브랜치: `fix/issue-214-email-sendgrid` (HEAD `c6ab7ef`)
-- `lib/notifications/dispatcher.ts`: RESEND stub → SendGrid v3 REST API (fetch 기반, fire-and-forget). **리뷰 픽스**: SENDGRID_API_KEY 미설정 시 'error'가 아닌 'skipped' 반환 (radar/email.ts 일관성)
-- `lib/radar/notifier-channels/email.ts`: placeholder 주소 → `orgDigestPreferences.recipientEmails` DB 조회 (lazy import로 env side-effect 회피)
-- 테스트 11개 (lib/notifications + lib/radar)
-- 검증: typecheck·biome·audit:check PASS
+- Duplicate-work prevention: GitHub Issue #18 확인 완료. 동일 작업은 현재 브랜치 `feat/issue-35-knowledge-gap` / PR #234 / Issue #35 범위로 진행 중이며, 새 브랜치 생성 없음.
+- Main state: `origin/main` fetch 완료. PR #234는 stacked PR로 base `docs/specs-regula-2026-06-22` (#233), head `feat/issue-35-knowledge-gap`.
+- Review fix scope: `consult()` 지식 갭 캡처가 `messages` FK 생성 전 `unanswered_queue`를 insert하던 순서 수정, `captureKnowledgeGap()` 이후 clustering + GitHub issue create/append wiring 복구.
+- Verification target: 신규 회귀 테스트 `tests/unit/knowledge-gap-capture-automation.test.ts`, 기존 consult hook/order test, knowledge-gap integration/phase23 tests.
 
-### PR #221 — #215 문서 렌더링 실구현 (priority/high)
-- 브랜치: `fix/issue-215-document-rendering` (HEAD `a8de60e`)
-- `lib/pccp/exporters/pdf.tsx`: react-pdf 실구현 (placeholder 제거, DRAFT watermark, content_jsonb 구조화)
-- `lib/pccp/exporters/docx.ts`: docx lib 실구현 (TITLE/HEADING_1/key-value)
-- `lib/pccp/exporters/content-flatten.ts`: **리뷰 DRY 픽스** — flattenContent 공유 유틸 추출 (pdf/docx 중복 제거)
-- `lib/pccp/types.ts`: PccpComponentRecord 추가
-- `app/api/ra/workflows/pccp/[id]/export/route.ts`: DB 행 → PccpComponentRecord 매핑 (잘못된 cast 수정)
-- Export-Hub pdf-exporter stale TODO 정리
-- 테스트 8개 (PDF/DOCX magic bytes 검증)
+## 현재 세션 (2026-06-23) — tier0 KNOWLEDGE-GAP-001 (#35) 구현 + sync + 보안 수정
 
-### PR #222 — #216 Inngest 클라이언트 wiring (priority/high)
-- 브랜치: `fix/issue-216-inngest-wiring`
-- `inngest@^4.7.0` 의존성 추가
-- `lib/inngest/client.ts` (싱글톤, id=regula) + `lib/inngest/functions.ts` (레지스트리) + `app/api/inngest/route.ts` (serve endpoint GET/POST/PUT)
-- `lib/inngest/digest/weekly-digest.ts`: cron(매주 월 00:00 UTC) + event 트리거 실등록, per-org step.run
-- `lib/inngest/docingest/upload-processed.ts`: 6단계 파이프라인 step.run 래핑. **파이프라인 모듈 dynamic import 전환** (openai 미설치 잠재 버그 회피)
-- 테스트 6개
+**브랜치: `feat/issue-35-knowledge-gap`** (stacked on `docs/specs-regula-2026-06-22` = PR #233). 커밋 6개(`56f9054`→`b10a9e2`). 작업 트리 clean.
 
-### 공통 검증
-- 각 PR typecheck·biome·audit:check PASS, 전체 회귀 0 failed
-- 신규 테스트 25개 (+11, +8, +6)
+### 무엇을 했나
+1. **우선순위 분석**: 신규 26개 SPEC `priority`×`depends_on` 교차 → READY 17 / BLOCKED 9 + 촉매 그래프. tier0 1순위 = KNOWLEDGE-GAP-001 #35(해금 3, delta-sync #45 머지됨).
+2. **구현 (Phase 0-5, DDD)**: migration 0066(enum 3종·`unanswered_queue`·RLS), 4-condition 감지, redaction+hash, GitHub issue 자동화(cosine clustering), classify API/UI, Inngest 일일 digest(08:00), gap-replay 폐쇄 루프.
+3. **`/moai sync` 사이클**: 문서 6개 동기화(`b10a9e2`) + **보안 리뷰(expert-security)가 머지 차단 결함 포착·수정(`e081435`)**.
 
-### 후속 (별도 이슈 권장)
-- upload-processed helper stubs (`insertChunks`, `updateDocumentStatus`) 실구현 — DOCINGEST Phase 3
-- CER PDF rich-layout (현재 minimal이지만 valid PDF)
-- 수동 트리거 API → `inngest.send()` 연결
-- Inngest dev server 로컬 구동 검증
+### 보안 수정 (sync Phase 0.55) — ★반드시 기억
+- **C1 CRITICAL**: `replayGapTest` 런타임 깨짐(비-UUID 합성 id → `consult()` persist FK 위반 → markGapResolved 도달 불가). 통합테스트가 `consult()` mock해 놓침 → `consult()` 비지속 `mode:'replay'` 추가 + real-replay regression 테스트(pre-fix FAIL 검증).
+- **H1/H2**: classify/replay 라우트 + markGapResolved 크로스-org IDOR → `org_id` 소유권 검증(타 org 404); delta-sync org 미확정 시 skip.
+- **M1**: `knowledge_gap_resolved` audit을 resolve 성공 후 이동. **M2**: apiBase `https://` 강제.
+- **★교훈**: mock 중심 통합테스트는 외부 파이프라인 재실행 경로의 런타임 결함을 놓침 → replay/재실행 경로는 실제 파이프라인을 호출하는 regression test 병행 필수.
 
-### 기술 결정 근거 (모두 코드베이스 기반)
-- #214 SendGrid: RADAR digest·digest/email-sender가 이미 SendGrid 사용 (프로젝트 표준)
-- #215 react-pdf + docx: 둘 다 이미 package.json 의존성
-- #216 Inngest SDK: 5개 stub이 이미 Inngest API shape로 작성됨
+### 상태
+- 전체 스위트 **3165 passed | 7 skipped** · typecheck/biome/`next build` PASS.
+- **PR #234** OPEN (stacked on #233). `Fixes #35`. #35 이슈 코멘트(시작/완료) + PR sync 코멘트 완료.
+- 환경변수(선택): `KNOWLEDGE_GAP_GITHUB_{TOKEN,REPO}`, `SENDGRID_API_KEY` — `.env.example` 추가. 미설정 시 no-op.
 
-## 다음 세션 시작 지점
-1. PR #220/#221/#222 리뷰 피드백 반영 (있을 경우)
-2. 3 PR 머지 후 main 기준 implementation-status.md 최종 동기화
-3. 후속 이슈(#39 워크플로우 LLM 실구현 등) 착수 여부 결정
+## 🎯 다음 세션 시작 지점
 
-## 이전 세션 히스토리 (참고용)
+### 옵션 A — tier1 착수 (권장: 단일 세션 구현 가능성 높은 순)
+1. **CLASSIFY #59** — 의료기기 분류 마법사(FDA/EU/MFDS/NMPA/PMDA). 해금 2(STANDARDS#62·REIMBURSEMENT#70). deps 3/3 충족. spec.md만 존재(draft).
+2. **PMS #53** — EU MDR PMS 보고서·PMCF. 해금 2(CAPA#68·CLINICAL-INVESTIGATION#69). deps 5/5.
+3. **TRACEABILITY #47** — 해금 1(LABELING#66). deps 2/2, 최저 복잡도(빠른 승리).
+4. **CHANGE-CONTROL #54**(Medium) — 해금 2(CAPA#68·LABELING#66).
 
-- 2026-06-21 QA Gate 0~5 SPEC 패밀리 Active 통일 완료 (PR #217, #218)
-- 2026-06-21 ESIG #88 (PR #204), AUDITOR-VIEW #92 (PR #206) 머지 완료
-- 2026-06-21 PERSONAL-LIB #86 (PR #208), CALENDAR #44 (PR #209) 머지 완료
-- Branch: `feat/issue-92`
-- PR: #206 `feat(audit): 외부 감사관 읽기 전용 페르소나 및 1-클릭 감사 패키지 (Issue #92)`
-- Issue: #92; duplicate-work prevention checked via Issue #18.
-- Main checked: `origin/main` fetched before review-fix work; only open PR is #206.
-- Review fix scope: allow auditor `POST /api/ra/audit-package` through `withPermission`, add persisted `auditor` `user_role`, and ship `audit.access` / `audit.denied` / `audit.package.generated` enum migration.
-- Local verification: targeted auditor tests PASS, `pnpm typecheck` PASS, `pnpm lint` PASS, `pnpm ci:migrations` PASS, `pnpm audit:check` PASS, full `pnpm test` PASS (2854 passed / 7 skipped).
+**tier1 착수 절차 (L-001 + 이번 세션 패턴)**:
+- `feat/issue-{N}` 브랜치 → 이슈 코멘트 "작업 시작" → manager-ddd ANALYZE(tasks.md/design.md; 26개 신규 SPEC은 전부 spec.md 단일이라 구현계획 선행 필수)
+- phase별 구현(regula-backend/frontend) + **매 phase 게이트 직검**(typecheck+test+count 단언)
+- ★**구현 완료 후 `/moai sync` Phase 0.55 expert-security 리뷰 필수** (이번 C1 교훈: mock 테스트 통과해도 런타임 결함 가능)
+- `Fixes #{N}` PR
 
-## Active Work — 2026-06-21 QA 메타 루프 마무리 + 프로덕션 감사
+### 옵션 B — PR #233/#234 머지 (사용자 주도)
+- #233(26 SPEC) 머지 → #234 base 자동 갱신 → #234 머지 → #35 자동 close.
+- 머지 후: README/implementation-status "pending merge" → "merged"로 갱신.
 
-### 병합된 작업 (main)
-- **PR #212** — Gate 1~5 SPEC(#75-79) Draft→Active 승격 + 문서 동기화. Closes #75~#79.
+### 블로커 (외부 의존, 대기)
+- hybrid-ra-saas 배포 대기: #191, #168/#169/#171, #199~#202 (env: HYBRID_RA_API_BASE_URL/TOKEN/TENANT_ID).
 
-### 진행 중 (오픈 PR)
-- **PR #217** `fix/issue-213-gate5-ssot` — Gate 5 SSoT 범위 정합 13→9건 (#213). MERGEABLE.
-- **PR #218** `fix/issue-74-gate0-spec` — Gate 0 SPEC Draft→Active (#74). MERGEABLE. **Gate 0~5 패밀리 전체 Active 통일 완료.**
-
-### 프로덕션 준비도 감사로 신규 등록된 gap 이슈
-- **#214** 이메일 디스패처 stub (Resend/SendGrid 미연동) — 착수 전 결정: provider 통합(Resend vs SendGrid), API key 프로비저닝 필요
-- **#215** 문서 렌더링 placeholder (PCCP/CER/Export-Hub PDF·DOCX) — 착수 전 결정: 렌더링 엔진(react-pdf vs Puppeteer vs docx lib)
-- **#216** Inngest 백그라운드 잡 인프라 unwired — 착수 전 결정: Inngest vs Cloudflare Cron(#9 정합) vs QStash
-- 기존 추적: #35 (gap-replay stub), #39 (워크플로우 LLM synthetic) — OPEN
-
-### 다음 세션 시작 지점
-1. PR #217, #218 병합 → QA Gate 프레임워크 100% 완결
-2. #214 이메일: provider 결정 + API key 확보 후 착수 (digest email-sender가 SendGrid 사용 중 → 통합 권장)
-3. Tier 2(#215/#216)는 기술 결정 후 착수. Tier 3(#39)는 /moai plan 선후.
-
-## ✅ 완료 — 2026-06-21 QA 메타 루프 완결 (Tier 1)
-
-**main HEAD: `4f17b51`** (모든 CI PASS, 열린 PR 0건, main only)
-
-- ✅ **PR #217** Gate 5 SSoT 정합 #213 — squash merge (`6e117f2`). #213 CLOSED.
-  - 리뷰(manager-quality) HIGH fix: qa-matrix §Gate Assignment Summary per-row 정합 (Gate 2: 38→34, Gate 5: 11→9), drift 방지 노트 추가
-- ✅ **PR #218** Gate 0 SPEC 승격 #74 — squash merge (`4f17b51`). #74 CLOSED.
-  - 리뷰(manager-quality) PASS (LOW fix: AC #6 impact axis SSoT 9축 정합)
-  - sync: implementation-status.md "Gate 0-5 SPEC promotion" 행 확장
-
-### 결과: Gate 0~5 SPEC 패밀리 6개 전부 Active 통일 완료
-- SPEC-REGULA-QA-{SPEC-READINESS, IMPLEMENTATION-CHECKPOINT, PR-ACCEPTANCE, WAVE-INTEGRATION, DOMAIN-UAT, OPERATIONS}-001 → 모두 Active
-
-### 다음 세션 시작 지점 (Tier 1 잔여 → Tier 2)
-1. **#214 이메일 연동** — provider 결정(Resend vs SendGrid, SendGrid 권장) + API key 프로비저닝 후 착수
-2. **#215 문서 렌더링** — 엔진 결정(react-pdf vs Puppeteer vs docx lib) 후 착수
-3. **#216 Inngest infra** — 잡 인프라 결정(Inngest vs Cloudflare Cron vs QStash) 후 착수
-4. **#39 워크플로우 LLM** — /moai plan 으로 SPEC-REGULA-WORKFLOWS-LLM-002 구현 계획 수립 후 착수 (CRITICAL, 대규모)
+## 이전 세션 히스토리 (상세는 git log + project-state.md)
+- 2026-06-22: 26개 SPEC-REGULA 일괄 작성 (PR #233, OPEN).
+- 2026-06-21: 백엔드 tech debt 3종(#214/#215/#216 → PR #220/#221/#222), QA Gate 0~5 Active 통일(#217/#218), PERSONAL-LIB #86·CALENDAR #44 머지, Delta-Sync #45 머지.
+- 2026-06-20: EXPORT-HUB·ESIG·AUDITOR-VIEW 완료, QA Gate 5종 구현.

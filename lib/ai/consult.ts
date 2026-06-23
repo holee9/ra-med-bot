@@ -17,6 +17,7 @@ import type { SourceItem, StreamEvent, TraceEvent } from '../../types/streaming'
 import { writeAudit } from '../audit';
 import { db } from '../db/client';
 import { conversations, messageBlocks, messages } from '../db/schema';
+import { captureKnowledgeGap, detectKnowledgeGap } from '../knowledge-gap/detector';
 import { enforceCitations } from './citation-enforce';
 import { calculateConfidence, getConfidenceLevel } from './confidence';
 import { shouldAutoFlag } from './expert-review-gating';
@@ -45,6 +46,34 @@ function sha256Hex(input: string): string {
 }
 
 /**
+ * Options for non-default consult modes.
+ *
+ * `mode: 'replay'` (REQ-KNOWLEDGE-GAP-014, Issue #35 security fix C1):
+ *   Used by knowledge-gap replay to re-run a redacted question WITHOUT
+ *   persisting a phantom message row and WITHOUT re-capturing the (already
+ *   known) gap. Stage 8 `persistMessage` and Stage 9 `captureKnowledgeGap`
+ *   are both skipped. The pipeline still produces the real answer + sources
+ *   + confidence so the caller can re-evaluate the 4 gap conditions.
+ *
+ *   Rationale: replay runs under a synthetic system session with a
+ *   non-uuid messageId and a sentinel conversationId. Allowing persist or
+ *   gap-capture to run on those ids yields a uuid-parse error on
+ *   `messages.id` and a FK violation on `conversation_id`, which throws and
+ *   prevents `markGapResolved` from ever being reached.
+ *
+ * When omitted (default), all side-effects run unchanged — preserving the
+ * production chat behavior (characterization: consult-hook test, consult
+ * runtime test, consult regression test all stay green).
+ */
+export type ConsultOptions = {
+  /**
+   * `'replay'` skips Stage 8 persist and Stage 9 gap-capture. Any other
+   * value (or undefined) runs the full pipeline with all side-effects.
+   */
+  mode?: 'replay';
+};
+
+/**
  * Main RAG pipeline. Yields StreamEvents in 3-phase SSE order.
  *
  * Phase A: meta → trace*(N)
@@ -57,7 +86,9 @@ export async function* consult(
   messageId: string,
   conversationId: string,
   signal?: AbortSignal,
+  options?: ConsultOptions,
 ): AsyncGenerator<StreamEvent> {
+  const isReplay = options?.mode === 'replay';
   const validator = new StreamOrderValidator();
   const startTs = Date.now();
 
@@ -418,8 +449,30 @@ export async function* consult(
     });
   }
 
+  // ---- Knowledge gap detection (SPEC-REGULA-KNOWLEDGE-GAP-001, Issue #35) ----
+  // REQ-KNOWLEDGE-GAP-001: evaluate the 4 gap conditions from design.md §2.1.
+  //
+  // SECURITY (C1 fix): SKIPPED in replay mode. Replay re-runs an already-known
+  // gap under a synthetic session; re-capturing would attempt to INSERT a new
+  // unanswered_queue row on a sentinel conversationId (FK violation) and UPDATE
+  // a non-existent messages row. The caller (replayGapTest) already knows the
+  // gap and only needs the answer + sources to re-evaluate the 4 conditions.
+  const gapReason = isReplay
+    ? null
+    : detectKnowledgeGap({
+        confidenceScore: Number(confidenceScore),
+        confidenceLevel: confidenceLevel ?? 'low',
+        citationCoverageBelow80,
+        topChunksLength: topChunks.length,
+        llmFailed,
+      });
+
   // ---- Stage 8: Persist ----
-  if (!signal?.aborted) {
+  // SECURITY (C1 fix): SKIPPED in replay mode. Replay uses a non-uuid messageId
+  // (`replay-${queueId}`) and a sentinel conversationId with no matching
+  // conversations row — persisting would trigger uuid-parse + FK errors that
+  // throw and prevent the caller (markGapResolved) from running.
+  if (!signal?.aborted && !isReplay) {
     await persistMessage({
       conversationId,
       messageId,
@@ -439,6 +492,35 @@ export async function* consult(
       violations,
       citedChunks,
     });
+  }
+
+  // ---- Stage 9: Capture knowledge gap ----
+  // unanswered_queue.message_id has a FK to messages.id, so capture MUST run
+  // after persistMessage() has created the assistant message row.
+  // Non-fatal: a gap-capture failure MUST NOT break the SSE stream — the user
+  // still receives their answer. Log and continue.
+  if (gapReason !== null && orgId !== undefined) {
+    try {
+      await captureKnowledgeGap({
+        orgId,
+        conversationId,
+        messageId,
+        originalQuestion: input.question,
+        reason: gapReason,
+        actorId: session.user?.id ?? null,
+      });
+      // REQ-KNOWLEDGE-GAP-003: mark the message row (separate from expertReviewRequired).
+      await db
+        .update(messages)
+        .set({ knowledgeGapRequired: true })
+        .where(eq(messages.id, messageId));
+    } catch (gapErr) {
+      logger.error('[consult] knowledge gap capture failed (non-fatal):', {
+        error: gapErr instanceof Error ? gapErr.message : String(gapErr),
+        messageId,
+        gapReason,
+      });
+    }
   }
 
   yield* emit({ type: 'done', duration_ms: Date.now() - startTs });

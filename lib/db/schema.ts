@@ -242,6 +242,37 @@ export const auditActionEnum = pgEnum('audit_action', [
   'corpus.sync_started',
   'corpus.sync_completed',
   'corpus.sync_failed',
+  // SPEC-REGULA-KNOWLEDGE-GAP-001 — added via 0066_knowledge_gap.sql (Issue #35,
+  // REQ-KNOWLEDGE-GAP-016): 4 knowledge-gap lifecycle audit actions.
+  'knowledge_gap_created',
+  'knowledge_gap_classified',
+  'knowledge_gap_digest_sent',
+  'knowledge_gap_resolved',
+]);
+
+// @MX:NOTE [AUTO] Knowledge gap enums — SPEC-REGULA-KNOWLEDGE-GAP-001 (Issue #35).
+// @MX:SPEC SPEC-REGULA-KNOWLEDGE-GAP-001 (REQ-KNOWLEDGE-GAP-001, REQ-KNOWLEDGE-GAP-008)
+// @MX:REASON Drizzle pgEnum mirrors the SQL types created in 0066_knowledge_gap.sql.
+// Keep in lock-step with the migration or runtime inserts fail.
+// gap_reason: why a consult was classified as a knowledge gap (design.md §2.1).
+// gap_status: lifecycle state of an unanswered_queue row.
+// gap_classification: RA-lead classification category (REQ-KNOWLEDGE-GAP-008).
+export const gapReasonEnum = pgEnum('gap_reason', [
+  'low_confidence', // confidence score < 0.5 threshold
+  'low_citation', // citation coverage < 80%
+  'no_results', // search returned 0 chunks
+  'policy_blocked', // LLM generation failed / policy restriction
+]);
+export const gapStatusEnum = pgEnum('gap_status', [
+  'open', // Initial state after detection
+  'classified', // RA-lead classification completed
+  'resolved', // Closed-loop replay verification passed
+]);
+export const gapClassificationEnum = pgEnum('gap_classification', [
+  'ra_project_gap', // RA project SOP gap
+  'md_process_gap', // MD manufacturing/registration process gap
+  'external_regulation_needed', // External regulation source needed
+  'bug', // Product bug
 ]);
 
 // REQ-WF-049: workflow_type pgEnum — workflow kinds.
@@ -390,6 +421,9 @@ export const messages = pgTable(
     confidenceScore: numeric('confidence_score', { precision: 4, scale: 3 }),
     durationMs: integer('duration_ms'),
     expertReviewRequired: boolean('expert_review_required').notNull().default(false),
+    // SPEC-REGULA-KNOWLEDGE-GAP-001 (REQ-KNOWLEDGE-GAP-003): separate flag from
+    // expertReviewRequired — distinguishes expert review gating from knowledge gap tracking.
+    knowledgeGapRequired: boolean('knowledge_gap_required').notNull().default(false),
     tokensIn: integer('tokens_in'),
     tokensOut: integer('tokens_out'),
     model: text('model'),
@@ -683,6 +717,45 @@ export const auditLogs = pgTable(
     actionIdx: index('idx_audit_logs_action_created').on(t.action, t.createdAt),
     // Performance optimization: resource-specific audit queries
     resourceIdx: index('idx_audit_logs_resource').on(t.resourceType, t.resourceId),
+  }),
+);
+
+// @MX:NOTE [AUTO] unanswered_queue — SPEC-REGULA-KNOWLEDGE-GAP-001 (Issue #35, REQ-KNOWLEDGE-GAP-004).
+// @MX:SPEC SPEC-REGULA-KNOWLEDGE-GAP-001 (REQ-KNOWLEDGE-GAP-001..004)
+// @MX:REASON RLS org isolation enforced in 0066_knowledge_gap.sql — inherits
+// app.current_org_id pattern from 0015_docingest_rls.sql. Do not bypass.
+// Stores PII-redacted user questions that the RAG pipeline could not answer
+// with sufficient confidence/citation, feeding the closed-loop KB augmentation.
+export const unansweredQueue = pgTable(
+  'unanswered_queue',
+  {
+    id: uuid('id').defaultRandom().primaryKey(),
+    orgId: uuid('org_id')
+      .notNull()
+      .references(() => organizations.id, { onDelete: 'cascade' }),
+    conversationId: uuid('conversation_id')
+      .notNull()
+      .references(() => conversations.id, { onDelete: 'cascade' }),
+    messageId: uuid('message_id')
+      .notNull()
+      .references(() => messages.id, { onDelete: 'cascade' }),
+    redactedQuestion: text('redacted_question').notNull(),
+    redactionHash: text('redaction_hash').notNull(),
+    gapReason: gapReasonEnum('gap_reason').notNull(),
+    clusterId: text('cluster_id'),
+    githubIssueNumber: integer('github_issue_number'),
+    classification: gapClassificationEnum('classification'),
+    status: gapStatusEnum('status').notNull().default('open'),
+    createdAt: timestamp('created_at', { withTimezone: true, mode: 'date' }).notNull().defaultNow(),
+    resolvedAt: timestamp('resolved_at', { withTimezone: true, mode: 'date' }),
+  },
+  (t) => ({
+    // RLS org isolation lookup (REQ-KNOWLEDGE-GAP-004)
+    orgIdx: index('idx_unanswered_queue_org').on(t.orgId),
+    // Queue status filtering for RA-lead classification workflow
+    statusIdx: index('idx_unanswered_queue_status').on(t.status),
+    // Cluster append lookup (REQ-KNOWLEDGE-GAP-005)
+    clusterIdx: index('idx_unanswered_queue_cluster').on(t.clusterId),
   }),
 );
 

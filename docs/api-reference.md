@@ -865,6 +865,133 @@ Side effects:
 - Soft-revokes the active signature.
 - Writes append-only audit event `signature.revoked`.
 
+---
+
+## Knowledge Gap
+
+### GET /api/knowledge-gap/queue
+
+Retrieve unanswered question queue with pagination and filters.
+
+Permission: `knowledgegap.view`.
+
+```http
+GET /api/knowledge-gap/queue?page=1&pageSize=50&gap_reason=low_confidence&status=open
+Authorization: session cookie
+```
+
+**Query Parameters**:
+
+- `page` (optional): Page number, default 1
+- `pageSize` (optional): Items per page, default 50
+- `gap_reason` (optional): Filter by gap_reason enum (low_confidence/low_citation/no_results/policy_blocked)
+- `status` (optional): Filter by status enum (open/classified/resolved)
+- `classification` (optional): Filter by classification enum (ra_project_gap/md_process_gap/external_regulation_needed/bug)
+
+Response `200 OK`:
+
+```json
+{
+  "items": [
+    {
+      "id": "uuid",
+      "redacted_question": "PII 제거된 질문 원문",
+      "gap_reason": "low_confidence",
+      "status": "open",
+      "classification": null,
+      "cluster_id": "cluster-hash",
+      "github_issue_number": 123,
+      "created_at": "2026-06-23T00:00:00Z",
+      "resolved_at": null
+    }
+  ],
+  "total": 150,
+  "page": 1,
+  "pageSize": 50
+}
+```
+
+### POST /api/knowledge-gap/classify
+
+Classify an unanswered question into RA categories. Only ra-lead/admin can classify.
+
+Permission: `knowledgegap.classify`.
+
+```http
+POST /api/knowledge-gap/classify
+Content-Type: application/json
+Authorization: session cookie
+
+{
+  "queueId": "uuid",
+  "classification": "ra_project_gap",
+  "note": "RA 프로젝트 SOP 누락 — MD-process 팀에 handoff 필요"
+}
+```
+
+**Zod Schema** (`lib/knowledge-gap/schemas.ts`):
+
+```typescript
+export const ClassifyRequestSchema = z.object({
+  queueId: z.string().uuid(),
+  classification: z.enum(['ra_project_gap', 'md_process_gap', 'external_regulation_needed', 'bug']),
+  note: z.string().max(1000).optional(),
+})
+```
+
+Response `200 OK`:
+
+```json
+{
+  "id": "uuid",
+  "classification": "ra_project_gap",
+  "status": "classified",
+  "updated_at": "2026-06-23T01:00:00Z"
+}
+```
+
+Side effects:
+
+- Updates `unanswered_queue.classification` and `status` to `classified`
+- Writes append-only audit event `knowledge_gap_classified`
+
+### POST /api/knowledge-gap/replay/[queueId]
+
+Execute replay test for a resolved gap after KB augmentation. Verifies if the question now passes with citations.
+
+Permission: `knowledgegap.replay`.
+
+```http
+POST /api/knowledge-gap/replay/uuid
+Authorization: session cookie
+```
+
+Response `200 OK` (when passed):
+
+```json
+{
+  "passed": true,
+  "queueId": "uuid",
+  "answer_with_citations": "증거 문서 기반 답변...",
+  "sources": [
+    {
+      "source_id": "uuid",
+      "title": "관련 규정 문서",
+      "chunk_index": 5
+    }
+  ],
+  "resolved_at": "2026-06-23T02:00:00Z"
+}
+```
+
+Side effects:
+
+- If `passed: true`: sets `unanswered_queue.status = 'resolved'`, `resolved_at = NOW()`
+- GitHub Issue comment: posts evidence documents + replay result
+- Writes append-only audit event `knowledge_gap_resolved`
+
+---
+
 ## Common Error Codes
 
 | Code | HTTP | Description |

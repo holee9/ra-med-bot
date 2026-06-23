@@ -23,11 +23,12 @@ describe('inngest client (SPEC-REGULA-DIGEST-001)', () => {
 });
 
 describe('function registry', () => {
-  it('registers both the weekly digest and docingest upload functions', () => {
+  it('registers the weekly digest, knowledge-gap digest, and docingest upload functions', () => {
     const ids = functions.map((f) => (f as unknown as { id: () => string }).id());
     expect(ids).toContain('digest-weekly-cron');
+    expect(ids).toContain('knowledge-gap-daily-digest');
     expect(ids).toContain('docingest-upload-processed');
-    expect(functions).toHaveLength(2);
+    expect(functions).toHaveLength(3);
   });
 
   it('weekly digest function is the same instance exported from its module', () => {

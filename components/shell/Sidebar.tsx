@@ -39,12 +39,16 @@ interface SidebarProps {
   // SPEC-REGULA-PREDICATE-001 (REQ-PRE-029): Predicate Search is visible only to
   // RA/Dev/Exec departments. Gated server-side and passed down as a prop.
   showPredicate?: boolean;
+  // SPEC-REGULA-KNOWLEDGE-GAP-001 (Issue #35): Knowledge Gap queue is visible to
+  // roles with knowledgegap.view (ra-member+). Gated server-side and passed down.
+  showKnowledgeGap?: boolean;
   initialLocale?: string;
 }
 
 export default function Sidebar(props?: SidebarProps) {
   const showExpertReview = props?.showExpertReview ?? false;
   const showPredicate = props?.showPredicate ?? false;
+  const showKnowledgeGap = props?.showKnowledgeGap ?? false;
   const currentProjectId = useUIStore((s) => s.currentProjectId);
   const setCurrentProjectId = useUIStore((s) => s.setCurrentProjectId);
   const { data = [] } = useProjects();
@@ -143,6 +147,19 @@ export default function Sidebar(props?: SidebarProps) {
           );
         })}
       </nav>
+
+      {/* SPEC-REGULA-KNOWLEDGE-GAP-001: Knowledge Gap queue link (Issue #35). */}
+      {showKnowledgeGap && (
+        <nav className="px-2 py-1">
+          <Link
+            href="/knowledge-gap"
+            data-testid="sidebar-knowledge-gap-link"
+            className="rounded-md px-3 py-2 text-sm text-ink-700 hover:bg-ink-50 block"
+          >
+            미답변 큐
+          </Link>
+        </nav>
+      )}
 
       {/* SPEC-REGULA-PREDICATE-001: Predicate Search conditional link (REQ-PRE-029) */}
       {showPredicate && (

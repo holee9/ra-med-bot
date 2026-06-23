@@ -85,6 +85,34 @@
 
 ---
 
+## [Unreleased] — Knowledge Gap Loop (2026-06-23)
+
+### Added
+
+- **미답변 자동 이슈화 및 지식베이스 보강 루프** (SPEC-REGULA-KNOWLEDGE-GAP-001 — Issue #35, PR #234): 4-condition 감지, 클러스터링, GitHub 자동 이슈, RA 분류 UI, 일일 Digest, 폐쇄 루프 검증.
+  - `unanswered_queue` 테이블(migration 0066): 13컬럼(redacted_question, redaction_hash, gap_reason, cluster_id, github_issue_number, classification, status, created_at, resolved_at), RLS org 격리
+  - `messages.knowledge_gap_required` 컬럼 추가(expert_review_required와 분리)
+  - 4-condition 감지: low_confidence(<0.5), low_citation(<80%), no_results(0 chunks), policy_blocked(LLM 실패)
+  - PII/영업비밀 redaction 후 SHA-256 hash 기록(lib/knowledge-gap/redaction.ts)
+  - Cosine similarity 클러스터링(≥0.85) → 중복 질문 그룹화(lib/knowledge-gap/clustering.ts)
+  - GitHub Issue 자동 생성/append(fetch 기반 GitHub client, labels: knowledge-gap/ra-auto/needs-classification)
+  - RA 분류 API/UI: `POST /api/knowledge-gap/classify`(`knowledgegap.classify`), `app/(app)/knowledge-gap/page.tsx`, 4개 카테고리(ra_project_gap/md_process_gap/external_regulation_needed/bug)
+  - 미답변 큐 조회: `GET /api/knowledge-gap/queue`(페이지네이션, 필터), `QueueFilters.tsx`
+  - 일일 Digest: Inngest `knowledge-gap-daily-digest`(08:00 UTC), 반복 미답변 top topics, 긴급도, SLA
+  - 폐쇄 루프: `POST /api/knowledge-gap/replay/[queueId]`(replayGapTest), 통과 시 `status='resolved'`, GitHub Issue comment(증거 문서+결과)
+  - 권한 3종 추가: `knowledgegap.classify`(ra-lead/admin), `knowledgegap.view`(ra-member+), `knowledgegap.replay`(ra-lead/admin) — 총 41개 권한
+  - Audit action 4종 추가: `knowledge_gap_created`, `knowledge_gap_classified`, `knowledge_gap_digest_sent`, `knowledge_gap_resolved` — 총 113개
+  - Inngest 함수 3종: daily-digest, docingest upload-processed, weekly-digest
+  - 환경변수(optional): `KNOWLEDGE_GAP_GITHUB_TOKEN`, `KNOWLEDGE_GAP_GITHUB_REPO`, `SENDGRID_API_KEY`(email dispatcher 공유)
+  - 신규 테스트 17개(AC-01~08), 총 3,157 passed / 7 skipped
+  - 검증: typecheck, biome, next build PASS
+
+### Changed
+
+- **README Wave 3 카탈로그**: SPEC-REGULA-KNOWLEDGE-GAP-001 상태를 draft → "구현 완료 (PR #234)"로 갱신
+
+---
+
 ## [Unreleased] — Wave 3 (2026-06-04 sync)
 
 ### Added
