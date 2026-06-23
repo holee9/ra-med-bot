@@ -277,3 +277,24 @@ describe('components/shell/Sidebar.tsx — Knowledge Gap conditional nav (Issue 
     expect(container.querySelector('[data-testid="sidebar-knowledge-gap-link"]')).toBeNull();
   });
 });
+
+// SPEC-REGULA-CLASSIFY-001 (Issue #59): conditional Classify nav link.
+// The main <nav> still has 10 links (asserted above); the Classify entry is
+// rendered in a separate conditional <nav> block, gated by showClassify.
+describe('components/shell/Sidebar.tsx — Classify conditional nav (Issue #59)', () => {
+  it('renders 기기 분류 link when showClassify=true', async () => {
+    const mod = await import('../../components/shell/Sidebar');
+    const Sidebar = mod.default as React.ComponentType<{ showClassify?: boolean }>;
+    const { container } = render(React.createElement(Sidebar, { showClassify: true }));
+    const link = container.querySelector('[data-testid="sidebar-classify-link"]');
+    expect(link).not.toBeNull();
+    expect(link?.getAttribute('href')).toBe('/workflows/classification');
+    expect(link?.textContent).toContain('기기 분류');
+  });
+
+  it('hides 기기 분류 link when showClassify is false/omitted', async () => {
+    const mod = await import('../../components/shell/Sidebar');
+    const { container } = render(React.createElement(mod.default));
+    expect(container.querySelector('[data-testid="sidebar-classify-link"]')).toBeNull();
+  });
+});

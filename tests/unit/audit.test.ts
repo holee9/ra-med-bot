@@ -59,6 +59,7 @@ describe('lib/audit.ts (REQ-BREADTH-057) — extended AuditAction type', () => {
       expect.arrayContaining([
         'standards_searched',
         'device_classified',
+        'classification_exported',
         'digest_generated',
         'samd_assessment_created',
         'dhf_created',
@@ -71,7 +72,7 @@ describe('lib/audit.ts (REQ-BREADTH-057) — extended AuditAction type', () => {
         'export.confluence',
       ]),
     );
-    expect(values).toHaveLength(113); // +2 signature.* (ESIG-001) +3 audit.* (AUDITOR-VIEW-001) +2 personal_bookmark.* (PERSONAL-LIB-001) +3 deadline.* (CALENDAR-001) +3 corpus.* (DELTA-SYNC-001) +4 knowledge_gap.* (KNOWLEDGE-GAP-001)
+    expect(values).toHaveLength(114); // +2 signature.* (ESIG-001) +3 audit.* (AUDITOR-VIEW-001) +2 personal_bookmark.* (PERSONAL-LIB-001) +3 deadline.* (CALENDAR-001) +3 corpus.* (DELTA-SYNC-001) +4 knowledge_gap.* (KNOWLEDGE-GAP-001) +1 classification_exported (CLASSIFY-001)
   });
 
   it.each([

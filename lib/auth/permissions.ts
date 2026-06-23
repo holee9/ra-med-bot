@@ -57,7 +57,12 @@ export type PermissionAction =
   // RA-lead classifies and triggers replay; ra-member+ can view the queue.
   | 'knowledgegap.classify'
   | 'knowledgegap.view'
-  | 'knowledgegap.replay';
+  | 'knowledgegap.replay'
+  // Classification wizard actions (SPEC-REGULA-CLASSIFY-001, Issue #59)
+  // generate: ra-lead only — classification drives regulatory pathway decisions.
+  // view: ra-member+ — transparent across the RA team.
+  | 'classify.generate'
+  | 'classify.view';
 
 export interface PermissionSpec {
   minRole: Role;
@@ -198,4 +203,12 @@ export const PERMISSIONS: Record<PermissionAction, PermissionSpec> = {
   'knowledgegap.view': { minRole: 'ra-member', scope: 'org', resourceType: 'knowledgeGap' },
   'knowledgegap.classify': { minRole: 'ra-lead', scope: 'org', resourceType: 'knowledgeGap' },
   'knowledgegap.replay': { minRole: 'ra-lead', scope: 'org', resourceType: 'knowledgeGap' },
+
+  // @MX:NOTE [AUTO] classify.* — SPEC-REGULA-CLASSIFY-001 (Issue #59).
+  // @MX:SPEC SPEC-REGULA-CLASSIFY-001
+  // generate: ra-lead only — multi-jurisdiction classification drives submission
+  // pathway decisions (510(k)/PMA/CE etc.), so it is a judgment call.
+  // view: ra-member+ — classification results are shared across the RA team.
+  'classify.generate': { minRole: 'ra-lead', scope: 'org', resourceType: 'deviceClassification' },
+  'classify.view': { minRole: 'ra-member', scope: 'org', resourceType: 'deviceClassification' },
 };

@@ -147,6 +147,8 @@ export type AuditAction =
   | 'standards_compliance_updated'
   // SPEC-REGULA-CLASSIFY-001 — classification audit actions via 0051_classification_audit_actions.sql:
   | 'device_classified'
+  // SPEC-REGULA-CLASSIFY-001 — report export audit action via 0067_classify.sql:
+  | 'classification_exported'
   // SPEC-REGULA-DIGEST-001 — digest audit actions via 0053_digest_audit_actions.sql:
   | 'digest_generated'
   | 'digest_emailed'
