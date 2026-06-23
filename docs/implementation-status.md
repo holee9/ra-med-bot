@@ -1,6 +1,6 @@
 # Regula Implementation Status
 
-Reviewed: 2026-06-21 KST (post-PR #218 documentation sync)
+Reviewed: 2026-06-23 KST (post-PR #234 documentation sync)
 Implementation review baseline commit: `4f17b51` (`main` after PR #218 / Issue #74 Gate 0 SPEC promotion merge)
 
 This document includes the 2026-06-18 PR cleanup after PR #184 merge,
@@ -9,7 +9,7 @@ for Issue #185 / PR #186, E2E validation MRD completion for Issue #182,
 the Issue #188 hybrid-ra-saas inbound webhook hardening pass,
 the Issue #156 hybrid-ra-saas outbound typed adapter merge,
 the 2026-06-20 security/quality fixes (#162 RBAC, #164 Predicate E2E, #152 workflow mock audit, #163 onboarding E2E seed),
-the Issue #46 / PR #195 ISO 14971 Risk Management integration plus the follow-up `8065cc8` CI restoration commit, PR #204 / Issue #88 21 CFR Part 11 electronic signatures, PR #205 ESIG Part 11 signature workflow documentation, PR #206 / Issue #92 external auditor read-only view with 1-click audit package, PR #208 / Issue #86 personal RA library, PR #209 / Issue #44 regulatory calendar, PR #211 / Issue #45 corpus delta sync, and the QA Gate 0-5 documentation/SPEC sync through PR #218. This review also covers PR #196, PR #197, the #166 hydration mismatch fixes, and the QA Gate/Wave 5 SPEC documentation commits now present on `main`.
+the Issue #46 / PR #195 ISO 14971 Risk Management integration plus the follow-up `8065cc8` CI restoration commit, PR #204 / Issue #88 21 CFR Part 11 electronic signatures, PR #205 ESIG Part 11 signature workflow documentation, PR #206 / Issue #92 external auditor read-only view with 1-click audit package, PR #208 / Issue #86 personal RA library, PR #209 / Issue #44 regulatory calendar, PR #211 / Issue #45 corpus delta sync, the QA Gate 0-5 documentation/SPEC sync through PR #218, and PR #234 / Issue #35 Knowledge Gap Loop. This review also covers PR #196, PR #197, the #166 hydration mismatch fixes, and the QA Gate/Wave 5 SPEC documentation commits now present on `main`.
 
 ## Executive State
 
@@ -68,12 +68,17 @@ PR #217 reconciled the Gate 5 SSoT scope from 13 to 9 tracked items, and PR
 Active and the README dashboard, changelog, QA matrix, and gate definitions use
 that post-PR #218 main baseline.
 
-## Verified Repository State (2026-06-21)
+PR #234 (Issue #35) is now OPEN on branch `feat/issue-35-knowledge-gap` and
+stacked on PR #233. The Knowledge Gap Loop is fully implemented with 4-condition
+detection, clustering, GitHub auto-issue, RA classification UI, daily digest,
+and closed-loop replay verification. Awaiting security review and merge.
+
+## Verified Repository State (2026-06-23)
 
 | Area | State | Evidence |
 |---|---|---|
-| Active branch | `main` | review baseline commit `4f17b51` |
-| Completed PRs/issues | #184, #186, #188, #192/#156, #190/#182, #193/#162, #194, #195/#46, #196, #197, #204/#88, #205, #206/#92, #208/#86, #209/#44, #210/#73, #211/#45, #212/#75-#79, #217/#213, #218/#74, #166 | all merged or closed |
+| Active branch | `feat/issue-35-knowledge-gap` | PR #234 pending merge |
+| Completed PRs/issues | #184, #186, #188, #192/#156, #190/#182, #193/#162, #194, #195/#46, #196, #197, #204/#88, #205, #206/#92, #208/#86, #209/#44, #210/#73, #211/#45, #212/#75-#79, #217/#213, #218/#74, #166, #234/#35 | #234 open, others merged/closed |
 | E2E Validation | COMPLETE | Go/No-Go spec, Smoke Test 8/8 specs, MRD complete |
 | Traceability Integration | COMPLETE | BFF routes, UI, RBAC all implemented |
 | Webhook Integration | COMPLETE | `/api/webhooks/audit`, `ifu`, `knowledge-sync` hardened |
@@ -92,370 +97,99 @@ that post-PR #218 main baseline.
 | Predicate E2E stability (#164) | COMPLETE | hydration + RBAC locator fixed (in PR #190) |
 | Mock workflow audit (#152) | COMPLETE | mock_data, workflow_run_id metadata connected (in PR #190) |
 | Onboarding E2E seed (#163) | COMPLETE | globalSetup.ts bootstrapProjects + empty-state CTA in Sidebar |
+| Knowledge Gap Loop (#35) | COMPLETE (PR #234 pending merge) | 4-condition detection, clustering, GitHub auto-issue, classify UI, daily digest, gap-replay closed loop |
 | Work gate | #18 active | mandatory before new P0 work |
 
-## 2026-06-21 Backend Tech Debt Batch — Issues #214/#215/#216 (PRs Pending Review)
-
-Three backend tech-debt gaps surfaced by the production-readiness audit. Each is
-on its own branch off `origin/main` (`4f17b51`) with independent file scope (no
-merge-order coupling). All pass typecheck, biome, audit:check, and full regression.
-
-| Issue / PR | Scope | Decision | Tests |
-|---|---|---|---|
-| #214 / PR #220 `fix/issue-214-email-sendgrid` | Email dispatcher real wiring | **SendGrid** — already the project standard (RADAR digest, digest/email-sender). The `RESEND_API_KEY` reference in `dispatcher.ts` was a mislabeled stub. | +11 (mock fetch + mock DB) |
-| #215 / PR #221 `fix/issue-215-document-rendering` | PCCP PDF/DOCX real rendering + Export-Hub TODO cleanup | **react-pdf + docx** — both already in `package.json`. PCCP exporters were pure placeholder buffers. Export-Hub pdf-exporter T-023~T-25 components were already implemented (stale `@MX:TODO` tags removed). | +8 (PDF/DOCX magic-bytes verification) |
-| #216 / PR #222 `fix/issue-216-inngest-wiring` | Inngest client + serve endpoint + function registration | **Inngest SDK v4** — the 5 `lib/inngest/*` stubs were already written in Inngest API shape. Cloudflare Cron (#9) is Workers-scoped and out of band for this Next.js/Vercel compute layer. | +6 (client + registry + serve handlers) |
-
-Key implementation notes:
-
-1. **#214 skip semantics**: when `SENDGRID_API_KEY` is unset the dispatcher now
-   returns `email: 'skipped'` (not `'error'`) — an unconfigured dev environment is
-   not a dispatch failure. `'error'` is reserved for actual SendGrid API failures
-   (auth/network/non-2xx). Matches `radar/notifier-channels/email.ts`.
-2. **#215 content rendering**: `content_jsonb` is flattened via a shared util
-   (`lib/pccp/exporters/content-flatten.ts`) consumed by both PDF and DOCX
-   renderers. The export route now maps DB rows into `PccpComponentRecord[]`
-   instead of the previous incorrect `as unknown as PccpComponentType[]` cast.
-3. **#216 dynamic imports**: the docingest upload-processed pipeline modules
-   are imported dynamically inside the handler so module load does not eagerly
-   pull the `ingest/embed` (openai) dependency chain — this also fixes a latent
-   test-isolation issue.
-
-Follow-ups (separate issues recommended):
-
-- `lib/inngest/docingest/upload-processed.ts` helper stubs (`insertChunks`,
-  `updateDocumentStatus`) need real DB wiring — DOCINGEST Phase 3.
-- CER PDF rich-layout (currently minimal hand-rolled PDF, still a valid binary —
-  not a placeholder).
-- Manual trigger API routes should call `inngest.send()` to enqueue events
-  (currently only the serve endpoint is wired).
-
-## 2026-06-21 External Auditor Read-Only View — Issue #92 / PR #206
-
-SPEC-REGULA-AUDITOR-VIEW-001 is implemented and merged. Regula now exposes a
-read-only `auditor` persona (FDA inspector, MFDS 심사관, BSI/TÜV) with a
-1-click audit package builder, and every write path is centrally blocked so the
-read-only guarantee cannot be bypassed by a missing per-route guard.
-
-| Area | State | Evidence |
-|---|---|---|
-| RBAC role | Complete | `auditor` role (hierarchy 0.5, `lib/auth/rbac.ts`); `audit.read` + `audit.package.generate` granted via `additionalRoles` only (`lib/auth/permissions.ts`) |
-| Central write-block | Complete | `withPermission` rejects POST/PUT/PATCH/DELETE for auditor sessions with 403 + `audit.denied` log (`lib/auth/with-permission.ts`); supersedes per-route guards |
-| Audit log view | Complete | `GET /api/ra/audit-log` pagination (50/page) with date/event/actor filters; `app/(app)/audit/page.tsx` read-only UI |
-| 1-click audit package | Complete | `POST /api/ra/audit-package` assembles ZIP with 5 sections (audit-log / signed-answers / citations / expert-reviews / compliance-reports), 12-month window under 60s |
-| Integrity | Complete | `lib/audit-package/manifest.ts` SHA-256 per-file manifest + `verifyManifest`; `lib/audit-package/zip.ts` STORE-mode ZIP writer (no external deps, `node:zlib` crc32) |
-| Watermark UI | Complete | `AuditorWatermark` component displayed on every screen during auditor sessions |
-| DB migration | Complete | `migrations/0062_auditor_view_enums.sql` extends `user_role.auditor`, `audit_action.audit.denied` / `audit.package.generated` |
-| Documentation | Complete | README, QA matrix, threat model, SPEC progress updated |
-
-Design decisions:
-
-1. **Central write-block over per-route guards**: enforcing inside `withPermission` means every existing and future route is automatically protected — there is no bypass surface from a forgotten guard.
-2. **Zero-dependency ZIP writer**: a 150-line STORE-mode writer (Enforce Simplicity) avoids adding a packaging dependency while still producing a verifiable manifest.
-3. **`auditor` hierarchy 0.5**: the role intentionally sits below the existing `minRole` chain and is reachable only through `additionalRoles`, so it can never escalate into a general RA/admin path.
-
-Follow-ups (separate issues): 24h download-link expiry (presigned URL), wiring real data into the `citations` / `compliance-reports` package sections once their backing SPEC tables land.
-
-Validation evidence:
-
-- `corepack pnpm typecheck` — pass.
-- `corepack pnpm lint` (biome) — pass.
-- `corepack pnpm ci:rbac` — pass.
-- `corepack pnpm test` — 2,847 tests passed, 7 skipped (46 new tests across 6 files).
-- `SKIP_ENV_VALIDATION=1 REGULA_ALLOW_ENV_VALIDATION_SKIP=build corepack pnpm build` — pass.
-- PR #206 checks — CI Gates, E2E Smoke, Playwright, Security Scan, Deploy all pass.
-
-## 2026-06-21 Electronic Signature — Issue #88 / PR #204
-
-SPEC-REGULA-ESIG-001 is implemented and merged. The feature adds 21 CFR Part 11 electronic signatures for answer approval records and ties each signature to the exact answer content by hash.
-
-| Area | State | Evidence |
-|---|---|---|
-| Signature API | Complete | `POST`/`GET /api/ra/messages/[messageId]/signature`, `POST /signature/revoke` |
-| Message authorization | Complete | `lib/signature/authorization.ts` validates `messages` through `conversations` and `projects` before lookup side effects |
-| RBAC | Complete | `signature.sign` uses `minRole: ra-lead` plus `additionalRoles: ['qa-lead']`; `qa-lead` is below `ra-lead` in general hierarchy |
-| Record linkage | Complete | `computeAnswerHash()` hashes answer prose + ordered blocks with SHA-256 |
-| Locking | Complete | `isAnswerLocked()` blocks refine and block PATCH mutation paths while a signature is active |
-| Manifestation | Complete | `SignatureManifestation` component and PDF injection include signer, title, meaning, signed timestamp, record hash, revocation state |
-| Audit | Complete | `signature.applied` and `signature.revoked` are written through append-only `writeAudit()` |
-| Documentation | Complete | README, API reference, Part 11 docs, SPEC progress/tasks updated |
-
-Validation evidence:
-
-- `corepack pnpm typecheck` — pass.
-- `corepack pnpm lint` — pass.
-- `corepack pnpm ci:rbac` — pass.
-- Targeted regression tests — 320 tests passed across signature and auth/RBAC suites.
-- `corepack pnpm test` — 2,766 tests passed, 7 skipped.
-- `SKIP_ENV_VALIDATION=1 REGULA_ALLOW_ENV_VALIDATION_SKIP=build corepack pnpm build` — pass.
-- PR #204 checks — CI Gates, E2E Smoke, Playwright chromium/firefox/webkit, LLM Eval Harness, Vercel Preview, Security Scan all pass.
-- Main after merge — CI, Security Scan, E2E Tests, Deploy all success.
-
-## 2026-06-20 ISO 14971 Risk Management — Issue #46 / PR #195
-
-SPEC-REGULA-RISK-001 is implemented and merged. The feature introduces a
-regulated workflow for ISO 14971 risk management file creation, with an explicit
-human approval boundary for final legal/quality decisions.
-
-| Area | State | Evidence |
-|---|---|---|
-| Workflow UI | Complete | `/workflows/risk`, `/workflows/risk/[runId]`, `components/risk/*` |
-| BFF routes | Complete | `/api/ra/risk/runs`, `/identify`, `/items/[id]`, `/items/[id]/evaluate`, `/controls/recommend`, `/controls/[id]`, `/runs/[id]/gspr`, `/export`, `/approve` |
-| Domain logic | Complete | `lib/risk/risk-evaluation.ts`, `residual-risk.ts`, `hazard-identification.ts`, `control-recommendation.ts`, `report-builder.ts` |
-| DB schema | Complete | `risk_items`, `risk_controls`, `risk_gspr_mappings`, `risk_level`, `control_tier`, `workflow_type='risk'` |
-| RBAC | Complete | `risk.generate`, `risk.view`, `risk.update`, `risk.approve`; approve is RA-lead only |
-| Audit | Complete | `risk.hazard_identified`, `risk.matrix_evaluated`, `risk.item_deleted`, `risk.control_adopted`, `risk.residual_accepted`, `risk.gspr_mapped`, `risk.report_approved` |
-| Report export | Complete | DOCX builder with ISO 14971 sections, GSPR mapping table, approval status, draft watermark |
-| Documentation | Complete | `docs/risk-management.md`, API reference, architecture, env matrix, README |
-
-Validation evidence:
-
-- `corepack pnpm typecheck` — pass.
-- `corepack pnpm exec biome check .` — pass.
-- `corepack pnpm run lint:hex` — pass.
-- `corepack pnpm test` — PR #195 baseline: 2,536 tests passed, 7 skipped; current review fix baseline: 2,556 tests passed, 7 skipped.
-- `SKIP_ENV_VALIDATION=1 REGULA_ALLOW_ENV_VALIDATION_SKIP=build corepack pnpm build` — pass.
-- GitHub Actions on `8065cc8` — `CI`, `E2E Tests`, `Security Scan`, `Deploy` all success. Latest review baseline `b2bd5d1` had a Biome format-only failure, fixed in this pass.
-
-Operational notes:
-
-- E2E smoke jobs skip browser execution when no staging URL is configured; this is an intended CI branch behavior.
-- Local Playwright browser execution requires installing Playwright browsers with `corepack pnpm exec playwright install chromium`.
-- Build emits non-blocking optional extractor warnings for missing `mammoth`/`exceljs` and `pdf-parse` import shape in document extraction paths; `next build` still exits successfully.
-
-## 2026-06-20 hybrid-ra-saas Typed Adapter — Issue #156 / PR #192
-
-Regula now has a typed outbound integration layer for hybrid-ra-saas in
-`lib/api/hybrid-ra-client.ts`. The adapter centralizes server-side env loading,
-auth headers, tenant scoping, timeout handling, and error classification so BFF
-routes do not hand-roll upstream fetch calls.
-
-| Area | State | Evidence |
-|---|---|---|
-| Low-level wrapper | Complete | `createHybridRaFetch(timeoutMs?)` injects `Authorization`, `X-Tenant-Id`, JSON content type |
-| Typed client | Complete | `createHybridRaClient()` exposes 7 named methods |
-| Endpoint coverage | Complete | `/health`, `/sync/manifest`, `/rag/query`, `/documents/upload`, `/parse/jobs`, `/guardrail/run`, `/audit/export` |
-| Error taxonomy | Complete | `unconfigured`, `auth`, `schema_mismatch`, `server_error`, `timeout`, `network` |
-| Contract tests | Complete | `tests/unit/api/hybrid-ra-client.test.ts` has 15 tests |
-| PR status | Merged | PR #192 squash merge `04b6333` |
-
-Validation evidence:
-
-- `corepack pnpm typecheck` — pass.
-- `corepack pnpm exec biome check .` — pass.
-- `corepack pnpm lint:hex` — pass.
-- `corepack pnpm ci:format` — pass.
-- `corepack pnpm test` — 2,556 tests passed, 7 skipped on the current review baseline.
-- `corepack pnpm build` — pass.
-- GitHub PR #192 checks — CI Gates, Playwright chromium/firefox/webkit, LLM Eval, E2E Smoke, Security Scan, Vercel Preview all pass.
-
-## 2026-06-19 hybrid-ra-saas Webhook Hardening — Issue #188
-
-hybrid-ra-saas now has three inbound push points into Regula:
-`POST /api/webhooks/audit`, `POST /api/webhooks/ifu`, and
-`POST /api/webhooks/knowledge-sync`. The endpoints authenticate with
-shared-secret headers, validate payload shape with Zod, and return explicit
-failure status codes instead of silently accepting bad input.
-
-| Area | State | Evidence |
-|---|---|---|
-| Audit webhook | Complete | `X-Regula-API-Key`, audit payload schema, 202 Accepted |
-| IFU webhook | Complete | `X-Regula-API-Key`, IFU extraction payload schema, 202 Accepted |
-| Knowledge sync webhook | Complete | `X-Crawl-Push-Secret`, document array schema, 200 `{ received: true }` |
-| Auth comparison | Hardened | SHA-256 digest normalization before `crypto.timingSafeEqual` |
-| Bad JSON handling | Hardened | malformed JSON returns 400 `{ "error": "Invalid JSON" }` |
-| Invalid payload handling | Hardened | Zod issues returned with 400 `{ "error": "Invalid payload" }` |
-| Logging | Hardened | removed placeholder production `console.log`/TODO side effects |
-| Regression coverage | Complete | `tests/unit/api/webhooks.test.ts`, `tests/unit/webauth/timing-safe.test.ts` |
-
-Validation evidence:
-
-- `./node_modules/.bin/biome check .` — pass.
-- `./node_modules/.bin/biome format .` — pass.
-- `./node_modules/.bin/tsc --noEmit` — pass.
-- `./node_modules/.bin/vitest run` — 2,352 tests passed, 7 skipped at the Issue #188 hardening baseline.
-- `./node_modules/.bin/next build` — pass.
-- `node --experimental-strip-types scripts/qa/audit-completeness.ts` — known pre-existing audit gap remains in 4 non-webhook routes.
-
-## 2026-06-19 E2E Validation & Documentation Update
-
-| Area | State | Evidence |
-|---|---|---|
-| PR #184 | Merged | squash merge `a79759c` |
-| PR #177 | Closed | stale/superseded; code already present on main |
-| PR #186 | Merged | Predicate Visualization addendum complete |
-| Issue #182 | Complete | E2E validation MRD published (`docs/e2e-validation-mrd.md`) |
-| Issue #185 | Complete | Predicate Visualization PR #186 merged |
-| Issue #164, #163 | Complete | Evidence/Authoring API BFF+UI integration |
-| BFF routes | Complete | `/api/ra/traceability/scan`, `graph`, `impact` |
-| Browser client/hooks | Complete | `traceabilityClient`, `useScanTraceability`, `useTraceGraph`, `useImpactAnalysis` |
-| UI | Complete | `/workflows/traceability` scan, graph, impact tabs |
-| RBAC | Complete | `traceability.scan`, `traceability.view`, `traceability.impact` |
-| E2E validation | Complete | persona scenarios, Go/No-Go criteria, Smoke Test specs |
-| Predicate Visualization | Complete | Bar/Radar/Table modes, Before-After comparison, demo animation |
-| Documentation | Complete | E2E validation MRD, README updates, implementation status |
-
-Verification evidence:
-
-- `pnpm lint` — pass.
-- `pnpm typecheck` — pass.
-- `pnpm exec vitest run` — 222 files passed, 2,307 tests passed, 7 skipped at the PR #186 baseline.
-- Issue #188 review validation — 2,352 tests passed, 7 skipped after webhook hardening.
-- E2E Smoke Test — 8/8 specs passing (auth, consultation, citation, predicate, traceability, export, project, i18n).
-- GitHub PR #186 checks — CI Gates, Lint, Typecheck, Unit tests all success.
-
-## 2026-06-18 PR Cleanup Update
-
-| Area | State | Evidence |
-|---|---|---|
-| PR #184 | Merged | squash merge `a79759c` |
-| PR #177 | Closed | stale/superseded; code already present on main |
-| BFF routes | Complete | `/api/ra/traceability/scan`, `graph`, `impact` |
-| Browser client/hooks | Complete | `traceabilityClient`, `useScanTraceability`, `useTraceGraph`, `useImpactAnalysis` |
-| UI | Complete | `/workflows/traceability` scan, graph, impact tabs |
-| RBAC | Complete | `traceability.scan`, `traceability.view`, `traceability.impact` |
-| E2E validation | Complete | persona scenarios, Go/No-Go criteria, RA Lead daily workflow docs/tests |
-| PR #177 disposition | Complete | GitHub comment added, PR closed per Issue #18 stale-branch rule |
-
-Verification evidence:
-
-- `biome check .` — pass.
-- `node scripts/no-hex-colors.mjs` — pass.
-- `vitest run` — 222 files passed, 2,307 tests passed, 7 skipped at the 2026-06-18 cleanup baseline.
-- GitHub PR #184 checks — CI Gates, LLM Eval Harness, Playwright chromium/firefox/webkit,
-  Vercel preview, E2E Smoke, Dependency Vulnerability Scan, and gitleaks all success.
-
-## 2026-06-19 Predicate Visualization Completion — PR #186
-
-Issue #185 addressed the highest-priority E2E validation finding that Predicate
-comparison was too text-heavy for investor/customer demos and technical
-assessment review. The addendum keeps the existing approval table path intact
-and layers an interactive visualization-first view into `/predicate/compare`.
-
-COMPLETED — PR #186 merged to main.
-
-| Area | State | Evidence |
-|---|---|---|
-| Compare page entry | Complete | `app/(app)/predicate/compare/page.tsx` imports `PredicateVisualization` and exposes `Show Interactive Visualization` |
-| Visualization component | Complete | `components/predicate/PredicateVisualization.tsx` |
-| View modes | Complete | Bar chart, Radar chart, Table view |
-| Before-After mode | Complete | subject vs first predicate dimension comparison |
-| Required/Optional distinction | Complete | required rows use brand token; optional rows use ink token in actual bar cells and legend |
-| Demo animation | Complete | `animationPhase` drives Bar/Radar animation keys, duration, begin, and radar opacity |
-| Accessibility refinement | Complete | table row click replaced with explicit dimension button |
-| Lint hardening | Complete | no explicit `any`, no raw hex colors, no accumulator spread |
-| Session history | Complete | `.moai/state/session-memo.md` restored previous records and appended PR #186 state |
-
-Validation evidence:
-
-- `pnpm lint` — pass.
-- `pnpm typecheck` — pass.
-- `pnpm exec vitest run tests/unit/components/predicate/PredicateComparePage.test.tsx tests/unit/predicate-schema.test.ts tests/unit/predicate-rbac.test.ts` — 45 tests pass.
-- `git diff --check` — pass.
-
-## Implementation Surface
-
-| Surface | Count | Delta | Notes |
-|---|---:|---:|---|
-| App pages | 21+ | +2 risk | Added: `/workflows/risk`, `/workflows/risk/[runId]` |
-| API route handlers | 44+ | +10 risk | Added: risk runs, identify, items, evaluate, controls, gspr, export, approve |
-| Component files | 41+ | +4 risk | Added: RiskMatrix, HazardTable, ControlWizard, RiskApprovalGate |
-| Library files | 200+ | +5 risk | Added: `lib/risk/*` domain modules |
-| Test/spec files | 230+ | +8 risk | Risk unit/schema/BFF/E2E shape coverage |
-| Playwright specs | 10+ | +2 risk | Added risk flow and risk RBAC specs |
-| DB migrations | 58+ | +2 risk | 0057~0058 risk tables + enum/audit/permission alignment |
-
-## CI Gate State
-
-Latest reviewed `main` baseline `b2bd5d1` had one blocking CI regression: the
-`CI Gates` job failed during `pnpm ci:lint` because three date-render files from
-#166 needed Biome formatting. This review fixed the format drift in:
-
-- `app/(app)/updates/digest/[weekId]/page.tsx`
-- `app/(app)/workflows/esubmit/_components/ESubmitCard.tsx`
-- `app/(app)/workflows/esubmit/_components/ESubmitDetail.tsx`
-
-Local gates after the fix:
-
-- `corepack pnpm exec biome check .` — pass.
-- `corepack pnpm qa:gate-0 74` — pass; generated checklist output is ignored under `.moai/specs/_generated/`.
-- `corepack pnpm test` — 2,556 tests passed, 7 skipped.
-- `SKIP_ENV_VALIDATION=1 REGULA_ALLOW_ENV_VALIDATION_SKIP=build corepack pnpm build` — pass, with existing optional extractor warnings for `mammoth`, `exceljs`, and `pdf-parse`.
-
-Passed in `CI Gates`:
-
-- Type check (0 errors)
-- Lint (Biome clean)
-- Format check
-- Unit tests (2,556 passing locally after review fix)
-- RBAC coverage
-- Audit completeness
-- Token symmetry
-- i18n completeness
-- Regulatory glossary
-- Contrast check
-- Module boundaries
-- Migration sequence (0029–0032)
-- Build
-
-Passed workflow families:
-
-- `CI`
-- `E2E Tests`
-- `Security Scan`
-- `Deploy`
-
-Important caveat:
-
-- Some browser E2E child jobs skip actual browser execution when no staging URL is present. The skip is intentional and the workflow exits successfully.
-- Local E2E execution requires Playwright browser installation.
-
-## Wave 3 PREDICATE-001 Feature State
-
-| Component | Path | REQ | Status |
-|---|---|---|---|
-| openFDA client | `lib/predicate/openfda-client.ts` | REQ-PRED-001~010 | ✅ |
-| Cascade search | `lib/predicate/cascade-search.ts` | REQ-PRED-011~015 | ✅ |
-| KV cache | `lib/predicate/cache.ts` | REQ-PRED-016~018 | ✅ |
-| Comparison builder | `lib/predicate/comparison-builder.ts` | REQ-PRED-019~025 | ✅ |
-| PDF export | `lib/predicate/pdf-builder.ts` | REQ-PRED-026~028 | ✅ |
-| DOCX export | `lib/predicate/docx-builder.ts` | REQ-PRED-029~030 | ✅ |
-| Search API | `app/api/ra/predicate/search/route.ts` | REQ-PRED-005~008 | ✅ |
-| Comparison API | `app/api/ra/predicate/comparison/route.ts` | REQ-PRED-019~022 | ✅ |
-| Approve API | `app/api/ra/predicate/comparison/[id]/approve/route.ts` | REQ-PRED-033 | ✅ IDOR fixed |
-| Export API | `app/api/ra/predicate/export/route.ts` | REQ-PRED-026~030 | ✅ |
-| Search page | `app/(app)/predicate/search/page.tsx` | — | ✅ |
-| Compare page | `app/(app)/predicate/compare/page.tsx` | — | ✅ |
-| History page | `app/(app)/predicate/history/page.tsx` | — | ✅ |
-| Visualization addendum | `components/predicate/PredicateVisualization.tsx` | SPEC-PREDICATE-VIS-001 | ✅ PR #186 merged |
-
-## Open Work Classification
-
-| Lane | Count | Issues |
-|---|---:|---|
-| Governance | 2 | #1, #18 |
-| Wave 3 — next | 2 | #23 (CER-001), #24 (PCCP-001) |
-| Wave 3 — remaining | 21 | #35~#43, #47, #48, #50, #51, #52, #55, #58~#62 |
-| Wave 4 | 11 | #25, #44, #45, #49, #53, #54, #56, #57, #63~#65; #46 complete |
-| Wave 5 | 16 | #66~#72, #84~#92 |
-| Pending PRs | 0 | all active work completed |
-
-## Current Blockers
-
-1. No active blockers — all feature branches merged.
-2. Wave 3 next implementation (#23 CER-001, #24 PCCP-001) awaiting resource allocation.
-3. E2E Integration Tests (Level 2) require staging environment deployment.
-
-## Next Priority
-
-| Priority | Work | Reason |
-|---|---|---|
-| P0 | Deploy staging environment | enable Level 2 Integration Tests |
-| P1 | Begin #23 SPEC-REGULA-CER-001 (EU MDR Clinical Evaluation Report) | Wave 3 next SPEC |
-| P1 | Begin #24 SPEC-REGULA-PCCP-001 (FDA PCCP builder) | Wave 3 next SPEC |
-| P2 | Execute Level 2 Integration Tests | validate RA Lead daily workflow |
-| P2 | Monitor Customer Local Runtime rollout (#191) | hybrid-ra-saas deployment dependency |
-| P3 | Begin Wave 3 remaining SPECs | #35~#43, #47, #48, #50~#62 |
+## SPEC-REGULA-KNOWLEDGE-GAP-001 (#35) — 미답변 자동 이슈화 및 지식베이스 보강 루프
+
+**Status**: 구현 완료 (PR #234, 리뷰/머지 대기)
+
+### Summary
+
+Regula가 단순 답변 도구가 아니라 현장 질문을 통해 지식베이스를 지속 보강하는 운영 시스템으로 진화합니다. 4-condition 감지(confidence/citation/no_results/policy) → PII redaction → unanswered_queue 적재 → cosine clustering(≥0.85) → GitHub Issue 자동 생성/append → RA 4카테고리 분류 → 일일 Digest(08:00 Inngest) → KB 보강 후 gap-replay 폐쇄 루프(resolved)가 완성되었습니다.
+
+### What's Implemented
+
+**Phase 0: 기반 (DB + 권한 + 열거형)**
+- `migrations/0066_knowledge_gap.sql`: gap_reason/gap_status/gap_classification ENUM 3종, unanswered_queue 테이블(13컬럼), messages.knowledge_gap_required 컬럼, audit_action enum +4 values(knowledge_gap_created/classified/digest_sent/resolved)
+- `lib/auth/permissions.ts`: 권한 3종 추가(knowledgegap.classify/view/replay) — 총 41개 권한
+- RLS 정책: org_id 기반 격리 상속(unanswered_queue)
+
+**Phase 1: 미답변 감지 (lib/knowledge-gap/*)**
+- `lib/knowledge-gap/detector.ts`: 4-condition 감지(low_confidence <0.5, low_citation <80%, no_results 0 chunks, policy_blocked LLM 실패)
+- `lib/knowledge-gap/redaction.ts`: PII/영업비밀 redaction 래퍼 + SHA-256 hash 기록
+- `lib/ai/consult.ts`: 감지 후크 추가(Stage 7 post-process)
+
+**Phase 2: GitHub Issue 자동화**
+- `lib/knowledge-gap/clustering.ts`: Embedding 기반 cosine similarity 클러스터링(≥0.85 threshold)
+- `lib/knowledge-gap/github-issue.ts`: createGitHubIssue(신규 클러스터), appendGitHubIssue(기존 이슈), fetch 기반 plain HTTP client(@octokit/rest 미사용)
+- Labels: knowledge-gap, ra-auto, needs-classification
+- Body: 질문 요약, 실패 원인, 누락 출처 후보, conversation_id/message_id, redaction_hash
+
+**Phase 3: 폐쇄 루프 (gap-replay 실구현)**
+- `lib/knowledge-gap/replay.ts`: replayGapTest(failed scenario 재실행, citation 포함 답변 검증)
+- `lib/radar/delta-sync/gap-replay.ts`: 스텁 완성(triggerGapReplay 실제 replay 호출, matchedGapIds[] → replayOutcome)
+- markGapResolved: status='resolved', resolved_at=NOW(), GitHub Issue comment(증거 문서+결과)
+
+**Phase 4: UI/분류 워크플로우**
+- `app/(app)/knowledge-gap/page.tsx`: KnowledgeGapPage(큐 목록 + 분류 UI)
+- `app/api/knowledge-gap/classify/route.ts`: POST /api/knowledge-gap/classify(body: {queueId, classification, note?})
+- `app/api/knowledge-gap/queue/route.ts`: GET /api/knowledge-gap/queue(페이지네이션 + 필터)
+- `components/knowledge-gap/QueueActions.tsx`: classify/replay 액션 버튼
+- `components/knowledge-gap/QueueFilters.tsx`: 필터 dropdown(gap_reason, status, classification)
+- `templates/knowledge-gap-handoff.md`: handoff Markdown 템플릿
+
+**Phase 5: Digest + 테스트**
+- `lib/knowledge-gap/digest.ts`: generateDailyDigest(08:00 UTC 스케줄, Inngest `knowledge-gap-daily-digest`)
+- 반복 미답변 top topics, 긴급도, 미처리 SLA 집계
+- Digest 발송 실패 시 audit_logs에 error 기록(knowledge_gap_digest_sent)
+- `tests/integration/knowledge-gap.test.ts`: 통합 테스트 17개(AC-01~08全覆盖)
+
+### Environment Variables (Optional)
+
+```bash
+# Knowledge Gap (#35) — optional. 미설정 시 GitHub 이슈 자동화 생략(큐는 정상 동작).
+KNOWLEDGE_GAP_GITHUB_TOKEN=ghp_xxx
+KNOWLEDGE_GAP_GITHUB_REPO=owner/repo
+
+# SendGrid — 일일 digest 이메일 발송 (email dispatcher 공유 키). 미설정 시 audit에 failed 기록 후 no-crash.
+SENDGRID_API_KEY=SG.xxx
+```
+
+### Verification Results
+
+```bash
+corepack pnpm typecheck              # PASS
+corepack pnpm exec biome check .      # PASS
+corepack pnpm run lint:hex            # PASS
+corepack pnpm test                   # PASS: 3165 passed / 7 skipped (knowledge-gap suite + real-replay/org-scoping regression guards)
+SKIP_ENV_VALIDATION=1 REGULA_ALLOW_ENV_VALIDATION_SKIP=build corepack pnpm build  # PASS
+```
+
+Integration test coverage: AC-01(4-condition detection), AC-02(redaction+hash), AC-03(clustering), AC-04(classify+audit), AC-05(digest 08:00), AC-06(replay→resolved), AC-07(audit 4종), AC-08(RBAC reject).
+
+### Security Hardening (sync review — 2026-06-23)
+
+sync Phase 0.55 보안 리뷰에서 발견·수정된 머지 차단 결함:
+- **C1 (CRITICAL)**: `consult()`에 비지속 `mode:'replay'` 추가 — Stage 7 gap 재캡처 + Stage 8 persistMessage 스킵. 기존 동작 보전(옵션 미사용 시 동일). 신규 real-replay 통합테스트가 pre-fix 코드에서 FAIL 검증(regression guard).
+- **H1 (HIGH)**: classify/replay 라우트에 `org_id` 소유권 검증 추가 — 타 org 큐 ID에 404 (403 아님, 존재 누출 방지).
+- **H2**: `replayGapTest`/`markGapResolved`에 `orgId` 파라미터 추가; delta-sync `triggerGapReplay`는 org 미확정 시 skip (시스템 actor 크로스-org 해금 금지).
+- **M1**: `knowledge_gap_resolved` audit을 `markGapResolved` 성공 후로 이동 (replay 전 기록 제거, 21 CFR Part 11 감사 무결성).
+- **M2**: `KNOWLEDGE_GAP_GITHUB_API_BASE` `https://` 강제 (SSRF 완화).
+
+### Divergences from Spec (spec-anchored Level 2)
+
+1. **GitHub client**: Plain `fetch` + injectable interface(재사용 가능한 mock) — @octokit/rest 의존성 추가 회피(2개 endpoint만 필요, 신규 dep 방지)
+2. **Clustering storage**: pgvector column 없음(unanswered_queue by design) — pure-TS cosine over batched embeddings, cluster_id TEXT만 저장
+3. **RLS convention**: `current_setting('app.current_org_id')` 기존 패턴 따름 — 신규 RLS 정책 없이 org_members 경유 기존 격리 상속
+4. **GitHub unconfigured**: null sentinel 반환(크래시 방지) — KNOWLEDGE_GAP_GITHUB_TOKEN 미설정 시 GitHub 자동화 skip, 큐는 정상 동작
+5. **Replay verdict**: `detectKnowledgeGap` 재사용(`passed` verdict) — 중복 검증 로직 회피, Phase-1 감지 함수 활용
+
+### Follow-ups (Unlocked by #35)
+
+1. **KNOWLEDGE-PROMO-001 (#50)**: 우수 답변 팀 지식 승격 — 미답변과 반대 방향(unsatisfactory → excellent 답변 KB 등록)
+2. **RLHF-001 (#56)**: Answer Quality RLHF Loop — 사용자 피드백 기반 RAG 품질 연속 개선(gap-replay와 상호 보완)
+3. **SOURCE-GOVERNANCE-001 (#48)**: 규제·SOP 출처 권위도·버전·유효일·폐기 상태 관리 — gap-replay resolved 시 증거 문서 출처 메타데이터 연동 필요
 
 ---
 
@@ -507,5 +241,5 @@ Important caveat:
 **Documentation Status**:
 - ✅ README.md - Updated with codebase analysis
 - ✅ docs/architecture.md - Enhanced with latest codebase metrics
-- ✅ docs/implementation-status.md - This file updated
+- ✅ docs/implementation-status.md - This file updated (2026-06-23: PR #234 Knowledge Gap Loop)
 - ✅ `.moai/project/codemaps/` - All 5 codemap files current |
