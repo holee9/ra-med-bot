@@ -28,7 +28,7 @@ import { writeAudit } from '@/lib/audit';
 import { db } from '@/lib/db/client';
 import { unansweredQueue } from '@/lib/db/schema';
 import type { SourceItem, StreamEvent } from '@/types/streaming';
-import { eq } from 'drizzle-orm';
+import { and, eq } from 'drizzle-orm';
 import type { Session } from 'next-auth';
 import { detectKnowledgeGap } from './detector';
 import { commentGapResolved } from './github-issue';
@@ -70,9 +70,29 @@ function systemSession(): Session {
  *   - confidenceScore >= 0.5      (clears low_confidence)
  *                                  AND confidenceLevel !== 'low'
  *
- * Throws if the queue row does not exist (caller maps to 404).
+ * SECURITY (H2 fix): `orgId` is REQUIRED for the HTTP replay route and scopes
+ * the queue-row SELECT. When the row belongs to a different org (or does not
+ * exist), the function throws — the caller maps this to 404 (never 403, to
+ * avoid leaking existence). The delta-sync path resolves orgId from the
+ * ingestion-run context.
+ *
+ * SECURITY (C1 fix): consult() is invoked with `mode:'replay'` so Stage 7
+ * gap-capture and Stage 8 persist are both skipped — replay no longer tries
+ * to write a messages row with the synthetic id or capture a duplicate gap.
+ *
+ * Throws if the queue row does not exist or is outside the passed orgId
+ * (caller maps to 404).
  */
-export async function replayGapTest(queueId: string): Promise<ReplayGapTestResult> {
+export async function replayGapTest(queueId: string, orgId?: string): Promise<ReplayGapTestResult> {
+  // Scope by org when provided. The HTTP route always passes session.user.organizationId;
+  // the delta-sync path resolves org from the ingestion-run context. When orgId
+  // is absent (legacy/unit test only), we fall through to id-only scope — but
+  // production callers MUST pass it for the IDOR protection to hold.
+  const rowPredicate =
+    orgId !== undefined
+      ? and(eq(unansweredQueue.id, queueId), eq(unansweredQueue.orgId, orgId))
+      : eq(unansweredQueue.id, queueId);
+
   const [row] = await db
     .select({
       id: unansweredQueue.id,
@@ -80,15 +100,17 @@ export async function replayGapTest(queueId: string): Promise<ReplayGapTestResul
       redactedQuestion: unansweredQueue.redactedQuestion,
     })
     .from(unansweredQueue)
-    .where(eq(unansweredQueue.id, queueId));
+    .where(rowPredicate);
 
   if (!row) {
     throw new Error(`replayGapTest: unanswered_queue row not found: ${queueId}`);
   }
 
-  // Re-run the redacted question. We use a fresh messageId/conversationId so the
-  // replay does NOT pollute the user's conversation history — replay is observability.
-  const replayMessageId = `replay-${queueId}`;
+  // SECURITY (C1 fix): the replay messageId is NOT persisted (consult replay
+  // mode skips Stage 8) — but we still use a valid uuid so any non-persisted
+  // internal reference (e.g. audit meta, validator state) is well-formed.
+  // conversationId is similarly a sentinel uuid, never inserted.
+  const replayMessageId = '00000000-0000-0000-0000-000000000003';
   const replayConversationId = '00000000-0000-0000-0000-000000000002'; // sentinel
 
   const collected = await collectConsultEvents({
@@ -163,6 +185,9 @@ async function collectConsultEvents(args: {
     args.session,
     args.messageId,
     args.conversationId,
+    undefined,
+    // SECURITY (C1 fix): replay mode skips Stage 7 gap-capture and Stage 8 persist.
+    { mode: 'replay' },
   );
 
   for await (const ev of events) {
@@ -208,6 +233,11 @@ async function collectConsultEvents(args: {
 /**
  * Mark a queue item resolved after a passing replay (REQ-KNOWLEDGE-GAP-015).
  *
+ * SECURITY (H2 fix): `orgId` scopes the row lookup AND the UPDATE WHERE clause.
+ * When passed, a row outside the org is invisible (treated as not found → throw
+ * → caller maps to 404). This closes the IDOR where a caller could resolve a
+ * gap belonging to another org by knowing its queueId.
+ *
  * Side-effects (design.md §4.3):
  *   1. unanswered_queue.status = 'resolved', resolved_at = NOW()
  *   2. GitHub issue comment (best-effort, never throws into the replay flow)
@@ -216,23 +246,31 @@ async function collectConsultEvents(args: {
 export async function markGapResolved(
   queueId: string,
   evidence: { answerWithCitations: string; sources: SourceItem[] },
+  orgId?: string,
 ): Promise<void> {
+  const rowPredicate =
+    orgId !== undefined
+      ? and(eq(unansweredQueue.id, queueId), eq(unansweredQueue.orgId, orgId))
+      : eq(unansweredQueue.id, queueId);
+
   const [row] = await db
     .select({
       id: unansweredQueue.id,
       githubIssueNumber: unansweredQueue.githubIssueNumber,
     })
     .from(unansweredQueue)
-    .where(eq(unansweredQueue.id, queueId));
+    .where(rowPredicate);
 
   if (!row) {
     throw new Error(`markGapResolved: unanswered_queue row not found: ${queueId}`);
   }
 
+  // Scope the UPDATE by orgId as well — defense-in-depth against any race that
+  // moves the row between SELECT and UPDATE. The id+org conjunction is stable.
   await db
     .update(unansweredQueue)
     .set({ status: 'resolved', resolvedAt: new Date() })
-    .where(eq(unansweredQueue.id, queueId));
+    .where(rowPredicate);
 
   if (row.githubIssueNumber !== null) {
     await commentGapResolved(row.githubIssueNumber, {

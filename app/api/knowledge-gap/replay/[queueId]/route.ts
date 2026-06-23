@@ -17,7 +17,6 @@
 
 export const runtime = 'nodejs';
 
-import { writeAudit } from '@/lib/audit';
 import { withPermission } from '@/lib/auth/with-permission';
 import {
   type ReplayGapTestResult,
@@ -39,19 +38,16 @@ export const POST = withPermission('knowledgegap.replay', async (_req, ctx, sess
     return Response.json({ error: 'missing_queue_id' }, { status: 400 });
   }
 
-  await writeAudit({
-    actor_id: session.user.id,
-    action: 'knowledge_gap_resolved', // pre-resolution audit: replay triggered
-    resource_type: 'unanswered_queue',
-    resource_id: queueId,
-    meta_json: { phase: 'replay_triggered' },
-  });
+  // SECURITY (H1/H2 fix): pass the caller's orgId into both replayGapTest and
+  // markGapResolved so the queue row lookup is org-scoped. A row that does not
+  // exist OR belongs to another org both surface as 404 — never 403, to avoid
+  // leaking existence of cross-org queueIds.
+  const orgId = session.user.organizationId;
 
   let result: ReplayGapTestResult;
   try {
-    result = await replayGapTest(queueId);
+    result = await replayGapTest(queueId, orgId);
   } catch (err) {
-    // Row not found is the most common case — map to 404.
     const msg = err instanceof Error ? err.message : String(err);
     const notFound = msg.includes('not found');
     return Response.json(
@@ -61,10 +57,17 @@ export const POST = withPermission('knowledgegap.replay', async (_req, ctx, sess
   }
 
   if (result.passed) {
-    await markGapResolved(queueId, {
-      answerWithCitations: result.answerWithCitations,
-      sources: result.sources,
-    });
+    // M1 fix: the knowledge_gap_resolved audit is written INSIDE markGapResolved
+    // (only after the UPDATE succeeds). We do NOT write a "resolved" audit before
+    // replay has confirmed the gap cleared — that would record a false resolution.
+    await markGapResolved(
+      queueId,
+      {
+        answerWithCitations: result.answerWithCitations,
+        sources: result.sources,
+      },
+      orgId,
+    );
   }
 
   return Response.json({

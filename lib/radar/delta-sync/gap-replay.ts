@@ -20,6 +20,13 @@ export interface GapReplayInput {
   matchedGapIds?: string[];
   /** Ingestion run that produced the candidate resolution. */
   ingestionRunId?: string;
+  /**
+   * SECURITY (H2 fix): Org that owns the gaps. The ingestion-run context knows
+   * which org/crawler the delta-sync belongs to; callers MUST pass it so
+   * replayGapTest/markGapResolved scope rows by org. When omitted, gaps are
+   * SKIPPED — we never resolve gaps under a system actor across orgs.
+   */
+  orgId?: string;
 }
 
 export interface GapReplayResult {
@@ -45,6 +52,10 @@ export function shouldTriggerGapReplay(input: GapReplayInput): boolean {
  * audit_logs entry — REQ-KNOWLEDGE-GAP-015). On fail: leave the gap open so the
  * next ingestion can retry.
  *
+ * SECURITY (H2 fix): `input.orgId` scopes every replay + resolve. When the org
+ * cannot be determined from the ingestion-run context, gaps are SKIPPED (with
+ * an audit-friendly log) — never resolved under a system actor across orgs.
+ *
  * `replayOutcome` is the aggregate: 'passed' only if every gap passed, 'failed'
  * if any gap failed or errored. Individual errors are logged but non-fatal so a
  * single broken gap does not block resolution of the others.
@@ -55,17 +66,33 @@ export async function triggerGapReplay(input: GapReplayInput): Promise<GapReplay
     return { triggered: false, gapIds: [] };
   }
 
+  // SECURITY (H2 fix): system-actor replay MUST be org-scoped. If the caller
+  // could not resolve the org from the ingestion-run context, skip — resolving
+  // gaps blindly under a system actor would cross org boundaries.
+  if (!input.orgId) {
+    logger.warn('[gap-replay] skipping replay: no orgId in ingestion-run context', {
+      crawler: input.crawlerName,
+      ingestionRunId: input.ingestionRunId,
+      gapCount: gapIds.length,
+    });
+    return { triggered: false, gapIds, replayOutcome: 'pending' };
+  }
+
   let allPassed = true;
 
   await Promise.all(
     gapIds.map(async (gapId) => {
       try {
-        const result = await replayGapTest(gapId);
+        const result = await replayGapTest(gapId, input.orgId);
         if (result.passed) {
-          await markGapResolved(gapId, {
-            answerWithCitations: result.answerWithCitations,
-            sources: result.sources,
-          });
+          await markGapResolved(
+            gapId,
+            {
+              answerWithCitations: result.answerWithCitations,
+              sources: result.sources,
+            },
+            input.orgId,
+          );
         } else {
           allPassed = false;
           logger.info('[gap-replay] gap not yet resolved', {

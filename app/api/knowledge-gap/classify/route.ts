@@ -20,7 +20,7 @@ import { writeAudit } from '@/lib/audit';
 import { withPermission } from '@/lib/auth/with-permission';
 import { db } from '@/lib/db/client';
 import { unansweredQueue } from '@/lib/db/schema';
-import { eq } from 'drizzle-orm';
+import { and, eq } from 'drizzle-orm';
 import { z } from 'zod';
 
 /**
@@ -48,15 +48,28 @@ export const POST = withPermission('knowledgegap.classify', async (req, _ctx, se
 
   const { queueId, classification, note } = parsed.data;
 
-  const updated = await db
-    .update(unansweredQueue)
-    .set({ classification, status: 'classified' })
-    .where(eq(unansweredQueue.id, queueId))
-    .returning({ id: unansweredQueue.id });
+  // SECURITY (H1 fix): SELECT-then-UPDATE scoped by id+org. A row that does not
+  // exist OR exists in another org both surface as 404 (not 403) so we never
+  // leak the existence of a cross-org queueId. RLS also enforces this at the DB
+  // layer; the explicit filter keeps the query plan cheap and unambiguous.
+  const orgId = session.user.organizationId;
+  const [existing] = await db
+    .select({ id: unansweredQueue.id })
+    .from(unansweredQueue)
+    .where(
+      orgId !== undefined
+        ? and(eq(unansweredQueue.id, queueId), eq(unansweredQueue.orgId, orgId))
+        : eq(unansweredQueue.id, queueId),
+    );
 
-  if (updated.length === 0) {
+  if (!existing) {
     return Response.json({ error: 'not_found', queueId }, { status: 404 });
   }
+
+  await db
+    .update(unansweredQueue)
+    .set({ classification, status: 'classified' })
+    .where(eq(unansweredQueue.id, queueId));
 
   await writeAudit({
     actor_id: session.user.id,
