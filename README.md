@@ -320,6 +320,8 @@ corepack pnpm build                                                            P
 GitHub PR #192 checks                                                          PASS
 ```
 
+> **운영 배포 노트**: Vercel 프로덕션 환경변수 등록 미확정(silent degradation 의심) → 상세는 [`docs/implementation-status.md`](docs/implementation-status.md) 참조.
+
 ### hybrid-ra-saas inbound webhook 연동 완료 — Issue #188 (2026-06-19 완료)
 
 hybrid-ra-saas (Customer Local Runtime + Cloud Control Plane)에서 ra-med-bot으로 이벤트를 push하는 inbound webhook 3개를 구현했다.
