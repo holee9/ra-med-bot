@@ -276,13 +276,25 @@ describe('markGapResolved — status + audit + github comment', () => {
       markGapResolved('missing', { answerWithCitations: 'x', sources: [] }),
     ).rejects.toThrow('not found');
   });
+
+  // SECURITY (H2 fix): when orgId is passed, a row in another org must be
+  // invisible (treated as not found → throw → caller maps to 404).
+  it('throws (404-equivalent) when row exists in another org (H2 fix)', async () => {
+    const { markGapResolved } = await import('../../lib/knowledge-gap/replay');
+    // The scoped SELECT resolves to [] because the id+org conjunction matches
+    // no row — the production WHERE clause filters both predicates.
+    mockSelectReturns([]);
+    await expect(
+      markGapResolved('gap-other-org', { answerWithCitations: 'x', sources: [] }, 'org-own'),
+    ).rejects.toThrow('not found');
+  });
 });
 
 // --- gap-replay.ts stub completion (REQ-KNOWLEDGE-GAP-014, 015) -----------
 describe('triggerGapReplay — closed loop', () => {
   it('returns triggered=false when no matched gaps', async () => {
     const { triggerGapReplay } = await import('../../lib/radar/delta-sync/gap-replay');
-    const result = await triggerGapReplay({ crawlerName: 'fda' });
+    const result = await triggerGapReplay({ crawlerName: 'fda', orgId: 'org-1' });
     expect(result.triggered).toBe(false);
     expect(result.gapIds).toEqual([]);
   });
@@ -299,5 +311,67 @@ describe('triggerGapReplay — closed loop', () => {
     const { shouldTriggerGapReplay } = await import('../../lib/radar/delta-sync/gap-replay');
     expect(shouldTriggerGapReplay({ crawlerName: 'x' })).toBe(false);
     expect(shouldTriggerGapReplay({ crawlerName: 'x', matchedGapIds: ['g1'] })).toBe(true);
+  });
+
+  // SECURITY (H2 fix): system-actor replay MUST be org-scoped. When the
+  // ingestion-run context cannot resolve an org, gaps are SKIPPED — never
+  // resolved under a cross-org system actor.
+  it('skips replay (triggered=false) when orgId is absent (H2 fix)', async () => {
+    const { triggerGapReplay } = await import('../../lib/radar/delta-sync/gap-replay');
+    const result = await triggerGapReplay({
+      crawlerName: 'fda',
+      matchedGapIds: ['gap-1', 'gap-2'],
+      // orgId intentionally omitted
+    });
+    expect(result.triggered).toBe(false);
+    expect(result.replayOutcome).toBe('pending');
+  });
+
+  it('passes orgId through to replayGapTest + markGapResolved (H2 fix)', async () => {
+    const replayMod = await import('@/lib/knowledge-gap/replay');
+    // Spy on the real exports so we can assert call args without replacing the
+    // module graph. gap-replay.ts calls the same live bindings.
+    const replayGapTestSpy = vi.spyOn(replayMod, 'replayGapTest').mockResolvedValue({
+      passed: true,
+      answerWithCitations: 'ans',
+      sources: [
+        {
+          id: 's1',
+          citeIndex: 1,
+          title: 'Src',
+          orgLabel: 'FDA',
+          year: 2024,
+          type: 'Regulation' as const,
+          url: null,
+          anchor: '',
+          offset: 0,
+        },
+      ],
+      remainingReason: null,
+      reasonSummary: 'cleared',
+    });
+    const markGapResolvedSpy = vi.spyOn(replayMod, 'markGapResolved').mockResolvedValue(undefined);
+    try {
+      const { triggerGapReplay } = await import('../../lib/radar/delta-sync/gap-replay');
+
+      const result = await triggerGapReplay({
+        crawlerName: 'fda',
+        matchedGapIds: ['gap-1'],
+        orgId: 'org-99',
+      });
+
+      expect(result.triggered).toBe(true);
+      expect(result.replayOutcome).toBe('passed');
+      // The org-scoped replayGapTest was called with the passed orgId.
+      expect(replayGapTestSpy).toHaveBeenCalledWith('gap-1', 'org-99');
+      expect(markGapResolvedSpy).toHaveBeenCalledWith(
+        'gap-1',
+        expect.objectContaining({ answerWithCitations: 'ans' }),
+        'org-99',
+      );
+    } finally {
+      replayGapTestSpy.mockRestore();
+      markGapResolvedSpy.mockRestore();
+    }
   });
 });

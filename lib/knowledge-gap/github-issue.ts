@@ -56,7 +56,13 @@ export interface GitHubIssuesClient {
 /** Read repo config once per call so tests can stub process.env per-case. */
 function readRepoConfig(): { repo: string; apiBase: string; hasToken: boolean } {
   const repo = process.env.KNOWLEDGE_GAP_GITHUB_REPO ?? '';
-  const apiBase = process.env.KNOWLEDGE_GAP_GITHUB_API_BASE ?? 'https://api.github.com';
+  const rawApiBase = process.env.KNOWLEDGE_GAP_GITHUB_API_BASE ?? 'https://api.github.com';
+  // SECURITY (M2 fix): reject non-https apiBase to prevent SSRF — an operator who
+  // points KNOWLEDGE_GAP_GITHUB_API_BASE at http:// or a file:// / ldap:// style
+  // URL would otherwise cause the server to issue authenticated requests toward
+  // an attacker-controlled host (the PAT would leak in the Authorization header).
+  // Default to the canonical https GitHub endpoint when the env value is invalid.
+  const apiBase = rawApiBase.startsWith('https://') ? rawApiBase : 'https://api.github.com';
   const hasToken = Boolean(process.env.KNOWLEDGE_GAP_GITHUB_TOKEN);
   return { repo, apiBase, hasToken };
 }
