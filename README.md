@@ -11,11 +11,11 @@
 
 ---
 
-## 구현 현황 대시보드 (2026-06-21 KST 기준)
+## 구현 현황 대시보드 (2026-06-23 KST 기준)
 
 상세 점검 기록: [`docs/implementation-status.md`](docs/implementation-status.md)
 
-### 최신 main 상태 (2026-06-21)
+### 최신 main 상태 (2026-06-23)
 
 현재 `main`은 PR #218(Gate 0 SPEC 승격)까지 반영된 상태입니다. Wave 5 규제 준수 축(ESIG #88 / Export Hub #87 / Auditor View #92) 완성에 이어 개인 RA 라이브러리(#86), 규제 캘린더(#44), 코퍼스 증분 동기화(#45)가 머지되었고, QA 게이트 프레임워크가 정비되어 **Gate 0~5 SPEC 6개가 모두 Active**로 승격되었습니다(#212 Gate 1-5, #217 Gate 5 SSoT 정합, #218 Gate 0). 2026-06-21 기준 main의 `CI`, `Security Scan`, `E2E Tests`, `Deploy`가 모두 통과했습니다.
 
@@ -45,6 +45,56 @@
 | 로컬 단위 테스트 | PASS | `pnpm test`: 2,766 passed / 7 skipped |
 | 권한 매트릭스 | PASS | `audit.read`, `audit.package.generate`, `signature.sign` 포함 — auditor role은 `additionalRoles` 경유로만 audit endpoint 접근 |
 | AuditAction enum | PASS | `signature.applied`, `signature.revoked`, `audit.denied`, `audit.package.generated` 포함 |
+
+### 신규 SPEC Batch (2026-06-22) — Wave 3/4/5·시스템 26개 스펙 일괄 작성
+
+2026-06-22에 `manager-spec` 배치 작업으로 **26개 `SPEC-REGULA-*`** 가 신규 작성되었습니다 (모두 `status: draft`, 기존 이슈 #35~#72에 1:1 매핑). 각 SPEC은 `.moai/specs/SPEC-REGULA-*/spec.md`에 위치하며, 멀티 관할권 규제 전략(STRATEGY #40, 킬러 기능)을 필두로 채택·검증·PMS·거버넌스 축이 한 번에 정의되었습니다. 구현 진행은 각 SPEC의 이슈에서 추적합니다.
+
+**Wave 3 — 전략·분류·지식 루프 (11개)**
+
+| SPEC | 이슈 | 제목 |
+|---|---|---|
+| `SPEC-REGULA-BATCH-001` | #43 | 배치 질의 모드 (사전 미팅 준비·대량 규제 Q&A) |
+| `SPEC-REGULA-CLASSIFY-001` | #59 | 의료기기 분류 자동화 마법사 (FDA/EU/MFDS/NMPA/PMDA 통합) |
+| `SPEC-REGULA-CROSSMARKET-001` | #42 | 멀티 관할권 갭 분석기 (기존 허가 → 신규 시장 진출 요건) |
+| `SPEC-REGULA-KNOWLEDGE-GAP-001` | #35 | 미답변 자동 이슈화 및 지식베이스 보강 루프 |
+| `SPEC-REGULA-KNOWLEDGE-PROMO-001` | #50 | 대화 시맨틱 검색 & 우수 답변 팀 지식 승격 |
+| `SPEC-REGULA-PROJECT-MEMORY-001` | #51 | 프로젝트 지속 컨텍스트 메모리 (의사결정 누적 & 크로스 세션 기억) |
+| `SPEC-REGULA-ROI-001` | #55 | 비즈니스 가치 대시보드: RA 업무 효율화 ROI 정량화 |
+| `SPEC-REGULA-SOURCE-GOVERNANCE-001` | #48 | 규제·SOP 출처 권위도·버전·유효일·폐기 상태 관리 |
+| `SPEC-REGULA-STANDARDS-001` | #62 | 조화 표준 적용성 & 개정 추적기 (ISO/IEC/EN/ASTM 자동 매핑) |
+| `SPEC-REGULA-STRATEGY-001` | #40 | 멀티 관할권 규제 전략 생성기 (Killer Feature) |
+| `SPEC-REGULA-WORKFLOWS-LLM-002` | #39 | 워크플로우 LLM 실제 구현 (510(k)·감사대응·적응증영향 executor) |
+
+**Wave 4 — 온보딩·변경통제·검토·추적 (6개)**
+
+| SPEC | 이슈 | 제목 |
+|---|---|---|
+| `SPEC-REGULA-ADOPTION-001` | #38 | 사용자 온보딩·성과 KPI·피드백 루프 |
+| `SPEC-REGULA-CHANGE-CONTROL-001` | #54 | 설계 변경 규제 영향 자동 평가기 (Change Control RA Impact) |
+| `SPEC-REGULA-REVIEW-OPS-001` | #36 | 전문가 검토 SLA·승인 워크벤치·증거 패키지 |
+| `SPEC-REGULA-RLHF-001` | #56 | 사용자 피드백 기반 RAG 품질 연속 개선 (Answer Quality RLHF Loop) |
+| `SPEC-REGULA-SUBMISSION-LIFECYCLE-001` | #37 | 510(k)·CER·PCCP 산출물 패키징·검증·추적 |
+| `SPEC-REGULA-TRACEABILITY-001` | #47 | 규제 근거·위험·요구사항·초안·검토·제출 추적 매트릭스 |
+
+**Wave 5 — PMS·CAPA·사이버·라벨링·임상·보험 (6개)**
+
+| SPEC | 이슈 | 제목 |
+|---|---|---|
+| `SPEC-REGULA-CAPA-001` | #68 | 불만·CAPA 폐루프 관리 (Complaint→Vigilance→Risk→DHF 연결) |
+| `SPEC-REGULA-CLINICAL-INVESTIGATION-001` | #69 | 임상시험·임상조사 계획기 (FDA IDE·EU MDR Clinical Investigation·IRB 패키지) |
+| `SPEC-REGULA-CYBERDEVICE-001` | #67 | 의료기기 사이버보안·SBOM 제출 증거 (FDA Cybersecurity·EU MDR GSPR 대응) |
+| `SPEC-REGULA-LABELING-001` | #66 | 라벨링·IFU·클레임 검토 워크벤치 (표시문구·사용목적·번역 일관성 관리) |
+| `SPEC-REGULA-PMS-001` | #53 | EU MDR 출시 후 임상 감시 (PMS 보고서 & PMCF 계획 생성기) |
+| `SPEC-REGULA-REIMBURSEMENT-001` | #70 | 보험·상환 경로 분석기 (CPT/HCPCS·DRG·수가·시장접근 근거 생성) |
+
+**시스템 — 검증·코퍼스 라이선스·모델 거버넌스 (3개)**
+
+| SPEC | 이슈 | 제목 |
+|---|---|---|
+| `SPEC-REGULA-CORPUS-LICENSE-001` | #72 | 코퍼스 라이선스·사용권 관리 (규제문서·표준·논문 수집 권한 검증) |
+| `SPEC-REGULA-MODEL-GOVERNANCE-001` | #71 | LLM·프롬프트·템플릿 변경통제 (모델 버전 검증·승인·롤백) |
+| `SPEC-REGULA-VALIDATION-001` | #49 | Regula 자체 검증 패키지 (IQ/OQ/PQ·변경통제·릴리즈 증거) |
 
 ### 21 CFR Part 11 Electronic Signature 완료 — Issue #88 / PR #204
 
