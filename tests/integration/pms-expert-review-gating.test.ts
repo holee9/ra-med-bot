@@ -86,7 +86,11 @@ vi.mock('@/lib/audit', () => ({
 // ---------------------------------------------------------------------------
 
 vi.mock('@/lib/auth/with-permission', () => ({
-  withPermission: (_action: string, handler: (req: Request, ctx: unknown, session: unknown) => Promise<Response>) =>
+  withPermission:
+    (
+      _action: string,
+      handler: (req: Request, ctx: unknown, session: unknown) => Promise<Response>,
+    ) =>
     async (req: Request, ctx: unknown): Promise<Response> => {
       const session = {
         user: {
@@ -117,10 +121,9 @@ function setDocumentStatus(reviewStatus: string): void {
 }
 
 function makeCloseRequest(): Request {
-  return new Request(
-    `http://localhost/api/pms/${PROJECT_ID}/documents/${DOCUMENT_ID}/close`,
-    { method: 'POST' },
-  );
+  return new Request(`http://localhost/api/pms/${PROJECT_ID}/documents/${DOCUMENT_ID}/close`, {
+    method: 'POST',
+  });
 }
 
 beforeEach(() => {
@@ -136,9 +139,7 @@ afterEach(() => {
 describe('AC-07 / REQ-PMS-009 server-side expert-review gating', () => {
   it('rejects close with 403 when review_status=draft (REQ-PMS-009 HIGH)', async () => {
     setDocumentStatus('draft');
-    const { POST } = await import(
-      '@/app/api/pms/[projectId]/documents/[documentId]/close/route'
-    );
+    const { POST } = await import('@/app/api/pms/[projectId]/documents/[documentId]/close/route');
 
     const ctx = { params: Promise.resolve({ projectId: PROJECT_ID, documentId: DOCUMENT_ID }) };
     const res = await POST(makeCloseRequest(), ctx);
@@ -153,9 +154,7 @@ describe('AC-07 / REQ-PMS-009 server-side expert-review gating', () => {
 
   it('rejects close with 403 when review_status=pending_review', async () => {
     setDocumentStatus('pending_review');
-    const { POST } = await import(
-      '@/app/api/pms/[projectId]/documents/[documentId]/close/route'
-    );
+    const { POST } = await import('@/app/api/pms/[projectId]/documents/[documentId]/close/route');
 
     const ctx = { params: Promise.resolve({ projectId: PROJECT_ID, documentId: DOCUMENT_ID }) };
     const res = await POST(makeCloseRequest(), ctx);
@@ -167,9 +166,7 @@ describe('AC-07 / REQ-PMS-009 server-side expert-review gating', () => {
 
   it('writes pms.report_export_denied audit when gating blocks close', async () => {
     setDocumentStatus('draft');
-    const { POST } = await import(
-      '@/app/api/pms/[projectId]/documents/[documentId]/close/route'
-    );
+    const { POST } = await import('@/app/api/pms/[projectId]/documents/[documentId]/close/route');
 
     const ctx = { params: Promise.resolve({ projectId: PROJECT_ID, documentId: DOCUMENT_ID }) };
     await POST(makeCloseRequest(), ctx);
@@ -179,9 +176,7 @@ describe('AC-07 / REQ-PMS-009 server-side expert-review gating', () => {
 
   it('allows close when review_status=approved (reviewed document)', async () => {
     setDocumentStatus('approved');
-    const { POST } = await import(
-      '@/app/api/pms/[projectId]/documents/[documentId]/close/route'
-    );
+    const { POST } = await import('@/app/api/pms/[projectId]/documents/[documentId]/close/route');
 
     const ctx = { params: Promise.resolve({ projectId: PROJECT_ID, documentId: DOCUMENT_ID }) };
     const res = await POST(makeCloseRequest(), ctx);
@@ -196,9 +191,7 @@ describe('AC-07 / REQ-PMS-009 server-side expert-review gating', () => {
 
   it('writes pms.report_closed audit when close succeeds', async () => {
     setDocumentStatus('approved');
-    const { POST } = await import(
-      '@/app/api/pms/[projectId]/documents/[documentId]/close/route'
-    );
+    const { POST } = await import('@/app/api/pms/[projectId]/documents/[documentId]/close/route');
 
     const ctx = { params: Promise.resolve({ projectId: PROJECT_ID, documentId: DOCUMENT_ID }) };
     await POST(makeCloseRequest(), ctx);
@@ -208,9 +201,7 @@ describe('AC-07 / REQ-PMS-009 server-side expert-review gating', () => {
 
   it('returns 404 when document does not exist (no cross-org leak)', async () => {
     mockDocumentRow = null; // Document not found.
-    const { POST } = await import(
-      '@/app/api/pms/[projectId]/documents/[documentId]/close/route'
-    );
+    const { POST } = await import('@/app/api/pms/[projectId]/documents/[documentId]/close/route');
 
     const ctx = { params: Promise.resolve({ projectId: PROJECT_ID, documentId: DOCUMENT_ID }) };
     const res = await POST(makeCloseRequest(), ctx);
