@@ -298,3 +298,24 @@ describe('components/shell/Sidebar.tsx — Classify conditional nav (Issue #59)'
     expect(container.querySelector('[data-testid="sidebar-classify-link"]')).toBeNull();
   });
 });
+
+// SPEC-REGULA-PMS-001 (Issue #53): conditional PMS Workbench nav link.
+// The main <nav> still has 10 links (asserted above); the PMS entry is rendered
+// in a separate conditional <nav> block, gated by showPms.
+describe('components/shell/Sidebar.tsx — PMS conditional nav (Issue #53)', () => {
+  it('renders PMS 워크벤치 link when showPms=true', async () => {
+    const mod = await import('../../components/shell/Sidebar');
+    const Sidebar = mod.default as React.ComponentType<{ showPms?: boolean }>;
+    const { container } = render(React.createElement(Sidebar, { showPms: true }));
+    const link = container.querySelector('[data-testid="sidebar-pms-link"]');
+    expect(link).not.toBeNull();
+    expect(link?.getAttribute('href')).toBe('/pms');
+    expect(link?.textContent).toContain('PMS 워크벤치');
+  });
+
+  it('hides PMS 워크벤치 link when showPms is false/omitted', async () => {
+    const mod = await import('../../components/shell/Sidebar');
+    const { container } = render(React.createElement(mod.default));
+    expect(container.querySelector('[data-testid="sidebar-pms-link"]')).toBeNull();
+  });
+});

@@ -48,6 +48,9 @@ interface SidebarProps {
   // SPEC-REGULA-TRACEABILITY-001 (Issue #47): Traceability matrix is visible to
   // roles with traceability.view (ra-member+). Gated server-side and passed down.
   showTraceability?: boolean;
+  // SPEC-REGULA-PMS-001 (Issue #53): PMS Workbench is visible to roles with
+  // pms.view (ra-member+). Gated server-side and passed down.
+  showPms?: boolean;
   initialLocale?: string;
 }
 
@@ -57,6 +60,7 @@ export default function Sidebar(props?: SidebarProps) {
   const showKnowledgeGap = props?.showKnowledgeGap ?? false;
   const showClassify = props?.showClassify ?? false;
   const showTraceability = props?.showTraceability ?? false;
+  const showPms = props?.showPms ?? false;
   const currentProjectId = useUIStore((s) => s.currentProjectId);
   const setCurrentProjectId = useUIStore((s) => s.setCurrentProjectId);
   const { data = [] } = useProjects();
@@ -191,6 +195,19 @@ export default function Sidebar(props?: SidebarProps) {
             className="rounded-md px-3 py-2 text-sm text-ink-700 hover:bg-ink-50 block"
           >
             추적 매트릭스
+          </Link>
+        </nav>
+      )}
+
+      {/* SPEC-REGULA-PMS-001 (Issue #53): PMS Workbench conditional link. */}
+      {showPms && (
+        <nav className="px-2 py-1">
+          <Link
+            href="/pms"
+            data-testid="sidebar-pms-link"
+            className="rounded-md px-3 py-2 text-sm text-ink-700 hover:bg-ink-50 block"
+          >
+            PMS 워크벤치
           </Link>
         </nav>
       )}

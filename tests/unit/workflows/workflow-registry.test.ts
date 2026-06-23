@@ -2,8 +2,8 @@ import { describe, expect, it } from 'vitest';
 import { WORKFLOW_REGISTRY } from '../../../lib/workflows/registry';
 
 describe('WORKFLOW_REGISTRY', () => {
-  it('has 8 entries', () => {
-    expect(WORKFLOW_REGISTRY).toHaveLength(8);
+  it('has 11 entries', () => {
+    expect(WORKFLOW_REGISTRY).toHaveLength(11);
   });
 
   it('each entry has required fields', () => {

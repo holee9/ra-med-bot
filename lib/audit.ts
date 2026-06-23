@@ -61,7 +61,7 @@ import { auditLogs } from './db/schema';
 //
 // SPEC-REGULA-DELTA-SYNC-001 values added via 0065_delta_sync.sql (3):
 //   corpus.sync_started, corpus.sync_completed, corpus.sync_failed
-// Total: 71 values.
+// Total: 73 values.
 export type AuditAction =
   | 'llm.call'
   | 'source.access'
@@ -222,7 +222,18 @@ export type AuditAction =
   | 'traceability.edge_created'
   | 'traceability.edge_deleted'
   | 'traceability.packet_exported'
-  | 'traceability.stale_propagated';
+  | 'traceability.stale_propagated'
+  // SPEC-REGULA-PMS-001 (Issue #53, REQ-PMS-010). EU MDR Article 83-86
+  // PMS/PMCF state-transition audit trail (21 CFR Part 11).
+  | 'pms.report_created'
+  | 'pms.compliance_checked'
+  | 'pms.report_exported'
+  | 'pms.report_export_denied'
+  | 'pms.report_closed'
+  | 'pms.input_uploaded'
+  | 'pmcf.plan_created'
+  | 'pmcf.evaluation_drafted'
+  | 'pms.cer_linked';
 
 export interface AuditEvent {
   /** User UUID, or null for system-initiated events. */

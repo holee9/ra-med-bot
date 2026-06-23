@@ -28,6 +28,8 @@ export default async function AppLayout({ children }: { children: React.ReactNod
   let showClassify = false;
   // SPEC-REGULA-TRACEABILITY-001 (Issue #47): Traceability matrix nav gated to ra-member+ (traceability.view).
   let showTraceability = false;
+  // SPEC-REGULA-PMS-001 (Issue #53): PMS Workbench nav gated to ra-member+ (pms.view).
+  let showPms = false;
   try {
     const { auth } = await import('@/lib/auth');
     const { hasRole } = await import('@/lib/auth/rbac');
@@ -38,6 +40,7 @@ export default async function AppLayout({ children }: { children: React.ReactNod
       showKnowledgeGap = hasRole(userRole as Parameters<typeof hasRole>[0], 'ra-member');
       showClassify = hasRole(userRole as Parameters<typeof hasRole>[0], 'ra-member');
       showTraceability = hasRole(userRole as Parameters<typeof hasRole>[0], 'ra-member');
+      showPms = hasRole(userRole as Parameters<typeof hasRole>[0], 'ra-member');
     }
     const department = (session?.user as { department?: string } | undefined)?.department;
     if (department) {
@@ -65,6 +68,7 @@ export default async function AppLayout({ children }: { children: React.ReactNod
         showKnowledgeGap={showKnowledgeGap}
         showClassify={showClassify}
         showTraceability={showTraceability}
+        showPms={showPms}
         initialLocale={initialLocale}
       />
       <div className="flex min-w-0 flex-1 flex-col">

@@ -257,6 +257,16 @@ export const auditActionEnum = pgEnum('audit_action', [
   'traceability.edge_deleted',
   'traceability.packet_exported',
   'traceability.stale_propagated',
+  // SPEC-REGULA-PMS-001 (Issue #53): EU MDR Article 83-86 PMS/PMCF audit trail.
+  'pms.report_created',
+  'pms.compliance_checked',
+  'pms.report_exported',
+  'pms.report_export_denied',
+  'pms.report_closed',
+  'pms.input_uploaded',
+  'pmcf.plan_created',
+  'pmcf.evaluation_drafted',
+  'pms.cer_linked',
 ]);
 
 // @MX:NOTE [AUTO] Knowledge gap enums — SPEC-REGULA-KNOWLEDGE-GAP-001 (Issue #35).
@@ -294,6 +304,7 @@ export const gapClassificationEnum = pgEnum('gap_classification', [
 // SPEC-REGULA-RISK-001: 'risk' added via 0057_risk_workflow_type.sql.
 // SPEC-REGULA-CLASSIFY-001: 'classification' added via 0051_classification_audit_actions.sql;
 // 'classify' added via 0067_classify.sql (tasks.md canonical value, mirrors 'risk' naming).
+// SPEC-REGULA-PMS-001: 'pms_report', 'pmcf_plan', 'pmcf_evaluation' added via 0069_pms.sql.
 export const workflowTypeEnum = pgEnum('workflow_type', [
   'submission_drafter',
   'audit_response',
@@ -305,6 +316,9 @@ export const workflowTypeEnum = pgEnum('workflow_type', [
   'risk',
   'classification',
   'classify',
+  'pms_report',
+  'pmcf_plan',
+  'pmcf_evaluation',
 ]);
 
 // REQ-WF-049: workflow_status pgEnum — lifecycle states for workflow_runs.
@@ -1761,5 +1775,54 @@ export const staleFlags = pgTable(
     nodeIdx: index('idx_stale_flags_node').on(t.nodeId),
     orgIdx: index('idx_stale_flags_org').on(t.orgId),
     nodeReasonUnique: unique('uq_stale_flags_node_reason').on(t.nodeId, t.reason),
+  }),
+);
+
+// @MX:NOTE [AUTO] PMS inputs/documents — SPEC-REGULA-PMS-001 (Issue #53).
+// @MX:SPEC SPEC-REGULA-PMS-001 (REQ-PMS-001, REQ-PMS-005, REQ-PMS-006)
+// complaint/vigilance data inputs and generated PMSR/PMCF documents. Both
+// isolated per org via RLS on app.current_org_id (0068 pattern). org_id has
+// no inline FK here — the migration owns the REFERENCES constraint; Drizzle
+// mirrors columns only for query typing.
+export const pmsInputs = pgTable(
+  'pms_inputs',
+  {
+    id: uuid('id').defaultRandom().primaryKey(),
+    orgId: uuid('org_id').notNull(),
+    projectId: uuid('project_id').notNull(),
+    source: text('source').notNull(),
+    severity: text('severity'),
+    susarFlag: boolean('susar_flag').notNull().default(false),
+    trendCategory: text('trend_category'),
+    payload: jsonb('payload').notNull().default({}),
+    uploadedBy: uuid('uploaded_by'),
+    createdAt: timestamp('created_at', { withTimezone: true, mode: 'date' }).notNull().defaultNow(),
+  },
+  (t) => ({
+    projectIdx: index('idx_pms_inputs_project').on(t.projectId),
+    orgIdx: index('idx_pms_inputs_org').on(t.orgId),
+  }),
+);
+
+export const pmsDocuments = pgTable(
+  'pms_documents',
+  {
+    id: uuid('id').defaultRandom().primaryKey(),
+    orgId: uuid('org_id').notNull(),
+    projectId: uuid('project_id').notNull(),
+    workflowRunId: uuid('workflow_run_id'),
+    workflowType: workflowTypeEnum('workflow_type').notNull(),
+    cerRef: uuid('cer_ref'),
+    body: jsonb('body').notNull().default({}),
+    complianceStatus: text('compliance_status').notNull().default('pending'),
+    reviewStatus: text('review_status').notNull().default('draft'),
+    createdBy: uuid('created_by').notNull(),
+    createdAt: timestamp('created_at', { withTimezone: true, mode: 'date' }).notNull().defaultNow(),
+    updatedAt: timestamp('updated_at', { withTimezone: true, mode: 'date' }).notNull().defaultNow(),
+  },
+  (t) => ({
+    projectIdx: index('idx_pms_documents_project').on(t.projectId),
+    orgIdx: index('idx_pms_documents_org').on(t.orgId),
+    workflowIdx: index('idx_pms_documents_workflow').on(t.workflowRunId),
   }),
 );
