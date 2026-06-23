@@ -32,8 +32,16 @@ regula/
 │   │   ├── dashboard/page.tsx
 │   │   ├── projects/[projectId]/page.tsx
 │   │   ├── sources/[sourceId]/page.tsx
+│   │   ├── traceability/
+│   │   │   ├── page.tsx                 # Traceability Matrix (PR #242)
+│   │   │   └── [deliverableId]/page.tsx # Evidence Packet
 │   │   └── settings/page.tsx
 │   ├── api/
+│   │   ├── traceability/
+│   │   │   ├── route.ts                 # Matrix 조회 (PR #242)
+│   │   │   ├── edges/route.ts           # Edge 생성/수정
+│   │   │   ├── [deliverableId]/packet/route.ts
+│   │   │   └── [deliverableId]/export/route.ts
 │   │   ├── ra/consult/route.ts          # 메인 RAG 엔드포인트 (streaming)
 │   │   ├── ra/conversations/route.ts
 │   │   ├── ra/sources/route.ts
@@ -152,6 +160,7 @@ regula/
 | `components/primitives/` | Radix UI 래핑(Button, Chip, Dialog, Dropdown, Callout) | 도메인 로직 |
 | `lib/ai/` | RAG 오케스트레이션, 리트리버, 프롬프트, confidence, expert-review | DB 쿼리, auth |
 | `lib/db/` | Drizzle 스키마, 쿼리, 클라이언트 | AI/LLM 로직 |
+| `lib/traceability/` | Evidence graph, matrix, stale propagation, packet export (8 modules) | AI/LLM 로직 |
 | `lib/auth.ts` | Auth.js 설정, 세션 헬퍼 | 앱 비즈니스 로직 |
 | `hooks/` | `useStreamingAnswer`, `useConversation`, `useProject`, `useTheme` | 서버 사이드 로직 |
 | `stores/` | Zustand — `ui.ts`(테마, 사이드바), `conversation.ts` | 서버 상태(TanStack Query 담당) |
@@ -189,6 +198,13 @@ regula/
    - History, Templates, Knowledge, Updates, Dashboard views
    - Conversations, templates, updates, dashboard, projects APIs
    - 5-corpus retriever expansion and project switching
+
+5. **Phase 5 — Traceability** (완료, 2026-06-23, PR #242)
+   - Evidence graph: nodes (7 types), edges (6 relations), stale flags
+   - Traceability Matrix UI: 행(요구사항/규제/위험/제출) × 열(근거/답변/reviewer/export/gap)
+   - Evidence Packet: 산출물별 근거 패킷, PDF/Markdown export
+   - Stale propagation: BFS 멱등성 보장 전파 (hook 구현 완료, wiring 이월)
+   - Migration 0068, permissions (traceability.manage/view)
 
 ### Prototype vs. Production 경계
 

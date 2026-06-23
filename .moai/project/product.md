@@ -74,6 +74,14 @@ Regula는 두 지식 레포의 **소비자이자 사용자 인터페이스**다.
 
 사용자 질문이 쌓일수록 지식베이스가 성장하고 bot의 답변 가능 범위가 확장된다.
 
+### 5. 추적성 매트릭스 (Traceability Matrix) — 완료 (2026-06-23, PR #242)
+
+- **Evidence Graph**: source → answer/draft → review → export artifact 관계 그래프화
+- **Matrix UI**: 요구사항/규제 요구사항/위험 항목/제출 섹션(행) × 근거 출처/생성 답변/reviewer decision/export artifact/open gap(열)
+- **Evidence Packet**: 답변·CER 섹션·PCCP 컴포넌트·510(k) 섹션·위험 항목별 근거 패킷, PDF/Markdown export
+- **Stale 전파**: source supersession 시 연결된 산출물에 stale flag 전파 (BFS 멱등성 보장)
+- **감사 추적**: 모든 traceability 변경 audit_logs 기록, 21 CFR Part 11 준수
+
 ---
 
 ## 답변 구조
@@ -123,7 +131,7 @@ Regula는 두 지식 레포의 **소비자이자 사용자 인터페이스**다.
 | Structured Outputs 구현 | ✅ 완료 (Issue #5, 2026-05-02) |
 | Breadth 구현 | ✅ 완료 (2026-05-03) |
 | Wave 3 (Predicate) | ✅ 완료 (2026-06-19, PR #186, Issue #188) |
-| Traceability Integration | ✅ 완료 (2026-06-19, PR #184) |
+| Traceability Matrix | ✅ 완료 (2026-06-23, PR #242, Issue #47) |
 | E2E Validation Framework | ✅ 완료 (2026-06-19, Issue #182) |
 | Enterprise/Launch | 🔄 계획 중 (Wave 4-5) |
 

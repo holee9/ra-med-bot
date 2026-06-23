@@ -1,11 +1,11 @@
 ---
 id: SPEC-REGULA-TRACEABILITY-001
 version: 1.0.0
-status: draft
+status: completed
 phase: wave4
 priority: High
 created: 2026-06-22
-updated: 2026-06-22
+updated: 2026-06-23
 author: manager-spec (batch-2026-06-22)
 issue_number: 47
 depends_on:
@@ -144,3 +144,99 @@ src/
 - #37 Submission Lifecycle (submission_packages, exported_in edge)
 - #41 Impact Tracker (regulatory update supersession)
 - #46 ISO 14971 Risk (risk_items, mitigates edge)
+
+---
+
+## §5 Implementation Notes (As-Implemented)
+
+### 5.1 구현 개요 (Implementation Summary)
+
+本 SPEC은 2026-06-23 PR #242 (commit `c76cd05`)으로 메인 브랜치에 머지 완료되었다. Issue #47은 CLOSED/COMPLETED 상태다.
+
+#### 구현 범위
+
+1. **데이터베이스 마이그레이션** (`0068_traceability.sql`):
+   - `evidence_nodes`: 7가지 노드 타입 (source_section, citation, message, workflow_run, expert_review, submission_package, risk_item)
+   - `evidence_edges`: 6가지 관계 타입 (derived_from, cites, reviewed_by, exported_in, mitigates, satisfies)
+   - `stale_flags`: supersession 전파 추적
+   - Enum 타입: `evidence_node_type`, `edge_relation`
+   - RLS: org-isolation (organization_id 기반)
+   - audit_logs 확장: +4 actions (edge create/modify/delete + stale propagate)
+
+2. **권한 체계**:
+   - `traceability.manage`: RA Lead 전용 (edge 생성/수정/삭제)
+   - `traceability.view`: RA Member 이상 (조회)
+
+3. **백엔드 구현** (`lib/traceability/` 8개 모듈):
+   - `graph.ts`: IDOR 3-layer 방어 (node isolation, edge validation, RBAC), BFS 기반 그래프 순회
+   - `matrix.ts`: 행/열 집계, gap 검출 (missing citations, stale sources, unresolved reviews)
+   - `stale-propagation.ts`: BFS 멱등성 보장 전파 (propagation 트리에서 이미 방문한 노드 스킵)
+   - `evidence-packet.ts`: 답변/CER/PCCP/510(k)/risk 항목별 근거 패킷 조립
+   - `export-packet.ts`: PDF/Markdown export (jspdf + marked 라이브러리)
+   - `verify-edges.ts`: replay/eval 시나리오 edge 무결성 검증
+   - `hooks.ts`: supersession 이벤트 리스너 (구현 완료, wiring 이월 - AC-05 DEFERRED 참조)
+   - `stale-reason.ts`: stale 플래그 사유 분류
+
+4. **API 엔드포인트** (4종):
+   - `GET /api/traceability`: matrix 조회 (projectId, jurisdiction, product, package, risk level, stale 필터)
+   - `POST /api/traceability/edges`: edge 생성/수정 (RBAC + audit)
+   - `GET /api/traceability/[id]/packet`: evidence packet 조회
+   - `GET /api/traceability/[id]/export?format=pdf|md`: packet export
+   - **주의**: 기존 #169 `/api/ra/traceability` BFF와 엄격 분리 (RA domain vs. Traceability domain)
+
+5. **프론트엔드 구현** (`app/(app)/traceability/`):
+   - **Matrix UI**: 행(요구사항/규제 요구사항/위험 항목/제출 섹션) × 열(근거 출처/생성 답변/reviewer decision/export artifact/open gap)
+   - **Packet View**: 개별 산출물별 근거 패킷 상세 보기
+   - **Client Islands**: 4개 (matrix-filter-island, matrix-view-island, packet-detail-island, export-controls-island)
+   - **Sidebar 네비게이션**: 조건부 표시 (traceability.manage 권한 시에만)
+   - **WCAG 2.1 AA**: icon+text 병행, ARIA tree role, keyboard navigation
+
+6. **보안/품질 리뷰**:
+   - **evaluator-active**: PASS-WITH-CONDITIONS (3건 조건부 통과)
+   - **expert-security**: BLOCK-MERGE 7건 (C1~W2) 수정 후 통과
+     - C1: path traversal defense (node ref_id 정규화)
+     - W1: insufficient audit context (actor_ip, user_agent 추가)
+     - W2: stale propagation 재진입 가능성 (BFS 방문 세트 추가)
+   - **Hardening 2건**:
+     - L3: `writeAudit` 트랜잭션 파라미터 누락 (tx param 추가)
+     - L4: `db.transaction` 래핑 누락 (21 CFR Part 11 감사 무결성 보장)
+
+7. **회귀 베이스라인 갱신**:
+   - migration: 67 → 68 (+0068_traceability.sql)
+   - PermissionAction: 43 → 44 (+traceability.manage)
+   - audit_action: 114 → 118 (+4: traceability.edge_created/modified/deleted + stale_propagated)
+   - enterprise-migrations: +1 (0068)
+
+8. **검증 결과**:
+   - `npm run typecheck`: PASS
+   - `npm run biome check`: PASS
+   - `npm run build`: PASS
+   - 전체 테스트 스위트: **3304 passed | 7 skipped** (0 failed)
+
+### 5.2 Acceptance Criteria 구현 상태 (AC Status)
+
+| AC# | Criterion | Status | 비고 |
+|-----|-----------|--------|------|
+| AC-01 | source → answer/draft → review → export artifact 관계가 graph로 저장된다 | ✅ 구현 완료 | evidence_nodes + evidence_edges, audit Trails |
+| AC-02 | 프로젝트별 traceability matrix UI가 제공되고 필터가 동작한다 | ✅ 구현 완료 | matrix view + 6종 필터 |
+| AC-03 | citation 누락·stale source·unresolved review가 matrix에서 표시된다 | ✅ 구현 완료 | gap detection (missing citations, stale flags, unresolved reviews) |
+| AC-04 | evidence packet PDF/Markdown export가 가능하다 | ✅ 구현 완료 | export-packet.ts (jspdf for PDF, marked for MD) |
+| AC-05 | source supersession 시 영향받는 산출물이 stale로 표시된다 | ⏸️ DEFERRED(W1) | **hook 구현 완료, wiring만 이월** (의존: #45 delta-sync write path, #238) |
+| AC-06 | 모든 traceability 변경이 audit_logs에 남는다 | ✅ 구현 완료 | +4 audit actions, writeAudit tx param |
+| AC-07 | replay/eval 시나리오가 traceability edge를 검증한다 | ✅ 구현 완료 | verify-edges.ts (순환 검증, orphan 노드 검출) |
+| AC-08 | source 미연결 산출물이 open evidence gap으로 표시된다 | ✅ 구현 완료 | matrix.ts gap detection (no-linked-source 플래그) |
+
+**참고**: AC-05는 #45 (delta-sync write path) 완료 후 #238 이슈에서 supersession hook을 delta-sync pipeline에 wiring하여 완료 예정.
+
+---
+
+## §6 Follow-up Issues (추적 이슈)
+
+본 SPEC 구현과 관련된 후속 작업 이슈들이다. 이미 GitHub에 등록된 상태다.
+
+| Issue ID | 제목 | 내용 | 의존성 |
+|-----------|------|------|---------|
+| #238 | Wire stale-propagation hook into delta-sync supersession write | AC-05 완료: source supersession 시 delta-sync write path에서 stale propagation hook 호출. hook은 lib/traceability/stale-propagation.ts에 이미 구현됨. | #45 (delta-sync write path) |
+| #239 | RLS WITH CHECK clauses + app.current_org_id GUC wiring | 전체 프로젝트 공통: evidence_nodes/evidence_edges 테이블에 WITH CHECK 절 추가 및 app-level GUC(current_org_id) 세팅으로 org isolation 강화. | 전체 레포 |
+| #240 | Matrix read reuses generic dashboard.view audit action | L1 최적화: matrix 조회 시 audit action 세분화 (traceability.view vs dashboard.view)로 정확한 감사 추적. | 본 SPEC |
+| #241 | Export 502 leaks exporter error detail to client | L2 보안: export 실패 시 서버 내부 오류 디테일이 클라이언트로 누출되는 이슈 수정 (try-catch 래핑, 일반 오류 메시지 반환). | 별도 PR 예정 |

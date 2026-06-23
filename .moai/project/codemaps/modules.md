@@ -225,8 +225,8 @@ Regula는 12개 핵심 모듈로 구성된 모듈형 아키텍처를 따르며, 
 ---
 
 ### 8. lib/db 모듈
-**위치**: `lib/db/`  
-**책임**: 데이터베이스 스키마 및 쿼리  
+**위치**: `lib/db/`
+**책임**: 데이터베이스 스키마 및 쿼리
 **공개 인터페이스**: 타입 안전한 쿼리 함수 + 스키마 정의
 
 | 모듈 | 설명 | 주요 테이블 |
@@ -242,6 +242,39 @@ Regula는 12개 핵심 모듈로 구성된 모듈형 아키텍처를 따르며, 
 - 쿼리 실행
 - 트랜잭션 처리
 - RLS(Row-Level Security)
+
+---
+
+### 8.1 lib/traceability 모듈 (PR #242, 2026-06-23)
+**위치**: `lib/traceability/`
+**책임**: 근거 그래프, 추적성 매트릭스, stale 전파, 패킷 export
+**공개 인터페이스**: 함수 인터페이스 + 타입 정의
+
+| 모듈 | 설명 | 주요 함수 |
+|---|---|---|
+| `graph.ts` | Evidence graph 조회, IDOR 3-layer 방어 | `getGraph`, `createEdge`, `validateEdge` |
+| `matrix.ts` | 행/열 집계, gap 검출 | `buildMatrix`, `detectGaps` |
+| `stale-propagation.ts` | BFS 멱등성 보장 stale 전파 | `propagateStaleFlags` |
+| `evidence-packet.ts` | 산출물별 근거 패킷 조립 | `buildPacket` |
+| `export-packet.ts` | PDF/Markdown export | `exportToPDF`, `exportToMarkdown` |
+| `verify-edges.ts` | replay/eval 시나리오 edge 검증 | `verifyIntegrity`, `detectOrphans` |
+| `hooks.ts` | Supersession 이벤트 리스너 (구현 완료, wiring 이월) | `onSuperseded` |
+| `stale-reason.ts` | Stale 플래그 사유 분류 | `classifyStaleReason` |
+
+**의존성**:
+- `lib/db/` (데이터베이스 접근: evidence_nodes, evidence_edges, stale_flags)
+- `lib/audit.ts` (감사 로그)
+- `lib/auth.ts` (RBAC: traceability.manage, traceability.view)
+- 외부 라이브러리: jspdf (PDF export), marked (Markdown export)
+
+**주요 기능**:
+- Evidence graph: 7가지 노드 타입 (source_section, citation, message, workflow_run, expert_review, submission_package, risk_item)
+- Edge 관계: 6가지 (derived_from, cites, reviewed_by, exported_in, mitigates, satisfies)
+- IDOR 방어: 3-layer (node isolation, edge validation, RBAC)
+- Stale 전파: BFS 멱등성 보장 (방문 세트로 중복 방지)
+- Audit: 4 actions (edge_created, edge_modified, edge_deleted, stale_propagated)
+
+**관련 SPEC**: SPEC-REGULA-TRACEABILITY-001
 
 ---
 
