@@ -176,6 +176,9 @@ describe('app/(app) route coverage — Phase 4 navigation contract', () => {
       'app/(app)/updates/page.tsx',
       'app/(app)/dashboard/page.tsx',
       'app/(app)/settings/page.tsx',
+      // SPEC-REGULA-KNOWLEDGE-GAP-001 (Issue #35): conditional nav, but the page
+      // file must still exist for users with knowledgegap.view.
+      'app/(app)/knowledge-gap/page.tsx',
     ];
 
     for (const page of requiredPages) {
@@ -251,5 +254,26 @@ describe('components/shell/Topbar.tsx — REQ-FND-020', () => {
     const mod = await import('../../components/shell/Topbar');
     render(await mod.default());
     expect(screen.getByText('전문가 검토')).toBeTruthy();
+  });
+});
+
+// SPEC-REGULA-KNOWLEDGE-GAP-001 (Issue #35): conditional Knowledge Gap nav link.
+// The main <nav> still has 10 links (asserted above); the Knowledge Gap entry is
+// rendered in a separate conditional <nav> block, gated by showKnowledgeGap.
+describe('components/shell/Sidebar.tsx — Knowledge Gap conditional nav (Issue #35)', () => {
+  it('renders 미답변 큐 link when showKnowledgeGap=true', async () => {
+    const mod = await import('../../components/shell/Sidebar');
+    const Sidebar = mod.default as React.ComponentType<{ showKnowledgeGap?: boolean }>;
+    const { container } = render(React.createElement(Sidebar, { showKnowledgeGap: true }));
+    const link = container.querySelector('[data-testid="sidebar-knowledge-gap-link"]');
+    expect(link).not.toBeNull();
+    expect(link?.getAttribute('href')).toBe('/knowledge-gap');
+    expect(link?.textContent).toContain('미답변 큐');
+  });
+
+  it('hides 미답변 큐 link when showKnowledgeGap is false/omitted', async () => {
+    const mod = await import('../../components/shell/Sidebar');
+    const { container } = render(React.createElement(mod.default));
+    expect(container.querySelector('[data-testid="sidebar-knowledge-gap-link"]')).toBeNull();
   });
 });

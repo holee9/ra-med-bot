@@ -22,6 +22,8 @@ export default async function AppLayout({ children }: { children: React.ReactNod
   // SPEC-REGULA-PREDICATE-001 (REQ-PRE-029): Predicate Search nav is restricted to
   // RA/Dev/Exec departments. Resolved from the user's department on the session.
   let showPredicate = false;
+  // SPEC-REGULA-KNOWLEDGE-GAP-001 (Issue #35): Knowledge Gap nav gated to ra-member+.
+  let showKnowledgeGap = false;
   try {
     const { auth } = await import('@/lib/auth');
     const { hasRole } = await import('@/lib/auth/rbac');
@@ -29,6 +31,7 @@ export default async function AppLayout({ children }: { children: React.ReactNod
     const userRole = (session?.user as { role?: string } | undefined)?.role;
     if (userRole) {
       showExpertReview = hasRole(userRole as Parameters<typeof hasRole>[0], 'ra-lead');
+      showKnowledgeGap = hasRole(userRole as Parameters<typeof hasRole>[0], 'ra-member');
     }
     const department = (session?.user as { department?: string } | undefined)?.department;
     if (department) {
@@ -53,6 +56,7 @@ export default async function AppLayout({ children }: { children: React.ReactNod
       <Sidebar
         showExpertReview={showExpertReview}
         showPredicate={showPredicate}
+        showKnowledgeGap={showKnowledgeGap}
         initialLocale={initialLocale}
       />
       <div className="flex min-w-0 flex-1 flex-col">
