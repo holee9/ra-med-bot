@@ -15,8 +15,6 @@ import { writeAudit } from '@/lib/audit';
 import { db } from '@/lib/db/client';
 import { unansweredQueue } from '@/lib/db/schema';
 import { and, eq, isNotNull } from 'drizzle-orm';
-import { assignCluster } from './clustering';
-import { appendGitHubIssue, createGitHubIssue } from './github-issue';
 import { redactQuestion } from './redaction';
 
 /** Input to the pure detection function — all 4 signal dimensions. */
@@ -128,6 +126,11 @@ export async function captureKnowledgeGap(ctx: CaptureContext): Promise<CaptureK
       redaction_hash: hash,
     },
   });
+
+  const [{ assignCluster }, { appendGitHubIssue, createGitHubIssue }] = await Promise.all([
+    import('./clustering'),
+    import('./github-issue'),
+  ]);
 
   const assignment = await assignCluster(ctx.orgId, queueId, redacted, hash);
   const clusterId = assignment.existingClusterId ?? assignment.newClusterId;
