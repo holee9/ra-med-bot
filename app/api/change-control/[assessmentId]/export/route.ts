@@ -7,14 +7,22 @@
 // caller cannot bypass the expert review gate (REQ-009).
 //
 // REQ-007: exports a PDF report attachable to a DHF or change management system.
-// MVP returns a structured JSON report (full PDF rendering is Phase 6+ — the
-// frontend / external QMS can render from this canonical shape).
+// Two formats are supported via the `?format=` search param:
+//   - format=pdf-json (default): canonical JSON shape, consumed by the frontend
+//     and external QMS integrations. Backward compatible.
+//   - format=pdf: real PDF byte stream (Content-Type: application/pdf) rendered
+//     from the same canonical shape via @react-pdf/renderer (AC-05).
 
 import { writeAudit } from '@/lib/audit';
 import { withPermission } from '@/lib/auth/with-permission';
+import {
+  exportChangeAssessmentToPdf,
+  getChangePdfFilename,
+} from '@/lib/change-control/exporters/pdf';
 import { fetchLinkedRiskItems } from '@/lib/change-control/risk-linkage';
 import { db } from '@/lib/db/client';
 import { changeAssessments, changeVerdictCitations, changeVerdicts } from '@/lib/db/schema';
+import { sanitizeFilename } from '@/lib/traceability/export-packet';
 import { and, eq } from 'drizzle-orm';
 
 type RouteContext = {
@@ -25,7 +33,7 @@ type RouteContext = {
 const BLOCKING_STATUSES = new Set(['provisional']);
 
 async function postExport(
-  _request: Request,
+  request: Request,
   ctx: RouteContext,
   session: { user: { id: string; organizationId?: string } },
 ): Promise<Response> {
@@ -130,7 +138,39 @@ async function postExport(
     return Response.json({ error: 'Failed to record export audit' }, { status: 500 });
   }
 
-  // Canonical report shape. Frontend / QMS renders the PDF from this.
+  // REQ-007 AC-05: format selector. Default `pdf-json` is backward compatible
+  // (frontend + QMS already consume the canonical JSON shape). `format=pdf`
+  // renders the real PDF byte stream from the same canonical shape.
+  const url = new URL(request.url);
+  const format = url.searchParams.get('format') === 'pdf' ? 'pdf' : 'pdf-json';
+
+  if (format === 'pdf') {
+    // REQ-007: render the canonical shape into a real PDF byte stream.
+    // DRAFT watermark for non-final assessments (21 CFR Part 11 record integrity).
+    const includeDraftWatermark = assessment.status !== 'final';
+    let pdfBuffer: Buffer;
+    try {
+      pdfBuffer = await exportChangeAssessmentToPdf(assessment, verdictsWithCitations, riskLinks, {
+        includeDraftWatermark,
+      });
+    } catch (err) {
+      console.error('change PDF render failed', err);
+      return Response.json({ error: 'Failed to render PDF' }, { status: 500 });
+    }
+
+    const rawFilename = getChangePdfFilename(assessment);
+    const filename = sanitizeFilename(rawFilename);
+    return new Response(new Uint8Array(pdfBuffer), {
+      status: 200,
+      headers: {
+        'Content-Type': 'application/pdf',
+        'Content-Disposition': `attachment; filename="${filename}"`,
+        'Cache-Control': 'no-store',
+      },
+    });
+  }
+
+  // Canonical report shape (default). Frontend / QMS renders the PDF from this.
   return Response.json(
     {
       assessment,
@@ -138,8 +178,6 @@ async function postExport(
       riskLinks,
       exportedAt: new Date().toISOString(),
       format: 'pdf-json',
-      // @MX:TODO full PDF byte stream wiring (puppeteer/pdf-lib) — Phase 6+.
-      // The JSON shape above is the single source of truth for the renderer.
     },
     { status: 200 },
   );

@@ -219,6 +219,58 @@ describe('H-4 export_blocked audit action', () => {
 });
 
 // ---------------------------------------------------------------------------
+// AC-05 / REQ-007: real PDF byte rendering (Issue #247 follow-up)
+// ---------------------------------------------------------------------------
+
+describe('AC-05 PDF byte rendering: export route format=pdf wiring', () => {
+  it('imports exportChangeAssessmentToPdf and getChangePdfFilename', () => {
+    const src = readText('app/api/change-control/[assessmentId]/export/route.ts');
+    expect(src).toMatch(/exportChangeAssessmentToPdf/);
+    expect(src).toMatch(/getChangePdfFilename/);
+  });
+
+  it('reads format from searchParams (pdf branch + pdf-json default)', () => {
+    const src = readText('app/api/change-control/[assessmentId]/export/route.ts');
+    expect(src).toMatch(/searchParams\.get\('format'\)/);
+    expect(src).toMatch(/format === 'pdf'/);
+    // Default canonical JSON shape preserved (backward compat).
+    expect(src).toMatch(/format:\s*'pdf-json'/);
+  });
+
+  it('returns Content-Type application/pdf with sanitized attachment filename', () => {
+    const src = readText('app/api/change-control/[assessmentId]/export/route.ts');
+    expect(src).toMatch(/'Content-Type':\s*'application\/pdf'/);
+    expect(src).toMatch(/Content-Disposition.*attachment; filename=/);
+    // sanitizeFilename is wired (mirrors traceability export convention).
+    expect(src).toMatch(/sanitizeFilename/);
+  });
+
+  it('computes DRAFT watermark from non-final status', () => {
+    const src = readText('app/api/change-control/[assessmentId]/export/route.ts');
+    // REQ-007 / 21 CFR Part 11: non-final → DRAFT watermark.
+    expect(src).toMatch(/assessment\.status !== 'final'/);
+    expect(src).toMatch(/includeDraftWatermark/);
+  });
+
+  it('no longer carries the Phase 6+ @MX:TODO deferral', () => {
+    const src = readText('app/api/change-control/[assessmentId]/export/route.ts');
+    // The MVP deferral marker is removed — AC-05 is implemented.
+    expect(src).not.toMatch(/@MX:TODO full PDF byte stream wiring/);
+  });
+
+  it('renderer module exists at the canonical path', () => {
+    const src = readText('lib/change-control/exporters/pdf.tsx');
+    expect(src).toMatch(/export async function exportChangeAssessmentToPdf/);
+    expect(src).toMatch(/import\('@react-pdf\/renderer'\)/);
+    // REQ-010 provenance footer (model/prompt/template) is not omitted.
+    expect(src).toMatch(/Provenance/);
+    expect(src).toMatch(/modelVersion/);
+    expect(src).toMatch(/promptVersion/);
+    expect(src).toMatch(/templateVersion/);
+  });
+});
+
+// ---------------------------------------------------------------------------
 // M-1 MEDIUM: riskItemIds cross-org validation in risk-linkage.ts
 // ---------------------------------------------------------------------------
 
