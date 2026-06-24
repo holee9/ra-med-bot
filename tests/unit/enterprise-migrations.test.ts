@@ -311,7 +311,7 @@ describe('lib/db/schema.ts Phase 5 additions', () => {
     const values = extractAuditActionEnumValues(src);
     const typeValues = extractAuditActionTypeValues(auditSrc);
     expect(values).toEqual(typeValues);
-    expect(values).toHaveLength(147); // +7 complaint/capa.* (CAPA-001, #68) +1 cer_persisted (#255)
+    expect(values).toHaveLength(148); // +7 complaint/capa.* (CAPA-001, #68) +1 cer_persisted (#255) +1 traceability.matrix_viewed (#240)
   });
 
   it.each(REQUIRED_RECOVERY_TABLES)(
@@ -367,7 +367,7 @@ describe('lib/audit.ts Phase 5 AuditAction type additions', () => {
         'change.export_blocked',
       ]),
     );
-    expect(values).toHaveLength(147); // +7 complaint/capa.* (CAPA-001, #68) +1 cer_persisted (#255)
+    expect(values).toHaveLength(148); // +7 complaint/capa.* (CAPA-001, #68) +1 cer_persisted (#255) +1 traceability.matrix_viewed (#240)
   });
 
   it.each(REQUIRED_RECOVERY_AUDIT_ACTIONS)(
@@ -1272,5 +1272,40 @@ describe('Migration 0074: cer_persisted audit action (Issue #255)', () => {
   it('AuditAction type in audit.ts includes cer_persisted', () => {
     const src = readText('lib/audit.ts');
     expect(src).toContain("'cer_persisted'");
+  });
+});
+
+// ---------------------------------------------------------------------------
+// Migration 0075: traceability.matrix_viewed audit action (Issue #240)
+// SPEC-REGULA-TRACEABILITY-001 — distinct read audit for the evidence matrix
+// view (separate from dashboard.view) so 21 CFR Part 11 inspectors can
+// unambiguously identify when a user viewed the per-project traceability matrix.
+// ---------------------------------------------------------------------------
+describe('Migration 0075: traceability.matrix_viewed audit action (Issue #240)', () => {
+  it('migration file 0075_traceability_matrix_viewed_audit_action.sql exists', () => {
+    expect(fileExists('migrations/0075_traceability_matrix_viewed_audit_action.sql')).toBe(true);
+  });
+
+  it('adds traceability.matrix_viewed to audit_action enum', () => {
+    const sql = readText('migrations/0075_traceability_matrix_viewed_audit_action.sql');
+    expect(sql).toMatch(
+      /ALTER TYPE audit_action ADD VALUE IF NOT EXISTS 'traceability.matrix_viewed'/,
+    );
+  });
+
+  it('has exactly 1 ALTER TYPE audit_action statement', () => {
+    const sql = readText('migrations/0075_traceability_matrix_viewed_audit_action.sql');
+    const matches = sql.match(/ALTER TYPE audit_action ADD VALUE/g) ?? [];
+    expect(matches).toHaveLength(1);
+  });
+
+  it('auditActionEnum in schema.ts includes traceability.matrix_viewed', () => {
+    const src = readText('lib/db/schema.ts');
+    expect(src).toContain("'traceability.matrix_viewed'");
+  });
+
+  it('AuditAction type in audit.ts includes traceability.matrix_viewed', () => {
+    const src = readText('lib/audit.ts');
+    expect(src).toContain("'traceability.matrix_viewed'");
   });
 });

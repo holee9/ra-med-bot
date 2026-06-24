@@ -222,10 +222,12 @@ export type AuditAction =
   | 'knowledge_gap_resolved'
   // SPEC-REGULA-TRACEABILITY-001 (Issue #47, REQ-TRACEABILITY-010).
   // Four edge lifecycle actions for the local evidence graph layer.
+  // #240: +1 matrix_viewed (0075) — distinct read audit for the evidence matrix.
   | 'traceability.edge_created'
   | 'traceability.edge_deleted'
   | 'traceability.packet_exported'
   | 'traceability.stale_propagated'
+  | 'traceability.matrix_viewed'
   // SPEC-REGULA-PMS-001 (Issue #53, REQ-PMS-010). EU MDR Article 83-86
   // PMS/PMCF state-transition audit trail (21 CFR Part 11).
   | 'pms.report_created'

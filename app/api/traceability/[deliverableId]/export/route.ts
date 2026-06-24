@@ -47,10 +47,13 @@ export const GET = withPermission('traceability.view', async (req, ctx, session)
 
   const result = await exportPacket(packet, format);
   if (!result.success || !result.content) {
-    return Response.json(
-      { error: 'export_failed', detail: result.error?.message ?? 'unknown' },
-      { status: 502 },
-    );
+    // L2 (#241): do NOT forward exporter internals to the client — log server-side only.
+    console.error('[traceability.export] packet export failed', {
+      deliverableId,
+      format,
+      error: result.error?.message ?? 'unknown',
+    });
+    return Response.json({ error: 'export_failed' }, { status: 502 });
   }
 
   // 21 CFR Part 11 — every packet export is audited.

@@ -262,6 +262,9 @@ export const auditActionEnum = pgEnum('audit_action', [
   'traceability.edge_deleted',
   'traceability.packet_exported',
   'traceability.stale_propagated',
+  // #240 — added via 0075_traceability_matrix_viewed_audit_action.sql: matrix
+  // view read audit (+1), distinct from dashboard.view for 21 CFR Part 11 clarity.
+  'traceability.matrix_viewed',
   // SPEC-REGULA-PMS-001 (Issue #53): EU MDR Article 83-86 PMS/PMCF audit trail.
   'pms.report_created',
   'pms.compliance_checked',
