@@ -51,6 +51,9 @@ interface SidebarProps {
   // SPEC-REGULA-PMS-001 (Issue #53): PMS Workbench is visible to roles with
   // pms.view (ra-member+). Gated server-side and passed down.
   showPms?: boolean;
+  // SPEC-REGULA-CHANGE-CONTROL-001 (Issue #54): Change Control is visible to
+  // roles with change.view (ra-member+). Gated server-side and passed down.
+  showChangeControl?: boolean;
   initialLocale?: string;
 }
 
@@ -61,6 +64,7 @@ export default function Sidebar(props?: SidebarProps) {
   const showClassify = props?.showClassify ?? false;
   const showTraceability = props?.showTraceability ?? false;
   const showPms = props?.showPms ?? false;
+  const showChangeControl = props?.showChangeControl ?? false;
   const currentProjectId = useUIStore((s) => s.currentProjectId);
   const setCurrentProjectId = useUIStore((s) => s.setCurrentProjectId);
   const { data = [] } = useProjects();
@@ -208,6 +212,19 @@ export default function Sidebar(props?: SidebarProps) {
             className="rounded-md px-3 py-2 text-sm text-ink-700 hover:bg-ink-50 block"
           >
             PMS 워크벤치
+          </Link>
+        </nav>
+      )}
+
+      {/* SPEC-REGULA-CHANGE-CONTROL-001 (Issue #54): Change Control conditional link. */}
+      {showChangeControl && (
+        <nav className="px-2 py-1">
+          <Link
+            href="/change-control"
+            data-testid="sidebar-change-control-link"
+            className="rounded-md px-3 py-2 text-sm text-ink-700 hover:bg-ink-50 block"
+          >
+            변경 관리
           </Link>
         </nav>
       )}

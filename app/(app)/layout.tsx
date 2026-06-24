@@ -30,6 +30,8 @@ export default async function AppLayout({ children }: { children: React.ReactNod
   let showTraceability = false;
   // SPEC-REGULA-PMS-001 (Issue #53): PMS Workbench nav gated to ra-member+ (pms.view).
   let showPms = false;
+  // SPEC-REGULA-CHANGE-CONTROL-001 (Issue #54): Change Control nav gated to ra-member+ (change.view).
+  let showChangeControl = false;
   try {
     const { auth } = await import('@/lib/auth');
     const { hasRole } = await import('@/lib/auth/rbac');
@@ -41,6 +43,7 @@ export default async function AppLayout({ children }: { children: React.ReactNod
       showClassify = hasRole(userRole as Parameters<typeof hasRole>[0], 'ra-member');
       showTraceability = hasRole(userRole as Parameters<typeof hasRole>[0], 'ra-member');
       showPms = hasRole(userRole as Parameters<typeof hasRole>[0], 'ra-member');
+      showChangeControl = hasRole(userRole as Parameters<typeof hasRole>[0], 'ra-member');
     }
     const department = (session?.user as { department?: string } | undefined)?.department;
     if (department) {
@@ -69,6 +72,7 @@ export default async function AppLayout({ children }: { children: React.ReactNod
         showClassify={showClassify}
         showTraceability={showTraceability}
         showPms={showPms}
+        showChangeControl={showChangeControl}
         initialLocale={initialLocale}
       />
       <div className="flex min-w-0 flex-1 flex-col">

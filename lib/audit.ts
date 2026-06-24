@@ -233,7 +233,21 @@ export type AuditAction =
   | 'pms.input_uploaded'
   | 'pmcf.plan_created'
   | 'pmcf.evaluation_drafted'
-  | 'pms.cer_linked';
+  | 'pms.cer_linked'
+  // SPEC-REGULA-CHANGE-CONTROL-001 (Issue #54, REQ-CHANGE-CONTROL-012).
+  // 6 change-control lifecycle audit actions for 21 CFR Part 11 traceability.
+  //   change.assessment_created         — new assessment record inserted
+  //   change.verdict_produced           — per-jurisdiction verdict generated
+  //   change.verdict_citation_rejected  — verdict blocked by REQ-006 citation enforcement
+  //   change.assessment_reviewed        — expert review gate: provisional → reviewed (REQ-009)
+  //   change.report_exported            — PDF report exported (only reviewed/final)
+  //   change.export_blocked             — provisional export denied (REQ-009/011 gate, H-4)
+  | 'change.assessment_created'
+  | 'change.verdict_produced'
+  | 'change.verdict_citation_rejected'
+  | 'change.assessment_reviewed'
+  | 'change.report_exported'
+  | 'change.export_blocked';
 
 export interface AuditEvent {
   /** User UUID, or null for system-initiated events. */

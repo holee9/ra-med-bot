@@ -267,6 +267,15 @@ export const auditActionEnum = pgEnum('audit_action', [
   'pmcf.plan_created',
   'pmcf.evaluation_drafted',
   'pms.cer_linked',
+  // SPEC-REGULA-CHANGE-CONTROL-001 (Issue #54, REQ-CHANGE-CONTROL-012):
+  // 6 change-control lifecycle audit actions (21 CFR Part 11). change.export_blocked
+  // (H-4) records provisional-export denial, distinct from REQ-006 citation rejection.
+  'change.assessment_created',
+  'change.verdict_produced',
+  'change.verdict_citation_rejected',
+  'change.assessment_reviewed',
+  'change.report_exported',
+  'change.export_blocked',
 ]);
 
 // @MX:NOTE [AUTO] Knowledge gap enums — SPEC-REGULA-KNOWLEDGE-GAP-001 (Issue #35).
@@ -305,6 +314,7 @@ export const gapClassificationEnum = pgEnum('gap_classification', [
 // SPEC-REGULA-CLASSIFY-001: 'classification' added via 0051_classification_audit_actions.sql;
 // 'classify' added via 0067_classify.sql (tasks.md canonical value, mirrors 'risk' naming).
 // SPEC-REGULA-PMS-001: 'pms_report', 'pmcf_plan', 'pmcf_evaluation' added via 0069_pms.sql.
+// SPEC-REGULA-CHANGE-CONTROL-001: 'change_control_assessment' added via 0071_change_control.sql.
 export const workflowTypeEnum = pgEnum('workflow_type', [
   'submission_drafter',
   'audit_response',
@@ -319,6 +329,7 @@ export const workflowTypeEnum = pgEnum('workflow_type', [
   'pms_report',
   'pmcf_plan',
   'pmcf_evaluation',
+  'change_control_assessment',
 ]);
 
 // REQ-WF-049: workflow_status pgEnum — lifecycle states for workflow_runs.
@@ -1824,5 +1835,136 @@ export const pmsDocuments = pgTable(
     projectIdx: index('idx_pms_documents_project').on(t.projectId),
     orgIdx: index('idx_pms_documents_org').on(t.orgId),
     workflowIdx: index('idx_pms_documents_workflow').on(t.workflowRunId),
+  }),
+);
+
+// ---------------------------------------------------------------------------
+// SPEC-REGULA-CHANGE-CONTROL-001 — Design Change RA Impact Assessor (Issue #54)
+// Migration: 0071_change_control.sql
+// REQ-CHANGE-CONTROL-001 (workflow_type) handled above in workflowTypeEnum.
+// REQ-CHANGE-CONTROL-012 (audit_action) handled above in auditActionEnum.
+// ---------------------------------------------------------------------------
+
+// REQ-003: 6 change types — mirrors the migration CHECK constraint.
+export const changeTypeEnum = pgEnum('change_type_enum', [
+  'design',
+  'material',
+  'manufacturing_process',
+  'software',
+  'labeling',
+  'intended_use',
+]);
+
+// REQ-004: 4 verdicts × REQ-005: 5 jurisdictions
+export const changeVerdictEnum = pgEnum('change_verdict_enum', [
+  'new_submission_required',
+  'change_notification',
+  'internal_record_only',
+  'not_applicable',
+]);
+
+// REQ-009/REQ-011: provisional → reviewed → final lifecycle
+export const changeAssessmentStatusEnum = pgEnum('change_assessment_status', [
+  'provisional',
+  'reviewed',
+  'final',
+]);
+
+// @MX:ANCHOR [AUTO] changeAssessments — top-level change assessment record.
+// @MX:REASON Referenced by change_verdicts, change_risk_links, BFF routes, and
+//           report builder. fan_in >= 3.
+// @MX:SPEC SPEC-REGULA-CHANGE-CONTROL-001 (REQ-CHANGE-CONTROL-002~004, REQ-010)
+export const changeAssessments = pgTable(
+  'change_assessments',
+  {
+    id: uuid('id').defaultRandom().primaryKey(),
+    orgId: uuid('org_id').notNull(),
+    projectId: uuid('project_id').notNull(),
+    workflowRunId: uuid('workflow_run_id'),
+    changeType: text('change_type').notNull(),
+    description: text('description').notNull(),
+    impactScope: text('impact_scope').notNull(),
+    status: text('status').notNull().default('provisional'),
+    // REQ-010: version metadata for rollback
+    modelVersion: text('model_version').notNull(),
+    promptVersion: text('prompt_version').notNull(),
+    templateVersion: text('template_version').notNull(),
+    createdBy: uuid('created_by').notNull(),
+    createdAt: timestamp('created_at', { withTimezone: true, mode: 'date' }).notNull().defaultNow(),
+    updatedAt: timestamp('updated_at', { withTimezone: true, mode: 'date' }).notNull().defaultNow(),
+  },
+  (t) => ({
+    projectIdx: index('idx_change_assessments_project').on(t.projectId),
+    orgIdx: index('idx_change_assessments_org').on(t.orgId),
+    runIdx: index('idx_change_assessments_run').on(t.workflowRunId),
+  }),
+);
+
+// @MX:NOTE [AUTO] change_verdicts — per-jurisdiction verdict with rationale.
+// @MX:SPEC SPEC-REGULA-CHANGE-CONTROL-001 (REQ-004, REQ-005)
+export const changeVerdicts = pgTable(
+  'change_verdicts',
+  {
+    id: uuid('id').defaultRandom().primaryKey(),
+    orgId: uuid('org_id').notNull(),
+    assessmentId: uuid('assessment_id')
+      .notNull()
+      .references(() => changeAssessments.id, { onDelete: 'cascade' }),
+    jurisdiction: text('jurisdiction').notNull(),
+    verdict: text('verdict').notNull(),
+    rationale: text('rationale').notNull(),
+    confidence: text('confidence').notNull().default('unverified'),
+    createdAt: timestamp('created_at', { withTimezone: true, mode: 'date' }).notNull().defaultNow(),
+  },
+  (t) => ({
+    assessmentIdx: index('idx_change_verdicts_assessment').on(t.assessmentId),
+    orgIdx: index('idx_change_verdicts_org').on(t.orgId),
+  }),
+);
+
+// @MX:ANCHOR [AUTO] change_verdict_citations — REQ-006 citation enforcement table.
+// @MX:REASON excerpt is the DB-level NOT NULL defense (dual with validateVerdictCitations)
+//           against LLM-hallucinated verdicts without a grounded regulatory excerpt.
+// @MX:SPEC SPEC-REGULA-CHANGE-CONTROL-001 (REQ-006)
+export const changeVerdictCitations = pgTable(
+  'change_verdict_citations',
+  {
+    id: uuid('id').defaultRandom().primaryKey(),
+    orgId: uuid('org_id').notNull(),
+    verdictId: uuid('verdict_id')
+      .notNull()
+      .references(() => changeVerdicts.id, { onDelete: 'cascade' }),
+    sourceSectionId: uuid('source_section_id'),
+    // REQ-006: excerpt NOT NULL — DB-level defense. The migration also has a
+    // CHECK (length(btrim(excerpt)) > 0) so empty/whitespace strings are rejected.
+    excerpt: text('excerpt').notNull(),
+    sourceLabel: text('source_label'),
+    createdAt: timestamp('created_at', { withTimezone: true, mode: 'date' }).notNull().defaultNow(),
+  },
+  (t) => ({
+    verdictIdx: index('idx_change_verdict_citations_verdict').on(t.verdictId),
+    orgIdx: index('idx_change_verdict_citations_org').on(t.orgId),
+  }),
+);
+
+// @MX:NOTE [AUTO] change_risk_links — ISO 14971 (#46) risk re-evaluation linkage.
+// @MX:SPEC SPEC-REGULA-CHANGE-CONTROL-001 (REQ-008). risk_items from SPEC-REGULA-RISK-001 (#46).
+export const changeRiskLinks = pgTable(
+  'change_risk_links',
+  {
+    id: uuid('id').defaultRandom().primaryKey(),
+    orgId: uuid('org_id').notNull(),
+    assessmentId: uuid('assessment_id')
+      .notNull()
+      .references(() => changeAssessments.id, { onDelete: 'cascade' }),
+    riskItemId: uuid('risk_item_id')
+      .notNull()
+      .references(() => riskItems.id, { onDelete: 'cascade' }),
+    createdAt: timestamp('created_at', { withTimezone: true, mode: 'date' }).notNull().defaultNow(),
+  },
+  (t) => ({
+    assessmentIdx: index('idx_change_risk_links_assessment').on(t.assessmentId),
+    orgIdx: index('idx_change_risk_links_org').on(t.orgId),
+    riskItemIdx: index('idx_change_risk_links_risk_item').on(t.riskItemId),
   }),
 );
