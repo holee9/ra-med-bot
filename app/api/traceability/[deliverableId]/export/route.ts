@@ -48,10 +48,13 @@ export const GET = withPermission('traceability.view', async (req, ctx, session)
   const result = await exportPacket(packet, format);
   if (!result.success || !result.content) {
     // L2 (#241): do NOT forward exporter internals to the client — log server-side only.
+    // MEDIUM-1 (#241): strip CRLF/control chars + cap length to prevent log-injection
+    // (exporter errors may carry DB-sourced chars); protects Part 11 log integrity.
+    const safeError = (result.error?.message ?? 'unknown').replace(/[\p{Cc}]/gu, ' ').slice(0, 500);
     console.error('[traceability.export] packet export failed', {
       deliverableId,
       format,
-      error: result.error?.message ?? 'unknown',
+      error: safeError,
     });
     return Response.json({ error: 'export_failed' }, { status: 502 });
   }
