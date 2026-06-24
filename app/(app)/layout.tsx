@@ -32,6 +32,8 @@ export default async function AppLayout({ children }: { children: React.ReactNod
   let showPms = false;
   // SPEC-REGULA-CHANGE-CONTROL-001 (Issue #54): Change Control nav gated to ra-member+ (change.view).
   let showChangeControl = false;
+  // SPEC-REGULA-LABELING-001 (Issue #66): Labeling nav gated to ra-member+ (label.view).
+  let showLabeling = false;
   try {
     const { auth } = await import('@/lib/auth');
     const { hasRole } = await import('@/lib/auth/rbac');
@@ -44,6 +46,7 @@ export default async function AppLayout({ children }: { children: React.ReactNod
       showTraceability = hasRole(userRole as Parameters<typeof hasRole>[0], 'ra-member');
       showPms = hasRole(userRole as Parameters<typeof hasRole>[0], 'ra-member');
       showChangeControl = hasRole(userRole as Parameters<typeof hasRole>[0], 'ra-member');
+      showLabeling = hasRole(userRole as Parameters<typeof hasRole>[0], 'ra-member');
     }
     const department = (session?.user as { department?: string } | undefined)?.department;
     if (department) {
@@ -73,6 +76,7 @@ export default async function AppLayout({ children }: { children: React.ReactNod
         showTraceability={showTraceability}
         showPms={showPms}
         showChangeControl={showChangeControl}
+        showLabeling={showLabeling}
         initialLocale={initialLocale}
       />
       <div className="flex min-w-0 flex-1 flex-col">

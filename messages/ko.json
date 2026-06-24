@@ -105,5 +105,58 @@
       "exportFailed": "export 실패",
       "alreadyReviewed": "이미 검토 완료된 평가입니다."
     }
+  },
+  "labeling": {
+    "title": "라벨링·IFU 워크벤치",
+    "description": "의료기기 라벨, IFU, intended use, indication, 마케팅 claim의 관할권별 검토·승인",
+    "nav": "라벨링·IFU",
+    "status": {
+      "draft": "초안 (Draft)",
+      "in_review": "검토 중 (In Review)",
+      "approved": "승인 완료 (Approved)",
+      "rejected": "반려 (Rejected)"
+    },
+    "form": {
+      "project": "프로젝트",
+      "productName": "제품명",
+      "jurisdiction": "관할권",
+      "submit": "라벨링 문서 생성",
+      "submitting": "생성 중…"
+    },
+    "tabs": {
+      "sections": "섹션",
+      "checklist": "관할권 체크리스트",
+      "claims": "Claim 검증",
+      "translations": "번역 diff"
+    },
+    "claims": {
+      "expertReviewRequired": "전문가 검토 필요",
+      "comparative": "비교 주의 (Comparative)",
+      "superiority": "우월성 주의 (Superiority)",
+      "submit": "claim 검증"
+    },
+    "translation": {
+      "match": "일치 (Match)",
+      "minor": "경미한 차이 (Minor)",
+      "major": "주요 차이 (Major)",
+      "review": "검토 필요 (Review Required)",
+      "submit": "번역 diff 실행"
+    },
+    "approve": {
+      "submit": "승인 (RA Lead)",
+      "esubmitBeta": "eSubmit 연동: #65 구현 후 활성화 예정 (Beta)"
+    },
+    "export": {
+      "submit": "내보내기",
+      "blocked": "export가 차단되었습니다. 미해결 claim이 존재합니다. (REQ-006)"
+    },
+    "errors": {
+      "forbidden": "라벨링 워크벤치 접근은 RA Member 권한 이상 필요합니다 (label.view).",
+      "noProject": "라벨링 문서를 생성하려면 먼저 프로젝트를 생성하세요.",
+      "fetchFailed": "라벨링 문서를 불러오지 못했습니다. 잠시 후 다시 시도하세요.",
+      "createFailed": "라벨링 문서 생성 중 오류가 발생했습니다.",
+      "approveFailed": "승인 실패",
+      "exportFailed": "export 실패"
+    }
   }
 }

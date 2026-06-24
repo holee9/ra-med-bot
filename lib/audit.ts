@@ -247,7 +247,21 @@ export type AuditAction =
   | 'change.verdict_citation_rejected'
   | 'change.assessment_reviewed'
   | 'change.report_exported'
-  | 'change.export_blocked';
+  | 'change.export_blocked'
+  // SPEC-REGULA-LABELING-001 (Issue #66, REQ-LABEL-010):
+  // 6 labeling lifecycle audit actions for 21 CFR Part 11 traceability.
+  //   label.document_created            — new labeling document inserted (REQ-001)
+  //   label.claim_validated             — claim passed citation validation (REQ-003)
+  //   label.claim_citation_rejected     — claim blocked: no grounded citation → expert-review (REQ-004)
+  //   label.translation_diff_detected   — semantic diff detected in translation (REQ-007)
+  //   label.approved                    — RA-lead approved labeling document (REQ-012)
+  //   label.export_blocked              — export denied: unsupported claims exist (REQ-006)
+  | 'label.document_created'
+  | 'label.claim_validated'
+  | 'label.claim_citation_rejected'
+  | 'label.translation_diff_detected'
+  | 'label.approved'
+  | 'label.export_blocked';
 
 export interface AuditEvent {
   /** User UUID, or null for system-initiated events. */

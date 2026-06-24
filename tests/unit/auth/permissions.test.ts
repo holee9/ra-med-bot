@@ -55,14 +55,19 @@ const EXPECTED_ACTIONS: PermissionAction[] = [
   'change.assess',
   'change.view',
   'change.export',
+  // SPEC-REGULA-LABELING-001 (Issue #66)
+  'label.create',
+  'label.view',
+  'label.approve',
+  'label.export',
 ];
 
 const VALID_ROLES = ['admin', 'qa-lead', 'ra-lead', 'ra-member', 'viewer', 'auditor'] as const;
 const VALID_SCOPES = ['org', 'project', 'user', 'none'] as const;
 
 describe('lib/auth/permissions.ts (REQ-ENTERPRISE-020) — PERMISSIONS matrix', () => {
-  it('PERMISSIONS contains exactly 47 entries', () => {
-    expect(Object.keys(PERMISSIONS)).toHaveLength(47); // +personal.view (PERSONAL-LIB-001) +deadline.view/manage (CALENDAR-001) +knowledgegap.classify/view/replay (KNOWLEDGE-GAP-001) +classify.generate/view (CLASSIFY-001) +traceability.manage (TRACEABILITY-001) +change.assess/view/export (CHANGE-CONTROL-001)
+  it('PERMISSIONS contains exactly 51 entries', () => {
+    expect(Object.keys(PERMISSIONS)).toHaveLength(51); // +label.create/view/approve/export (LABELING-001, Issue #66)
   });
 
   it.each(EXPECTED_ACTIONS)('PERMISSIONS contains action: %s', (action) => {
