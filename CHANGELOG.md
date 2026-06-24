@@ -11,6 +11,20 @@
 
 > **Wave 5 규제 준수 축 완성**: Issue #88 전자서명(PR #204), Issue #87 Export Hub(PR #203), Issue #92 외부 감사관 뷰(PR #206), Issue #53 PMS(PR #246), Issue #54 Change Control(PR #54)가 main에 머지되었습니다. 21 CFR Part 11 §11.50/§11.70 전자서명, 다중 포맷 내보내기, 외부 감사관 read-only 페르소나 + 1-클릭 감사 패키지, EU MDR PMS/PMCF 자동화, 설계 변경 규제 영향 자동 평가가 통합되었습니다.
 
+### CAPA #68 — 불만·CAPA 폐루프 관리 (2026-06-24)
+
+> SPEC-REGULA-CAPA-001 구현 완료: complaint intake → reportability(#61) → RCA(5 Whys/Fishbone) → corrective/preventive → effectiveness(Inngest) → close(ESIG+게이트) → #46/#54/#64 linkage
+- **Migration 0073**: workflow_type enum +1(`complaint_intake`, 15→16), audit_action enum +7(139→146: complaint_created/reportability_assessed/root_cause_created/capa_created/effectiveness_checked/capa_closed/qms_synced), 테이블 5개(complaints/capa_records/capa_root_causes/capa_links/capa_effectiveness_checks) + RLS
+- **권한**: capa.*, capa.close, capa.qms_sync (ra-lead 전용)
+- **백엔드**: lib/capa/ 10모듈(intake/reportability/root-cause/records/effectiveness/trend-detector/linkage/close-gate/qms-sync/audit)
+- **API**: POST /api/capa/complaints, POST /api/capa/complaints/[id]/reportability, POST /api/capa/records, POST /api/capa/records/[id]/root-cause, POST /api/capa/records/[id]/effectiveness, POST /api/capa/records/[id]/close, GET/POST /api/capa/qms-sync
+- **프론트엔드**: app/(app)/capa 워크벤치(intake 폼 + CAPA 목록 + RCA 작성 + effectiveness check + close 게이트)
+- **재사용**: #61 assessReportability(REQ-002) · #54 assessChange + #46 risk_items + #64 design_history_files(REQ-008 linkage) · #53 pms_inputs(REQ-007 trend) · ESIG computeAnswerHash(REQ-010) · Inngest(REQ-006)
+- **보안 fix**(expert-security 리뷰): C-1 vigilance/adverse_events org 스코프(workflowRunId anchor) · H-1 ESIG 서명자 해시 binding(§11.70) · H-2 7 라우트 audit tx 래핑 · H-3 createdBy userId · evaluator getCapaLinkCount count(*) + linkage pms/risk 검증
+- **게이트 결과**: typecheck 0 · biome 0 · test 3721 passed | 7 skipped · build 0
+- **AC 완료 상태**: AC-01~04·06~08 ✅ · AC-05 ⏸️ DEFERRED(#57 QMS 실제 통신)
+- **Follow-up**: #57(QMS 실제 통신 — REQ-009 stub 교체)
+
 ### CHANGE-CONTROL #54 — 설계 변경 규제 영향 자동 평가기 (2026-06-24)
 
 > SPEC-REGULA-CHANGE-CONTROL-001 구현 완료: 변경 유형 6종 분류 → 5관할권(FDA/EU MDR/MFDS/NMPA/PMDA) verdict + citation 강제(REQ-006) + ISO 14971 연계 + expert review gate + PDF export(MVP)

@@ -102,6 +102,92 @@ and closed-loop replay verification. Awaiting security review and merge.
 | **Change Control (#54)** | **COMPLETE** (2026-06-24) | 설계 변경 규제 영향 자동 평가기 — migration 0071(workflow_type +1, audit_action +6, 테이블 4 + RLS), lib/change-control 8모듈(types/classify/engine/jurisdictions/verdict/version-metadata/risk-linkage), API 4종(run/[id]/review/export), UI(app/(app)/change-control), 권한 change.assess/view/export. **결정 근거**: createHybridRaFetch 실구현(H-1), CLASSIFY/PMS 패턴 재사용(jurisdictions verdict 로직). **보안 fix**: C-1 IDOR(assertPmsProjectAccess) · H-1 실제 LLM wiring(REQ-006 reject live) · H-2 프롬프트 인젝션(<change_description>+UNTRUSTED DATA) · H-3 catch audit tx · H-4 change.export_blocked audit · M-1 risk-linkage org 검증. **게이트**: 3571 passed | 7 skipped · build 0. **AC 완료**: AC-01~04·06~08 ✅ · AC-05 ⏸️ DEFERRED(JSON shape만, 실제 PDF → #247) |
 | Work gate | #18 active | mandatory before new P0 work |
 
+## SPEC-REGULA-CAPA-001 (#68) — 불만·CAPA 폐루프 관리
+
+**Status**: 구현 완료 (2026-06-24, feat/issue-68 브랜치)
+
+### Summary
+
+Regula가 불만 접수부터 CAPA 완료, 효과성 확인, DHF/Risk/PMS 반영까지 하나의 추적 가능한 워크플로우로 관리합니다. complaint intake 구조화 폼, reportability assessment(#61 Vigilance 연결), root cause analysis(5 Whys, Fishbone), corrective/preventive action 분리 관리, CAPA owner·due date·effectiveness check 관리, 반복 불만 trend detection(#53 PMS 연결)이 통합되었습니다.
+
+### What's Implemented
+
+**Phase 0: 기반 (DB + 권한 + 열거형)**
+- `migrations/0073_capa.sql`: workflow_type enum +1(`complaint_intake`, 15→16), audit_action enum +7(139→146), 테이블 5개(complaints/capa_records/capa_root_causes/capa_links/capa_effectiveness_checks) + RLS
+- `lib/auth/permissions.ts`: 권한 3종 추가(capa.*, capa.close, capa.qms_sync — ra-lead 전용)
+
+**Phase 1: CAPA 코어 모듈 (lib/capa/ 10모듈)**
+- `intake.ts`: complaint 구조화 접수
+- `reportability.ts`: reportability assessment + Vigilance 연결(#61 재사용)
+- `root-cause.ts`: 5 Whys / Fishbone RCA 작성 지원
+- `records.ts`: CAPA 레코드 관리(corrective/preventive 분리)
+- `effectiveness.ts`: effectiveness check 스케줄링(Inngest cron, REQ-006 재사용)
+- `trend-detector.ts`: 반복 불만 trend detection → PMS 연결(#53 pms_inputs 재사용)
+- `linkage.ts`: #46 Risk, #54 Change Control, #64 DHF 자동 연결(REQ-008 linkage 패턴 재사용)
+- `close-gate.ts`: reportability·링크 검증 후 전자서명(ESIG computeAnswerHash 재사용, REQ-010)
+- `qms-sync.ts`: QMS 양방향 동기화(REQ-009 stub, AC-05 DEFERRED)
+- `audit.ts`: audit_logs 기록(모든 단계)
+
+**Phase 2: API 7종**
+- `POST /api/capa/complaints` — complaint intake
+- `POST /api/capa/complaints/[id]/reportability` — assessment + Vigilance 연결
+- `POST /api/capa/records` — CAPA 생성 (corrective/preventive)
+- `POST /api/capa/records/[id]/root-cause` — RCA 작성
+- `POST /api/capa/records/[id]/effectiveness` — effectiveness check
+- `POST /api/capa/records/[id]/close` — reportability·링크 검증 후 전자서명
+- `GET/POST /api/capa/qms-sync` — QMS 양방향 동기화
+
+**Phase 3: UI 워크벤치**
+- `app/(app)/capa/page.tsx`: CAPA 폐루프 워크벤치(intake 폼 + CAPA 목록 + RCA 작성 + effectiveness check + close 게이트)
+
+**Phase 4: 보안 강화 (expert-security 리뷰)**
+- **C-1 (CRITICAL → RESOLVED)**: vigilance/adverse_events org 스코프 수정 — workflowRunId 기반 anchor 추가, 타 org 접근 차단
+- **H-1 (HIGH → RESOLVED)**: ESIG 서명자 해시 binding — §11.70 서명자 userId 강제 binding
+- **H-2 (HIGH → RESOLVED)**: 7 라우트 audit tx 래핑 — db.transaction()으로 상태 전이와 audit log 기록 원자성 보장
+- **H-3 (MEDIUM → RESOLVED)**: createdBy userId 검증 — CAPA 생성자 검증 로직 추가
+- **evaluator linkage 검증**: getCapaLinkCount count(*) 추가, linkage pms/risk 검증 로직 강화
+
+### Environment Variables (Optional)
+
+```bash
+# CAPA (#68) — 별도 env 변수 없음. 기존 DB/AI/Inngest/ESIG 설정 공유.
+```
+
+### Verification Results
+
+```bash
+corepack pnpm typecheck              # PASS: 0 에러
+corepack pnpm exec biome check .     # PASS: 0 에러
+corepack pnpm run lint:hex           # PASS: 0 에러
+corepack pnpm test                   # PASS: 3721 passed | 7 skipped | 0 failed
+corepack pnpm build                  # PASS
+```
+
+Integration test coverage: AC-01(complaint→reportability→CAPA), AC-02(effectiveness 알림), AC-03(linkage 누락 0건), AC-04(전자서명 100%), AC-05(QMS stub DEFERRED), AC-06(trend→PMS), AC-07(reportable 미연결 close 차단), AC-08(권한 거부).
+
+### Security Hardening (run 단계 expert-security + evaluator-active)
+
+**C-1 (CRITICAL → RESOLVED)**: vigilance/adverse_events org 스코프 수정 — workflowRunId 기반 anchor 추가, 타 org 접근 차단(IDOR 방지).
+
+**H-1 (HIGH → RESOLVED)**: ESIG 서명자 해시 binding — §11.70 서명자 userId 강제 binding(21 CFR Part 11 준수).
+
+**H-2 (HIGH → RESOLVED)**: 7 라우트 audit tx 래핑 — db.transaction()으로 상태 전이와 audit log 기록 원자성 보장.
+
+**H-3 (MEDIUM → RESOLVED)**: createdBy userId 검증 — CAPA 생성자 검증 로직 추가.
+
+**evaluator linkage 검증**: getCapaLinkCount count(*) 추가, linkage pms/risk 검증 로직 강화.
+
+### Divergences from Spec (spec-anchored Level 2)
+
+1. **AC-05 QMS 실제 통신**: ⏸️ DEFERRED — REQ-009 stub만 구현, 실제 QMS 시스템 연동은 #57 follow-up 이슈
+2. **RCA 작성 지원**: 5 Whys/Fishbone 템플릿만 제공, AI 자동 판정은 out-of-scope(사용자/expert 판정)
+
+### Follow-ups (Unlocked by #68)
+
+1. **#57 (AC-05 DEFERRED)**: QMS 실제 통신 — REQ-009 stub 교체, 실제 QMS 시스템 연동
+
+---
+
 ## SPEC-REGULA-KNOWLEDGE-GAP-001 (#35) — 미답변 자동 이슈화 및 지식베이스 보강 루프
 
 **Status**: 구현 완료 (PR #234, 리뷰/머지 대기)
