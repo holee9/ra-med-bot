@@ -31,7 +31,7 @@ import {
   validateRootCauseAnalysis,
 } from '@/lib/capa/root-cause';
 import { TREND_THRESHOLD, computeTrendSignature } from '@/lib/capa/trend-signature';
-import { describe, expect, it } from 'vitest';
+import { describe, expect, it, vi } from 'vitest';
 
 const root = path.resolve(__dirname, '..', '..');
 const readText = (rel: string): string => fs.readFileSync(path.join(root, rel), 'utf8');
@@ -128,6 +128,125 @@ describe('AC-02: effectiveness reminder (REQ-006)', () => {
     const src = readText('lib/inngest/capa/effectiveness-due-reminder.ts');
     expect(src).toContain('dispatchEffectivenessReminders');
     expect(src).toContain("id: 'capa-effectiveness-due-reminder'");
+  });
+
+  // M-4 (issue #251): dispatchEffectivenessReminders is no longer a no-op —
+  // it renders a body per reminder and invokes the provided sender. Uses the
+  // injected sender path so no SendGrid/network is required. The db query is
+  // stubbed via vi.mock so the test exercises the dispatch loop in isolation.
+  it('M-4: dispatchEffectivenessReminders actually invokes the sender N times for N due checks', async () => {
+    // Inline module mock so the default SendGrid path is never reached.
+    vi.resetModules();
+    vi.doMock('@/lib/db/client', () => ({
+      db: {
+        select: () => {
+          const rows = [
+            {
+              checkId: 'chk-1',
+              capaId: 'capa-1',
+              ownerId: 'owner-1',
+              dueDate: '2026-06-24',
+              ownerEmail: 'owner1@example.com',
+              ownerName: 'Owner One',
+            },
+            {
+              checkId: 'chk-2',
+              capaId: 'capa-2',
+              ownerId: 'owner-2',
+              dueDate: '2026-06-24',
+              ownerEmail: 'owner2@example.com',
+              ownerName: 'Owner Two',
+            },
+            {
+              checkId: 'chk-3',
+              capaId: 'capa-3',
+              ownerId: 'owner-3',
+              dueDate: '2026-06-24',
+              ownerEmail: 'owner3@example.com',
+              ownerName: 'Owner Three',
+            },
+          ];
+          const chain = Promise.resolve(rows) as unknown as {
+            from: () => unknown;
+            innerJoin: () => unknown;
+            leftJoin: () => unknown;
+            where: () => unknown;
+          };
+          chain.from = () => chain;
+          chain.innerJoin = () => chain;
+          chain.leftJoin = () => chain;
+          chain.where = () => chain;
+          return chain;
+        },
+      },
+    }));
+
+    const { dispatchEffectivenessReminders, renderEffectivenessReminder } = await import(
+      '@/lib/capa/effectiveness'
+    );
+
+    const sentBodies: string[] = [];
+    const result = await dispatchEffectivenessReminders('2026-06-24', {
+      sendReminder: async (_reminder, body) => {
+        sentBodies.push(body);
+        return true;
+      },
+    });
+
+    expect(result.totalDue).toBe(3);
+    expect(result.dispatched).toBe(3);
+    expect(sentBodies).toHaveLength(3);
+    // Each body must be a rendered reminder containing the CAPA id.
+    expect(sentBodies[0]).toContain('capa-1');
+    expect(sentBodies[2]).toContain('capa-3');
+    // The renderer must produce a plain-text body with the key fields.
+    expect(renderEffectivenessReminder).toBeDefined();
+
+    vi.doUnmock('@/lib/db/client');
+    vi.resetModules();
+  });
+
+  it('M-4: dispatchEffectivenessReminders does not count a failed send as dispatched', async () => {
+    vi.resetModules();
+    vi.doMock('@/lib/db/client', () => ({
+      db: {
+        select: () => {
+          const rows = [
+            {
+              checkId: 'chk-1',
+              capaId: 'capa-1',
+              ownerId: 'owner-1',
+              dueDate: '2026-06-24',
+              ownerEmail: 'owner1@example.com',
+              ownerName: 'Owner One',
+            },
+          ];
+          const chain = Promise.resolve(rows) as unknown as {
+            from: () => unknown;
+            innerJoin: () => unknown;
+            leftJoin: () => unknown;
+            where: () => unknown;
+          };
+          chain.from = () => chain;
+          chain.innerJoin = () => chain;
+          chain.leftJoin = () => chain;
+          chain.where = () => chain;
+          return chain;
+        },
+      },
+    }));
+
+    const { dispatchEffectivenessReminders } = await import('@/lib/capa/effectiveness');
+
+    const result = await dispatchEffectivenessReminders('2026-06-24', {
+      sendReminder: async () => false, // sender reports failure
+    });
+
+    expect(result.totalDue).toBe(1);
+    expect(result.dispatched).toBe(0); // failed send not counted
+
+    vi.doUnmock('@/lib/db/client');
+    vi.resetModules();
   });
 });
 
