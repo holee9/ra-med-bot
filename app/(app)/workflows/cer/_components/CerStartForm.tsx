@@ -3,8 +3,13 @@
 // @MX:NOTE [AUTO] CerStartForm — drives a CER run. Submits CerInput to
 // POST /api/ra/workflows/cer, surfaces the appraised literature, and exports
 // the assembled document via POST /api/ra/workflows/cer/export (docx | pdf).
-// @MX:SPEC SPEC-REGULA-CER-001
+// @MX:SPEC SPEC-REGULA-CER-001 + SPEC-REGULA-PMS-001 (AC-04 projectId persistence)
+//
+// Project selector: when a project is chosen the CER run is persisted to
+// workflow_runs (workflowType='cer') so PMS report auto-linkage resolves.
+// "No project" keeps the legacy ephemeral behavior (projectId omitted).
 
+import { useProjects } from '@/lib/queries/useProjects';
 import { type FormEvent, useState } from 'react';
 import { type LiteratureItem, PubMedReview } from './PubMedReview';
 
@@ -23,6 +28,8 @@ const SECONDARY_BTN =
   'rounded-md border border-brand-300 px-4 py-2 text-sm text-brand-700 hover:bg-brand-50 disabled:cursor-not-allowed disabled:opacity-60';
 
 export function CerStartForm() {
+  const { data: projects = [], isLoading: projectsLoading } = useProjects();
+  const [projectId, setProjectId] = useState('');
   const [deviceName, setDeviceName] = useState('');
   const [manufacturer, setManufacturer] = useState('');
   const [pubmedQuery, setPubmedQuery] = useState('');
@@ -51,6 +58,7 @@ export function CerStartForm() {
           deviceName,
           manufacturer,
           pubmedQuery,
+          ...(projectId ? { projectId } : {}),
           ...(deviceDescription ? { deviceDescription } : {}),
           ...(intendedUse ? { intendedUse } : {}),
         }),
@@ -117,6 +125,28 @@ export function CerStartForm() {
         className="flex flex-col gap-4 rounded-lg border border-ink-200 bg-surface p-5"
       >
         <h2 className="font-serif text-lg text-ink-900">Start a new CER run</h2>
+
+        <div className="flex flex-col gap-1">
+          <label htmlFor="cer-project" className="text-sm font-medium text-ink-700">
+            Project <span className="text-ink-400">(optional — link to PMS report)</span>
+          </label>
+          <select
+            id="cer-project"
+            value={projectId}
+            onChange={(e) => setProjectId(e.target.value)}
+            disabled={projectsLoading}
+            className={INPUT_CLASS}
+          >
+            <option value="">
+              {projectsLoading ? 'Loading projects…' : 'No project (ephemeral run)'}
+            </option>
+            {projects.map((p) => (
+              <option key={p.id} value={p.id}>
+                {p.name}
+              </option>
+            ))}
+          </select>
+        </div>
 
         <div className="flex flex-col gap-1">
           <label htmlFor="cer-device-name" className="text-sm font-medium text-ink-700">

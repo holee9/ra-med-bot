@@ -58,13 +58,18 @@ export const IndicationImpactInputSchema = z.object({
 });
 export type IndicationImpactInput = z.infer<typeof IndicationImpactInputSchema>;
 
-// REQ-CER-001: Clinical Evaluation Report (CER) workflow input
+// REQ-CER-001: Clinical Evaluation Report (CER) workflow input.
+// @MX:NOTE [AUTO] projectId is OPTIONAL for backward compat — when present, the
+//           CER route persists a workflow_runs row (workflowType='cer') so that
+//           lib/pms/cer-linkage can auto-link CER data into PMS reports
+//           (SPEC-REGULA-PMS-001 AC-04 / REQ-PMS-004). Absent → ephemeral run.
 export const CerInputSchema = z.object({
   deviceName: z.string().min(1).max(200),
   manufacturer: z.string().min(1).max(200),
   pubmedQuery: z.string().min(1).max(500),
   deviceDescription: z.string().optional(),
   intendedUse: z.string().optional(),
+  projectId: z.string().uuid().optional(),
 });
 export type CerInput = z.infer<typeof CerInputSchema>;
 

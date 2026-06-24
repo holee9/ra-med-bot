@@ -1,15 +1,10 @@
 // @MX:NOTE [AUTO] AC-04 / REQ-PMS-004 CER linkage integration tests.
 // @MX:SPEC SPEC-REGULA-PMS-001 (REQ-PMS-004, AC-04)
-// @MX:REASON [AUTO] Honest coverage: auto-linkage is DEFERRED (CER not persisted
-//           locally). Tests verify (a) manual override, (b) graceful null on absent
-//           CER run (current production reality), (c) graceful null on DB error,
-//           (d) forward-compat extraction when a CER workflow_run exists.
-//
-// IMPORTANT: These tests do NOT claim "auto-linkage works in production". CER
-// results currently run through the hybrid-ra-saas BFF and are not persisted to
-// the local workflow_runs table. Auto-discovery returns null in production until
-// CER local persistence lands (cross-SPEC follow-up). The forward-compatibility
-// case verifies the extraction shape for when persistence is added.
+// @MX:REASON [AUTO] Auto-linkage is ACTIVE: CER runs persist to workflow_runs
+//           when a projectId is supplied (see cer-persist-roundtrip.test.ts for
+//           the full route→persist→resolve end-to-end path). These tests cover
+//           the resolver directly: (a) manual override, (b) graceful null on
+//           absent CER run, (c) graceful null on DB error, (d) extraction shape.
 
 import { resolveCerLinkage } from '@/lib/pms/cer-linkage';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
@@ -50,8 +45,8 @@ afterEach(() => {
 const PROJECT_ID = '00000000-0000-0000-0000-000000000001';
 const ORG_ID = 'aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa';
 
-describe('AC-04 / REQ-PMS-004 CER linkage (auto-linkage DEFERRED)', () => {
-  it('returns manual override cerData without DB lookup when provided (functional path today)', async () => {
+describe('AC-04 / REQ-PMS-004 CER linkage (auto-linkage ACTIVE)', () => {
+  it('returns manual override cerData without DB lookup when provided', async () => {
     const manual = {
       cerId: 'manual-cer-1',
       deviceName: 'ManualDevice',
@@ -66,9 +61,8 @@ describe('AC-04 / REQ-PMS-004 CER linkage (auto-linkage DEFERRED)', () => {
     expect(dbMock.select).not.toHaveBeenCalled();
   });
 
-  it('returns null gracefully when no CER workflow_run exists (CURRENT PRODUCTION REALITY)', async () => {
-    // CER results are not persisted to local workflow_runs today (hybrid-ra-saas BFF).
-    // Auto-discovery therefore returns null in production. This is DEFERRED, not a bug.
+  it('returns null gracefully when no CER workflow_run exists', async () => {
+    // No CER run persisted for this project (e.g. ephemeral run without projectId).
     cerRows = [];
     const dbMock = makeDbMock();
 
@@ -94,9 +88,8 @@ describe('AC-04 / REQ-PMS-004 CER linkage (auto-linkage DEFERRED)', () => {
     expect(result).toBeNull();
   });
 
-  // Forward-compatibility: verifies extraction shape for when CER local persistence
-  // lands (cross-SPEC follow-up). NOT a claim that auto-linkage works in production.
-  it('FORWARD-COMPAT: extracts device fields when a CER workflow_run exists (future activation)', async () => {
+  // Verifies extraction shape against the result_json persisted by the CER route.
+  it('extracts device fields when a CER workflow_run exists', async () => {
     cerRows = [
       {
         id: 'cer-run-uuid',
@@ -118,7 +111,7 @@ describe('AC-04 / REQ-PMS-004 CER linkage (auto-linkage DEFERRED)', () => {
     expect(result?.riskProfile).toBe('high');
   });
 
-  it('FORWARD-COMPAT: extracts device fields from nested device block when top-level absent', async () => {
+  it('extracts device fields from nested device block when top-level absent', async () => {
     cerRows = [
       {
         id: 'cer-run-nested',
@@ -137,7 +130,7 @@ describe('AC-04 / REQ-PMS-004 CER linkage (auto-linkage DEFERRED)', () => {
     expect(result?.intendedUse).toBe('monitoring');
   });
 
-  it('FORWARD-COMPAT: returns empty-string fallbacks when CER result_json has missing keys', async () => {
+  it('returns empty-string fallbacks when CER result_json has missing keys', async () => {
     cerRows = [{ id: 'cer-empty-result', resultJson: {} }];
     const dbMock = makeDbMock();
 
