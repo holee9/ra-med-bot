@@ -117,7 +117,15 @@ export type PermissionAction =
   //   view: ra-lead — model-governance state is visible to RA leads for oversight.
   | 'modelgov.manage'
   | 'modelgov.approve'
-  | 'modelgov.view';
+  | 'modelgov.view'
+  // SPEC-REGULA-CYBERDEVICE-001 (Issue 67, REQ-CYBERDEVICE-013): 2 RBAC actions.
+  //   manage: ra-member+ — import SBOM, generate threat model, run CVE analysis
+  //           (team activity, mirrors risk.generate / complaint.create).
+  //   view: ra-member+ — cybersecurity evidence visibility shared across RA team.
+  // REQ-013 is an entitlement/view gate, not a regulatory signoff — no separate
+  // approve action is needed (cyber.access_denied audit covers denial).
+  | 'cyberdevice.manage'
+  | 'cyberdevice.view';
 
 export interface PermissionSpec {
   minRole: Role;
@@ -351,4 +359,12 @@ export const PERMISSIONS: Record<PermissionAction, PermissionSpec> = {
   'modelgov.manage': { minRole: 'admin', scope: 'org', resourceType: 'modelGovernance' },
   'modelgov.approve': { minRole: 'ra-lead', scope: 'org', resourceType: 'modelGovernance' },
   'modelgov.view': { minRole: 'ra-lead', scope: 'org', resourceType: 'modelGovernance' },
+
+  // SPEC-REGULA-CYBERDEVICE-001 (Issue 67, REQ-CYBERDEVICE-013): 2 RBAC actions.
+  // manage: ra-member+ — SBOM import, threat-model generation, CVE analysis,
+  //         evidence bundle assembly (team activity). Mirrors risk.generate.
+  // view: ra-member+ — cybersecurity evidence transparency across the RA team
+  //       (REQ-013 entitlement gate; denial audited as cyber.access_denied).
+  'cyberdevice.manage': { minRole: 'ra-member', scope: 'org', resourceType: 'cyberdevice' },
+  'cyberdevice.view': { minRole: 'ra-member', scope: 'org', resourceType: 'cyberdevice' },
 };

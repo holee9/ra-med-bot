@@ -326,7 +326,7 @@ describe('lib/db/schema.ts Phase 5 additions', () => {
     const values = extractAuditActionEnumValues(src);
     const typeValues = extractAuditActionTypeValues(auditSrc);
     expect(values).toEqual(typeValues);
-    expect(values).toHaveLength(164); // +7 complaint/capa.* (CAPA-001, #68) +1 cer_persisted (#255) +1 traceability.matrix_viewed (#240) +8 ci.* (CLINICAL-INVESTIGATION, #69) +8 modelgov.* (MODEL-GOVERNANCE, Issue 71)
+    expect(values).toHaveLength(173); // +7 complaint/capa.* (CAPA-001, #68) +1 cer_persisted (#255) +1 traceability.matrix_viewed (#240) +8 ci.* (CLINICAL-INVESTIGATION, #69) +8 modelgov.* (MODEL-GOVERNANCE, Issue 71) +9 cyber.* (CYBERDEVICE, Issue 67)
   });
 
   it.each(REQUIRED_RECOVERY_TABLES)(
@@ -382,7 +382,7 @@ describe('lib/audit.ts Phase 5 AuditAction type additions', () => {
         'change.export_blocked',
       ]),
     );
-    expect(values).toHaveLength(164); // +7 complaint/capa.* (CAPA-001, #68) +1 cer_persisted (#255) +1 traceability.matrix_viewed (#240) +8 ci.* (CLINICAL-INVESTIGATION, #69) +8 modelgov.* (MODEL-GOVERNANCE, Issue 71)
+    expect(values).toHaveLength(173); // +7 complaint/capa.* (CAPA-001, #68) +1 cer_persisted (#255) +1 traceability.matrix_viewed (#240) +8 ci.* (CLINICAL-INVESTIGATION, #69) +8 modelgov.* (MODEL-GOVERNANCE, Issue 71) +9 cyber.* (CYBERDEVICE, Issue 67)
   });
 
   it.each(REQUIRED_RECOVERY_AUDIT_ACTIONS)(
@@ -1470,5 +1470,82 @@ describe('migrations/0077_model_governance.sql (SPEC-REGULA-MODEL-GOVERNANCE-001
     expect(src).toMatch(/export const modelPin = pgTable/);
     expect(src).toMatch(/export const changeRequest = pgTable/);
     expect(src).toMatch(/export const approvedCombination = pgTable/);
+  });
+});
+
+// ---------------------------------------------------------------------------
+// migrations/0078_cyberdevice.sql (SPEC-REGULA-CYBERDEVICE-001, Issue 67)
+// ---------------------------------------------------------------------------
+describe('migrations/0078_cyberdevice.sql (SPEC-REGULA-CYBERDEVICE-001, Issue 67)', () => {
+  it('migration file exists', () => {
+    expect(fileExists('migrations/0078_cyberdevice.sql')).toBe(true);
+  });
+
+  it.each([
+    'cyber.threat_modeled',
+    'cyber.sbom_imported',
+    'cyber.sbom_validated',
+    'cyber.sbom_diffed',
+    'cyber.cve_analyzed',
+    'cyber.update_plan_created',
+    'cyber.evidence_bundled',
+    'cyber.risk_linked',
+    'cyber.access_denied',
+  ])('adds ALTER TYPE audit_action ADD VALUE for: %s', (action) => {
+    const sql = readText('migrations/0078_cyberdevice.sql');
+    const escaped = action.replace(/\./g, '\\.');
+    expect(sql).toMatch(
+      new RegExp(`ALTER TYPE audit_action ADD VALUE\\s+IF NOT EXISTS\\s+'${escaped}'`),
+    );
+  });
+
+  it('has exactly 9 ALTER TYPE audit_action statements', () => {
+    const sql = readText('migrations/0078_cyberdevice.sql');
+    const matches = sql.match(/ALTER TYPE audit_action ADD VALUE/g) ?? [];
+    expect(matches).toHaveLength(9);
+  });
+
+  it('creates the 4 new tables with org_id + project_id scoping', () => {
+    const sql = readText('migrations/0078_cyberdevice.sql');
+    expect(sql).toMatch(/CREATE TABLE threat_model/);
+    expect(sql).toMatch(/CREATE TABLE sbom/);
+    expect(sql).toMatch(/CREATE TABLE cve_impact/);
+    expect(sql).toMatch(/CREATE TABLE cyber_evidence_bundle/);
+    expect(sql).toMatch(/REFERENCES organizations\(id\)/);
+    expect(sql).toMatch(/REFERENCES projects\(id\)/);
+  });
+
+  it('enables RLS with org-isolation on all 4 tables', () => {
+    const sql = readText('migrations/0078_cyberdevice.sql');
+    expect(sql).toMatch(/ENABLE ROW LEVEL SECURITY/g);
+    const policies = sql.match(/tenant_isolation_\w+/g) ?? [];
+    expect(policies.length).toBeGreaterThanOrEqual(4);
+    expect(sql).toMatch(/current_setting\('app.current_org_id'/);
+  });
+
+  it('creates the 2 new enums (sbom_format, cve_severity)', () => {
+    const sql = readText('migrations/0078_cyberdevice.sql');
+    expect(sql).toMatch(/CREATE TYPE sbom_format AS ENUM \('spdx', 'cyclonedx'\)/);
+    expect(sql).toMatch(/CREATE TYPE cve_severity AS ENUM/);
+  });
+
+  it.each([
+    'cyber.threat_modeled',
+    'cyber.sbom_imported',
+    'cyber.cve_analyzed',
+    'cyber.access_denied',
+  ])('auditActionEnum in schema.ts includes %s', (action) => {
+    const src = readText('lib/db/schema.ts');
+    expect(src).toContain(`'${action}'`);
+  });
+
+  it('schema.ts defines the 4 new tables + 2 new enums', () => {
+    const src = readText('lib/db/schema.ts');
+    expect(src).toMatch(/export const sbomFormatEnum/);
+    expect(src).toMatch(/export const cveSeverityEnum/);
+    expect(src).toMatch(/export const threatModel = pgTable/);
+    expect(src).toMatch(/export const sbom = pgTable/);
+    expect(src).toMatch(/export const cveImpact = pgTable/);
+    expect(src).toMatch(/export const cyberEvidenceBundle = pgTable/);
   });
 });

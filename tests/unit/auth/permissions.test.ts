@@ -64,14 +64,17 @@ const EXPECTED_ACTIONS: PermissionAction[] = [
   'modelgov.manage',
   'modelgov.approve',
   'modelgov.view',
+  // SPEC-REGULA-CYBERDEVICE-001 (Issue 67)
+  'cyberdevice.manage',
+  'cyberdevice.view',
 ];
 
 const VALID_ROLES = ['admin', 'qa-lead', 'ra-lead', 'ra-member', 'viewer', 'auditor'] as const;
 const VALID_SCOPES = ['org', 'project', 'user', 'none'] as const;
 
 describe('lib/auth/permissions.ts (REQ-ENTERPRISE-020) — PERMISSIONS matrix', () => {
-  it('PERMISSIONS contains exactly 64 entries', () => {
-    expect(Object.keys(PERMISSIONS)).toHaveLength(64); // +7 complaint/capa.* (CAPA-001, Issue #68) +3 clinical_investigation.* (Issue #69) +3 modelgov.* (MODEL-GOVERNANCE, Issue 71)
+  it('PERMISSIONS contains exactly 66 entries', () => {
+    expect(Object.keys(PERMISSIONS)).toHaveLength(66); // +7 complaint/capa.* (CAPA-001, Issue #68) +3 clinical_investigation.* (Issue #69) +3 modelgov.* (MODEL-GOVERNANCE, Issue 71) +2 cyberdevice.* (CYBERDEVICE, Issue 67)
   });
 
   it.each(EXPECTED_ACTIONS)('PERMISSIONS contains action: %s', (action) => {
