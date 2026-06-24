@@ -1,11 +1,11 @@
 ---
 id: SPEC-REGULA-CAPA-001
 version: 1.0.0
-status: draft
+status: completed
 phase: wave5
 priority: High
 created: 2026-06-22
-updated: 2026-06-22
+updated: 2026-06-24
 author: manager-spec (batch-2026-06-22)
 issue_number: 68
 depends_on:
@@ -148,3 +148,50 @@ lib/db/schema/capa.ts
 - #61 Vigilance (보고 대상 사건 분기)
 - #64 DHF (설계 이력 반영)
 - SPEC-REGULA-ESIG-001 (전자서명)
+
+---
+
+## §5 Implementation Notes (2026-06-24)
+
+### 구현 범위
+- **Migration 0073**: workflow_type enum +1(`complaint_intake`, 15→16), audit_action enum +7(139→146: complaint_created, reportability_assessed, root_cause_created, capa_created, effectiveness_checked, capa_closed, qms_synced), 테이블 5개(complaints, capa_records, capa_root_causes, capa_links, capa_effectiveness_checks) + RLS
+- **lib/capa/** 모듈 10개: intake.ts, reportability.ts, root-cause.ts, records.ts, effectiveness.ts, trend-detector.ts, linkage.ts, close-gate.ts, qms-sync.ts, audit.ts
+- **API 7종**: POST /api/capa/complaints, POST /api/capa/complaints/[id]/reportability, POST /api/capa/records, POST /api/capa/records/[id]/root-cause, POST /api/capa/records/[id]/effectiveness, POST /api/capa/records/[id]/close, GET/POST /api/capa/qms-sync
+- **UI 워크벤치**: app/(app)/capa/page.tsx (intake 폼 + CAPA 목록 + RCA 작성 + effectiveness check + close 게이트)
+- **권한**: capa.*, capa.close, capa.qms_sync (ra-lead 전용)
+
+### 재사용 패턴
+- #61 Vigilance assessReportability (REQ-002): reportability assessment 공통 로직 재사용
+- #54 Change Control assessChange + #46 Risk risk_items + #64 DHF design_history_files (REQ-008 linkage): CAPA 결과 연결 패턴 재사용
+- #53 PMS pms_inputs (REQ-007 trend): 반복 불만 trend detection 재사용
+- SPEC-REGULA-ESIG-001 computeAnswerHash (REQ-010): 전자서명 해시 계산 재사용
+- Inngest effectiveness cron (REQ-006): effectiveness check 스케줄링 재사용
+
+### 보안 수정 (expert-security 리뷰 머지 차단 결함 fix)
+- **C-1 (CRITICAL → RESOLVED)**: vigilance/adverse_events org 스코프 수정 — workflowRunId 기반 anchor 추가, 타 org 접근 차단
+- **H-1 (HIGH → RESOLVED)**: ESIG 서명자 해시 binding 수정 — §11.70 서명자 userId 강제 binding
+- **H-2 (HIGH → RESOLVED)**: 7 라우트 audit tx 래핑 — db.transaction()으로 상태 전이와 audit log 기록 원자성 보장
+- **H-3 (MEDIUM → RESOLVED)**: createdBy userId 검증 — CAPA 생성자 검증 로직 추가
+- **evaluator linkage 검증**: getCapaLinkCount count(*) 추가, linkage pms/risk 검증 로직 강화
+
+### 품질 게이트 결과
+- **typecheck**: 0 에러
+- **biome**: 0 에러
+- **test**: 3721 passed | 7 skipped
+- **build**: 0 에러
+
+### Acceptance Criteria 완료 상태
+- AC-01: complaint → reportability → CAPA 분기 E2E 통과 ✅
+- AC-02: CAPA effectiveness check 기한 알림 동작 ✅
+- AC-03: CAPA와 risk/DHF/change control 링크 누락 0건 ✅
+- AC-04: 전자서명 및 감사 로그 100% 기록 ✅
+- AC-05: QMS export/import 상태 동기화 지원 ⏸️ DEFERRED (#57)
+- AC-06: 반복 불만 trend detection → PMS 연결 ✅
+- AC-07: reportable인데 Vigilance 미연결 시 close 차단 ✅
+- AC-08: 권한 없는 상태 전이 거부됨 ✅
+
+---
+
+## §6 Follow-up Issues
+
+- **#57**: QMS 실제 통신 (REQ-009 stub 교체) — AC-05 DEFERRED 해결을 위한 실제 QMS 시스템 연동

@@ -158,5 +158,47 @@
       "approveFailed": "Approval failed",
       "exportFailed": "Export failed"
     }
+  },
+  "capa": {
+    "title": "Complaint & CAPA",
+    "description": "From complaint intake to corrective/preventive closed loop",
+    "nav": "Complaint & CAPA",
+    "status": {
+      "pending": "Pending assessment",
+      "reportable": "Reportable",
+      "not_reportable": "Not reportable",
+      "open": "Open",
+      "in_progress": "In progress",
+      "pending_effectiveness": "Pending effectiveness",
+      "closed": "Closed",
+      "cancelled": "Cancelled"
+    },
+    "tabs": {
+      "reportability": "Reportability (REQ-002)",
+      "rootCause": "Root cause (REQ-003)",
+      "corrective": "Corrective (REQ-004)",
+      "preventive": "Preventive (REQ-004)",
+      "effectiveness": "Effectiveness (REQ-006)",
+      "close": "Close (REQ-010)"
+    },
+    "closeGate": {
+      "allowed": "Ready to close",
+      "blockedVigilance": "Vigilance link missing",
+      "insufficientRole": "Insufficient role",
+      "blockedVigilanceDesc": "The reportable complaint is not linked to Vigilance. Run the reportability assessment first.",
+      "insufficientRoleDesc": "Closing a CAPA requires RA Lead role or higher (capa.close)."
+    },
+    "qmsStub": "Beta: active after #57",
+    "qmsStubNotice": "QMS integration will be activated after SPEC-REGULA-QMS-001 (#57) ships. Currently a stub (no-op).",
+    "esig": {
+      "title": "CAPA close e-signature",
+      "21cfrNote": "21 CFR §11.50 — a signature must include the signer's name, date/time, and meaning. Submitting generates a §11.70 record hash permanently linked to this close decision.",
+      "signerName": "Signer name",
+      "signerTitle": "Title",
+      "meaning": "Meaning of signature",
+      "submit": "Sign & close",
+      "submitting": "Signing…",
+      "blocked": "Close blocked: reportable complaint lacks Vigilance linkage (REQ-011)"
+    }
   }
 }

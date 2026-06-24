@@ -261,7 +261,23 @@ export type AuditAction =
   | 'label.claim_citation_rejected'
   | 'label.translation_diff_detected'
   | 'label.approved'
-  | 'label.export_blocked';
+  | 'label.export_blocked'
+  // SPEC-REGULA-CAPA-001 (Issue #68, REQ-CAPA-010). 7 complaint/CAPA lifecycle
+  // audit actions for 21 CFR Part 11 traceability. Mirror the schema enum.
+  //   complaint.intake_created             — new structured complaint inserted (REQ-001)
+  //   complaint.reportability_assessed     — reportability decision + vigilance link (REQ-002)
+  //   capa.record_created                  — corrective/preventive record inserted (REQ-004/005)
+  //   capa.root_cause_documented           — RCA (5 Whys / Fishbone) saved (REQ-003)
+  //   capa.effectiveness_scheduled         — effectiveness check scheduled (REQ-006)
+  //   capa.closed                          — CAPA closed with ESIG (REQ-010)
+  //   capa.close_blocked_vigilance_missing — close denied: reportable + no vigilance_ref (REQ-011)
+  | 'complaint.intake_created'
+  | 'complaint.reportability_assessed'
+  | 'capa.record_created'
+  | 'capa.root_cause_documented'
+  | 'capa.effectiveness_scheduled'
+  | 'capa.closed'
+  | 'capa.close_blocked_vigilance_missing';
 
 export interface AuditEvent {
   /** User UUID, or null for system-initiated events. */

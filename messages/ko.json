@@ -158,5 +158,47 @@
       "approveFailed": "승인 실패",
       "exportFailed": "export 실패"
     }
+  },
+  "capa": {
+    "title": "불만·CAPA 관리",
+    "description": "불만 접수부터 시정·예방조치 폐루프까지",
+    "nav": "불만·CAPA",
+    "status": {
+      "pending": "평가 대기",
+      "reportable": "보고 대상",
+      "not_reportable": "보고 불필요",
+      "open": "열림",
+      "in_progress": "진행 중",
+      "pending_effectiveness": "실효성 대기",
+      "closed": "종료됨",
+      "cancelled": "취소됨"
+    },
+    "tabs": {
+      "reportability": "보고 의무 (REQ-002)",
+      "rootCause": "근본 원인 (REQ-003)",
+      "corrective": "시정조치 (REQ-004)",
+      "preventive": "예방조치 (REQ-004)",
+      "effectiveness": "실효성 검증 (REQ-006)",
+      "close": "종료 (REQ-010)"
+    },
+    "closeGate": {
+      "allowed": "종료 가능",
+      "blockedVigilance": "Vigilance 연결 누락",
+      "insufficientRole": "권한 부족",
+      "blockedVigilanceDesc": "reportable 불만이 Vigilance에 연결되지 않았습니다. 먼저 reportability 평가를 수행하세요.",
+      "insufficientRoleDesc": "CAPA 종료는 RA Lead 권한 이상 필요합니다 (capa.close)."
+    },
+    "qmsStub": "Beta: #57 구현 후 활성화",
+    "qmsStubNotice": "QMS 통합은 SPEC-REGULA-QMS-001 (#57) 구현 후 활성화됩니다. 현재는 stub(no-op)입니다.",
+    "esig": {
+      "title": "CAPA 종료 전자서명",
+      "21cfrNote": "21 CFR §11.50 — 서명은 서명자 이름, 서명 일시, 서명의 의미를 포함해야 합니다. 서명 제출 시 §11.70 기록 해시가 생성되어 본 종료 결정에 영구 연결됩니다.",
+      "signerName": "서명자 이름",
+      "signerTitle": "직책",
+      "meaning": "서명 의미",
+      "submit": "서명 후 종료",
+      "submitting": "서명 중…",
+      "blocked": "종료가 차단되었습니다: reportable 불만의 Vigilance 연결 누락 (REQ-011)"
+    }
   }
 }

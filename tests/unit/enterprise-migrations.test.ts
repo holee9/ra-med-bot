@@ -311,7 +311,7 @@ describe('lib/db/schema.ts Phase 5 additions', () => {
     const values = extractAuditActionEnumValues(src);
     const typeValues = extractAuditActionTypeValues(auditSrc);
     expect(values).toEqual(typeValues);
-    expect(values).toHaveLength(139); // +6 label.* (LABELING-001, Issue #66)
+    expect(values).toHaveLength(146); // +7 complaint/capa.* (CAPA-001, Issue #68)
   });
 
   it.each(REQUIRED_RECOVERY_TABLES)(
@@ -367,7 +367,7 @@ describe('lib/audit.ts Phase 5 AuditAction type additions', () => {
         'change.export_blocked',
       ]),
     );
-    expect(values).toHaveLength(139); // +6 label.* (LABELING-001, Issue #66)
+    expect(values).toHaveLength(146); // +7 complaint/capa.* (CAPA-001, Issue #68)
   });
 
   it.each(REQUIRED_RECOVERY_AUDIT_ACTIONS)(
@@ -1128,5 +1128,116 @@ describe('Migration 0072: labeling (SPEC-REGULA-LABELING-001)', () => {
     expect(src).toMatch(/'label\.export':\s*\{\s*minRole:\s*'ra-lead'/);
     expect(src).toMatch(/'label\.create':\s*\{\s*minRole:\s*'ra-member'/);
     expect(src).toMatch(/'label\.view':\s*\{\s*minRole:\s*'ra-member'/);
+  });
+});
+
+// ---------------------------------------------------------------------------
+// Migration 0073: 1 workflow_type + 7 audit_action + 5 tables + RLS + indexes
+// SPEC-REGULA-CAPA-001 (Issue #68)
+// ---------------------------------------------------------------------------
+const CAPA_AUDIT_ACTIONS = [
+  'complaint.intake_created',
+  'complaint.reportability_assessed',
+  'capa.record_created',
+  'capa.root_cause_documented',
+  'capa.effectiveness_scheduled',
+  'capa.closed',
+  'capa.close_blocked_vigilance_missing',
+] as const;
+
+describe('Migration 0073: capa (SPEC-REGULA-CAPA-001)', () => {
+  it('migration file 0073_capa.sql exists', () => {
+    expect(fileExists('migrations/0073_capa.sql')).toBe(true);
+  });
+
+  it('adds complaint workflow_type (1 value)', () => {
+    const sql = readText('migrations/0073_capa.sql');
+    expect(sql).toContain("ALTER TYPE workflow_type ADD VALUE IF NOT EXISTS 'complaint'");
+  });
+
+  it('adds 7 audit_action values', () => {
+    const sql = readText('migrations/0073_capa.sql');
+    for (const v of CAPA_AUDIT_ACTIONS) {
+      expect(sql).toContain(`ALTER TYPE audit_action ADD VALUE IF NOT EXISTS '${v}'`);
+    }
+  });
+
+  it('creates 5 tables with RLS', () => {
+    const sql = readText('migrations/0073_capa.sql');
+    const tables = [
+      'complaints',
+      'capa_records',
+      'capa_root_causes',
+      'capa_links',
+      'capa_effectiveness_checks',
+    ];
+    for (const t of tables) {
+      expect(sql).toContain(`CREATE TABLE ${t}`);
+      expect(sql).toContain('ENABLE ROW LEVEL SECURITY');
+    }
+  });
+
+  it('capa_links has UNIQUE constraint for link integrity (AC-03)', () => {
+    const sql = readText('migrations/0073_capa.sql');
+    expect(sql).toContain('UNIQUE (capa_id, target_type, target_id)');
+  });
+
+  it('capa_records has type CHECK for corrective/preventive split (REQ-004)', () => {
+    const sql = readText('migrations/0073_capa.sql');
+    expect(sql).toContain("CHECK (type IN ('corrective','preventive'))");
+  });
+
+  it('complaints has reportability_status + vigilance_ref (REQ-002/011)', () => {
+    const sql = readText('migrations/0073_capa.sql');
+    expect(sql).toContain('reportability_status');
+    expect(sql).toContain('vigilance_ref');
+    expect(sql).toContain(
+      "CHECK (reportability_status IN ('pending','reportable','not_reportable'))",
+    );
+  });
+
+  it('RLS policies use app.current_org_id pattern', () => {
+    const sql = readText('migrations/0073_capa.sql');
+    expect(sql).toContain("current_setting('app.current_org_id', true)::uuid");
+    // 5 tables × 2 (USING + WITH CHECK) = 10 occurrences minimum
+    const matches = sql.match(/current_setting\('app\.current_org_id'/g);
+    expect(matches?.length).toBeGreaterThanOrEqual(10);
+  });
+
+  it('schema.ts defines 5 CAPA tables', () => {
+    const src = readText('lib/db/schema.ts');
+    expect(src).toMatch(/export const complaints\s*=\s*pgTable/);
+    expect(src).toMatch(/export const capaRecords\s*=\s*pgTable/);
+    expect(src).toMatch(/export const capaRootCauses\s*=\s*pgTable/);
+    expect(src).toMatch(/export const capaLinks\s*=\s*pgTable/);
+    expect(src).toMatch(/export const capaEffectivenessChecks\s*=\s*pgTable/);
+  });
+
+  it('AuditAction type in audit.ts includes the 7 capa/complaint values', () => {
+    const src = readText('lib/audit.ts');
+    for (const v of CAPA_AUDIT_ACTIONS) {
+      expect(src).toContain(`'${v}'`);
+    }
+  });
+
+  it('permissions.ts adds 7 capa/complaint PermissionActions (REQ-012 RBAC)', () => {
+    const src = readText('lib/auth/permissions.ts');
+    const actions = [
+      'complaint.create',
+      'complaint.assess_reportability',
+      'capa.create',
+      'capa.root_cause',
+      'capa.effectiveness',
+      'capa.close',
+      'capa.qms_sync',
+    ];
+    for (const a of actions) {
+      expect(src).toContain(`'${a}'`);
+    }
+    // ra-lead only for close/qms_sync; ra-member+ for the rest
+    expect(src).toMatch(/'capa\.close':\s*\{\s*minRole:\s*'ra-lead'/);
+    expect(src).toMatch(/'capa\.qms_sync':\s*\{\s*minRole:\s*'ra-lead'/);
+    expect(src).toMatch(/'complaint\.create':\s*\{\s*minRole:\s*'ra-member'/);
+    expect(src).toMatch(/'capa\.create':\s*\{\s*minRole:\s*'ra-member'/);
   });
 });

@@ -285,6 +285,22 @@ export const auditActionEnum = pgEnum('audit_action', [
   'label.translation_diff_detected',
   'label.approved',
   'label.export_blocked',
+  // SPEC-REGULA-CAPA-001 — added via 0073_capa.sql (REQ-CAPA-010):
+  // 7 complaint/capa lifecycle audit actions for 21 CFR Part 11 traceability.
+  //   complaint.intake_created             — new structured complaint inserted (REQ-001)
+  //   complaint.reportability_assessed     — reportability decision stored + vigilance link (REQ-002)
+  //   capa.record_created                  — new corrective/preventive record inserted (REQ-004/005)
+  //   capa.root_cause_documented           — RCA (5 Whys / Fishbone) saved (REQ-003)
+  //   capa.effectiveness_scheduled         — effectiveness check scheduled (REQ-006)
+  //   capa.closed                          — CAPA closed with ESIG (REQ-010)
+  //   capa.close_blocked_vigilance_missing — close denied: reportable + no vigilance_ref (REQ-011 gate)
+  'complaint.intake_created',
+  'complaint.reportability_assessed',
+  'capa.record_created',
+  'capa.root_cause_documented',
+  'capa.effectiveness_scheduled',
+  'capa.closed',
+  'capa.close_blocked_vigilance_missing',
 ]);
 
 // @MX:NOTE [AUTO] Knowledge gap enums — SPEC-REGULA-KNOWLEDGE-GAP-001 (Issue #35).
@@ -325,6 +341,7 @@ export const gapClassificationEnum = pgEnum('gap_classification', [
 // SPEC-REGULA-PMS-001: 'pms_report', 'pmcf_plan', 'pmcf_evaluation' added via 0069_pms.sql.
 // SPEC-REGULA-CHANGE-CONTROL-001: 'change_control_assessment' added via 0071_change_control.sql.
 // SPEC-REGULA-LABELING-001: 'labeling' added via 0072_labeling.sql.
+// SPEC-REGULA-CAPA-001: 'complaint' added via 0073_capa.sql.
 export const workflowTypeEnum = pgEnum('workflow_type', [
   'submission_drafter',
   'audit_response',
@@ -341,6 +358,7 @@ export const workflowTypeEnum = pgEnum('workflow_type', [
   'pmcf_evaluation',
   'change_control_assessment',
   'labeling',
+  'complaint',
 ]);
 
 // REQ-WF-049: workflow_status pgEnum — lifecycle states for workflow_runs.
@@ -2149,5 +2167,193 @@ export const labelingTranslations = pgTable(
   (t) => ({
     sectionIdx: index('idx_labeling_translations_section').on(t.sectionId),
     orgIdx: index('idx_labeling_translations_org').on(t.orgId),
+  }),
+);
+
+// ---------------------------------------------------------------------------
+// SPEC-REGULA-CAPA-001 — Complaint → CAPA closed-loop management
+// Migration: 0073_capa.sql
+// REQ-CAPA-001 (workflow_type 'complaint') handled above in workflowTypeEnum.
+// REQ-CAPA-010 (audit_action) handled above in auditActionEnum.
+// ---------------------------------------------------------------------------
+
+// REQ-002: complaint reportability lifecycle.
+export const complaintReportabilityStatusEnum = pgEnum('complaint_reportability_status', [
+  'pending',
+  'reportable',
+  'not_reportable',
+]);
+
+// REQ-004: corrective vs preventive action split.
+export const capaTypeEnum = pgEnum('capa_type', ['corrective', 'preventive']);
+
+// REQ-005: CAPA status lifecycle.
+export const capaStatusEnum = pgEnum('capa_status', [
+  'open',
+  'in_progress',
+  'pending_effectiveness',
+  'closed',
+  'cancelled',
+]);
+
+// REQ-005: effectiveness check result.
+export const capaEffectivenessStatusEnum = pgEnum('capa_effectiveness_status', [
+  'pending',
+  'passed',
+  'failed',
+]);
+
+// @MX:ANCHOR [AUTO] complaints — top-level structured complaint intake record.
+// @MX:REASON Referenced by capa_records, reportability wrapper, trend detector, close-gate. fan_in >= 3.
+// @MX:SPEC SPEC-REGULA-CAPA-001 (REQ-001, REQ-002, REQ-007, REQ-011)
+export const complaints = pgTable(
+  'complaints',
+  {
+    id: uuid('id').defaultRandom().primaryKey(),
+    orgId: uuid('org_id')
+      .notNull()
+      .references(() => organizations.id, { onDelete: 'cascade' }),
+    projectId: uuid('project_id')
+      .notNull()
+      .references(() => projects.id, { onDelete: 'cascade' }),
+    workflowRunId: uuid('workflow_run_id').references(() => workflowRuns.id, {
+      onDelete: 'set null',
+    }),
+    intakeData: jsonb('intake_data').notNull().default({}),
+    reportabilityStatus: text('reportability_status').notNull().default('pending'),
+    vigilanceRef: uuid('vigilance_ref'),
+    trendSignature: text('trend_signature'),
+    createdBy: uuid('created_by')
+      .notNull()
+      .references(() => users.id),
+    createdAt: timestamp('created_at', { withTimezone: true, mode: 'date' }).notNull().defaultNow(),
+    updatedAt: timestamp('updated_at', { withTimezone: true, mode: 'date' }).notNull().defaultNow(),
+  },
+  (t) => ({
+    projectIdx: index('idx_complaints_project').on(t.projectId),
+    orgIdx: index('idx_complaints_org').on(t.orgId),
+    reportabilityIdx: index('idx_complaints_reportability').on(t.reportabilityStatus),
+    trendIdx: index('idx_complaints_trend').on(t.orgId, t.trendSignature),
+  }),
+);
+
+// @MX:ANCHOR [AUTO] capaRecords — corrective AND preventive action records (split).
+// @MX:REASON Referenced by root causes, links, effectiveness checks, close route. fan_in >= 3.
+// @MX:SPEC SPEC-REGULA-CAPA-001 (REQ-004, REQ-005, REQ-010)
+export const capaRecords = pgTable(
+  'capa_records',
+  {
+    id: uuid('id').defaultRandom().primaryKey(),
+    orgId: uuid('org_id')
+      .notNull()
+      .references(() => organizations.id, { onDelete: 'cascade' }),
+    projectId: uuid('project_id')
+      .notNull()
+      .references(() => projects.id, {
+        onDelete: 'cascade',
+      }),
+    complaintId: uuid('complaint_id')
+      .notNull()
+      .references(() => complaints.id, {
+        onDelete: 'cascade',
+      }),
+    type: text('type').notNull(),
+    description: text('description').notNull(),
+    ownerId: uuid('owner_id')
+      .notNull()
+      .references(() => users.id),
+    dueDate: date('due_date').notNull(),
+    status: text('status').notNull().default('open'),
+    effectivenessStatus: text('effectiveness_status').notNull().default('pending'),
+    closedBy: uuid('closed_by').references(() => users.id),
+    closedAt: timestamp('closed_at', { withTimezone: true, mode: 'date' }),
+    closeSignatureHash: text('close_signature_hash'),
+    createdBy: uuid('created_by')
+      .notNull()
+      .references(() => users.id),
+    createdAt: timestamp('created_at', { withTimezone: true, mode: 'date' }).notNull().defaultNow(),
+    updatedAt: timestamp('updated_at', { withTimezone: true, mode: 'date' }).notNull().defaultNow(),
+  },
+  (t) => ({
+    complaintIdx: index('idx_capa_records_complaint').on(t.complaintId),
+    orgIdx: index('idx_capa_records_org').on(t.orgId),
+    projectIdx: index('idx_capa_records_project').on(t.projectId),
+    statusIdx: index('idx_capa_records_status').on(t.status),
+    ownerIdx: index('idx_capa_records_owner').on(t.ownerId),
+  }),
+);
+
+// REQ-003: root cause analysis (5 Whys / Fishbone).
+export const capaRootCauses = pgTable(
+  'capa_root_causes',
+  {
+    id: uuid('id').defaultRandom().primaryKey(),
+    orgId: uuid('org_id')
+      .notNull()
+      .references(() => organizations.id, { onDelete: 'cascade' }),
+    capaId: uuid('capa_id')
+      .notNull()
+      .references(() => capaRecords.id, { onDelete: 'cascade' }),
+    method: text('method').notNull(),
+    analysisData: jsonb('analysis_data').notNull().default({}),
+    summary: text('summary').notNull(),
+    createdBy: uuid('created_by')
+      .notNull()
+      .references(() => users.id),
+    createdAt: timestamp('created_at', { withTimezone: true, mode: 'date' }).notNull().defaultNow(),
+    updatedAt: timestamp('updated_at', { withTimezone: true, mode: 'date' }).notNull().defaultNow(),
+  },
+  (t) => ({
+    capaIdx: index('idx_capa_root_causes_capa').on(t.capaId),
+    orgIdx: index('idx_capa_root_causes_org').on(t.orgId),
+  }),
+);
+
+// REQ-008: cross-workflow traceability links (risk / change_control / DHF / PMS).
+export const capaLinks = pgTable(
+  'capa_links',
+  {
+    id: uuid('id').defaultRandom().primaryKey(),
+    orgId: uuid('org_id')
+      .notNull()
+      .references(() => organizations.id, { onDelete: 'cascade' }),
+    capaId: uuid('capa_id')
+      .notNull()
+      .references(() => capaRecords.id, { onDelete: 'cascade' }),
+    targetType: text('target_type').notNull(),
+    targetId: text('target_id').notNull(),
+    createdBy: uuid('created_by')
+      .notNull()
+      .references(() => users.id),
+    createdAt: timestamp('created_at', { withTimezone: true, mode: 'date' }).notNull().defaultNow(),
+  },
+  (t) => ({
+    capaIdx: index('idx_capa_links_capa').on(t.capaId),
+    targetIdx: index('idx_capa_links_target').on(t.targetType, t.targetId),
+    orgIdx: index('idx_capa_links_org').on(t.orgId),
+  }),
+);
+
+// REQ-006: scheduled effectiveness verification.
+export const capaEffectivenessChecks = pgTable(
+  'capa_effectiveness_checks',
+  {
+    id: uuid('id').defaultRandom().primaryKey(),
+    orgId: uuid('org_id')
+      .notNull()
+      .references(() => organizations.id, { onDelete: 'cascade' }),
+    capaId: uuid('capa_id')
+      .notNull()
+      .references(() => capaRecords.id, { onDelete: 'cascade' }),
+    dueDate: date('due_date').notNull(),
+    checkedAt: timestamp('checked_at', { withTimezone: true, mode: 'date' }),
+    result: text('result'),
+    notes: text('notes'),
+    createdAt: timestamp('created_at', { withTimezone: true, mode: 'date' }).notNull().defaultNow(),
+  },
+  (t) => ({
+    capaIdx: index('idx_capa_effectiveness_capa').on(t.capaId),
+    orgIdx: index('idx_capa_effectiveness_org').on(t.orgId),
+    dueIdx: index('idx_capa_effectiveness_due').on(t.dueDate),
   }),
 );
