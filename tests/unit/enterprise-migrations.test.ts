@@ -326,7 +326,7 @@ describe('lib/db/schema.ts Phase 5 additions', () => {
     const values = extractAuditActionEnumValues(src);
     const typeValues = extractAuditActionTypeValues(auditSrc);
     expect(values).toEqual(typeValues);
-    expect(values).toHaveLength(156); // +7 complaint/capa.* (CAPA-001, #68) +1 cer_persisted (#255) +1 traceability.matrix_viewed (#240) +8 ci.* (CLINICAL-INVESTIGATION, #69)
+    expect(values).toHaveLength(164); // +7 complaint/capa.* (CAPA-001, #68) +1 cer_persisted (#255) +1 traceability.matrix_viewed (#240) +8 ci.* (CLINICAL-INVESTIGATION, #69) +8 modelgov.* (MODEL-GOVERNANCE, Issue 71)
   });
 
   it.each(REQUIRED_RECOVERY_TABLES)(
@@ -382,7 +382,7 @@ describe('lib/audit.ts Phase 5 AuditAction type additions', () => {
         'change.export_blocked',
       ]),
     );
-    expect(values).toHaveLength(156); // +7 complaint/capa.* (CAPA-001, #68) +1 cer_persisted (#255) +1 traceability.matrix_viewed (#240) +8 ci.* (CLINICAL-INVESTIGATION, #69)
+    expect(values).toHaveLength(164); // +7 complaint/capa.* (CAPA-001, #68) +1 cer_persisted (#255) +1 traceability.matrix_viewed (#240) +8 ci.* (CLINICAL-INVESTIGATION, #69) +8 modelgov.* (MODEL-GOVERNANCE, Issue 71)
   });
 
   it.each(REQUIRED_RECOVERY_AUDIT_ACTIONS)(
@@ -1394,5 +1394,81 @@ describe('Migration 0076: clinical investigation planner (Issue #69)', () => {
   ])('auditActionEnum in schema.ts includes %s', (action) => {
     const src = readText('lib/db/schema.ts');
     expect(src).toContain(`'${action}'`);
+  });
+});
+
+describe('migrations/0077_model_governance.sql (SPEC-REGULA-MODEL-GOVERNANCE-001, Issue 71)', () => {
+  it('migration file exists', () => {
+    expect(fileExists('migrations/0077_model_governance.sql')).toBe(true);
+  });
+
+  it.each([
+    'modelgov.prompt_registered',
+    'modelgov.change_requested',
+    'modelgov.eval_passed',
+    'modelgov.eval_failed',
+    'modelgov.approved',
+    'modelgov.rejected',
+    'modelgov.rolled_back',
+    'modelgov.runtime_blocked',
+  ])('adds audit action %s to audit_action enum', (action) => {
+    const sql = readText('migrations/0077_model_governance.sql');
+    expect(sql).toMatch(new RegExp(`ALTER TYPE audit_action ADD VALUE IF NOT EXISTS '${action}'`));
+  });
+
+  it('has exactly 8 ALTER TYPE audit_action statements + 0 workflow_type', () => {
+    const sql = readText('migrations/0077_model_governance.sql');
+    const auditMatches = sql.match(/ALTER TYPE audit_action ADD VALUE/g) ?? [];
+    expect(auditMatches).toHaveLength(8);
+    // REQ-MODELGOV does not persist to workflow_runs — no workflow_type extension.
+    const wfMatches = sql.match(/ALTER TYPE workflow_type ADD VALUE/g) ?? [];
+    expect(wfMatches).toHaveLength(0);
+  });
+
+  it('creates 3 new enums (modelgov_kind, eval_status, modelgov_approval_status)', () => {
+    const sql = readText('migrations/0077_model_governance.sql');
+    expect(sql).toMatch(/CREATE TYPE modelgov_kind AS ENUM/);
+    expect(sql).toMatch(/CREATE TYPE eval_status AS ENUM/);
+    expect(sql).toMatch(/CREATE TYPE modelgov_approval_status AS ENUM/);
+  });
+
+  it.each(['prompt_registry', 'model_pin', 'change_request', 'approved_combination'])(
+    'creates table %s with RLS org-isolation',
+    (table) => {
+      const sql = readText('migrations/0077_model_governance.sql');
+      expect(sql).toMatch(new RegExp(`CREATE TABLE ${table}`));
+      expect(sql).toMatch(new RegExp(`ENABLE ROW LEVEL SECURITY.*${table}`, 's'));
+    },
+  );
+
+  it('enforces single-active approved_combination via partial UNIQUE INDEX (REQ-MODELGOV-013)', () => {
+    const sql = readText('migrations/0077_model_governance.sql');
+    expect(sql).toMatch(/CREATE UNIQUE INDEX approved_combination_one_active_per_org/);
+    expect(sql).toMatch(/WHERE active = true/);
+  });
+
+  it.each([
+    'modelgov.prompt_registered',
+    'modelgov.change_requested',
+    'modelgov.eval_passed',
+    'modelgov.eval_failed',
+    'modelgov.approved',
+    'modelgov.rejected',
+    'modelgov.rolled_back',
+    'modelgov.runtime_blocked',
+  ])('auditActionEnum in schema.ts includes %s', (action) => {
+    const src = readText('lib/db/schema.ts');
+    expect(src).toContain(`'${action}'`);
+  });
+
+  it('schema.ts defines the 4 new tables + 3 new enums', () => {
+    const src = readText('lib/db/schema.ts');
+    expect(src).toMatch(/export const modelgovKindEnum/);
+    expect(src).toMatch(/export const evalStatusEnum/);
+    expect(src).toMatch(/export const modelgovApprovalStatusEnum/);
+    expect(src).toMatch(/export const promptRegistry = pgTable/);
+    expect(src).toMatch(/export const modelPin = pgTable/);
+    expect(src).toMatch(/export const changeRequest = pgTable/);
+    expect(src).toMatch(/export const approvedCombination = pgTable/);
   });
 });

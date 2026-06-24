@@ -321,6 +321,17 @@ export const auditActionEnum = pgEnum('audit_action', [
   'ci.results_linked',
   'ci.closed',
   'ci.close_blocked_signoff_missing',
+  // SPEC-REGULA-MODEL-GOVERNANCE-001 — added via 0077_model_governance.sql
+  // (Issue 71, REQ-MODELGOV-007/012/014): 8 model-governance lifecycle audit
+  // actions for 21 CFR Part 11 traceability of LLM/prompt/template changes.
+  'modelgov.prompt_registered',
+  'modelgov.change_requested',
+  'modelgov.eval_passed',
+  'modelgov.eval_failed',
+  'modelgov.approved',
+  'modelgov.rejected',
+  'modelgov.rolled_back',
+  'modelgov.runtime_blocked',
 ]);
 
 // @MX:NOTE [AUTO] Knowledge gap enums — SPEC-REGULA-KNOWLEDGE-GAP-001 (Issue #35).
@@ -2526,5 +2537,124 @@ export const ciLinks = pgTable(
     investigationIdx: index('idx_ci_links_investigation').on(t.investigationId),
     orgIdx: index('idx_ci_links_org').on(t.orgId),
     targetIdx: index('idx_ci_links_target').on(t.targetType, t.targetId),
+  }),
+);
+
+// @MX:NOTE [AUTO] Model Governance enums — SPEC-REGULA-MODEL-GOVERNANCE-001 (Issue 71).
+// @MX:SPEC SPEC-REGULA-MODEL-GOVERNANCE-001 (REQ-MODELGOV-001~014)
+// @MX:REASON Drizzle pgEnum mirrors the SQL types created in 0077_model_governance.sql.
+// Keep in lock-step with the migration or runtime inserts fail.
+export const modelgovKindEnum = pgEnum('modelgov_kind', ['prompt', 'template']);
+export const evalStatusEnum = pgEnum('eval_status', ['pending', 'passed', 'failed']);
+export const modelgovApprovalStatusEnum = pgEnum('modelgov_approval_status', [
+  'pending_review',
+  'approved',
+  'rejected',
+]);
+
+// @MX:NOTE [AUTO] prompt_registry — immutable prompt/template version store (REQ-MODELGOV-001).
+// @MX:SPEC SPEC-REGULA-MODEL-GOVERNANCE-001 (REQ-MODELGOV-001)
+// @MX:REASON Insert-only by convention (lib/model-governance/registry.ts enforces).
+//           content_hash deduplicates identical content. Never UPDATE — only new versions.
+//           RLS org-isolation enforced in 0077_model_governance.sql.
+export const promptRegistry = pgTable(
+  'prompt_registry',
+  {
+    id: uuid('id').defaultRandom().primaryKey(),
+    orgId: uuid('org_id')
+      .notNull()
+      .references(() => organizations.id, { onDelete: 'cascade' }),
+    kind: modelgovKindEnum('kind').notNull(),
+    contentHash: text('content_hash').notNull(),
+    content: text('content').notNull(),
+    version: integer('version').notNull(),
+    createdAt: timestamp('created_at', { withTimezone: true, mode: 'date' }).notNull().defaultNow(),
+    createdBy: uuid('created_by').references(() => users.id, { onDelete: 'set null' }),
+  },
+  (t) => ({
+    orgKindHashIdx: index('idx_prompt_registry_org_kind_hash').on(t.orgId, t.kind, t.contentHash),
+    orgKindVersionIdx: index('idx_prompt_registry_org_kind_version').on(t.orgId, t.kind, t.version),
+  }),
+);
+
+// @MX:NOTE [AUTO] model_pin — pinned model provider/id/version + retrieval_config (REQ-MODELGOV-002/003).
+// @MX:SPEC SPEC-REGULA-MODEL-GOVERNANCE-001 (REQ-MODELGOV-002, REQ-MODELGOV-003)
+export const modelPin = pgTable(
+  'model_pin',
+  {
+    id: uuid('id').defaultRandom().primaryKey(),
+    orgId: uuid('org_id')
+      .notNull()
+      .references(() => organizations.id, { onDelete: 'cascade' }),
+    provider: text('provider').notNull(),
+    modelId: text('model_id').notNull(),
+    modelVersion: text('model_version').notNull(),
+    retrievalConfig: jsonb('retrieval_config').notNull().default({}),
+    createdAt: timestamp('created_at', { withTimezone: true, mode: 'date' }).notNull().defaultNow(),
+    createdBy: uuid('created_by').references(() => users.id, { onDelete: 'set null' }),
+  },
+  (t) => ({
+    orgIdx: index('idx_model_pin_org').on(t.orgId),
+  }),
+);
+
+// @MX:NOTE [AUTO] change_request — eval -> approval workflow (REQ-MODELGOV-004/005/010/011).
+// @MX:SPEC SPEC-REGULA-MODEL-GOVERNANCE-001 (REQ-MODELGOV-004, REQ-MODELGOV-005)
+export const changeRequest = pgTable(
+  'change_request',
+  {
+    id: uuid('id').defaultRandom().primaryKey(),
+    orgId: uuid('org_id')
+      .notNull()
+      .references(() => organizations.id, { onDelete: 'cascade' }),
+    promptId: uuid('prompt_id').references(() => promptRegistry.id, { onDelete: 'restrict' }),
+    modelPinId: uuid('model_pin_id').references(() => modelPin.id, { onDelete: 'restrict' }),
+    evalRunId: text('eval_run_id'),
+    evalStatus: evalStatusEnum('eval_status').notNull().default('pending'),
+    evalResultRef: text('eval_result_ref'),
+    approvalStatus: modelgovApprovalStatusEnum('approval_status')
+      .notNull()
+      .default('pending_review'),
+    approverId: uuid('approver_id').references(() => users.id, { onDelete: 'set null' }),
+    approvedAt: timestamp('approved_at', { withTimezone: true, mode: 'date' }),
+    createdAt: timestamp('created_at', { withTimezone: true, mode: 'date' }).notNull().defaultNow(),
+    createdBy: uuid('created_by').references(() => users.id, { onDelete: 'set null' }),
+  },
+  (t) => ({
+    orgIdx: index('idx_change_request_org').on(t.orgId),
+    orgStatusIdx: index('idx_change_request_org_status').on(t.orgId, t.approvalStatus),
+  }),
+);
+
+// @MX:NOTE [AUTO] approved_combination — the active approved prompt+model pair (REQ-MODELGOV-013).
+// @MX:ANCHOR [AUTO] Single-active per org enforced by partial UNIQUE INDEX in 0077_model_governance.sql.
+// @MX:REASON REQ-MODELGOV-013 — exactly one active combination per org. Mirrors PCCP
+//           single-active pattern (lib/pccp/version-manager.ts). fan_in >= 3 expected
+//           (approve route, rollback route, combination-resolver).
+// @MX:SPEC SPEC-REGULA-MODEL-GOVERNANCE-001 (REQ-MODELGOV-013, REQ-MODELGOV-006)
+export const approvedCombination = pgTable(
+  'approved_combination',
+  {
+    id: uuid('id').defaultRandom().primaryKey(),
+    orgId: uuid('org_id')
+      .notNull()
+      .references(() => organizations.id, { onDelete: 'cascade' }),
+    promptId: uuid('prompt_id')
+      .notNull()
+      .references(() => promptRegistry.id, { onDelete: 'restrict' }),
+    modelPinId: uuid('model_pin_id')
+      .notNull()
+      .references(() => modelPin.id, { onDelete: 'restrict' }),
+    active: boolean('active').notNull().default(false),
+    approvedAt: timestamp('approved_at', { withTimezone: true, mode: 'date' })
+      .notNull()
+      .defaultNow(),
+    supersededBy: uuid('superseded_by'),
+    changeRequestId: uuid('change_request_id').references(() => changeRequest.id, {
+      onDelete: 'set null',
+    }),
+  },
+  (t) => ({
+    orgActiveIdx: index('idx_approved_combination_org_active').on(t.orgId, t.active),
   }),
 );

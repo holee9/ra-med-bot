@@ -21,6 +21,7 @@
 
 import fs from 'node:fs';
 import path from 'node:path';
+import { PERMISSIONS } from '@/lib/auth/permissions';
 import {
   assessComplaintReportability,
   mapComplaintToAdverseEvent,
@@ -524,29 +525,26 @@ describe('Count regression (L-007 baseline)', () => {
     expect(vals).toContain("'clinical_investigation'");
   });
 
-  it('audit_action enum has 156 values (148 + 8 ci.*)', () => {
+  it('audit_action enum has 164 values (148 + 8 ci.* + 8 modelgov.*)', () => {
     const src = readText('lib/db/schema.ts');
     const match = src.match(
       /export const auditActionEnum = pgEnum\('audit_action', \[([\s\S]*?)\]\);/,
     );
     const vals = match?.[1]?.match(/'[a-z_.]+'/g) ?? [];
-    expect(vals.length).toBe(156);
+    expect(vals.length).toBe(164);
   });
 
-  it('AuditAction type has 156 values (sync with schema enum)', () => {
+  it('AuditAction type has 164 values (sync with schema enum)', () => {
     const src = readText('lib/audit.ts');
     const match = src.match(/export type AuditAction =\s*([\s\S]*?);/);
     const vals = match?.[1]?.match(/'[a-z_.]+'/g) ?? [];
-    expect(vals.length).toBe(156);
+    expect(vals.length).toBe(164);
   });
 
-  it('PermissionAction union has 57 members (54 + 3 clinical_investigation.*)', () => {
-    const src = readText('lib/auth/permissions.ts');
-    const match = src.match(
-      /export type PermissionAction\s*=\s*([\s\S]*?)export interface PermissionSpec/,
-    );
-    const vals = match?.[1]?.match(/'[a-z_.]+'/g) ?? [];
-    expect(vals.length).toBe(57);
+  it('PERMISSIONS matrix has 64 entries (54 + 3 clinical_investigation.* + 7 complaint/capa.* + 3 modelgov.*)', () => {
+    // Runtime count is the authoritative source of truth (matches
+    // tests/unit/auth/permissions.test.ts and tests/regression/foundation.test.ts).
+    expect(Object.keys(PERMISSIONS).length).toBe(64);
   });
 });
 

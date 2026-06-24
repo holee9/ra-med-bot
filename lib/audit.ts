@@ -302,7 +302,26 @@ export type AuditAction =
   | 'ci.event_recorded'
   | 'ci.results_linked'
   | 'ci.closed'
-  | 'ci.close_blocked_signoff_missing';
+  | 'ci.close_blocked_signoff_missing'
+  // SPEC-REGULA-MODEL-GOVERNANCE-001 (Issue 71, REQ-MODELGOV-007/012/014):
+  // 8 model-governance lifecycle audit actions for 21 CFR Part 11 traceability
+  // of LLM/prompt/template changes. Added via 0077_model_governance.sql.
+  //   modelgov.prompt_registered   — immutable prompt/template version registered (REQ-001)
+  //   modelgov.change_requested    — change request submitted + eval triggered (REQ-004)
+  //   modelgov.eval_passed         — promptfoo eval threshold met (REQ-010)
+  //   modelgov.eval_failed         — promptfoo eval threshold missed (REQ-011)
+  //   modelgov.approved            — combination approved by expert (REQ-012)
+  //   modelgov.rejected            — combination rejected (REQ-014)
+  //   modelgov.rolled_back         — active combination reverted (REQ-006)
+  //   modelgov.runtime_blocked     — unapproved combination blocked at runtime (REQ-008)
+  | 'modelgov.prompt_registered'
+  | 'modelgov.change_requested'
+  | 'modelgov.eval_passed'
+  | 'modelgov.eval_failed'
+  | 'modelgov.approved'
+  | 'modelgov.rejected'
+  | 'modelgov.rolled_back'
+  | 'modelgov.runtime_blocked';
 
 export interface AuditEvent {
   /** User UUID, or null for system-initiated events. */
