@@ -6,7 +6,7 @@
 
 import { db } from '@/lib/db/client';
 import { approvedCombination, modelPin, promptRegistry } from '@/lib/db/schema';
-import { and, eq } from 'drizzle-orm';
+import { and, desc, eq } from 'drizzle-orm';
 import type { ActiveCombination } from './types';
 
 /**
@@ -37,7 +37,7 @@ export async function getActiveCombination(orgId: string): Promise<ActiveCombina
 }
 
 /**
- * Find the most recently superseded (previous active) combination for rollback.
+ * Find the most recently superseded (immediately-prior) combination for rollback.
  * Returns null if there is no prior combination to revert to.
  */
 export async function getPreviousCombination(
@@ -53,7 +53,9 @@ export async function getPreviousCombination(
     })
     .from(approvedCombination)
     .where(and(eq(approvedCombination.orgId, orgId), eq(approvedCombination.active, false)))
-    .orderBy(approvedCombination.approvedAt)
+    // H1 fix: DESC selects the MOST RECENT superseded combo (immediately-prior),
+    // not the oldest. ASC was reverting to the first combo ever approved.
+    .orderBy(desc(approvedCombination.approvedAt))
     .limit(1);
 
   // Exclude the current active id (defensive — active=false filter already handles it).

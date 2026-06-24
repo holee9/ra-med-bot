@@ -135,7 +135,11 @@ export async function approveChangeRequest(params: {
 
   // REQ-005: eval must have passed before approval.
   if (row.evalStatus !== 'passed') {
-    return db.transaction(async (tx) => {
+    // M3 fix (21 CFR Part 11 §11.10(e)): write the rejection audit in a
+    // COMMITTING transaction BEFORE the throw. The prior code wrote the audit
+    // inside the same tx that then threw — the throw rolled the tx back,
+    // losing the denial record. Mirrors the capa #251 close-route denial fix.
+    await db.transaction(async (tx) => {
       await writeAudit(
         {
           actor_id: params.approverId,
@@ -150,8 +154,8 @@ export async function approveChangeRequest(params: {
         },
         tx,
       );
-      throw new ChangeRequestBlockedError(`eval_status_${row.evalStatus}_not_passed`);
     });
+    throw new ChangeRequestBlockedError(`eval_status_${row.evalStatus}_not_passed`);
   }
 
   if (row.approvalStatus !== 'pending_review') {

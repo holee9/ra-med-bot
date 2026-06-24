@@ -9,7 +9,7 @@
 import type { AuditDbHandle } from '@/lib/audit';
 import { db } from '@/lib/db/client';
 import { approvedCombination } from '@/lib/db/schema';
-import { and, eq } from 'drizzle-orm';
+import { and, desc, eq } from 'drizzle-orm';
 import { auditRolledBack } from './audit';
 
 export class RollbackError extends Error {
@@ -71,7 +71,9 @@ export async function rollbackCombination(params: {
         .where(
           and(eq(approvedCombination.orgId, params.orgId), eq(approvedCombination.active, false)),
         )
-        .orderBy(approvedCombination.approvedAt)
+        // H1 fix: DESC selects the MOST RECENT superseded combo (immediately-prior),
+        // not the oldest. ASC was reverting to the first combo ever approved.
+        .orderBy(desc(approvedCombination.approvedAt))
         .limit(1);
       if (!prev) {
         throw new RollbackError('no_previous_combination_to_rollback_to');

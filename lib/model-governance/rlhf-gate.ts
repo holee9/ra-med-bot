@@ -5,7 +5,8 @@
 //           eval -> approval workflow. The actual RLHF data collection body is
 //           deferred to a follow-up issue (see @MX:TODO below).
 
-import { writeAudit } from '@/lib/audit';
+import { createHash } from 'node:crypto';
+import { type AuditDbHandle, writeAudit } from '@/lib/audit';
 import { db } from '@/lib/db/client';
 import { changeRequest } from '@/lib/db/schema';
 
@@ -43,27 +44,37 @@ export async function submitRlhfProposal(params: {
 
   if (!row) throw new Error('change_request insert returned no rows');
 
-  await writeAudit({
-    actor_id: params.submittedBy,
-    action: 'modelgov.change_requested',
-    resource_type: 'change_request',
-    resource_id: row.id,
-    meta_json: {
-      org_id: params.orgId,
-      source: 'rlhf',
-      prompt_id: params.promptId ?? null,
-      proposal_text_hash: hashText(params.proposalText),
-    },
+  // M3 fix: wrap the audit in a committing transaction so it persists
+  // independently of any downstream throw. Mirrors the capa #251 denial
+  // pattern (21 CFR Part 11 — the record MUST survive). writeAudit with a
+  // committed tx handle guarantees the row is durable.
+  await db.transaction(async (tx: AuditDbHandle) => {
+    await writeAudit(
+      {
+        actor_id: params.submittedBy,
+        action: 'modelgov.change_requested',
+        resource_type: 'change_request',
+        resource_id: row.id,
+        meta_json: {
+          org_id: params.orgId,
+          source: 'rlhf',
+          prompt_id: params.promptId ?? null,
+          proposal_text_hash: hashProposalText(params.proposalText),
+        },
+      },
+      tx,
+    );
   });
 
   return { changeRequestId: row.id };
 }
 
-function hashText(text: string): string {
-  // Simple non-crypto hash to avoid storing raw proposal text in audit (PII hygiene).
-  let h = 0;
-  for (let i = 0; i < text.length; i++) {
-    h = (Math.imul(31, h) + text.charCodeAt(i)) | 0;
-  }
-  return `fnv32:${(h >>> 0).toString(16)}`;
+/**
+ * M2 fix: SHA-256 replaces the prior 32-bit FNV-like hash. The old hash was
+ * brute-forceable and collision-prone (2^32 space). SHA-256 is the same
+ * algorithm used for prompt_registry.content_hash. Proposal text is PII-free
+ * (an improvement suggestion, not user data) so a strong hash is appropriate.
+ */
+function hashProposalText(text: string): string {
+  return `sha256:${createHash('sha256').update(text, 'utf8').digest('hex')}`;
 }
