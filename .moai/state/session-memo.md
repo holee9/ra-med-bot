@@ -2,68 +2,47 @@
 
 > 세션 연결용. 상세 작업 맥락은 auto-memory `project-state.md`(~/.claude/projects/.../memory/)가 1차 진실원 — 항상 로드됨. 본 파일은 빠른 시작 요약.
 
-## 현재 세션 (2026-06-24) — follow-up 3종 순차 진행 중 (#251 ✅ → #247 → #243)
+## 현재 세션 (2026-06-24) — 3-PR 순차 파이프라인 완료 (#255 → #241/#240 → #69)
 
-**main HEAD: `7b8a16a`** (#243 머지 후). 오픈 PR 0건. main 클린.
+**main HEAD: `5a675cb`** (#69 머지 후). 오픈 PR 0건. main 클린.
 
-### ✅ #251 CAPA 보안 정리 — MERGED PR #253 (`6bc9dc6`, #251 CLOSED)
-- 코드 직검(L-007): C-1/H-1/H-2/H-3/M-1/M-2/M-3 은 **이미 fix됨** 확인 (보고만 잔존).
-- 잔존 2종 fix: **M-4** `dispatchEffectivenessReminders` 실제 발송 wiring (notifications/dispatcher + digest 패턴, SENDGRID 미설정 시 no-op, never-throws 보존, `dispatched` 정직 카운트) + **route-level runtime IDOR 테스트 신규** (`capa-idor-runtime.test.ts` 10건, pms-idor-runtime 미러링 — TRACEABILITY H1 결함 클래스 폐쇄).
-- 게이트 직검: typecheck 0 · biome clean · 타깃 70/70 · build 0 · **전체 3733 passed** (baseline 3721 +12, 회귀 0).
-- sync Phase 0.55 expert-security: **PASS-WITH-CONDITIONS** (CRITICAL/HIGH 0, LOW 3 비차단 — reportability 403 런타임 미포함·mock-the-leaf·seed UUID).
-- CI 전체 pass (CI Gates·Dep Scan·E2E Smoke·LLM Eval·Playwright 3·gitleaks·vercel-preview).
+### ✅ PR-1 #255 — CER cer_persisted audit (MERGED PR #257, squash `8956d2e`, #255 CLOSED)
+- migration 0074: audit_action enum `cer_persisted` 추가. CER persist-tx audit `cer_created`→`cer_persisted` 전환 (cer_created=개시 1행만, Part 11 provenance 분리, #243 M-1 이관).
+- 미커밋 review-fix(cer-persist-roundtrip.test.ts rollback false-positive) 통합 — mock tx staging + in-tx audit 실패 시나리오.
+- 카운트 146→147, enterprise-migrations +1. 게이트 직검: 3754 passed.
 
-### ✅ #247 CC PDF 실바이트 — MERGED PR #254 (`3e8d6c3`, #247 CLOSED)
-- `lib/change-control/exporters/pdf.tsx` 신규 (`@react-pdf/renderer`, PCCP 패턴) + export 라우트 `format=pdf` 바이트 스트림 (pdf-json 보존) + filename 2중 살균 + magic-bytes 테스트.
-- 게이트 직검: typecheck 0 · biome clean · 타깃 32/32 · build 0 · **전체 3745 passed** (baseline 3733 +12, 회귀 0).
-- sync Phase 0.55 expert-security: **PASS-WITH-CONDITIONS** (CRITICAL/HIGH 0). MEDIUM-1(filename 보안 코멘트 사실 오류 — changeType이 `text` 컬럼이므로 정규치환+sanitizeFilename이 유일 방어벽임 명시) 본 PR 정정. 비차단: format=pdf 런라운 게이트 테스트(소스레벨 커버)/console.error 원시 에러/입력 길이 cap.
+### ✅ PR-2 #241/#240 — Traceability 보안 그룹 (MERGED PR #258, squash `e25d556`, #241·#240 CLOSED)
+- #241 (L2 info disclosure): export 502 응답 detail 제거 + 서버 로깅 + MEDIUM-1 제어문자 살균(`\p{Cc}`, log-injection 방어).
+- #240 (L1 audit clarity): `traceability.matrix_viewed` audit action 신규(migration 0075). matrix GET audit dashboard.view→matrix_viewed.
+- 카운트 147→148. 게이트 직검: 3759 passed.
+- ★**L-008 신규 캡처**: CI `pnpm lint`가 `lint:hex`(no-hex-colors.mjs) 포함 — 로컬을 `pnpm biome check`만 돌려 CI fail(49s) 놓침. 코드 줄 인라인 주석의 `(#240)`가 3자리 hex로 오탐. 교훈: 로컬 게이트는 `pnpm lint`(full) 실행, 코드 줄 trailing 주석에 `#NNN` 금지(주석 전용 줄만 면제).
 
-### ✅ #243 CER 로컬 영속화 + PMS 자동 연계 — MERGED PR #256 (`7b8a16a`, #243 CLOSED)
-- 조사 핵심: CER은 projectId 없는 독립 도구 → \`resolveCerLinkage\`(projectId 스코프) 매칭 불가. 외부 블로커 아님 — projectId 도입으로 AC-04 진짜 충족.
-- 구현: CerInputSchema \`projectId(optional)\` + CER 라우트 \`assertPmsProjectAccess\` 검증 + \`workflow_runs\`(workflowType='cer') 영속화(audit과 tx, PII-safe) + cer-linkage DEFERRED→ACTIVE + CerStartForm \`useProjects()\` 프로젝트 선택자 + 실제 persist 경로 라운드트립 테스트 + SPEC AC-04 completed.
-- 게이트 직검: typecheck 0 · biome clean · 타깃 10/10 · build 0 · **전체 3749 passed** (baseline 3745 +4, 회귀 0).
-- sync Phase 0.55 expert-security: **PASS-WITH-CONDITIONS** (CRITICAL/HIGH 0). M-1(\`cer_created\` 2행 Part 11 provenance)은 \`lib/cer/audit.ts\` 의도 문서화(옵션 c) + follow-up **#255**(cer_persisted 별칭 action)로 이관.
+### ✅ PR-3 #69 — CLINICAL-INVESTIGATION tier1 풀사이클 (MERGED PR #259, squash `5a675cb`, #69 CLOSED)
+- migration 0076: 5 테이블 + 4 enum + workflow_type +1(17) + audit +8 ci.*(148→156) + RLS. 모든 테이블 org_id.
+- lib/clinical-investigation 11 모듈 + API 9종 + Frontend(page+Workbench+Sidebar nav). AC-01~08 커버.
+- 카운트: workflow_type 16→17, audit 148→156, PermissionAction 58→61(runtime 직검), REQUIRED_RECOVERY_TABLES 17→22.
+- ★**sync Phase 0.55 expert-security BLOCK-MERGE → 결함 5건 수정 + 런타임 테스트 12개**(C-1 cross-org signoff IDOR / H-1 citation inert→authoritativeCitations / H-2 linkage tx 누수 / H-3 denial audit tx+fail-closed / H-4 target IDOR 검증). evaluator-active는 PASS 오탐(관대함) → expert-security 정오탐으로 덮음 (L-007 재확인).
+- 게이트 직검: 3869 passed (+110).
+- DEFER → #65(eSubmit 번들), M-1(tier2 프롬프트 인젝션), M-3(ci_events.data PII).
 
-### 🎯 follow-up 3종 세션 완료 (#251·#247·#243 전부 머지)
-- 회귀 누적 baseline: 3721 → **3749 passed** (+28: #251 +12 / #247 +12 / #243 +4).
-- 다음 후보 (READY): 미구현 high SPEC #69(CLINICAL-INVESTIGATION)·#67·#71·#72 · follow-up #255(CER audit)·#244(PMCF Eval UI)·#245(PMS E2E)·#249(LABELING eSubmit, #65 의존).
+### 🎯 다음 세션 시작 지점 (2026-06-24 갱신)
+- **회귀 누적**: 3749(직전) → **3869 passed** (+120: #255 +5 / #241-240 +5 / #69 +110). migration 0076, audit 156, 권한 61.
+- **오픈 이슈 READY**: 미구현 high SPEC **CYBERDEVICE #67** · **MODEL-GOVERNANCE #71** · **CORPUS-LICENSE #72**. follow-up: #65(eSubmit, #69 의존) · #244(PMCF Eval UI) · #245(PMS E2E) · #249(LABELING eSubmit) · #57(QMS) · #255 CLOSED.
+- **tier1 착수 절차 (L-001 + L-007 + L-008 + 본 세션 패턴)**:
+  1. main 기반 `feat/issue-{N}` → 이슈 코멘트 "작업 시작" + Gate 0 정합성.
+  2. **베이스라인 카운트 직검**(wf_type/audit/권한/migration) — 에이전트 보고 매번 틀림(#69에선 "33→36" 오보고, 실제 58→61). runtime `Object.keys(PERMISSIONS).length` 직측으로 진실 확인.
+  3. 구현(regula-backend/frontend 위임) → 매 phase 게이트 직검.
+  4. ★**sync Phase 0.55 expert-security + evaluator 병렬** — expert-security 우선(관대한 evaluator 오탐 多). IDOR·audit tx·citation 강제·org 스코프 결함 클래스 반복.
+  5. 게이트 직검 체크리스트: `pnpm typecheck && pnpm lint(biome+lint:hex) && pnpm test && pnpm build`.
+  6. `Fixes #{N}` PR → CI watch → squash merge.
+- **블로커(외부 의존)**: hybrid-ra-saas 배포(#202 등) — T3610 로컬 실제 프로덕션, 급하지 않음.
 
-### 무엇을 했나 (3 SPEC 동일 /moai run 사이클)
-1. **CHANGE-CONTROL #54** (PR #248, `4bb1478`): manager-strategy 분석 → 백엔드(0071) + 프론트 → expert-security **머지차단 6건 fix**(C-1 IDOR/H-1 LLM wiring/H-2 인젝션/H-3 audit tx/H-4 export_blocked/M-1 risk org).
-2. **LABELING #66** (PR #250, `27bb163`): 백엔드(0072) + 프론트 → expert-security **CRITICAL/HIGH 없음**(CC 결함 클래스 재발 없음) + evaluator AC-06 데드코드 fix(approve 라우트 live 호출).
-3. **CAPA #68** (PR #252, `a941cb0`): 백엔드(0073) + 프론트 + Inngest → expert-security **머지차단 5건 fix**(C-1 vigilance org 스코프/H-1 ESIG binding/H-2 audit tx/H-3 createdBy/evaluator linkage). 재사용 #61/#54/#46/#64/#53/ESIG.
-4. **게이트 직검(L-007)**: CC 3571 / LABELING 3652 / CAPA 3721 passed · build 0 · CI 전체 pass(3 SPEC 모두).
-
-### 상태
-- main HEAD: `a941cb0`. 오픈 PR 0건.
-- 회귀(누적): workflow_type 13→16 · audit_action 127→146 · PermissionAction 44→58 · migration 0073.
-- AC: CC AC-01~08(05→#247) · LABELING AC-01~06·08(07→#249) · CAPA AC-01~04·06~08(05→#57).
-- Follow-up: **#247**(CC PDF) · **#249**(LABELING eSubmit) · **#57**(CAPA QMS) · **#251**(CAPA 보안 트래킹) · PMS #243/#244/#245.
-
-## 🎯 다음 세션 시작 지점
-
-### 다음 착수 후보 (READY)
-1. 미구현 high SPEC: CLINICAL-INVESTIGATION #69 · CYBERDEVICE #67 · MODEL-GOVERNANCE #71 · CORPUS-LICENSE #72.
-2. PMS follow-up: #243(외부 블로커 hybrid-ra-saas) · #244(PMCF Eval UI) · #245(E2E).
-3. follow-up: #247(CC PDF) · #249(LABELING eSubmit) · #57(QMS) · #251(CAPA 보안).
-
-### tier1 착수 절차 (L-001 + L-007 + 본 세션 3-SPEC 패턴)
-- main 기반 `feat/issue-{N}` → 이슈 코멘트 → manager-strategy 분석(tasks.md 선행).
-- **★베이스라인 카운트 직검**(wf_type/audit/권한/migration) — manager-strategy 보고가 본 세션에서 매번 틀림(CC: 12/107/43 실제 13/127/44; CAPA: audit 166 실제 146). 오케스트레이터 grep/파싱 필수.
-- phase별 구현 + 매 phase 게이트 직검.
-- ★**sync Phase 0.55 expert-security + evaluator-active 병렬 리뷰 필수** — 본 세션 3 SPEC 모두 결함 포착(CC 6건/LABELING 데드코드/CAPA 5건). 특히 **audit tx 비원자성 결함 클래스 반복** + **교차 SPEC org_id 누락**(vigilance 테이블).
-- **route-level anti-mock 테스트** + 데드코드 live 호출 검증(evaluator가 AC 형식적 충족 잡음).
-- `Fixes #{N}` PR → CI watch → squash merge.
-
-### 핵심 교훈 (본 세션 3 SPEC)
-- **L-007**: 베이스라인 카운트·게이트·결함 보고 전부 오케스트레이터 직검 — 에이전트 보고 신뢰 금지.
-- **교차 SPEC org_id**: org_id 없는 테이블(vigilance/adverse_events) 재사용 시 테넌트 격리 사전 확인 — workflow_runs 체인 또는 org_id 추가.
-- **audit 트랜잭션**: writeAudit 항상 mutation과 동일 tx(Part 11). 3회 반복 결함 클래스.
-
-### hybrid-ra-saas 연동 — 사실상 완료 (T3610 로컬 실제 프로덕션)
-- 실제 프로덕션 = T3610 로컬 Next.js + Cloudflare Tunnel (`regula.abyz-lab.work`). GitHub Actions Vercel/CF 잡은 secrets 미설정으로 스킵(정상).
+### 핵심 교훈 (본 세션 3 PR)
+- **L-007**: 베이스라인 카운트·게이트·결함 보고 전부 오케스트레이터 직검. #69에선 PermissionAction 보고가 33→36(오보고) vs 실제 58→61 — runtime 직측으로 포착. evaluator-active도 관대히 PASS 오탐.
+- **L-008**: 로컬 게이트는 `pnpm lint`(lint:hex 포함) full 실행. 코드 줄 trailing 주석 `#NNN` 금지.
+- **교차 SPEC org_id**: expert_reviews에 org_id 없어 C-1 발생 — join으로 회피. org_id 없는 테이블 재사용 시 사전 확인.
 
 ## 이전 세션 히스토리 (상세는 git log + project-state.md)
-- 2026-06-24: tier1 CHANGE-CONTROL #54 + LABELING #66 + CAPA #68 main 머지 (3 SPEC).
-- 2026-06-24(이전): PMS #53.
-- 2026-06-23: tier0 KNOWLEDGE-GAP #35 · tier1 CLASSIFY #59 · TRACEABILITY #47 main 머지. 26개 SPEC 배치.
+- 2026-06-24(이전): follow-up 3종(#251·#247·#243) 머지 + review-fix(cer rollback test).
+- 2026-06-24: tier1 CHANGE-CONTROL #54 + LABELING #66 + CAPA #68 머지 (3 SPEC).
+- 2026-06-23: tier0 KNOWLEDGE-GAP #35 · tier1 CLASSIFY #59 · TRACEABILITY #47 머지. 26개 SPEC batch.
