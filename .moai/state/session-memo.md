@@ -4,7 +4,7 @@
 
 ## 현재 세션 (2026-06-24) — follow-up 3종 순차 진행 중 (#251 ✅ → #247 → #243)
 
-**main HEAD: `3e8d6c3`** (#247 머지 후). 오픈 PR 0건. main 클린.
+**main HEAD: `7b8a16a`** (#243 머지 후). 오픈 PR 0건. main 클린.
 
 ### ✅ #251 CAPA 보안 정리 — MERGED PR #253 (`6bc9dc6`, #251 CLOSED)
 - 코드 직검(L-007): C-1/H-1/H-2/H-3/M-1/M-2/M-3 은 **이미 fix됨** 확인 (보고만 잔존).
@@ -18,7 +18,15 @@
 - 게이트 직검: typecheck 0 · biome clean · 타깃 32/32 · build 0 · **전체 3745 passed** (baseline 3733 +12, 회귀 0).
 - sync Phase 0.55 expert-security: **PASS-WITH-CONDITIONS** (CRITICAL/HIGH 0). MEDIUM-1(filename 보안 코멘트 사실 오류 — changeType이 `text` 컬럼이므로 정규치환+sanitizeFilename이 유일 방어벽임 명시) 본 PR 정정. 비차단: format=pdf 런라운 게이트 테스트(소스레벨 커버)/console.error 원시 에러/입력 길이 cap.
 
-### 🎯 다음: #243 (PMS CER 로컬 영속화)
+### ✅ #243 CER 로컬 영속화 + PMS 자동 연계 — MERGED PR #256 (`7b8a16a`, #243 CLOSED)
+- 조사 핵심: CER은 projectId 없는 독립 도구 → \`resolveCerLinkage\`(projectId 스코프) 매칭 불가. 외부 블로커 아님 — projectId 도입으로 AC-04 진짜 충족.
+- 구현: CerInputSchema \`projectId(optional)\` + CER 라우트 \`assertPmsProjectAccess\` 검증 + \`workflow_runs\`(workflowType='cer') 영속화(audit과 tx, PII-safe) + cer-linkage DEFERRED→ACTIVE + CerStartForm \`useProjects()\` 프로젝트 선택자 + 실제 persist 경로 라운드트립 테스트 + SPEC AC-04 completed.
+- 게이트 직검: typecheck 0 · biome clean · 타깃 10/10 · build 0 · **전체 3749 passed** (baseline 3745 +4, 회귀 0).
+- sync Phase 0.55 expert-security: **PASS-WITH-CONDITIONS** (CRITICAL/HIGH 0). M-1(\`cer_created\` 2행 Part 11 provenance)은 \`lib/cer/audit.ts\` 의도 문서화(옵션 c) + follow-up **#255**(cer_persisted 별칭 action)로 이관.
+
+### 🎯 follow-up 3종 세션 완료 (#251·#247·#243 전부 머지)
+- 회귀 누적 baseline: 3721 → **3749 passed** (+28: #251 +12 / #247 +12 / #243 +4).
+- 다음 후보 (READY): 미구현 high SPEC #69(CLINICAL-INVESTIGATION)·#67·#71·#72 · follow-up #255(CER audit)·#244(PMCF Eval UI)·#245(PMS E2E)·#249(LABELING eSubmit, #65 의존).
 
 ### 무엇을 했나 (3 SPEC 동일 /moai run 사이클)
 1. **CHANGE-CONTROL #54** (PR #248, `4bb1478`): manager-strategy 분석 → 백엔드(0071) + 프론트 → expert-security **머지차단 6건 fix**(C-1 IDOR/H-1 LLM wiring/H-2 인젝션/H-3 audit tx/H-4 export_blocked/M-1 risk org).
