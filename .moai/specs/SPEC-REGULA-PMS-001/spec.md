@@ -185,7 +185,7 @@ PR #246 (commit `8a513cc`)로 main 머지 완료. **3443 passed | 7 skipped | 0 
 | AC-01 | ✅ 구현 완료 | `workflow_type` enum에 3개 신규 타입 추가 |
 | AC-02 | ✅ 구현 완료 | MDCG 2022-21 섹션 구조로 생성 |
 | AC-03 | ✅ 구현 완료 | Annex XIV Part B 체크리스트 100% 포함 |
-| AC-04 | ⏸️ DEFERRED | REQ-PMS-004 자동 CER 연계 — CER 로컬 영속화 아키텍처 블로커로 수동 연계만 동작 |
+| AC-04 | ✅ 구현 완료 | REQ-PMS-004 자동 CER 연계 — CER projectId 영속화로 자동 연계 활성화 (#243) |
 | AC-05 | ✅ 구현 완료 | complaint/vigilance 데이터 입력·업로드 통합 |
 | AC-06 | ✅ 구현 완료 | Article 83-86 컴플라이언스 체크 결과 표시 |
 | AC-07 | ✅ 구현 완료 | expert review 없이 close 시도 시 403 차단 |
@@ -264,5 +264,15 @@ PMS #53 완료로 해제된 후속 이슈들:
 
 ### §2/§3 as-implemented 주석
 
-- REQ-PMS-004: "⏸️ PARTIAL — 수동 CER 연계만 동작 (자동 연계는 #243 DEFERRED)"
-- AC-04: "⏸️ DEFERRED — CER 로컬 영속화 아키텍처 블로커"
+- REQ-PMS-004: "✅ 구현 완료 — CER projectId 영속화로 자동 연계 동작 (#243)"
+- AC-04: "✅ 구현 완료 — CER deliverable 로컬 영속화 + 자동 연계 활성화 (#243)"
+
+### 5.4 AC-04 자동 CER 연계 활성화 (#243)
+
+**구현**: CER 워크플로 라우트(`app/api/ra/workflows/cer/route.ts`)가 `CerInputSchema.projectId`(optional, SPEC-REGULA-CER-001 cross-SPEC 입력 변경)를 받아 `workflow_runs` 테이블에 `workflowType='cer'` 행으로 영속화한다. `assertPmsProjectAccess`로 소유권 검증(IDOR 가드) 후, `db.transaction` 내에서 insert + `cer_created` audit을 원자적으로 기록(21 CFR Part 11 H2 패턴). PubMed query 원문은 PII 규칙에 따라 `input_json`에 저장하지 않고 `pubmedQueryLength`만 기록(`lib/cer/audit.ts` 정책과 일관).
+
+**연계**: `lib/pms/cer-linkage.ts`의 `resolveCerLinkage` 쿼리는 구조적으로 이미 완전했으나 production에서 null을 반환했다(CER이 영속화되지 않았기 때문). 이제 영속화된 행을 조회해 `{ cerId, deviceName, intendedUse, riskProfile }`를 추출 — 수동 override는 path 1로 유지.
+
+**테스트**: `tests/integration/cer-persist-roundtrip.test.ts`가 실제 라우트 핸들러 → in-memory `workflow_runs` insert → 실제 `resolveCerLinkage` 조회의 end-to-end 경로를 검증(route → persist → resolve, cerLinked=true). IDOR(타 org projectId → 404), backward-compat(projectId 없음 → 미영속화), H2 원자성(audit 실패 → rollback) 케이스 포함.
+
+**프론트**: `CerStartForm`에 `useProjects` 기반 project selector 추가. project 선택 시 `projectId` POST 본문 포함(영속화 경로), 미선택 시 기존 ephemeral 동작 유지.
