@@ -27,4 +27,6 @@ export const INNGEST_EVENTS = {
   DIGEST_WEEKLY_TRIGGER: 'digest/weekly.trigger',
   /** Fires daily (or on manual replay) to dispatch the knowledge-gap digest. */
   KNOWLEDGE_GAP_DIGEST_TRIGGER: 'knowledge-gap/digest.trigger',
+  /** Fires daily (or on manual replay) to sweep due CAPA effectiveness checks. */
+  CAPA_EFFECTIVENESS_REMINDER_TRIGGER: 'capa/effectiveness.reminder.trigger',
 } as const;

@@ -57,6 +57,9 @@ interface SidebarProps {
   // SPEC-REGULA-LABELING-001 (Issue #66): Labeling workbench is visible to
   // roles with label.view (ra-member+). Gated server-side and passed down.
   showLabeling?: boolean;
+  // SPEC-REGULA-CAPA-001 (Issue #68): CAPA complaint/closed-loop workbench is
+  // visible to roles with complaint.view (ra-member+). Gated server-side.
+  showCapa?: boolean;
   initialLocale?: string;
 }
 
@@ -69,6 +72,7 @@ export default function Sidebar(props?: SidebarProps) {
   const showPms = props?.showPms ?? false;
   const showChangeControl = props?.showChangeControl ?? false;
   const showLabeling = props?.showLabeling ?? false;
+  const showCapa = props?.showCapa ?? false;
   const currentProjectId = useUIStore((s) => s.currentProjectId);
   const setCurrentProjectId = useUIStore((s) => s.setCurrentProjectId);
   const { data = [] } = useProjects();
@@ -242,6 +246,19 @@ export default function Sidebar(props?: SidebarProps) {
             className="rounded-md px-3 py-2 text-sm text-ink-700 hover:bg-ink-50 block"
           >
             라벨링·IFU
+          </Link>
+        </nav>
+      )}
+
+      {/* SPEC-REGULA-CAPA-001 (Issue #68): CAPA complaint/closed-loop conditional link. */}
+      {showCapa && (
+        <nav className="px-2 py-1">
+          <Link
+            href="/capa"
+            data-testid="sidebar-capa-link"
+            className="rounded-md px-3 py-2 text-sm text-ink-700 hover:bg-ink-50 block"
+          >
+            불만·CAPA
           </Link>
         </nav>
       )}

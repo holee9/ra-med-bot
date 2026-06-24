@@ -34,6 +34,8 @@ export default async function AppLayout({ children }: { children: React.ReactNod
   let showChangeControl = false;
   // SPEC-REGULA-LABELING-001 (Issue #66): Labeling nav gated to ra-member+ (label.view).
   let showLabeling = false;
+  // SPEC-REGULA-CAPA-001 (Issue #68): CAPA nav gated to ra-member+ (complaint.view).
+  let showCapa = false;
   try {
     const { auth } = await import('@/lib/auth');
     const { hasRole } = await import('@/lib/auth/rbac');
@@ -47,6 +49,7 @@ export default async function AppLayout({ children }: { children: React.ReactNod
       showPms = hasRole(userRole as Parameters<typeof hasRole>[0], 'ra-member');
       showChangeControl = hasRole(userRole as Parameters<typeof hasRole>[0], 'ra-member');
       showLabeling = hasRole(userRole as Parameters<typeof hasRole>[0], 'ra-member');
+      showCapa = hasRole(userRole as Parameters<typeof hasRole>[0], 'ra-member');
     }
     const department = (session?.user as { department?: string } | undefined)?.department;
     if (department) {
@@ -77,6 +80,7 @@ export default async function AppLayout({ children }: { children: React.ReactNod
         showPms={showPms}
         showChangeControl={showChangeControl}
         showLabeling={showLabeling}
+        showCapa={showCapa}
         initialLocale={initialLocale}
       />
       <div className="flex min-w-0 flex-1 flex-col">

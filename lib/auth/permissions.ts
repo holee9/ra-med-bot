@@ -85,7 +85,21 @@ export type PermissionAction =
   | 'label.create'
   | 'label.view'
   | 'label.approve'
-  | 'label.export';
+  | 'label.export'
+  // SPEC-REGULA-CAPA-001 (Issue #68, REQ-CAPA-012): 7 CAPA RBAC actions.
+  // intake/assess/create/root_cause: ra-member+ — structured intake is a team
+  //   activity. Mirrors complaint intake → reportability → CAPA creation flow.
+  // close: ra-lead ONLY — REQ-010 ESIG + REQ-011 vigilance gate is a regulatory
+  //        approval decision (21 CFR Part 11). Mirrors label.approve.
+  // effectiveness: ra-member+ — scheduling effectiveness checks is operational.
+  // qms_sync: ra-lead ONLY — REQ-009 QMS sync is a system-of-record decision.
+  | 'complaint.create'
+  | 'complaint.assess_reportability'
+  | 'capa.create'
+  | 'capa.root_cause'
+  | 'capa.effectiveness'
+  | 'capa.close'
+  | 'capa.qms_sync';
 
 export interface PermissionSpec {
   minRole: Role;
@@ -264,4 +278,27 @@ export const PERMISSIONS: Record<PermissionAction, PermissionSpec> = {
   'label.view': { minRole: 'ra-member', scope: 'org', resourceType: 'labelingDocument' },
   'label.approve': { minRole: 'ra-lead', scope: 'org', resourceType: 'labelingDocument' },
   'label.export': { minRole: 'ra-lead', scope: 'org', resourceType: 'labelingDocument' },
+
+  // SPEC-REGULA-CAPA-001 (Issue #68, REQ-CAPA-012): CAPA RBAC actions.
+  // create/assess/root_cause/effectiveness: ra-member+ (team activity).
+  // close/qms_sync: ra-lead ONLY (regulatory approval, 21 CFR Part 11).
+  'complaint.create': {
+    minRole: 'ra-member',
+    scope: 'org',
+    resourceType: 'complaint',
+  },
+  'complaint.assess_reportability': {
+    minRole: 'ra-member',
+    scope: 'org',
+    resourceType: 'complaint',
+  },
+  'capa.create': { minRole: 'ra-member', scope: 'org', resourceType: 'capaRecord' },
+  'capa.root_cause': { minRole: 'ra-member', scope: 'org', resourceType: 'capaRootCause' },
+  'capa.effectiveness': {
+    minRole: 'ra-member',
+    scope: 'org',
+    resourceType: 'capaEffectivenessCheck',
+  },
+  'capa.close': { minRole: 'ra-lead', scope: 'org', resourceType: 'capaRecord' },
+  'capa.qms_sync': { minRole: 'ra-lead', scope: 'org', resourceType: 'capaRecord' },
 };
