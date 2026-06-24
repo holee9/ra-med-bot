@@ -103,6 +103,12 @@ const REQUIRED_RECOVERY_TABLES = [
   ['change_verdicts', 'changeVerdicts'],
   ['change_verdict_citations', 'changeVerdictCitations'],
   ['change_risk_links', 'changeRiskLinks'],
+  // SPEC-REGULA-CLINICAL-INVESTIGATION-001 (Issue #69) — 5 CI tables.
+  ['clinical_investigations', 'clinicalInvestigations'],
+  ['ci_protocols', 'ciProtocols'],
+  ['ci_documents', 'ciDocuments'],
+  ['ci_events', 'ciEvents'],
+  ['ci_links', 'ciLinks'],
 ] as const;
 
 const REQUIRED_RECOVERY_AUDIT_ACTIONS = [
@@ -133,6 +139,15 @@ const REQUIRED_RECOVERY_AUDIT_ACTIONS = [
   'change.verdict_citation_rejected',
   'change.assessment_reviewed',
   'change.report_exported',
+  // SPEC-REGULA-CLINICAL-INVESTIGATION-001 (Issue #69) — 8 ci.* audit actions.
+  'ci.assessed',
+  'ci.pathway_determined',
+  'ci.protocol_updated',
+  'ci.irb_package_drafted',
+  'ci.event_recorded',
+  'ci.results_linked',
+  'ci.closed',
+  'ci.close_blocked_signoff_missing',
 ] as const;
 
 describe('Migration 2: audit_action enum +12 values (REQ-ENTERPRISE-028)', () => {
@@ -311,7 +326,7 @@ describe('lib/db/schema.ts Phase 5 additions', () => {
     const values = extractAuditActionEnumValues(src);
     const typeValues = extractAuditActionTypeValues(auditSrc);
     expect(values).toEqual(typeValues);
-    expect(values).toHaveLength(148); // +7 complaint/capa.* (CAPA-001, #68) +1 cer_persisted (#255) +1 traceability.matrix_viewed (#240)
+    expect(values).toHaveLength(156); // +7 complaint/capa.* (CAPA-001, #68) +1 cer_persisted (#255) +1 traceability.matrix_viewed (#240) +8 ci.* (CLINICAL-INVESTIGATION, #69)
   });
 
   it.each(REQUIRED_RECOVERY_TABLES)(
@@ -367,7 +382,7 @@ describe('lib/audit.ts Phase 5 AuditAction type additions', () => {
         'change.export_blocked',
       ]),
     );
-    expect(values).toHaveLength(148); // +7 complaint/capa.* (CAPA-001, #68) +1 cer_persisted (#255) +1 traceability.matrix_viewed (#240)
+    expect(values).toHaveLength(156); // +7 complaint/capa.* (CAPA-001, #68) +1 cer_persisted (#255) +1 traceability.matrix_viewed (#240) +8 ci.* (CLINICAL-INVESTIGATION, #69)
   });
 
   it.each(REQUIRED_RECOVERY_AUDIT_ACTIONS)(
@@ -1307,5 +1322,77 @@ describe('Migration 0075: traceability.matrix_viewed audit action (Issue #240)',
   it('AuditAction type in audit.ts includes traceability.matrix_viewed', () => {
     const src = readText('lib/audit.ts');
     expect(src).toContain("'traceability.matrix_viewed'");
+  });
+});
+
+// Migration 0076: clinical investigation planner (SPEC-REGULA-CLINICAL-INVESTIGATION-001, Issue #69)
+describe('Migration 0076: clinical investigation planner (Issue #69)', () => {
+  it('migration file 0076_clinical_investigation.sql exists', () => {
+    expect(fileExists('migrations/0076_clinical_investigation.sql')).toBe(true);
+  });
+
+  it('adds clinical_investigation to workflow_type enum', () => {
+    const sql = readText('migrations/0076_clinical_investigation.sql');
+    expect(sql).toMatch(
+      /ALTER TYPE workflow_type ADD VALUE IF NOT EXISTS 'clinical_investigation'/,
+    );
+  });
+
+  it.each([
+    'ci.assessed',
+    'ci.pathway_determined',
+    'ci.protocol_updated',
+    'ci.irb_package_drafted',
+    'ci.event_recorded',
+    'ci.results_linked',
+    'ci.closed',
+    'ci.close_blocked_signoff_missing',
+  ])('adds audit action %s to audit_action enum', (action) => {
+    const sql = readText('migrations/0076_clinical_investigation.sql');
+    expect(sql).toMatch(new RegExp(`ALTER TYPE audit_action ADD VALUE IF NOT EXISTS '${action}'`));
+  });
+
+  it('has exactly 8 ALTER TYPE audit_action statements + 1 workflow_type', () => {
+    const sql = readText('migrations/0076_clinical_investigation.sql');
+    const auditMatches = sql.match(/ALTER TYPE audit_action ADD VALUE/g) ?? [];
+    expect(auditMatches).toHaveLength(8);
+    const wfMatches = sql.match(/ALTER TYPE workflow_type ADD VALUE/g) ?? [];
+    expect(wfMatches).toHaveLength(1);
+  });
+
+  it('creates 4 new enums (ci_pathway, ci_doc_type, ci_event_type, ci_link_target_type)', () => {
+    const sql = readText('migrations/0076_clinical_investigation.sql');
+    expect(sql).toMatch(/CREATE TYPE ci_pathway AS ENUM/);
+    expect(sql).toMatch(/CREATE TYPE ci_doc_type AS ENUM/);
+    expect(sql).toMatch(/CREATE TYPE ci_event_type AS ENUM/);
+    expect(sql).toMatch(/CREATE TYPE ci_link_target_type AS ENUM/);
+  });
+
+  it.each(['clinical_investigations', 'ci_protocols', 'ci_documents', 'ci_events', 'ci_links'])(
+    'creates table %s with RLS org-isolation',
+    (table) => {
+      const sql = readText('migrations/0076_clinical_investigation.sql');
+      expect(sql).toMatch(new RegExp(`CREATE TABLE ${table}`));
+      expect(sql).toMatch(new RegExp(`ENABLE ROW LEVEL SECURITY.*${table}`, 's'));
+    },
+  );
+
+  it('workflowTypeEnum in schema.ts includes clinical_investigation', () => {
+    const src = readText('lib/db/schema.ts');
+    expect(src).toContain("'clinical_investigation'");
+  });
+
+  it.each([
+    'ci.assessed',
+    'ci.pathway_determined',
+    'ci.protocol_updated',
+    'ci.irb_package_drafted',
+    'ci.event_recorded',
+    'ci.results_linked',
+    'ci.closed',
+    'ci.close_blocked_signoff_missing',
+  ])('auditActionEnum in schema.ts includes %s', (action) => {
+    const src = readText('lib/db/schema.ts');
+    expect(src).toContain(`'${action}'`);
   });
 });

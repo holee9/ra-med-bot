@@ -282,7 +282,27 @@ export type AuditAction =
   | 'capa.root_cause_documented'
   | 'capa.effectiveness_scheduled'
   | 'capa.closed'
-  | 'capa.close_blocked_vigilance_missing';
+  | 'capa.close_blocked_vigilance_missing'
+  // SPEC-REGULA-CLINICAL-INVESTIGATION-001 (Issue #69, REQ-CLININV-010).
+  // 8 clinical-investigation lifecycle audit actions for 21 CFR Part 11 traceability.
+  // Mirror the schema enum. ci.close_blocked_signoff_missing records the expert-signoff
+  // close-gate denial (REQ-012), mirroring capa.close_blocked_vigilance_missing.
+  //   ci.assessed                       — gap-based necessity assessment produced (REQ-001)
+  //   ci.pathway_determined             — FDA IDE / EU MDR pathway decision (REQ-002/003)
+  //   ci.protocol_updated               — synopsis/endpoint/criteria saved (REQ-005)
+  //   ci.irb_package_drafted            — IRB/EC submission package draft (REQ-004)
+  //   ci.event_recorded                 — milestone/deviation/AE tracked (REQ-008)
+  //   ci.results_linked                 — results linked to CER/PMS/DHF (REQ-009)
+  //   ci.closed                         — investigation closed with expert signoff (REQ-012)
+  //   ci.close_blocked_signoff_missing  — close denied: no expert signoff (REQ-012 gate)
+  | 'ci.assessed'
+  | 'ci.pathway_determined'
+  | 'ci.protocol_updated'
+  | 'ci.irb_package_drafted'
+  | 'ci.event_recorded'
+  | 'ci.results_linked'
+  | 'ci.closed'
+  | 'ci.close_blocked_signoff_missing';
 
 export interface AuditEvent {
   /** User UUID, or null for system-initiated events. */
@@ -306,7 +326,7 @@ export interface AuditEvent {
  * tx-scoped clone. Uses the structural `insert` signature so both the db and a
  * Drizzle PgTransaction satisfy this without a hard import of the tx type.
  */
-type AuditDbHandle = {
+export type AuditDbHandle = {
   insert: (typeof db)['insert'];
 };
 

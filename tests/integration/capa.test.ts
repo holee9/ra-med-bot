@@ -513,37 +513,40 @@ describe('REQ-003: root cause validation', () => {
 // Count regression assertions (L-007 baseline enforcement)
 // ---------------------------------------------------------------------------
 describe('Count regression (L-007 baseline)', () => {
-  it('workflow_type enum has 16 values (15 + complaint)', () => {
+  it('workflow_type enum has 17 values (15 + complaint + clinical_investigation)', () => {
     const src = readText('lib/db/schema.ts');
     const match = src.match(
       /export const workflowTypeEnum = pgEnum\('workflow_type', \[([\s\S]*?)\]\);/,
     );
     const vals = match?.[1]?.match(/'[a-z_]+'/g) ?? [];
-    expect(vals.length).toBe(16);
+    expect(vals.length).toBe(17);
     expect(vals).toContain("'complaint'");
+    expect(vals).toContain("'clinical_investigation'");
   });
 
-  it('audit_action enum has 148 values (139 + 7 capa + 1 cer_persisted + 1 traceability.matrix_viewed)', () => {
+  it('audit_action enum has 156 values (148 + 8 ci.*)', () => {
     const src = readText('lib/db/schema.ts');
     const match = src.match(
       /export const auditActionEnum = pgEnum\('audit_action', \[([\s\S]*?)\]\);/,
     );
     const vals = match?.[1]?.match(/'[a-z_.]+'/g) ?? [];
-    expect(vals.length).toBe(148);
+    expect(vals.length).toBe(156);
   });
 
-  it('AuditAction type has 148 values (sync with schema enum)', () => {
+  it('AuditAction type has 156 values (sync with schema enum)', () => {
     const src = readText('lib/audit.ts');
     const match = src.match(/export type AuditAction =\s*([\s\S]*?);/);
     const vals = match?.[1]?.match(/'[a-z_.]+'/g) ?? [];
-    expect(vals.length).toBe(148);
+    expect(vals.length).toBe(156);
   });
 
-  it('PermissionAction union has 33 members (26 + 7 capa)', () => {
+  it('PermissionAction union has 57 members (54 + 3 clinical_investigation.*)', () => {
     const src = readText('lib/auth/permissions.ts');
-    const match = src.match(/export type PermissionAction\s*=\s*([\s\S]*?);/);
+    const match = src.match(
+      /export type PermissionAction\s*=\s*([\s\S]*?)export interface PermissionSpec/,
+    );
     const vals = match?.[1]?.match(/'[a-z_.]+'/g) ?? [];
-    expect(vals.length).toBe(33);
+    expect(vals.length).toBe(57);
   });
 });
 
