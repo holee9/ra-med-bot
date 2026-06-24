@@ -110,6 +110,8 @@ export const userDepartmentEnum = pgEnum('user_department', ['RA', 'Dev', 'Exec'
 // Phase 8 DocIngest: +6 via 0016_docingest_audit_actions.sql.
 // Phase 10 Radar: +3 via 0018_radar.sql. chat.query: +1. answer.refine: +1. Total: 48.
 // CER-001: +5 via 0037_cer_audit_actions.sql. Total: 53. (REQ-CER-036~040)
+// #255: +1 cer_persisted via 0074_cer_persisted_audit_action.sql (CER deliverable
+//        persist, REQ-CER-036 provenance split — separates initiation from persist).
 // VIGILANCE-001: +4 via 0042_vigilance_audit_actions.sql. Total: 57.
 // NOTE: auth.mfa_fail is NOT included (removed in v0.3.0 H-5).
 export const auditActionEnum = pgEnum('audit_action', [
@@ -175,6 +177,9 @@ export const auditActionEnum = pgEnum('audit_action', [
   'cer_expert_approved',
   'cer_exported',
   'cer_literature_search',
+  // #255 — added via 0074_cer_persisted_audit_action.sql: deliverable-persist row,
+  // atomic with workflow_runs insert (distinct from cer_created = run initiated).
+  'cer_persisted',
   // SPEC-REGULA-IMPACT-001 — added via 0034_impact_audit_actions.sql (3):
   'impact.assessment_created',
   'impact.critical_detected',

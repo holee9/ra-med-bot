@@ -126,6 +126,9 @@ export type AuditAction =
   | 'cer_expert_approved'
   | 'cer_exported'
   | 'cer_literature_search'
+  // #255 — deliverable-persist row (in-tx with workflow_runs insert). Distinct from
+  // cer_created (run initiation) for unambiguous 21 CFR Part 11 provenance.
+  | 'cer_persisted'
   // SPEC-REGULA-IMPACT-001 — impact analysis events via 0034_impact_audit_actions.sql:
   | 'impact.assessment_created'
   | 'impact.critical_detected'

@@ -523,20 +523,20 @@ describe('Count regression (L-007 baseline)', () => {
     expect(vals).toContain("'complaint'");
   });
 
-  it('audit_action enum has 146 values (139 + 7 capa)', () => {
+  it('audit_action enum has 147 values (139 + 7 capa + 1 cer_persisted)', () => {
     const src = readText('lib/db/schema.ts');
     const match = src.match(
       /export const auditActionEnum = pgEnum\('audit_action', \[([\s\S]*?)\]\);/,
     );
     const vals = match?.[1]?.match(/'[a-z_.]+'/g) ?? [];
-    expect(vals.length).toBe(146);
+    expect(vals.length).toBe(147);
   });
 
-  it('AuditAction type has 146 values (sync with schema enum)', () => {
+  it('AuditAction type has 147 values (sync with schema enum)', () => {
     const src = readText('lib/audit.ts');
     const match = src.match(/export type AuditAction =\s*([\s\S]*?);/);
     const vals = match?.[1]?.match(/'[a-z_.]+'/g) ?? [];
-    expect(vals.length).toBe(146);
+    expect(vals.length).toBe(147);
   });
 
   it('PermissionAction union has 33 members (26 + 7 capa)', () => {

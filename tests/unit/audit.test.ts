@@ -72,7 +72,7 @@ describe('lib/audit.ts (REQ-BREADTH-057) — extended AuditAction type', () => {
         'export.confluence',
       ]),
     );
-    expect(values).toHaveLength(146); // +7 complaint/capa.* (CAPA-001, Issue #68)
+    expect(values).toHaveLength(147); // +7 complaint/capa.* (CAPA-001, #68) +1 cer_persisted (#255)
   });
 
   it.each([

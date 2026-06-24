@@ -311,7 +311,7 @@ describe('lib/db/schema.ts Phase 5 additions', () => {
     const values = extractAuditActionEnumValues(src);
     const typeValues = extractAuditActionTypeValues(auditSrc);
     expect(values).toEqual(typeValues);
-    expect(values).toHaveLength(146); // +7 complaint/capa.* (CAPA-001, Issue #68)
+    expect(values).toHaveLength(147); // +7 complaint/capa.* (CAPA-001, #68) +1 cer_persisted (#255)
   });
 
   it.each(REQUIRED_RECOVERY_TABLES)(
@@ -367,7 +367,7 @@ describe('lib/audit.ts Phase 5 AuditAction type additions', () => {
         'change.export_blocked',
       ]),
     );
-    expect(values).toHaveLength(146); // +7 complaint/capa.* (CAPA-001, Issue #68)
+    expect(values).toHaveLength(147); // +7 complaint/capa.* (CAPA-001, #68) +1 cer_persisted (#255)
   });
 
   it.each(REQUIRED_RECOVERY_AUDIT_ACTIONS)(
@@ -1239,5 +1239,38 @@ describe('Migration 0073: capa (SPEC-REGULA-CAPA-001)', () => {
     expect(src).toMatch(/'capa\.qms_sync':\s*\{\s*minRole:\s*'ra-lead'/);
     expect(src).toMatch(/'complaint\.create':\s*\{\s*minRole:\s*'ra-member'/);
     expect(src).toMatch(/'capa\.create':\s*\{\s*minRole:\s*'ra-member'/);
+  });
+});
+
+// ---------------------------------------------------------------------------
+// Migration 0074: cer_persisted audit action (SPEC-REGULA-CER-001, Issue #255)
+// Splits CER deliverable-persist provenance from run-initiation so cer_created
+// unambiguously means "run initiated" and cer_persisted means "deliverable
+// stored, atomic with workflow_runs insert" (21 CFR Part 11, REQ-CER-036).
+// ---------------------------------------------------------------------------
+describe('Migration 0074: cer_persisted audit action (Issue #255)', () => {
+  it('migration file 0074_cer_persisted_audit_action.sql exists', () => {
+    expect(fileExists('migrations/0074_cer_persisted_audit_action.sql')).toBe(true);
+  });
+
+  it('adds cer_persisted to audit_action enum', () => {
+    const sql = readText('migrations/0074_cer_persisted_audit_action.sql');
+    expect(sql).toMatch(/ALTER TYPE audit_action ADD VALUE IF NOT EXISTS 'cer_persisted'/);
+  });
+
+  it('has exactly 1 ALTER TYPE audit_action statement', () => {
+    const sql = readText('migrations/0074_cer_persisted_audit_action.sql');
+    const matches = sql.match(/ALTER TYPE audit_action ADD VALUE/g) ?? [];
+    expect(matches).toHaveLength(1);
+  });
+
+  it('auditActionEnum in schema.ts includes cer_persisted', () => {
+    const src = readText('lib/db/schema.ts');
+    expect(src).toContain("'cer_persisted'");
+  });
+
+  it('AuditAction type in audit.ts includes cer_persisted', () => {
+    const src = readText('lib/audit.ts');
+    expect(src).toContain("'cer_persisted'");
   });
 });
