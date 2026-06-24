@@ -270,12 +270,15 @@ describe('AC-07: expert signoff close gate (REQ-012)', () => {
     expect(src).toContain('investigation_not_found_or_org_mismatch');
   });
 
-  it('close gate verifies expertSignoffId is a resolved expert review (source-level)', () => {
+  it('close gate verifies expertSignoffId is a resolved expert review org-bound to the caller (source-level)', () => {
     const src = readText('lib/clinical-investigation/close-gate.ts');
     expect(src).toContain('expertReviews');
     expect(src).toContain('expertSignoffId');
     expect(src).toContain("eq(expertReviews.status, 'resolved')");
-    expect(src).toContain('expert_signoff_not_resolved');
+    // C-1 fix: signoff is org-bound via conversations → projects.organizationId.
+    // A cross-org resolved review UUID is denied with expert_signoff_not_org_bound.
+    expect(src).toContain('projects.organizationId');
+    expect(src).toContain('expert_signoff_not_org_bound');
   });
 });
 

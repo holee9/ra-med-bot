@@ -36,6 +36,11 @@ export const POST = withPermission('clinical_investigation.manage', async (req, 
   const pkg = buildIrbPackageDraft(input, {
     intendedUse: investigation.necessityRationale ?? undefined,
   });
+  // @MX:TODO [AUTO] M-1 prompt-injection defense DEFERRED. tier1 is deterministic
+  //   (no LLM), so necessityRationale is only interpolated into template text.
+  //   When tier2 LLM wiring lands, this field MUST be wrapped in
+  //   `<UNTRUSTED_USER_CONTENT>` markers and the system prompt MUST instruct the
+  //   model to treat it as data, not instructions (OWASP LLM01).
 
   try {
     const documentIds = await db.transaction(async (tx) => {

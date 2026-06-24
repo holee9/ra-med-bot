@@ -41,21 +41,32 @@ export const POST = withPermission('clinical_investigation.manage', async (req, 
   // REQ-012 close gate.
   const gate = await canCloseInvestigation(investigationId, organizationId, input.expertSignoffId);
   if (!gate.allowed) {
-    // Audit the denial (21 CFR Part 11). Mirror capa.close_blocked_vigilance_missing.
+    // H-3 fix: audit the denial in a transaction. A Part 11 denial audit row
+    // is the ONLY durable evidence the gate fired — swallowing a write failure
+    // would silently drop that evidence. If the audit insert fails the route
+    // returns 500 (fail-closed) rather than a clean 403. Mirrors the
+    // success-path atomicity (db.transaction). The previous implementation
+    // wrote the audit outside any tx and `console.error`-swallowed failures.
     try {
-      await writeAudit({
-        actor_id: session.user.id,
-        action: 'ci.close_blocked_signoff_missing',
-        resource_type: 'clinical_investigation',
-        resource_id: investigationId,
-        meta_json: {
-          investigationId,
-          reason: gate.reason,
-          expertSignoffId: input.expertSignoffId,
-        },
+      await db.transaction(async (tx) => {
+        await writeAudit(
+          {
+            actor_id: session.user.id,
+            action: 'ci.close_blocked_signoff_missing',
+            resource_type: 'clinical_investigation',
+            resource_id: investigationId,
+            meta_json: {
+              investigationId,
+              reason: gate.reason,
+              expertSignoffId: input.expertSignoffId,
+            },
+          },
+          tx,
+        );
       });
     } catch (auditErr) {
-      console.error('ci.close_blocked audit write failed', auditErr);
+      console.error('ci.close_blocked denial audit write failed (fail-closed)', auditErr);
+      return Response.json({ error: 'Failed to record close denial' }, { status: 500 });
     }
     return Response.json({ error: 'Close blocked', reason: gate.reason }, { status: 403 });
   }

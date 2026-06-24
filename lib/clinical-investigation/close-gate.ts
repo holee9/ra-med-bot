@@ -8,7 +8,7 @@
 // @MX:SPEC SPEC-REGULA-CLINICAL-INVESTIGATION-001 (Issue #69, REQ-CLININV-012, AC-07)
 
 import { db } from '@/lib/db/client';
-import { clinicalInvestigations, expertReviews } from '@/lib/db/schema';
+import { clinicalInvestigations, conversations, expertReviews, projects } from '@/lib/db/schema';
 import { and, eq } from 'drizzle-orm';
 import type { CloseGateResult } from './types';
 
@@ -20,11 +20,15 @@ import type { CloseGateResult } from './types';
  *   - Investigation is already closed.
  *   - No expertSignoffId is supplied.
  *   - expertSignoffId does not resolve to expert_reviews.status='resolved'.
+ *   - expertSignoffId belongs to a conversation/project in ANOTHER org
+ *     (C-1 fix: cross-org signoff UUID probing is now blocked).
  *
- * The existing expert_reviews table is not org-scoped, so this function keeps
- * org isolation on the investigation itself and treats the review row only as
- * approval evidence. A future migration may add resource-scoped expert reviews;
- * until then, the minimum safe gate is "real resolved review ID", not just a UUID.
+ * C-1 fix (org-binding): expert_reviews has no organization_id column, so the
+ * signoff is org-bound via its conversation → project → organization chain.
+ * A caller supplying another org's resolved review UUID is denied with
+ * `expert_signoff_not_org_bound`. For projectless conversations (projectId is
+ * null), the join yields no row → denied (a signoff must belong to a project
+ * in the caller's org to count as approval evidence).
  */
 export async function canCloseInvestigation(
   investigationId: string,
@@ -54,14 +58,26 @@ export async function canCloseInvestigation(
     return { allowed: false, reason: 'expert_signoff_missing' };
   }
 
+  // C-1 fix: bind the signoff to the caller's org via
+  // expert_reviews → conversations → projects.organizationId. The join also
+  // enforces status='resolved' in the same query so a non-resolved or
+  // cross-org review collapses to a single deny decision.
   const [review] = await db
-    .select({ id: expertReviews.id, status: expertReviews.status })
+    .select({ id: expertReviews.id })
     .from(expertReviews)
-    .where(and(eq(expertReviews.id, expertSignoffId), eq(expertReviews.status, 'resolved')))
+    .innerJoin(conversations, eq(conversations.id, expertReviews.conversationId))
+    .innerJoin(projects, eq(projects.id, conversations.projectId))
+    .where(
+      and(
+        eq(expertReviews.id, expertSignoffId),
+        eq(expertReviews.status, 'resolved'),
+        eq(projects.organizationId, orgId),
+      ),
+    )
     .limit(1);
 
   if (!review) {
-    return { allowed: false, reason: 'expert_signoff_not_resolved' };
+    return { allowed: false, reason: 'expert_signoff_not_org_bound' };
   }
 
   return { allowed: true, reason: 'ok' };

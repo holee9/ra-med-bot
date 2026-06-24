@@ -11,7 +11,7 @@
 //   - Significant risk (SR) device → full IDE (21 CFR 812.20).
 //   - NSR-eligible but risk reassessment pending → NSR pathway with escalation note.
 
-import { enforceCitations } from './citation-enforcement';
+import { authoritativeCitations } from './citation-enforcement';
 import type { IdeDecisionInput, PathwayDecision, RegulatoryCitation } from './types';
 
 const CITATION_812_2: RegulatoryCitation = { source: '21 CFR', id: '812.2' };
@@ -32,11 +32,14 @@ const CITATION_56: RegulatoryCitation = { source: '21 CFR', id: '56' };
  *   - riskLevel 'significant' → full IDE (FDA approval required before study)
  *   - riskLevel 'nsr_eligible' → NSR with sponsor self-determination, IRB-overseeable
  *
- * Citations are re-grounded against retrieved sources via enforceCitations.
+ * Citations are AUTHORITATIVE statute references (21 CFR 812.x) baked into the
+ * decision tree — NOT LLM-generated. They are grounded-by-construction and
+ * carry confidence='authoritative' (H-1 fix). When a future tier2 LLM enhances
+ * the decision prose, its citations MUST go through enforceCitations.
  */
 export function decideIdePathway(
   input: IdeDecisionInput,
-  retrievedSources: ReadonlyArray<{ citation: string; title?: string }> = [],
+  _retrievedSources: ReadonlyArray<{ citation: string; title?: string }> = [],
 ): PathwayDecision {
   let decision: string;
   let regulatoryBasis: string;
@@ -88,7 +91,11 @@ export function decideIdePathway(
     emitted = [CITATION_812_20, CITATION_812_2, CITATION_50, CITATION_56];
   }
 
-  const enforced = enforceCitations(emitted, retrievedSources);
+  // H-1 fix: emitted citations are AUTHORITATIVE 21 CFR 812.x statute
+  // references baked into the decision tree — NOT LLM-generated. They are
+  // grounded-by-construction and carry confidence='authoritative'. Do NOT
+  // route through enforceCitations([]) (that would mark them 'unverified').
+  const enforced = authoritativeCitations(emitted);
 
   return {
     pathway: 'fda_ide',

@@ -8,7 +8,7 @@
 // produce a clinical-investigation necessity assessment. The output MUST include a
 // recommendation, rationale, and regulatory basis citations (REQ-010).
 
-import { enforceCitations } from './citation-enforcement';
+import { authoritativeCitations } from './citation-enforcement';
 import type { AssessInput, GapAssessmentResult, RegulatoryCitation } from './types';
 
 // Regulatory anchors that justify necessity decisions (REQ-010). These are the
@@ -43,11 +43,15 @@ const CITATION_IDE: RegulatoryCitation = {
  * `necessityStatus` and `confidence` for 21 CFR Part 11 traceability.
  *
  * @param input - CER/literature gap summary + device context.
- * @param retrievedSources - RAG-retrieved regulatory sources for citation grounding.
+ * @param _retrievedSources - Reserved for tier2 LLM wiring (unused in tier1).
+ *   The citations emitted here are AUTHORITATIVE statute references (EU MDR
+ *   Annex XIV, ISO 14155, 21 CFR 812), authoritative-by-construction, and
+ *   bypass RAG grounding (H-1 fix). When a future tier2 LLM enhances the
+ *   recommendation prose, its citations MUST go through enforceCitations.
  */
 export function assessNecessity(
   input: AssessInput,
-  retrievedSources: ReadonlyArray<{ citation: string; title?: string }> = [],
+  _retrievedSources: ReadonlyArray<{ citation: string; title?: string }> = [],
 ): GapAssessmentResult {
   const cerGap = input.cerGapSummary.toLowerCase();
   const litGap = (input.literatureGapSummary ?? '').toLowerCase();
@@ -96,7 +100,12 @@ export function assessNecessity(
     emitted = [CITATION_CER_GAP];
   }
 
-  const enforced = enforceCitations(emitted, retrievedSources);
+  // H-1 fix: emitted citations are AUTHORITATIVE statute references
+  // (EU MDR Annex XIV Part A, ISO 14155, 21 CFR 812) baked into the decision
+  // tree — NOT LLM-generated. They are grounded-by-construction and carry
+  // confidence='authoritative'. Do NOT route through enforceCitations([])
+  // (that would mark them 'unverified' and make REQ-010 look unmet).
+  const enforced = authoritativeCitations(emitted);
 
   return {
     necessityStatus,

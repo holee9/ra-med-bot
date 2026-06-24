@@ -40,6 +40,11 @@ export const POST = withPermission('clinical_investigation.manage', async (req, 
   // decision; this route persists the reference when provided.
   const vigilanceLinked = input.type === 'adverse_event' && Boolean(input.vigilanceRef);
 
+  // @MX:TODO [AUTO] M-3 PII policy for ci_events.data is DEFERRED. Adverse-event
+  //   descriptions may carry patient-identifiable details. The current row stores
+  //   title/description verbatim in the JSONB. A follow-up must decide: (a) redact
+  //   PII at ingress, (b) encrypt the column, or (c) gate downstream reads. The
+  //   decision is deferred pending RA-lead input on the data-handling SOP.
   try {
     const inserted = await db.transaction(async (tx) => {
       const [row] = await tx

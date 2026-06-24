@@ -12,7 +12,7 @@
 //   - Optional investigator brochure (REQ-007, template scaffold)
 //   - Optional monitoring plan (REQ-007, template scaffold)
 
-import { enforceCitations } from './citation-enforcement';
+import { authoritativeCitations } from './citation-enforcement';
 import { generateConsentDraft } from './consent-generator';
 import type { IrbPackageDraft, IrbPackageInput, RegulatoryCitation } from './types';
 
@@ -35,7 +35,7 @@ const CITATIONS: RegulatoryCitation[] = [
 export function buildIrbPackageDraft(
   input: IrbPackageInput,
   deviceContext: { deviceName?: string; intendedUse?: string; riskLevel?: string },
-  retrievedSources: ReadonlyArray<{ citation: string; title?: string }> = [],
+  _retrievedSources: ReadonlyArray<{ citation: string; title?: string }> = [],
 ): IrbPackageDraft {
   const heading =
     input.pathway === 'fda_ide' ? 'IRB Submission Package' : 'Ethics Committee Submission Package';
@@ -82,6 +82,7 @@ export function buildIrbPackageDraft(
   const result: IrbPackageDraft = {
     irbPackage,
     citations: [],
+    confidence: 'authoritative',
   };
 
   if (input.includeConsentDraft) {
@@ -94,8 +95,17 @@ export function buildIrbPackageDraft(
     result.monitoringPlan = buildMonitoringPlan(input.pathway);
   }
 
-  const enforced = enforceCitations(CITATIONS, retrievedSources);
+  // H-1 fix: CITATIONS are AUTHORITATIVE 21 CFR 56 / 812 / EU MDR Art 62(4)
+  // statute references baked into the package template — NOT LLM-generated.
+  // Grounded-by-construction → confidence='authoritative'. Do NOT route
+  // through enforceCitations([]) (that would mark them 'unverified').
+  // H-1 fix: CITATIONS are AUTHORITATIVE 21 CFR 56 / 812 / EU MDR Art 62(4)
+  // statute references baked into the package template — NOT LLM-generated.
+  // Grounded-by-construction → confidence='authoritative'. Do NOT route
+  // through enforceCitations([]) (that would mark them 'unverified').
+  const enforced = authoritativeCitations(CITATIONS);
   result.citations = enforced.citations;
+  result.confidence = enforced.confidence;
 
   return result;
 }

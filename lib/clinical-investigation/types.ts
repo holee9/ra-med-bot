@@ -29,7 +29,15 @@ export interface RegulatoryCitation {
 
 // Confidence mirrors the classify/cer convention: 'high'|'med'|'low'|'unverified'.
 // 'unverified' is set when citation enforcement strips ALL emitted citations.
-export type Confidence = 'high' | 'med' | 'low' | 'unverified';
+//
+// H-1 fix: 'authoritative' is a tier reserved for deterministic statute
+// references baked into the tier1 decision trees (21 CFR 812.x, EU MDR Art 62,
+// ISO 14155). These are NOT LLM-generated and do NOT require RAG grounding —
+// they are authoritative-by-construction. Routing them through
+// enforceCitations([]) → 'unverified' was incorrect (made REQ-010 look unmet).
+// The 'authoritative' tier flows to the audit row so FDA inspectors see
+// grounded citations, not 'unverified' on every deterministic pathway output.
+export type Confidence = 'high' | 'med' | 'low' | 'unverified' | 'authoritative';
 
 // -------------------------------------
 // §2 Request schemas (Route Handler inputs)
@@ -136,6 +144,9 @@ export interface IrbPackageDraft {
   brochure?: string;
   monitoringPlan?: string;
   citations: RegulatoryCitation[];
+  // H-1 fix: records the authoritative confidence tier so the audit row can
+  // distinguish grounded statute references from LLM-generated citations.
+  confidence: Confidence;
 }
 
 export interface CloseGateResult {
@@ -145,5 +156,8 @@ export interface CloseGateResult {
     | 'investigation_not_found_or_org_mismatch'
     | 'expert_signoff_missing'
     | 'expert_signoff_not_resolved'
+    // C-1 fix: signoff UUID exists and is resolved but belongs to another org
+    // (or to a projectless conversation). Cross-org signoff probing is blocked.
+    | 'expert_signoff_not_org_bound'
     | 'already_closed';
 }

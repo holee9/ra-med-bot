@@ -4,7 +4,10 @@
 import { writeAudit } from '@/lib/audit';
 import { withPermission } from '@/lib/auth/with-permission';
 import { assertInvestigationAccess, resolveRouteId } from '@/lib/clinical-investigation/access';
-import { linkInvestigationResults } from '@/lib/clinical-investigation/linkage';
+import {
+  linkInvestigationResults,
+  verifyLinkTargetExists,
+} from '@/lib/clinical-investigation/linkage';
 import { ciLinkInputSchema } from '@/lib/clinical-investigation/types';
 import { db } from '@/lib/db/client';
 
@@ -28,6 +31,22 @@ export const POST = withPermission('clinical_investigation.manage', async (req, 
     );
   }
   const input = parsed.data;
+
+  // H-4 fix: validate the referent row exists AND belongs to the caller's org
+  // before linking. Without this, a caller could point a ci_links row at any
+  // UUID (nonexistent or another org's CER/PMS/DHF deliverable). 404 — never
+  // 403 — so UUID probing is not possible. Mirrors capa verifyTargetExists.
+  const targetValid = await verifyLinkTargetExists(
+    organizationId,
+    input.targetType,
+    input.targetId,
+  );
+  if (!targetValid) {
+    return Response.json(
+      { error: 'Link target not found in caller organization' },
+      { status: 404 },
+    );
+  }
 
   try {
     const result = await db.transaction(async (tx) => {

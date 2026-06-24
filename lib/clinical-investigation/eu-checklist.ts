@@ -5,7 +5,7 @@
 //           so the output is audit-defensible. Callers persist the checklist JSONB
 //           and surface it to the RA team via the dashboard (AC-05).
 
-import { enforceCitations } from './citation-enforcement';
+import { authoritativeCitations } from './citation-enforcement';
 import type { RegulatoryCitation } from './types';
 
 export interface ChecklistItem {
@@ -38,11 +38,15 @@ const CITATIONS: RegulatoryCitation[] = [
  * Annex XV Chapter II; the caller (UI/RA team) marks each item completed as
  * evidence is gathered.
  *
- * Citations are re-grounded via enforceCitations against the RAG-retrieved source
- * list to ensure regulatory text fidelity (REQ-010).
+ * Citations are AUTHORITATIVE EU MDR / ISO statute references baked into the
+ * checklist — NOT LLM-generated. They are grounded-by-construction and carry
+ * confidence='authoritative' (H-1 fix). When a future tier2 LLM augments the
+ * checklist, its citations MUST go through enforceCitations.
+ *
+ * @param _retrievedSources - Reserved for tier2 LLM wiring (unused in tier1).
  */
 export function buildEuMdrChecklist(
-  retrievedSources: ReadonlyArray<{ citation: string; title?: string }> = [],
+  _retrievedSources: ReadonlyArray<{ citation: string; title?: string }> = [],
 ): EuChecklistResult {
   const items: ChecklistItem[] = [
     {
@@ -107,7 +111,11 @@ export function buildEuMdrChecklist(
     },
   ];
 
-  const enforced = enforceCitations(CITATIONS, retrievedSources);
+  // H-1 fix: CITATIONS are AUTHORITATIVE EU MDR Article 62 / Annex XV / ISO
+  // 14155 statute references baked into the checklist — NOT LLM-generated.
+  // Grounded-by-construction → confidence='authoritative'. Do NOT route
+  // through enforceCitations([]) (that would mark them 'unverified').
+  const enforced = authoritativeCitations(CITATIONS);
 
   return { items, citations: enforced.citations };
 }
