@@ -67,7 +67,15 @@ export type PermissionAction =
   // manage: ra-lead ONLY — edge writes are audit-material regulatory records
   // (21 CFR Part 11). The existing 'traceability.view' (hybrid-ra-saas #169
   // BFF proxy scope) is reused for matrix/packet/export reads.
-  | 'traceability.manage';
+  | 'traceability.manage'
+  // Change control actions (SPEC-REGULA-CHANGE-CONTROL-001, Issue #54)
+  // assess/export: ra-lead only — change assessment drives regulatory pathway
+  // decisions (new submission vs. change notification) and DHF export is a
+  // 21 CFR Part 11 audit-material record. Mirrors classify.generate pattern.
+  // view: ra-member+ — assessment results are transparent across the RA team.
+  | 'change.assess'
+  | 'change.view'
+  | 'change.export';
 
 export interface PermissionSpec {
   minRole: Role;
@@ -223,4 +231,17 @@ export const PERMISSIONS: Record<PermissionAction, PermissionSpec> = {
   //            IDOR defense is layered on top in the route (org_id double-gate).
   // @MX:SPEC SPEC-REGULA-TRACEABILITY-001 (REQ-TRACEABILITY-010, Issue #47)
   'traceability.manage': { minRole: 'ra-lead', scope: 'org', resourceType: 'traceability' },
+
+  // @MX:NOTE [AUTO] change.* — SPEC-REGULA-CHANGE-CONTROL-001 (Issue #54).
+  // @MX:SPEC SPEC-REGULA-CHANGE-CONTROL-001
+  // assess: ra-lead only — change assessment produces per-jurisdiction verdicts
+  // (new_submission_required / change_notification / internal_record_only /
+  // not_applicable) that drive regulatory pathway decisions. Mirrors
+  // classify.generate pattern (REQ-CHANGE-CONTROL-003~005).
+  // export: ra-lead only — DHF/change-management attachable PDF export is a
+  // 21 CFR Part 11 audit-material record (REQ-CHANGE-CONTROL-007).
+  // view: ra-member+ — transparency across the RA team (REQ-CHANGE-CONTROL-011).
+  'change.assess': { minRole: 'ra-lead', scope: 'org', resourceType: 'changeAssessment' },
+  'change.view': { minRole: 'ra-member', scope: 'org', resourceType: 'changeAssessment' },
+  'change.export': { minRole: 'ra-lead', scope: 'org', resourceType: 'changeAssessment' },
 };

@@ -1,11 +1,11 @@
 ---
 id: SPEC-REGULA-CHANGE-CONTROL-001
-version: 1.0.0
-status: draft
+version: 1.1.0
+status: completed
 phase: wave4
 priority: Medium
 created: 2026-06-22
-updated: 2026-06-22
+updated: 2026-06-24
 author: manager-spec (batch-2026-06-22)
 issue_number: 54
 depends_on:
@@ -24,6 +24,7 @@ labels:
 | Version | Date | Author | Changes |
 |---------|------|--------|---------|
 | 1.0.0 | 2026-06-22 | manager-spec (batch) | 초기 작성. Issue #54 기반. |
+| 1.1.0 | 2026-06-24 | manager-docs (sync) | 구현 완료 후 문서 동기화. status completed 전환, Implementation Notes/Follow-up Issues 추가. |
 
 ---
 
@@ -149,3 +150,116 @@ src/
 - SPEC-REGULA-WORKFLOWS-001 (Cloudflare Workflows runtime 재사용, workflow_type enum)
 - #46 ISO 14971 Risk Management (위험 재평가 연계)
 - #36 Review Ops (expert review gate — verdict 확정)
+
+---
+
+## §5 Implementation Notes (2026-06-24)
+
+구현 완료. migration 0071(workflow_type +1=`change_control_assessment`, audit_action +6, 테이블 4 + RLS), lib/change-control/(classify·engine·jurisdictions·verdict·version-metadata·risk-linkage), API 4종(run/[id]/review/export), UI(app/(app)/change-control), 권한 change.assess/view/export. 보안 fix(sync Phase 0.55 expert-security): C-1 IDOR(assertPmsProjectAccess) · H-1 실제 LLM wiring(createHybridRaFetch, REQ-006 reject live) · H-2 프롬프트 인젝션(<change_description>+UNTRUSTED DATA) · H-3 catch audit tx · H-4 change.export_blocked audit · M-1 risk-linkage org 검증. 게이트: typecheck 0 · biome 0 · test 3571 passed | 7 skipped · build 0. AC: AC-01~04·06~08 ✅ · AC-05 PDF export MVP(JSON shape) → #247 follow-up.
+
+---
+
+## §6 Follow-up Issues
+
+### #247 - PDF 보고서 실제 바이트 렌더링 (AC-05 / REQ-007 MVP from #54)
+
+- **내용**: AC-05 PDF export 기능의 실제 PDF 바이트 렌더링
+- **범위**: 현재 JSON shape만 반환되는 export endpoint를 실제 PDF 바이트 생성으로 완성
+- **이유**: MVP 범위에서 실제 PDF 구현 제외, follow-up 이슈로 분리
+- **링크**: https://github.com/holee9/ra-med-bot/issues/247
+
+`migrations/0071_change_control.sql`로 DB 스키마 변경:
+
+- **workflow_type enum**: `change_control_assessment` 추가 (13→14)
+- **audit_action enum**: +6 액션 추가 (127→133)
+  - `change.assessment_created`
+  - `change.verdict_produced`
+  - `change.verdict_citation_rejected`
+  - `change.assessment_reviewed`
+  - `change.report_exported`
+  - `change.export_blocked`
+- **테이블 4개 신규**: `change_assessments`, `change_verdicts`, `change_verdict_citations`, `change_risk_links`
+- **RLS org_id**: 모든 테이블에 `org_id` 기반 Row Level Security 적용
+
+### 5.2 권한 추가
+
+PermissionAction enum 44→47:
+
+- `change.assess` (ra-lead)
+- `change.view` (ra-member+)
+- `change.export` (ra-lead)
+
+### 5.3 백엔드 구현
+
+**lib/change-control/ 모듈 (8개)**:
+
+- `types.ts`: 타입 정의
+- `classify.ts`: REQ-003 6종 분류 (design/material/manufacturing_process/software/labeling/intended_use)
+- `engine.ts`: 5관할권 Promise.all RAG+LLM 평가, createHybridRaFetch wiring
+- `jurisdictions/`: FDA/EU MDR/MFDS/NMPA/PMDA 로직
+- `verdict.ts`: REQ-006 validateCitations + DB NOT NULL 이중 방어
+- `version-metadata.ts`: REQ-010 model/prompt/template version 기록
+- `risk-linkage.ts`: REQ-008 ISO 14971 risk_items 연계, org join 검증
+
+**API Routes (4개)**:
+
+- `POST /api/change-control/run`: assessment 생성
+- `GET /api/change-control/[id]`: verdict + citation + risk link 조회
+- `POST /api/change-control/[id]/review`: REQ-009 expert review gate
+- `POST /api/change-control/[id]/export`: REQ-007/011 provisional 게이트
+
+### 5.4 프론트엔드 구현
+
+**app/(app)/change-control/**:
+
+- `page.tsx`: 입력 폼 (REQ-002)
+- `[assessmentId]/page.tsx`: verdict view + provisional 배지 (REQ-011) + expert review + PDF export 버튼
+
+**components/change-control/**:
+
+- `VerdictCard.tsx`: 관할권별 verdict 카드
+- `CitationList.tsx`: citation 리스트
+- `ProvisionalBadge.tsx`: provisional 상태 배지 (REQ-011)
+- `verdict-labels.tsx`: verdict 라벨
+
+**조건부 Sidebar 네비**: change-control 권한에 따라 항목 표시
+
+### 5.5 보안 강화 (expert-security Phase 0.55 리뷰)
+
+- **C-1 IDOR**: assertPmsProjectAccess로 org 별 접근 제어
+- **H-1 실제 LLM wiring**: createHybridRaFetch 실구현, REQ-006 reject 경로 live
+- **H-2 프롬프트 인젝션**: <change_description> UNTRUSTED DATA → <untrusted> 태그
+- **H-3 catch audit tx**: 모든 LLM 호출 try-catch로 audit 트랜잭션션 보존
+- **H-4 export_blocked**: provisional 상태 export 시 `change.export_blocked` audit
+- **M-1 risk-linkage org 검증**: ISO 14971 연계 시 org 일치성 검증
+
+### 5.6 게이트 결과
+
+- **typecheck**: 0 에러
+- **biome**: 0 에러
+- **test**: 3571 passed | 7 skipped | 0 failed
+- **build**: PASS
+
+### 5.7 Acceptance Criteria 완료 상태
+
+| AC# | 상태 | 비고 |
+|-----|------|------|
+| AC-01 | ✅ | 구조화 입력 폼 구현 완료 |
+| AC-02 | ✅ | 6종 분류 로직 구현 완료 |
+| AC-03 | ✅ | 관할권별 verdict 생성 완료 |
+| AC-04 | ✅ | citation 강제 검증 구현 완료 |
+| AC-05 | ⏸️ DEFERRED | PDF export MVP(JSON shape)만 구현, 실제 PDF 바이트는 follow-up #247로 연기 |
+| AC-06 | ✅ | ISO 14971 risk_items 연계 완료 |
+| AC-07 | ✅ | expert review gate + provisional 배지 구현 완료 |
+| AC-08 | ✅ | audit_logs + version metadata 기록 완료 |
+
+---
+
+## §6 Follow-up Issues
+
+### #247 - PDF 보고서 실제 바이트 렌더링 (AC-05 / REQ-007 MVP from #54)
+
+- **내용**: AC-05 PDF export 기능의 실제 PDF 바이트 렌더링
+- **범위**: 현재 JSON shape만 반환되는 export endpoint를 실제 PDF 바이트 생성으로 완성
+- **이유**: MVP 범위에서 실제 PDF 구현 제외, follow-up 이슈로 분리
+- **링크**: https://github.com/holee9/ra-med-bot/issues/247

@@ -9,6 +9,24 @@
 
 ## [Unreleased] — Wave 5 (2026-06-20~24)
 
+> **Wave 5 규제 준수 축 완성**: Issue #88 전자서명(PR #204), Issue #87 Export Hub(PR #203), Issue #92 외부 감사관 뷰(PR #206), Issue #53 PMS(PR #246), Issue #54 Change Control(PR #54)가 main에 머지되었습니다. 21 CFR Part 11 §11.50/§11.70 전자서명, 다중 포맷 내보내기, 외부 감사관 read-only 페르소나 + 1-클릭 감사 패키지, EU MDR PMS/PMCF 자동화, 설계 변경 규제 영향 자동 평가가 통합되었습니다.
+
+### CHANGE-CONTROL #54 — 설계 변경 규제 영향 자동 평가기 (2026-06-24)
+
+> SPEC-REGULA-CHANGE-CONTROL-001 구현 완료: 변경 유형 6종 분류 → 5관할권(FDA/EU MDR/MFDS/NMPA/PMDA) verdict + citation 강제(REQ-006) + ISO 14971 연계 + expert review gate + PDF export(MVP)
+- **Migration 0071**: workflow_type enum `change_control_assessment` 추가(13→14), audit_action +6(127→133: assessment_created, verdict_produced, verdict_citation_rejected, assessment_reviewed, report_exported, export_blocked), 테이블 4개(change_assessments, change_verdicts, change_verdict_citations, change_risk_links) + RLS
+- **권한**: PermissionAction 44→47 (change.assess/view/export)
+- **백엔드**: lib/change-control/ 모듈 8개(types/classify/engine/jurisdictions/verdict/version-metadata/risk-linkage), API 4종(POST /api/change-control/run, GET /api/change-control/[id], POST /api/change-control/[id]/review, POST /api/change-control/[id]/export)
+- **프론트엔드**: app/(app)/change-control/page.tsx(입력 폼), [assessmentId]/page.tsx(verdict view + provisional 배지 + expert review + PDF export), components/change-control/(VerdictCard/CitationList/ProvisionalBadge/verdict-labels)
+- **보안 강화**(expert-security Phase 0.55): C-1 IDOR(assertPmsProjectAccess) · H-1 실제 LLM wiring(createHybridRaFetch, REQ-006 reject live) · H-2 프롬프트 인젝션(<change_description>+UNTRUSTED DATA) · H-3 catch audit tx · H-4 change.export_blocked audit · M-1 risk-linkage org 검증
+- **게이트 결과**: typecheck 0 · biome 0 · test 3571 passed | 7 skipped · build 0
+- **AC 완료 상태**: AC-01~04·06~08 ✅ · AC-05 ⏸️ DEFERRED(PDF export MVP, JSON shape만 구현, 실제 PDF 바이트는 #247)
+- **Follow-up**: #247(PDF 실제 바이트 렌더링)
+
+---
+
+## [Unreleased] — Wave 5 (2026-06-20~24)
+
 > **Wave 5 규제 준수 축 완성**: Issue #88 전자서명(PR #204), Issue #87 Export Hub(PR #203), Issue #92 외부 감사관 뷰(PR #206), Issue #53 PMS(PR #246)가 main에 머지되었습니다. 21 CFR Part 11 §11.50/§11.70 전자서명, 다중 포맷 내보내기, 외부 감사관 read-only 페르소나 + 1-클릭 감사 패키지, EU MDR PMS/PMCF 자동화가 통합되었습니다.
 
 ### Backend Tech Debt Batch (2026-06-21) — PRs Pending Review
@@ -96,7 +114,21 @@
 
 ### Changed
 
-- **QA 게이트 프레임워크 완결** (Issues #73~#79, PR #210/#212/#217/#218): 전체 이슈 QA 매트릭스 구축 + Gate 0~5 SPEC 6개를 Draft → Active로 승격. SSoT 체계 정비(`docs/qa/qa-gate-definitions.md`, `qa-matrix.md`, `_shared/qa-gate-roadmap.md`). Gate 5 적용 범위 per-row/summary/definitions 모두 9건으로 정합(#213). Gate 0 helper 스크립트 `scripts/qa-gate-0-checklist.ts`. 각 게이트 SPEC은 EARS REQ + Application Scope + Evidence Artifacts + SSoT Alignment 구조로 `qa-gate-definitions.md` PASS 조건을 operationalize.
+- **QA 게이트 프레임워크 완결** (Issues #73~#79, PR #210/#212/#217/#218): 전체 이슈 QA 매트릭스 구축 + Gate 0~5 SPEC 6개를 Draft → Active로 승격. SSoT 체계 정비(`docs/qa/qa-gate-definitions.md`, `qa-matrix.md`, `_shared/qa-gate- roadmap.md`). Gate 5 적용 범위 per-row/summary/definitions 모두 9건으로 정합(#213). Gate 0 helper 스크립트 `scripts/qa-gate-0-checklist.ts`. 각 게이트 SPEC은 EARS REQ + Application Scope + Evidence Artifacts + SSoT Alignment 구조로 `qa-gate-definitions.md` PASS 조건을 operationalize.
+
+### Added
+
+- **설계 변경 규제 영향 자동 평가기** (SPEC-REGULA-CHANGE-CONTROL-001 — Issue #54): 설계 변경(design/material/manufacturing_process/software/labeling/intended_use) 구조화 입력 → 5관할권(FDA/EU MDR/MFDS/NMPA/PMDA) AI 평가 → verdict(새 허가 필요/변경 신고/내부 기록만/해당 없음) + citation 강제 → PDF export.
+  - **Migration 0071**: `workflow_type` enum +1(`change_control_assessment`, 13→14), `audit_action` enum +6(change assessment/verdict/review/export 관련, 127→133), 테이블 4개(change_assessments/change_verdicts/change_verdict_citations/change_risk_links) + RLS org_id
+  - **권한**: `change.assess`(ra-lead), `change.view`(ra-member+), `change.export`(ra-lead) — PermissionAction 44→47
+  - **백엔드**: `lib/change-control/` 8모듈(types, classify[REQ-003 6종], engine[5관할권 Promise.all RAG+LLM, createHybridRaFetch wiring], jurisdictions[FDA/EU MDR/MFDS/NMPA/PMDA], verdict[REQ-006 validateCitations + DB NOT NULL 이중 방어], version-metadata[REQ-010], risk-linkage[REQ-008 ISO 14971 연계, org 검증])
+  - **API**: POST /api/change-control/run, GET /api/change-control/[id], POST /api/change-control/[id]/review(REQ-009 expert review gate), POST /api/change-control/[id]/export(REQ-007/011 provisional 게이트)
+  - **UI**: app/(app)/change-control(입력 폼 REQ-002 + verdict view + provisional 배지 REQ-011 + expert review + PDF export 버튼), components/change-control/(VerdictCard/CitationList/ProvisionalBadge/verdict-labels), Sidebar 조건부 네비
+  - **보안 fix**: expert-security Phase 0.55 리뷰 — C-1 IDOR(assertPmsProjectAccess), H-1 실제 LLM wiring(createHybridRaFetch, REQ-006 reject 경로 live), H-2 프롬프트 인젝션(<change_description>+UNTRUSTED DATA), H-3 catch audit tx, H-4 export_blocked audit, M-1 risk-linkage org 검증
+  - **게이트 결과**: typecheck 0 · biome 0 · test 3571 passed | 7 skipped · build 0
+  - **AC 상태**: AC-01~04, AC-06~08 ✅ 통과 · AC-05 ⏸️ DEFERRED(REQ-PMS-004 자동 CER 연계 → #243 follow-up 이슈와 동일 패턴으로 PDF export 실제 바이트 렌더링은 follow-up #247)
+  - **Follow-ups**: #247(PDF export 실제 바이트 렌더링), #243(PMS CER 자동 연계는 #53에서 해결)
+  - **문서**: spec.md status completed, Implementation Notes, Follow-up Issues 추가
 
 ---
 

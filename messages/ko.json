@@ -31,5 +31,79 @@
     "mfds": "MFDS (식품의약품안전처)",
     "nmpa": "NMPA",
     "pmda": "PMDA"
+  },
+  "changeControl": {
+    "title": "변경 관리",
+    "description": "설계 변경의 관할권별 규제 영향 자동 평가",
+    "form": {
+      "project": "프로젝트",
+      "changeType": "변경 유형",
+      "description": "변경 설명",
+      "impactScope": "영향 범위",
+      "targetMarkets": "대상 시장",
+      "submit": "평가 실행",
+      "submitting": "평가 실행 중…"
+    },
+    "changeTypes": {
+      "design": "설계 변경",
+      "material": "재료 변경",
+      "manufacturing_process": "제조 공정 변경",
+      "software": "소프트웨어 변경",
+      "labeling": "라벨링 변경",
+      "intended_use": "적응증(의도된 용도) 변경"
+    },
+    "verdicts": {
+      "new_submission_required": "새 허가 신청 필요",
+      "change_notification": "변경 신고",
+      "internal_record_only": "내부 기록만",
+      "not_applicable": "해당 없음"
+    },
+    "jurisdictions": {
+      "FDA": "FDA (미국)",
+      "EU_MDR": "EU MDR (유럽)",
+      "MFDS": "MFDS (한국)",
+      "NMPA": "NMPA (중국)",
+      "PMDA": "PMDA (일본)"
+    },
+    "status": {
+      "provisional": "전문가 검토 대기 (Provisional)",
+      "reviewed": "검토 완료",
+      "final": "확정"
+    },
+    "actions": {
+      "confirmReview": "검토 완료",
+      "export": "PDF 내보내기"
+    },
+    "provisionalBanner": {
+      "title": "전문가 검토 대기 중 (Provisional)",
+      "body": "AI verdict는 전문가(RA Lead) 검토 완료 전까지 provisional로 표시되며, PDF 내보내기에서 제외됩니다. (REQ-009 / REQ-011)"
+    },
+    "exportTooltip": {
+      "provisional": "전문가 검토 완료 후 내보낼 수 있습니다",
+      "noPermission": "export 권한이 필요합니다 (change.export)",
+      "default": "평가 보고서 내보내기"
+    },
+    "exportNotice": {
+      "beta": "평가 보고서를 내보냈습니다. (Beta: PDF 렌더링은 Phase 6+ 예정 — 현재는 정형 JSON 보고서로 제공됩니다.)"
+    },
+    "riskLinks": {
+      "title": "ISO 14971 위험 재평가 연계",
+      "empty": "이 평가에 연결된 위험 항목이 없습니다.",
+      "recommended": "재평가 권장",
+      "severity": "심각도"
+    },
+    "versionMetadata": {
+      "title": "버전 메타데이터 (롤백 추적)",
+      "model": "Model",
+      "prompt": "Prompt",
+      "template": "Template"
+    },
+    "errors": {
+      "forbidden": "변경 관리 페이지 접근은 RA Member 권한 이상 필요합니다 (change.view).",
+      "noProject": "평가를 실행하려면 먼저 프로젝트를 생성하세요.",
+      "reviewFailed": "검토 확정 실패",
+      "exportFailed": "export 실패",
+      "alreadyReviewed": "이미 검토 완료된 평가입니다."
+    }
   }
 }

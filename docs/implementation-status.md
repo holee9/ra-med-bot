@@ -99,6 +99,7 @@ and closed-loop replay verification. Awaiting security review and merge.
 | Mock workflow audit (#152) | COMPLETE | mock_data, workflow_run_id metadata connected (in PR #190) |
 | Onboarding E2E seed (#163) | COMPLETE | globalSetup.ts bootstrapProjects + empty-state CTA in Sidebar |
 | Knowledge Gap Loop (#35) | COMPLETE (PR #234 pending merge) | 4-condition detection, clustering, GitHub auto-issue, classify UI, daily digest, gap-replay closed loop |
+| **Change Control (#54)** | **COMPLETE** (2026-06-24) | 설계 변경 규제 영향 자동 평가기 — migration 0071(workflow_type +1, audit_action +6, 테이블 4 + RLS), lib/change-control 8모듈(types/classify/engine/jurisdictions/verdict/version-metadata/risk-linkage), API 4종(run/[id]/review/export), UI(app/(app)/change-control), 권한 change.assess/view/export. **결정 근거**: createHybridRaFetch 실구현(H-1), CLASSIFY/PMS 패턴 재사용(jurisdictions verdict 로직). **보안 fix**: C-1 IDOR(assertPmsProjectAccess) · H-1 실제 LLM wiring(REQ-006 reject live) · H-2 프롬프트 인젝션(<change_description>+UNTRUSTED DATA) · H-3 catch audit tx · H-4 change.export_blocked audit · M-1 risk-linkage org 검증. **게이트**: 3571 passed | 7 skipped · build 0. **AC 완료**: AC-01~04·06~08 ✅ · AC-05 ⏸️ DEFERRED(JSON shape만, 실제 PDF → #247) |
 | Work gate | #18 active | mandatory before new P0 work |
 
 ## SPEC-REGULA-KNOWLEDGE-GAP-001 (#35) — 미답변 자동 이슈화 및 지식베이스 보강 루프

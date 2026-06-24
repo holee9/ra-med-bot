@@ -71,7 +71,7 @@
 | SPEC | 이슈 | 제목 |
 |---|---|---|
 | `SPEC-REGULA-ADOPTION-001` | #38 | 사용자 온보딩·성과 KPI·피드백 루프 |
-| `SPEC-REGULA-CHANGE-CONTROL-001` | #54 | 설계 변경 규제 영향 자동 평가기 (Change Control RA Impact) |
+| `SPEC-REGULA-CHANGE-CONTROL-001` | #54 | ✅ 구현 완료 설계 변경 규제 영향 자동 평가기 (Change Control RA Impact) |
 | `SPEC-REGULA-REVIEW-OPS-001` | #36 | 전문가 검토 SLA·승인 워크벤치·증거 패키지 |
 | `SPEC-REGULA-RLHF-001` | #56 | 사용자 피드백 기반 RAG 품질 연속 개선 (Answer Quality RLHF Loop) |
 | `SPEC-REGULA-SUBMISSION-LIFECYCLE-001` | #37 | 510(k)·CER·PCCP 산출물 패키징·검증·추적 |

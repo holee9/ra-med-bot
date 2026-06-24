@@ -47,14 +47,22 @@ const EXPECTED_ACTIONS: PermissionAction[] = [
   'deadline.manage',
   'classify.generate',
   'classify.view',
+  'traceability.manage',
+  'knowledgegap.classify',
+  'knowledgegap.view',
+  'knowledgegap.replay',
+  // SPEC-REGULA-CHANGE-CONTROL-001 (Issue #54)
+  'change.assess',
+  'change.view',
+  'change.export',
 ];
 
 const VALID_ROLES = ['admin', 'qa-lead', 'ra-lead', 'ra-member', 'viewer', 'auditor'] as const;
 const VALID_SCOPES = ['org', 'project', 'user', 'none'] as const;
 
 describe('lib/auth/permissions.ts (REQ-ENTERPRISE-020) — PERMISSIONS matrix', () => {
-  it('PERMISSIONS contains exactly 44 entries', () => {
-    expect(Object.keys(PERMISSIONS)).toHaveLength(44); // +personal.view (PERSONAL-LIB-001) +deadline.view/manage (CALENDAR-001) +knowledgegap.classify/view/replay (KNOWLEDGE-GAP-001) +classify.generate/view (CLASSIFY-001) +traceability.manage (TRACEABILITY-001)
+  it('PERMISSIONS contains exactly 47 entries', () => {
+    expect(Object.keys(PERMISSIONS)).toHaveLength(47); // +personal.view (PERSONAL-LIB-001) +deadline.view/manage (CALENDAR-001) +knowledgegap.classify/view/replay (KNOWLEDGE-GAP-001) +classify.generate/view (CLASSIFY-001) +traceability.manage (TRACEABILITY-001) +change.assess/view/export (CHANGE-CONTROL-001)
   });
 
   it.each(EXPECTED_ACTIONS)('PERMISSIONS contains action: %s', (action) => {

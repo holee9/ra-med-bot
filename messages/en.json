@@ -31,5 +31,79 @@
     "mfds": "MFDS (Ministry of Food and Drug Safety)",
     "nmpa": "NMPA",
     "pmda": "PMDA"
+  },
+  "changeControl": {
+    "title": "Change Control",
+    "description": "Automated jurisdictional regulatory impact assessment for design changes",
+    "form": {
+      "project": "Project",
+      "changeType": "Change type",
+      "description": "Change description",
+      "impactScope": "Impact scope",
+      "targetMarkets": "Target markets",
+      "submit": "Run assessment",
+      "submitting": "Running assessment…"
+    },
+    "changeTypes": {
+      "design": "Design change",
+      "material": "Material change",
+      "manufacturing_process": "Manufacturing process change",
+      "software": "Software change",
+      "labeling": "Labeling change",
+      "intended_use": "Intended use change"
+    },
+    "verdicts": {
+      "new_submission_required": "New submission required",
+      "change_notification": "Change notification",
+      "internal_record_only": "Internal record only",
+      "not_applicable": "Not applicable"
+    },
+    "jurisdictions": {
+      "FDA": "FDA (US)",
+      "EU_MDR": "EU MDR (EU)",
+      "MFDS": "MFDS (KR)",
+      "NMPA": "NMPA (CN)",
+      "PMDA": "PMDA (JP)"
+    },
+    "status": {
+      "provisional": "Provisional — pending expert review",
+      "reviewed": "Reviewed",
+      "final": "Final"
+    },
+    "actions": {
+      "confirmReview": "Confirm review",
+      "export": "Export PDF"
+    },
+    "provisionalBanner": {
+      "title": "Provisional — pending expert review",
+      "body": "AI verdicts are marked provisional until an RA Lead review is completed and excluded from PDF export. (REQ-009 / REQ-011)"
+    },
+    "exportTooltip": {
+      "provisional": "Export available after expert review is completed",
+      "noPermission": "Export permission required (change.export)",
+      "default": "Export assessment report"
+    },
+    "exportNotice": {
+      "beta": "Assessment report exported. (Beta: PDF rendering arrives in Phase 6+ — currently a structured JSON report is provided.)"
+    },
+    "riskLinks": {
+      "title": "ISO 14971 risk re-evaluation linkage",
+      "empty": "No linked risk items for this assessment.",
+      "recommended": "Re-evaluation recommended",
+      "severity": "Severity"
+    },
+    "versionMetadata": {
+      "title": "Version metadata (rollback trace)",
+      "model": "Model",
+      "prompt": "Prompt",
+      "template": "Template"
+    },
+    "errors": {
+      "forbidden": "Change Control access requires RA Member role or higher (change.view).",
+      "noProject": "Create a project before running an assessment.",
+      "reviewFailed": "Failed to confirm review",
+      "exportFailed": "Export failed",
+      "alreadyReviewed": "This assessment has already been reviewed."
+    }
   }
 }

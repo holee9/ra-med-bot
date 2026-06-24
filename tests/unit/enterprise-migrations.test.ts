@@ -98,6 +98,11 @@ const REQUIRED_RECOVERY_TABLES = [
   ['reportability_assessments', 'reportabilityAssessments'],
   ['vigilance_reports', 'vigilanceReports'],
   ['corpus_sync_runs', 'corpusSyncRuns'],
+  // SPEC-REGULA-CHANGE-CONTROL-001 (Issue #54) — 4 change-control tables.
+  ['change_assessments', 'changeAssessments'],
+  ['change_verdicts', 'changeVerdicts'],
+  ['change_verdict_citations', 'changeVerdictCitations'],
+  ['change_risk_links', 'changeRiskLinks'],
 ] as const;
 
 const REQUIRED_RECOVERY_AUDIT_ACTIONS = [
@@ -122,6 +127,12 @@ const REQUIRED_RECOVERY_AUDIT_ACTIONS = [
   'submission_package_created',
   'submission_package_submitted',
   'submission_validation_completed',
+  // SPEC-REGULA-CHANGE-CONTROL-001 (Issue #54) — 5 change-control audit actions.
+  'change.assessment_created',
+  'change.verdict_produced',
+  'change.verdict_citation_rejected',
+  'change.assessment_reviewed',
+  'change.report_exported',
 ] as const;
 
 describe('Migration 2: audit_action enum +12 values (REQ-ENTERPRISE-028)', () => {
@@ -300,7 +311,7 @@ describe('lib/db/schema.ts Phase 5 additions', () => {
     const values = extractAuditActionEnumValues(src);
     const typeValues = extractAuditActionTypeValues(auditSrc);
     expect(values).toEqual(typeValues);
-    expect(values).toHaveLength(127); // +2 signature.* (ESIG-001) +3 audit.* (AUDITOR-VIEW-001) +2 personal_bookmark.* (PERSONAL-LIB-001) +3 deadline.* (CALENDAR-001) +3 corpus.* (DELTA-SYNC-001) +4 knowledge_gap_* (KNOWLEDGE-GAP-001) +1 classification_exported (CLASSIFY-001) +4 traceability.* (TRACEABILITY-001) +7 pms.*/pmcf.* (PMS-001) +2 pms.report_export_denied/pms.report_closed (PMS-001 AC-07)
+    expect(values).toHaveLength(133); // +2 signature.* (ESIG-001) +3 audit.* (AUDITOR-VIEW-001) +2 personal_bookmark.* (PERSONAL-LIB-001) +3 deadline.* (CALENDAR-001) +3 corpus.* (DELTA-SYNC-001) +4 knowledge_gap_* (KNOWLEDGE-GAP-001) +1 classification_exported (CLASSIFY-001) +4 traceability.* (TRACEABILITY-001) +7 pms.*/pmcf.* (PMS-001) +2 pms.report_export_denied/pms.report_closed (PMS-001 AC-07) +6 change.* (CHANGE-CONTROL-001 incl. change.export_blocked H-4)
   });
 
   it.each(REQUIRED_RECOVERY_TABLES)(
@@ -347,9 +358,16 @@ describe('lib/audit.ts Phase 5 AuditAction type additions', () => {
         'export.pdf',
         'export.email',
         'export.confluence',
+        // SPEC-REGULA-CHANGE-CONTROL-001 (Issue #54)
+        'change.assessment_created',
+        'change.verdict_produced',
+        'change.verdict_citation_rejected',
+        'change.assessment_reviewed',
+        'change.report_exported',
+        'change.export_blocked',
       ]),
     );
-    expect(values).toHaveLength(127); // +2 signature.* (ESIG-001) +3 audit.* (AUDITOR-VIEW-001) +2 personal_bookmark.* (PERSONAL-LIB-001) +3 deadline.* (CALENDAR-001) +3 corpus.* (DELTA-SYNC-001) +4 knowledge_gap_* (KNOWLEDGE-GAP-001) +1 classification_exported (CLASSIFY-001) +4 traceability.* (TRACEABILITY-001) +7 pms.*/pmcf.* (PMS-001) +2 pms.report_export_denied/pms.report_closed (PMS-001 AC-07)
+    expect(values).toHaveLength(133); // +2 signature.* (ESIG-001) +3 audit.* (AUDITOR-VIEW-001) +2 personal_bookmark.* (PERSONAL-LIB-001) +3 deadline.* (CALENDAR-001) +3 corpus.* (DELTA-SYNC-001) +4 knowledge_gap_* (KNOWLEDGE-GAP-001) +1 classification_exported (CLASSIFY-001) +4 traceability.* (TRACEABILITY-001) +7 pms.*/pmcf.* (PMS-001) +2 pms.report_export_denied/pms.report_closed (PMS-001 AC-07) +6 change.* (CHANGE-CONTROL-001 incl. change.export_blocked H-4)
   });
 
   it.each(REQUIRED_RECOVERY_AUDIT_ACTIONS)(
@@ -882,5 +900,120 @@ describe('SPEC-REGULA-PMS-001 (Issue #53) — migration 0069', () => {
     for (const v of PMS_AUDIT_ACTIONS) {
       expect(src).toContain(`'${v}'`);
     }
+  });
+});
+
+// ---------------------------------------------------------------------------
+// SPEC-REGULA-CHANGE-CONTROL-001 (Issue #54) — Design Change RA Impact Assessor
+// Migration 0071: 1 workflow_type + 5 audit_action + 4 tables + RLS + indexes
+// ---------------------------------------------------------------------------
+const CHANGE_CONTROL_AUDIT_ACTIONS = [
+  'change.assessment_created',
+  'change.verdict_produced',
+  'change.verdict_citation_rejected',
+  'change.assessment_reviewed',
+  'change.report_exported',
+  'change.export_blocked',
+] as const;
+
+describe('Migration 0071: change_control_assessment (SPEC-REGULA-CHANGE-CONTROL-001)', () => {
+  it('migration file 0071_change_control.sql exists', () => {
+    expect(fileExists('migrations/0071_change_control.sql')).toBe(true);
+  });
+
+  it('adds change_control_assessment to workflow_type enum (REQ-001)', () => {
+    const sql = readText('migrations/0071_change_control.sql');
+    expect(sql).toMatch(
+      /ALTER TYPE workflow_type ADD VALUE IF NOT EXISTS 'change_control_assessment'/,
+    );
+  });
+
+  it.each(CHANGE_CONTROL_AUDIT_ACTIONS)(
+    'adds ALTER TYPE audit_action ADD VALUE for: %s (REQ-012)',
+    (action) => {
+      const sql = readText('migrations/0071_change_control.sql');
+      const escaped = action.replace(/\./g, '\\.');
+      expect(sql).toMatch(
+        new RegExp(`ALTER TYPE audit_action ADD VALUE IF NOT EXISTS '${escaped}'`),
+      );
+    },
+  );
+
+  it('has exactly 7 ALTER TYPE statements (1 workflow_type + 6 audit_action incl. export_blocked)', () => {
+    const sql = readText('migrations/0071_change_control.sql');
+    const wf = sql.match(/ALTER TYPE workflow_type ADD VALUE/g) ?? [];
+    const audit = sql.match(/ALTER TYPE audit_action ADD VALUE/g) ?? [];
+    expect(wf).toHaveLength(1);
+    expect(audit).toHaveLength(6);
+  });
+
+  it('creates 4 change-control tables', () => {
+    const sql = readText('migrations/0071_change_control.sql');
+    expect(sql).toMatch(/CREATE TABLE change_assessments/);
+    expect(sql).toMatch(/CREATE TABLE change_verdicts/);
+    expect(sql).toMatch(/CREATE TABLE change_verdict_citations/);
+    expect(sql).toMatch(/CREATE TABLE change_risk_links/);
+  });
+
+  it('enforces excerpt NOT NULL on change_verdict_citations (REQ-006 DB defense)', () => {
+    const sql = readText('migrations/0071_change_control.sql');
+    expect(sql).toMatch(/excerpt\s+TEXT\s+NOT\s+NULL/i);
+    expect(sql).toMatch(/length\(btrim\(excerpt\)\)\s*>\s*0/);
+  });
+
+  it('enables RLS with org_id tenant isolation on all 4 tables', () => {
+    const sql = readText('migrations/0071_change_control.sql');
+    for (const table of [
+      'change_assessments',
+      'change_verdicts',
+      'change_verdict_citations',
+      'change_risk_links',
+    ]) {
+      expect(sql).toMatch(new RegExp(`ENABLE ROW LEVEL SECURITY[\\s\\S]*${table}`));
+      expect(sql).toMatch(new RegExp(`tenant_isolation_${table}`));
+    }
+  });
+
+  it('links change_risk_links.risk_item_id to risk_items.id (REQ-008 / #46)', () => {
+    const sql = readText('migrations/0071_change_control.sql');
+    expect(sql).toMatch(/risk_item_id\s+UUID\s+NOT\s+NULL\s+REFERENCES risk_items\(id\)/);
+  });
+
+  it('schema.ts workflowTypeEnum includes change_control_assessment', () => {
+    const src = readText('lib/db/schema.ts');
+    expect(src).toContain("'change_control_assessment'");
+  });
+
+  it('schema.ts auditActionEnum includes the 5 change.* values', () => {
+    const src = readText('lib/db/schema.ts');
+    for (const v of CHANGE_CONTROL_AUDIT_ACTIONS) {
+      expect(src).toContain(`'${v}'`);
+    }
+  });
+
+  it('schema.ts defines 4 change-control tables', () => {
+    const src = readText('lib/db/schema.ts');
+    expect(src).toMatch(/export const changeAssessments\s*=\s*pgTable/);
+    expect(src).toMatch(/export const changeVerdicts\s*=\s*pgTable/);
+    expect(src).toMatch(/export const changeVerdictCitations\s*=\s*pgTable/);
+    expect(src).toMatch(/export const changeRiskLinks\s*=\s*pgTable/);
+  });
+
+  it('AuditAction type in audit.ts includes the 5 change.* values', () => {
+    const src = readText('lib/audit.ts');
+    for (const v of CHANGE_CONTROL_AUDIT_ACTIONS) {
+      expect(src).toContain(`'${v}'`);
+    }
+  });
+
+  it('permissions.ts adds 3 change.* PermissionActions (REQ-012 RBAC)', () => {
+    const src = readText('lib/auth/permissions.ts');
+    expect(src).toMatch(/'change\.assess'/);
+    expect(src).toMatch(/'change\.view'/);
+    expect(src).toMatch(/'change\.export'/);
+    // ra-lead only for assess/export; ra-member+ for view
+    expect(src).toMatch(/'change\.assess':\s*\{\s*minRole:\s*'ra-lead'/);
+    expect(src).toMatch(/'change\.export':\s*\{\s*minRole:\s*'ra-lead'/);
+    expect(src).toMatch(/'change\.view':\s*\{\s*minRole:\s*'ra-member'/);
   });
 });

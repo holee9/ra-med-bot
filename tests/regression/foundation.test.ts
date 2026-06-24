@@ -38,8 +38,8 @@ describe('FOUNDATION regression', () => {
   // + personal.view — SPEC-REGULA-PERSONAL-LIB-001
   // + deadline.view, deadline.manage — SPEC-REGULA-CALENDAR-001)
   // ---------------------------------------------------------------------------
-  it('has 44 permission actions defined', () => {
-    expect(Object.keys(PERMISSIONS).length).toBe(44); // +knowledgegap.classify/view/replay (KNOWLEDGE-GAP-001) +classify.generate/view (CLASSIFY-001) +traceability.manage (TRACEABILITY-001)
+  it('has 47 permission actions defined', () => {
+    expect(Object.keys(PERMISSIONS).length).toBe(47); // +knowledgegap.classify/view/replay (KNOWLEDGE-GAP-001) +classify.generate/view (CLASSIFY-001) +traceability.manage (TRACEABILITY-001) +change.assess/view/export (CHANGE-CONTROL-001)
   });
 
   it('profile.edit permission exists with user scope', () => {
