@@ -60,6 +60,9 @@ interface SidebarProps {
   // SPEC-REGULA-CAPA-001 (Issue #68): CAPA complaint/closed-loop workbench is
   // visible to roles with complaint.view (ra-member+). Gated server-side.
   showCapa?: boolean;
+  // SPEC-REGULA-CLINICAL-INVESTIGATION-001 (Issue #69): Clinical Investigation planner
+  // is visible to roles with clinical_investigation.view (ra-member+).
+  showClinicalInvestigation?: boolean;
   initialLocale?: string;
 }
 
@@ -73,6 +76,7 @@ export default function Sidebar(props?: SidebarProps) {
   const showChangeControl = props?.showChangeControl ?? false;
   const showLabeling = props?.showLabeling ?? false;
   const showCapa = props?.showCapa ?? false;
+  const showClinicalInvestigation = props?.showClinicalInvestigation ?? false;
   const currentProjectId = useUIStore((s) => s.currentProjectId);
   const setCurrentProjectId = useUIStore((s) => s.setCurrentProjectId);
   const { data = [] } = useProjects();
@@ -259,6 +263,19 @@ export default function Sidebar(props?: SidebarProps) {
             className="rounded-md px-3 py-2 text-sm text-ink-700 hover:bg-ink-50 block"
           >
             불만·CAPA
+          </Link>
+        </nav>
+      )}
+
+      {/* SPEC-REGULA-CLINICAL-INVESTIGATION-001 (Issue #69): Clinical Investigation conditional link. */}
+      {showClinicalInvestigation && (
+        <nav className="px-2 py-1">
+          <Link
+            href="/clinical-investigation"
+            data-testid="sidebar-clinical-investigation-link"
+            className="rounded-md px-3 py-2 text-sm text-ink-700 hover:bg-ink-50 block"
+          >
+            임상조사
           </Link>
         </nav>
       )}

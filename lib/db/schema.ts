@@ -309,6 +309,18 @@ export const auditActionEnum = pgEnum('audit_action', [
   'capa.effectiveness_scheduled',
   'capa.closed',
   'capa.close_blocked_vigilance_missing',
+  // SPEC-REGULA-CLINICAL-INVESTIGATION-001 — added via 0076_clinical_investigation.sql
+  // (Issue #69, REQ-CLININV-010): 8 clinical-investigation lifecycle audit actions
+  // for 21 CFR Part 11 traceability. ci.close_blocked_signoff_missing records the
+  // expert-signoff close-gate denial (REQ-012), mirroring capa.close_blocked_*.
+  'ci.assessed',
+  'ci.pathway_determined',
+  'ci.protocol_updated',
+  'ci.irb_package_drafted',
+  'ci.event_recorded',
+  'ci.results_linked',
+  'ci.closed',
+  'ci.close_blocked_signoff_missing',
 ]);
 
 // @MX:NOTE [AUTO] Knowledge gap enums — SPEC-REGULA-KNOWLEDGE-GAP-001 (Issue #35).
@@ -367,6 +379,8 @@ export const workflowTypeEnum = pgEnum('workflow_type', [
   'change_control_assessment',
   'labeling',
   'complaint',
+  // Issue #69 (REQ-CLININV-001~012): clinical investigation planner.
+  'clinical_investigation',
 ]);
 
 // REQ-WF-049: workflow_status pgEnum — lifecycle states for workflow_runs.
@@ -2363,5 +2377,154 @@ export const capaEffectivenessChecks = pgTable(
     capaIdx: index('idx_capa_effectiveness_capa').on(t.capaId),
     orgIdx: index('idx_capa_effectiveness_org').on(t.orgId),
     dueIdx: index('idx_capa_effectiveness_due').on(t.dueDate),
+  }),
+);
+
+// @MX:NOTE [AUTO] Clinical Investigation enums — SPEC-REGULA-CLINICAL-INVESTIGATION-001 (Issue #69).
+// @MX:SPEC SPEC-REGULA-CLINICAL-INVESTIGATION-001 (REQ-CLININV-001~012)
+// @MX:REASON Drizzle pgEnum mirrors the SQL types created in 0076_clinical_investigation.sql.
+// Keep in lock-step with the migration or runtime inserts fail.
+export const ciPathwayEnum = pgEnum('ci_pathway', ['fda_ide', 'eu_mdr']);
+export const ciDocTypeEnum = pgEnum('ci_doc_type', [
+  'irb_package',
+  'consent',
+  'brochure',
+  'monitoring_plan',
+]);
+export const ciEventTypeEnum = pgEnum('ci_event_type', ['milestone', 'deviation', 'adverse_event']);
+export const ciLinkTargetTypeEnum = pgEnum('ci_link_target_type', ['cer', 'pms', 'dhf']);
+
+// SPEC-REGULA-CLINICAL-INVESTIGATION-001 (Issue #69, REQ-CLININV-001~012).
+// @MX:NOTE [AUTO] clinical_investigations — root table of the CI planner domain.
+// @MX:REASON All 5 CI tables are org_id-scoped (tenant isolation, L-007 cross-SPEC lesson:
+//   tables without org_id caused CAPA C-1 defect). pathway is nullable until the user
+//   commits to FDA IDE or EU MDR (REQ-002/003). necessity_status drives the gap-assessment
+//   output (REQ-001); approval_status gates the expert-signoff close (REQ-012, AC-07).
+export const clinicalInvestigations = pgTable(
+  'clinical_investigations',
+  {
+    id: uuid('id').defaultRandom().primaryKey(),
+    orgId: uuid('org_id')
+      .notNull()
+      .references(() => organizations.id, { onDelete: 'cascade' }),
+    projectId: uuid('project_id').references(() => projects.id, { onDelete: 'set null' }),
+    pathway: ciPathwayEnum('pathway'),
+    necessityStatus: text('necessity_status').notNull().default('pending'),
+    necessityRationale: text('necessity_rationale'),
+    approvalStatus: text('approval_status').notNull().default('draft'),
+    createdBy: uuid('created_by')
+      .notNull()
+      .references(() => users.id, { onDelete: 'restrict' }),
+    createdAt: timestamp('created_at', { withTimezone: true, mode: 'date' }).notNull().defaultNow(),
+    updatedAt: timestamp('updated_at', { withTimezone: true, mode: 'date' }).notNull().defaultNow(),
+  },
+  (t) => ({
+    orgIdx: index('idx_clinical_investigations_org').on(t.orgId),
+    projectIdx: index('idx_clinical_investigations_project').on(t.projectId),
+    statusIdx: index('idx_clinical_investigations_status').on(t.approvalStatus),
+  }),
+);
+
+// SPEC-REGULA-CLINICAL-INVESTIGATION-001 (Issue #69, REQ-CLININV-005).
+// ci_protocols — protocol synopsis/endpoint/inclusion-exclusion criteria (AC-06).
+export const ciProtocols = pgTable(
+  'ci_protocols',
+  {
+    id: uuid('id').defaultRandom().primaryKey(),
+    orgId: uuid('org_id')
+      .notNull()
+      .references(() => organizations.id, { onDelete: 'cascade' }),
+    investigationId: uuid('investigation_id')
+      .notNull()
+      .references(() => clinicalInvestigations.id, { onDelete: 'cascade' }),
+    synopsis: text('synopsis'),
+    endpoints: jsonb('endpoints').notNull().default({}),
+    inclusionCriteria: jsonb('inclusion_criteria').notNull().default([]),
+    exclusionCriteria: jsonb('exclusion_criteria').notNull().default([]),
+    createdAt: timestamp('created_at', { withTimezone: true, mode: 'date' }).notNull().defaultNow(),
+    updatedAt: timestamp('updated_at', { withTimezone: true, mode: 'date' }).notNull().defaultNow(),
+  },
+  (t) => ({
+    investigationIdx: index('idx_ci_protocols_investigation').on(t.investigationId),
+    orgIdx: index('idx_ci_protocols_org').on(t.orgId),
+  }),
+);
+
+// SPEC-REGULA-CLINICAL-INVESTIGATION-001 (Issue #69, REQ-CLININV-004/006/007).
+// ci_documents — IRB/EC package draft, informed consent, investigator brochure,
+// monitoring plan. doc_type is a typed enum; content holds the generated draft text.
+export const ciDocuments = pgTable(
+  'ci_documents',
+  {
+    id: uuid('id').defaultRandom().primaryKey(),
+    orgId: uuid('org_id')
+      .notNull()
+      .references(() => organizations.id, { onDelete: 'cascade' }),
+    investigationId: uuid('investigation_id')
+      .notNull()
+      .references(() => clinicalInvestigations.id, { onDelete: 'cascade' }),
+    docType: ciDocTypeEnum('doc_type').notNull(),
+    content: text('content').notNull().default(''),
+    reviewStatus: text('review_status').notNull().default('draft'),
+    createdAt: timestamp('created_at', { withTimezone: true, mode: 'date' }).notNull().defaultNow(),
+    updatedAt: timestamp('updated_at', { withTimezone: true, mode: 'date' }).notNull().defaultNow(),
+  },
+  (t) => ({
+    investigationIdx: index('idx_ci_documents_investigation').on(t.investigationId),
+    orgIdx: index('idx_ci_documents_org').on(t.orgId),
+    typeIdx: index('idx_ci_documents_type').on(t.docType),
+  }),
+);
+
+// SPEC-REGULA-CLINICAL-INVESTIGATION-001 (Issue #69, REQ-CLININV-008, AC-08).
+// ci_events — milestone / deviation / adverse_event. adverse_event rows carry an
+// optional vigilance_ref linking to the Vigilance domain (AC-08). Mirrors the
+// capa.close_blocked_vigilance_missing linkage direction.
+export const ciEvents = pgTable(
+  'ci_events',
+  {
+    id: uuid('id').defaultRandom().primaryKey(),
+    orgId: uuid('org_id')
+      .notNull()
+      .references(() => organizations.id, { onDelete: 'cascade' }),
+    investigationId: uuid('investigation_id')
+      .notNull()
+      .references(() => clinicalInvestigations.id, { onDelete: 'cascade' }),
+    type: ciEventTypeEnum('type').notNull(),
+    data: jsonb('data').notNull().default({}),
+    vigilanceRef: text('vigilance_ref'),
+    occurredAt: timestamp('occurred_at', { withTimezone: true, mode: 'date' })
+      .notNull()
+      .defaultNow(),
+    createdAt: timestamp('created_at', { withTimezone: true, mode: 'date' }).notNull().defaultNow(),
+  },
+  (t) => ({
+    investigationIdx: index('idx_ci_events_investigation').on(t.investigationId),
+    orgIdx: index('idx_ci_events_org').on(t.orgId),
+    typeIdx: index('idx_ci_events_type').on(t.type),
+  }),
+);
+
+// SPEC-REGULA-CLINICAL-INVESTIGATION-001 (Issue #69, REQ-CLININV-009, AC-04).
+// ci_links — forward-compatibility hook linking investigation results to CER/PMS/DHF
+// deliverables. Mirrors lib/pms/cer-linkage.ts project-scoped linkage pattern.
+export const ciLinks = pgTable(
+  'ci_links',
+  {
+    id: uuid('id').defaultRandom().primaryKey(),
+    orgId: uuid('org_id')
+      .notNull()
+      .references(() => organizations.id, { onDelete: 'cascade' }),
+    investigationId: uuid('investigation_id')
+      .notNull()
+      .references(() => clinicalInvestigations.id, { onDelete: 'cascade' }),
+    targetType: ciLinkTargetTypeEnum('target_type').notNull(),
+    targetId: uuid('target_id').notNull(),
+    createdAt: timestamp('created_at', { withTimezone: true, mode: 'date' }).notNull().defaultNow(),
+  },
+  (t) => ({
+    investigationIdx: index('idx_ci_links_investigation').on(t.investigationId),
+    orgIdx: index('idx_ci_links_org').on(t.orgId),
+    targetIdx: index('idx_ci_links_target').on(t.targetType, t.targetId),
   }),
 );

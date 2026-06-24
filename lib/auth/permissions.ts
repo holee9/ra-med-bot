@@ -99,7 +99,18 @@ export type PermissionAction =
   | 'capa.root_cause'
   | 'capa.effectiveness'
   | 'capa.close'
-  | 'capa.qms_sync';
+  | 'capa.qms_sync'
+  // SPEC-REGULA-CLINICAL-INVESTIGATION-001 (Issue #69). 3 RBAC actions.
+  //   assess: ra-lead — gap-based necessity + pathway decisions drive regulatory
+  //          submission strategy (FDA IDE vs EU MDR Article 62), so they are a
+  //          judgment call (mirrors classify.generate / change.assess).
+  //   manage: ra-lead — IRB package draft, protocol edits, event recording, close
+  //          (21 CFR Part 11 audit-material records). Mirrors capa.close.
+  //   view: ra-member+ — investigation status is shared across the RA team
+  //          dashboard AC-05. Mirrors capa.create / traceability.view.
+  | 'clinical_investigation.assess'
+  | 'clinical_investigation.manage'
+  | 'clinical_investigation.view';
 
 export interface PermissionSpec {
   minRole: Role;
@@ -301,4 +312,27 @@ export const PERMISSIONS: Record<PermissionAction, PermissionSpec> = {
   },
   'capa.close': { minRole: 'ra-lead', scope: 'org', resourceType: 'capaRecord' },
   'capa.qms_sync': { minRole: 'ra-lead', scope: 'org', resourceType: 'capaRecord' },
+
+  // @MX:NOTE [AUTO] clinical_investigation.* — SPEC-REGULA-CLINICAL-INVESTIGATION-001 (Issue #69).
+  // @MX:SPEC SPEC-REGULA-CLINICAL-INVESTIGATION-001
+  // assess: ra-lead only — gap-based necessity + pathway decisions drive submission
+  //         strategy (FDA IDE vs EU MDR Article 62), a regulatory judgment call.
+  // manage: ra-lead only — IRB package draft, protocol edits, event recording, close
+  //         (21 CFR Part 11 audit-material records). Mirrors capa.close.
+  // view: ra-member+ — investigation status is shared across the RA team (AC-05 dashboard).
+  'clinical_investigation.assess': {
+    minRole: 'ra-lead',
+    scope: 'org',
+    resourceType: 'clinicalInvestigation',
+  },
+  'clinical_investigation.manage': {
+    minRole: 'ra-lead',
+    scope: 'org',
+    resourceType: 'clinicalInvestigation',
+  },
+  'clinical_investigation.view': {
+    minRole: 'ra-member',
+    scope: 'org',
+    resourceType: 'clinicalInvestigation',
+  },
 };

@@ -33,13 +33,13 @@ describe('FOUNDATION regression', () => {
   });
 
   // ---------------------------------------------------------------------------
-  // Permissions matrix has exactly 38 actions (32 base + signature.sign — SPEC-REGULA-ESIG-001
+  // Permissions matrix count preserved (32 base + signature.sign — SPEC-REGULA-ESIG-001
   // + audit.read, audit.package.generate — SPEC-REGULA-AUDITOR-VIEW-001
   // + personal.view — SPEC-REGULA-PERSONAL-LIB-001
   // + deadline.view, deadline.manage — SPEC-REGULA-CALENDAR-001)
   // ---------------------------------------------------------------------------
   it('has 58 permission actions defined', () => {
-    expect(Object.keys(PERMISSIONS).length).toBe(58); // +7 complaint/capa.* (CAPA-001, Issue #68)
+    expect(Object.keys(PERMISSIONS).length).toBe(61); // +7 complaint/capa.* (CAPA-001, Issue #68) +3 clinical_investigation.* (Issue #69)
   });
 
   it('profile.edit permission exists with user scope', () => {
