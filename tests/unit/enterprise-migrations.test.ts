@@ -311,7 +311,7 @@ describe('lib/db/schema.ts Phase 5 additions', () => {
     const values = extractAuditActionEnumValues(src);
     const typeValues = extractAuditActionTypeValues(auditSrc);
     expect(values).toEqual(typeValues);
-    expect(values).toHaveLength(133); // +2 signature.* (ESIG-001) +3 audit.* (AUDITOR-VIEW-001) +2 personal_bookmark.* (PERSONAL-LIB-001) +3 deadline.* (CALENDAR-001) +3 corpus.* (DELTA-SYNC-001) +4 knowledge_gap_* (KNOWLEDGE-GAP-001) +1 classification_exported (CLASSIFY-001) +4 traceability.* (TRACEABILITY-001) +7 pms.*/pmcf.* (PMS-001) +2 pms.report_export_denied/pms.report_closed (PMS-001 AC-07) +6 change.* (CHANGE-CONTROL-001 incl. change.export_blocked H-4)
+    expect(values).toHaveLength(139); // +6 label.* (LABELING-001, Issue #66)
   });
 
   it.each(REQUIRED_RECOVERY_TABLES)(
@@ -367,7 +367,7 @@ describe('lib/audit.ts Phase 5 AuditAction type additions', () => {
         'change.export_blocked',
       ]),
     );
-    expect(values).toHaveLength(133); // +2 signature.* (ESIG-001) +3 audit.* (AUDITOR-VIEW-001) +2 personal_bookmark.* (PERSONAL-LIB-001) +3 deadline.* (CALENDAR-001) +3 corpus.* (DELTA-SYNC-001) +4 knowledge_gap_* (KNOWLEDGE-GAP-001) +1 classification_exported (CLASSIFY-001) +4 traceability.* (TRACEABILITY-001) +7 pms.*/pmcf.* (PMS-001) +2 pms.report_export_denied/pms.report_closed (PMS-001 AC-07) +6 change.* (CHANGE-CONTROL-001 incl. change.export_blocked H-4)
+    expect(values).toHaveLength(139); // +6 label.* (LABELING-001, Issue #66)
   });
 
   it.each(REQUIRED_RECOVERY_AUDIT_ACTIONS)(
@@ -1015,5 +1015,118 @@ describe('Migration 0071: change_control_assessment (SPEC-REGULA-CHANGE-CONTROL-
     expect(src).toMatch(/'change\.assess':\s*\{\s*minRole:\s*'ra-lead'/);
     expect(src).toMatch(/'change\.export':\s*\{\s*minRole:\s*'ra-lead'/);
     expect(src).toMatch(/'change\.view':\s*\{\s*minRole:\s*'ra-member'/);
+  });
+});
+
+// ---------------------------------------------------------------------------
+// SPEC-REGULA-LABELING-001 (Issue #66) — Labeling & IFU Structured Authoring
+// Migration 0072: 1 workflow_type + 6 audit_action + 5 tables + RLS + indexes
+// ---------------------------------------------------------------------------
+const LABELING_AUDIT_ACTIONS = [
+  'label.document_created',
+  'label.claim_validated',
+  'label.claim_citation_rejected',
+  'label.translation_diff_detected',
+  'label.approved',
+  'label.export_blocked',
+] as const;
+
+describe('Migration 0072: labeling (SPEC-REGULA-LABELING-001)', () => {
+  it('migration file 0072_labeling.sql exists', () => {
+    expect(fileExists('migrations/0072_labeling.sql')).toBe(true);
+  });
+
+  it('adds labeling to workflow_type enum (REQ-001)', () => {
+    const sql = readText('migrations/0072_labeling.sql');
+    expect(sql).toMatch(/ALTER TYPE workflow_type ADD VALUE IF NOT EXISTS 'labeling'/);
+  });
+
+  it.each(LABELING_AUDIT_ACTIONS)(
+    'adds ALTER TYPE audit_action ADD VALUE for: %s (REQ-010)',
+    (action) => {
+      const sql = readText('migrations/0072_labeling.sql');
+      const escaped = action.replace(/\./g, '\\.');
+      expect(sql).toMatch(
+        new RegExp(`ALTER TYPE audit_action ADD VALUE IF NOT EXISTS '${escaped}'`),
+      );
+    },
+  );
+
+  it('has exactly 7 ALTER TYPE statements (1 workflow_type + 6 audit_action)', () => {
+    const sql = readText('migrations/0072_labeling.sql');
+    const wf = sql.match(/ALTER TYPE workflow_type ADD VALUE/g) ?? [];
+    const audit = sql.match(/ALTER TYPE audit_action ADD VALUE/g) ?? [];
+    expect(wf).toHaveLength(1);
+    expect(audit).toHaveLength(6);
+  });
+
+  it('creates 5 labeling tables', () => {
+    const sql = readText('migrations/0072_labeling.sql');
+    expect(sql).toMatch(/CREATE TABLE labeling_documents/);
+    expect(sql).toMatch(/CREATE TABLE labeling_sections/);
+    expect(sql).toMatch(/CREATE TABLE labeling_claims/);
+    expect(sql).toMatch(/CREATE TABLE labeling_claim_citations/);
+    expect(sql).toMatch(/CREATE TABLE labeling_translations/);
+  });
+
+  it('enforces excerpt NOT NULL on labeling_claim_citations (REQ-003 DB defense)', () => {
+    const sql = readText('migrations/0072_labeling.sql');
+    expect(sql).toMatch(/excerpt\s+TEXT\s+NOT\s+NULL/i);
+    expect(sql).toMatch(/length\(btrim\(excerpt\)\)\s*>\s*0/);
+  });
+
+  it('enables RLS with org_id tenant isolation on all 5 tables', () => {
+    const sql = readText('migrations/0072_labeling.sql');
+    for (const table of [
+      'labeling_documents',
+      'labeling_sections',
+      'labeling_claims',
+      'labeling_claim_citations',
+      'labeling_translations',
+    ]) {
+      expect(sql).toMatch(new RegExp(`ENABLE ROW LEVEL SECURITY[\\s\\S]*${table}`));
+      expect(sql).toMatch(new RegExp(`tenant_isolation_${table}`));
+    }
+  });
+
+  it('schema.ts workflowTypeEnum includes labeling', () => {
+    const src = readText('lib/db/schema.ts');
+    expect(src).toContain("'labeling'");
+  });
+
+  it('schema.ts auditActionEnum includes the 6 label.* values', () => {
+    const src = readText('lib/db/schema.ts');
+    for (const v of LABELING_AUDIT_ACTIONS) {
+      expect(src).toContain(`'${v}'`);
+    }
+  });
+
+  it('schema.ts defines 5 labeling tables', () => {
+    const src = readText('lib/db/schema.ts');
+    expect(src).toMatch(/export const labelingDocuments\s*=\s*pgTable/);
+    expect(src).toMatch(/export const labelingSections\s*=\s*pgTable/);
+    expect(src).toMatch(/export const labelingClaims\s*=\s*pgTable/);
+    expect(src).toMatch(/export const labelingClaimCitations\s*=\s*pgTable/);
+    expect(src).toMatch(/export const labelingTranslations\s*=\s*pgTable/);
+  });
+
+  it('AuditAction type in audit.ts includes the 6 label.* values', () => {
+    const src = readText('lib/audit.ts');
+    for (const v of LABELING_AUDIT_ACTIONS) {
+      expect(src).toContain(`'${v}'`);
+    }
+  });
+
+  it('permissions.ts adds 4 label.* PermissionActions (REQ-012 RBAC)', () => {
+    const src = readText('lib/auth/permissions.ts');
+    expect(src).toMatch(/'label\.create'/);
+    expect(src).toMatch(/'label\.view'/);
+    expect(src).toMatch(/'label\.approve'/);
+    expect(src).toMatch(/'label\.export'/);
+    // ra-lead only for approve/export; ra-member+ for create/view
+    expect(src).toMatch(/'label\.approve':\s*\{\s*minRole:\s*'ra-lead'/);
+    expect(src).toMatch(/'label\.export':\s*\{\s*minRole:\s*'ra-lead'/);
+    expect(src).toMatch(/'label\.create':\s*\{\s*minRole:\s*'ra-member'/);
+    expect(src).toMatch(/'label\.view':\s*\{\s*minRole:\s*'ra-member'/);
   });
 });

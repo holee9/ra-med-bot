@@ -276,6 +276,15 @@ export const auditActionEnum = pgEnum('audit_action', [
   'change.assessment_reviewed',
   'change.report_exported',
   'change.export_blocked',
+  // SPEC-REGULA-LABELING-001 (Issue #66, REQ-LABEL-010):
+  // 6 labeling lifecycle audit actions (21 CFR Part 11). label.export_blocked
+  // records export denial when unsupported claims exist (REQ-LABEL-006).
+  'label.document_created',
+  'label.claim_validated',
+  'label.claim_citation_rejected',
+  'label.translation_diff_detected',
+  'label.approved',
+  'label.export_blocked',
 ]);
 
 // @MX:NOTE [AUTO] Knowledge gap enums — SPEC-REGULA-KNOWLEDGE-GAP-001 (Issue #35).
@@ -315,6 +324,7 @@ export const gapClassificationEnum = pgEnum('gap_classification', [
 // 'classify' added via 0067_classify.sql (tasks.md canonical value, mirrors 'risk' naming).
 // SPEC-REGULA-PMS-001: 'pms_report', 'pmcf_plan', 'pmcf_evaluation' added via 0069_pms.sql.
 // SPEC-REGULA-CHANGE-CONTROL-001: 'change_control_assessment' added via 0071_change_control.sql.
+// SPEC-REGULA-LABELING-001: 'labeling' added via 0072_labeling.sql.
 export const workflowTypeEnum = pgEnum('workflow_type', [
   'submission_drafter',
   'audit_response',
@@ -330,6 +340,7 @@ export const workflowTypeEnum = pgEnum('workflow_type', [
   'pmcf_plan',
   'pmcf_evaluation',
   'change_control_assessment',
+  'labeling',
 ]);
 
 // REQ-WF-049: workflow_status pgEnum — lifecycle states for workflow_runs.
@@ -1966,5 +1977,177 @@ export const changeRiskLinks = pgTable(
     assessmentIdx: index('idx_change_risk_links_assessment').on(t.assessmentId),
     orgIdx: index('idx_change_risk_links_org').on(t.orgId),
     riskItemIdx: index('idx_change_risk_links_risk_item').on(t.riskItemId),
+  }),
+);
+
+// ---------------------------------------------------------------------------
+// SPEC-REGULA-LABELING-001 — Labeling & IFU Structured Authoring (Issue #66)
+// Migration: 0072_labeling.sql
+// REQ-LABEL-001 (workflow_type) handled above in workflowTypeEnum.
+// REQ-LABEL-010 (audit_action) handled above in auditActionEnum.
+// ---------------------------------------------------------------------------
+
+// REQ-001: 5 structured section types.
+export const labelingSectionTypeEnum = pgEnum('labeling_section_type_enum', [
+  'intended_use',
+  'indication',
+  'contraindication',
+  'warning',
+  'precaution',
+]);
+
+// REQ-005: claim classification — supported/comparative/superiority/unsupported.
+export const labelingClaimTypeEnum = pgEnum('labeling_claim_type_enum', [
+  'supported',
+  'comparative',
+  'superiority',
+  'unsupported',
+]);
+
+// REQ-006: document lifecycle — draft → in_review → approved.
+export const labelingDocumentStatusEnum = pgEnum('labeling_document_status', [
+  'draft',
+  'in_review',
+  'approved',
+  'rejected',
+]);
+
+// REQ-007: translation semantic-diff status (MVP heuristic).
+export const labelingDiffStatusEnum = pgEnum('labeling_diff_status', [
+  'match',
+  'minor_diff',
+  'major_diff',
+  'review_required',
+]);
+
+// @MX:ANCHOR [AUTO] labelingDocuments — top-level labeling/IFU record per project.
+// @MX:REASON Referenced by labeling_sections, labeling_claims (transitively),
+//           BFF routes, change-control linkage, and export hub. fan_in >= 3.
+// @MX:SPEC SPEC-REGULA-LABELING-001 (REQ-LABEL-001, REQ-LABEL-006, REQ-LABEL-012)
+export const labelingDocuments = pgTable(
+  'labeling_documents',
+  {
+    id: uuid('id').defaultRandom().primaryKey(),
+    orgId: uuid('org_id').notNull(),
+    projectId: uuid('project_id').notNull(),
+    workflowRunId: uuid('workflow_run_id'),
+    productName: text('product_name').notNull(),
+    // REQ-002/011: jurisdiction drives the required-elements checklist
+    jurisdiction: text('jurisdiction').notNull(),
+    // REQ-006/012: approval gate
+    status: text('status').notNull().default('draft'),
+    approvedBy: uuid('approved_by'),
+    approvedAt: timestamp('approved_at', { withTimezone: true, mode: 'date' }),
+    createdBy: uuid('created_by').notNull(),
+    createdAt: timestamp('created_at', { withTimezone: true, mode: 'date' }).notNull().defaultNow(),
+    updatedAt: timestamp('updated_at', { withTimezone: true, mode: 'date' }).notNull().defaultNow(),
+  },
+  (t) => ({
+    projectIdx: index('idx_labeling_documents_project').on(t.projectId),
+    orgIdx: index('idx_labeling_documents_org').on(t.orgId),
+    runIdx: index('idx_labeling_documents_run').on(t.workflowRunId),
+  }),
+);
+
+// @MX:NOTE [AUTO] labeling_sections — structured sections per document.
+// @MX:SPEC SPEC-REGULA-LABELING-001 (REQ-LABEL-001)
+export const labelingSections = pgTable(
+  'labeling_sections',
+  {
+    id: uuid('id').defaultRandom().primaryKey(),
+    orgId: uuid('org_id').notNull(),
+    documentId: uuid('document_id')
+      .notNull()
+      .references(() => labelingDocuments.id, { onDelete: 'cascade' }),
+    sectionType: text('section_type').notNull(),
+    content: text('content').notNull().default(''),
+    locale: text('locale').notNull().default('en'),
+    createdAt: timestamp('created_at', { withTimezone: true, mode: 'date' }).notNull().defaultNow(),
+    updatedAt: timestamp('updated_at', { withTimezone: true, mode: 'date' }).notNull().defaultNow(),
+  },
+  (t) => ({
+    documentIdx: index('idx_labeling_sections_document').on(t.documentId),
+    orgIdx: index('idx_labeling_sections_org').on(t.orgId),
+  }),
+);
+
+// @MX:ANCHOR [AUTO] labeling_claims — atomic claims linked to a section.
+// @MX:REASON REQ-003/004: claim-citation enforcement (expert_review_required
+//           when no grounded citation). REQ-005: comparative/superiority detection.
+// @MX:SPEC SPEC-REGULA-LABELING-001 (REQ-LABEL-003, REQ-LABEL-004, REQ-LABEL-005)
+export const labelingClaims = pgTable(
+  'labeling_claims',
+  {
+    id: uuid('id').defaultRandom().primaryKey(),
+    orgId: uuid('org_id').notNull(),
+    sectionId: uuid('section_id')
+      .notNull()
+      .references(() => labelingSections.id, { onDelete: 'cascade' }),
+    claimText: text('claim_text').notNull(),
+    claimType: text('claim_type').notNull().default('supported'),
+    expertReviewRequired: boolean('expert_review_required').notNull().default(false),
+    matchedKeywords: jsonb('matched_keywords'),
+    createdBy: uuid('created_by').notNull(),
+    createdAt: timestamp('created_at', { withTimezone: true, mode: 'date' }).notNull().defaultNow(),
+    updatedAt: timestamp('updated_at', { withTimezone: true, mode: 'date' }).notNull().defaultNow(),
+  },
+  (t) => ({
+    sectionIdx: index('idx_labeling_claims_section').on(t.sectionId),
+    orgIdx: index('idx_labeling_claims_org').on(t.orgId),
+    expertReviewIdx: index('idx_labeling_claims_expert_review').on(t.expertReviewRequired),
+  }),
+);
+
+// @MX:ANCHOR [AUTO] labeling_claim_citations — REQ-003 citation enforcement table.
+// @MX:REASON excerpt is the DB-level NOT NULL defense (dual with
+//           validateClaimCitations) against claims without a grounded excerpt.
+// @MX:SPEC SPEC-REGULA-LABELING-001 (REQ-LABEL-003)
+export const labelingClaimCitations = pgTable(
+  'labeling_claim_citations',
+  {
+    id: uuid('id').defaultRandom().primaryKey(),
+    orgId: uuid('org_id').notNull(),
+    claimId: uuid('claim_id')
+      .notNull()
+      .references(() => labelingClaims.id, { onDelete: 'cascade' }),
+    sourceSectionId: uuid('source_section_id'),
+    // REQ-003: excerpt NOT NULL — DB-level defense. Migration CHECK rejects empty.
+    excerpt: text('excerpt').notNull(),
+    sourceLabel: text('source_label'),
+    citationId: text('citation_id'),
+    createdAt: timestamp('created_at', { withTimezone: true, mode: 'date' }).notNull().defaultNow(),
+  },
+  (t) => ({
+    claimIdx: index('idx_labeling_claim_citations_claim').on(t.claimId),
+    orgIdx: index('idx_labeling_claim_citations_org').on(t.orgId),
+  }),
+);
+
+// @MX:NOTE [AUTO] labeling_translations — translated sections with semantic-diff.
+// @MX:SPEC SPEC-REGULA-LABELING-001 (REQ-LABEL-007)
+export const labelingTranslations = pgTable(
+  'labeling_translations',
+  {
+    id: uuid('id').defaultRandom().primaryKey(),
+    orgId: uuid('org_id').notNull(),
+    sectionId: uuid('section_id')
+      .notNull()
+      .references(() => labelingSections.id, { onDelete: 'cascade' }),
+    sourceLocale: text('source_locale').notNull(),
+    targetLocale: text('target_locale').notNull(),
+    sourceTextSnapshot: text('source_text_snapshot').notNull(),
+    targetText: text('target_text').notNull(),
+    semanticDiffStatus: text('semantic_diff_status').notNull().default('match'),
+    diffDetails: jsonb('diff_details'),
+    approvalStatus: text('approval_status').notNull().default('pending'),
+    approvedBy: uuid('approved_by'),
+    approvedAt: timestamp('approved_at', { withTimezone: true, mode: 'date' }),
+    createdBy: uuid('created_by').notNull(),
+    createdAt: timestamp('created_at', { withTimezone: true, mode: 'date' }).notNull().defaultNow(),
+    updatedAt: timestamp('updated_at', { withTimezone: true, mode: 'date' }).notNull().defaultNow(),
+  },
+  (t) => ({
+    sectionIdx: index('idx_labeling_translations_section').on(t.sectionId),
+    orgIdx: index('idx_labeling_translations_org').on(t.orgId),
   }),
 );

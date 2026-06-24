@@ -54,6 +54,9 @@ interface SidebarProps {
   // SPEC-REGULA-CHANGE-CONTROL-001 (Issue #54): Change Control is visible to
   // roles with change.view (ra-member+). Gated server-side and passed down.
   showChangeControl?: boolean;
+  // SPEC-REGULA-LABELING-001 (Issue #66): Labeling workbench is visible to
+  // roles with label.view (ra-member+). Gated server-side and passed down.
+  showLabeling?: boolean;
   initialLocale?: string;
 }
 
@@ -65,6 +68,7 @@ export default function Sidebar(props?: SidebarProps) {
   const showTraceability = props?.showTraceability ?? false;
   const showPms = props?.showPms ?? false;
   const showChangeControl = props?.showChangeControl ?? false;
+  const showLabeling = props?.showLabeling ?? false;
   const currentProjectId = useUIStore((s) => s.currentProjectId);
   const setCurrentProjectId = useUIStore((s) => s.setCurrentProjectId);
   const { data = [] } = useProjects();
@@ -225,6 +229,19 @@ export default function Sidebar(props?: SidebarProps) {
             className="rounded-md px-3 py-2 text-sm text-ink-700 hover:bg-ink-50 block"
           >
             변경 관리
+          </Link>
+        </nav>
+      )}
+
+      {/* SPEC-REGULA-LABELING-001 (Issue #66): Labeling workbench conditional link. */}
+      {showLabeling && (
+        <nav className="px-2 py-1">
+          <Link
+            href="/labeling"
+            data-testid="sidebar-labeling-link"
+            className="rounded-md px-3 py-2 text-sm text-ink-700 hover:bg-ink-50 block"
+          >
+            라벨링·IFU
           </Link>
         </nav>
       )}

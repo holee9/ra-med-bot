@@ -75,7 +75,17 @@ export type PermissionAction =
   // view: ra-member+ — assessment results are transparent across the RA team.
   | 'change.assess'
   | 'change.view'
-  | 'change.export';
+  | 'change.export'
+  // Labeling actions (SPEC-REGULA-LABELING-001, Issue #66)
+  // create/view: ra-member+ — structured authoring is a team-wide activity.
+  // approve: ra-lead ONLY — REQ-LABEL-012 RBAC gate (21 CFR Part 11 approval
+  //          authority). Mirrors risk.approve / change.assess pattern.
+  // export: ra-lead ONLY — REQ-LABEL-006 unsupported-claim gate is a regulatory
+  //         submission decision (audit-material record). Mirrors change.export.
+  | 'label.create'
+  | 'label.view'
+  | 'label.approve'
+  | 'label.export';
 
 export interface PermissionSpec {
   minRole: Role;
@@ -244,4 +254,14 @@ export const PERMISSIONS: Record<PermissionAction, PermissionSpec> = {
   'change.assess': { minRole: 'ra-lead', scope: 'org', resourceType: 'changeAssessment' },
   'change.view': { minRole: 'ra-member', scope: 'org', resourceType: 'changeAssessment' },
   'change.export': { minRole: 'ra-lead', scope: 'org', resourceType: 'changeAssessment' },
+
+  // @MX:ANCHOR [AUTO] label.approve — RA-lead ONLY approval gate invariant.
+  // @MX:REASON REQ-LABEL-012: only qualified RA-lead may approve labeling documents
+  //           (21 CFR Part 11 approval authority). Mirrors risk.approve.
+  // @MX:SPEC SPEC-REGULA-LABELING-001 (REQ-LABEL-012)
+  // Labeling actions (SPEC-REGULA-LABELING-001, Issue #66)
+  'label.create': { minRole: 'ra-member', scope: 'org', resourceType: 'labelingDocument' },
+  'label.view': { minRole: 'ra-member', scope: 'org', resourceType: 'labelingDocument' },
+  'label.approve': { minRole: 'ra-lead', scope: 'org', resourceType: 'labelingDocument' },
+  'label.export': { minRole: 'ra-lead', scope: 'org', resourceType: 'labelingDocument' },
 };

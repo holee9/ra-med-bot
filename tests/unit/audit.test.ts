@@ -72,7 +72,7 @@ describe('lib/audit.ts (REQ-BREADTH-057) — extended AuditAction type', () => {
         'export.confluence',
       ]),
     );
-    expect(values).toHaveLength(133); // +2 signature.* (ESIG-001) +3 audit.* (AUDITOR-VIEW-001) +2 personal_bookmark.* (PERSONAL-LIB-001) +3 deadline.* (CALENDAR-001) +3 corpus.* (DELTA-SYNC-001) +4 knowledge_gap.* (KNOWLEDGE-GAP-001) +1 classification_exported (CLASSIFY-001) +4 traceability.* (TRACEABILITY-001) +7 pms.*/pmcf.* (PMS-001) +2 pms.report_export_denied/pms.report_closed (PMS-001 AC-07) +6 change.* (CHANGE-CONTROL-001 incl. change.export_blocked H-4)
+    expect(values).toHaveLength(139); // +6 label.* (LABELING-001, Issue #66)
   });
 
   it.each([

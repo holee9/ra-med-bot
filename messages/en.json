@@ -105,5 +105,58 @@
       "exportFailed": "Export failed",
       "alreadyReviewed": "This assessment has already been reviewed."
     }
+  },
+  "labeling": {
+    "title": "Labeling & IFU Workbench",
+    "description": "Jurisdiction-specific review and approval of medical device labels, IFU, intended use, indication, and marketing claims",
+    "nav": "Labeling & IFU",
+    "status": {
+      "draft": "Draft",
+      "in_review": "In Review",
+      "approved": "Approved",
+      "rejected": "Rejected"
+    },
+    "form": {
+      "project": "Project",
+      "productName": "Product name",
+      "jurisdiction": "Jurisdiction",
+      "submit": "Create labeling document",
+      "submitting": "Creating…"
+    },
+    "tabs": {
+      "sections": "Sections",
+      "checklist": "Jurisdiction checklist",
+      "claims": "Claim validation",
+      "translations": "Translation diff"
+    },
+    "claims": {
+      "expertReviewRequired": "Expert review required",
+      "comparative": "Comparative warning",
+      "superiority": "Superiority warning",
+      "submit": "Validate claim"
+    },
+    "translation": {
+      "match": "Match",
+      "minor": "Minor diff",
+      "major": "Major diff",
+      "review": "Review required",
+      "submit": "Run translation diff"
+    },
+    "approve": {
+      "submit": "Approve (RA Lead)",
+      "esubmitBeta": "eSubmit integration: pending #65 (Beta)"
+    },
+    "export": {
+      "submit": "Export",
+      "blocked": "Export blocked: unresolved claims exist. (REQ-006)"
+    },
+    "errors": {
+      "forbidden": "Labeling workbench access requires RA Member role or higher (label.view).",
+      "noProject": "Create a project before creating a labeling document.",
+      "fetchFailed": "Failed to load the labeling document. Try again shortly.",
+      "createFailed": "An error occurred while creating the labeling document.",
+      "approveFailed": "Approval failed",
+      "exportFailed": "Export failed"
+    }
   }
 }
