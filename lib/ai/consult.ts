@@ -200,6 +200,47 @@ export async function* consult(
   // ---- Stage 6: LLM streaming ----
   if (signal?.aborted) return;
 
+  // @MX:NOTE [AUTO] REQ-MODELGOV-008/007 (Issue 71) — runtime guard + version metadata.
+  // @MX:REASON Before the LLM call, verify an approved prompt/model combination is
+  //           active for the org. An unapproved combo blocks answer generation
+  //           (REQ-008/AC-06). On pass, the version metadata is attached to the
+  //           llm.call audit row (REQ-007/AC-01) for 21 CFR Part 11 traceability.
+  //           Exhaustive wiring to every answer path is deferred (@MX:TODO) — this
+  //           is the primary consult path.
+  // @MX:TODO Wire runtime-guard into every secondary answer path (refine, workflows).
+  // @MX:SPEC SPEC-REGULA-MODEL-GOVERNANCE-001 (REQ-MODELGOV-007/008)
+  let answerVersionMeta: Record<string, unknown> | null = null;
+  if (!isReplay && orgId) {
+    try {
+      // Lazy import avoids loading model-governance module when replay skips it.
+      const { assertApprovedCombination } = await import('../model-governance/runtime-guard');
+      const { buildAnswerVersionMetadata } = await import('../model-governance/audit-metadata');
+      const activeCombo = await assertApprovedCombination({ orgId });
+      answerVersionMeta = {
+        ...buildAnswerVersionMetadata(activeCombo),
+      };
+    } catch (err: unknown) {
+      // REQ-MODELGOV-008: unapproved combination → block + audit + error event.
+      const reason =
+        err instanceof Error && 'reason' in err
+          ? String((err as { reason: string }).reason)
+          : 'runtime_block_error';
+      const { auditRuntimeBlocked } = await import('../model-governance/audit');
+      await auditRuntimeBlocked({
+        actorId: session.user?.id ?? null,
+        orgId,
+        resourceId: messageId,
+        reason,
+      });
+      yield* emit({
+        type: 'error',
+        code: 'modelgov_runtime_block',
+        message: 'Unapproved model/prompt combination',
+      });
+      return;
+    }
+  }
+
   // Audit: LLM call — before starting consult (REQ-CHAT-053).
   if (!isReplay) {
     await writeAudit({
@@ -218,6 +259,8 @@ export async function* consult(
         locale: input.locale,
         source_filter: input.sourceFilter,
         project_id: input.projectId ?? null,
+        // REQ-MODELGOV-007 (Issue 71): answer version metadata (prompt/model version).
+        answer_version: answerVersionMeta,
       },
     });
   }

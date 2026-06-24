@@ -60,14 +60,18 @@ const EXPECTED_ACTIONS: PermissionAction[] = [
   'label.view',
   'label.approve',
   'label.export',
+  // SPEC-REGULA-MODEL-GOVERNANCE-001 (Issue 71)
+  'modelgov.manage',
+  'modelgov.approve',
+  'modelgov.view',
 ];
 
 const VALID_ROLES = ['admin', 'qa-lead', 'ra-lead', 'ra-member', 'viewer', 'auditor'] as const;
 const VALID_SCOPES = ['org', 'project', 'user', 'none'] as const;
 
 describe('lib/auth/permissions.ts (REQ-ENTERPRISE-020) — PERMISSIONS matrix', () => {
-  it('PERMISSIONS contains exactly 61 entries', () => {
-    expect(Object.keys(PERMISSIONS)).toHaveLength(61); // +7 complaint/capa.* (CAPA-001, Issue #68) +3 clinical_investigation.* (Issue #69)
+  it('PERMISSIONS contains exactly 64 entries', () => {
+    expect(Object.keys(PERMISSIONS)).toHaveLength(64); // +7 complaint/capa.* (CAPA-001, Issue #68) +3 clinical_investigation.* (Issue #69) +3 modelgov.* (MODEL-GOVERNANCE, Issue 71)
   });
 
   it.each(EXPECTED_ACTIONS)('PERMISSIONS contains action: %s', (action) => {

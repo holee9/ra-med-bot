@@ -110,7 +110,14 @@ export type PermissionAction =
   //          dashboard AC-05. Mirrors capa.create / traceability.view.
   | 'clinical_investigation.assess'
   | 'clinical_investigation.manage'
-  | 'clinical_investigation.view';
+  | 'clinical_investigation.view'
+  // SPEC-REGULA-MODEL-GOVERNANCE-001 (Issue 71, REQ-MODELGOV-014): 3 RBAC actions.
+  //   manage: admin — register/rollback model config is a platform-level decision.
+  //   approve: ra-lead — combination approval is a regulatory signoff (21 CFR Part 11).
+  //   view: ra-lead — model-governance state is visible to RA leads for oversight.
+  | 'modelgov.manage'
+  | 'modelgov.approve'
+  | 'modelgov.view';
 
 export interface PermissionSpec {
   minRole: Role;
@@ -335,4 +342,13 @@ export const PERMISSIONS: Record<PermissionAction, PermissionSpec> = {
     scope: 'org',
     resourceType: 'clinicalInvestigation',
   },
+  // SPEC-REGULA-MODEL-GOVERNANCE-001 (Issue 71, REQ-MODELGOV-014): 3 RBAC actions.
+  // manage: admin — registering/rolling back model config is a platform-level
+  //   decision (mirrors sources.ingest).
+  // approve: ra-lead ONLY — combination approval is a regulatory signoff
+  //   (21 CFR Part 11). Mirrors label.approve / capa.close.
+  // view: ra-lead — model-governance state visible to RA leads for oversight.
+  'modelgov.manage': { minRole: 'admin', scope: 'org', resourceType: 'modelGovernance' },
+  'modelgov.approve': { minRole: 'ra-lead', scope: 'org', resourceType: 'modelGovernance' },
+  'modelgov.view': { minRole: 'ra-lead', scope: 'org', resourceType: 'modelGovernance' },
 };
