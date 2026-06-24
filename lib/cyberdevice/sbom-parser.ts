@@ -25,6 +25,15 @@ export interface ParsedSbom {
 }
 
 /**
+ * M-1 fix (DoS guard): maximum number of components parseSbom will accept.
+ * A 2MB SBOM document can carry ~50K components, parsed synchronously — reject
+ * earlier to bound CPU + memory. 10K is generous for tier1 medical-device
+ * firmware SBOMs while preventing a malicious payload from stalling the event
+ * loop. Lift the ceiling via env SBOM_MAX_COMPONENTS if a real product exceeds.
+ */
+export const SBOM_MAX_COMPONENTS = Number.parseInt(process.env.SBOM_MAX_COMPONENTS ?? '10000', 10);
+
+/**
  * REQ-003: parse + validate an SBOM document. Structural validation only —
  * tier1 does not run schema-registry validation (SPDX schema URL fetch,
  * CycloneDX JSON Schema) which is deferred. Rejects malformed JSON, wrong
@@ -44,6 +53,15 @@ export function parseSbom(format: 'spdx' | 'cyclonedx', rawDocument: string): Pa
 
   const docRecord = doc as Record<string, unknown>;
   const components = format === 'spdx' ? parseSpdx(docRecord) : parseCycloneDx(docRecord);
+
+  // M-1 fix: cap component count before the per-component Zod validation loop
+  // so a oversized payload is rejected in O(1) rather than O(n).
+  if (components.length > SBOM_MAX_COMPONENTS) {
+    throw new SbomParseError(
+      `SBOM component count ${components.length} exceeds maximum ${SBOM_MAX_COMPONENTS}`,
+      'too_many_components',
+    );
+  }
 
   // Validate every component through Zod so malformed entries are rejected
   // rather than silently producing partial evidence.

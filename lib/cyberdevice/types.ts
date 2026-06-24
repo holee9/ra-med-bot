@@ -85,6 +85,10 @@ export const cveRecordSchema = z.object({
   cveId: z.string().regex(/^CVE-\d{4}-\d{4,}$/),
   kevFlag: z.boolean().default(false),
   cvssBaseScore: z.number().min(0).max(10),
+  // H-1 fix (REQ-010): optional ISO 14971 risk_item IDs to link this CVE's
+  // residual cyber risk to. Cross-org IDs are dropped by filterRiskItemsByOrg.
+  affectedComponentNames: z.array(z.string()).optional(),
+  riskItemIds: z.array(z.string().uuid()).optional(),
 });
 export type CveRecord = z.infer<typeof cveRecordSchema>;
 

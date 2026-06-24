@@ -326,7 +326,7 @@ describe('lib/db/schema.ts Phase 5 additions', () => {
     const values = extractAuditActionEnumValues(src);
     const typeValues = extractAuditActionTypeValues(auditSrc);
     expect(values).toEqual(typeValues);
-    expect(values).toHaveLength(173); // +7 complaint/capa.* (CAPA-001, #68) +1 cer_persisted (#255) +1 traceability.matrix_viewed (#240) +8 ci.* (CLINICAL-INVESTIGATION, #69) +8 modelgov.* (MODEL-GOVERNANCE, Issue 71) +9 cyber.* (CYBERDEVICE, Issue 67)
+    expect(values).toHaveLength(174); // +7 complaint/capa.* (CAPA-001, #68) +1 cer_persisted (#255) +1 traceability.matrix_viewed (#240) +8 ci.* (CLINICAL-INVESTIGATION, #69) +8 modelgov.* (MODEL-GOVERNANCE, Issue 71) +9 cyber.* (CYBERDEVICE, Issue 67) +1 cyber.reassess_triggered (CYBERDEVICE H-2 fix, Issue 67)
   });
 
   it.each(REQUIRED_RECOVERY_TABLES)(
@@ -382,7 +382,7 @@ describe('lib/audit.ts Phase 5 AuditAction type additions', () => {
         'change.export_blocked',
       ]),
     );
-    expect(values).toHaveLength(173); // +7 complaint/capa.* (CAPA-001, #68) +1 cer_persisted (#255) +1 traceability.matrix_viewed (#240) +8 ci.* (CLINICAL-INVESTIGATION, #69) +8 modelgov.* (MODEL-GOVERNANCE, Issue 71) +9 cyber.* (CYBERDEVICE, Issue 67)
+    expect(values).toHaveLength(174); // +7 complaint/capa.* (CAPA-001, #68) +1 cer_persisted (#255) +1 traceability.matrix_viewed (#240) +8 ci.* (CLINICAL-INVESTIGATION, #69) +8 modelgov.* (MODEL-GOVERNANCE, Issue 71) +9 cyber.* (CYBERDEVICE, Issue 67) +1 cyber.reassess_triggered (CYBERDEVICE H-2 fix, Issue 67)
   });
 
   it.each(REQUIRED_RECOVERY_AUDIT_ACTIONS)(

@@ -334,6 +334,9 @@ export type AuditAction =
   //   cyber.evidence_bundled     — cybersecurity evidence bundle assembled (REQ-009/012/014)
   //   cyber.risk_linked          — residual cyber risk linked to ISO 14971 risk item (REQ-010)
   //   cyber.access_denied        — entitlement-less access blocked (REQ-013)
+  // SPEC-REGULA-CYBERDEVICE-001 (Issue 67, H-2 fix) — added via
+  // 0079_cyberdevice_linkage_hardening.sql (1 action):
+  //   cyber.reassess_triggered   — REQ-011 CVE/KEV change-control re-eval signal (durable audit)
   | 'cyber.threat_modeled'
   | 'cyber.sbom_imported'
   | 'cyber.sbom_validated'
@@ -342,7 +345,8 @@ export type AuditAction =
   | 'cyber.update_plan_created'
   | 'cyber.evidence_bundled'
   | 'cyber.risk_linked'
-  | 'cyber.access_denied';
+  | 'cyber.access_denied'
+  | 'cyber.reassess_triggered';
 
 export interface AuditEvent {
   /** User UUID, or null for system-initiated events. */

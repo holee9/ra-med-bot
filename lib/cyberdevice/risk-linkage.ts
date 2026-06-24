@@ -17,6 +17,13 @@ import { db } from '@/lib/db/client';
 import { cveImpact, riskItems, workflowRuns } from '@/lib/db/schema';
 import { and, eq, inArray } from 'drizzle-orm';
 
+/**
+ * Minimal transaction-handle type compatible with both the db singleton and a
+ * tx-scoped clone. Requires `update` (used by linkCveImpactToRiskItem). Both the
+ * db singleton and a Drizzle PgTransaction satisfy this structurally.
+ */
+type RiskLinkTx = { update: typeof db.update } | undefined;
+
 export interface RiskLinkageResult {
   /** IDs of risk_items that were resolved to the caller's org and linked. */
   linkedRiskItemIds: string[];
@@ -53,11 +60,16 @@ export async function filterRiskItemsByOrg(
  * REQ-010: link a CVE impact record to an ISO 14971 risk_item. Sets
  * cve_impact.risk_item_id. The audit row (cyber.risk_linked) is written by the
  * caller inside the same transaction (Part 11 atomicity).
+ *
+ * H-1 fix: accepts an optional `tx` so the UPDATE rides the caller's
+ * transaction boundary. filterRiskItemsByOrg is always invoked (org-filter
+ * defense is live, not dead) to drop cross-org risk_item IDs before linking.
  */
 export async function linkCveImpactToRiskItem(params: {
   cveImpactId: string;
   riskItemIds: string[];
   orgId: string;
+  tx?: RiskLinkTx;
 }): Promise<RiskLinkageResult> {
   const { ok, rejected } = await filterRiskItemsByOrg(params.riskItemIds, params.orgId);
   // REQ-010 linkage is single-risk-item per CVE (cve_impact.risk_item_id is a
@@ -66,7 +78,8 @@ export async function linkCveImpactToRiskItem(params: {
   // caller's audit meta. This mirrors how riskControls links to risk_items.
   const primaryRiskItemId = ok[0];
   if (primaryRiskItemId) {
-    await db
+    const client = params.tx ?? db;
+    await client
       .update(cveImpact)
       .set({ riskItemId: primaryRiskItemId })
       .where(eq(cveImpact.id, params.cveImpactId));

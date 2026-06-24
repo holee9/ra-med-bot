@@ -344,6 +344,9 @@ export const auditActionEnum = pgEnum('audit_action', [
   'cyber.evidence_bundled',
   'cyber.risk_linked',
   'cyber.access_denied',
+  // SPEC-REGULA-CYBERDEVICE-001 (Issue 67, H-2 fix) — added via
+  // 0079_cyberdevice_linkage_hardening.sql: REQ-011 durable reassessment signal.
+  'cyber.reassess_triggered',
 ]);
 
 // @MX:NOTE [AUTO] Knowledge gap enums — SPEC-REGULA-KNOWLEDGE-GAP-001 (Issue #35).

@@ -243,3 +243,41 @@ export async function auditCyberAccessDenied(
     tx,
   );
 }
+
+/**
+ * REQ-011 (H-2 fix): durable reassessment signal. When a CVE triggers a
+ * change-control + risk re-evaluation predicate (matched, severity escalation,
+ * or KEV addition), this audit row makes the signal 21 CFR Part 11 traceable.
+ * Written inside the cve-analysis transaction so it rides the same atomicity
+ * boundary as the cve_impact insert. Full change-control workflow enqueue
+ * (#54 wiring) remains @MX:TODO; this audit row is the minimum durable trace.
+ */
+export async function auditReassessTriggered(
+  params: {
+    userId: string;
+    projectId: string;
+    cveImpactId: string;
+    cveId: string;
+    severity: string;
+    kevFlag: boolean;
+    reason: string;
+  },
+  tx?: AuditTx,
+): Promise<void> {
+  await writeAudit(
+    {
+      actor_id: params.userId,
+      action: 'cyber.reassess_triggered',
+      resource_type: 'cveImpact',
+      resource_id: params.cveImpactId,
+      meta_json: {
+        projectId: params.projectId,
+        cveId: params.cveId,
+        severity: params.severity,
+        kevFlag: params.kevFlag,
+        reason: params.reason,
+      },
+    },
+    tx,
+  );
+}

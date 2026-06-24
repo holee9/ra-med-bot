@@ -2,8 +2,9 @@
 // @MX:SPEC SPEC-REGULA-CYBERDEVICE-001 (REQ-009, REQ-012, REQ-014, AC-05)
 
 import { withPermission } from '@/lib/auth/with-permission';
-import { auditEvidenceBundled } from '@/lib/cyberdevice/audit';
+import { auditCyberAccessDenied, auditEvidenceBundled } from '@/lib/cyberdevice/audit';
 import { assembleEvidenceBundle } from '@/lib/cyberdevice/evidence-bundle';
+import { verifyLinkedReferentExists } from '@/lib/cyberdevice/linkage';
 import { evidenceBundleInputSchema } from '@/lib/cyberdevice/types';
 import { db } from '@/lib/db/client';
 import { cyberEvidenceBundle, sbom, threatModel } from '@/lib/db/schema';
@@ -29,12 +30,20 @@ export const POST = withPermission('cyberdevice.manage', async (req, _ctx, sessi
   if (denied) return denied;
 
   // IDOR: threat_model + sbom must belong to the same project + org.
+  // REQ-013: cross-tenant denial produces a cyber.access_denied audit row.
   const [tm] = await db
     .select({ orgId: threatModel.orgId, projectId: threatModel.projectId })
     .from(threatModel)
     .where(eq(threatModel.id, body.threatModelId))
     .limit(1);
   if (!tm || tm.orgId !== organizationId || tm.projectId !== body.projectId) {
+    if (tm && tm.orgId !== organizationId) {
+      await auditCyberAccessDenied({
+        userId: session.user.id,
+        projectId: body.projectId,
+        reason: 'threat_model_cross_org',
+      });
+    }
     return Response.json({ error: 'threat_model_not_found' }, { status: 404 });
   }
   const [sb] = await db
@@ -43,7 +52,58 @@ export const POST = withPermission('cyberdevice.manage', async (req, _ctx, sessi
     .where(eq(sbom.id, body.sbomId))
     .limit(1);
   if (!sb || sb.orgId !== organizationId || sb.projectId !== body.projectId) {
+    if (sb && sb.orgId !== organizationId) {
+      await auditCyberAccessDenied({
+        userId: session.user.id,
+        projectId: body.projectId,
+        reason: 'sbom_cross_org',
+      });
+    }
     return Response.json({ error: 'sbom_not_found' }, { status: 404 });
+  }
+
+  // C-1 fix: validate each non-null linked_* referent exists AND belongs to the
+  // caller's org before persisting. Without this, a caller could link another
+  // org's SaMD/DHF/Submission or a dangling UUID. Native FK is blocked by a
+  // uuid-vs-text type mismatch (see 0079 migration), so this in-app check is
+  // the authoritative guard. Mirrors lib/clinical-investigation/linkage.ts
+  // verifyLinkTargetExists (H-4 pattern).
+  if (body.linkedSamdId) {
+    const ok = await verifyLinkedReferentExists(organizationId, 'samd', body.linkedSamdId);
+    if (!ok) {
+      await auditCyberAccessDenied({
+        userId: session.user.id,
+        projectId: body.projectId,
+        reason: 'linked_samd_cross_org_or_missing',
+      });
+      return Response.json({ error: 'linked_samd_not_found' }, { status: 404 });
+    }
+  }
+  if (body.linkedDhfId) {
+    const ok = await verifyLinkedReferentExists(organizationId, 'dhf', body.linkedDhfId);
+    if (!ok) {
+      await auditCyberAccessDenied({
+        userId: session.user.id,
+        projectId: body.projectId,
+        reason: 'linked_dhf_cross_org_or_missing',
+      });
+      return Response.json({ error: 'linked_dhf_not_found' }, { status: 404 });
+    }
+  }
+  if (body.linkedSubmissionId) {
+    const ok = await verifyLinkedReferentExists(
+      organizationId,
+      'submission',
+      body.linkedSubmissionId,
+    );
+    if (!ok) {
+      await auditCyberAccessDenied({
+        userId: session.user.id,
+        projectId: body.projectId,
+        reason: 'linked_submission_cross_org_or_missing',
+      });
+      return Response.json({ error: 'linked_submission_not_found' }, { status: 404 });
+    }
   }
 
   const assembled = assembleEvidenceBundle({
