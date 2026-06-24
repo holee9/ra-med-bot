@@ -321,7 +321,32 @@ export type AuditAction =
   | 'modelgov.approved'
   | 'modelgov.rejected'
   | 'modelgov.rolled_back'
-  | 'modelgov.runtime_blocked';
+  | 'modelgov.runtime_blocked'
+  // SPEC-REGULA-CYBERDEVICE-001 (Issue 67) — 9 cybersecurity lifecycle audit actions
+  // for 21 CFR Part 11 traceability of medical-device cybersecurity evidence.
+  // Added via 0078_cyberdevice.sql. Mirror the auditActionEnum in lib/db/schema.ts.
+  //   cyber.threat_modeled       — threat model generated from architecture input (REQ-001)
+  //   cyber.sbom_imported        — SBOM ingested (REQ-003)
+  //   cyber.sbom_validated       — SBOM format validation result recorded (REQ-003)
+  //   cyber.sbom_diffed          — two SBOM versions diffed (REQ-004)
+  //   cyber.cve_analyzed         — CVE/KEV impact analysis performed (REQ-005/006)
+  //   cyber.update_plan_created  — secure update / patch / EOS plan generated (REQ-007)
+  //   cyber.evidence_bundled     — cybersecurity evidence bundle assembled (REQ-009/012/014)
+  //   cyber.risk_linked          — residual cyber risk linked to ISO 14971 risk item (REQ-010)
+  //   cyber.access_denied        — entitlement-less access blocked (REQ-013)
+  // SPEC-REGULA-CYBERDEVICE-001 (Issue 67, H-2 fix) — added via
+  // 0079_cyberdevice_linkage_hardening.sql (1 action):
+  //   cyber.reassess_triggered   — REQ-011 CVE/KEV change-control re-eval signal (durable audit)
+  | 'cyber.threat_modeled'
+  | 'cyber.sbom_imported'
+  | 'cyber.sbom_validated'
+  | 'cyber.sbom_diffed'
+  | 'cyber.cve_analyzed'
+  | 'cyber.update_plan_created'
+  | 'cyber.evidence_bundled'
+  | 'cyber.risk_linked'
+  | 'cyber.access_denied'
+  | 'cyber.reassess_triggered';
 
 export interface AuditEvent {
   /** User UUID, or null for system-initiated events. */

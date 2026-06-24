@@ -332,6 +332,21 @@ export const auditActionEnum = pgEnum('audit_action', [
   'modelgov.rejected',
   'modelgov.rolled_back',
   'modelgov.runtime_blocked',
+  // SPEC-REGULA-CYBERDEVICE-001 — added via 0078_cyberdevice.sql
+  // (Issue 67, REQ-CYBERDEVICE-007/013/014): 9 cybersecurity lifecycle audit
+  // actions for 21 CFR Part 11 traceability of medical-device cybersecurity evidence.
+  'cyber.threat_modeled',
+  'cyber.sbom_imported',
+  'cyber.sbom_validated',
+  'cyber.sbom_diffed',
+  'cyber.cve_analyzed',
+  'cyber.update_plan_created',
+  'cyber.evidence_bundled',
+  'cyber.risk_linked',
+  'cyber.access_denied',
+  // SPEC-REGULA-CYBERDEVICE-001 (Issue 67, H-2 fix) — added via
+  // 0079_cyberdevice_linkage_hardening.sql: REQ-011 durable reassessment signal.
+  'cyber.reassess_triggered',
 ]);
 
 // @MX:NOTE [AUTO] Knowledge gap enums — SPEC-REGULA-KNOWLEDGE-GAP-001 (Issue #35).
@@ -2656,5 +2671,141 @@ export const approvedCombination = pgTable(
   },
   (t) => ({
     orgActiveIdx: index('idx_approved_combination_org_active').on(t.orgId, t.active),
+  }),
+);
+
+// ===========================================================================
+// SPEC-REGULA-CYBERDEVICE-001 (Issue 67, REQ-CYBERDEVICE-001~014)
+// Medical-device cybersecurity & SBOM submission evidence.
+// 4 tables (threat_model, sbom, cve_impact, cyber_evidence_bundle) + 2 enums.
+// All org_id + project_id scoped (RLS via app.current_org_id, mirror 0067-0077).
+// ===========================================================================
+
+// REQ-CYBERDEVICE-003: SBOM interchange format.
+export const sbomFormatEnum = pgEnum('sbom_format', ['spdx', 'cyclonedx']);
+
+// REQ-CYBERDEVICE-005: CVSS v3.1 base-score severity bands.
+export const cveSeverityEnum = pgEnum('cve_severity', [
+  'none',
+  'low',
+  'medium',
+  'high',
+  'critical',
+]);
+
+// @MX:NOTE [AUTO] threatModel — product-architecture-driven threat model (REQ-001/002/008).
+export const threatModel = pgTable(
+  'threat_model',
+  {
+    id: uuid('id').defaultRandom().primaryKey(),
+    orgId: uuid('org_id')
+      .notNull()
+      .references(() => organizations.id, { onDelete: 'cascade' }),
+    projectId: uuid('project_id')
+      .notNull()
+      .references(() => projects.id, { onDelete: 'cascade' }),
+    architectureInput: jsonb('architecture_input').notNull(),
+    threats: jsonb('threats').notNull().default({}),
+    gsprMapping: jsonb('gspr_mapping').notNull().default({}),
+    createdBy: uuid('created_by')
+      .notNull()
+      .references(() => users.id),
+    createdAt: timestamp('created_at', { withTimezone: true, mode: 'date' }).notNull().defaultNow(),
+    updatedAt: timestamp('updated_at', { withTimezone: true, mode: 'date' }).notNull().defaultNow(),
+  },
+  (t) => ({
+    orgProjectIdx: index('idx_threat_model_org_project').on(t.orgId, t.projectId),
+  }),
+);
+
+// @MX:NOTE [AUTO] sbom — imported software bill of materials (REQ-003/004).
+export const sbom = pgTable(
+  'sbom',
+  {
+    id: uuid('id').defaultRandom().primaryKey(),
+    orgId: uuid('org_id')
+      .notNull()
+      .references(() => organizations.id, { onDelete: 'cascade' }),
+    projectId: uuid('project_id')
+      .notNull()
+      .references(() => projects.id, { onDelete: 'cascade' }),
+    format: sbomFormatEnum('format').notNull(),
+    version: text('version').notNull(),
+    components: jsonb('components').notNull().default([]),
+    validated: boolean('validated').notNull().default(false),
+    contentHash: text('content_hash').notNull(),
+    createdBy: uuid('created_by')
+      .notNull()
+      .references(() => users.id),
+    createdAt: timestamp('created_at', { withTimezone: true, mode: 'date' }).notNull().defaultNow(),
+  },
+  (t) => ({
+    orgProjectIdx: index('idx_sbom_org_project').on(t.orgId, t.projectId),
+    orgProjectVersionIdx: index('idx_sbom_org_project_version').on(t.orgId, t.projectId, t.version),
+  }),
+);
+
+// @MX:NOTE [AUTO] cveImpact — CVE/KEV impact on a product component (REQ-005/006/010/011).
+export const cveImpact = pgTable(
+  'cve_impact',
+  {
+    id: uuid('id').defaultRandom().primaryKey(),
+    orgId: uuid('org_id')
+      .notNull()
+      .references(() => organizations.id, { onDelete: 'cascade' }),
+    projectId: uuid('project_id')
+      .notNull()
+      .references(() => projects.id, { onDelete: 'cascade' }),
+    cveId: text('cve_id').notNull(),
+    kevFlag: boolean('kev_flag').notNull().default(false),
+    affectedComponentRef: text('affected_component_ref').notNull(),
+    severity: cveSeverityEnum('severity').notNull().default('none'),
+    mitigation: text('mitigation'),
+    // REQ-010: nullable FK to risk_items for ISO 14971 residual risk linkage.
+    riskItemId: uuid('risk_item_id').references(() => riskItems.id, { onDelete: 'set null' }),
+    sbomId: uuid('sbom_id').references(() => sbom.id, { onDelete: 'cascade' }),
+    createdAt: timestamp('created_at', { withTimezone: true, mode: 'date' }).notNull().defaultNow(),
+  },
+  (t) => ({
+    orgProjectIdx: index('idx_cve_impact_org_project').on(t.orgId, t.projectId),
+    cveIdx: index('idx_cve_impact_cve').on(t.orgId, t.cveId),
+    riskItemIdx: index('idx_cve_impact_risk_item').on(t.riskItemId),
+  }),
+);
+
+// @MX:NOTE [AUTO] cyberEvidenceBundle — assembled cybersecurity evidence packet (REQ-009/012/014).
+// Links threat model + SBOM + pen-test artifact + update plan to SaMD/DHF/Submission.
+export const cyberEvidenceBundle = pgTable(
+  'cyber_evidence_bundle',
+  {
+    id: uuid('id').defaultRandom().primaryKey(),
+    orgId: uuid('org_id')
+      .notNull()
+      .references(() => organizations.id, { onDelete: 'cascade' }),
+    projectId: uuid('project_id')
+      .notNull()
+      .references(() => projects.id, { onDelete: 'cascade' }),
+    threatModelId: uuid('threat_model_id').references(() => threatModel.id, {
+      onDelete: 'set null',
+    }),
+    sbomId: uuid('sbom_id').references(() => sbom.id, { onDelete: 'set null' }),
+    pentestArtifactPath: text('pentest_artifact_path'),
+    updatePlan: jsonb('update_plan').notNull().default({}),
+    // Downstream linkages (Issue #63 SaMD, #64 DHF, #65 Submission) are opaque
+    // uuid columns for tier1 — FK constraints added when those tables land.
+    linkedSamdId: uuid('linked_samd_id'),
+    linkedDhfId: uuid('linked_dhf_id'),
+    linkedSubmissionId: uuid('linked_submission_id'),
+    createdBy: uuid('created_by')
+      .notNull()
+      .references(() => users.id),
+    createdAt: timestamp('created_at', { withTimezone: true, mode: 'date' }).notNull().defaultNow(),
+    updatedAt: timestamp('updated_at', { withTimezone: true, mode: 'date' }).notNull().defaultNow(),
+  },
+  (t) => ({
+    orgProjectIdx: index('idx_cyber_evidence_bundle_org_project').on(t.orgId, t.projectId),
+    samdIdx: index('idx_cyber_evidence_bundle_samd').on(t.linkedSamdId),
+    dhfIdx: index('idx_cyber_evidence_bundle_dhf').on(t.linkedDhfId),
+    submissionIdx: index('idx_cyber_evidence_bundle_submission').on(t.linkedSubmissionId),
   }),
 );

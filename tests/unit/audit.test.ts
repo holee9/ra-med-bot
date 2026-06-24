@@ -72,7 +72,7 @@ describe('lib/audit.ts (REQ-BREADTH-057) — extended AuditAction type', () => {
         'export.confluence',
       ]),
     );
-    expect(values).toHaveLength(164); // +7 complaint/capa.* (CAPA-001, #68) +1 cer_persisted (#255) +1 traceability.matrix_viewed (#240) +8 ci.* (CLINICAL-INVESTIGATION, #69) +8 modelgov.* (MODEL-GOVERNANCE, Issue 71)
+    expect(values).toHaveLength(174); // +7 complaint/capa.* (CAPA-001, #68) +1 cer_persisted (#255) +1 traceability.matrix_viewed (#240) +8 ci.* (CLINICAL-INVESTIGATION, #69) +8 modelgov.* (MODEL-GOVERNANCE, Issue 71) +9 cyber.* (CYBERDEVICE, Issue 67) +1 cyber.reassess_triggered (CYBERDEVICE H-2 fix, Issue 67)
   });
 
   it.each([
