@@ -43,7 +43,7 @@ export const GET = withPermission('traceability.view', async (req, _ctx, session
   // Keep the audit row minimal (non-PII) and scoped to the project.
   await writeAudit({
     actor_id: session.user.id,
-    action: 'traceability.matrix_viewed', // matrix-specific read audit (#240) — distinct from dashboard.view for Part 11 clarity
+    action: 'traceability.matrix_viewed', // matrix-specific read audit — distinct from dashboard.view for Part 11 clarity
     resource_type: 'traceability',
     resource_id: parsed.data.projectId ?? organizationId,
     meta_json: {
