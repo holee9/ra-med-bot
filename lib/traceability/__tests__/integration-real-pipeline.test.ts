@@ -181,6 +181,7 @@ describe('real-pipeline: audit action enum lock-step (AC-06)', () => {
     expect(values).toContain('traceability.edge_deleted');
     expect(values).toContain('traceability.packet_exported');
     expect(values).toContain('traceability.stale_propagated');
+    expect(values).toContain('traceability.matrix_viewed');
   });
 });
 
