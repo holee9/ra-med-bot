@@ -46,10 +46,12 @@ interface WorkflowRunRow {
 
 const workflowRunsStore: WorkflowRunRow[] = [];
 const projectsStore: Set<string> = new Set(); // projectIds belonging to ORG_A
-const auditRecords: Array<{ action: string; resource_id: string; tx?: unknown }> = [];
+const auditRecords: Array<{ action: string; resource_id: string; tx?: unknown; failed?: boolean }> =
+  [];
 
+let activeTransactionWorkflowRunsStore: WorkflowRunRow[] | null = null;
 let transactionShouldFail = false;
-let auditShouldFail = false;
+let auditShouldFailInTransaction = false;
 
 // ---------------------------------------------------------------------------
 // DB mock — the route inserts via db.transaction(tx => tx.insert(...).returning());
@@ -121,6 +123,10 @@ function getDrizzleTableName(table: unknown): string | undefined {
   return undefined;
 }
 
+function getWorkflowRunsWriteStore(): WorkflowRunRow[] {
+  return activeTransactionWorkflowRunsStore ?? workflowRunsStore;
+}
+
 // Explicit interface breaks the self-referential type cycle (dbMock.transaction
 // references dbMock via closure in its own initializer) without resorting to `any`.
 interface DbMock {
@@ -147,12 +153,13 @@ const dbMock: DbMock = {
             result_json: ((input.resultJson ?? input.result_json) as Row | null) ?? null,
             created_at: new Date(),
           };
-          workflowRunsStore.push(row);
+          getWorkflowRunsWriteStore().push(row);
         }
         return chain;
       }),
       returning: vi.fn(async () => {
-        const last = workflowRunsStore[workflowRunsStore.length - 1];
+        const writeStore = getWorkflowRunsWriteStore();
+        const last = writeStore[writeStore.length - 1];
         return [{ id: last?.id ?? crypto.randomUUID() }];
       }),
     };
@@ -166,7 +173,16 @@ const dbMock: DbMock = {
   }),
   transaction: vi.fn(async (fn: (tx: unknown) => Promise<unknown>) => {
     if (transactionShouldFail) throw new Error('simulated transaction failure');
-    return fn(dbMock as unknown);
+    const previousTransactionStore = activeTransactionWorkflowRunsStore;
+    const stagedWorkflowRuns = [...workflowRunsStore];
+    activeTransactionWorkflowRunsStore = stagedWorkflowRuns;
+    try {
+      const result = await fn(dbMock as unknown);
+      workflowRunsStore.splice(0, workflowRunsStore.length, ...stagedWorkflowRuns);
+      return result;
+    } finally {
+      activeTransactionWorkflowRunsStore = previousTransactionStore;
+    }
   }),
 };
 
@@ -178,8 +194,14 @@ vi.mock('@/lib/db/client', () => ({ db: dbMock }));
 
 vi.mock('@/lib/audit', () => ({
   writeAudit: vi.fn(async (params: { action: string; resource_id: string }, tx?: unknown) => {
-    if (auditShouldFail) throw new Error('simulated audit failure');
-    auditRecords.push({ action: params.action, resource_id: params.resource_id, tx });
+    const shouldFail = auditShouldFailInTransaction && Boolean(tx);
+    auditRecords.push({
+      action: params.action,
+      resource_id: params.resource_id,
+      tx,
+      ...(shouldFail ? { failed: true } : {}),
+    });
+    if (shouldFail) throw new Error('simulated audit failure');
   }),
 }));
 
@@ -263,8 +285,9 @@ function resetStores() {
   workflowRunsStore.length = 0;
   projectsStore.clear();
   auditRecords.length = 0;
+  activeTransactionWorkflowRunsStore = null;
   transactionShouldFail = false;
-  auditShouldFail = false;
+  auditShouldFailInTransaction = false;
 }
 
 function buildCerBody(overrides: Partial<Record<string, unknown>> = {}): string {
@@ -325,8 +348,8 @@ describe('CER persist → PMS auto-linkage roundtrip (AC-04 / REQ-PMS-004)', () 
     expect(resultJson.deviceName).toBe('CardioStent-X');
     expect(resultJson.intendedUse).toBe('coronary artery stenting');
 
-    // 5. The cer_created audit rode the same transaction (H2 atomicity).
-    expect(auditRecords.some((a) => a.action === 'cer_created' && a.tx)).toBe(true);
+    // 5. The cer_persisted audit rode the same transaction (H2 atomicity).
+    expect(auditRecords.some((a) => a.action === 'cer_persisted' && a.tx)).toBe(true);
 
     // 6. REAL resolveCerLinkage against the SAME store → cerLinked true.
     const linkage = await resolveCerLinkage(PROJECT_ID, ORG_A, null);
@@ -364,14 +387,18 @@ describe('CER persist → PMS auto-linkage roundtrip (AC-04 / REQ-PMS-004)', () 
   });
 
   it('rolls back the workflow_runs insert when the audit write fails (H2 atomicity)', async () => {
-    auditShouldFail = true;
+    auditShouldFailInTransaction = true;
     const req = new Request('http://localhost/api/ra/workflows/cer', {
       method: 'POST',
       body: buildCerBody({ projectId: PROJECT_ID }),
     });
 
     await expect(postCer(req, {})).rejects.toBeDefined();
-    // Transaction rolled back → no row survives in the store.
+    expect(dbMock.transaction).toHaveBeenCalledTimes(1);
+    expect(auditRecords.some((a) => a.action === 'cer_created' && !a.tx)).toBe(true);
+    expect(auditRecords.some((a) => a.action === 'cer_literature_search' && !a.tx)).toBe(true);
+    expect(auditRecords.some((a) => a.action === 'cer_persisted' && a.tx && a.failed)).toBe(true);
+    // The in-transaction insert was staged, then rolled back after writeAudit failed.
     expect(workflowRunsStore).toHaveLength(0);
   });
 });

@@ -80,7 +80,7 @@ async function postCer(request: Request, session: AuthSession): Promise<Response
 
   // SPEC-REGULA-PMS-001 (AC-04 / REQ-PMS-004): persist to workflow_runs when a
   // projectId is present, so PMS report auto-linkage resolves in production.
-  // The workflow_runs insert and a cer_created audit (with persisted meta) ride
+  // The workflow_runs insert and a cer_persisted audit (with persisted meta) ride
   // the SAME db.transaction — 21 CFR Part 11 atomicity (H2 pattern): a failure
   // between the two rolls back both.
   // input_json is PII-safe: PubMed query text is NOT stored, only its length
@@ -117,7 +117,7 @@ async function postCer(request: Request, session: AuthSession): Promise<Response
       await writeAudit(
         {
           actor_id: session.user.id,
-          action: 'cer_created',
+          action: 'cer_persisted',
           resource_type: 'cer_run',
           resource_id: runId,
           meta_json: {

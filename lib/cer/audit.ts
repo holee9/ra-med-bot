@@ -13,20 +13,17 @@ import { writeAudit } from '../audit';
  * BEFORE any external work (PubMed search) so the initiation is recorded even
  * if later steps fail.
  *
- * Two-row note (21 CFR Part 11 provenance): when the CER run supplies a
- * projectId, the route (`app/api/ra/workflows/cer/route.ts`) ALSO emits a
- * second `cer_created` row with `meta_json: { workflowRunId, projectId,
- * persisted: true }` INSIDE the persist transaction. This is intentional and
- * NOT a bug:
- *   - Row 1 (this function, autocommit)  = run was INITIATED (REQ-CER-036).
- *   - Row 2 (route, in-tx)               = deliverable was PERSISTED (AC-04),
- *                                          atomic with the workflow_runs insert.
- * A reviewer reading two `cer_created` rows for one run should treat row 1 as
- * "initiation" and the row carrying `persisted: true` as "deliverable stored".
+ * Two-row provenance (21 CFR Part 11) — distinct actions, unambiguous semantics:
+ *   - Row 1 — `cer_created`  (this function, autocommit OUTSIDE any tx)
+ *                            = run was INITIATED (REQ-CER-036).
+ *   - Row 2 — `cer_persisted` (route, INSIDE the persist db.transaction)
+ *                            = deliverable was PERSISTED (AC-04), atomic with
+ *                              the workflow_runs insert. Emitted with
+ *                              `meta_json: { workflowRunId, projectId,
+ *                              persisted: true }` when the run supplies a
+ *                              projectId.
  * If only row 1 is present (persist tx rolled back), the run was initiated but
  * no deliverable was stored — the PMS linkage query will return null.
- * Follow-up option: split into a distinct `cer_persisted` action for unambiguous
- * semantics (requires an audit_action enum migration).
  */
 export async function auditCerCreated(actorId: string, cerRunId: string): Promise<void> {
   await writeAudit({
