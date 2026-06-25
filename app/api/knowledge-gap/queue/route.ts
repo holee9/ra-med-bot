@@ -14,7 +14,7 @@
 export const runtime = 'nodejs';
 
 import { withPermission } from '@/lib/auth/with-permission';
-import { db } from '@/lib/db/client';
+import { withTenantScope } from '@/lib/db/client';
 import { unansweredQueue } from '@/lib/db/schema';
 import { type SQL, and, desc, eq } from 'drizzle-orm';
 import { z } from 'zod';
@@ -49,37 +49,45 @@ export const GET = withPermission('knowledgegap.view', async (req, _ctx, session
     );
   }
 
-  const filters: SQL[] = [];
   // Org scoping: only rows from the caller's org. RLS also enforces this at the DB,
   // but we add the filter explicitly so the query plan is cheap and unambiguous.
-  if (session.user.organizationId) {
-    filters.push(eq(unansweredQueue.orgId, session.user.organizationId));
+  const orgId = session.user.organizationId;
+  if (!orgId) {
+    return Response.json({ error: 'no_org_context' }, { status: 403 });
   }
+
+  const filters: SQL[] = [];
+  filters.push(eq(unansweredQueue.orgId, orgId));
   if (parsed.data.status) filters.push(eq(unansweredQueue.status, parsed.data.status));
   if (parsed.data.reason) filters.push(eq(unansweredQueue.gapReason, parsed.data.reason));
   if (parsed.data.classification) {
     filters.push(eq(unansweredQueue.classification, parsed.data.classification));
   }
 
-  const rows = await db
-    .select({
-      id: unansweredQueue.id,
-      conversationId: unansweredQueue.conversationId,
-      messageId: unansweredQueue.messageId,
-      redactedQuestion: unansweredQueue.redactedQuestion,
-      gapReason: unansweredQueue.gapReason,
-      clusterId: unansweredQueue.clusterId,
-      githubIssueNumber: unansweredQueue.githubIssueNumber,
-      classification: unansweredQueue.classification,
-      status: unansweredQueue.status,
-      createdAt: unansweredQueue.createdAt,
-      resolvedAt: unansweredQueue.resolvedAt,
-    })
-    .from(unansweredQueue)
-    .where(filters.length > 0 ? and(...filters) : undefined)
-    .orderBy(desc(unansweredQueue.createdAt))
-    .limit(parsed.data.pageSize)
-    .offset((parsed.data.page - 1) * parsed.data.pageSize);
+  // #239 Phase 2: withTenantScope sets app.current_org_id GUC for RLS enforce.
+  // App-level eq(unansweredQueue.orgId, orgId) retained as defense-in-depth
+  // (RLS is inert project-wide until service-role bypass is dropped).
+  const rows = await withTenantScope(orgId, async (dbs) =>
+    dbs
+      .select({
+        id: unansweredQueue.id,
+        conversationId: unansweredQueue.conversationId,
+        messageId: unansweredQueue.messageId,
+        redactedQuestion: unansweredQueue.redactedQuestion,
+        gapReason: unansweredQueue.gapReason,
+        clusterId: unansweredQueue.clusterId,
+        githubIssueNumber: unansweredQueue.githubIssueNumber,
+        classification: unansweredQueue.classification,
+        status: unansweredQueue.status,
+        createdAt: unansweredQueue.createdAt,
+        resolvedAt: unansweredQueue.resolvedAt,
+      })
+      .from(unansweredQueue)
+      .where(filters.length > 0 ? and(...filters) : undefined)
+      .orderBy(desc(unansweredQueue.createdAt))
+      .limit(parsed.data.pageSize)
+      .offset((parsed.data.page - 1) * parsed.data.pageSize),
+  );
 
   return Response.json({
     page: parsed.data.page,
