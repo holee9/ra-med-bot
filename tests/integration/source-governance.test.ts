@@ -76,7 +76,16 @@ beforeEach(() => {
   vi.doMock('@/lib/audit', () => ({
     writeAudit: vi.fn(async () => {}),
   }));
-  vi.doMock('@/lib/db/client', () => ({ db: makeMockDb(mockRows) }));
+  vi.doMock('@/lib/db/client', () => {
+    const mockDb = makeMockDb(mockRows);
+    return {
+      db: mockDb,
+      withTenantScope: vi.fn(
+        async <T>(_orgId: string, fn: (db: typeof mockDb) => Promise<T>): Promise<T> =>
+          fn(mockDb) as Promise<T>,
+      ),
+    };
+  });
 });
 
 // ---------------------------------------------------------------------------
@@ -244,6 +253,7 @@ describe('AC-04: pending_review on ingest (REQ-SOURCE-GOV-003/009)', () => {
     const { setPendingReviewOnIngest } = await import('@/lib/source-governance/review-workflow');
     const result = await setPendingReviewOnIngest({
       sourceId: 'src-sop-1',
+      orgId: 'org-1',
       isInternalSop: true,
       ownerDepartment: null,
     });
@@ -266,7 +276,9 @@ describe('AC-04: pending_review on ingest (REQ-SOURCE-GOV-003/009)', () => {
 describe('AC-05: approval audit (REQ-SOURCE-GOV-015)', () => {
   it('source-level: approveSource wraps UPDATE + audit in one transaction', () => {
     const src = readText('lib/source-governance/review-workflow.ts');
-    expect(src).toContain('db.transaction');
+    // Phase 3 RLS: org-scoped DB ops now run inside withTenantScope (which
+    // wraps db.transaction + sets the GUC). Assert the scoped wrapper is present.
+    expect(src).toContain('withTenantScope');
     expect(src).toContain('auditSourceApproval');
   });
 
@@ -320,7 +332,8 @@ describe('AC-07: delta-sync governance refresh (REQ-SOURCE-GOV-016)', () => {
 
   it('source-level: delta-sync-hook writes audit source.delta_sync_updated in tx', () => {
     const src = readText('lib/source-governance/delta-sync-hook.ts');
-    expect(src).toContain('db.transaction');
+    // Phase 3 RLS: org-scoped UPDATE + audit now run inside withTenantScope.
+    expect(src).toContain('withTenantScope');
     expect(src).toContain('auditSourceDeltaSyncUpdated');
   });
 });
@@ -417,26 +430,35 @@ function makeSequentialMockDb(queue: unknown[][]) {
     update: vi.fn(() => ({ set: () => ({ where: () => Promise.resolve() }) })),
     insert: vi.fn(() => ({ values: () => Promise.resolve() })),
   };
-  return {
+  const mockDb = {
     select: vi.fn(selectMock),
     update: vi.fn(() => ({ set: () => ({ where: () => Promise.resolve() }) })),
     transaction: vi.fn(async (cb: (tx: unknown) => Promise<unknown>) => cb(txMock)),
   };
+  return mockDb;
+}
+
+/** Attach withTenantScope to a mock db object (calls fn with the same mockDb). */
+function withScope<T>(mockDb: T) {
+  return vi.fn(
+    async <R>(_orgId: string, fn: (db: T) => Promise<R>): Promise<R> => fn(mockDb) as Promise<R>,
+  );
 }
 
 describe('BEHAVIORAL C-2+M-1: markSuperseded (REQ-SOURCE-GOV-005/006)', () => {
   it('writes superseded_by + audits when successor is in same org', async () => {
     vi.doMock('@/lib/audit', () => ({ writeAudit: vi.fn(async () => {}) }));
-    vi.doMock('@/lib/db/client', () => ({
-      db: makeSequentialMockDb([
+    vi.doMock('@/lib/db/client', () => {
+      const mockDb = makeSequentialMockDb([
         [{ id: 'src-old', approvalStatus: 'approved' }], // getSourceInOrg(sourceId)
         [{ id: 'src-new', approvalStatus: 'approved' }], // getSourceInOrg(supersededBy)
         // assessSourceChangeImpact: messageSources select → empty
         [],
         // assessSourceChangeImpact: unansweredQueue select → empty
         [],
-      ]),
-    }));
+      ]);
+      return { db: mockDb, withTenantScope: withScope(mockDb) };
+    });
     vi.resetModules();
     const { markSuperseded } = await import('@/lib/source-governance/review-workflow');
     const result = await markSuperseded({
@@ -451,7 +473,7 @@ describe('BEHAVIORAL C-2+M-1: markSuperseded (REQ-SOURCE-GOV-005/006)', () => {
   it('rejects self-cycle (sourceId === supersededBy) → ok:false, no db write', async () => {
     const db = makeSequentialMockDb([]);
     vi.doMock('@/lib/audit', () => ({ writeAudit: vi.fn(async () => {}) }));
-    vi.doMock('@/lib/db/client', () => ({ db }));
+    vi.doMock('@/lib/db/client', () => ({ db, withTenantScope: withScope(db) }));
     vi.resetModules();
     const { markSuperseded } = await import('@/lib/source-governance/review-workflow');
     const result = await markSuperseded({
@@ -466,9 +488,10 @@ describe('BEHAVIORAL C-2+M-1: markSuperseded (REQ-SOURCE-GOV-005/006)', () => {
 
   it('returns null on IDOR miss (source not in org)', async () => {
     vi.doMock('@/lib/audit', () => ({ writeAudit: vi.fn(async () => {}) }));
-    vi.doMock('@/lib/db/client', () => ({
-      db: makeSequentialMockDb([[]]), // getSourceInOrg returns empty
-    }));
+    vi.doMock('@/lib/db/client', () => {
+      const mockDb = makeSequentialMockDb([[]]); // getSourceInOrg returns empty
+      return { db: mockDb, withTenantScope: withScope(mockDb) };
+    });
     vi.resetModules();
     const { markSuperseded } = await import('@/lib/source-governance/review-workflow');
     const result = await markSuperseded({
@@ -489,7 +512,7 @@ describe('BEHAVIORAL H-3: updateGovernanceFields sets authorityGrade (REQ-SOURCE
       [], // assessSourceChangeImpact unansweredQueue
     ]);
     vi.doMock('@/lib/audit', () => ({ writeAudit: vi.fn(async () => {}) }));
-    vi.doMock('@/lib/db/client', () => ({ db }));
+    vi.doMock('@/lib/db/client', () => ({ db, withTenantScope: withScope(db) }));
     vi.resetModules();
     const { updateGovernanceFields } = await import('@/lib/source-governance/review-workflow');
     const result = await updateGovernanceFields({
@@ -499,15 +522,17 @@ describe('BEHAVIORAL H-3: updateGovernanceFields sets authorityGrade (REQ-SOURCE
       fields: { authorityGrade: 'regulator_official' },
     });
     expect(result?.updatedFields).toContain('authority_grade');
-    // The tx.update was called inside the transaction with our setClause.
-    expect(db.transaction).toHaveBeenCalled();
+    // Phase 3 RLS: the UPDATE now runs inside withTenantScope (which wraps
+    // db.transaction + sets the GUC). Assert the scoped update fired.
+    expect(db.update).toHaveBeenCalled();
   });
 
   it('returns null on IDOR miss (→ 404)', async () => {
     vi.doMock('@/lib/audit', () => ({ writeAudit: vi.fn(async () => {}) }));
-    vi.doMock('@/lib/db/client', () => ({
-      db: makeSequentialMockDb([[]]),
-    }));
+    vi.doMock('@/lib/db/client', () => {
+      const mockDb = makeSequentialMockDb([[]]);
+      return { db: mockDb, withTenantScope: withScope(mockDb) };
+    });
     vi.resetModules();
     const { updateGovernanceFields } = await import('@/lib/source-governance/review-workflow');
     const result = await updateGovernanceFields({
@@ -522,14 +547,15 @@ describe('BEHAVIORAL H-3: updateGovernanceFields sets authorityGrade (REQ-SOURCE
 
 describe('BEHAVIORAL H-2: assessSourceChangeImpact produces knowledge-gap impact (REQ-010)', () => {
   it('returns knowledgeGapIds derived from message_sources → unanswered_queue join', async () => {
-    vi.doMock('@/lib/db/client', () => ({
-      db: makeSequentialMockDb([
+    vi.doMock('@/lib/db/client', () => {
+      const mockDb = makeSequentialMockDb([
         // messageSources select: 2 messages reference this source
         [{ messageId: 'msg-1' }, { messageId: 'msg-2' }],
         // unansweredQueue select: 1 of those messages is an open gap
         [{ id: 'gap-1' }],
-      ]),
-    }));
+      ]);
+      return { db: mockDb, withTenantScope: withScope(mockDb) };
+    });
     vi.resetModules();
     const { assessSourceChangeImpact } = await import('@/lib/source-governance/review-workflow');
     const impact = await assessSourceChangeImpact({ sourceId: 'src-1' });
@@ -537,9 +563,10 @@ describe('BEHAVIORAL H-2: assessSourceChangeImpact produces knowledge-gap impact
   });
 
   it('returns empty when no messages reference the source', async () => {
-    vi.doMock('@/lib/db/client', () => ({
-      db: makeSequentialMockDb([[]]),
-    }));
+    vi.doMock('@/lib/db/client', () => {
+      const mockDb = makeSequentialMockDb([[]]);
+      return { db: mockDb, withTenantScope: withScope(mockDb) };
+    });
     vi.resetModules();
     const { assessSourceChangeImpact } = await import('@/lib/source-governance/review-workflow');
     const impact = await assessSourceChangeImpact({ sourceId: 'src-orphan' });

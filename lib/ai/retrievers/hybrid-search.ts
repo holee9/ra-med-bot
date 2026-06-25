@@ -7,7 +7,7 @@
 import { openai } from '@ai-sdk/openai';
 import { type EmbeddingModel, embed } from 'ai';
 import { sql } from 'drizzle-orm';
-import { db } from '../../db/client';
+import { db, withTenantScope } from '../../db/client';
 
 export interface RetrievedChunk {
   sectionId: string;
@@ -87,54 +87,58 @@ export async function hybridSearch(
   }
 
   // 4. Query — hybrid (pgvector cosine + FTS) when embedding available, FTS-only otherwise.
-  let rawRows: unknown;
-  if (embeddingLiteral !== null) {
-    // Hybrid: FULL OUTER JOIN so a section is included if it ranks in either branch.
-    rawRows = await db.execute<HybridRow>(sql`
-      WITH vec AS (
+  // The raw SQL is org-scoped via RLS; when orgId is supplied, wrap in
+  // withTenantScope so the GUC is set. When orgId is absent, fall back to the
+  // global db handle (defense-in-depth still applies via sources/app-level gates).
+  type ExecHandle = Pick<typeof db, 'execute'>;
+  const runQueryOnHandle = async (client: ExecHandle): Promise<unknown> => {
+    if (embeddingLiteral !== null) {
+      // Hybrid: FULL OUTER JOIN so a section is included if it ranks in either branch.
+      return client.execute<HybridRow>(sql`
+        WITH vec AS (
+          SELECT
+            ss.id AS section_id,
+            1.0 - (ss.embedding <=> ${embeddingLiteral}::vector) AS vec_score
+          FROM source_sections ss
+          INNER JOIN sources s ON s.id = ss.source_id
+          WHERE ss.embedding IS NOT NULL
+            ${typeFilter}
+          ORDER BY ss.embedding <=> ${embeddingLiteral}::vector
+          LIMIT ${k * 4}
+        ),
+        fts AS (
+          SELECT
+            ss.id AS section_id,
+            ts_rank(to_tsvector('english', ss.text), websearch_to_tsquery('english', ${ftsQuery})) AS fts_score
+          FROM source_sections ss
+          INNER JOIN sources s ON s.id = ss.source_id
+          WHERE to_tsvector('english', ss.text) @@ websearch_to_tsquery('english', ${ftsQuery})
+            ${typeFilter}
+          ORDER BY fts_score DESC
+          LIMIT ${k * 4}
+        )
         SELECT
-          ss.id AS section_id,
-          1.0 - (ss.embedding <=> ${embeddingLiteral}::vector) AS vec_score
+          ss.id            AS section_id,
+          ss.source_id     AS source_id,
+          ss.anchor        AS anchor,
+          ss.text          AS text,
+          vec.vec_score    AS vec_score,
+          fts.fts_score    AS fts_score,
+          s.org_label      AS org_label,
+          s.title          AS title,
+          s.year           AS year,
+          s.type::text     AS type,
+          s.url            AS url
         FROM source_sections ss
         INNER JOIN sources s ON s.id = ss.source_id
-        WHERE ss.embedding IS NOT NULL
-          ${typeFilter}
-        ORDER BY ss.embedding <=> ${embeddingLiteral}::vector
+        LEFT JOIN vec ON vec.section_id = ss.id
+        LEFT JOIN fts ON fts.section_id = ss.id
+        WHERE (vec.vec_score IS NOT NULL OR fts.fts_score IS NOT NULL)
         LIMIT ${k * 4}
-      ),
-      fts AS (
-        SELECT
-          ss.id AS section_id,
-          ts_rank(to_tsvector('english', ss.text), websearch_to_tsquery('english', ${ftsQuery})) AS fts_score
-        FROM source_sections ss
-        INNER JOIN sources s ON s.id = ss.source_id
-        WHERE to_tsvector('english', ss.text) @@ websearch_to_tsquery('english', ${ftsQuery})
-          ${typeFilter}
-        ORDER BY fts_score DESC
-        LIMIT ${k * 4}
-      )
-      SELECT
-        ss.id            AS section_id,
-        ss.source_id     AS source_id,
-        ss.anchor        AS anchor,
-        ss.text          AS text,
-        vec.vec_score    AS vec_score,
-        fts.fts_score    AS fts_score,
-        s.org_label      AS org_label,
-        s.title          AS title,
-        s.year           AS year,
-        s.type::text     AS type,
-        s.url            AS url
-      FROM source_sections ss
-      INNER JOIN sources s ON s.id = ss.source_id
-      LEFT JOIN vec ON vec.section_id = ss.id
-      LEFT JOIN fts ON fts.section_id = ss.id
-      WHERE (vec.vec_score IS NOT NULL OR fts.fts_score IS NOT NULL)
-      LIMIT ${k * 4}
-    `);
-  } else {
+      `);
+    }
     // FTS-only: skips vector CTE when OpenAI embedding is unavailable.
-    rawRows = await db.execute<HybridRow>(sql`
+    return client.execute<HybridRow>(sql`
       SELECT
         ss.id            AS section_id,
         ss.source_id     AS source_id,
@@ -154,6 +158,13 @@ export async function hybridSearch(
       ORDER BY fts_score DESC
       LIMIT ${k * 4}
     `);
+  };
+
+  let rawRows: unknown;
+  if (orgId) {
+    rawRows = await withTenantScope(orgId, async (dbs) => runQueryOnHandle(dbs));
+  } else {
+    rawRows = await runQueryOnHandle(db);
   }
 
   // 5. Combine and rank in app-land. We normalize fts_score to [0,1] by

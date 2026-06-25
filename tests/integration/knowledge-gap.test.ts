@@ -171,7 +171,13 @@ vi.mock('@/lib/db/client', () => {
       return selectChain();
     },
   };
-  return { db: client };
+  return {
+    db: client,
+    withTenantScope: vi.fn(
+      async <T>(_orgId: string, fn: (db: typeof client) => Promise<T>): Promise<T> =>
+        fn(client) as Promise<T>,
+    ),
+  };
 });
 
 // Stub consult() — the replay path imports it at module load time.

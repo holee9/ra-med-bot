@@ -6,7 +6,7 @@
 // a second read. The trend signature is computed up-front so trend detection
 // is O(1) at insert time.
 
-import { db } from '@/lib/db/client';
+import { type db, withTenantScope } from '@/lib/db/client';
 import { complaints } from '@/lib/db/schema';
 import { and, eq } from 'drizzle-orm';
 import { computeTrendSignature } from './trend-detector';
@@ -40,23 +40,30 @@ export async function createComplaint(
   tx?: DbHandle,
 ): Promise<{ id: string; trendSignature: string }> {
   const trendSignature = computeTrendSignature(params.intake);
-  const client = tx ?? db;
 
-  const [row] = await client
-    .insert(complaints)
-    .values({
-      orgId: params.orgId,
-      projectId: params.projectId,
-      intakeData: params.intake,
-      reportabilityStatus: 'pending',
-      trendSignature,
-      createdBy: params.createdBy,
-    })
-    .returning({ id: complaints.id });
+  const doInsert = async (client: DbHandle): Promise<{ id: string; trendSignature: string }> => {
+    const [row] = await client
+      .insert(complaints)
+      .values({
+        orgId: params.orgId,
+        projectId: params.projectId,
+        intakeData: params.intake,
+        reportabilityStatus: 'pending',
+        trendSignature,
+        createdBy: params.createdBy,
+      })
+      .returning({ id: complaints.id });
 
-  const complaintId = row?.id;
-  if (!complaintId) throw new Error('failed to insert complaint');
-  return { id: complaintId, trendSignature };
+    const complaintId = row?.id;
+    if (!complaintId) throw new Error('failed to insert complaint');
+    return { id: complaintId, trendSignature };
+  };
+
+  if (tx) {
+    // Caller's scope (already inside withTenantScope).
+    return doInsert(tx);
+  }
+  return withTenantScope(params.orgId, (dbs) => doInsert(dbs as unknown as DbHandle));
 }
 
 /**
@@ -72,16 +79,18 @@ export async function getComplaint(
   reportabilityStatus: string;
   vigilanceRef: string | null;
 } | null> {
-  const [row] = await db
-    .select({
-      id: complaints.id,
-      intakeData: complaints.intakeData,
-      reportabilityStatus: complaints.reportabilityStatus,
-      vigilanceRef: complaints.vigilanceRef,
-    })
-    .from(complaints)
-    .where(and(eq(complaints.id, complaintId), eq(complaints.orgId, orgId)))
-    .limit(1);
+  const [row] = await withTenantScope(orgId, (dbs) =>
+    dbs
+      .select({
+        id: complaints.id,
+        intakeData: complaints.intakeData,
+        reportabilityStatus: complaints.reportabilityStatus,
+        vigilanceRef: complaints.vigilanceRef,
+      })
+      .from(complaints)
+      .where(and(eq(complaints.id, complaintId), eq(complaints.orgId, orgId)))
+      .limit(1),
+  );
 
   if (!row) return null;
   return {

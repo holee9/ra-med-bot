@@ -7,7 +7,7 @@
 
 import { createHash } from 'node:crypto';
 import { type AuditDbHandle, writeAudit } from '@/lib/audit';
-import { db } from '@/lib/db/client';
+import { db, withTenantScope } from '@/lib/db/client';
 import { changeRequest } from '@/lib/db/schema';
 
 /**
@@ -30,25 +30,25 @@ export async function submitRlhfProposal(params: {
   promptId?: string;
   proposalText: string;
 }): Promise<{ changeRequestId: string }> {
-  const [row] = await db
-    .insert(changeRequest)
-    .values({
-      orgId: params.orgId,
-      promptId: params.promptId ?? null,
-      modelPinId: null,
-      evalStatus: 'pending',
-      approvalStatus: 'pending_review',
-      createdBy: params.submittedBy,
-    })
-    .returning({ id: changeRequest.id });
+  return withTenantScope(params.orgId, async (dbs) => {
+    const [row] = await dbs
+      .insert(changeRequest)
+      .values({
+        orgId: params.orgId,
+        promptId: params.promptId ?? null,
+        modelPinId: null,
+        evalStatus: 'pending',
+        approvalStatus: 'pending_review',
+        createdBy: params.submittedBy,
+      })
+      .returning({ id: changeRequest.id });
 
-  if (!row) throw new Error('change_request insert returned no rows');
+    if (!row) throw new Error('change_request insert returned no rows');
 
-  // M3 fix: wrap the audit in a committing transaction so it persists
-  // independently of any downstream throw. Mirrors the capa #251 denial
-  // pattern (21 CFR Part 11 — the record MUST survive). writeAudit with a
-  // committed tx handle guarantees the row is durable.
-  await db.transaction(async (tx: AuditDbHandle) => {
+    // M3 fix: writeAudit inside the same tenant scope so the audit row + GUC
+    // commit atomically (21 CFR Part 11 — the record MUST survive). The
+    // withTenantScope callback already runs inside db.transaction, so the
+    // audit commits with the insert.
     await writeAudit(
       {
         actor_id: params.submittedBy,
@@ -62,11 +62,11 @@ export async function submitRlhfProposal(params: {
           proposal_text_hash: hashProposalText(params.proposalText),
         },
       },
-      tx,
+      dbs as unknown as AuditDbHandle,
     );
-  });
 
-  return { changeRequestId: row.id };
+    return { changeRequestId: row.id };
+  });
 }
 
 /**

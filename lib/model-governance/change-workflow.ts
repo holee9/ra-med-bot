@@ -8,7 +8,7 @@
 // @MX:SPEC SPEC-REGULA-MODEL-GOVERNANCE-001 (Issue 71, REQ-MODELGOV-004/005/012/013/014)
 
 import { type AuditDbHandle, writeAudit } from '@/lib/audit';
-import { db } from '@/lib/db/client';
+import { withTenantScope } from '@/lib/db/client';
 import { approvedCombination, changeRequest } from '@/lib/db/schema';
 import { and, eq } from 'drizzle-orm';
 import { auditApproved, auditChangeRequested, auditEvalResult } from './audit';
@@ -43,7 +43,7 @@ export async function createChangeRequest(params: {
     evalStatus = gate.passed ? 'passed' : 'failed';
   }
 
-  return db.transaction(async (tx) => {
+  return withTenantScope(params.orgId, async (tx) => {
     const [row] = await tx
       .insert(changeRequest)
       .values({
@@ -116,18 +116,22 @@ export async function approveChangeRequest(params: {
   approverId: string;
   evalResultRef?: string;
 }): Promise<{ combinationId: string }> {
-  const [row] = await db
-    .select({
-      id: changeRequest.id,
-      promptId: changeRequest.promptId,
-      modelPinId: changeRequest.modelPinId,
-      evalStatus: changeRequest.evalStatus,
-      approvalStatus: changeRequest.approvalStatus,
-      evalResultRef: changeRequest.evalResultRef,
-    })
-    .from(changeRequest)
-    .where(and(eq(changeRequest.id, params.changeRequestId), eq(changeRequest.orgId, params.orgId)))
-    .limit(1);
+  const row = await withTenantScope(params.orgId, (dbs) =>
+    dbs
+      .select({
+        id: changeRequest.id,
+        promptId: changeRequest.promptId,
+        modelPinId: changeRequest.modelPinId,
+        evalStatus: changeRequest.evalStatus,
+        approvalStatus: changeRequest.approvalStatus,
+        evalResultRef: changeRequest.evalResultRef,
+      })
+      .from(changeRequest)
+      .where(
+        and(eq(changeRequest.id, params.changeRequestId), eq(changeRequest.orgId, params.orgId)),
+      )
+      .limit(1),
+  ).then((r) => r[0]);
 
   if (!row) {
     throw new ChangeRequestBlockedError('change_request_not_found_or_org_mismatch');
@@ -136,10 +140,10 @@ export async function approveChangeRequest(params: {
   // REQ-005: eval must have passed before approval.
   if (row.evalStatus !== 'passed') {
     // M3 fix (21 CFR Part 11 §11.10(e)): write the rejection audit in a
-    // COMMITTING transaction BEFORE the throw. The prior code wrote the audit
-    // inside the same tx that then threw — the throw rolled the tx back,
-    // losing the denial record. Mirrors the capa #251 close-route denial fix.
-    await db.transaction(async (tx) => {
+    // COMMITTING transaction BEFORE the throw. withTenantScope wraps the
+    // audit in its own tx (GUC set) so the denial record persists even when
+    // the throw below propagates. Mirrors the capa #251 close-route denial fix.
+    await withTenantScope(params.orgId, async (tx) => {
       await writeAudit(
         {
           actor_id: params.approverId,
@@ -164,7 +168,7 @@ export async function approveChangeRequest(params: {
 
   const evalResultRef = params.evalResultRef ?? row.evalResultRef ?? null;
 
-  return db.transaction(async (tx) => {
+  return withTenantScope(params.orgId, async (tx) => {
     // REQ-013: supersede the current active combination (if any).
     const [currentActive] = await tx
       .select({ id: approvedCombination.id })
@@ -240,7 +244,7 @@ export async function recordEvalResult(params: {
     evalResultRef: params.evalResultRef ?? null,
   });
 
-  return db.transaction(async (tx) => {
+  return withTenantScope(params.orgId, async (tx) => {
     await tx
       .update(changeRequest)
       .set({

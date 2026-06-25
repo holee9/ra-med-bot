@@ -198,7 +198,13 @@ function resolveRows(fromTable: string): Row[] {
   }
 }
 
-vi.mock('@/lib/db/client', () => ({ db: dbMock }));
+vi.mock('@/lib/db/client', () => ({
+  db: dbMock,
+  withTenantScope: vi.fn(
+    async <T>(_orgId: string, fn: (db: typeof dbMock) => Promise<T>): Promise<T> =>
+      dbMock.transaction(async (tx: unknown) => fn(tx as typeof dbMock)) as Promise<T>,
+  ),
+}));
 
 // ---------------------------------------------------------------------------
 // Audit mock — records every writeAudit call. Can simulate failure.

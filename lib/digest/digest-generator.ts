@@ -5,7 +5,7 @@
 import crypto from 'node:crypto';
 import Anthropic from '@anthropic-ai/sdk';
 import { and, desc, eq, gte, lte } from 'drizzle-orm';
-import { db } from '../db/client';
+import { withTenantScope } from '../db/client';
 import { orgUpdateRelevance, regulatoryUpdates, weeklyDigests } from '../db/schema';
 import { logger } from '../observability/logger';
 
@@ -136,30 +136,36 @@ export async function generateWeeklyDigest(orgId: string, weekId?: string): Prom
   const targetWeekId = weekId ?? getWeekId(new Date());
   const { start, end } = getWeekBounds(targetWeekId);
 
-  // Fetch relevant updates for this org in the week
-  const updates = await db
-    .select({
-      id: regulatoryUpdates.id,
-      title: regulatoryUpdates.title,
-      region: regulatoryUpdates.region,
-      severity: regulatoryUpdates.severity,
-      publishedAt: regulatoryUpdates.publishedAt,
-      sourceUrl: regulatoryUpdates.sourceUrl,
-      rawContentEn: regulatoryUpdates.rawContentEn,
-      impactScore: regulatoryUpdates.impactScore,
-      orgImpactScore: orgUpdateRelevance.impactScore,
-    })
-    .from(regulatoryUpdates)
-    .leftJoin(
-      orgUpdateRelevance,
-      and(
-        eq(orgUpdateRelevance.updateId, regulatoryUpdates.id),
-        eq(orgUpdateRelevance.orgId, orgId),
-      ),
-    )
-    .where(and(gte(regulatoryUpdates.publishedAt, start), lte(regulatoryUpdates.publishedAt, end)))
-    .orderBy(desc(regulatoryUpdates.impactScore))
-    .limit(50);
+  // Wrap all DB access in one tenant scope so the weekly_digests upsert runs
+  // with the GUC set (regulatory_updates is a global catalog read, but
+  // org_update_relevance + weekly_digests are org-scoped).
+  const updates = await withTenantScope(orgId, (dbs) =>
+    dbs
+      .select({
+        id: regulatoryUpdates.id,
+        title: regulatoryUpdates.title,
+        region: regulatoryUpdates.region,
+        severity: regulatoryUpdates.severity,
+        publishedAt: regulatoryUpdates.publishedAt,
+        sourceUrl: regulatoryUpdates.sourceUrl,
+        rawContentEn: regulatoryUpdates.rawContentEn,
+        impactScore: regulatoryUpdates.impactScore,
+        orgImpactScore: orgUpdateRelevance.impactScore,
+      })
+      .from(regulatoryUpdates)
+      .leftJoin(
+        orgUpdateRelevance,
+        and(
+          eq(orgUpdateRelevance.updateId, regulatoryUpdates.id),
+          eq(orgUpdateRelevance.orgId, orgId),
+        ),
+      )
+      .where(
+        and(gte(regulatoryUpdates.publishedAt, start), lte(regulatoryUpdates.publishedAt, end)),
+      )
+      .orderBy(desc(regulatoryUpdates.impactScore))
+      .limit(50),
+  );
 
   // Generate AI summaries (sequential to avoid rate limits)
   const digestUpdates: DigestUpdate[] = [];
@@ -197,16 +203,66 @@ export async function generateWeeklyDigest(orgId: string, weekId?: string): Prom
     { critical: 0, high: 0, medium: 0, low: 0 },
   );
 
-  // Check for existing digest to preserve shareToken for link stability
-  const existing = await db.query.weeklyDigests.findFirst({
-    where: and(eq(weeklyDigests.orgId, orgId), eq(weeklyDigests.weekId, targetWeekId)),
+  // Check for existing digest + upsert in one tenant scope.
+  await withTenantScope(orgId, async (dbs) => {
+    const existing = await dbs.query.weeklyDigests.findFirst({
+      where: and(eq(weeklyDigests.orgId, orgId), eq(weeklyDigests.weekId, targetWeekId)),
+    });
+
+    // @MX:NOTE: [AUTO] Preserve existing shareToken to keep email links stable across normal regenerations
+    // @MX:REASON: Using existing?.shareToken prevents 404 errors on previously sent token-gated email links
+    // Preserve existing token for normal regeneration, only generate new for explicit rotation
+    const shareToken = existing?.shareToken || crypto.randomBytes(16).toString('hex');
+
+    await dbs
+      .insert(weeklyDigests)
+      .values({
+        orgId,
+        weekId: targetWeekId,
+        updateCount: digestUpdates.length,
+        criticalCount: counts.critical,
+        highCount: counts.high,
+        mediumCount: counts.medium,
+        lowCount: counts.low,
+        digestJson: {
+          week_id: targetWeekId,
+          share_token: shareToken,
+          week_start: start.toISOString(),
+          week_end: end.toISOString(),
+          org_id: orgId,
+          updates: digestUpdates,
+          update_count: digestUpdates.length,
+          critical_count: counts.critical,
+          high_count: counts.high,
+          medium_count: counts.medium,
+          low_count: counts.low,
+        } as unknown as Record<string, unknown>,
+        shareToken,
+      })
+      .onConflictDoUpdate({
+        target: [weeklyDigests.orgId, weeklyDigests.weekId],
+        set: {
+          updateCount: digestUpdates.length,
+          criticalCount: counts.critical,
+          highCount: counts.high,
+          mediumCount: counts.medium,
+          lowCount: counts.low,
+          generatedAt: new Date(),
+        },
+      });
   });
 
-  // @MX:NOTE: [AUTO] Preserve existing shareToken to keep email links stable across normal regenerations
-  // @MX:REASON: Using existing?.shareToken prevents 404 errors on previously sent token-gated email links
-  // Preserve existing token for normal regeneration, only generate new for explicit rotation
-  const shareToken = existing?.shareToken || crypto.randomBytes(16).toString('hex');
-  const payload: DigestPayload = {
+  // Reconstruct the payload for the return value (token may have been regenerated
+  // by the upsert; use a fresh read to stay consistent). For simplicity, derive
+  // the share token from a final read inside a scope.
+  const finalRow = await withTenantScope(orgId, (dbs) =>
+    dbs.query.weeklyDigests.findFirst({
+      where: and(eq(weeklyDigests.orgId, orgId), eq(weeklyDigests.weekId, targetWeekId)),
+    }),
+  );
+  const shareToken = finalRow?.shareToken ?? crypto.randomBytes(16).toString('hex');
+
+  return {
     week_id: targetWeekId,
     share_token: shareToken,
     week_start: start.toISOString(),
@@ -219,34 +275,4 @@ export async function generateWeeklyDigest(orgId: string, weekId?: string): Prom
     medium_count: counts.medium,
     low_count: counts.low,
   };
-
-  // Upsert digest record
-  await db
-    .insert(weeklyDigests)
-    .values({
-      orgId,
-      weekId: targetWeekId,
-      updateCount: payload.update_count,
-      criticalCount: counts.critical,
-      highCount: counts.high,
-      mediumCount: counts.medium,
-      lowCount: counts.low,
-      digestJson: payload as unknown as Record<string, unknown>,
-      shareToken,
-    })
-    .onConflictDoUpdate({
-      target: [weeklyDigests.orgId, weeklyDigests.weekId],
-      set: {
-        updateCount: payload.update_count,
-        criticalCount: counts.critical,
-        highCount: counts.high,
-        mediumCount: counts.medium,
-        lowCount: counts.low,
-        digestJson: payload as unknown as Record<string, unknown>,
-        shareToken,
-        generatedAt: new Date(),
-      },
-    });
-
-  return payload;
 }

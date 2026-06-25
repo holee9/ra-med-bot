@@ -123,6 +123,7 @@ export const uploadProcessedFn = inngest.createFunction(
       const { setPendingReviewOnIngest } = await import('@/lib/source-governance/review-workflow');
       return setPendingReviewOnIngest({
         sourceId,
+        orgId,
         isInternalSop: docClass === DocClass.internal_sop,
         ownerDepartment: null,
       });
