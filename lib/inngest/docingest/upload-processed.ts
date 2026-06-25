@@ -1,6 +1,7 @@
 // @MX:NOTE [AUTO] Inngest function for docingest/document.created — full ingest pipeline.
-// @MX:SPEC SPEC-REGULA-DOCINGEST-001 (REQ-DOC-021, REQ-DOC-022, REQ-DOC-025)
-// Steps: extract → redact → chunk → embed → insert chunks → update status
+// @MX:SPEC SPEC-REGULA-DOCINGEST-001 (REQ-DOC-021, REQ-DOC-022, REQ-DOC-025),
+//   SPEC-REGULA-CORPUS-LICENSE-001 (REQ-CORPUSLIC-002)
+// Steps: license-gate → extract → redact → chunk → embed → insert chunks → update status
 // Each step is wrapped in Inngest step.run for independent retry + observability.
 
 import type { DocClass } from '../../ingest/doc-class';
@@ -15,6 +16,12 @@ export interface DocCreatedEvent {
     r2Key: string;
     mimeType: string;
     uploadedBy: string;
+    /**
+     * REQ-CORPUSLIC-002 — the pre-registered, licensed sourceId this document
+     * attaches to. The upload route enforces this before enqueuing; the worker
+     * re-checks (defense-in-depth) so a bypassed enqueue cannot store chunks.
+     */
+    sourceId: string;
   };
 }
 
@@ -30,7 +37,7 @@ export const uploadProcessedFn = inngest.createFunction(
     triggers: [{ event: INNGEST_EVENTS.DOCINGEST_DOCUMENT_CREATED }],
   },
   async ({ event, step }) => {
-    const { documentId, orgId, docClass, r2Key, mimeType } = event.data;
+    const { documentId, orgId, docClass, r2Key, mimeType, sourceId } = event.data;
 
     // Pipeline modules imported dynamically so module load does not pull the
     // ingest/embed (openai) dependency chain eagerly (keeps tests side-effect-free).
@@ -39,6 +46,29 @@ export const uploadProcessedFn = inngest.createFunction(
     const { extractText } = await import('../../ingest/extract/index');
     const { redactPiiForIngest } = await import('../../ingest/pii/redact');
     const { notifyAdminQuarantine } = await import('../../notifications/admin-quarantine');
+
+    // Step 0: REQ-CORPUSLIC-002 license gate — defense-in-depth. The upload
+    // route already gates before enqueuing, but the Inngest worker is the
+    // actual storage path. On denial, SKIP insertChunks + audit + bail.
+    const ingestAllowed = await step.run('license-gate', async () => {
+      const { assertIngestionLicensed } = await import('@/lib/corpus-license/license-gate');
+      const gate = await assertIngestionLicensed({
+        sourceId,
+        orgId,
+        userId: event.data.uploadedBy,
+        wantsFullText: true,
+      });
+      return gate.allowed;
+    });
+
+    if (!ingestAllowed) {
+      // Do NOT proceed to extract/chunk/embed/insertChunks. Mark the document
+      // as ingestion-blocked so the upload UI surfaces the rejection.
+      await step.run('mark-blocked', async () =>
+        updateDocumentStatus(documentId, 'ingestion_blocked'),
+      );
+      return { status: 'ingestion_blocked', chunkCount: 0 };
+    }
 
     // Step 1: Download and extract text
     const rawText = await step.run('extract-text', async () => {

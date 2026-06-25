@@ -316,3 +316,239 @@ describe('Anti-dead-code: gate functions have confirmed call sites', () => {
     expect(consult.includes('generateUsageNotice')).toBe(true);
   });
 });
+
+// ---------------------------------------------------------------------------
+// C-1: upload new-source creation path gated (REQ-002/003)
+// ---------------------------------------------------------------------------
+describe('C-1: upload rejects new-source ingest without licensed sourceId', () => {
+  it('source-level: upload route requires existingSourceId and rejects with 400', () => {
+    const src = readText('app/api/ra/admin/documents/upload/route.ts');
+    expect(src).toContain('no_licensed_source');
+    expect(src).toContain("reason: 'no_licensed_source'");
+    expect(src).toContain('corpus.ingestion_blocked');
+    expect(src).not.toContain('@MX:TODO enforce gate for the new-source creation path');
+  });
+
+  it('source-level: upload route no longer creates new sources rows', () => {
+    const src = readText('app/api/ra/admin/documents/upload/route.ts');
+    // The insert(sources) path was removed; sections attach to existingSourceId.
+    expect(src).not.toContain('insert(sources)');
+    expect(src).toContain('sourceId: existingSourceId');
+  });
+});
+
+// ---------------------------------------------------------------------------
+// C-2: Inngest upload-processed pipeline gated (REQ-002)
+// ---------------------------------------------------------------------------
+describe('C-2: Inngest upload-processed enforces license gate', () => {
+  it('source-level: upload-processed calls assertIngestionLicensed at step 0', () => {
+    const src = readText('lib/inngest/docingest/upload-processed.ts');
+    expect(src).toContain('assertIngestionLicensed');
+    expect(src).toContain("run('license-gate'");
+    expect(src).toContain('ingestion_blocked');
+    expect(src).toContain('sourceId: string');
+  });
+
+  it('source-level: DocCreatedEvent carries sourceId', () => {
+    const src = readText('lib/inngest/docingest/upload-processed.ts');
+    expect(src).toMatch(/sourceId:\s*string/);
+  });
+});
+
+// ---------------------------------------------------------------------------
+// C-3: orgId threaded through per-corpus retrievers (REQ-008)
+// ---------------------------------------------------------------------------
+describe('C-3: per-corpus retrievers thread orgId to hybridSearch', () => {
+  const retrievers = [
+    'lib/ai/retrievers/fda.ts',
+    'lib/ai/retrievers/eu-mdr.ts',
+    'lib/ai/retrievers/mfds.ts',
+    'lib/ai/retrievers/nmpa.ts',
+    'lib/ai/retrievers/pmda.ts',
+  ];
+  for (const rel of retrievers) {
+    it(`source-level: ${rel} passes opts.orgId to hybridSearch`, () => {
+      const src = readText(rel);
+      expect(src).toContain('opts.orgId');
+    });
+  }
+
+  it('source-level: hybrid-search @MX:TODO removed (wiring complete)', () => {
+    const src = readText('lib/ai/retrievers/hybrid-search.ts');
+    expect(src).not.toContain('@MX:TODO wire orgId through');
+  });
+
+  it('source-level: internal-docs applies filterExpiredSources', () => {
+    const src = readText('lib/ai/retrievers/internal-docs.ts');
+    expect(src).toContain('filterExpiredSources');
+  });
+
+  it('source-level: pms-report route threads orgId into hybridSearch', () => {
+    const src = readText('app/api/workflows/pms-report/run/route.ts');
+    expect(src).toMatch(/hybridSearch\([^)]*orgId/);
+  });
+
+  it('domain: expired source excluded when orgId threaded', async () => {
+    const pastDate = '2020-01-01';
+    const futureDate = '2099-12-31';
+    vi.doMock('@/lib/db/client', () => ({
+      db: makeMockDb({
+        select: [
+          { sourceId: 'expired-src', id: 'lic-a', expiryDate: pastDate },
+          { sourceId: 'active-src', id: 'lic-b', expiryDate: futureDate },
+        ],
+      }),
+    }));
+    const mod = await import('@/lib/corpus-license/expiry-checker');
+    const eligible = await mod.filterExpiredSources(['expired-src', 'active-src'], 'org-1');
+    expect(eligible.has('expired-src')).toBe(false);
+    expect(eligible.has('active-src')).toBe(true);
+    vi.doUnmock('@/lib/db/client');
+  });
+});
+
+// ---------------------------------------------------------------------------
+// C-4: export rights gate + usage notice in exports (REQ-007/011)
+// ---------------------------------------------------------------------------
+describe('C-4: export rights gate + usage notice', () => {
+  it('source-level: verifyExportRights exists in export-gate lib', () => {
+    const src = readText('lib/corpus-license/export-gate.ts');
+    expect(src).toContain('verifyExportRights');
+    expect(src).toContain('export_not_permitted');
+  });
+
+  it('source-level: change-control export route wires verifyExportRights + 403', () => {
+    const src = readText('app/api/change-control/[assessmentId]/export/route.ts');
+    expect(src).toContain('verifyExportRights');
+    expect(src).toContain('export_license_blocked');
+    expect(src).toContain('auditExportBlockedBatch');
+  });
+
+  it('source-level: change-control export route wires generateUsageNotice', () => {
+    const src = readText('app/api/change-control/[assessmentId]/export/route.ts');
+    expect(src).toContain('generateUsageNotice');
+  });
+
+  it('source-level: traceability export route wires verifyExportRights + notices', () => {
+    const src = readText('app/api/traceability/[deliverableId]/export/route.ts');
+    expect(src).toContain('verifyExportRights');
+    expect(src).toContain('generateUsageNotice');
+  });
+
+  it('source-level: PDF renderer accepts usageNotices option', () => {
+    const src = readText('lib/change-control/exporters/pdf.tsx');
+    expect(src).toContain('usageNotices');
+    expect(src).toContain('Source Usage Restrictions');
+  });
+
+  it('source-level: packetToMarkdown accepts usageNotices param', () => {
+    const src = readText('lib/traceability/export-packet.ts');
+    expect(src).toMatch(/packetToMarkdown\([\s\S]*usageNotices/);
+    expect(src).toContain('Source Usage Restrictions');
+  });
+
+  it('domain: verifyExportRights blocks source with export=false', async () => {
+    vi.resetModules();
+    vi.doMock('@/lib/db/client', () => ({ db: makeMockDb({ select: [] }) }));
+    vi.doMock('@/lib/corpus-license/permitted-use', () => ({
+      fetchPermittedUse: vi.fn().mockResolvedValue({
+        sourceId: 'iso-src',
+        licenseType: 'standard_paid',
+        permittedUse: { ingest: true, embed: true, search: true, summarize: true, export: false },
+        fullTextAllowed: false,
+        abstractOnly: true,
+        hasActiveEntitlement: false,
+      }),
+      isFullTextBlocked: vi.fn().mockReturnValue(true),
+    }));
+    vi.doMock('@/lib/corpus-license/audit', () => ({ auditExportBlocked: vi.fn() }));
+    const mod = await import('@/lib/corpus-license/export-gate');
+    const result = await mod.verifyExportRights({ sourceIds: ['iso-src'], orgId: 'org-1' });
+    expect(result.allowed).toBe(false);
+    expect(result.blockedSources).toHaveLength(1);
+    expect(result.blockedSources[0]?.reason).toBe('export_not_permitted');
+    vi.doUnmock('@/lib/corpus-license/permitted-use');
+    vi.doUnmock('@/lib/db/client');
+    vi.doUnmock('@/lib/corpus-license/audit');
+  });
+
+  it('domain: verifyExportRights allows sources with export=true', async () => {
+    vi.resetModules();
+    vi.doMock('@/lib/db/client', () => ({ db: makeMockDb({ select: [] }) }));
+    vi.doMock('@/lib/corpus-license/permitted-use', () => ({
+      fetchPermittedUse: vi.fn().mockResolvedValue({
+        sourceId: 'open-src',
+        licenseType: 'open',
+        permittedUse: { ingest: true, embed: true, search: true, summarize: true, export: true },
+        fullTextAllowed: true,
+        abstractOnly: false,
+        hasActiveEntitlement: true,
+      }),
+      isFullTextBlocked: vi.fn().mockReturnValue(false),
+    }));
+    vi.doMock('@/lib/corpus-license/audit', () => ({ auditExportBlocked: vi.fn() }));
+    const mod = await import('@/lib/corpus-license/export-gate');
+    const result = await mod.verifyExportRights({ sourceIds: ['open-src'], orgId: 'org-1' });
+    expect(result.allowed).toBe(true);
+    expect(result.blockedSources).toHaveLength(0);
+    vi.doUnmock('@/lib/corpus-license/permitted-use');
+    vi.doUnmock('@/lib/db/client');
+    vi.doUnmock('@/lib/corpus-license/audit');
+  });
+});
+
+// ---------------------------------------------------------------------------
+// C-4 (H-2): abstract-only enforcement audit wired at retrieval/answer time
+// ---------------------------------------------------------------------------
+describe('C-4 (H-2): auditAbstractOnlyEnforced wired in consult answer path', () => {
+  it('source-level: consult.ts calls auditAbstractOnlyEnforced after retrieval', () => {
+    const src = readText('lib/ai/consult.ts');
+    expect(src).toContain('auditAbstractOnlyEnforced');
+    expect(src).toContain('isFullTextBlocked');
+  });
+
+  it('source-level: auditAbstractOnlyEnforced is NOT dead code (has call site)', () => {
+    const consult = readText('lib/ai/consult.ts');
+    const auditLib = readText('lib/corpus-license/audit.ts');
+    expect(auditLib).toContain('auditAbstractOnlyEnforced');
+    expect(consult.includes('auditAbstractOnlyEnforced')).toBe(true);
+  });
+});
+
+// ---------------------------------------------------------------------------
+// C-4 (H-1): auditExportBlocked is NOT dead code (wired via export-gate)
+// ---------------------------------------------------------------------------
+describe('C-4 (H-1): auditExportBlocked wired via export-gate batch helper', () => {
+  it('source-level: export-gate calls auditExportBlocked via auditExportBlockedBatch', () => {
+    const gate = readText('lib/corpus-license/export-gate.ts');
+    expect(gate).toContain('auditExportBlocked');
+    expect(gate).toContain('auditExportBlockedBatch');
+  });
+
+  it('source-level: change-control export route calls auditExportBlockedBatch', () => {
+    const src = readText('app/api/change-control/[assessmentId]/export/route.ts');
+    expect(src).toContain('auditExportBlockedBatch');
+  });
+});
+
+// ---------------------------------------------------------------------------
+// H-3: ingestion-gate route is documented as manual pre-ingest check
+// ---------------------------------------------------------------------------
+describe('H-3: ingestion-gate route doc-comment clarifies manual use', () => {
+  it('source-level: route comment explains it is a manual pre-ingest check', () => {
+    const src = readText('app/api/corpus-license/ingestion-gate/route.ts');
+    expect(src).toMatch(/manual pre-ingest check endpoint/i);
+    expect(src).toMatch(/directly|direct/);
+  });
+});
+
+// ---------------------------------------------------------------------------
+// H-4: revoked source full text redacted in admin sources API
+// ---------------------------------------------------------------------------
+describe('H-4: revoked source full text redacted in sources [id] route', () => {
+  it('source-level: sources [id] route applies filterExpiredSources + redacts text', () => {
+    const src = readText('app/api/ra/sources/[id]/route.ts');
+    expect(src).toContain('filterExpiredSources');
+    expect(src).toContain('revoked or expired license — full text redacted');
+  });
+});

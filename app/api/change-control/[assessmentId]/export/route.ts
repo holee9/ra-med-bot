@@ -112,6 +112,58 @@ async function postExport(
 
   const riskLinks = await fetchLinkedRiskItems(assessmentId, organizationId);
 
+  // REQ-CORPUSLIC-011 — export-rights gate. Every cited corpus source must be
+  // licensed for export; blocked sources abort the export with 403 + audit.
+  // @MX:NOTE citations[].id is the corpus sourceId when the verdict cited RAG
+  // results; non-corpus citations (manual) fall outside the license scope and
+  // are skipped (no UUID → fetchPermittedUse returns null → no false block).
+  const citedSourceIds = Array.from(
+    new Set(
+      verdictsWithCitations
+        .flatMap((v) => v.citations.map((c) => c.id))
+        .filter((s): s is string => typeof s === 'string' && s.length > 0),
+    ),
+  );
+  const { verifyExportRights, auditExportBlockedBatch } = await import(
+    '@/lib/corpus-license/export-gate'
+  );
+  const exportGate = await verifyExportRights({ sourceIds: citedSourceIds, orgId: organizationId });
+  if (!exportGate.allowed) {
+    await auditExportBlockedBatch({
+      userId: session.user.id,
+      blockedSources: exportGate.blockedSources,
+    });
+    await writeAudit({
+      actor_id: session.user.id,
+      action: 'corpus.export_blocked',
+      resource_type: 'changeAssessment',
+      resource_id: assessmentId,
+      meta_json: {
+        blockedCount: exportGate.blockedSources.length,
+        reasons: exportGate.blockedSources.map((b) => b.reason),
+      },
+    });
+    return Response.json(
+      {
+        error: 'export_license_blocked',
+        blockedCount: exportGate.blockedSources.length,
+      },
+      { status: 403 },
+    );
+  }
+
+  // REQ-CORPUSLIC-007/011 — attach per-source usage-restriction notices to the
+  // exported payload so the PDF/JSON consumer sees redistribution restrictions.
+  let usageNotices: Array<{ sourceId: string; notice: string }> = [];
+  if (citedSourceIds.length > 0) {
+    try {
+      const { generateUsageNotice } = await import('@/lib/corpus-license/usage-notice');
+      usageNotices = await generateUsageNotice(citedSourceIds, organizationId);
+    } catch {
+      // License metadata unavailable — export proceeds without notices.
+    }
+  }
+
   try {
     await db.transaction(async (tx) => {
       await writeAudit(
@@ -152,6 +204,7 @@ async function postExport(
     try {
       pdfBuffer = await exportChangeAssessmentToPdf(assessment, verdictsWithCitations, riskLinks, {
         includeDraftWatermark,
+        usageNotices,
       });
     } catch (err) {
       console.error('change PDF render failed', err);
@@ -176,6 +229,7 @@ async function postExport(
       assessment,
       verdicts: verdictsWithCitations,
       riskLinks,
+      usageNotices,
       exportedAt: new Date().toISOString(),
       format: 'pdf-json',
     },

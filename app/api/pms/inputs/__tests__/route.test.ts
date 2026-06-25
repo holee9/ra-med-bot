@@ -80,7 +80,8 @@ describe('PMS report route — citation + CER linkage + audit (REQ-PMS-002/004/0
 
   it('calls executePmsReport with a retriever (citation grounding path)', () => {
     expect(src).toMatch(/executePmsReport/);
-    expect(src).toMatch(/retrieveFn: retrievePmsReportSources/);
+    // C-3: retriever is now a factory that captures orgId for license filtering.
+    expect(src).toMatch(/retrieveFn: makePmsRetriever\(organizationId\)/);
     expect(src).toMatch(/hybridSearch/);
   });
 

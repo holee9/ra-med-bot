@@ -19,7 +19,7 @@
 import { writeAudit } from '@/lib/audit';
 import { withPermission } from '@/lib/auth/with-permission';
 import { db } from '@/lib/db/client';
-import { sourceSections, sources } from '@/lib/db/schema';
+import { sourceSections } from '@/lib/db/schema';
 import { chunk } from '@/lib/ingest/chunkers';
 import { DocClass } from '@/lib/ingest/doc-class';
 import { embedChunks } from '@/lib/ingest/embed';
@@ -59,7 +59,6 @@ export const POST = withPermission('sources.ingest', async (req, _ctx, session) 
 
   const file = form.get('file');
   const docClassRaw = form.get('docClass');
-  const titleOverride = form.get('title');
   const existingSourceIdRaw = form.get('sourceId');
 
   if (!(file instanceof File)) {
@@ -72,18 +71,40 @@ export const POST = withPermission('sources.ingest', async (req, _ctx, session) 
   }
   const docClass = parsedClass.data;
 
-  // REQ-CORPUSLIC-002 — pre-ingest license gate. When an existing sourceId is
-  // supplied (admin pre-registered the source + license), assert the license
-  // is valid BEFORE extract/chunk/embed. Primary wired call site for
-  // assertIngestionLicensed alongside the ingestion-gate API.
-  // @MX:TODO enforce gate for the new-source creation path (currently only the
-  // existing-source re-ingest path is gated; new sources require a follow-up
-  // to chain license creation + ingest in one transaction).
+  // REQ-CORPUSLIC-002/003 — pre-ingest license gate. A source MUST have an
+  // active license before ingest (SPEC intent: "ingestion 이전에 사용권 검증
+  // gate"). New-source creation + ingest in one ungated flow is forbidden —
+  // unlicensed paid-standard content would enter the corpus. Therefore an
+  // existing sourceId with an active license is REQUIRED; uploads without one
+  // are rejected with 400 + audited as `corpus.ingestion_blocked`.
+  // Primary wired call site for assertIngestionLicensed.
   const existingSourceId =
     typeof existingSourceIdRaw === 'string' && existingSourceIdRaw.trim().length > 0
       ? existingSourceIdRaw.trim()
       : null;
-  if (existingSourceId && session.user.organizationId) {
+  if (!existingSourceId) {
+    // REQ-003: no pre-registered licensed source → block ingest at the gate.
+    await writeAudit({
+      action: 'corpus.ingestion_blocked',
+      actor_id: session.user.id,
+      resource_type: 'source',
+      resource_id: 'pending',
+      meta_json: {
+        reason: 'no_licensed_source',
+        docClass,
+        fileName: redactRegexPii(file.name).text,
+      },
+    });
+    return Response.json(
+      {
+        error: 'no_licensed_source',
+        reason:
+          'sourceId with active license required before ingestion — register license via POST /api/corpus-license/source-license first',
+      },
+      { status: 400 },
+    );
+  }
+  if (session.user.organizationId) {
     const { assertIngestionLicensed } = await import('@/lib/corpus-license/license-gate');
     const gate = await assertIngestionLicensed({
       sourceId: existingSourceId,
@@ -177,33 +198,15 @@ export const POST = withPermission('sources.ingest', async (req, _ctx, session) 
   }
 
   // ---------------------------------------------------------------------
-  // 5. Persist sources + source_sections in a single transaction so a
-  //    partial failure cannot leave orphan sources rows.
+  // 5. Persist source_sections against the PRE-REGISTERED, LICENSED source
+  //    (existingSourceId). The upload route no longer creates new source
+  //    rows — SPEC REQ-003 requires a licensed source to exist before ingest.
+  //    The title override (if any) updates the existing source row.
   // ---------------------------------------------------------------------
-  const title =
-    typeof titleOverride === 'string' && titleOverride.trim().length > 0
-      ? redactRegexPii(titleOverride.trim()).text
-      : redactRegexPii(file.name).text;
-  const filenameExt = file.name.includes('.') ? file.name.split('.').pop()?.slice(0, 32) : null;
-
   const result: UploadSuccess = await db.transaction(async (tx) => {
-    const inserted = await tx
-      .insert(sources)
-      .values({
-        organizationId: session.user.organizationId ?? null,
-        orgLabel: 'Internal',
-        title,
-        type: 'Internal',
-        region: null,
-        url: null,
-      })
-      .returning({ id: sources.id });
-
-    const row = inserted[0];
-    if (!row) throw new Error('source_insert_failed');
-
+    // Attach sections to the pre-registered source (no new sources row).
     const sectionRows = chunks.map((c, idx) => ({
-      sourceId: row.id,
+      sourceId: existingSourceId,
       anchor: `${docClass}-${idx + 1}`,
       heading: typeof c.metadata.sectionPath === 'string' ? c.metadata.sectionPath : null,
       text: c.text,
@@ -212,7 +215,7 @@ export const POST = withPermission('sources.ingest', async (req, _ctx, session) 
 
     await tx.insert(sourceSections).values(sectionRows);
 
-    return { sourceId: row.id, sectionCount: sectionRows.length };
+    return { sourceId: existingSourceId, sectionCount: sectionRows.length };
   });
 
   // ---------------------------------------------------------------------
@@ -229,7 +232,9 @@ export const POST = withPermission('sources.ingest', async (req, _ctx, session) 
       mimeType,
       sizeBytes: file.size,
       sectionCount: result.sectionCount,
-      filenameExt,
+      filenameExt: file.name.includes('.')
+        ? (file.name.split('.').pop()?.slice(0, 32) ?? null)
+        : null,
       filenameLength: file.name.length,
     },
   });

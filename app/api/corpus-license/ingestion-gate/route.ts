@@ -1,8 +1,13 @@
-// @MX:NOTE [AUTO] POST /api/corpus-license/ingestion-gate — pre-ingest license check.
+// @MX:NOTE [AUTO] POST /api/corpus-license/ingestion-gate — manual pre-ingest license check.
 // @MX:SPEC SPEC-REGULA-CORPUS-LICENSE-001 (REQ-CORPUSLIC-002, REQ-CORPUSLIC-003, REQ-CORPUSLIC-004)
 //
-// Primary call site for assertIngestionLicensed (REQ-002 gate). The lib/ingest/
-// pipeline calls this endpoint (or the lib function directly) before embedding.
+// Manual pre-ingest check endpoint: an admin UI (or external caller) probes
+// whether a sourceId would pass the license gate BEFORE starting an ingest.
+// The production ingest paths call the lib function (`assertIngestionLicensed`)
+// directly — the upload route (app/api/ra/admin/documents/upload/route.ts) and
+// the Inngest worker (lib/inngest/docingest/upload-processed.ts) both import
+// the gate rather than HTTP-calling this route. This endpoint exists for
+// ad-hoc/admin verification and is not on the hot ingest path.
 import { withPermission } from '@/lib/auth/with-permission';
 import { assertIngestionLicensed } from '@/lib/corpus-license/license-gate';
 import { ingestionGateInputSchema } from '@/lib/corpus-license/types';

@@ -128,7 +128,45 @@ export async function internalDocsRetrieve(
       EXPERT_REVIEW_CLASSES.has(r.metadata?.docClass as string),
   );
 
+  // REQ-CORPUSLIC-008 — exclude expired/revoked-entitlement sources from
+  // internal-docs retrieval. sourceId is carried in metadata.sourceId by the
+  // ingest pipeline. Defense-in-depth: license-db hiccup never blocks retrieval.
+  const filteredResults =
+    results.length > 0 ? await filterInternalDocExpiredSources(results) : results;
+
   void userId; // ACL check done via RLS in withTenantScope
 
-  return { results, expertReviewRequired };
+  return { results: filteredResults, expertReviewRequired };
+}
+
+/**
+ * REQ-CORPUSLIC-008 — drop internal-doc chunks whose sourceId maps to an
+ * expired or revoked-entitlement source. Falls through unfiltered on any
+ * license-metadata error so RLS remains the sole guarantee.
+ */
+async function filterInternalDocExpiredSources(
+  results: InternalDocsResult[],
+): Promise<InternalDocsResult[]> {
+  const sourceIds = Array.from(
+    new Set(
+      results
+        .map((r) => r.metadata?.sourceId as string | undefined)
+        .filter((s): s is string => typeof s === 'string' && s.length > 0),
+    ),
+  );
+  if (sourceIds.length === 0) return results;
+  try {
+    const { filterExpiredSources } = await import('@/lib/corpus-license/expiry-checker');
+    // orgId is already validated by the caller (InternalDocsOptions.orgId is required).
+    // Re-derive from the first result's metadata to avoid threading another param.
+    const orgId = results[0]?.metadata?.orgId as string | undefined;
+    if (!orgId) return results;
+    const eligible = await filterExpiredSources(sourceIds, orgId);
+    return results.filter((r) => {
+      const sid = r.metadata?.sourceId as string | undefined;
+      return !sid || eligible.has(sid);
+    });
+  } catch {
+    return results;
+  }
 }

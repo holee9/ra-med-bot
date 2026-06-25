@@ -33,7 +33,7 @@ describe('lib/ai/retrievers/pmda.ts (REQ-BREADTH-036)', () => {
 
     const { PmdaRetriever } = await import('@/lib/ai/retrievers/pmda');
     await new PmdaRetriever().retrieve('薬機法', { limit: 6 });
-    expect(hybridSearch).toHaveBeenCalledWith('薬機法', 'pmda', 6, 'all');
+    expect(hybridSearch).toHaveBeenCalledWith('薬機法', 'pmda', 6, 'all', undefined);
   });
 
   it('retrieve() uses default limit 10', async () => {
@@ -42,6 +42,6 @@ describe('lib/ai/retrievers/pmda.ts (REQ-BREADTH-036)', () => {
 
     const { PmdaRetriever } = await import('@/lib/ai/retrievers/pmda');
     await new PmdaRetriever().retrieve('query');
-    expect(hybridSearch).toHaveBeenCalledWith('query', 'pmda', 10, 'all');
+    expect(hybridSearch).toHaveBeenCalledWith('query', 'pmda', 10, 'all', undefined);
   });
 });

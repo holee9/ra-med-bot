@@ -397,6 +397,28 @@ export async function* consult(
     } catch {
       // License metadata unavailable — answer proceeds without notices.
     }
+
+    // REQ-CORPUSLIC-013 — audit when an abstract-only source's full text is
+    // blocked at answer time (the consult path serves full section text by
+    // default; abstract-only licenses forbid that). Primary call site for
+    // auditAbstractOnlyEnforced. Swallowed: license-db hiccup never breaks answer.
+    try {
+      const { auditAbstractOnlyEnforced } = await import('@/lib/corpus-license/audit');
+      const { isFullTextBlocked, fetchPermittedUse } = await import(
+        '@/lib/corpus-license/permitted-use'
+      );
+      const actorId = session.user?.id;
+      if (actorId) {
+        for (const item of sourceItems) {
+          const policy = await fetchPermittedUse(item.id, orgIdForNotice);
+          if (policy?.abstractOnly && isFullTextBlocked(policy)) {
+            await auditAbstractOnlyEnforced({ userId: actorId, sourceId: item.id });
+          }
+        }
+      }
+    } catch {
+      // License metadata unavailable — skip audit (advisory).
+    }
   }
 
   yield* emit({ type: 'sources', items: allSourceItems });

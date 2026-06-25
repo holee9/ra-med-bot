@@ -105,6 +105,29 @@ export const GET = withPermission('conversation.view', async (_req, ctx, session
     .where(eq(sourceSections.sourceId, id))
     .orderBy(sourceSections.anchor);
 
+  // REQ-CORPUSLIC-008/H-4 — redact full text for expired/revoked-entitlement
+  // sources so the admin API cannot leak revoked content. The source row stays
+  // visible (heading/anchor) but `text` is blanked when the license is inactive.
+  // Defense-in-depth: license-db hiccup → fall through with full text (RLS still
+  // isolates; the retriever path already filters via filterExpiredSources).
+  let licensedTextSections = sections;
+  if (session.user.organizationId && sections.length > 0) {
+    try {
+      const { filterExpiredSources } = await import(
+        '../../../../../lib/corpus-license/expiry-checker'
+      );
+      const eligible = await filterExpiredSources([id], session.user.organizationId);
+      if (!eligible.has(id)) {
+        licensedTextSections = sections.map((s) => ({
+          ...s,
+          text: '[revoked or expired license — full text redacted]',
+        }));
+      }
+    } catch {
+      // License metadata unavailable — leave full text intact (advisory filter).
+    }
+  }
+
   return Response.json({
     id: source.id,
     orgLabel: source.orgLabel,
@@ -112,6 +135,6 @@ export const GET = withPermission('conversation.view', async (_req, ctx, session
     year: source.year,
     type: source.type,
     url: source.url,
-    sections,
+    sections: licensedTextSections,
   });
 });

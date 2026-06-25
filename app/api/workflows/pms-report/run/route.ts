@@ -30,13 +30,17 @@ const PmsReportRunSchema = z.object({
     .default(null),
 });
 
-const retrievePmsReportSources: PmsRetriever = async (query) => {
-  const chunks = await hybridSearch(query, 'all', 8, 'regs');
-  return chunks.map((chunk) => ({
-    source: [chunk.orgLabel, chunk.title].filter(Boolean).join(' - '),
-    section: chunk.anchor || chunk.title,
-  }));
-};
+// REQ-CORPUSLIC-008 — factory captures orgId so filterExpiredSources fires
+// inside hybridSearch on the PMS report retrieval path too.
+function makePmsRetriever(orgId: string): PmsRetriever {
+  return async (query) => {
+    const chunks = await hybridSearch(query, 'all', 8, 'regs', orgId);
+    return chunks.map((chunk) => ({
+      source: [chunk.orgLabel, chunk.title].filter(Boolean).join(' - '),
+      section: chunk.anchor || chunk.title,
+    }));
+  };
+}
 
 function createRouteFetch(request: Request): PmsFetchFn {
   const origin = new URL(request.url).origin;
@@ -87,7 +91,7 @@ async function postRun(
         deviceClass: body.deviceClass,
       },
       {
-        retrieveFn: retrievePmsReportSources,
+        retrieveFn: makePmsRetriever(organizationId),
         fetchFn: createRouteFetch(request),
         cerData,
       },

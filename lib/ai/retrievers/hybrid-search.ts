@@ -184,11 +184,11 @@ export async function hybridSearch(
   chunks.sort((a, b) => b.combined_score - a.combined_score);
 
   // REQ-CORPUSLIC-008 — exclude expired/revoked-entitlement sources from search.
-  // Primary call site for filterExpiredSources. Only applied when orgId is
-  // supplied (callers without session context fall through — they are
-  // non-RAG paths like the PMS report builder). Defense-in-depth: a license-db
-  // hiccup never blocks retrieval (RLS still enforces org isolation).
-  // @MX:TODO wire orgId through fda/eu-mdr/mfds/nmpa/pmda retriever opts for exhaustive coverage.
+  // Primary call site for filterExpiredSources. orgId is threaded from all
+  // per-corpus retrievers (fda/eu-mdr/mfds/nmpa/pmda) via RetrieverOptions and
+  // from consult.ts → parallelRetrieveAndMerge. PMS-report builder passes orgId
+  // directly. Defense-in-depth: a license-db hiccup never blocks retrieval
+  // (RLS still enforces org isolation).
   if (orgId && chunks.length > 0) {
     try {
       const { filterExpiredSources } = await import('@/lib/corpus-license/expiry-checker');
