@@ -166,13 +166,14 @@ describe('H-2 prompt-injection hardening: assessViaLLM prompt', () => {
 // ---------------------------------------------------------------------------
 
 describe('H-3 audit integrity: run route catch block', () => {
-  it('wraps the failure-path writeAudit in db.transaction', () => {
+  it('wraps the failure-path writeAudit in withTenantScope (tx-scoped)', () => {
     const src = readText('app/api/change-control/run/route.ts');
-    // The catch block must contain a db.transaction wrapper around writeAudit.
+    // #239 Phase 2: the catch block must wrap failure-path writeAudit in
+    // withTenantScope (which itself runs db.transaction) for GUC + atomicity.
     const catchIdx = src.indexOf('} catch (err) {');
     expect(catchIdx).toBeGreaterThan(-1);
     const catchSlice = src.slice(catchIdx);
-    expect(catchSlice).toMatch(/db\.transaction\(async \(tx\)/);
+    expect(catchSlice).toMatch(/withTenantScope\(/);
     expect(catchSlice).toMatch(/change\.assessment_created/);
     expect(catchSlice).toMatch(/failed:\s*true/);
   });

@@ -154,7 +154,19 @@ const dbMock: {
   })),
 };
 
-vi.mock('@/lib/db/client', () => ({ db: dbMock }));
+vi.mock('@/lib/db/client', () => ({
+  db: dbMock,
+  // #239 Phase 2: mirror real withTenantScope — delegate to dbMock.transaction
+  // so the H2/C-3 atomicity assertions on dbMock.transaction still hold, and
+  // fn receives dbMock as the scoped tx handle (tx === dbMock).
+  withTenantScope: vi.fn(
+    // dbMock.transaction's cb is typed (tx: unknown) in this file, so accept
+    // unknown and cast — at runtime dbMockRef is passed, which === dbMock.
+    // dbMock.transaction returns Promise<unknown>; cast to Promise<T>.
+    async <T>(_orgId: string, fn: (db: typeof dbMock) => Promise<T>): Promise<T> =>
+      dbMock.transaction(async (tx: unknown) => fn(tx as typeof dbMock)) as Promise<T>,
+  ),
+}));
 
 // Break the self-referential type cycle: dbMock.transaction references
 // dbMock via closure, so TypeScript can't infer the const's type. The ref

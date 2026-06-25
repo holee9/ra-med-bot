@@ -62,7 +62,15 @@ const dbMock: DbMock = {
   })),
 };
 
-vi.mock('@/lib/db/client', () => ({ db: dbMock }));
+vi.mock('@/lib/db/client', () => ({
+  db: dbMock,
+  // #239 Phase 2: mirror real withTenantScope — delegate to dbMock.transaction
+  // so the close route's tx-wrapped audit assertions still hold (tx === dbMock).
+  withTenantScope: vi.fn(
+    async <T>(_orgId: string, fn: (db: typeof dbMock) => Promise<T>): Promise<T> =>
+      dbMock.transaction(async (tx: typeof dbMock) => fn(tx)) as Promise<T>,
+  ),
+}));
 
 // ---------------------------------------------------------------------------
 // Audit mock.
