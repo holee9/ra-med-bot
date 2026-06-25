@@ -11,7 +11,7 @@
 // updateGovernanceFromSync() for every source touched by the ingestion run,
 // AFTER the gap-replay loop, so the governance state reflects the new content.
 
-import { db } from '@/lib/db/client';
+import { withTenantScope } from '@/lib/db/client';
 import { sources } from '@/lib/db/schema';
 import { logger } from '@/lib/observability/logger';
 import { eq, inArray } from 'drizzle-orm';
@@ -57,10 +57,9 @@ export async function updateGovernanceFromSync(params: {
 
   // Bulk-verify the source IDs belong to the org before per-source UPDATEs.
   const ids = params.updates.map((u) => u.sourceId);
-  const owned = (await db
-    .select({ id: sources.id })
-    .from(sources)
-    .where(inArray(sources.id, ids))) as Array<{ id: string }>;
+  const owned = await withTenantScope(params.orgId, (dbs) =>
+    dbs.select({ id: sources.id }).from(sources).where(inArray(sources.id, ids)),
+  );
   const ownedSet = new Set(owned.map((r) => r.id));
 
   for (const update of params.updates) {
@@ -91,7 +90,7 @@ export async function updateGovernanceFromSync(params: {
         updatedFields.push('superseded_by');
       }
 
-      await db.transaction(async (tx) => {
+      await withTenantScope(params.orgId, async (tx) => {
         await tx.update(sources).set(setClause).where(eq(sources.id, update.sourceId));
         await auditSourceDeltaSyncUpdated({
           userId: params.actorId,

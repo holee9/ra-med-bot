@@ -11,7 +11,7 @@
 import { openai } from '@ai-sdk/openai';
 import { type EmbeddingModel, embed } from 'ai';
 import { sql } from 'drizzle-orm';
-import { db } from '../../db/client';
+import { type db, withTenantScope } from '../../db/client';
 import type { IRetriever, RetrievalResult, RetrieverOptions } from './types';
 
 interface SopsRow extends Record<string, unknown> {
@@ -60,55 +60,57 @@ export class InternalSopsRetriever implements IRetriever {
 
     // SQL-level org isolation: WHERE ss.org_id = orgId.
     // This filter runs inside Postgres — cross-org rows are never loaded.
-    let rows: unknown;
-    if (embeddingLiteral !== null) {
-      rows = await db.execute<SopsRow>(sql`
-        WITH vec AS (
+    // Wrapped in withTenantScope so the RLS GUC is also set for this org.
+    type ExecHandle = Pick<typeof db, 'execute'>;
+    const runQuery = async (client: ExecHandle): Promise<unknown> => {
+      if (embeddingLiteral !== null) {
+        return client.execute<SopsRow>(sql`
+          WITH vec AS (
+            SELECT
+              ss.id AS section_id,
+              1.0 - (ss.embedding <=> ${embeddingLiteral}::vector) AS vec_score
+            FROM source_sections ss
+            INNER JOIN sources s ON s.id = ss.source_id
+            WHERE ss.embedding IS NOT NULL
+              AND s.organization_id = ${orgId}
+              AND s.type = 'Internal'
+            ORDER BY ss.embedding <=> ${embeddingLiteral}::vector
+            LIMIT ${limit * 4}
+          ),
+          fts AS (
+            SELECT
+              ss.id AS section_id,
+              ts_rank(to_tsvector('english', ss.text), websearch_to_tsquery('english', ${query})) AS fts_score
+            FROM source_sections ss
+            INNER JOIN sources s ON s.id = ss.source_id
+            WHERE to_tsvector('english', ss.text) @@ websearch_to_tsquery('english', ${query})
+              AND s.organization_id = ${orgId}
+              AND s.type = 'Internal'
+            ORDER BY fts_score DESC
+            LIMIT ${limit * 4}
+          )
           SELECT
-            ss.id AS section_id,
-            1.0 - (ss.embedding <=> ${embeddingLiteral}::vector) AS vec_score
+            ss.id           AS section_id,
+            ss.source_id    AS source_id,
+            ss.anchor       AS anchor,
+            ss.text         AS text,
+            (0.6 * COALESCE(vec.vec_score, 0) + 0.4 * COALESCE(fts.fts_score, 0)) AS combined_score,
+            s.org_label     AS org_label,
+            s.title         AS title,
+            s.year          AS year,
+            s.type::text    AS type,
+            s.url           AS url
           FROM source_sections ss
           INNER JOIN sources s ON s.id = ss.source_id
-          WHERE ss.embedding IS NOT NULL
-            AND s.organization_id = ${orgId}
-            AND s.type = 'Internal'
-          ORDER BY ss.embedding <=> ${embeddingLiteral}::vector
-          LIMIT ${limit * 4}
-        ),
-        fts AS (
-          SELECT
-            ss.id AS section_id,
-            ts_rank(to_tsvector('english', ss.text), websearch_to_tsquery('english', ${query})) AS fts_score
-          FROM source_sections ss
-          INNER JOIN sources s ON s.id = ss.source_id
-          WHERE to_tsvector('english', ss.text) @@ websearch_to_tsquery('english', ${query})
-            AND s.organization_id = ${orgId}
-            AND s.type = 'Internal'
-          ORDER BY fts_score DESC
-          LIMIT ${limit * 4}
-        )
-        SELECT
-          ss.id           AS section_id,
-          ss.source_id    AS source_id,
-          ss.anchor       AS anchor,
-          ss.text         AS text,
-          (0.6 * COALESCE(vec.vec_score, 0) + 0.4 * COALESCE(fts.fts_score, 0)) AS combined_score,
-          s.org_label     AS org_label,
-          s.title         AS title,
-          s.year          AS year,
-          s.type::text    AS type,
-          s.url           AS url
-        FROM source_sections ss
-        INNER JOIN sources s ON s.id = ss.source_id
-        LEFT JOIN vec ON vec.section_id = ss.id
-        LEFT JOIN fts ON fts.section_id = ss.id
-        WHERE (vec.section_id IS NOT NULL OR fts.section_id IS NOT NULL)
-        ORDER BY combined_score DESC
-        LIMIT ${limit}
-      `);
-    } else {
+          LEFT JOIN vec ON vec.section_id = ss.id
+          LEFT JOIN fts ON fts.section_id = ss.id
+          WHERE (vec.section_id IS NOT NULL OR fts.section_id IS NOT NULL)
+          ORDER BY combined_score DESC
+          LIMIT ${limit}
+        `);
+      }
       // FTS-only fallback when embedding is unavailable.
-      rows = await db.execute<SopsRow>(sql`
+      return client.execute<SopsRow>(sql`
         SELECT
           ss.id           AS section_id,
           ss.source_id    AS source_id,
@@ -128,7 +130,9 @@ export class InternalSopsRetriever implements IRetriever {
         ORDER BY combined_score DESC
         LIMIT ${limit}
       `);
-    }
+    };
+
+    const rows = await withTenantScope(orgId, async (dbs) => runQuery(dbs));
 
     const list = rows as unknown as SopsRow[];
     let mapped = list.map((r) => ({

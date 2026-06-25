@@ -1,6 +1,6 @@
 // @MX:NOTE [AUTO] Entitlement grant/revoke lifecycle helpers (REQ-CORPUSLIC-008).
 // @MX:SPEC SPEC-REGULA-CORPUS-LICENSE-001 (REQ-CORPUSLIC-008)
-import { db } from '@/lib/db/client';
+import { withTenantScope } from '@/lib/db/client';
 import { entitlement, sourceLicense } from '@/lib/db/schema';
 import { and, eq } from 'drizzle-orm';
 import { auditEntitlementGranted, auditEntitlementRevoked } from './audit';
@@ -18,7 +18,7 @@ export async function grantEntitlement(params: {
   orgId: string;
   grantedBy: string;
 }): Promise<{ entitlementId: string; created: boolean }> {
-  return db.transaction(async (tx) => {
+  return withTenantScope(params.orgId, async (tx) => {
     // Verify the source_license belongs to this org (IDOR guard).
     const [lic] = await tx
       .select({ id: sourceLicense.id, orgId: sourceLicense.orgId })
@@ -77,7 +77,7 @@ export async function revokeEntitlement(params: {
   orgId: string;
   revokedBy: string;
 }): Promise<{ entitlementId: string; revoked: boolean }> {
-  return db.transaction(async (tx) => {
+  return withTenantScope(params.orgId, async (tx) => {
     const [active] = await tx
       .select({ id: entitlement.id })
       .from(entitlement)

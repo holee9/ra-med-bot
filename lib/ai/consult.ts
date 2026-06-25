@@ -15,7 +15,7 @@ import type { Session } from 'next-auth';
 import type { ConsultRequest } from '../../types/consult';
 import type { SourceItem, StreamEvent, TraceEvent } from '../../types/streaming';
 import { writeAudit } from '../audit';
-import { db } from '../db/client';
+import { db, withTenantScope } from '../db/client';
 import { conversations, messageBlocks, messages } from '../db/schema';
 import { captureKnowledgeGap, detectKnowledgeGap } from '../knowledge-gap/detector';
 import { enforceCitations } from './citation-enforce';
@@ -466,12 +466,18 @@ export async function* consult(
         if (blockType) {
           // Persist block before SSE emit (REQ-STRUCT-034, REQ-STRUCT-035)
           try {
-            await db.insert(messageBlocks).values({
-              messageId,
-              blockType,
-              blockJson: blockEvent as unknown as Record<string, unknown>,
-              orderIndex: structuredOrderIndex,
-            });
+            const insertBlock = (client: typeof db) =>
+              client.insert(messageBlocks).values({
+                messageId,
+                blockType,
+                blockJson: blockEvent as unknown as Record<string, unknown>,
+                orderIndex: structuredOrderIndex,
+              });
+            if (orgId) {
+              await withTenantScope(orgId, (dbs) => insertBlock(dbs));
+            } else {
+              await insertBlock(db);
+            }
             structuredOrderIndex++;
           } catch (insertErr) {
             // REQ-STRUCT-035: log and continue — emit even if persist fails
@@ -607,10 +613,16 @@ export async function* consult(
       });
 
       // REQ-ENTERPRISE-010: mark message as requiring expert review
-      await db
-        .update(messages)
-        .set({ expertReviewRequired: true })
-        .where(eq(messages.id, messageId));
+      const markExpertReview = (client: typeof db) =>
+        client
+          .update(messages)
+          .set({ expertReviewRequired: true })
+          .where(eq(messages.id, messageId));
+      if (orgId) {
+        await withTenantScope(orgId, (dbs) => markExpertReview(dbs));
+      } else {
+        await markExpertReview(db);
+      }
 
       // REQ-ENTERPRISE-010: audit the auto-flag event
       await writeAudit({
@@ -688,10 +700,16 @@ export async function* consult(
         actorId: session.user?.id ?? null,
       });
       // REQ-KNOWLEDGE-GAP-003: mark the message row (separate from expertReviewRequired).
-      await db
-        .update(messages)
-        .set({ knowledgeGapRequired: true })
-        .where(eq(messages.id, messageId));
+      const markKnowledgeGap = (client: typeof db) =>
+        client
+          .update(messages)
+          .set({ knowledgeGapRequired: true })
+          .where(eq(messages.id, messageId));
+      if (orgId) {
+        await withTenantScope(orgId, (dbs) => markKnowledgeGap(dbs));
+      } else {
+        await markKnowledgeGap(db);
+      }
     } catch (gapErr) {
       logger.error('[consult] knowledge gap capture failed (non-fatal):', {
         error: gapErr instanceof Error ? gapErr.message : String(gapErr),

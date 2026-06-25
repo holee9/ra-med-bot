@@ -7,7 +7,7 @@
 //           consume.
 // @MX:SPEC SPEC-REGULA-CLINICAL-INVESTIGATION-001 (Issue #69, REQ-CLININV-009, AC-04)
 
-import { db } from '@/lib/db/client';
+import { type db, withTenantScope } from '@/lib/db/client';
 import { ciLinks, designHistoryFiles, pmsInputs, workflowRuns } from '@/lib/db/schema';
 import { and, eq } from 'drizzle-orm';
 import type { CiLinkTarget } from './types';
@@ -49,7 +49,18 @@ export async function linkInvestigationResults(
   },
   tx?: LinkDbHandle,
 ): Promise<LinkResult> {
-  const client = tx ?? db;
+  // When the caller supplies a scoped tx handle (already inside withTenantScope),
+  // run directly on it. Otherwise, open a tenant scope so the GUC is set.
+  if (tx) {
+    return runLink(tx, params);
+  }
+  return withTenantScope(params.orgId, (dbs) => runLink(dbs as unknown as LinkDbHandle, params));
+}
+
+async function runLink(
+  client: LinkDbHandle,
+  params: { investigationId: string; orgId: string; targetType: CiLinkTarget; targetId: string },
+): Promise<LinkResult> {
   const [row] = await client
     .insert(ciLinks)
     .values({
@@ -123,39 +134,41 @@ export async function verifyLinkTargetExists(
   targetType: CiLinkTarget,
   targetId: string,
 ): Promise<boolean> {
-  switch (targetType) {
-    case 'cer': {
-      const rows = await db
-        .select({ id: workflowRuns.id })
-        .from(workflowRuns)
-        .where(
-          and(
-            eq(workflowRuns.id, targetId),
-            eq(workflowRuns.organizationId, orgId),
-            eq(workflowRuns.workflowType, 'cer'),
-          ),
-        )
-        .limit(1);
-      return rows.length > 0;
+  return withTenantScope(orgId, async (dbs) => {
+    switch (targetType) {
+      case 'cer': {
+        const rows = await dbs
+          .select({ id: workflowRuns.id })
+          .from(workflowRuns)
+          .where(
+            and(
+              eq(workflowRuns.id, targetId),
+              eq(workflowRuns.organizationId, orgId),
+              eq(workflowRuns.workflowType, 'cer'),
+            ),
+          )
+          .limit(1);
+        return rows.length > 0;
+      }
+      case 'pms': {
+        const rows = await dbs
+          .select({ id: pmsInputs.id })
+          .from(pmsInputs)
+          .where(and(eq(pmsInputs.id, targetId), eq(pmsInputs.orgId, orgId)))
+          .limit(1);
+        return rows.length > 0;
+      }
+      case 'dhf': {
+        const rows = await dbs
+          .select({ id: designHistoryFiles.id })
+          .from(designHistoryFiles)
+          .where(and(eq(designHistoryFiles.id, targetId), eq(designHistoryFiles.orgId, orgId)))
+          .limit(1);
+        return rows.length > 0;
+      }
+      default: {
+        return false;
+      }
     }
-    case 'pms': {
-      const rows = await db
-        .select({ id: pmsInputs.id })
-        .from(pmsInputs)
-        .where(and(eq(pmsInputs.id, targetId), eq(pmsInputs.orgId, orgId)))
-        .limit(1);
-      return rows.length > 0;
-    }
-    case 'dhf': {
-      const rows = await db
-        .select({ id: designHistoryFiles.id })
-        .from(designHistoryFiles)
-        .where(and(eq(designHistoryFiles.id, targetId), eq(designHistoryFiles.orgId, orgId)))
-        .limit(1);
-      return rows.length > 0;
-    }
-    default: {
-      return false;
-    }
-  }
+  });
 }

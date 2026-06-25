@@ -226,6 +226,7 @@ export const POST = withPermission('sources.ingest', async (req, _ctx, session) 
     const { setPendingReviewOnIngest } = await import('@/lib/source-governance/review-workflow');
     await setPendingReviewOnIngest({
       sourceId: existingSourceId,
+      orgId,
       isInternalSop: docClass === DocClass.internal_sop,
       ownerDepartment: null,
     });

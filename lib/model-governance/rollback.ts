@@ -7,7 +7,7 @@
 // @MX:SPEC SPEC-REGULA-MODEL-GOVERNANCE-001 (Issue 71, REQ-MODELGOV-006, AC-03)
 
 import type { AuditDbHandle } from '@/lib/audit';
-import { db } from '@/lib/db/client';
+import { withTenantScope } from '@/lib/db/client';
 import { approvedCombination } from '@/lib/db/schema';
 import { and, desc, eq } from 'drizzle-orm';
 import { auditRolledBack } from './audit';
@@ -34,7 +34,7 @@ export async function rollbackCombination(params: {
   actorId: string | null;
   toCombinationId?: string;
 }): Promise<{ fromId: string; toId: string }> {
-  return db.transaction(async (tx) => {
+  return withTenantScope(params.orgId, async (tx) => {
     // Current active.
     const [current] = await tx
       .select({ id: approvedCombination.id })

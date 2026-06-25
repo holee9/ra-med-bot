@@ -13,7 +13,7 @@
 // fire the change-control hook (deterministic, testable) without coupling this
 // module to the change-control persistence layer.
 
-import { db } from '@/lib/db/client';
+import { type db, withTenantScope } from '@/lib/db/client';
 import { cveImpact, riskItems, workflowRuns } from '@/lib/db/schema';
 import { and, eq, inArray } from 'drizzle-orm';
 
@@ -42,11 +42,15 @@ export async function filterRiskItemsByOrg(
 ): Promise<{ ok: string[]; rejected: string[] }> {
   if (riskItemIds.length === 0) return { ok: [], rejected: [] };
   try {
-    const rows = await db
-      .select({ id: riskItems.id })
-      .from(riskItems)
-      .innerJoin(workflowRuns, eq(riskItems.workflowRunId, workflowRuns.id))
-      .where(and(inArray(riskItems.id, [...riskItemIds]), eq(workflowRuns.organizationId, orgId)));
+    const rows = await withTenantScope(orgId, (dbs) =>
+      dbs
+        .select({ id: riskItems.id })
+        .from(riskItems)
+        .innerJoin(workflowRuns, eq(riskItems.workflowRunId, workflowRuns.id))
+        .where(
+          and(inArray(riskItems.id, [...riskItemIds]), eq(workflowRuns.organizationId, orgId)),
+        ),
+    );
     const okSet = new Set(rows.map((r) => r.id));
     const ok = [...okSet];
     const rejected = riskItemIds.filter((id) => !okSet.has(id));
@@ -78,11 +82,20 @@ export async function linkCveImpactToRiskItem(params: {
   // caller's audit meta. This mirrors how riskControls links to risk_items.
   const primaryRiskItemId = ok[0];
   if (primaryRiskItemId) {
-    const client = params.tx ?? db;
-    await client
-      .update(cveImpact)
-      .set({ riskItemId: primaryRiskItemId })
-      .where(eq(cveImpact.id, params.cveImpactId));
+    if (params.tx) {
+      // Caller's scope (already inside withTenantScope).
+      await params.tx
+        .update(cveImpact)
+        .set({ riskItemId: primaryRiskItemId })
+        .where(eq(cveImpact.id, params.cveImpactId));
+    } else {
+      await withTenantScope(params.orgId, (dbs) =>
+        dbs
+          .update(cveImpact)
+          .set({ riskItemId: primaryRiskItemId })
+          .where(eq(cveImpact.id, params.cveImpactId)),
+      );
+    }
   }
   return {
     linkedRiskItemIds: ok,

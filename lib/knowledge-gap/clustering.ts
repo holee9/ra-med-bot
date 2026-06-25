@@ -14,7 +14,7 @@
 // Embeddings are generated from redacted text only — no PII reaches the embedding API.
 
 import { createHash } from 'node:crypto';
-import { db } from '@/lib/db/client';
+import { db, withTenantScope } from '@/lib/db/client';
 import { unansweredQueue } from '@/lib/db/schema';
 import { embedChunks } from '@/lib/ingest/embed';
 import { and, eq } from 'drizzle-orm';
@@ -70,15 +70,17 @@ export async function findSimilarOpenCluster(
   redactedQuestion: string,
   excludeGapId?: string,
 ): Promise<string | null> {
-  const openGaps = await db
-    .select({
-      id: unansweredQueue.id,
-      redactedQuestion: unansweredQueue.redactedQuestion,
-      redactionHash: unansweredQueue.redactionHash,
-      clusterId: unansweredQueue.clusterId,
-    })
-    .from(unansweredQueue)
-    .where(and(eq(unansweredQueue.orgId, orgId), eq(unansweredQueue.status, 'open')));
+  const openGaps = await withTenantScope(orgId, (dbs) =>
+    dbs
+      .select({
+        id: unansweredQueue.id,
+        redactedQuestion: unansweredQueue.redactedQuestion,
+        redactionHash: unansweredQueue.redactionHash,
+        clusterId: unansweredQueue.clusterId,
+      })
+      .from(unansweredQueue)
+      .where(and(eq(unansweredQueue.orgId, orgId), eq(unansweredQueue.status, 'open'))),
+  );
 
   const candidateGaps =
     excludeGapId === undefined ? openGaps : openGaps.filter((gap) => gap.id !== excludeGapId);
@@ -127,7 +129,9 @@ export async function assignCluster(
   const existingClusterId = await findSimilarOpenCluster(orgId, redactedQuestion, gapId);
 
   const clusterId = existingClusterId ?? newClusterId;
-  await db.update(unansweredQueue).set({ clusterId }).where(eq(unansweredQueue.id, gapId));
+  await withTenantScope(orgId, (dbs) =>
+    dbs.update(unansweredQueue).set({ clusterId }).where(eq(unansweredQueue.id, gapId)),
+  );
 
   return {
     existingClusterId,

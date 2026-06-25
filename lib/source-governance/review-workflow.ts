@@ -7,7 +7,7 @@
 //   A dead-code definition without a call site is a SPEC violation.
 // @MX:SPEC SPEC-REGULA-SOURCE-GOVERNANCE-001 (REQ-SOURCE-GOV-009/010/015, AC-04/05)
 
-import { db } from '@/lib/db/client';
+import { withTenantScope } from '@/lib/db/client';
 import { messageSources, sources, unansweredQueue } from '@/lib/db/schema';
 import { logger } from '@/lib/observability/logger';
 import { eq, inArray } from 'drizzle-orm';
@@ -31,19 +31,22 @@ import type { ApprovalStatus, SourceChangeImpact } from './types';
  */
 export async function setPendingReviewOnIngest(params: {
   sourceId: string;
+  orgId: string;
   isInternalSop: boolean;
   ownerDepartment?: string | null;
 }): Promise<{ approvalStatus: ApprovalStatus; missingOwner: boolean }> {
   const missingOwner =
     params.isInternalSop && (!params.ownerDepartment || params.ownerDepartment.trim() === '');
 
-  await db
-    .update(sources)
-    .set({
-      approvalStatus: 'pending_review',
-      ownerDepartment: params.ownerDepartment ?? null,
-    })
-    .where(eq(sources.id, params.sourceId));
+  await withTenantScope(params.orgId, (dbs) =>
+    dbs
+      .update(sources)
+      .set({
+        approvalStatus: 'pending_review',
+        ownerDepartment: params.ownerDepartment ?? null,
+      })
+      .where(eq(sources.id, params.sourceId)),
+  );
 
   if (missingOwner) {
     logger.warn('[source-governance] internal SOP ingested without owner_department', {
@@ -69,7 +72,7 @@ export async function approveSource(params: {
   const existing = await getSourceInOrg(params.sourceId, params.orgId);
   if (!existing) return null; // IDOR → caller returns 404.
 
-  await db.transaction(async (tx) => {
+  await withTenantScope(params.orgId, async (tx) => {
     await tx
       .update(sources)
       .set({ approvalStatus: params.decision, lastReviewedAt: new Date() })
@@ -120,7 +123,7 @@ export async function markSuperseded(params: {
   if (!successor) return null;
 
   const { auditSourceSuperseded } = await import('./audit');
-  await db.transaction(async (tx) => {
+  await withTenantScope(params.orgId, async (tx) => {
     await tx
       .update(sources)
       .set({ supersededBy: params.supersededBy })
@@ -139,7 +142,7 @@ export async function markSuperseded(params: {
   // Best-effort: impact assessment failure never fails the supersede (the
   // state change already succeeded + audited).
   try {
-    await assessSourceChangeImpact({ sourceId: params.sourceId });
+    await assessSourceChangeImpact({ sourceId: params.sourceId, orgId: params.orgId });
   } catch (err) {
     logger.warn('[source-governance] assessSourceChangeImpact failed post-supersede', {
       sourceId: params.sourceId,
@@ -220,7 +223,7 @@ export async function updateGovernanceFields(params: {
   }
 
   const { auditSourceGovernanceUpdated } = await import('./audit');
-  await db.transaction(async (tx) => {
+  await withTenantScope(params.orgId, async (tx) => {
     await tx.update(sources).set(setClause).where(eq(sources.id, params.sourceId));
     await auditSourceGovernanceUpdated({
       userId: params.userId,
@@ -233,7 +236,7 @@ export async function updateGovernanceFields(params: {
   // H-2 (REQ-SOURCE-GOV-010): wire assessSourceChangeImpact into the governance
   // change flow so downstream knowledge gaps surface on the dashboard.
   try {
-    await assessSourceChangeImpact({ sourceId: params.sourceId });
+    await assessSourceChangeImpact({ sourceId: params.sourceId, orgId: params.orgId });
   } catch (err) {
     logger.warn('[source-governance] assessSourceChangeImpact failed post-governance-update', {
       sourceId: params.sourceId,
@@ -259,27 +262,41 @@ export async function updateGovernanceFields(params: {
  */
 export async function assessSourceChangeImpact(params: {
   sourceId: string;
+  orgId?: string;
 }): Promise<SourceChangeImpact> {
   try {
-    const rows = (await db
-      .select({ messageId: messageSources.messageId })
-      .from(messageSources)
-      .where(eq(messageSources.sourceId, params.sourceId))) as Array<{
-      messageId: string;
-    }>;
+    const runRead = async <T>(
+      fn: (dbs: typeof import('@/lib/db/client')['db']) => Promise<T>,
+    ): Promise<T> => {
+      if (params.orgId) {
+        const { withTenantScope } = await import('@/lib/db/client');
+        return withTenantScope(params.orgId, fn);
+      }
+      const { db: fallbackDb } = await import('@/lib/db/client');
+      return fn(fallbackDb);
+    };
+
+    const rows = await runRead((dbs) =>
+      dbs
+        .select({ messageId: messageSources.messageId })
+        .from(messageSources)
+        .where(eq(messageSources.sourceId, params.sourceId)),
+    );
 
     if (rows.length === 0) {
       return { knowledgeGapIds: [], evalScenarioIds: [], submissionPackageIds: [] };
     }
 
     const messageIds = rows.map((r) => r.messageId);
-    const gapRows = (await db
-      .select({ id: unansweredQueue.id })
-      .from(unansweredQueue)
-      .where(inArray(unansweredQueue.messageId, messageIds))) as Array<{ id: string }>;
+    const gapRows = await runRead((dbs) =>
+      dbs
+        .select({ id: unansweredQueue.id })
+        .from(unansweredQueue)
+        .where(inArray(unansweredQueue.messageId, messageIds)),
+    );
 
     return {
-      knowledgeGapIds: gapRows.map((r) => r.id),
+      knowledgeGapIds: gapRows.map((r) => (r as { id: string }).id),
       // @MX:TODO [AUTO] REQ-SOURCE-GOV-010 follow-up: eval-scenario + submission-package
       //   impact joins (depends on eval/submission tables not yet finalised in
       //   this tier). Knowledge-gap impact is the highest-priority signal and is
