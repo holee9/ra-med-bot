@@ -88,8 +88,17 @@ export async function approveSource(params: {
 }
 
 /**
- * REQ-SOURCE-GOV-005 — mark a source superseded by another. Writes the
+ * REQ-SOURCE-GOV-005/006 — mark a source superseded by another. Writes the
  * supersession link + audit in one transaction.
+ *
+ * Live call site: POST /api/source-governance/[id]/supersede route (RBAC
+ * sourcegov.manage + IDOR via getSourceInOrg). REQ-006 retrieval-gate reads
+ * superseded_by to exclude superseded sources from default search — a dead
+ * markSuperseded makes REQ-005/006 inert (column always NULL).
+ *
+ * M-1 (cycle/self-ref prevention): rejects `sourceId === supersededBy`
+ * (self-cycle) and verifies `supersededBy` belongs to the same org via
+ * getSourceInOrg (cross-org supersede is an IDOR-style data-integrity bug).
  */
 export async function markSuperseded(params: {
   sourceId: string;
@@ -97,8 +106,18 @@ export async function markSuperseded(params: {
   orgId: string;
   userId: string;
 }): Promise<{ ok: boolean } | null> {
+  // M-1: self-cycle prevention — a source cannot supersede itself.
+  if (params.sourceId === params.supersededBy) {
+    return { ok: false };
+  }
+
   const existing = await getSourceInOrg(params.sourceId, params.orgId);
   if (!existing) return null;
+
+  // M-1: supersededBy MUST belong to the same org. Cross-org supersede would
+  // orphan the historical-lookup traversal (REQ-006 points to a foreign row).
+  const successor = await getSourceInOrg(params.supersededBy, params.orgId);
+  if (!successor) return null;
 
   const { auditSourceSuperseded } = await import('./audit');
   await db.transaction(async (tx) => {
@@ -115,7 +134,114 @@ export async function markSuperseded(params: {
     });
   });
 
+  // H-2 (REQ-SOURCE-GOV-010): wire assessSourceChangeImpact into the supersede
+  // flow so the dashboard surfaces knowledge gaps referencing this source.
+  // Best-effort: impact assessment failure never fails the supersede (the
+  // state change already succeeded + audited).
+  try {
+    await assessSourceChangeImpact({ sourceId: params.sourceId });
+  } catch (err) {
+    logger.warn('[source-governance] assessSourceChangeImpact failed post-supersede', {
+      sourceId: params.sourceId,
+      error: err instanceof Error ? err.message : String(err),
+    });
+  }
+
   return { ok: true };
+}
+
+/**
+ * REQ-SOURCE-GOV-004/008 — set governance fields (authorityGrade, jurisdiction,
+ * effectiveDate, sunsetDate, ownerDepartment, reviewCycleDays) on a source.
+ *
+ * Live call site: PATCH /api/source-governance/[id] route (RBAC sourcegov.manage
+ * + IDOR via getSourceInOrg). authorityGrade had NO setter before this — every
+ * source was null-grade, making assessLowAuthority (REQ-008) meaningless.
+ *
+ * Audit: source.governance_updated, written inside the same transaction as the
+ * UPDATE (21 CFR Part 11 atomicity — H2). Wires the previously-dead
+ * {@link auditSourceGovernanceUpdated} helper.
+ *
+ * Returns the refreshed impact (knowledge gaps referencing the source), or null
+ * on IDOR miss. Impact is best-effort.
+ */
+export async function updateGovernanceFields(params: {
+  sourceId: string;
+  orgId: string;
+  userId: string;
+  fields: {
+    authorityGrade?:
+      | 'regulator_official'
+      | 'harmonized_standard'
+      | 'internal_sop'
+      | 'prior_submission'
+      | 'public_database'
+      | 'secondary_reference'
+      | null;
+    jurisdiction?: string | null;
+    effectiveDate?: string | null;
+    sunsetDate?: string | null;
+    ownerDepartment?: string | null;
+    reviewCycleDays?: number | null;
+  };
+}): Promise<{ updatedFields: string[] } | null> {
+  const existing = await getSourceInOrg(params.sourceId, params.orgId);
+  if (!existing) return null;
+
+  const setClause: Record<string, unknown> = {};
+  const updatedFields: string[] = [];
+  if (params.fields.authorityGrade !== undefined) {
+    setClause.authorityGrade = params.fields.authorityGrade;
+    updatedFields.push('authority_grade');
+  }
+  if (params.fields.jurisdiction !== undefined) {
+    setClause.jurisdiction = params.fields.jurisdiction;
+    updatedFields.push('jurisdiction');
+  }
+  if (params.fields.effectiveDate !== undefined) {
+    setClause.effectiveDate = params.fields.effectiveDate;
+    updatedFields.push('effective_date');
+  }
+  if (params.fields.sunsetDate !== undefined) {
+    setClause.sunsetDate = params.fields.sunsetDate;
+    updatedFields.push('sunset_date');
+  }
+  if (params.fields.ownerDepartment !== undefined) {
+    setClause.ownerDepartment = params.fields.ownerDepartment;
+    updatedFields.push('owner_department');
+  }
+  if (params.fields.reviewCycleDays !== undefined) {
+    setClause.reviewCycleDays = params.fields.reviewCycleDays;
+    updatedFields.push('review_cycle_days');
+  }
+
+  if (updatedFields.length === 0) {
+    return { updatedFields: [] };
+  }
+
+  const { auditSourceGovernanceUpdated } = await import('./audit');
+  await db.transaction(async (tx) => {
+    await tx.update(sources).set(setClause).where(eq(sources.id, params.sourceId));
+    await auditSourceGovernanceUpdated({
+      userId: params.userId,
+      sourceId: params.sourceId,
+      fields: setClause,
+      tx,
+    });
+  });
+
+  // H-2 (REQ-SOURCE-GOV-010): wire assessSourceChangeImpact into the governance
+  // change flow so downstream knowledge gaps surface on the dashboard.
+  try {
+    await assessSourceChangeImpact({ sourceId: params.sourceId });
+  } catch (err) {
+    logger.warn('[source-governance] assessSourceChangeImpact failed post-governance-update', {
+      sourceId: params.sourceId,
+      error: err instanceof Error ? err.message : String(err),
+    });
+  }
+
+  return { updatedFields };
 }
 
 /**

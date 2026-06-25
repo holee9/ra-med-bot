@@ -337,6 +337,11 @@ async function main(): Promise<void> {
           type: seed.type,
           region: seed.region,
           url: seed.url,
+          // REQ-SOURCE-GOV-004/008 — FDA corpus = regulator_official authority.
+          // Without this every seeded source is null-grade, making assessLowAuthority
+          // treat all FDA sources as low-authority (the REQ-008 gate becomes inert).
+          authorityGrade: 'regulator_official',
+          approvalStatus: 'approved',
           // Use sql`NULL` to bypass postgres-js custom-type serialisation for null vectors.
           embedding: titleEmbedding ?? (sql`NULL` as unknown as number[]),
         })

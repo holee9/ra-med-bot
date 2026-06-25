@@ -45,6 +45,35 @@ export const approveRequestSchema = z.object({
 });
 export type ApproveRequest = z.infer<typeof approveRequestSchema>;
 
+/** REQ-SOURCE-GOV-005/006 — POST /api/source-governance/[id]/supersede body. */
+export const supersedeRequestSchema = z.object({
+  supersededBy: z.string().uuid(),
+});
+export type SupersedeRequest = z.infer<typeof supersedeRequestSchema>;
+
+/** REQ-SOURCE-GOV-004/008 — PATCH /api/source-governance/[id] body. */
+export const updateGovernanceRequestSchema = z
+  .object({
+    authorityGrade: authorityGradeSchema.nullable().optional(),
+    jurisdiction: z.string().max(200).nullable().optional(),
+    effectiveDate: z
+      .string()
+      .regex(/^\d{4}-\d{2}-\d{2}$/)
+      .nullable()
+      .optional(),
+    sunsetDate: z
+      .string()
+      .regex(/^\d{4}-\d{2}-\d{2}$/)
+      .nullable()
+      .optional(),
+    ownerDepartment: z.string().max(200).nullable().optional(),
+    reviewCycleDays: z.number().int().positive().max(3650).nullable().optional(),
+  })
+  .refine((d) => Object.keys(d).length > 0, {
+    message: 'at least one governance field is required',
+  });
+export type UpdateGovernanceRequest = z.infer<typeof updateGovernanceRequestSchema>;
+
 /** REQ-SOURCE-GOV-010 — impact payload returned by review-workflow. */
 export interface SourceChangeImpact {
   knowledgeGapIds: string[];

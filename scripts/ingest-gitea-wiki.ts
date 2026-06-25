@@ -138,6 +138,8 @@ async function ingestGiteaWiki(): Promise<void> {
         title: `Gitea Wiki (${wikiRepo})`,
         year: new Date().getFullYear(),
         type: 'Internal',
+        // REQ-SOURCE-GOV-004/008 — internal SOP wiki = internal_sop authority.
+        authorityGrade: 'internal_sop',
         region: 'KR',
         url: `${giteaUrl}/${wikiRepo}/wiki`,
         // Provenance fields for Gitea source

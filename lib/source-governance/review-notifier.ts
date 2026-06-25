@@ -12,7 +12,7 @@
 
 import { db } from '@/lib/db/client';
 import { sources } from '@/lib/db/schema';
-import { and, eq, isNull, lte, or } from 'drizzle-orm';
+import { and, eq, isNull, or, sql } from 'drizzle-orm';
 
 export interface ReviewDueSource {
   id: string;
@@ -25,19 +25,29 @@ export interface ReviewDueSource {
 
 /**
  * REQ-SOURCE-GOV-013 — sources whose review is due within `withinDays` (default 30).
- * A source is "due" when:
- *   - review_cycle_days is set AND last_reviewed_at + cycle <= now + withinDays
- *   - OR last_reviewed_at is null (never reviewed) AND the source is approved.
  *
- * Best-effort date arithmetic in JS (Drizzle date-text comparison is simpler
- * here than a server-side expression). RLS scopes by org automatically.
+ * M-3 fix: the prior predicate `lte(reviewCycleDays, withinDays)` compared
+ * cycle-days against 30 — so a 365-day-cycle source 400 days overdue was
+ * excluded (cycle 365 > 30). The real "due" condition is:
+ *   - last_reviewed_at + (review_cycle_days || ' days')::interval <= now() + (withinDays || ' days')::interval
+ *   - OR last_reviewed_at IS NULL AND approval_status='approved' (never reviewed)
+ *
+ * The due-date arithmetic is pushed to SQL via Drizzle's sql template so the
+ * interval comparison is server-side (no JS date skew across timezones). RLS
+ * scopes by org automatically.
  */
 export async function getReviewDueSources(params: {
   orgId: string;
   withinDays?: number;
 }): Promise<ReviewDueSource[]> {
   const withinDays = params.withinDays ?? 30;
-  const horizon = new Date(Date.now() + withinDays * 24 * 60 * 60 * 1000);
+
+  const duePredicate = or(
+    // Reviewed before but the cycle has elapsed (or will within withinDays).
+    sql`(sources.last_reviewed_at + ((sources.review_cycle_days || ' days'))::interval) <= (now() + (${withinDays} || ' days')::interval)`,
+    // Never reviewed AND approved (newly-approved sources need an initial review).
+    and(isNull(sources.lastReviewedAt), eq(sources.approvalStatus, 'approved')),
+  );
 
   const rows = (await db
     .select({
@@ -52,25 +62,17 @@ export async function getReviewDueSources(params: {
       and(
         eq(sources.organizationId, params.orgId),
         eq(sources.approvalStatus, 'approved'),
-        or(lte(sources.reviewCycleDays, withinDays), isNull(sources.lastReviewedAt)),
+        sql`sources.review_cycle_days IS NOT NULL OR sources.last_reviewed_at IS NULL`,
+        duePredicate,
       ),
     )) as Array<Omit<ReviewDueSource, 'daysOverdue'>>;
 
   const now = Date.now();
-  return rows
-    .map((r) => {
-      const cycle = r.reviewCycleDays ?? 0;
-      const last = r.lastReviewedAt ? new Date(r.lastReviewedAt).getTime() : 0;
-      const dueAt = last + cycle * 24 * 60 * 60 * 1000;
-      const daysOverdue = Math.floor((now - dueAt) / (24 * 60 * 60 * 1000));
-      return { ...r, daysOverdue };
-    })
-    .filter((r) => {
-      // Keep sources whose due-at falls on or before the horizon.
-      const cycle = r.reviewCycleDays ?? 0;
-      if (cycle === 0) return r.lastReviewedAt === null;
-      const dueAt =
-        (r.lastReviewedAt ? new Date(r.lastReviewedAt).getTime() : 0) + cycle * 86400000;
-      return dueAt <= horizon.getTime();
-    });
+  return rows.map((r) => {
+    const cycle = r.reviewCycleDays ?? 0;
+    const last = r.lastReviewedAt ? new Date(r.lastReviewedAt).getTime() : 0;
+    const dueAt = cycle > 0 ? last + cycle * 24 * 60 * 60 * 1000 : 0;
+    const daysOverdue = cycle > 0 ? Math.floor((now - dueAt) / (24 * 60 * 60 * 1000)) : 0;
+    return { ...r, daysOverdue };
+  });
 }

@@ -75,12 +75,17 @@ export type CerInput = z.infer<typeof CerInputSchema>;
 
 // REQ-CER-039: CER export input. stageContent maps a MEDDEV stage id (1-10,
 // as a string key) to authored content used to reconstruct the CerDocument.
+// citedSourceIds (optional, REQ-SOURCE-GOV-007): corpus source UUIDs cited in
+// the CER literature sections — when present the export route runs the
+// governance freshness gate so superseded/stale sources cannot ship in a
+// regulatory submission. Forward-compatible: omitted today → gate is a no-op.
 export const CerExportSchema = z.object({
   cerRunId: z.string().uuid(),
   format: z.enum(['docx', 'pdf']),
   deviceName: z.string().min(1).max(200),
   manufacturer: z.string().min(1).max(200),
   stageContent: z.record(z.string(), z.string()).optional(),
+  citedSourceIds: z.array(z.string().uuid()).optional(),
 });
 export type CerExportInput = z.infer<typeof CerExportSchema>;
 

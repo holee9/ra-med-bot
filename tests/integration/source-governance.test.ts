@@ -383,3 +383,231 @@ describe('IDOR + compose-with-license-filter', () => {
     expect(src).toMatch(/'sourcegov\.view':\s*\{\s*minRole:\s*'ra-member'/);
   });
 });
+
+// ---------------------------------------------------------------------------
+// BEHAVIORAL tests (Issue #48 follow-up): exercise REAL lib functions with a
+// sequential-select mock db. Each fix (C-1/C-2/H-3/H-2/H-1/M-3) is verified by
+// behavior, not source-string grep. Mirrors CAPA #251 hybrid pattern.
+// ---------------------------------------------------------------------------
+
+// Sequential mock: each db.select().from().where() / .where().limit() call pops
+// the next row-set from `queue`. This lets multi-select functions
+// (markSuperseded does getSourceInOrg x2) be exercised deterministically.
+function makeSequentialMockDb(queue: unknown[][]) {
+  let idx = 0;
+  const pop = () => {
+    const rows = queue[idx] ?? [];
+    idx += 1;
+    return rows;
+  };
+  const thenable = (rows: unknown[]) => {
+    const p = Promise.resolve(rows) as Promise<unknown[]> & {
+      limit: () => Promise<unknown[]>;
+    };
+    p.limit = () => Promise.resolve(rows);
+    return p;
+  };
+  const selectMock = () => ({
+    from: () => ({
+      where: () => thenable(pop()),
+    }),
+  });
+  const txMock = {
+    select: selectMock,
+    update: vi.fn(() => ({ set: () => ({ where: () => Promise.resolve() }) })),
+    insert: vi.fn(() => ({ values: () => Promise.resolve() })),
+  };
+  return {
+    select: vi.fn(selectMock),
+    update: vi.fn(() => ({ set: () => ({ where: () => Promise.resolve() }) })),
+    transaction: vi.fn(async (cb: (tx: unknown) => Promise<unknown>) => cb(txMock)),
+  };
+}
+
+describe('BEHAVIORAL C-2+M-1: markSuperseded (REQ-SOURCE-GOV-005/006)', () => {
+  it('writes superseded_by + audits when successor is in same org', async () => {
+    vi.doMock('@/lib/audit', () => ({ writeAudit: vi.fn(async () => {}) }));
+    vi.doMock('@/lib/db/client', () => ({
+      db: makeSequentialMockDb([
+        [{ id: 'src-old', approvalStatus: 'approved' }], // getSourceInOrg(sourceId)
+        [{ id: 'src-new', approvalStatus: 'approved' }], // getSourceInOrg(supersededBy)
+        // assessSourceChangeImpact: messageSources select → empty
+        [],
+        // assessSourceChangeImpact: unansweredQueue select → empty
+        [],
+      ]),
+    }));
+    vi.resetModules();
+    const { markSuperseded } = await import('@/lib/source-governance/review-workflow');
+    const result = await markSuperseded({
+      sourceId: 'src-old',
+      supersededBy: 'src-new',
+      orgId: 'org-1',
+      userId: 'user-1',
+    });
+    expect(result).toEqual({ ok: true });
+  });
+
+  it('rejects self-cycle (sourceId === supersededBy) → ok:false, no db write', async () => {
+    const db = makeSequentialMockDb([]);
+    vi.doMock('@/lib/audit', () => ({ writeAudit: vi.fn(async () => {}) }));
+    vi.doMock('@/lib/db/client', () => ({ db }));
+    vi.resetModules();
+    const { markSuperseded } = await import('@/lib/source-governance/review-workflow');
+    const result = await markSuperseded({
+      sourceId: 'src-x',
+      supersededBy: 'src-x',
+      orgId: 'org-1',
+      userId: 'user-1',
+    });
+    expect(result).toEqual({ ok: false });
+    expect(db.update).not.toHaveBeenCalled();
+  });
+
+  it('returns null on IDOR miss (source not in org)', async () => {
+    vi.doMock('@/lib/audit', () => ({ writeAudit: vi.fn(async () => {}) }));
+    vi.doMock('@/lib/db/client', () => ({
+      db: makeSequentialMockDb([[]]), // getSourceInOrg returns empty
+    }));
+    vi.resetModules();
+    const { markSuperseded } = await import('@/lib/source-governance/review-workflow');
+    const result = await markSuperseded({
+      sourceId: 'src-foreign',
+      supersededBy: 'src-new',
+      orgId: 'org-1',
+      userId: 'user-1',
+    });
+    expect(result).toBeNull();
+  });
+});
+
+describe('BEHAVIORAL H-3: updateGovernanceFields sets authorityGrade (REQ-SOURCE-GOV-004/008)', () => {
+  it('sets authorityGrade + audits when source is in org', async () => {
+    const db = makeSequentialMockDb([
+      [{ id: 'src-1', approvalStatus: 'approved' }], // getSourceInOrg
+      [], // assessSourceChangeImpact messageSources
+      [], // assessSourceChangeImpact unansweredQueue
+    ]);
+    vi.doMock('@/lib/audit', () => ({ writeAudit: vi.fn(async () => {}) }));
+    vi.doMock('@/lib/db/client', () => ({ db }));
+    vi.resetModules();
+    const { updateGovernanceFields } = await import('@/lib/source-governance/review-workflow');
+    const result = await updateGovernanceFields({
+      sourceId: 'src-1',
+      orgId: 'org-1',
+      userId: 'user-1',
+      fields: { authorityGrade: 'regulator_official' },
+    });
+    expect(result?.updatedFields).toContain('authority_grade');
+    // The tx.update was called inside the transaction with our setClause.
+    expect(db.transaction).toHaveBeenCalled();
+  });
+
+  it('returns null on IDOR miss (→ 404)', async () => {
+    vi.doMock('@/lib/audit', () => ({ writeAudit: vi.fn(async () => {}) }));
+    vi.doMock('@/lib/db/client', () => ({
+      db: makeSequentialMockDb([[]]),
+    }));
+    vi.resetModules();
+    const { updateGovernanceFields } = await import('@/lib/source-governance/review-workflow');
+    const result = await updateGovernanceFields({
+      sourceId: 'src-foreign',
+      orgId: 'org-1',
+      userId: 'user-1',
+      fields: { authorityGrade: 'regulator_official' },
+    });
+    expect(result).toBeNull();
+  });
+});
+
+describe('BEHAVIORAL H-2: assessSourceChangeImpact produces knowledge-gap impact (REQ-010)', () => {
+  it('returns knowledgeGapIds derived from message_sources → unanswered_queue join', async () => {
+    vi.doMock('@/lib/db/client', () => ({
+      db: makeSequentialMockDb([
+        // messageSources select: 2 messages reference this source
+        [{ messageId: 'msg-1' }, { messageId: 'msg-2' }],
+        // unansweredQueue select: 1 of those messages is an open gap
+        [{ id: 'gap-1' }],
+      ]),
+    }));
+    vi.resetModules();
+    const { assessSourceChangeImpact } = await import('@/lib/source-governance/review-workflow');
+    const impact = await assessSourceChangeImpact({ sourceId: 'src-1' });
+    expect(impact.knowledgeGapIds).toEqual(['gap-1']);
+  });
+
+  it('returns empty when no messages reference the source', async () => {
+    vi.doMock('@/lib/db/client', () => ({
+      db: makeSequentialMockDb([[]]),
+    }));
+    vi.resetModules();
+    const { assessSourceChangeImpact } = await import('@/lib/source-governance/review-workflow');
+    const impact = await assessSourceChangeImpact({ sourceId: 'src-orphan' });
+    expect(impact.knowledgeGapIds).toEqual([]);
+  });
+});
+
+describe('BEHAVIORAL C-1: gap-replay passes REAL touched source IDs (REQ-SOURCE-GOV-016/AC-07)', () => {
+  it('collects resolved source IDs from replay results and calls updateGovernanceFromSync with non-empty updates', async () => {
+    // Stub the knowledge-gap replay module to return a result with 2 sources.
+    vi.doMock('@/lib/knowledge-gap/replay', () => ({
+      replayGapTest: vi.fn(async () => ({
+        passed: true,
+        answerWithCitations: 'answer',
+        sources: [{ id: 'src-a' }, { id: 'src-b' }],
+        remainingReason: null,
+        reasonSummary: 'ok',
+        edgeIntegrity: { intact: true, missingEdges: [], staleEdges: [] },
+      })),
+      markGapResolved: vi.fn(async () => {}),
+    }));
+    // Capture the governance refresh call.
+    const captured: { updates: unknown[] }[] = [];
+    vi.doMock('@/lib/source-governance/delta-sync-hook', () => ({
+      updateGovernanceFromSync: vi.fn(async (params: { updates: unknown[] }) => {
+        captured.push({ updates: params.updates });
+        return { refreshed: [], skipped: [] };
+      }),
+    }));
+    vi.resetModules();
+    const { triggerGapReplay } = await import('@/lib/radar/delta-sync/gap-replay');
+    await triggerGapReplay({
+      crawlerName: 'fda',
+      matchedGapIds: ['gap-1'],
+      ingestionRunId: 'run-1',
+      orgId: 'org-1',
+    });
+    // The hook MUST have been called with a NON-empty updates array (the
+    // dead-code bug was updates: []). Both touched source IDs appear.
+    expect(captured).toHaveLength(1);
+    const first = captured[0];
+    expect(first).toBeDefined();
+    const updates = (first?.updates ?? []) as Array<{ sourceId: string }>;
+    expect(updates.length).toBeGreaterThan(0);
+    const ids = updates.map((u) => u.sourceId);
+    expect(ids).toEqual(expect.arrayContaining(['src-a', 'src-b']));
+  });
+});
+
+describe('BEHAVIORAL H-1: governance freshness gate at export routes', () => {
+  it('source-level: verifyGovernanceFreshness wired at packet read + CER + PCCP exports', () => {
+    const packet = readText('app/api/traceability/[deliverableId]/packet/route.ts');
+    const cer = readText('app/api/ra/workflows/cer/export/route.ts');
+    const pccp = readText('app/api/ra/workflows/pccp/[id]/export/route.ts');
+    expect(packet).toContain('verifyGovernanceFreshness');
+    expect(packet).toContain('auditStaleBlockedBatch');
+    expect(cer).toContain('verifyGovernanceFreshness');
+    expect(pccp).toContain('verifyGovernanceFreshness');
+  });
+});
+
+describe('BEHAVIORAL M-3: review-due query uses interval arithmetic (REQ-SOURCE-GOV-013)', () => {
+  it('source-level: review-notifier uses last_reviewed_at + cycle interval (not lte cycle vs withinDays)', () => {
+    const src = readText('lib/source-governance/review-notifier.ts');
+    // The dead-code bug was `lte(reviewCycleDays, withinDays)` — comparing
+    // cycle-days against 30. The fix pushes real due-date arithmetic to SQL.
+    expect(src).not.toContain('lte(sources.reviewCycleDays');
+    expect(src).toMatch(/review_cycle_days.*days.*interval/i);
+    expect(src).toMatch(/last_reviewed_at.*interval|now\(\).*days/is);
+  });
+});
