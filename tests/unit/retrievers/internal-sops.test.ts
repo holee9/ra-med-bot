@@ -10,10 +10,14 @@ import { describe, expect, it, vi } from 'vitest';
 const root = path.resolve(__dirname, '..', '..', '..');
 
 // Mock the db client to avoid real DB connections.
+// vi.hoisted ensures dbMock exists before the hoisted vi.mock factory runs.
+const { dbMock } = vi.hoisted(() => ({ dbMock: { execute: vi.fn() } }));
 vi.mock('@/lib/db/client', () => ({
-  db: {
-    execute: vi.fn(),
-  },
+  db: dbMock,
+  withTenantScope: vi.fn(
+    async <T>(_orgId: string, fn: (db: typeof dbMock) => Promise<T>): Promise<T> =>
+      fn(dbMock) as Promise<T>,
+  ),
 }));
 
 // Mock OpenAI embedding.

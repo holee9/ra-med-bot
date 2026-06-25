@@ -233,7 +233,7 @@ vi.mock('@/lib/db/client', () => ({
   // C-3 assertion on dbMock.transaction call count still holds, and the fn
   // receives dbMock as the scoped tx handle (same object the real impl passes).
   withTenantScope: vi.fn(
-    async <T>(orgId: string, fn: (db: typeof dbMock) => Promise<T>): Promise<T> => {
+    async <T>(_orgId: string, fn: (db: typeof dbMock) => Promise<T>): Promise<T> => {
       return dbMock.transaction(async (tx: typeof dbMock) => fn(tx));
     },
   ),

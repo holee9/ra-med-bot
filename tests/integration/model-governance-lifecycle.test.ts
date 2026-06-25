@@ -104,7 +104,14 @@ afterEach(() => {
 // Capture writeAudit calls so tests can assert the audit survived (M3).
 // We mock @/lib/audit so it records into state.auditLogs without touching DB.
 async function mockModules(state: MockState) {
-  vi.doMock('@/lib/db/client', () => ({ db: createMockDb(state) }));
+  const mockDb = createMockDb(state);
+  vi.doMock('@/lib/db/client', () => ({
+    db: mockDb,
+    withTenantScope: vi.fn(
+      async <T>(_orgId: string, fn: (db: typeof mockDb) => Promise<T>): Promise<T> =>
+        fn(mockDb) as Promise<T>,
+    ),
+  }));
   vi.doMock('@/lib/audit', () => ({
     writeAudit: async (params: Record<string, unknown>, _tx?: unknown) => {
       state.auditLogs.push({

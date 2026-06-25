@@ -15,9 +15,10 @@ vi.stubEnv('AUTH_GOOGLE_SECRET', 'test-google-secret');
 vi.stubEnv('ANTHROPIC_API_KEY', 'test-anthropic-key');
 vi.stubEnv('OPENAI_API_KEY', 'test-openai-key');
 
-// Mock DB client before it attempts real connection
-vi.mock('../../../lib/db/client', () => ({
-  db: {
+// Mock DB client before it attempts real connection.
+// vi.hoisted ensures the mock object exists before vi.mock factory runs.
+const { dbMock } = vi.hoisted(() => ({
+  dbMock: {
     select: vi.fn().mockReturnThis(),
     from: vi.fn().mockReturnThis(),
     leftJoin: vi.fn().mockReturnThis(),
@@ -33,6 +34,13 @@ vi.mock('../../../lib/db/client', () => ({
       },
     },
   },
+}));
+vi.mock('../../../lib/db/client', () => ({
+  db: dbMock,
+  withTenantScope: vi.fn(
+    async <T>(_orgId: string, fn: (db: typeof dbMock) => Promise<T>): Promise<T> =>
+      fn(dbMock) as Promise<T>,
+  ),
 }));
 
 vi.mock('@anthropic-ai/sdk', () => ({
