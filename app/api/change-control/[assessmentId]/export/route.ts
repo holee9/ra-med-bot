@@ -20,7 +20,7 @@ import {
   getChangePdfFilename,
 } from '@/lib/change-control/exporters/pdf';
 import { fetchLinkedRiskItems } from '@/lib/change-control/risk-linkage';
-import { db } from '@/lib/db/client';
+import { withTenantScope } from '@/lib/db/client';
 import { changeAssessments, changeVerdictCitations, changeVerdicts } from '@/lib/db/schema';
 import { sanitizeFilename } from '@/lib/traceability/export-packet';
 import { and, eq } from 'drizzle-orm';
@@ -44,12 +44,24 @@ async function postExport(
 
   const { assessmentId } = await ctx.params;
 
+  // #239 Phase 2: withTenantScope sets app.current_org_id GUC for RLS enforce.
+  // Each DB cluster below (initial SELECT, block-path audit, verdict/citation
+  // reads, export audit, corpus.export_blocked audit) runs inside its own
+  // withTenantScope so the GUC is set without holding one long tx across PDF
+  // rendering. App-level eq(changeAssessments.orgId, organizationId) retained
+  // as defense-in-depth (RLS is inert project-wide until service-role bypass
+  // is dropped).
+
   // Fetch the assessment with org scope (IDOR protection).
-  const rows = await db
-    .select()
-    .from(changeAssessments)
-    .where(and(eq(changeAssessments.id, assessmentId), eq(changeAssessments.orgId, organizationId)))
-    .limit(1);
+  const rows = await withTenantScope(organizationId, async (dbs) =>
+    dbs
+      .select()
+      .from(changeAssessments)
+      .where(
+        and(eq(changeAssessments.id, assessmentId), eq(changeAssessments.orgId, organizationId)),
+      )
+      .limit(1),
+  );
 
   if (rows.length === 0 || !rows[0]) {
     return Response.json({ error: 'Assessment not found' }, { status: 404 });
@@ -63,7 +75,7 @@ async function postExport(
   // from REQ-006 citation rejection.
   if (BLOCKING_STATUSES.has(assessment.status)) {
     try {
-      await db.transaction(async (tx) => {
+      await withTenantScope(organizationId, async (tx) => {
         await writeAudit(
           {
             actor_id: session.user.id,
@@ -95,20 +107,23 @@ async function postExport(
   }
 
   // Reviewed/final — assemble the canonical report shape and audit the export.
-  const verdictRows = await db
-    .select()
-    .from(changeVerdicts)
-    .where(eq(changeVerdicts.assessmentId, assessmentId));
+  const verdictsWithCitations = await withTenantScope(organizationId, async (dbs) => {
+    const verdictRows = await dbs
+      .select()
+      .from(changeVerdicts)
+      .where(eq(changeVerdicts.assessmentId, assessmentId));
 
-  const verdictsWithCitations = await Promise.all(
-    verdictRows.map(async (v) => {
-      const citations = await db
-        .select()
-        .from(changeVerdictCitations)
-        .where(eq(changeVerdictCitations.verdictId, v.id));
-      return { ...v, citations };
-    }),
-  );
+    // Fetch citations per verdict in a single pass.
+    return Promise.all(
+      verdictRows.map(async (v) => {
+        const citations = await dbs
+          .select()
+          .from(changeVerdictCitations)
+          .where(eq(changeVerdictCitations.verdictId, v.id));
+        return { ...v, citations };
+      }),
+    );
+  });
 
   const riskLinks = await fetchLinkedRiskItems(assessmentId, organizationId);
 
@@ -133,15 +148,20 @@ async function postExport(
       userId: session.user.id,
       blockedSources: exportGate.blockedSources,
     });
-    await writeAudit({
-      actor_id: session.user.id,
-      action: 'corpus.export_blocked',
-      resource_type: 'changeAssessment',
-      resource_id: assessmentId,
-      meta_json: {
-        blockedCount: exportGate.blockedSources.length,
-        reasons: exportGate.blockedSources.map((b) => b.reason),
-      },
+    await withTenantScope(organizationId, async (tx) => {
+      await writeAudit(
+        {
+          actor_id: session.user.id,
+          action: 'corpus.export_blocked',
+          resource_type: 'changeAssessment',
+          resource_id: assessmentId,
+          meta_json: {
+            blockedCount: exportGate.blockedSources.length,
+            reasons: exportGate.blockedSources.map((b) => b.reason),
+          },
+        },
+        tx,
+      );
     });
     return Response.json(
       {
@@ -183,7 +203,7 @@ async function postExport(
   }
 
   try {
-    await db.transaction(async (tx) => {
+    await withTenantScope(organizationId, async (tx) => {
       await writeAudit(
         {
           actor_id: session.user.id,
