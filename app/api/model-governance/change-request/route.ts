@@ -2,7 +2,7 @@
 // @MX:SPEC SPEC-REGULA-MODEL-GOVERNANCE-001 (Issue 71, REQ-MODELGOV-004/005)
 
 import { withPermission } from '@/lib/auth/with-permission';
-import { db } from '@/lib/db/client';
+import { withTenantScope } from '@/lib/db/client';
 import { changeRequest } from '@/lib/db/schema';
 import { assertModelPinAccess, assertPromptAccess } from '@/lib/model-governance/access';
 import { createChangeRequest } from '@/lib/model-governance/change-workflow';
@@ -54,6 +54,9 @@ export const GET = withPermission('modelgov.view', async (_req, _ctx, session) =
     return Response.json({ error: 'Organization context required' }, { status: 403 });
   }
 
-  const rows = await db.select().from(changeRequest).where(eq(changeRequest.orgId, organizationId));
+  // #239 Phase 2: withTenantScope sets app.current_org_id GUC for RLS enforce.
+  const rows = await withTenantScope(organizationId, async (dbs) =>
+    dbs.select().from(changeRequest).where(eq(changeRequest.orgId, organizationId)),
+  );
   return Response.json({ changeRequests: rows });
 });

@@ -22,6 +22,12 @@ vi.mock('@/lib/db/client', () => ({
     delete: () => ({ where: () => Promise.resolve([]) }),
     query: {},
   },
+  // #239 Phase 2: withTenantScope stub — delegates to an inline transaction
+  // so any transitive route import that calls withTenantScope does not crash.
+  // This file tests pure functions only; the fn receives the same mock db.
+  withTenantScope: vi.fn(
+    async <T>(_orgId: string, fn: (db: unknown) => Promise<T>): Promise<T> => fn({}),
+  ),
 }));
 
 import { buildAnswerVersionMetadata } from '@/lib/model-governance/audit-metadata';

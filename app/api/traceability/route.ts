@@ -6,7 +6,7 @@
 
 import { writeAudit } from '@/lib/audit';
 import { withPermission } from '@/lib/auth/with-permission';
-import { db } from '@/lib/db/client';
+import { withTenantScope } from '@/lib/db/client';
 import { buildMatrix } from '@/lib/traceability/matrix';
 import { listStaleNodeIds } from '@/lib/traceability/stale-propagation';
 import { z } from 'zod';
@@ -36,8 +36,13 @@ export const GET = withPermission('traceability.view', async (req, _ctx, session
     );
   }
 
-  const staleNodeIds = await listStaleNodeIds(db, organizationId);
-  const result = await buildMatrix(db, { ...parsed.data, orgId: organizationId }, { staleNodeIds });
+  // #239 Phase 2: withTenantScope sets app.current_org_id GUC for RLS enforce.
+  // listStaleNodeIds + buildMatrix issue org-scoped reads via the passed handle;
+  // wrapping them sets the GUC so Phase 3 FORCE RLS will enforce isolation.
+  const result = await withTenantScope(organizationId, async (dbs) => {
+    const staleNodeIds = await listStaleNodeIds(dbs, organizationId);
+    return buildMatrix(dbs, { ...parsed.data, orgId: organizationId }, { staleNodeIds });
+  });
 
   // Read-only view — no edge mutation, so we audit only at trace.debug granularity.
   // Keep the audit row minimal (non-PII) and scoped to the project.

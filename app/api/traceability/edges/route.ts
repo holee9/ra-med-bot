@@ -8,7 +8,7 @@
 
 import { writeAudit } from '@/lib/audit';
 import { withPermission } from '@/lib/auth/with-permission';
-import { db } from '@/lib/db/client';
+import { db, withTenantScope } from '@/lib/db/client';
 import {
   EdgeIdorError,
   type EvidenceEdgeRelation,
@@ -59,7 +59,8 @@ export const POST = withPermission('traceability.manage', async (req, _ctx, sess
       // H2 fix (21 CFR Part 11): edge create + audit commit atomically. A
       // transient failure between the INSERT and the audit write rolls back
       // BOTH — the edge must never persist without its audit record.
-      const res = await db.transaction(async (tx) => {
+      // #239 Phase 2: withTenantScope sets app.current_org_id GUC for RLS enforce.
+      const res = await withTenantScope(organizationId, async (tx) => {
         const txDb = tx as unknown as TraceabilityDb;
         const result = await createEdge(txDb, {
           orgId: organizationId,
@@ -125,7 +126,8 @@ export const POST = withPermission('traceability.manage', async (req, _ctx, sess
     }
 
     // action === 'delete' — H2: delete + audit in one transaction.
-    const deleted = await db.transaction(async (tx) => {
+    // #239 Phase 2: withTenantScope sets app.current_org_id GUC for RLS enforce.
+    const deleted = await withTenantScope(organizationId, async (tx) => {
       const txDb = tx as unknown as TraceabilityDb;
       const result = await deleteEdgeByKey(txDb, {
         orgId: organizationId,

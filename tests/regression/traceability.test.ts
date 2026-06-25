@@ -14,6 +14,11 @@ vi.mock('@/lib/db/client', () => ({
     })),
     insert: vi.fn(() => ({ values: vi.fn().mockResolvedValue(undefined) })),
   },
+  // #239 Phase 2: withTenantScope stub — delegates to an inline transaction
+  // so any transitive route import that calls withTenantScope does not crash.
+  withTenantScope: vi.fn(
+    async <T>(_orgId: string, fn: (db: unknown) => Promise<T>): Promise<T> => fn({}),
+  ),
 }));
 
 vi.mock('@/lib/auth', () => ({

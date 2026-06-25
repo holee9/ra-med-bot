@@ -89,7 +89,15 @@ const dbStub = {
 // vi.mock: hoisted, replaces modules before any import. The factory controls
 // behavior via the mutable state above. This is the ONLY way to mock @/lib/db
 // for a route handler that imports it at module-load time.
-vi.mock('@/lib/db/client', () => ({ db: dbStub }));
+// #239 Phase 2: withTenantScope delegates to dbStub.transaction so the GUC-wrap
+// path in the route is exercised; the fn receives dbStub as the scoped tx handle.
+vi.mock('@/lib/db/client', () => ({
+  db: dbStub,
+  withTenantScope: vi.fn(
+    async <T>(_orgId: string, fn: (db: typeof dbStub) => Promise<T>): Promise<T> =>
+      dbStub.transaction(async (tx: unknown) => fn(tx as typeof dbStub)) as Promise<T>,
+  ),
+}));
 vi.mock('@/lib/auth', () => ({ auth: async () => SESSION }));
 vi.mock('@/lib/auth/acl', () => ({
   isOrgMember: async () => true,

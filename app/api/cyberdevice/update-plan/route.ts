@@ -5,7 +5,7 @@ import { withPermission } from '@/lib/auth/with-permission';
 import { auditUpdatePlanCreated } from '@/lib/cyberdevice/audit';
 import { updatePlanInputSchema } from '@/lib/cyberdevice/types';
 import { generateUpdatePlan } from '@/lib/cyberdevice/update-plan';
-import { db } from '@/lib/db/client';
+import { withTenantScope } from '@/lib/db/client';
 import { cyberEvidenceBundle } from '@/lib/db/schema';
 import { assertPmsProjectAccess } from '@/lib/pms/project-ownership';
 
@@ -31,7 +31,8 @@ export const POST = withPermission('cyberdevice.manage', async (req, _ctx, sessi
 
   let bundleId = '';
   try {
-    await db.transaction(async (tx) => {
+    // #239 Phase 2: withTenantScope sets app.current_org_id GUC for RLS enforce.
+    await withTenantScope(organizationId, async (tx) => {
       const [created] = await tx
         .insert(cyberEvidenceBundle)
         .values({

@@ -114,7 +114,8 @@ describe('AC-01: SBOM import + version diff (REQ-003/004)', () => {
     expect(src).toContain('assertPmsProjectAccess');
     expect(src).toContain('auditSbomImported');
     expect(src).toContain('auditSbomValidated');
-    expect(src).toContain('db.transaction');
+    // #239 Phase 2: withTenantScope wraps db.transaction (sets GUC + preserves atomicity).
+    expect(src).toContain('withTenantScope');
   });
 
   it('sbom/diff route enforces withPermission + IDOR + audit (source-level)', () => {
@@ -226,7 +227,8 @@ describe('AC-03: CVE impact → component mapping (REQ-005/006)', () => {
     expect(src).toContain("withPermission('cyberdevice.manage'");
     expect(src).toContain('assertPmsProjectAccess');
     expect(src).toContain('auditCveAnalyzed');
-    expect(src).toContain('db.transaction');
+    // #239 Phase 2: withTenantScope wraps db.transaction (sets GUC + preserves atomicity).
+    expect(src).toContain('withTenantScope');
     expect(src).toContain('shouldTriggerReassessment');
   });
 });
@@ -487,7 +489,8 @@ describe('AC-05: evidence bundle assembly (REQ-009/012/014)', () => {
     expect(src).toContain('threat_model_not_found');
     expect(src).toContain('sbom_not_found');
     expect(src).toContain('auditEvidenceBundled');
-    expect(src).toContain('db.transaction');
+    // #239 Phase 2: withTenantScope wraps db.transaction (sets GUC + preserves atomicity).
+    expect(src).toContain('withTenantScope');
   });
 
   it('update-plan route generates signed staged plan', () => {

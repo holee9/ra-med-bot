@@ -1,12 +1,13 @@
 // @MX:NOTE [AUTO] Static coverage gate for withTenantScope wiring.
-// @MX:SPEC SPEC-REGULA-RLS-ENFORCE-001 (Phase 2 — rlhf + knowledge-gap + pms + change-control wiring)
+// @MX:SPEC SPEC-REGULA-RLS-ENFORCE-001 (Phase 2 — all 7 org-scoped domains wired)
 // @MX:REASON #239 Phase 2 enforces that every DB mutation/select in a wired
 //           domain route runs inside withTenantScope(...) so the
 //           app.current_org_id GUC is set for RLS policies. The gate scans
 //           route files statically: any file containing db.select|insert|
 //           update|delete|transaction MUST also contain a withTenantScope
-//           call. Wired domains: rlhf, knowledge-gap, pms, change-control;
-//           other domains are listed as pending wiring and explicitly skipped.
+//           call. Wired domains: rlhf, knowledge-gap, pms, change-control,
+//           cyberdevice, model-governance, traceability (all org-scoped
+//           domains under app/api/ are now wired).
 
 import { readFileSync, readdirSync } from 'node:fs';
 import { join } from 'node:path';
@@ -19,24 +20,41 @@ const ROOT = process.cwd();
  * its routes are wired in a follow-up PR. Each entry is a subdirectory under
  * app/api/.
  *
- * Phase 2 scope: rlhf, knowledge-gap, pms, change-control.
+ * Phase 2 scope (complete): rlhf, knowledge-gap, pms, change-control,
+ * cyberdevice, model-governance, traceability — all 7 org-scoped domains.
  */
-const WIRED_DOMAINS = ['rlhf', 'knowledge-gap', 'pms', 'change-control'];
+const WIRED_DOMAINS = [
+  'rlhf',
+  'knowledge-gap',
+  'pms',
+  'change-control',
+  'cyberdevice',
+  'model-governance',
+  'traceability',
+];
 
 /**
- * Domains NOT yet wired. Listed for explicit tracking; the gate does NOT
- * scan these. Remove a domain from this list when you add it to WIRED_DOMAINS.
- *
- * Pending: cyberdevice, model-governance, traceability (and any other
- * org-scoped domain under app/api/).
+ * Domains NOT yet wired. All 7 org-scoped domains are wired as of this PR,
+ * so the pending list is empty. Add a domain here only if a new org-scoped
+ * domain is introduced under app/api/ before its routes are wired.
  */
-const PENDING_DOMAINS = ['cyberdevice', 'model-governance', 'traceability'];
+const PENDING_DOMAINS: string[] = [];
 
 /** Pattern that flags a file as performing DB operations. */
 const DB_OP_PATTERN = /\b(?:db|tx|dbs)\s*\.(?:select|insert|update|delete|transaction)\s*\(/;
 
 /** Pattern confirming the file routes DB ops through withTenantScope. */
 const TENANT_SCOPE_PATTERN = /\bwithTenantScope\s*\(/;
+
+/**
+ * Strip `//` line comments so the DB_OP_PATTERN only matches real code, not
+ * prose mentions like "all in one db.transaction" in an @MX:REASON comment.
+ * Without this, a route that only documents db.transaction in a comment would
+ * be flagged as performing a DB op (false positive).
+ */
+function stripLineComments(source: string): string {
+  return source.replace(/^\s*\/\/.*$/gm, '');
+}
 
 /**
  * Recursively collect route.ts files under a given directory.
@@ -74,7 +92,8 @@ describe('withTenantScope static coverage gate (SPEC-REGULA-RLS-ENFORCE-001 Phas
           const rel = file.replace(`${ROOT}/`, '');
           it(`${rel}: every DB op runs inside withTenantScope`, () => {
             const source = readFileSync(file, 'utf8');
-            const hasDbOp = DB_OP_PATTERN.test(source);
+            const code = stripLineComments(source);
+            const hasDbOp = DB_OP_PATTERN.test(code);
             if (!hasDbOp) {
               // No DB ops in this file — nothing to enforce.
               return;
@@ -98,9 +117,8 @@ describe('withTenantScope static coverage gate (SPEC-REGULA-RLS-ENFORCE-001 Phas
       // This assertion exists to surface the pending list in test output.
       expect(PENDING_DOMAINS.length).toBeGreaterThanOrEqual(0);
       // Snapshot for visibility — update freely when wiring a domain.
-      expect(PENDING_DOMAINS).toEqual(
-        expect.arrayContaining(['cyberdevice', 'model-governance', 'traceability']),
-      );
+      // All 7 org-scoped domains are wired; pending list is empty.
+      expect(PENDING_DOMAINS).toEqual(expect.arrayContaining([]));
     });
   });
 });
