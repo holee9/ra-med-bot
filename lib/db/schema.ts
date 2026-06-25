@@ -370,6 +370,13 @@ export const auditActionEnum = pgEnum('audit_action', [
   'source.low_authority_flagged',
   'source.governance_updated',
   'source.delta_sync_updated',
+  // SPEC-REGULA-RLHF-001 — added via 0082_rlhf.sql (Issue #56, REQ-RLHF-013).
+  // feedback_submitted: every feedback write (21 CFR Part 11 audit-material).
+  // reranking_applied / reranking_rolled_back: retrieval re-ranking version
+  // metadata + rollback (change-control invariant, REQ-RLHF-013/014).
+  'feedback_submitted',
+  'reranking_applied',
+  'reranking_rolled_back',
 ]);
 
 // @MX:NOTE [AUTO] Source governance enums — SPEC-REGULA-SOURCE-GOVERNANCE-001 (Issue #48).
@@ -390,6 +397,25 @@ export const sourceApprovalStatusEnum = pgEnum('source_approval_status', [
   'pending_review',
   'approved',
   'rejected',
+]);
+
+// @MX:NOTE [AUTO] RLHF enums — SPEC-REGULA-RLHF-001 (Issue #56).
+// @MX:SPEC SPEC-REGULA-RLHF-001 (REQ-RLHF-001, REQ-RLHF-002, AC-02)
+// @MX:REASON Drizzle pgEnum mirrors the SQL types created in 0082_rlhf.sql.
+// Keep in lock-step with the migration or runtime inserts fail.
+// feedback_rating: thumb up/down (REQ-RLHF-001).
+// quality_tag: EXACTLY 8 values — Issue #56 comment extras are deferred to a
+//              follow-up (RLHF-v2). Do NOT expand without a SPEC amendment.
+export const feedbackRatingEnum = pgEnum('feedback_rating', ['up', 'down']);
+export const qualityTagEnum = pgEnum('quality_tag', [
+  'citation_missing',
+  'citation_wrong',
+  'answer_incomplete',
+  'answer_wrong',
+  'outdated_info',
+  'jurisdiction_mismatch',
+  'helpful',
+  'excellent',
 ]);
 
 // @MX:NOTE [AUTO] Knowledge gap enums — SPEC-REGULA-KNOWLEDGE-GAP-001 (Issue #35).
@@ -725,6 +751,9 @@ export const sourceSections = pgTable(
       .notNull()
       .defaultNow(),
     superseded_by: uuid('superseded_by'),
+    // SPEC-REGULA-RLHF-001 — feedback-driven score for retrieval re-ranking
+    // (Issue #56, REQ-RLHF-009). Default 0 so existing rows are re-ranking-neutral.
+    feedbackScore: numeric('feedback_score', { precision: 6, scale: 3 }).notNull().default('0'),
   },
   (t) => ({
     anchorUnique: unique('source_sections_source_anchor_idx').on(t.sourceId, t.anchor),
@@ -733,6 +762,35 @@ export const sourceSections = pgTable(
     // Delta-sync queries (REQ-DELTA-002)
     supersededByIdx: index('idx_source_sections_superseded_by').on(t.superseded_by),
     updatedAtIdx: index('idx_source_sections_updated_at').on(t.updated_at),
+  }),
+);
+
+// @MX:NOTE [AUTO] answer_feedback — SPEC-REGULA-RLHF-001 (Issue #56, REQ-RLHF-001).
+// @MX:SPEC SPEC-REGULA-RLHF-001 (REQ-RLHF-001, REQ-RLHF-004, AC-01)
+// @MX:REASON One feedback row per user per message (UNIQUE). RLS is enabled in the
+//           migration (0082_rlhf.sql) at the SQL level — org isolation via the
+//           messages -> conversations -> org_members join.
+export const answerFeedback = pgTable(
+  'answer_feedback',
+  {
+    id: uuid('id').defaultRandom().primaryKey(),
+    messageId: uuid('message_id')
+      .notNull()
+      .references(() => messages.id, { onDelete: 'cascade' }),
+    userId: text('user_id')
+      .notNull()
+      .references(() => users.id, { onDelete: 'cascade' }),
+    rating: feedbackRatingEnum('rating').notNull(),
+    qualityTags: qualityTagEnum('quality_tags').array().notNull().default(sql`'{}'::quality_tag[]`),
+    comment: text('comment'),
+    createdAt: timestamp('created_at', { withTimezone: true, mode: 'date' }).notNull().defaultNow(),
+  },
+  (t) => ({
+    // UNIQUE(message_id, user_id) — one feedback per user per message.
+    messageUserUnique: unique('answer_feedback_message_user_idx').on(t.messageId, t.userId),
+    messageIdx: index('idx_answer_feedback_message').on(t.messageId),
+    createdIdx: index('idx_answer_feedback_created').on(t.createdAt),
+    user_idx: index('idx_answer_feedback_user').on(t.userId),
   }),
 );
 

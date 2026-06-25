@@ -385,7 +385,14 @@ export type AuditAction =
   | 'source.stale_blocked'
   | 'source.low_authority_flagged'
   | 'source.governance_updated'
-  | 'source.delta_sync_updated';
+  | 'source.delta_sync_updated'
+  // SPEC-REGULA-RLHF-001 — added via 0082_rlhf.sql (Issue #56, REQ-RLHF-013).
+  // feedback_submitted: every feedback write (21 CFR Part 11 audit-material).
+  // reranking_applied / reranking_rolled_back: retrieval re-ranking version
+  // metadata + rollback (change-control invariant, REQ-RLHF-013/014).
+  | 'feedback_submitted'
+  | 'reranking_applied'
+  | 'reranking_rolled_back';
 
 export interface AuditEvent {
   /** User UUID, or null for system-initiated events. */
