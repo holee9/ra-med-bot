@@ -5,7 +5,7 @@ import { withPermission } from '@/lib/auth/with-permission';
 import { auditSbomImported, auditSbomValidated } from '@/lib/cyberdevice/audit';
 import { SbomParseError, parseSbom } from '@/lib/cyberdevice/sbom-parser';
 import { sbomImportInputSchema } from '@/lib/cyberdevice/types';
-import { db } from '@/lib/db/client';
+import { withTenantScope } from '@/lib/db/client';
 import { sbom } from '@/lib/db/schema';
 import { assertPmsProjectAccess } from '@/lib/pms/project-ownership';
 import { and, desc, eq } from 'drizzle-orm';
@@ -40,7 +40,8 @@ export const POST = withPermission('cyberdevice.manage', async (req, _ctx, sessi
 
   let sbomId = '';
   try {
-    await db.transaction(async (tx) => {
+    // #239 Phase 2: withTenantScope sets app.current_org_id GUC for RLS enforce.
+    await withTenantScope(organizationId, async (tx) => {
       const [created] = await tx
         .insert(sbom)
         .values({
@@ -108,19 +109,22 @@ export const GET = withPermission('cyberdevice.view', async (req, _ctx, session)
   const denied = await assertPmsProjectAccess(projectId, organizationId);
   if (denied) return denied;
 
-  const rows = await db
-    .select({
-      id: sbom.id,
-      format: sbom.format,
-      version: sbom.version,
-      componentCount: sbom.components,
-      validated: sbom.validated,
-      contentHash: sbom.contentHash,
-      createdAt: sbom.createdAt,
-    })
-    .from(sbom)
-    .where(and(eq(sbom.projectId, projectId), eq(sbom.orgId, organizationId)))
-    .orderBy(desc(sbom.createdAt));
+  // #239 Phase 2: withTenantScope sets app.current_org_id GUC for RLS enforce.
+  const rows = await withTenantScope(organizationId, async (dbs) =>
+    dbs
+      .select({
+        id: sbom.id,
+        format: sbom.format,
+        version: sbom.version,
+        componentCount: sbom.components,
+        validated: sbom.validated,
+        contentHash: sbom.contentHash,
+        createdAt: sbom.createdAt,
+      })
+      .from(sbom)
+      .where(and(eq(sbom.projectId, projectId), eq(sbom.orgId, organizationId)))
+      .orderBy(desc(sbom.createdAt)),
+  );
   // componentCount is jsonb; surface length without sending full payload in list view.
   const items = rows.map((r) => ({
     ...r,

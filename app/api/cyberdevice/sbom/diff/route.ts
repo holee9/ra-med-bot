@@ -5,7 +5,7 @@ import { withPermission } from '@/lib/auth/with-permission';
 import { auditSbomDiffed } from '@/lib/cyberdevice/audit';
 import { diffSbomVersions } from '@/lib/cyberdevice/sbom-diff';
 import type { SbomComponent } from '@/lib/cyberdevice/types';
-import { db } from '@/lib/db/client';
+import { withTenantScope } from '@/lib/db/client';
 import { sbom } from '@/lib/db/schema';
 import { assertPmsProjectAccess } from '@/lib/pms/project-ownership';
 import { and, eq } from 'drizzle-orm';
@@ -29,10 +29,13 @@ export const GET = withPermission('cyberdevice.view', async (req, _ctx, session)
   const denied = await assertPmsProjectAccess(projectId, organizationId);
   if (denied) return denied;
 
-  const rows = await db
-    .select({ version: sbom.version, components: sbom.components })
-    .from(sbom)
-    .where(and(eq(sbom.projectId, projectId), eq(sbom.orgId, organizationId)));
+  // #239 Phase 2: withTenantScope sets app.current_org_id GUC for RLS enforce.
+  const rows = await withTenantScope(organizationId, async (dbs) =>
+    dbs
+      .select({ version: sbom.version, components: sbom.components })
+      .from(sbom)
+      .where(and(eq(sbom.projectId, projectId), eq(sbom.orgId, organizationId))),
+  );
   const a = rows.find((r) => r.version === versionA);
   const b = rows.find((r) => r.version === versionB);
   if (!a || !b) {

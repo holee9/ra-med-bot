@@ -6,7 +6,7 @@ import { auditCyberAccessDenied, auditEvidenceBundled } from '@/lib/cyberdevice/
 import { assembleEvidenceBundle } from '@/lib/cyberdevice/evidence-bundle';
 import { verifyLinkedReferentExists } from '@/lib/cyberdevice/linkage';
 import { evidenceBundleInputSchema } from '@/lib/cyberdevice/types';
-import { db } from '@/lib/db/client';
+import { db, withTenantScope } from '@/lib/db/client';
 import { cyberEvidenceBundle, sbom, threatModel } from '@/lib/db/schema';
 import { assertPmsProjectAccess } from '@/lib/pms/project-ownership';
 import { eq } from 'drizzle-orm';
@@ -118,7 +118,8 @@ export const POST = withPermission('cyberdevice.manage', async (req, _ctx, sessi
 
   let bundleId = '';
   try {
-    await db.transaction(async (tx) => {
+    // #239 Phase 2: withTenantScope sets app.current_org_id GUC for RLS enforce.
+    await withTenantScope(organizationId, async (tx) => {
       const [created] = await tx
         .insert(cyberEvidenceBundle)
         .values({

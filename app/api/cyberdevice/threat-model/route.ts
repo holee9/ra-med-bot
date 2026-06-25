@@ -6,7 +6,7 @@ import { auditThreatModeled } from '@/lib/cyberdevice/audit';
 import { mapThreatsToGspr } from '@/lib/cyberdevice/gspr-mapping';
 import { generateThreatModel } from '@/lib/cyberdevice/threat-model-generator';
 import { architectureInputSchema } from '@/lib/cyberdevice/types';
-import { db } from '@/lib/db/client';
+import { withTenantScope } from '@/lib/db/client';
 import { threatModel } from '@/lib/db/schema';
 import { assertPmsProjectAccess } from '@/lib/pms/project-ownership';
 import { eq } from 'drizzle-orm';
@@ -40,7 +40,8 @@ export const POST = withPermission('cyberdevice.manage', async (req, _ctx, sessi
 
   let threatModelId = '';
   try {
-    await db.transaction(async (tx) => {
+    // #239 Phase 2: withTenantScope sets app.current_org_id GUC for RLS enforce.
+    await withTenantScope(organizationId, async (tx) => {
       const [created] = await tx
         .insert(threatModel)
         .values({
@@ -88,6 +89,9 @@ export const GET = withPermission('cyberdevice.view', async (req, _ctx, session)
   const denied = await assertPmsProjectAccess(projectId, organizationId);
   if (denied) return denied;
 
-  const rows = await db.select().from(threatModel).where(eq(threatModel.projectId, projectId));
+  // #239 Phase 2: withTenantScope sets app.current_org_id GUC for RLS enforce.
+  const rows = await withTenantScope(organizationId, async (dbs) =>
+    dbs.select().from(threatModel).where(eq(threatModel.projectId, projectId)),
+  );
   return Response.json({ items: rows });
 });
