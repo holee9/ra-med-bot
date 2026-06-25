@@ -18,7 +18,7 @@ import Google from 'next-auth/providers/google';
 import MicrosoftEntraID from 'next-auth/providers/microsoft-entra-id';
 import { writeAudit } from './audit';
 import { buildLoginAuditEvent, buildLogoutAuditEvent } from './auth/audit-callbacks';
-import { db } from './db/client';
+import { db, serviceDb } from './db/client';
 import { accounts, orgMembers, sessions, users, verificationTokens } from './db/schema';
 import { getEnv } from './env';
 
@@ -91,13 +91,18 @@ export const { handlers, auth, signIn, signOut } = NextAuth(() => {
       session: async ({ session, user, token }) => {
         const userId = user?.id ?? (token?.sub as string | undefined);
         if (!userId) return session;
+        // users = global identity table (not org-scoped) → safe on `db` under RLS.
+        // org_members = org-scoped → MUST use serviceDb. The orgId is derived FROM
+        // this read, so the GUC cannot be set yet — under FORCE RLS the non-superuser
+        // app role would get ZERO rows here and every user would lose org context.
+        // M-1: serviceDb bypasses RLS — bootstrap orgId derivation (chicken-and-egg).
         const [[dbUser], [membership]] = await Promise.all([
           db
             .select({ mustChangePassword: users.mustChangePassword, role: users.role })
             .from(users)
             .where(eq(users.id, userId))
             .limit(1),
-          db
+          serviceDb
             .select({ orgId: orgMembers.orgId })
             .from(orgMembers)
             .where(eq(orgMembers.userId, userId))

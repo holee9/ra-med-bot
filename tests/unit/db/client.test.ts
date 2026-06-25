@@ -24,7 +24,7 @@ vi.mock('../../../lib/db/client', () => {
     });
   }
 
-  return { db: mockDb, withTenantScope };
+  return { db: mockDb, serviceDb: mockDb, withTenantScope };
 });
 
 import { withTenantScope } from '../../../lib/db/client';

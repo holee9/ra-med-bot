@@ -21,7 +21,18 @@ const devPlaceholderMessage = (label: string): string =>
 // and stay optional in `.env.example` until then.
 const envSchema = z.object({
   // Database connection — Drizzle + postgres-js consume this directly.
+  // After SPEC-REGULA-RLS-ENFORCE-001 Phase 4 this is the non-superuser
+  // `regula_app` role (BYPASSRLS=false); all org-scoped reads rely on the
+  // `app.current_org_id` GUC set by withTenantScope.
   DATABASE_URL: z.string().url('DATABASE_URL must be a valid URL'),
+
+  // Optional service-role DB URL — connects with a BYPASSRLS role for
+  // bootstrap queries that cannot have a tenant GUC (Auth.js session
+  // callback derives orgId FROM this read, so it must see rows regardless
+  // of RLS). Falls back to DATABASE_URL when unset, so local dev with a
+  // single superuser role keeps working unchanged.
+  // @MX:SPEC SPEC-REGULA-RLS-ENFORCE-001 Phase 4 (M-1)
+  SERVICE_DATABASE_URL: z.string().url('SERVICE_DATABASE_URL must be a valid URL').optional(),
 
   // Auth.js v5 — AUTH_SECRET replaces the legacy NEXTAUTH_SECRET name.
   AUTH_SECRET: z
@@ -117,6 +128,7 @@ export function parseEnv(source: NodeJS.ProcessEnv = process.env): Env {
 
   return envSchema.parse({
     DATABASE_URL: source.DATABASE_URL,
+    SERVICE_DATABASE_URL: source.SERVICE_DATABASE_URL,
     AUTH_SECRET: source.AUTH_SECRET,
     NEXTAUTH_URL: source.NEXTAUTH_URL,
     AUTH_MICROSOFT_ID: microsoftId,

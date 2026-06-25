@@ -25,6 +25,22 @@ export type Database = typeof db;
 // Drizzle client type inferred from the db instance — exported for radar crawlers
 export type DrizzleClient = typeof db;
 
+// Service-role client: bypasses RLS for bootstrap queries that cannot have a
+// tenant GUC (Auth.js session callback derives orgId FROM this read).
+// Falls back to DATABASE_URL when SERVICE_DATABASE_URL is unset (local dev
+// with a single superuser role). Phase 4 sets SERVICE_DATABASE_URL to a
+// BYPASSRLS role while DATABASE_URL moves to the non-superuser app role.
+// @MX:WARN Service client bypasses RLS — use ONLY for org-membership bootstrap.
+// @MX:REASON Without this, the session callback would get ZERO rows from
+// org_members under FORCE RLS (GUC is derived FROM this read → chicken-and-egg).
+// @MX:SPEC SPEC-REGULA-RLS-ENFORCE-001 Phase 4 (M-1)
+const serviceQueryClient = postgres(env.SERVICE_DATABASE_URL ?? env.DATABASE_URL, {
+  max: 10,
+  idle_timeout: 30,
+  connect_timeout: 10,
+});
+export const serviceDb = drizzle(serviceQueryClient, { schema });
+
 /**
  * Execute a function within a tenant-scoped transaction.
  * Sets `app.current_org_id` GUC so RLS policies can enforce org isolation.
