@@ -9,7 +9,7 @@
 //           scoped to the caller's org.
 
 import { withPermission } from '@/lib/auth/with-permission';
-import { db } from '@/lib/db/client';
+import { withTenantScope } from '@/lib/db/client';
 import { answerFeedback, conversations, messages, projects } from '@/lib/db/schema';
 import { assertMessageInOrg } from '@/lib/rlhf/access';
 import { aggregateFeedback, detectDownwardTrend } from '@/lib/rlhf/feedback-aggregator';
@@ -36,16 +36,20 @@ export const GET = withPermission('rlhf.feedback', async (request, _ctx, session
   // C-2 defense-in-depth: even though assertMessageInOrg passed, the feedback
   // select itself is org-scoped via the 3-hop join so a race (message moved
   // projects between the assert and the select) cannot leak cross-org rows.
-  const rows = await db
-    .select({
-      rating: answerFeedback.rating,
-      createdAt: answerFeedback.createdAt,
-    })
-    .from(answerFeedback)
-    .innerJoin(messages, eq(messages.id, answerFeedback.messageId))
-    .innerJoin(conversations, eq(conversations.id, messages.conversationId))
-    .innerJoin(projects, eq(projects.id, conversations.projectId))
-    .where(and(eq(answerFeedback.messageId, messageId), eq(projects.organizationId, orgId)));
+  // #239 Phase 2: withTenantScope sets app.current_org_id GUC for RLS enforce.
+  // App-level eq(projects.organizationId, orgId) retained as defense-in-depth.
+  const rows = await withTenantScope(orgId, async (dbs) =>
+    dbs
+      .select({
+        rating: answerFeedback.rating,
+        createdAt: answerFeedback.createdAt,
+      })
+      .from(answerFeedback)
+      .innerJoin(messages, eq(messages.id, answerFeedback.messageId))
+      .innerJoin(conversations, eq(conversations.id, messages.conversationId))
+      .innerJoin(projects, eq(projects.id, conversations.projectId))
+      .where(and(eq(answerFeedback.messageId, messageId), eq(projects.organizationId, orgId))),
+  );
 
   const agg = aggregateFeedback(rows);
   const trend = detectDownwardTrend(rows);

@@ -13,7 +13,7 @@
 // heatmap.
 
 import { withPermission } from '@/lib/auth/with-permission';
-import { db } from '@/lib/db/client';
+import { withTenantScope } from '@/lib/db/client';
 import { answerFeedback, conversations, messages, projects } from '@/lib/db/schema';
 import { computeMessageScore } from '@/lib/rlhf/feedback-aggregator';
 import { desc, eq } from 'drizzle-orm';
@@ -40,20 +40,25 @@ export const GET = withPermission('audit.read', async (request, _ctx, session) =
 
   // Fetch recent feedback joined to message -> conversation -> project, scoped
   // to the caller's org so NO cross-org feedback rows are returned.
-  const rows = await db
-    .select({
-      rating: answerFeedback.rating,
-      createdAt: answerFeedback.createdAt,
-      messageId: answerFeedback.messageId,
-      conversationId: messages.conversationId,
-    })
-    .from(answerFeedback)
-    .innerJoin(messages, eq(messages.id, answerFeedback.messageId))
-    .innerJoin(conversations, eq(conversations.id, messages.conversationId))
-    .innerJoin(projects, eq(projects.id, conversations.projectId))
-    .where(eq(projects.organizationId, orgId))
-    .orderBy(desc(answerFeedback.createdAt))
-    .limit(limit);
+  // #239 Phase 2: withTenantScope sets app.current_org_id GUC for RLS enforce.
+  // App-level eq(projects.organizationId, orgId) retained as defense-in-depth
+  // (RLS is inert project-wide until service-role bypass is dropped).
+  const rows = await withTenantScope(orgId, async (dbs) =>
+    dbs
+      .select({
+        rating: answerFeedback.rating,
+        createdAt: answerFeedback.createdAt,
+        messageId: answerFeedback.messageId,
+        conversationId: messages.conversationId,
+      })
+      .from(answerFeedback)
+      .innerJoin(messages, eq(messages.id, answerFeedback.messageId))
+      .innerJoin(conversations, eq(conversations.id, messages.conversationId))
+      .innerJoin(projects, eq(projects.id, conversations.projectId))
+      .where(eq(projects.organizationId, orgId))
+      .orderBy(desc(answerFeedback.createdAt))
+      .limit(limit),
+  );
 
   // Group by conversationId as the corpus proxy (v1). Each conversation tends
   // to be scoped to a single regulatory topic / corpus in practice.

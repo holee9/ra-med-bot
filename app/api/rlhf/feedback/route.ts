@@ -15,6 +15,7 @@
 import { writeAudit } from '@/lib/audit';
 import { withPermission } from '@/lib/auth/with-permission';
 import { db } from '@/lib/db/client';
+import { withTenantScope } from '@/lib/db/client';
 import { answerFeedback, messages } from '@/lib/db/schema';
 import { redactQuestion } from '@/lib/knowledge-gap/redaction';
 import { logger } from '@/lib/observability/logger';
@@ -134,9 +135,10 @@ export const POST = withPermission('rlhf.feedback', async (request, _ctx, sessio
   // C-3: wrap the mutation + the 21 CFR Part 11 audit row in ONE transaction so
   // a crash between them cannot leave a feedback row with no audit trail. The
   // tx handle is threaded into writeAudit so the insert rides the same tx.
+  // #239 Phase 2: withTenantScope sets app.current_org_id GUC for RLS enforce.
   let feedbackId = '';
   try {
-    feedbackId = await db.transaction(async (tx) => {
+    feedbackId = await withTenantScope(orgId, async (tx) => {
       if (existingRow) {
         // L-2: the audit row carries `revised: true` in meta_json so regulators
         // can tell initial submissions apart from changed minds without adding

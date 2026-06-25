@@ -29,14 +29,19 @@ export type DrizzleClient = typeof db;
  * Execute a function within a tenant-scoped transaction.
  * Sets `app.current_org_id` GUC so RLS policies can enforce org isolation.
  * REQ-DOC-042: all org document queries MUST use this wrapper.
+ *
+ * SECURITY: uses parameterized `set_config(..., true)` instead of string
+ * interpolation. The third arg `true` makes the setting transaction-local
+ * (equivalent to SET LOCAL), and the sql template literal binds orgId as a
+ * parameter so it cannot break out into arbitrary SQL.
  */
 export async function withTenantScope<T>(
   orgId: string,
   fn: (db: DrizzleClient) => Promise<T>,
 ): Promise<T> {
   return db.transaction(async (tx) => {
-    // Set the GUC for RLS policy enforcement
-    await tx.execute(sql.raw(`SET LOCAL app.current_org_id = '${orgId}'`));
+    // Set the GUC for RLS policy enforcement (parameterized, injection-safe).
+    await tx.execute(sql`SELECT set_config('app.current_org_id', ${orgId}, true)`);
     return fn(tx as unknown as DrizzleClient);
   });
 }
