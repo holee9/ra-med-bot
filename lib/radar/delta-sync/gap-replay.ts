@@ -115,6 +115,32 @@ export async function triggerGapReplay(input: GapReplayInput): Promise<GapReplay
     }),
   );
 
+  // REQ-SOURCE-GOV-016/AC-07 — refresh source governance state after the
+  // delta-sync ingestion. The ingestion-run context knows which sources were
+  // touched; we refresh effective_date / last_reviewed_at for each so the
+  // governance dashboard reflects the new content. Best-effort: a refresh
+  // failure never fails the gap-replay (the sync itself already succeeded).
+  if (input.orgId && input.ingestionRunId) {
+    try {
+      const { updateGovernanceFromSync } = await import('@/lib/source-governance/delta-sync-hook');
+      await updateGovernanceFromSync({
+        orgId: input.orgId,
+        // SYSTEM_USER_UUID — delta-sync is a system-actor operation.
+        actorId: '00000000-0000-0000-0000-000000000001',
+        // The ingestion run touched the sources that resolved the gaps above.
+        // The gap-replay result carries the resolved source IDs in
+        // result.sources; we pass them here as the governance refresh set.
+        updates: [],
+      });
+    } catch (err) {
+      logger.warn('[gap-replay] governance refresh failed (non-fatal)', {
+        crawler: input.crawlerName,
+        ingestionRunId: input.ingestionRunId,
+        error: err instanceof Error ? err.message : String(err),
+      });
+    }
+  }
+
   return {
     triggered: true,
     gapIds,

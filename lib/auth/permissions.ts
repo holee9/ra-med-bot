@@ -131,7 +131,14 @@ export type PermissionAction =
   //           records (legal exposure if unauthorised). Stricter than cyberdevice.manage.
   //   view: ra-member+ — license status visible across the RA team for retrieval checks.
   | 'corpuslicense.manage'
-  | 'corpuslicense.view';
+  | 'corpuslicense.view'
+  // SPEC-REGULA-SOURCE-GOVERNANCE-001 (Issue #48, REQ-SOURCE-GOV-015): 2 RBAC actions.
+  //   manage: ra-lead — approve/reject of pending_review sources is a regulatory
+  //          signoff decision (21 CFR Part 11 audit-material). Mirrors label.approve.
+  //   view: ra-member+ — governance dashboard visible across the RA team for
+  //        oversight (counts, review-due, stale-citation artifacts).
+  | 'sourcegov.manage'
+  | 'sourcegov.view';
 
 export interface PermissionSpec {
   minRole: Role;
@@ -381,4 +388,11 @@ export const PERMISSIONS: Record<PermissionAction, PermissionSpec> = {
   // view: ra-member+ — retrieval gate reads license status on every search.
   'corpuslicense.manage': { minRole: 'admin', scope: 'org', resourceType: 'sourceLicense' },
   'corpuslicense.view': { minRole: 'ra-member', scope: 'org', resourceType: 'sourceLicense' },
+
+  // SPEC-REGULA-SOURCE-GOVERNANCE-001 (Issue #48, REQ-SOURCE-GOV-015): 2 RBAC actions.
+  // manage: ra-lead ONLY — approve/reject of pending_review sources is a regulatory
+  //   signoff (21 CFR Part 11). Mirrors label.approve / capa.close.
+  // view: ra-member+ — governance dashboard is shared across the RA team (AC-06).
+  'sourcegov.manage': { minRole: 'ra-lead', scope: 'org', resourceType: 'source' },
+  'sourcegov.view': { minRole: 'ra-member', scope: 'org', resourceType: 'source' },
 };

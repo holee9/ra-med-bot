@@ -4,7 +4,7 @@
 // Steps: license-gate → extract → redact → chunk → embed → insert chunks → update status
 // Each step is wrapped in Inngest step.run for independent retry + observability.
 
-import type { DocClass } from '../../ingest/doc-class';
+import { DocClass } from '../../ingest/doc-class';
 import { INNGEST_EVENTS, inngest } from '../client';
 
 export interface DocCreatedEvent {
@@ -114,6 +114,18 @@ export const uploadProcessedFn = inngest.createFunction(
         metadata: c.metadata as unknown as Record<string, unknown>,
       }));
       return insertChunks(documentId, orgId, chunkRecords, embeddings);
+    });
+
+    // Step 5b: REQ-SOURCE-GOV-009/AC-04 — set the source to pending_review.
+    // Called AFTER the license gate (step 0) so the source enters RA-owner
+    // approval workflow. Internal SOPs without owner_department stay pending.
+    await step.run('set-pending-review', async () => {
+      const { setPendingReviewOnIngest } = await import('@/lib/source-governance/review-workflow');
+      return setPendingReviewOnIngest({
+        sourceId,
+        isInternalSop: docClass === DocClass.internal_sop,
+        ownerDepartment: null,
+      });
     });
 
     // Step 6: Update status

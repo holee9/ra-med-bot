@@ -525,26 +525,26 @@ describe('Count regression (L-007 baseline)', () => {
     expect(vals).toContain("'clinical_investigation'");
   });
 
-  it('audit_action enum has 174 values (148 + 8 ci.* + 8 modelgov.* + 9 cyber.* + 1 cyber.reassess_triggered)', () => {
+  it('audit_action enum has 191 values (183 + 8 source.* SOURCE-GOVERNANCE Issue #48)', () => {
     const src = readText('lib/db/schema.ts');
     const match = src.match(
       /export const auditActionEnum = pgEnum\('audit_action', \[([\s\S]*?)\]\);/,
     );
     const vals = match?.[1]?.match(/'[a-z_.]+'/g) ?? [];
-    expect(vals.length).toBe(183);
+    expect(vals.length).toBe(191);
   });
 
-  it('AuditAction type has 183 values (sync with schema enum)', () => {
+  it('AuditAction type has 191 values (sync with schema enum)', () => {
     const src = readText('lib/audit.ts');
     const match = src.match(/export type AuditAction =\s*([\s\S]*?);/);
     const vals = match?.[1]?.match(/'[a-z_.]+'/g) ?? [];
-    expect(vals.length).toBe(183);
+    expect(vals.length).toBe(191);
   });
 
-  it('PERMISSIONS matrix has 68 entries (66 + 2 corpuslicense.* CORPUS-LICENSE Issue #72)', () => {
+  it('PERMISSIONS matrix has 70 entries (68 + 2 sourcegov.* SOURCE-GOVERNANCE Issue #48)', () => {
     // Runtime count is the authoritative source of truth (matches
     // tests/unit/auth/permissions.test.ts and tests/regression/foundation.test.ts).
-    expect(Object.keys(PERMISSIONS).length).toBe(68);
+    expect(Object.keys(PERMISSIONS).length).toBe(70);
   });
 });
 

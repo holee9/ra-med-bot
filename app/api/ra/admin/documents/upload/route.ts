@@ -218,6 +218,21 @@ export const POST = withPermission('sources.ingest', async (req, _ctx, session) 
     return { sourceId: existingSourceId, sectionCount: sectionRows.length };
   });
 
+  // REQ-SOURCE-GOV-009/AC-04 — set the newly-ingested source to pending_review.
+  // Called AFTER the license gate (which already passed above) so the source
+  // enters RA-owner approval workflow. Internal SOPs without owner_department
+  // stay pending_review and are flagged for the governance dashboard.
+  try {
+    const { setPendingReviewOnIngest } = await import('@/lib/source-governance/review-workflow');
+    await setPendingReviewOnIngest({
+      sourceId: existingSourceId,
+      isInternalSop: docClass === DocClass.internal_sop,
+      ownerDepartment: null,
+    });
+  } catch {
+    // Governance write unavailable — license gate still passed; RLS isolates.
+  }
+
   // ---------------------------------------------------------------------
   // 6. Audit. Failures here propagate (lib/audit.ts contract — never
   //    swallow the audit write).

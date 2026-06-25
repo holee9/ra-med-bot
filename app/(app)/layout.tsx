@@ -38,6 +38,8 @@ export default async function AppLayout({ children }: { children: React.ReactNod
   let showCapa = false;
   // SPEC-REGULA-CLINICAL-INVESTIGATION-001 (Issue #69): Clinical Investigation nav gated to ra-member+.
   let showClinicalInvestigation = false;
+  // SPEC-REGULA-SOURCE-GOVERNANCE-001 (Issue #48): Governance dashboard nav gated to ra-member+ (sourcegov.view).
+  let showGovernance = false;
   try {
     const { auth } = await import('@/lib/auth');
     const { hasRole } = await import('@/lib/auth/rbac');
@@ -53,6 +55,7 @@ export default async function AppLayout({ children }: { children: React.ReactNod
       showLabeling = hasRole(userRole as Parameters<typeof hasRole>[0], 'ra-member');
       showCapa = hasRole(userRole as Parameters<typeof hasRole>[0], 'ra-member');
       showClinicalInvestigation = hasRole(userRole as Parameters<typeof hasRole>[0], 'ra-member');
+      showGovernance = hasRole(userRole as Parameters<typeof hasRole>[0], 'ra-member');
     }
     const department = (session?.user as { department?: string } | undefined)?.department;
     if (department) {
@@ -85,6 +88,7 @@ export default async function AppLayout({ children }: { children: React.ReactNod
         showLabeling={showLabeling}
         showCapa={showCapa}
         showClinicalInvestigation={showClinicalInvestigation}
+        showGovernance={showGovernance}
         initialLocale={initialLocale}
       />
       <div className="flex min-w-0 flex-1 flex-col">

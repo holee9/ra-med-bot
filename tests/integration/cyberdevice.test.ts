@@ -592,25 +592,25 @@ describe('AC-07: entitlement denial → 403 + audit (REQ-013)', () => {
 // ---------------------------------------------------------------------------
 // Count-sync (L-009): audit_action + PermissionAction deltas.
 // ---------------------------------------------------------------------------
-describe('count-sync: audit_action (174→183) + PermissionAction (66→68)', () => {
-  it('audit_action enum has 183 values', () => {
+describe('count-sync: audit_action (174→191) + PermissionAction (66→70)', () => {
+  it('audit_action enum has 191 values', () => {
     const src = readText('lib/db/schema.ts');
     const match = src.match(
       /export const auditActionEnum = pgEnum\('audit_action', \[([\s\S]*?)\]\);/,
     );
     const vals = match?.[1]?.match(/'[a-z_.]+'/g) ?? [];
-    expect(vals.length).toBe(183);
+    expect(vals.length).toBe(191);
   });
 
-  it('AuditAction type has 183 values (sync with schema enum)', () => {
+  it('AuditAction type has 191 values (sync with schema enum)', () => {
     const src = readText('lib/audit.ts');
     const match = src.match(/export type AuditAction =\s*([\s\S]*?);/);
     const vals = match?.[1]?.match(/'[a-z_.]+'/g) ?? [];
-    expect(vals.length).toBe(183);
+    expect(vals.length).toBe(191);
   });
 
-  it('PERMISSIONS matrix has 68 entries', () => {
-    expect(Object.keys(PERMISSIONS).length).toBe(68);
+  it('PERMISSIONS matrix has 70 entries', () => {
+    expect(Object.keys(PERMISSIONS).length).toBe(70);
   });
 
   it('schema.ts defines all 4 cyberdevice tables', () => {

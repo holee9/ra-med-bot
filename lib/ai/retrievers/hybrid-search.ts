@@ -189,15 +189,20 @@ export async function hybridSearch(
   // from consult.ts → parallelRetrieveAndMerge. PMS-report builder passes orgId
   // directly. Defense-in-depth: a license-db hiccup never blocks retrieval
   // (RLS still enforces org isolation).
+  //
+  // REQ-SOURCE-GOV-005/009 — compose with the governance gate (filterGovernanceEligible)
+  // via composeRetrievalGates: superseded + pending_review/rejected sources are
+  // excluded too. A single composed call keeps the two gates in lock-step at
+  // every retrieval site (hybrid-search / internal-sops / internal-docs).
   if (orgId && chunks.length > 0) {
     try {
-      const { filterExpiredSources } = await import('@/lib/corpus-license/expiry-checker');
+      const { composeRetrievalGates } = await import('@/lib/source-governance/retrieval-gate');
       const sourceIds = Array.from(new Set(chunks.map((c) => c.sourceId)));
-      const eligible = await filterExpiredSources(sourceIds, orgId);
+      const eligible = await composeRetrievalGates(sourceIds, { orgId });
       const filtered = chunks.filter((c) => eligible.has(c.sourceId));
       return filtered.slice(0, k);
     } catch {
-      // License metadata unavailable — return unfiltered (RLS still isolates).
+      // License / governance metadata unavailable — return unfiltered (RLS still isolates).
     }
   }
 
