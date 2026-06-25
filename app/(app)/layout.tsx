@@ -40,6 +40,10 @@ export default async function AppLayout({ children }: { children: React.ReactNod
   let showClinicalInvestigation = false;
   // SPEC-REGULA-SOURCE-GOVERNANCE-001 (Issue #48): Governance dashboard nav gated to ra-member+ (sourcegov.view).
   let showGovernance = false;
+  // SPEC-REGULA-RLHF-001 (Issue #56): Quality heatmap nav gated to ra-member+
+  // (rlhf.feedback submitters). The heatmap route uses audit.read, but feedback
+  // submitters also see the nav to track answer quality.
+  let showQualityHeatmap = false;
   try {
     const { auth } = await import('@/lib/auth');
     const { hasRole } = await import('@/lib/auth/rbac');
@@ -56,6 +60,7 @@ export default async function AppLayout({ children }: { children: React.ReactNod
       showCapa = hasRole(userRole as Parameters<typeof hasRole>[0], 'ra-member');
       showClinicalInvestigation = hasRole(userRole as Parameters<typeof hasRole>[0], 'ra-member');
       showGovernance = hasRole(userRole as Parameters<typeof hasRole>[0], 'ra-member');
+      showQualityHeatmap = hasRole(userRole as Parameters<typeof hasRole>[0], 'ra-member');
     }
     const department = (session?.user as { department?: string } | undefined)?.department;
     if (department) {
@@ -89,6 +94,7 @@ export default async function AppLayout({ children }: { children: React.ReactNod
         showCapa={showCapa}
         showClinicalInvestigation={showClinicalInvestigation}
         showGovernance={showGovernance}
+        showQualityHeatmap={showQualityHeatmap}
         initialLocale={initialLocale}
       />
       <div className="flex min-w-0 flex-1 flex-col">
