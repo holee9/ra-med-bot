@@ -138,7 +138,11 @@ export type PermissionAction =
   //   view: ra-member+ — governance dashboard visible across the RA team for
   //        oversight (counts, review-due, stale-citation artifacts).
   | 'sourcegov.manage'
-  | 'sourcegov.view';
+  | 'sourcegov.view'
+  // SPEC-REGULA-RLHF-001 (Issue #56, REQ-RLHF-004): RLHF feedback submission.
+  // ra-member+ — inline answer feedback is a team-wide activity. NOT granted
+  // to viewer (feedback shapes retrieval re-ranking; needs active users).
+  | 'rlhf.feedback';
 
 export interface PermissionSpec {
   minRole: Role;
@@ -395,4 +399,10 @@ export const PERMISSIONS: Record<PermissionAction, PermissionSpec> = {
   // view: ra-member+ — governance dashboard is shared across the RA team (AC-06).
   'sourcegov.manage': { minRole: 'ra-lead', scope: 'org', resourceType: 'source' },
   'sourcegov.view': { minRole: 'ra-member', scope: 'org', resourceType: 'source' },
+
+  // @MX:NOTE [AUTO] rlhf.feedback — SPEC-REGULA-RLHF-001 (Issue #56, REQ-RLHF-004).
+  // @MX:SPEC SPEC-REGULA-RLHF-001
+  // Inline answer feedback. ra-member+ — team-wide activity that shapes
+  // retrieval re-ranking. NOT granted to viewer (feedback is an active signal).
+  'rlhf.feedback': { minRole: 'ra-member', scope: 'org', resourceType: 'answerFeedback' },
 };

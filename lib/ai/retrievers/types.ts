@@ -16,6 +16,12 @@ export interface RetrieverOptions {
   projectId?: string;
   /** Filter results to a specific organisation. */
   orgId?: string;
+  /**
+   * M-3 fix: the user who triggered the retrieval. Threaded through
+   * parallelRetrieveAndMerge -> applyRlhfReranking -> recordReranking so the
+   * 21 CFR Part 11 audit row for a re-rank attributes to a real user, not null.
+   */
+  actorId?: string | null;
 }
 
 /**

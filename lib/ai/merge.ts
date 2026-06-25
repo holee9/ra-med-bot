@@ -4,6 +4,7 @@
 // @MX:SPEC SPEC-REGULA-BREADTH-001 (REQ-BREADTH-039, REQ-BREADTH-042)
 
 import { logger } from '@/lib/observability/logger';
+import { applyRlhfReranking } from '@/lib/rlhf/retrieval-hook';
 import { EuMdrRetriever } from './retrievers/eu-mdr';
 import { FdaRetriever } from './retrievers/fda';
 import { InternalSopsRetriever } from './retrievers/internal-sops';
@@ -119,8 +120,56 @@ export async function parallelRetrieveAndMerge(
 
   // Rerank or sort, then cap at TOP_K.
   const sorted = await rerankOrSort(query, flat);
+
+  // SPEC-REGULA-RLHF-001 (REQ-RLHF-010, AC-05): apply feedback-driven re-ranking
+  // AFTER the semantic Cohere step. This is the SINGLE wiring point — the
+  // integration test (tests/integration/rlhf-reranking-flow.test.ts) asserts
+  // retrieval output changes when feedback_score changes.
+  //
+  // `id` on each RetrievalResult is the source_sections.id, so it maps directly
+  // to the feedback_score lookup. We apply RLHF re-ranking to derive the ORDER,
+  // then re-order the full Cohere-sorted list (preserving corpusType + content).
+  // Best-effort: if RLHF re-ranking fails, fall back to Cohere ordering.
+  let ordered = sorted;
+  try {
+    const rlhfResult = await applyRlhfReranking(
+      sorted.map((r) => ({ id: r.id, sourceSectionId: r.id, score: r.score })),
+      {
+        orgId: opts.orgId ?? 'unknown',
+        // M-3: thread the real actor through so the audit row attributes to a
+        // user, not null. merge.ts now accepts actorId on RetrieverOptions.
+        actorId: opts.actorId ?? null,
+        // H-1 fix: the post-rerank invariant gate moved OUT of merge.ts (where
+        // it ran with placeholder confidence=1.0 / citationCount=chunk count /
+        // expertReview=false and could NEVER fail). The authoritative gate now
+        // fires in lib/ai/consult.ts after the answer is composed, where the
+        // real confidence, real citation count, and real expert-review flag
+        // are known. See consult.ts `verifyPostRerankInvariants` call.
+        // The retrieval-hook still accepts a postRerank field for API
+        // stability; we pass neutral values that always pass so the dead-code
+        // path here is a no-op, and the REAL gate runs downstream.
+        postRerank: {
+          confidenceScore: 1.0,
+          citationCount: sorted.length,
+          expertReviewRequired: true,
+        },
+      },
+    );
+    // Reorder the full `sorted` list by the RLHF-derived id order.
+    const orderById = new Map(rlhfResult.results.map((r, i) => [r.id, i] as const));
+    ordered = [...sorted].sort((a, b) => {
+      const ai = orderById.get(a.id) ?? Number.MAX_SAFE_INTEGER;
+      const bi = orderById.get(b.id) ?? Number.MAX_SAFE_INTEGER;
+      return ai - bi;
+    });
+  } catch (err) {
+    logger.warn('[merge] RLHF re-ranking failed, falling back to Cohere ordering', {
+      err: err instanceof Error ? err.message : String(err),
+    });
+  }
+
   // Preserve corpusType after reranking
-  return sorted.map((r) => ({
+  return ordered.map((r) => ({
     ...r,
     corpusType: (r as MergedRetrievalResult).corpusType ?? 'public',
   })) as MergedRetrievalResult[];

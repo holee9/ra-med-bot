@@ -73,14 +73,16 @@ const EXPECTED_ACTIONS: PermissionAction[] = [
   // SPEC-REGULA-SOURCE-GOVERNANCE-001 (Issue #48)
   'sourcegov.manage',
   'sourcegov.view',
+  // SPEC-REGULA-RLHF-001 (Issue #56)
+  'rlhf.feedback',
 ];
 
 const VALID_ROLES = ['admin', 'qa-lead', 'ra-lead', 'ra-member', 'viewer', 'auditor'] as const;
 const VALID_SCOPES = ['org', 'project', 'user', 'none'] as const;
 
 describe('lib/auth/permissions.ts (REQ-ENTERPRISE-020) — PERMISSIONS matrix', () => {
-  it('PERMISSIONS contains exactly 68 entries', () => {
-    expect(Object.keys(PERMISSIONS)).toHaveLength(70); // +2 corpuslicense.* (#72) +2 sourcegov.* (SOURCE-GOVERNANCE, Issue #48)
+  it('PERMISSIONS contains exactly 71 entries', () => {
+    expect(Object.keys(PERMISSIONS)).toHaveLength(71); // +2 corpuslicense.* (#72) +2 sourcegov.* (#48) +1 rlhf.feedback (#56)
   });
 
   it.each(EXPECTED_ACTIONS)('PERMISSIONS contains action: %s', (action) => {

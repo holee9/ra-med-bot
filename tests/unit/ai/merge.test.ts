@@ -4,6 +4,21 @@
 import type { RetrievalResult } from '@/lib/ai/retrievers/types';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 
+// SPEC-REGULA-RLHF-001 (#56): mock the RLHF retrieval hook so merge.ts tests
+// do not trigger the real DB (feedback_score lookup) or env validation. The
+// hook returns results unchanged so the existing ordering assertions still hold;
+// the hook's own behavior is covered by tests/integration/rlhf-reranking-flow.test.ts.
+vi.mock('@/lib/rlhf/retrieval-hook', () => ({
+  applyRlhfReranking: vi.fn(async (results: unknown[]) => ({
+    results,
+    invariantCheck: {
+      passed: true,
+      violations: [],
+      thresholds: { confidenceFloor: 0.7, minCitations: 1 },
+    },
+  })),
+}));
+
 // Mock all 5 retriever classes to prevent real DB/network calls.
 vi.mock('@/lib/ai/retrievers/eu-mdr', () => ({
   EuMdrRetriever: vi.fn().mockImplementation(() => ({

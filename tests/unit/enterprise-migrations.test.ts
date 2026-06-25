@@ -326,7 +326,7 @@ describe('lib/db/schema.ts Phase 5 additions', () => {
     const values = extractAuditActionEnumValues(src);
     const typeValues = extractAuditActionTypeValues(auditSrc);
     expect(values).toEqual(typeValues);
-    expect(values).toHaveLength(191); // +9 corpus.* (#72) +8 source.* (SOURCE-GOVERNANCE, Issue #48)
+    expect(values).toHaveLength(194); // +9 corpus.* (#72) +8 source.* (#48) +3 rlhf.* (#56)
   });
 
   it.each(REQUIRED_RECOVERY_TABLES)(
@@ -382,7 +382,7 @@ describe('lib/audit.ts Phase 5 AuditAction type additions', () => {
         'change.export_blocked',
       ]),
     );
-    expect(values).toHaveLength(191); // +9 corpus.* (#72) +8 source.* (SOURCE-GOVERNANCE, Issue #48)
+    expect(values).toHaveLength(194); // +9 corpus.* (#72) +8 source.* (#48) +3 rlhf.* (#56)
   });
 
   it.each(REQUIRED_RECOVERY_AUDIT_ACTIONS)(
