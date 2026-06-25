@@ -58,6 +58,7 @@ env/
 # Test Coverage
 # ===========================================
 .coverage
+coverage/
 coverage.json
 htmlcov/
 

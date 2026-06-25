@@ -23,6 +23,7 @@ import type {
   SourceItem,
   TimelineEvent,
 } from '../../types/streaming';
+import { FeedbackControl } from '../answer-block/feedback-control';
 import { ExpertReviewCallout } from '../expert-review/ExpertReviewCallout';
 import { ExportHub } from '../export/ExportHub';
 import type { ExportArtifact } from '../export/FormatOptions';
@@ -255,6 +256,12 @@ export function AnswerBlock({
           </div>
         </section>
       )}
+
+      {/* Section 12: Feedback control (SPEC-REGULA-RLHF-001, REQ-RLHF-003).
+          Rendered only when a messageId is available — the backend needs it to
+          record the feedback row. Gated server-side by rlhf.feedback; unauthorized
+          roles still see the answer but this island's POST is 403-rejected. */}
+      {messageId && <FeedbackControl messageId={messageId} />}
 
       {/* DocViewer modal — lazy loaded */}
       <DocViewer />

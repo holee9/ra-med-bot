@@ -66,6 +66,10 @@ interface SidebarProps {
   // SPEC-REGULA-SOURCE-GOVERNANCE-001 (Issue #48): Governance dashboard is visible
   // to roles with sourcegov.view (ra-member+). Gated server-side and passed down.
   showGovernance?: boolean;
+  // SPEC-REGULA-RLHF-001 (Issue #56): Quality heatmap nav gated to ra-member+
+  // (rlhf.feedback submitters). The page route uses audit.read, but ra-member+
+  // feedback submitters also see the nav so they can track answer quality.
+  showQualityHeatmap?: boolean;
   initialLocale?: string;
 }
 
@@ -81,6 +85,7 @@ export default function Sidebar(props?: SidebarProps) {
   const showCapa = props?.showCapa ?? false;
   const showClinicalInvestigation = props?.showClinicalInvestigation ?? false;
   const showGovernance = props?.showGovernance ?? false;
+  const showQualityHeatmap = props?.showQualityHeatmap ?? false;
   const currentProjectId = useUIStore((s) => s.currentProjectId);
   const setCurrentProjectId = useUIStore((s) => s.setCurrentProjectId);
   const { data = [] } = useProjects();
@@ -319,6 +324,19 @@ export default function Sidebar(props?: SidebarProps) {
             className="rounded-md px-3 py-2 text-sm text-ink-700 hover:bg-ink-50 block"
           >
             출처 거버넌스
+          </Link>
+        </nav>
+      )}
+
+      {/* SPEC-REGULA-RLHF-001 (Issue #56): Quality heatmap conditional link. */}
+      {showQualityHeatmap && (
+        <nav className="px-2 py-1">
+          <Link
+            href="/quality/heatmap"
+            data-testid="sidebar-quality-heatmap-link"
+            className="rounded-md px-3 py-2 text-sm text-ink-700 hover:bg-ink-50 block"
+          >
+            품질 히트맵
           </Link>
         </nav>
       )}
