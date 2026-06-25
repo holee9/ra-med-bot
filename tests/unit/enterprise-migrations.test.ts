@@ -326,7 +326,7 @@ describe('lib/db/schema.ts Phase 5 additions', () => {
     const values = extractAuditActionEnumValues(src);
     const typeValues = extractAuditActionTypeValues(auditSrc);
     expect(values).toEqual(typeValues);
-    expect(values).toHaveLength(183); // +9 corpus.* (CORPUS-LICENSE, Issue #72)
+    expect(values).toHaveLength(191); // +9 corpus.* (#72) +8 source.* (SOURCE-GOVERNANCE, Issue #48)
   });
 
   it.each(REQUIRED_RECOVERY_TABLES)(
@@ -382,7 +382,7 @@ describe('lib/audit.ts Phase 5 AuditAction type additions', () => {
         'change.export_blocked',
       ]),
     );
-    expect(values).toHaveLength(183); // +9 corpus.* (CORPUS-LICENSE, Issue #72)
+    expect(values).toHaveLength(191); // +9 corpus.* (#72) +8 source.* (SOURCE-GOVERNANCE, Issue #48)
   });
 
   it.each(REQUIRED_RECOVERY_AUDIT_ACTIONS)(
@@ -1612,5 +1612,102 @@ describe('SPEC-REGULA-CORPUS-LICENSE-001 (Issue #72, migration 0080)', () => {
     expect(src).toMatch(/export const entitlementStatusEnum/);
     expect(src).toMatch(/export const sourceLicense = pgTable/);
     expect(src).toMatch(/export const entitlement = pgTable/);
+  });
+});
+
+// ---------------------------------------------------------------------------
+// SPEC-REGULA-SOURCE-GOVERNANCE-001 — Issue #48 (migration 0081_source_governance)
+// ---------------------------------------------------------------------------
+
+describe('SPEC-REGULA-SOURCE-GOVERNANCE-001 (Issue #48, migration 0081)', () => {
+  it('migration file 0081_source_governance.sql exists', () => {
+    expect(fileExists('migrations/0081_source_governance.sql')).toBe(true);
+  });
+
+  it('has exactly 8 ALTER TYPE audit_action statements', () => {
+    const sql = readText('migrations/0081_source_governance.sql');
+    const matches = sql.match(/ALTER TYPE audit_action ADD VALUE/g) ?? [];
+    expect(matches).toHaveLength(8);
+  });
+
+  it('creates the 2 new enums (source_authority_grade, source_approval_status)', () => {
+    const sql = readText('migrations/0081_source_governance.sql');
+    expect(sql).toMatch(/CREATE TYPE source_authority_grade AS ENUM/);
+    expect(sql).toMatch(/CREATE TYPE source_approval_status AS ENUM/);
+    for (const grade of [
+      'regulator_official',
+      'harmonized_standard',
+      'internal_sop',
+      'prior_submission',
+      'public_database',
+      'secondary_reference',
+    ]) {
+      expect(sql).toContain(`'${grade}'`);
+    }
+    for (const status of ['pending_review', 'approved', 'rejected']) {
+      expect(sql).toContain(`'${status}'`);
+    }
+  });
+
+  it('ALTERs the sources table with the 9 governance columns', () => {
+    const sql = readText('migrations/0081_source_governance.sql');
+    expect(sql).toMatch(/ALTER TABLE sources\s+ADD COLUMN IF NOT EXISTS authority_grade/);
+    expect(sql).toMatch(/ADD COLUMN IF NOT EXISTS jurisdiction/);
+    expect(sql).toMatch(/ADD COLUMN IF NOT EXISTS effective_date/);
+    expect(sql).toMatch(/ADD COLUMN IF NOT EXISTS sunset_date/);
+    expect(sql).toMatch(/ADD COLUMN IF NOT EXISTS superseded_by/);
+    expect(sql).toMatch(/ADD COLUMN IF NOT EXISTS owner_department/);
+    expect(sql).toMatch(/ADD COLUMN IF NOT EXISTS approval_status/);
+    expect(sql).toMatch(/ADD COLUMN IF NOT EXISTS review_cycle_days/);
+    expect(sql).toMatch(/ADD COLUMN IF NOT EXISTS last_reviewed_at/);
+  });
+
+  it('approval_status defaults to pending_review (REQ-SOURCE-GOV-009)', () => {
+    const sql = readText('migrations/0081_source_governance.sql');
+    expect(sql).toMatch(/approval_status source_approval_status NOT NULL DEFAULT 'pending_review'/);
+  });
+
+  it.each([
+    'source.approved',
+    'source.rejected',
+    'source.review_due',
+    'source.superseded',
+    'source.stale_blocked',
+    'source.low_authority_flagged',
+    'source.governance_updated',
+    'source.delta_sync_updated',
+  ])('auditActionEnum in schema.ts includes %s', (action) => {
+    const src = readText('lib/db/schema.ts');
+    expect(src).toContain(`'${action}'`);
+  });
+
+  it('schema.ts defines the 2 new enums + sources governance columns', () => {
+    const src = readText('lib/db/schema.ts');
+    expect(src).toMatch(/export const sourceAuthorityGradeEnum/);
+    expect(src).toMatch(/export const sourceApprovalStatusEnum/);
+    expect(src).toMatch(/authorityGrade: sourceAuthorityGradeEnum/);
+    expect(src).toMatch(/approvalStatus: sourceApprovalStatusEnum/);
+    expect(src).toMatch(/supersededBy: uuid\('superseded_by'\)/);
+    expect(src).toMatch(/sunsetDate: date\('sunset_date'\)/);
+    expect(src).toMatch(/effectiveDate: date\('effective_date'\)/);
+    expect(src).toMatch(/ownerDepartment: text\('owner_department'\)/);
+    expect(src).toMatch(/reviewCycleDays: integer\('review_cycle_days'\)/);
+    expect(src).toMatch(/lastReviewedAt: timestamp\('last_reviewed_at'/);
+  });
+
+  it('AuditAction type includes the 8 source.* values (lock-step)', () => {
+    const src = readText('lib/audit.ts');
+    for (const action of [
+      'source.approved',
+      'source.rejected',
+      'source.review_due',
+      'source.superseded',
+      'source.stale_blocked',
+      'source.low_authority_flagged',
+      'source.governance_updated',
+      'source.delta_sync_updated',
+    ]) {
+      expect(src).toContain(`'${action}'`);
+    }
   });
 });

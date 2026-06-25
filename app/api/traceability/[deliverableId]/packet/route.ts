@@ -28,5 +28,32 @@ export const GET = withPermission('traceability.view', async (_req, ctx, session
     // 404 (not 403) — avoid leaking deliverable existence across orgs.
     return Response.json({ error: 'not_found' }, { status: 404 });
   }
+
+  // REQ-SOURCE-GOV-007/AC-03 — governance freshness gate on the packet read.
+  // The packet is consumed by submission-assembly UIs; a stale (superseded /
+  // sunset-past / not-yet-effective) source referenced via a stale_source issue
+  // MUST NOT silently propagate into a deliverable. Composed alongside the
+  // export route's gate (the packet read is the preview twin of the export).
+  const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+  const packetSourceIds = Array.from(
+    new Set(packet.issues.map((i) => i.detail).flatMap((d) => (UUID_RE.test(d) ? [d] : []))),
+  );
+  if (packetSourceIds.length > 0) {
+    const { verifyGovernanceFreshness, auditStaleBlockedBatch } = await import(
+      '@/lib/source-governance/stale-check'
+    );
+    const govGate = await verifyGovernanceFreshness(packetSourceIds, organizationId);
+    if (!govGate.allowed) {
+      await auditStaleBlockedBatch({
+        userId: session.user.id,
+        blockedSources: govGate.blockedSources,
+      });
+      return Response.json(
+        { error: 'stale_citation_blocked', blockedCount: govGate.blockedSources.length },
+        { status: 403 },
+      );
+    }
+  }
+
   return Response.json(packet);
 });

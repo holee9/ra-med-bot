@@ -151,14 +151,17 @@ export class InternalSopsRetriever implements IRetriever {
     // Defense-in-depth: if the license query fails (e.g. license table not yet
     // migrated in a test/staging env), the retriever still returns results —
     // RLS already enforces org isolation, and the filter is advisory here.
+    //
+    // REQ-SOURCE-GOV-005/009 — compose with the governance gate via
+    // composeRetrievalGates (superseded + pending_review/rejected excluded).
     if (mapped.length > 0) {
       try {
-        const { filterExpiredSources } = await import('@/lib/corpus-license/expiry-checker');
+        const { composeRetrievalGates } = await import('@/lib/source-governance/retrieval-gate');
         const sourceIds = Array.from(new Set(mapped.map((m) => m.sourceId)));
-        const eligible = await filterExpiredSources(sourceIds, orgId);
+        const eligible = await composeRetrievalGates(sourceIds, { orgId });
         mapped = mapped.filter((m) => eligible.has(m.sourceId));
       } catch {
-        // License metadata unavailable — fall through with unfiltered results.
+        // License / governance metadata unavailable — fall through with unfiltered results.
       }
     }
 

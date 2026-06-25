@@ -367,7 +367,25 @@ export type AuditAction =
   | 'corpus.export_blocked'
   | 'corpus.access_denied'
   | 'corpus.expiry_warned'
-  | 'corpus.abstract_only_enforced';
+  | 'corpus.abstract_only_enforced'
+  // SPEC-REGULA-SOURCE-GOVERNANCE-001 — added via 0081_source_governance.sql
+  // (Issue 48, REQ-SOURCE-GOV-015): 8 source-governance lifecycle audit actions.
+  //   source.approved              — RA owner approved a pending_review source (REQ-015)
+  //   source.rejected              — RA owner rejected a pending_review source (REQ-015)
+  //   source.review_due            — periodic review cycle due notification (REQ-011/013)
+  //   source.superseded            — source marked superseded_by another (REQ-005)
+  //   source.stale_blocked         — stale citation blocked at draft/export (REQ-007)
+  //   source.low_authority_flagged — low-authority-only retrieval flagged expert review (REQ-008)
+  //   source.governance_updated    — governance fields updated (authority/jurisdiction/dates)
+  //   source.delta_sync_updated    — #45 delta-sync refreshed governance state (REQ-016)
+  | 'source.approved'
+  | 'source.rejected'
+  | 'source.review_due'
+  | 'source.superseded'
+  | 'source.stale_blocked'
+  | 'source.low_authority_flagged'
+  | 'source.governance_updated'
+  | 'source.delta_sync_updated';
 
 export interface AuditEvent {
   /** User UUID, or null for system-initiated events. */

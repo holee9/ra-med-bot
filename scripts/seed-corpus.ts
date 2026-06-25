@@ -23,6 +23,27 @@ interface SeedSection {
 
 type SourceType = 'Regulation' | 'Guidance' | 'Standard' | 'Industry' | 'Internal';
 
+// REQ-SOURCE-GOV-004/008 — derive authorityGrade from the corpus type so seeded
+// sources aren't all null-grade (which would make assessLowAuthority / REQ-008
+// treat every seeded source as low-authority). Mirrors source_authority_grade enum.
+function gradeForType(
+  type: SourceType,
+): 'regulator_official' | 'harmonized_standard' | 'internal_sop' | 'secondary_reference' {
+  switch (type) {
+    case 'Regulation':
+    case 'Guidance':
+      return 'regulator_official';
+    case 'Standard':
+      return 'harmonized_standard';
+    case 'Internal':
+      return 'internal_sop';
+    case 'Industry':
+      return 'secondary_reference';
+    default:
+      return 'secondary_reference';
+  }
+}
+
 interface SeedSource {
   orgLabel: string;
   title: string;
@@ -649,6 +670,9 @@ export async function runSeedCorpus(
           type: seed.type,
           region: seed.region,
           url: seed.url,
+          // REQ-SOURCE-GOV-004/008 — set authorityGrade from corpus type.
+          authorityGrade: gradeForType(seed.type),
+          approvalStatus: 'approved',
           embedding: titleEmbedding,
         })
         .returning({ id: sources.id });

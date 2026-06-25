@@ -359,6 +359,37 @@ export const auditActionEnum = pgEnum('audit_action', [
   'corpus.access_denied',
   'corpus.expiry_warned',
   'corpus.abstract_only_enforced',
+  // SPEC-REGULA-SOURCE-GOVERNANCE-001 — added via 0081_source_governance.sql
+  // (Issue 48, REQ-SOURCE-GOV-015): 8 source-governance lifecycle audit actions
+  // for 21 CFR Part 11 traceability of approval/supersession/stale-citation events.
+  'source.approved',
+  'source.rejected',
+  'source.review_due',
+  'source.superseded',
+  'source.stale_blocked',
+  'source.low_authority_flagged',
+  'source.governance_updated',
+  'source.delta_sync_updated',
+]);
+
+// @MX:NOTE [AUTO] Source governance enums — SPEC-REGULA-SOURCE-GOVERNANCE-001 (Issue #48).
+// @MX:SPEC SPEC-REGULA-SOURCE-GOVERNANCE-001 (REQ-SOURCE-GOV-001, REQ-SOURCE-GOV-009)
+// @MX:REASON Drizzle pgEnum mirrors the SQL types created in 0081_source_governance.sql.
+// Keep in lock-step with the migration or runtime inserts fail.
+// authority_grade: 6-tier hierarchy, drives retrieval ranking (REQ-004) + low-auth gating (REQ-008).
+// approval_status: pending_review default (REQ-009); gates search eligibility (REQ-004/005).
+export const sourceAuthorityGradeEnum = pgEnum('source_authority_grade', [
+  'regulator_official',
+  'harmonized_standard',
+  'internal_sop',
+  'prior_submission',
+  'public_database',
+  'secondary_reference',
+]);
+export const sourceApprovalStatusEnum = pgEnum('source_approval_status', [
+  'pending_review',
+  'approved',
+  'rejected',
 ]);
 
 // @MX:NOTE [AUTO] Knowledge gap enums — SPEC-REGULA-KNOWLEDGE-GAP-001 (Issue #35).
@@ -594,6 +625,19 @@ export const sources = pgTable(
     fullTextTsv: text('full_text_tsv'),
     embedding: vector('embedding'),
     createdAt: timestamp('created_at', { withTimezone: true, mode: 'date' }).notNull().defaultNow(),
+    // SPEC-REGULA-SOURCE-GOVERNANCE-001 (Issue #48, REQ-SOURCE-GOV-001/002/003/009).
+    // Governance columns backing the authority model, version/effective/sunset
+    // tracking, supersession, and approval workflow. approval_status defaults to
+    // 'pending_review' so new ingestions enter RA-owner review (REQ-009).
+    authorityGrade: sourceAuthorityGradeEnum('authority_grade'),
+    jurisdiction: text('jurisdiction'),
+    effectiveDate: date('effective_date'),
+    sunsetDate: date('sunset_date'),
+    supersededBy: uuid('superseded_by'),
+    ownerDepartment: text('owner_department'),
+    approvalStatus: sourceApprovalStatusEnum('approval_status').notNull().default('pending_review'),
+    reviewCycleDays: integer('review_cycle_days'),
+    lastReviewedAt: timestamp('last_reviewed_at', { withTimezone: true, mode: 'date' }),
   },
   (t) => ({
     // Performance optimization: org-level source catalog queries
@@ -605,6 +649,16 @@ export const sources = pgTable(
     // Provenance queries optimization
     sourceHostIdx: index('idx_sources_host').on(t.sourceHost),
     ingestionRunIdx: index('idx_sources_ingestion').on(t.ingestionRunId),
+    // SPEC-REGULA-SOURCE-GOVERNANCE-001 — retrieval-gate indexes.
+    // authorityGrade: priority ranking (regulator_official first). REQ-004.
+    // approvalStatus: exclude pending_review/rejected from default search. REQ-005/009.
+    // sunsetDate: stale-citation detection at draft/export. REQ-007.
+    // supersededBy: supersession traversal for historical lookups. REQ-006.
+    authorityGradeIdx: index('idx_sources_authority_grade').on(t.authorityGrade),
+    approvalStatusIdx: index('idx_sources_approval_status').on(t.approvalStatus),
+    sunsetDateIdx: index('idx_sources_sunset_date').on(t.sunsetDate),
+    supersededByIdx: index('idx_sources_superseded_by').on(t.supersededBy),
+    effectiveDateIdx: index('idx_sources_effective_date').on(t.effectiveDate),
   }),
 );
 

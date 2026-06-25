@@ -79,11 +79,23 @@ export async function triggerGapReplay(input: GapReplayInput): Promise<GapReplay
   }
 
   let allPassed = true;
+  // C-1 (REQ-SOURCE-GOV-016/AC-07): collect the REAL source IDs touched by the
+  // ingestion run. Each replayGapTest result carries the resolved source IDs in
+  // result.sources (SourceItem[]). We dedupe across gaps and pass them as
+  // GovernanceSyncUpdate entries so the governance refresh hook receives a
+  // NON-empty array (the hook early-returns on [] — the prior dead-code bug
+  // meant ZERO sources were ever refreshed).
+  const touchedSourceIds = new Set<string>();
 
   await Promise.all(
     gapIds.map(async (gapId) => {
       try {
         const result = await replayGapTest(gapId, input.orgId);
+        // Collect cited source IDs regardless of pass/fail — the ingestion run
+        // touched them either way (they were retrieved during replay).
+        for (const src of result.sources) {
+          if (src?.id) touchedSourceIds.add(src.id);
+        }
         if (result.passed) {
           await markGapResolved(
             gapId,
@@ -114,6 +126,30 @@ export async function triggerGapReplay(input: GapReplayInput): Promise<GapReplay
       }
     }),
   );
+
+  // REQ-SOURCE-GOV-016/AC-07 — refresh source governance state after the
+  // delta-sync ingestion, for the sources the replay actually touched. We
+  // refresh last_reviewed_at (effectiveDate/sunsetDate are derived from the
+  // synced document metadata by the ingestion worker separately). Best-effort:
+  // a refresh failure never fails the gap-replay (the sync itself already
+  // succeeded).
+  if (input.orgId && touchedSourceIds.size > 0) {
+    try {
+      const { updateGovernanceFromSync } = await import('@/lib/source-governance/delta-sync-hook');
+      await updateGovernanceFromSync({
+        orgId: input.orgId,
+        // SYSTEM_USER_UUID — delta-sync is a system-actor operation.
+        actorId: '00000000-0000-0000-0000-000000000001',
+        updates: Array.from(touchedSourceIds).map((sourceId) => ({ sourceId })),
+      });
+    } catch (err) {
+      logger.warn('[gap-replay] governance refresh failed (non-fatal)', {
+        crawler: input.crawlerName,
+        ingestionRunId: input.ingestionRunId,
+        error: err instanceof Error ? err.message : String(err),
+      });
+    }
+  }
 
   return {
     triggered: true,

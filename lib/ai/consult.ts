@@ -494,11 +494,37 @@ export async function* consult(
 
   // REQ-ENTERPRISE-008: use shouldAutoFlag for gating (adds policy keyword detection)
   const autoFlagResult = shouldAutoFlag(confidenceScore, input.question, cleaned);
-  const requiresExpertReview = autoFlagResult.flag || citationCoverageBelow80;
+
+  // REQ-SOURCE-GOV-008/AC-08 — assess whether the retrieved sources are
+  // low-authority-only. When every cited source is a non-primary grade
+  // (secondary_reference / public_database / null), the answer is flagged
+  // expert_review_required. Composed into requiresExpertReview below.
+  let lowAuthorityReason: string | null = null;
+  let lowAuthorityHighestGrade: string | null = null;
+  if (topChunks.length > 0) {
+    try {
+      const { rankByAuthority, assessLowAuthority } = await import(
+        '@/lib/source-governance/retrieval-gate'
+      );
+      const ranked = await rankByAuthority(Array.from(new Set(topChunks.map((c) => c.sourceId))));
+      const assessment = assessLowAuthority(ranked);
+      if (assessment.lowAuthorityOnly) {
+        lowAuthorityReason = `low-authority sources only (${assessment.reason ?? 'unknown'})`;
+        lowAuthorityHighestGrade = assessment.highestGrade;
+      }
+    } catch {
+      // Governance metadata unavailable — do not block the consult.
+    }
+  }
+
+  const requiresExpertReview =
+    autoFlagResult.flag || citationCoverageBelow80 || lowAuthorityReason !== null;
 
   if (requiresExpertReview) {
     const reason =
-      autoFlagResult.reason ?? (citationCoverageBelow80 ? 'citation coverage < 80%' : 'unknown');
+      lowAuthorityReason ??
+      autoFlagResult.reason ??
+      (citationCoverageBelow80 ? 'citation coverage < 80%' : 'unknown');
 
     yield* emit({ type: 'expert_review_required', reason });
 
@@ -515,6 +541,26 @@ export async function* consult(
           trigger: 'auto',
         },
       });
+
+      // REQ-SOURCE-GOV-008 — record the low-authority flag per cited source
+      // (audit-material, 21 CFR Part 11). Only emitted when the flag fired.
+      if (lowAuthorityReason) {
+        try {
+          const { auditSourceLowAuthorityFlagged } = await import('@/lib/source-governance/audit');
+          for (const c of topChunks.slice(0, 8)) {
+            await auditSourceLowAuthorityFlagged({
+              userId: session.user?.id ?? '00000000-0000-0000-0000-000000000001',
+              sourceId: c.sourceId,
+              conversationId,
+              reason: lowAuthorityReason,
+              highestGrade: lowAuthorityHighestGrade,
+            });
+          }
+        } catch {
+          // Audit write failure for low-authority flag is non-fatal — the
+          // primary expert_review.flag audit above already recorded the event.
+        }
+      }
 
       // REQ-ENTERPRISE-009: enqueue for reviewer assignment (idempotent)
       await enqueueExpertReview({

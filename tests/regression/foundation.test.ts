@@ -38,8 +38,8 @@ describe('FOUNDATION regression', () => {
   // + personal.view — SPEC-REGULA-PERSONAL-LIB-001
   // + deadline.view, deadline.manage — SPEC-REGULA-CALENDAR-001)
   // ---------------------------------------------------------------------------
-  it('has 68 permission actions defined', () => {
-    expect(Object.keys(PERMISSIONS).length).toBe(68); // +2 corpuslicense.* (CORPUS-LICENSE, Issue #72)
+  it('has 70 permission actions defined', () => {
+    expect(Object.keys(PERMISSIONS).length).toBe(70); // +2 corpuslicense.* (#72) +2 sourcegov.* (SOURCE-GOVERNANCE, Issue #48)
   });
 
   it('profile.edit permission exists with user scope', () => {

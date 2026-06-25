@@ -13,6 +13,10 @@ import { z } from 'zod';
 const ExportBodySchema = z.object({
   format: z.enum(['docx', 'pdf']),
   include_draft_watermark: z.boolean().default(true),
+  // REQ-SOURCE-GOV-007: optional corpus source UUIDs cited in the PCCP
+  // (e.g. predicate device sources). When present the governance freshness
+  // gate fires so superseded/stale sources cannot ship in the submission.
+  citedSourceIds: z.array(z.string().uuid()).optional(),
 });
 
 async function postExport(
@@ -55,6 +59,31 @@ async function postExport(
     completedAt: c.completedAt,
   }));
   const { format, include_draft_watermark } = parsed.data;
+
+  // REQ-SOURCE-GOV-007/AC-03 — governance freshness gate. When the caller
+  // supplies citedSourceIds, superseded / sunset-past / not-yet-effective
+  // sources MUST NOT ship in the PCCP submission. Forward-compatible: omitted
+  // today (PCCP components don't yet carry a source UUID array) → no-op.
+  const citedSourceIds = parsed.data.citedSourceIds ?? [];
+  if (citedSourceIds.length > 0) {
+    const { verifyGovernanceFreshness, auditStaleBlockedBatch } = await import(
+      '@/lib/source-governance/stale-check'
+    );
+    const govGate = await verifyGovernanceFreshness(
+      citedSourceIds,
+      session.user.organizationId ?? '',
+    );
+    if (!govGate.allowed) {
+      await auditStaleBlockedBatch({
+        userId: session.user.id,
+        blockedSources: govGate.blockedSources,
+      });
+      return Response.json(
+        { error: 'stale_citation_blocked', blockedCount: govGate.blockedSources.length },
+        { status: 403 },
+      );
+    }
+  }
 
   if (format === 'docx') {
     const buf = await exportPccpToDocx(versionTyped, componentsTyped, {

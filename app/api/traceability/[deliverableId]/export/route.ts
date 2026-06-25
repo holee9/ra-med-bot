@@ -74,6 +74,24 @@ export const GET = withPermission('traceability.view', async (req, ctx, session)
         { status: 403 },
       );
     }
+
+    // REQ-SOURCE-GOV-007/AC-03 — governance freshness gate. Compose alongside
+    // verifyExportRights: superseded / sunset-past / not-yet-effective sources
+    // MUST NOT appear in a regulatory submission export.
+    const { verifyGovernanceFreshness, auditStaleBlockedBatch } = await import(
+      '@/lib/source-governance/stale-check'
+    );
+    const govGate = await verifyGovernanceFreshness(packetSourceIds, organizationId);
+    if (!govGate.allowed) {
+      await auditStaleBlockedBatch({
+        userId: session.user.id,
+        blockedSources: govGate.blockedSources,
+      });
+      return Response.json(
+        { error: 'export_stale_citation_blocked', blockedCount: govGate.blockedSources.length },
+        { status: 403 },
+      );
+    }
   }
 
   // REQ-CORPUSLIC-007 — usage-restriction notices for any cited corpus sources.

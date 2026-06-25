@@ -70,6 +70,9 @@ const EXPECTED_ACTIONS: PermissionAction[] = [
   // SPEC-REGULA-CORPUS-LICENSE-001 (Issue #72)
   'corpuslicense.manage',
   'corpuslicense.view',
+  // SPEC-REGULA-SOURCE-GOVERNANCE-001 (Issue #48)
+  'sourcegov.manage',
+  'sourcegov.view',
 ];
 
 const VALID_ROLES = ['admin', 'qa-lead', 'ra-lead', 'ra-member', 'viewer', 'auditor'] as const;
@@ -77,7 +80,7 @@ const VALID_SCOPES = ['org', 'project', 'user', 'none'] as const;
 
 describe('lib/auth/permissions.ts (REQ-ENTERPRISE-020) — PERMISSIONS matrix', () => {
   it('PERMISSIONS contains exactly 68 entries', () => {
-    expect(Object.keys(PERMISSIONS)).toHaveLength(68); // +2 corpuslicense.* (CORPUS-LICENSE, Issue #72)
+    expect(Object.keys(PERMISSIONS)).toHaveLength(70); // +2 corpuslicense.* (#72) +2 sourcegov.* (SOURCE-GOVERNANCE, Issue #48)
   });
 
   it.each(EXPECTED_ACTIONS)('PERMISSIONS contains action: %s', (action) => {

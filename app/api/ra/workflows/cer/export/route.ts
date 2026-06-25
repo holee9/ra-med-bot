@@ -55,6 +55,33 @@ async function postCerExport(request: Request, session: AuthSession): Promise<Re
   });
 
   const isPdf = data.format === 'pdf';
+
+  // REQ-SOURCE-GOV-007/AC-03 — governance freshness gate. When the caller
+  // supplies citedSourceIds (corpus sources cited in the CER literature
+  // sections), superseded / sunset-past / not-yet-effective sources MUST NOT
+  // ship in the regulatory submission. Forward-compatible: when omitted the
+  // gate is a no-op (the CER body does not yet carry a source UUID array).
+  const citedSourceIds = data.citedSourceIds ?? [];
+  if (citedSourceIds.length > 0) {
+    const { verifyGovernanceFreshness, auditStaleBlockedBatch } = await import(
+      '@/lib/source-governance/stale-check'
+    );
+    const govGate = await verifyGovernanceFreshness(
+      citedSourceIds,
+      session.user.organizationId ?? '',
+    );
+    if (!govGate.allowed) {
+      await auditStaleBlockedBatch({
+        userId: session.user.id,
+        blockedSources: govGate.blockedSources,
+      });
+      return Response.json(
+        { error: 'stale_citation_blocked', blockedCount: govGate.blockedSources.length },
+        { status: 403 },
+      );
+    }
+  }
+
   const buffer = isPdf ? await exportToPDF(cer) : await exportToDOCX(cer);
 
   // REQ-CER-039: audit the export after the document is successfully generated.

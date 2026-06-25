@@ -156,12 +156,14 @@ async function filterInternalDocExpiredSources(
   );
   if (sourceIds.length === 0) return results;
   try {
-    const { filterExpiredSources } = await import('@/lib/corpus-license/expiry-checker');
+    // REQ-SOURCE-GOV-005/009 — compose license filter (filterExpiredSources)
+    // with the governance gate (filterGovernanceEligible) via composeRetrievalGates.
+    const { composeRetrievalGates } = await import('@/lib/source-governance/retrieval-gate');
     // orgId is already validated by the caller (InternalDocsOptions.orgId is required).
     // Re-derive from the first result's metadata to avoid threading another param.
     const orgId = results[0]?.metadata?.orgId as string | undefined;
     if (!orgId) return results;
-    const eligible = await filterExpiredSources(sourceIds, orgId);
+    const eligible = await composeRetrievalGates(sourceIds, { orgId });
     return results.filter((r) => {
       const sid = r.metadata?.sourceId as string | undefined;
       return !sid || eligible.has(sid);

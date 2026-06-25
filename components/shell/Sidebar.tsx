@@ -63,6 +63,9 @@ interface SidebarProps {
   // SPEC-REGULA-CLINICAL-INVESTIGATION-001 (Issue #69): Clinical Investigation planner
   // is visible to roles with clinical_investigation.view (ra-member+).
   showClinicalInvestigation?: boolean;
+  // SPEC-REGULA-SOURCE-GOVERNANCE-001 (Issue #48): Governance dashboard is visible
+  // to roles with sourcegov.view (ra-member+). Gated server-side and passed down.
+  showGovernance?: boolean;
   initialLocale?: string;
 }
 
@@ -77,6 +80,7 @@ export default function Sidebar(props?: SidebarProps) {
   const showLabeling = props?.showLabeling ?? false;
   const showCapa = props?.showCapa ?? false;
   const showClinicalInvestigation = props?.showClinicalInvestigation ?? false;
+  const showGovernance = props?.showGovernance ?? false;
   const currentProjectId = useUIStore((s) => s.currentProjectId);
   const setCurrentProjectId = useUIStore((s) => s.setCurrentProjectId);
   const { data = [] } = useProjects();
@@ -302,6 +306,19 @@ export default function Sidebar(props?: SidebarProps) {
             className="rounded-md px-3 py-2 text-sm text-ink-700 hover:bg-ink-50 block"
           >
             전문가 검토
+          </Link>
+        </nav>
+      )}
+
+      {/* SPEC-REGULA-SOURCE-GOVERNANCE-001 (Issue #48): Governance dashboard link. */}
+      {showGovernance && (
+        <nav className="px-2 py-1">
+          <Link
+            href="/governance"
+            data-testid="sidebar-governance-link"
+            className="rounded-md px-3 py-2 text-sm text-ink-700 hover:bg-ink-50 block"
+          >
+            출처 거버넌스
           </Link>
         </nav>
       )}
