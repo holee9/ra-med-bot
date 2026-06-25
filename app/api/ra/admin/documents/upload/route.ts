@@ -60,6 +60,7 @@ export const POST = withPermission('sources.ingest', async (req, _ctx, session) 
   const file = form.get('file');
   const docClassRaw = form.get('docClass');
   const titleOverride = form.get('title');
+  const existingSourceIdRaw = form.get('sourceId');
 
   if (!(file instanceof File)) {
     return Response.json({ error: 'file_missing' }, { status: 400 });
@@ -70,6 +71,33 @@ export const POST = withPermission('sources.ingest', async (req, _ctx, session) 
     return Response.json({ error: 'docClass_invalid' }, { status: 400 });
   }
   const docClass = parsedClass.data;
+
+  // REQ-CORPUSLIC-002 — pre-ingest license gate. When an existing sourceId is
+  // supplied (admin pre-registered the source + license), assert the license
+  // is valid BEFORE extract/chunk/embed. Primary wired call site for
+  // assertIngestionLicensed alongside the ingestion-gate API.
+  // @MX:TODO enforce gate for the new-source creation path (currently only the
+  // existing-source re-ingest path is gated; new sources require a follow-up
+  // to chain license creation + ingest in one transaction).
+  const existingSourceId =
+    typeof existingSourceIdRaw === 'string' && existingSourceIdRaw.trim().length > 0
+      ? existingSourceIdRaw.trim()
+      : null;
+  if (existingSourceId && session.user.organizationId) {
+    const { assertIngestionLicensed } = await import('@/lib/corpus-license/license-gate');
+    const gate = await assertIngestionLicensed({
+      sourceId: existingSourceId,
+      orgId: session.user.organizationId,
+      userId: session.user.id,
+      wantsFullText: true,
+    });
+    if (!gate.allowed) {
+      return Response.json(
+        { error: 'ingestion_license_blocked', reason: gate.reason, licenseType: gate.licenseType },
+        { status: 403 },
+      );
+    }
+  }
 
   // ---------------------------------------------------------------------
   // 2. REQ-QUAL-019 — input validation (size + MIME).

@@ -326,7 +326,7 @@ describe('lib/db/schema.ts Phase 5 additions', () => {
     const values = extractAuditActionEnumValues(src);
     const typeValues = extractAuditActionTypeValues(auditSrc);
     expect(values).toEqual(typeValues);
-    expect(values).toHaveLength(174); // +7 complaint/capa.* (CAPA-001, #68) +1 cer_persisted (#255) +1 traceability.matrix_viewed (#240) +8 ci.* (CLINICAL-INVESTIGATION, #69) +8 modelgov.* (MODEL-GOVERNANCE, Issue 71) +9 cyber.* (CYBERDEVICE, Issue 67) +1 cyber.reassess_triggered (CYBERDEVICE H-2 fix, Issue 67)
+    expect(values).toHaveLength(183); // +9 corpus.* (CORPUS-LICENSE, Issue #72)
   });
 
   it.each(REQUIRED_RECOVERY_TABLES)(
@@ -382,7 +382,7 @@ describe('lib/audit.ts Phase 5 AuditAction type additions', () => {
         'change.export_blocked',
       ]),
     );
-    expect(values).toHaveLength(174); // +7 complaint/capa.* (CAPA-001, #68) +1 cer_persisted (#255) +1 traceability.matrix_viewed (#240) +8 ci.* (CLINICAL-INVESTIGATION, #69) +8 modelgov.* (MODEL-GOVERNANCE, Issue 71) +9 cyber.* (CYBERDEVICE, Issue 67) +1 cyber.reassess_triggered (CYBERDEVICE H-2 fix, Issue 67)
+    expect(values).toHaveLength(183); // +9 corpus.* (CORPUS-LICENSE, Issue #72)
   });
 
   it.each(REQUIRED_RECOVERY_AUDIT_ACTIONS)(
@@ -1547,5 +1547,70 @@ describe('migrations/0078_cyberdevice.sql (SPEC-REGULA-CYBERDEVICE-001, Issue 67
     expect(src).toMatch(/export const sbom = pgTable/);
     expect(src).toMatch(/export const cveImpact = pgTable/);
     expect(src).toMatch(/export const cyberEvidenceBundle = pgTable/);
+  });
+});
+
+// ---------------------------------------------------------------------------
+// SPEC-REGULA-CORPUS-LICENSE-001 — Issue #72 (migration 0080_corpus_license)
+// ---------------------------------------------------------------------------
+
+describe('SPEC-REGULA-CORPUS-LICENSE-001 (Issue #72, migration 0080)', () => {
+  it('has exactly 9 ALTER TYPE audit_action statements', () => {
+    const sql = readText('migrations/0080_corpus_license.sql');
+    const matches = sql.match(/ALTER TYPE audit_action ADD VALUE/g) ?? [];
+    expect(matches).toHaveLength(9);
+  });
+
+  it('creates the 2 new tables with org_id scoping', () => {
+    const sql = readText('migrations/0080_corpus_license.sql');
+    expect(sql).toMatch(/CREATE TABLE source_license/);
+    expect(sql).toMatch(/CREATE TABLE entitlement/);
+    expect(sql).toMatch(/REFERENCES organizations\(id\)/);
+    expect(sql).toMatch(/REFERENCES sources\(id\)/);
+  });
+
+  it('enables RLS with org-isolation on both tables', () => {
+    const sql = readText('migrations/0080_corpus_license.sql');
+    expect(sql).toMatch(/ENABLE ROW LEVEL SECURITY/g);
+    const policies = sql.match(/tenant_isolation_\w+/g) ?? [];
+    expect(policies.length).toBeGreaterThanOrEqual(2);
+    expect(sql).toMatch(/current_setting\('app.current_org_id'/);
+  });
+
+  it('creates the 3 new enums (license_type, confidentiality_level, entitlement_status)', () => {
+    const sql = readText('migrations/0080_corpus_license.sql');
+    expect(sql).toMatch(
+      /CREATE TYPE license_type AS ENUM \('standard_paid', 'journal', 'internal_sop', 'open'\)/,
+    );
+    expect(sql).toMatch(
+      /CREATE TYPE confidentiality_level AS ENUM \('public', 'internal', 'trade_secret'\)/,
+    );
+    expect(sql).toMatch(
+      /CREATE TYPE entitlement_status AS ENUM \('active', 'revoked', 'expired'\)/,
+    );
+  });
+
+  it.each([
+    'corpus.license_set',
+    'corpus.ingestion_blocked',
+    'corpus.full_text_blocked',
+    'corpus.entitlement_granted',
+    'corpus.entitlement_revoked',
+    'corpus.export_blocked',
+    'corpus.access_denied',
+    'corpus.expiry_warned',
+    'corpus.abstract_only_enforced',
+  ])('auditActionEnum in schema.ts includes %s', (action) => {
+    const src = readText('lib/db/schema.ts');
+    expect(src).toContain(`'${action}'`);
+  });
+
+  it('schema.ts defines the 2 new tables + 3 new enums', () => {
+    const src = readText('lib/db/schema.ts');
+    expect(src).toMatch(/export const licenseTypeEnum/);
+    expect(src).toMatch(/export const confidentialityLevelEnum/);
+    expect(src).toMatch(/export const entitlementStatusEnum/);
+    expect(src).toMatch(/export const sourceLicense = pgTable/);
+    expect(src).toMatch(/export const entitlement = pgTable/);
   });
 });

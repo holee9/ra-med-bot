@@ -378,6 +378,27 @@ export async function* consult(
   const externalCitations = await externalCitationsPromise;
   const allSourceItems = [...sourceItems, ...externalCitations];
 
+  // REQ-CORPUSLIC-007/011 — attach per-source usage-restriction notices.
+  // Primary call site for generateUsageNotice. Errors are swallowed so a
+  // license-db hiccup never breaks the answer path (the notice is advisory).
+  const orgIdForNotice = (session.user as { organizationId?: string | null }).organizationId;
+  if (orgIdForNotice && sourceItems.length > 0) {
+    try {
+      const { generateUsageNotice } = await import('@/lib/corpus-license/usage-notice');
+      const notices = await generateUsageNotice(
+        sourceItems.map((s) => s.id),
+        orgIdForNotice,
+      );
+      const noticeMap = new Map(notices.map((n) => [n.sourceId, n.notice]));
+      for (const item of allSourceItems) {
+        const text = noticeMap.get(item.id);
+        if (text) item.usageNotice = text;
+      }
+    } catch {
+      // License metadata unavailable — answer proceeds without notices.
+    }
+  }
+
   yield* emit({ type: 'sources', items: allSourceItems });
 
   // ---- Phase C: structured blocks (REQ-STRUCT-002, REQ-STRUCT-003) ----

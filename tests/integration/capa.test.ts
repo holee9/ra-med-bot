@@ -531,20 +531,20 @@ describe('Count regression (L-007 baseline)', () => {
       /export const auditActionEnum = pgEnum\('audit_action', \[([\s\S]*?)\]\);/,
     );
     const vals = match?.[1]?.match(/'[a-z_.]+'/g) ?? [];
-    expect(vals.length).toBe(174);
+    expect(vals.length).toBe(183);
   });
 
-  it('AuditAction type has 174 values (sync with schema enum)', () => {
+  it('AuditAction type has 183 values (sync with schema enum)', () => {
     const src = readText('lib/audit.ts');
     const match = src.match(/export type AuditAction =\s*([\s\S]*?);/);
     const vals = match?.[1]?.match(/'[a-z_.]+'/g) ?? [];
-    expect(vals.length).toBe(174);
+    expect(vals.length).toBe(183);
   });
 
-  it('PERMISSIONS matrix has 66 entries (54 + 3 clinical_investigation.* + 7 complaint/capa.* + 3 modelgov.* + 2 cyberdevice.*)', () => {
+  it('PERMISSIONS matrix has 68 entries (66 + 2 corpuslicense.* CORPUS-LICENSE Issue #72)', () => {
     // Runtime count is the authoritative source of truth (matches
     // tests/unit/auth/permissions.test.ts and tests/regression/foundation.test.ts).
-    expect(Object.keys(PERMISSIONS).length).toBe(66);
+    expect(Object.keys(PERMISSIONS).length).toBe(68);
   });
 });
 

@@ -125,7 +125,13 @@ export type PermissionAction =
   // REQ-013 is an entitlement/view gate, not a regulatory signoff — no separate
   // approve action is needed (cyber.access_denied audit covers denial).
   | 'cyberdevice.manage'
-  | 'cyberdevice.view';
+  | 'cyberdevice.view'
+  // SPEC-REGULA-CORPUS-LICENSE-001 (Issue #72, REQ-CORPUSLIC-012): 2 RBAC actions.
+  //   manage: admin ONLY — license/entitlement writes are 21 CFR Part 11 audit-material
+  //           records (legal exposure if unauthorised). Stricter than cyberdevice.manage.
+  //   view: ra-member+ — license status visible across the RA team for retrieval checks.
+  | 'corpuslicense.manage'
+  | 'corpuslicense.view';
 
 export interface PermissionSpec {
   minRole: Role;
@@ -367,4 +373,12 @@ export const PERMISSIONS: Record<PermissionAction, PermissionSpec> = {
   //       (REQ-013 entitlement gate; denial audited as cyber.access_denied).
   'cyberdevice.manage': { minRole: 'ra-member', scope: 'org', resourceType: 'cyberdevice' },
   'cyberdevice.view': { minRole: 'ra-member', scope: 'org', resourceType: 'cyberdevice' },
+
+  // SPEC-REGULA-CORPUS-LICENSE-001 (Issue #72, REQ-CORPUSLIC-012): 2 RBAC actions.
+  // manage: admin ONLY — license/entitlement writes are audit-material records
+  //         with legal exposure. Stricter than cyberdevice.manage (which is a team
+  //         activity). Mirrors rbac.manage / sources.ingest admin gates.
+  // view: ra-member+ — retrieval gate reads license status on every search.
+  'corpuslicense.manage': { minRole: 'admin', scope: 'org', resourceType: 'sourceLicense' },
+  'corpuslicense.view': { minRole: 'ra-member', scope: 'org', resourceType: 'sourceLicense' },
 };

@@ -346,7 +346,28 @@ export type AuditAction =
   | 'cyber.evidence_bundled'
   | 'cyber.risk_linked'
   | 'cyber.access_denied'
-  | 'cyber.reassess_triggered';
+  | 'cyber.reassess_triggered'
+  // SPEC-REGULA-CORPUS-LICENSE-001 (Issue 72) — 9 corpus-license lifecycle audit
+  // actions for 21 CFR Part 11 traceability of license/entitlement state.
+  // Added via 0080_corpus_license.sql. Mirror the auditActionEnum in lib/db/schema.ts.
+  //   corpus.license_set            — license metadata created or updated (REQ-001/010)
+  //   corpus.ingestion_blocked      — ingestion gate blocked unlicensed source (REQ-002/003)
+  //   corpus.full_text_blocked      — paid full-text blocked without entitlement (REQ-004)
+  //   corpus.entitlement_granted    — entitlement granted for a source (REQ-001/008)
+  //   corpus.entitlement_revoked    — entitlement revoked, source search-excluded (REQ-008)
+  //   corpus.export_blocked         — export blocked for unentitled source (REQ-011)
+  //   corpus.access_denied          — cross-org or unauthorized access blocked (REQ-012)
+  //   corpus.expiry_warned          — admin warned of upcoming license expiry (REQ-014)
+  //   corpus.abstract_only_enforced — abstract-only policy enforced, full-text blocked (REQ-013)
+  | 'corpus.license_set'
+  | 'corpus.ingestion_blocked'
+  | 'corpus.full_text_blocked'
+  | 'corpus.entitlement_granted'
+  | 'corpus.entitlement_revoked'
+  | 'corpus.export_blocked'
+  | 'corpus.access_denied'
+  | 'corpus.expiry_warned'
+  | 'corpus.abstract_only_enforced';
 
 export interface AuditEvent {
   /** User UUID, or null for system-initiated events. */
