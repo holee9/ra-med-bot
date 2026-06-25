@@ -1373,6 +1373,101 @@ describe('Migration 0083: RLS WITH CHECK clauses project-wide (Issue #239)', () 
   });
 });
 
+// Migration 0084: FORCE ROW LEVEL SECURITY (SPEC-REGULA-RLS-ENFORCE-001, Issue #239, Phase 4)
+// Forces RLS on the 20 org-scoped tables so even owners are subject to policies.
+// Runtime enforcement still requires the app role switch (migration 0085) because
+// superuser + BYPASSRLS roles bypass RLS regardless of FORCE.
+describe('Migration 0084: FORCE ROW LEVEL SECURITY (Issue #239, Phase 4)', () => {
+  it('migration file 0084_force_rls.sql exists', () => {
+    expect(fileExists('migrations/0084_force_rls.sql')).toBe(true);
+  });
+
+  it('issues exactly 20 ALTER TABLE ... FORCE ROW LEVEL SECURITY statements', () => {
+    const sql = readText('migrations/0084_force_rls.sql');
+    const forceMatches = sql.match(/ALTER TABLE \w+ FORCE ROW LEVEL SECURITY/g) ?? [];
+    expect(forceMatches).toHaveLength(20);
+  });
+
+  it('includes @MX:WARN noting FORCE alone does not enforce (app role switch required)', () => {
+    const sql = readText('migrations/0084_force_rls.sql');
+    expect(sql).toMatch(/@MX:WARN/);
+    expect(sql).toMatch(/NOBYPASSRLS|regula_app/);
+    expect(sql).toMatch(/superuser|BYPASSRLS/);
+  });
+
+  it.each([
+    'organization_documents',
+    'document_chunks',
+    'document_access_policies',
+    'ingest_jobs',
+    'unanswered_queue',
+    'device_classifications',
+    'evidence_nodes',
+    'evidence_edges',
+    'stale_flags',
+    'prompt_registry',
+    'model_pin',
+    'change_request',
+    'approved_combination',
+    'threat_model',
+    'sbom',
+    'cve_impact',
+    'cyber_evidence_bundle',
+    'source_license',
+    'entitlement',
+    'answer_feedback',
+  ])('forces RLS on %s', (table) => {
+    const sql = readText('migrations/0084_force_rls.sql');
+    expect(sql).toContain(`ALTER TABLE ${table} FORCE ROW LEVEL SECURITY`);
+  });
+});
+
+// Migration 0085: non-superuser app role (SPEC-REGULA-RLS-ENFORCE-001, Issue #239, Phase 4)
+// Creates regula_app (NOBYPASSRLS) — the role that makes FORCE RLS actually enforce.
+describe('Migration 0085: non-superuser app role regula_app (Issue #239, Phase 4)', () => {
+  it('migration file 0085_app_role.sql exists', () => {
+    expect(fileExists('migrations/0085_app_role.sql')).toBe(true);
+  });
+
+  it('creates regula_app role via idempotent DO block (CREATE ROLE has no IF NOT EXISTS)', () => {
+    const sql = readText('migrations/0085_app_role.sql');
+    expect(sql).toMatch(/DO \$\$[\s\S]*pg_roles[\s\S]*regula_app[\s\S]*\$\$/);
+    expect(sql).toMatch(/CREATE ROLE regula_app/);
+  });
+
+  it('sets NOBYPASSRLS and NOSUPERUSER (RLS applies to this role)', () => {
+    const sql = readText('migrations/0085_app_role.sql');
+    expect(sql).toMatch(/NOBYPASSRLS/);
+    expect(sql).toMatch(/NOSUPERUSER/);
+  });
+
+  it('uses a placeholder password (never a real password in the repo)', () => {
+    const sql = readText('migrations/0085_app_role.sql');
+    expect(sql).toMatch(/CHANGE_ME_SET_VIA_ALTER_ROLE/);
+    expect(sql).toMatch(/ALTER ROLE regula_app WITH PASSWORD/i);
+  });
+
+  it('includes @MX:WARN about placeholder password + ops ALTER ROLE requirement', () => {
+    const sql = readText('migrations/0085_app_role.sql');
+    expect(sql).toMatch(/@MX:WARN/);
+    expect(sql).toMatch(/placeholder|CHANGE_ME/i);
+  });
+
+  it('grants schema + DML + sequence privileges on public', () => {
+    const sql = readText('migrations/0085_app_role.sql');
+    expect(sql).toMatch(/GRANT USAGE ON SCHEMA public TO regula_app/);
+    expect(sql).toMatch(
+      /GRANT SELECT, INSERT, UPDATE, DELETE ON ALL TABLES IN SCHEMA public TO regula_app/,
+    );
+    expect(sql).toMatch(/GRANT USAGE, SELECT ON ALL SEQUENCES IN SCHEMA public TO regula_app/);
+  });
+
+  it('sets ALTER DEFAULT PRIVILEGES so future tables also grant regula_app', () => {
+    const sql = readText('migrations/0085_app_role.sql');
+    expect(sql).toMatch(/ALTER DEFAULT PRIVILEGES IN SCHEMA public[\s\S]*regula_app/);
+  });
+});
+
 // Migration 0076: clinical investigation planner (SPEC-REGULA-CLINICAL-INVESTIGATION-001, Issue #69)
 describe('Migration 0076: clinical investigation planner (Issue #69)', () => {
   it('migration file 0076_clinical_investigation.sql exists', () => {
