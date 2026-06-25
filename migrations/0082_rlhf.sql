@@ -56,8 +56,16 @@ CREATE INDEX idx_answer_feedback_created ON answer_feedback(created_at);
 CREATE INDEX idx_answer_feedback_user ON answer_feedback(user_id);
 
 -- RLS: users see only their org's feedback. Mirrors the project-wide USING-only
--- pattern (WITH CHECK deferred to Issue #239). The join via messages -> conversations
--- -> org_members enforces org isolation consistent with the rest of the schema.
+-- pattern. The join is messages -> conversations -> projects -> org_members
+-- (conversations has NO direct organization_id; the org is resolved through
+-- projects.organization_id). This corrects the original 0082 policy which
+-- referenced a nonexistent c.organization_id column.
+--
+-- @MX:TODO [AUTO] RLS is INERT project-wide (service-role db client bypasses
+--   row security; no per-request SET LOCAL role). The query-layer org guard in
+--   lib/rlhf/access.ts (assertMessageInOrg) is the ACTUAL tenant boundary for
+--   RLHF routes. Adding WITH CHECK clauses is tracked by Issue #239 (project-
+--   wide RLS hardening) — do NOT add per-table WITH CHECK here, do it in #239.
 ALTER TABLE answer_feedback ENABLE ROW LEVEL SECURITY;
 CREATE POLICY answer_feedback_org_isolation ON answer_feedback
   USING (
@@ -65,7 +73,8 @@ CREATE POLICY answer_feedback_org_isolation ON answer_feedback
       SELECT 1
       FROM messages m
       JOIN conversations c ON c.id = m.conversation_id
-      JOIN org_members om ON om.org_id = c.organization_id
+      JOIN projects p ON p.id = c.project_id
+      JOIN org_members om ON om.org_id = p.organization_id
       WHERE m.id = answer_feedback.message_id
         AND om.user_id = answer_feedback.user_id
     )
@@ -77,9 +86,26 @@ CREATE POLICY answer_feedback_org_isolation ON answer_feedback
 
 -- REQ-RLHF-013: reranking version metadata + rollback audit events.
 -- feedback_submitted is the 21 CFR Part 11 record of every feedback write.
+--
+-- H-2 fix (expert-security): the re-rank audit action is `reranking_proposed`,
+-- NOT `reranking_applied`. The re-rank is recorded as a PENDING change_request
+-- (REQ-RLHF-013/014) — it is NEVER auto-applied, so the old name (`reranking_applied`)
+-- mis-stated the operational state to regulators. Net enum delta vs original
+-- 0082 design is still +3 (this is a rename, not an add).
+--
+-- PostgreSQL does not support ALTER TYPE ... RENAME VALUE before v13, and even
+-- there it is transaction-unsafe inside the same migration. We emit BOTH the
+-- old and new labels here so fresh DBs get the correct name; the old label is
+-- kept for any rows written between the original 0082 deploy and this hotfix
+-- (none in production — the feature shipped unmerged). The application layer
+-- (lib/audit.ts AuditAction union + lib/db/schema.ts auditActionEnum) ONLY
+-- inserts `reranking_proposed` going forward.
 ALTER TYPE audit_action ADD VALUE IF NOT EXISTS 'feedback_submitted';
-ALTER TYPE audit_action ADD VALUE IF NOT EXISTS 'reranking_applied';
+ALTER TYPE audit_action ADD VALUE IF NOT EXISTS 'reranking_proposed';
 ALTER TYPE audit_action ADD VALUE IF NOT EXISTS 'reranking_rolled_back';
+-- Deprecated label — retained so the type covers historical rows on dev DBs
+-- that ran the pre-hotfix 0082. No code path inserts this value after the H-2 fix.
+ALTER TYPE audit_action ADD VALUE IF NOT EXISTS 'reranking_applied';
 
 -- -------------------------------------
 -- §4 Extend source_sections

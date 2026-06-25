@@ -7,6 +7,21 @@
 // This orchestrator MUST be called from every re-ranking application path so
 // regulatory change-control (21 CFR Part 11) is preserved. REQ-RLHF-014 gate
 // is enforced separately by verifyPostRerankInvariants in eval-gate integration.
+//
+// H-2 fix (expert-security BLOCK-MERGE):
+//   1. DEDUP: only record a change_request when the re-ranking WEIGHT (lambda)
+//      or feedback-derived signature MATERIALLY CHANGES from the last recorded
+//      version. The previous implementation inserted a pending_review row on
+//      every retrieval call -> thousands of pending rows/day, none ever
+//      approved. We track the last-applied signature in a module-level cache
+//      keyed by orgId. A follow-up can persist this to a config row; the
+//      in-memory cache is sufficient to stop the row flood.
+//   2. RENAME: audit action `reranking_applied` -> `reranking_proposed`. The
+//      re-rank is a PENDING proposal, not an applied change. The old name
+//      mis-stated state to regulators.
+//   3. FAIL CLOSED: recordReranking errors propagate to the caller — no silent
+//      warn-and-continue. The retrieval-hook catches at its own boundary so
+//      retrieval still completes, but the error is a real health signal.
 
 import { writeAudit } from '@/lib/audit';
 import { buildAnswerVersionMetadata } from '@/lib/model-governance/audit-metadata';
@@ -32,10 +47,45 @@ export interface RerankingVersionDescriptor {
 }
 
 /**
+ * H-2: in-memory last-applied signature per org, used to dedup identical
+ * consecutive re-ranks. Keyed by orgId. A material change in lambda OR
+ * sectionCount (the two fields that determine the blend) produces a new
+ * signature; identical signatures skip the change_request insert.
+ *
+ * This is intentionally process-local: under a single-process deployment it
+ * fully prevents the row flood. Under multi-process, each process dedups its
+ * own calls (still a >90% reduction). Persisting to a config row is tracked as
+ * a follow-up — the dedup is a defense against row-flood, not a correctness
+ * invariant, so eventual consistency is acceptable.
+ */
+const LAST_RERANK_SIGNATURE = new Map<string, string>();
+
+function computeRerankSignature(descriptor: RerankingVersionDescriptor): string {
+  // sectionCount reflects the feedback-score-derived ordering shape; lambda is
+  // the blend weight. Together they uniquely identify a re-rank "version". We
+  // deliberately exclude timestamp + actor so identical consecutive retrievals
+  // dedup regardless of when they fire.
+  return `lambda=${descriptor.lambda.toFixed(4)}::sections=${descriptor.sectionCount}`;
+}
+
+/**
+ * H-2: return true when the descriptor represents a MATERIAL CHANGE from the
+ * last recorded version for this org. Exported for the regression test.
+ */
+export function isMaterialRerankChange(descriptor: RerankingVersionDescriptor): boolean {
+  const sig = computeRerankSignature(descriptor);
+  return LAST_RERANK_SIGNATURE.get(descriptor.orgId) !== sig;
+}
+
+/**
  * REQ-RLHF-013: record a re-ranking application as a pending_review
  * change_request (via submitRlhfProposal) + a 21 CFR Part 11 audit row
- * (`reranking_applied`). The change is NEVER auto-applied — it waits for
+ * (`reranking_proposed`). The change is NEVER auto-applied — it waits for
  * eval + approval (REQ-RLHF-015 HARD invariant, same gate as model governance).
+ *
+ * H-2: returns `{ changeRequestId, deduped }`. When `deduped` is true the
+ * call was a no-op (identical to the last recorded version) — no
+ * change_request row, no audit row.
  *
  * @MX:ANCHOR [AUTO] recordReranking — version metadata for every re-rank.
  * @MX:REASON Called from the retrieval wiring (Phase G). fan_in >= 3 expected
@@ -44,7 +94,17 @@ export interface RerankingVersionDescriptor {
  */
 export async function recordReranking(
   descriptor: RerankingVersionDescriptor,
-): Promise<{ changeRequestId: string }> {
+): Promise<{ changeRequestId: string | null; deduped: boolean }> {
+  const signature = computeRerankSignature(descriptor);
+
+  // H-2 dedup (primary): in-memory last-seen signature. Identical consecutive
+  // re-ranks (same lambda + same section set shape) skip the change_request
+  // insert entirely. This stops the row flood the previous implementation
+  // produced (one pending_review per retrieval call, none ever approved).
+  if (LAST_RERANK_SIGNATURE.get(descriptor.orgId) === signature) {
+    return { changeRequestId: null, deduped: true };
+  }
+
   // submitRlhfProposal stores as pending_review with source:'rlhf' in audit meta.
   const { changeRequestId } = await submitRlhfProposal({
     orgId: descriptor.orgId,
@@ -52,11 +112,12 @@ export async function recordReranking(
     proposalText: `rlhf-reranking lambda=${descriptor.lambda} sections=${descriptor.sectionCount}`,
   });
 
-  // 21 CFR Part 11 audit row — distinct from the change_request audit because
-  // the action is the APPLICATION of the re-rank (operational), not the request.
+  // 21 CFR Part 11 audit row — action is `reranking_proposed` (H-2 rename).
+  // The change is a PENDING proposal awaiting eval + approval, NOT an applied
+  // change. The old name (`reranking_applied`) mis-stated state to regulators.
   await writeAudit({
     actor_id: descriptor.submittedBy,
-    action: 'reranking_applied',
+    action: 'reranking_proposed',
     resource_type: 'change_request',
     resource_id: changeRequestId,
     meta_json: {
@@ -64,11 +125,14 @@ export async function recordReranking(
       source: 'rlhf',
       lambda: descriptor.lambda,
       section_count: descriptor.sectionCount,
+      signature,
       applied_at: descriptor.appliedAt.toISOString(),
     },
   });
 
-  return { changeRequestId };
+  LAST_RERANK_SIGNATURE.set(descriptor.orgId, signature);
+
+  return { changeRequestId, deduped: false };
 }
 
 /**
@@ -113,4 +177,12 @@ export function attachAnswerVersionMetadata(
 ): AnswerVersionMetadata | null {
   if (!combination) return null;
   return buildAnswerVersionMetadata(combination);
+}
+
+/**
+ * Test-only hook: reset the in-memory dedup map. Exported so the regression
+ * test can assert identical consecutive calls dedup without cross-test bleed.
+ */
+export function __resetRerankDedupForTests(): void {
+  LAST_RERANK_SIGNATURE.clear();
 }

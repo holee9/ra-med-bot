@@ -136,15 +136,22 @@ export async function parallelRetrieveAndMerge(
       sorted.map((r) => ({ id: r.id, sourceSectionId: r.id, score: r.score })),
       {
         orgId: opts.orgId ?? 'unknown',
-        actorId: null,
-        // Post-rerank invariant context: the merge step does not know the final
-        // confidence/citation/expert state (computed downstream in consult).
-        // We pass neutral values so the gate runs; the authoritative invariant
-        // check happens at answer finalization.
+        // M-3: thread the real actor through so the audit row attributes to a
+        // user, not null. merge.ts now accepts actorId on RetrieverOptions.
+        actorId: opts.actorId ?? null,
+        // H-1 fix: the post-rerank invariant gate moved OUT of merge.ts (where
+        // it ran with placeholder confidence=1.0 / citationCount=chunk count /
+        // expertReview=false and could NEVER fail). The authoritative gate now
+        // fires in lib/ai/consult.ts after the answer is composed, where the
+        // real confidence, real citation count, and real expert-review flag
+        // are known. See consult.ts `verifyPostRerankInvariants` call.
+        // The retrieval-hook still accepts a postRerank field for API
+        // stability; we pass neutral values that always pass so the dead-code
+        // path here is a no-op, and the REAL gate runs downstream.
         postRerank: {
           confidenceScore: 1.0,
           citationCount: sorted.length,
-          expertReviewRequired: false,
+          expertReviewRequired: true,
         },
       },
     );

@@ -1,26 +1,51 @@
 // @MX:NOTE [AUTO] GET /api/rlhf/feedback/aggregate — per-message feedback aggregation.
 // @MX:SPEC SPEC-REGULA-RLHF-001 (REQ-RLHF-005, REQ-RLHF-006)
+// @MX:REASON C-2 IDOR fix: RLS is inert project-wide (#239 debt), so org
+//           isolation MUST be enforced at the query layer. The previous query
+//           selected feedback by messageId with NO org filter — a caller from
+//           org-A could aggregate feedback on org-B's message. Now we assert
+//           the message belongs to the caller's org first (assertMessageInOrg)
+//           and the feedback select joins via messages->conversations->projects
+//           scoped to the caller's org.
 
 import { withPermission } from '@/lib/auth/with-permission';
 import { db } from '@/lib/db/client';
-import { answerFeedback } from '@/lib/db/schema';
+import { answerFeedback, conversations, messages, projects } from '@/lib/db/schema';
+import { assertMessageInOrg } from '@/lib/rlhf/access';
 import { aggregateFeedback, detectDownwardTrend } from '@/lib/rlhf/feedback-aggregator';
-import { eq } from 'drizzle-orm';
+import { and, eq } from 'drizzle-orm';
 
-export const GET = withPermission('rlhf.feedback', async (request) => {
+export const GET = withPermission('rlhf.feedback', async (request, _ctx, session) => {
   const url = new URL(request.url);
   const messageId = url.searchParams.get('messageId');
   if (!messageId) {
     return Response.json({ error: 'messageId_required' }, { status: 400 });
   }
 
+  const orgId = session.user.organizationId ?? '';
+  if (!orgId) {
+    return Response.json({ error: 'no_org_context' }, { status: 403 });
+  }
+
+  // C-2: verify the message belongs to the caller's org BEFORE aggregating.
+  const accessDenied = await assertMessageInOrg(messageId, orgId);
+  if (accessDenied) {
+    return accessDenied;
+  }
+
+  // C-2 defense-in-depth: even though assertMessageInOrg passed, the feedback
+  // select itself is org-scoped via the 3-hop join so a race (message moved
+  // projects between the assert and the select) cannot leak cross-org rows.
   const rows = await db
     .select({
       rating: answerFeedback.rating,
       createdAt: answerFeedback.createdAt,
     })
     .from(answerFeedback)
-    .where(eq(answerFeedback.messageId, messageId));
+    .innerJoin(messages, eq(messages.id, answerFeedback.messageId))
+    .innerJoin(conversations, eq(conversations.id, messages.conversationId))
+    .innerJoin(projects, eq(projects.id, conversations.projectId))
+    .where(and(eq(answerFeedback.messageId, messageId), eq(projects.organizationId, orgId)));
 
   const agg = aggregateFeedback(rows);
   const trend = detectDownwardTrend(rows);

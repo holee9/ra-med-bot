@@ -1,12 +1,14 @@
 // @MX:SPEC SPEC-REGULA-RLHF-001 (REQ-RLHF-011, AC-08)
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 
-// Typed mock handles so the test never references `any`.
+// Typed mock handles so the test never references `any`. Using concrete
+// function signatures avoids the vitest Mock generic variance clash between
+// `Mock<[], MockTrace>` and `Mock<any[], unknown>`.
 interface MockTrace {
-  event: ReturnType<typeof vi.fn>;
+  event: (...args: unknown[]) => unknown;
 }
 interface MockLangfuseClient {
-  trace: ReturnType<typeof vi.fn>;
+  trace: (...args: unknown[]) => MockTrace;
   flushAsync: ReturnType<typeof vi.fn>;
 }
 

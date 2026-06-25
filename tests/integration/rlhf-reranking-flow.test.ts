@@ -144,18 +144,23 @@ describe('REQ-RLHF-010 / AC-05: retrieval re-ranking wiring (Tier-1 dead-code de
     expect(invariantCheck.passed).toBe(true);
   });
 
-  it('retrieval does NOT break when recordReranking throws (best-effort)', async () => {
+  it('H-2: applyRlhfReranking PROPAGATES recordReranking errors (no silent swallow)', async () => {
     mockSelectReturns(async () => []);
     recordRerankingMock.mockRejectedValueOnce(new Error('audit db down'));
 
-    // Should NOT throw — retrieval must survive a version-tracking failure.
-    const { results } = await applyRlhfReranking(makeResults(), {
-      orgId: 'org-1',
-      actorId: 'user-1',
-      postRerank: { confidenceScore: 0.9, citationCount: 3, expertReviewRequired: false },
-    });
-
-    expect(results).toHaveLength(3);
+    // H-2 contract change: the retrieval-hook no longer catches recordReranking
+    // errors. A version-tracking failure is a real 21 CFR Part 11 health signal
+    // and MUST surface — the previous silent warn-and-continue masked audit-
+    // trail degradation. The retrieval-survives guarantee moved UP a layer to
+    // merge.ts (which wraps applyRlhfReranking in its own try/catch and falls
+    // back to Cohere ordering).
+    await expect(
+      applyRlhfReranking(makeResults(), {
+        orgId: 'org-1',
+        actorId: 'user-1',
+        postRerank: { confidenceScore: 0.9, citationCount: 3, expertReviewRequired: false },
+      }),
+    ).rejects.toThrow('audit db down');
   });
 });
 

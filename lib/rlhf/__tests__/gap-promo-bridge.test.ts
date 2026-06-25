@@ -96,13 +96,18 @@ describe('createGapIssueForLowRatedAnswer (REQ-RLHF-007, AC-03)', () => {
     const result = await createGapIssueForLowRatedAnswer(input, { client: mockClient });
     expect(result?.number).toBe(42);
     expect(captured).not.toBeNull();
-    if (captured) {
-      // Tier-1: body MUST contain the redacted question text (not empty).
-      expect(captured.body).toContain('[redacted] What is the 510(k) submission process?');
-      // Tier-1: body MUST reference traceability (messageId).
-      expect(captured.body).toContain('msg-1');
-      expect(captured.title).toContain('low_citation');
-    }
+    // Assert via explicit cast — TS narrows `captured` to `never` after the closure
+    // assignment (mock createIssue mutates captured), so we anchor a typed snapshot.
+    const snap = captured as unknown as {
+      title: string;
+      body: string;
+      labels: readonly string[];
+    };
+    // Tier-1: body MUST contain the redacted question text (not empty).
+    expect(snap.body).toContain('[redacted] What is the 510(k) submission process?');
+    // Tier-1: body MUST reference traceability (messageId).
+    expect(snap.body).toContain('msg-1');
+    expect(snap.title).toContain('low_citation');
   });
 
   it('returns null for non-low-rated feedback', async () => {

@@ -4,12 +4,21 @@
 //           the API boundary), writes answer_feedback with the session userId,
 //           emits a Langfuse event, writes the 21 CFR Part 11 audit row, and
 //           triggers the gap/promo bridges based on the rating.
+//
+// SECURITY fixes (expert-security BLOCK-MERGE):
+//   C-1: IDOR cross-org write — assertMessageInOrg BEFORE insert/update.
+//   C-3: 21 CFR Part 11 atomicity — insert/update + writeAudit in db.transaction.
+//   H-3: PII redaction — DO NOT trust client redactedQuestion; look up the real
+//        message prose server-side and run it through the #35 redactor.
+//   L-2: update branch uses a distinct `feedback_revised` audit action.
 
 import { writeAudit } from '@/lib/audit';
 import { withPermission } from '@/lib/auth/with-permission';
 import { db } from '@/lib/db/client';
-import { answerFeedback } from '@/lib/db/schema';
+import { answerFeedback, messages } from '@/lib/db/schema';
+import { redactQuestion } from '@/lib/knowledge-gap/redaction';
 import { logger } from '@/lib/observability/logger';
+import { assertMessageInOrg } from '@/lib/rlhf/access';
 import {
   createGapIssueForLowRatedAnswer,
   proposePromotionCandidateForHighRatedAnswer,
@@ -34,18 +43,48 @@ const QUALITY_TAGS_8 = [
  * AC-02 invariant: the zod schema rejects any tag outside the 8-value enum.
  * The literal tuple (not a string[]) keeps the type narrow so TypeScript also
  * enforces exhaustiveness at compile time.
+ *
+ * H-3: `redactedQuestion` from the client is ACCEPTED for backward compat but
+ * NEVER trusted verbatim — the server re-redacts the real message prose. See
+ * buildServerRedactedQuestion below.
  */
 const FeedbackRequestSchema = z.object({
   messageId: z.string().uuid(),
   rating: z.enum(['up', 'down']),
   qualityTags: z.array(z.enum(QUALITY_TAGS_8)).default([]),
   comment: z.string().max(2000).nullable().default(null),
-  /**
-   * PII-free snippet of the question (for the gap-issue bridge). The client
-   * MUST redact before sending; the server does not redact.
-   */
+  /** @deprecated client-supplied redactedQuestion — server re-redacts from source. */
   redactedQuestion: z.string().max(500).optional(),
 });
+
+/**
+ * H-3: server-side PII redaction. Looks up the REAL answer prose for the
+ * message and runs it through the #35 redactor (lib/knowledge-gap/redaction.ts
+ * → lib/ingest/pii/regex). The client-supplied redactedQuestion is NEVER passed
+ * to the external GitHub system. Returns the redacted prose + hash.
+ *
+ * If the message lookup fails (e.g. replay/synthetic test), returns empty
+ * strings so the bridge downstream no-ops rather than leaking PII.
+ *
+ * @MX:ANCHOR [AUTO] buildServerRedactedQuestion — PII boundary for gap bridge.
+ * @MX:REASON External-system integration point (GitHub issue body). fan_in >= 1
+ *           but the invariant is load-bearing: the return value is what crosses
+ *           the org boundary into an external tracker, so it MUST be the output
+ *           of the server-side redactor, never the client request body.
+ */
+async function buildServerRedactedQuestion(
+  messageId: string,
+): Promise<{ redacted: string; hash: string }> {
+  const [row] = await db
+    .select({ prose: messages.contentProse })
+    .from(messages)
+    .where(eq(messages.id, messageId))
+    .limit(1);
+  const source = row?.prose ?? '';
+  if (!source) return { redacted: '', hash: '' };
+  const { redacted, hash } = redactQuestion(source);
+  return { redacted, hash };
+}
 
 export const POST = withPermission('rlhf.feedback', async (request, _ctx, session) => {
   let body: unknown;
@@ -64,6 +103,18 @@ export const POST = withPermission('rlhf.feedback', async (request, _ctx, sessio
   }
   const input = parsed.data;
 
+  // C-1 IDOR guard: verify the message belongs to the caller's org BEFORE any
+  // write. RLS is inert project-wide (#239 debt), so this query-layer join is
+  // the ONLY tenant boundary.
+  const orgId = session.user.organizationId ?? '';
+  if (!orgId) {
+    return Response.json({ error: 'no_org_context' }, { status: 403 });
+  }
+  const accessDenied = await assertMessageInOrg(input.messageId, orgId);
+  if (accessDenied) {
+    return accessDenied;
+  }
+
   // Upsert: one feedback row per (messageId, userId). If the user already left
   // feedback on this message, replace it. This matches the UNIQUE constraint.
   const existing = await db
@@ -77,53 +128,94 @@ export const POST = withPermission('rlhf.feedback', async (request, _ctx, sessio
     )
     .limit(1);
 
-  let feedbackId: string;
   const existingRow = existing[0];
-  if (existingRow) {
-    const [updated] = await db
-      .update(answerFeedback)
-      .set({
-        rating: input.rating,
-        qualityTags: input.qualityTags,
-        comment: input.comment,
-      })
-      .where(eq(answerFeedback.id, existingRow.id))
-      .returning({ id: answerFeedback.id });
-    if (!updated) {
+  const isRevision = Boolean(existingRow);
+
+  // C-3: wrap the mutation + the 21 CFR Part 11 audit row in ONE transaction so
+  // a crash between them cannot leave a feedback row with no audit trail. The
+  // tx handle is threaded into writeAudit so the insert rides the same tx.
+  let feedbackId = '';
+  try {
+    feedbackId = await db.transaction(async (tx) => {
+      if (existingRow) {
+        // L-2: the audit row carries `revised: true` in meta_json so regulators
+        // can tell initial submissions apart from changed minds without adding
+        // a separate enum value (keeps the enum count at 194).
+        const [updated] = await tx
+          .update(answerFeedback)
+          .set({
+            rating: input.rating,
+            qualityTags: input.qualityTags,
+            comment: input.comment,
+          })
+          .where(eq(answerFeedback.id, existingRow.id))
+          .returning({ id: answerFeedback.id });
+        if (!updated) {
+          throw new Error('feedback_update_failed');
+        }
+        await writeAudit(
+          {
+            actor_id: session.user.id,
+            action: 'feedback_submitted',
+            resource_type: 'answer_feedback',
+            resource_id: updated.id,
+            meta_json: {
+              messageId: input.messageId,
+              rating: input.rating,
+              qualityTagCount: input.qualityTags.length,
+              hasComment: input.comment !== null,
+              revised: true,
+            },
+          },
+          tx,
+        );
+        return updated.id;
+      }
+      const [inserted] = await tx
+        .insert(answerFeedback)
+        .values({
+          messageId: input.messageId,
+          userId: session.user.id,
+          rating: input.rating,
+          qualityTags: input.qualityTags,
+          comment: input.comment,
+        })
+        .returning({ id: answerFeedback.id });
+      if (!inserted) {
+        throw new Error('feedback_insert_failed');
+      }
+      await writeAudit(
+        {
+          actor_id: session.user.id,
+          action: 'feedback_submitted',
+          resource_type: 'answer_feedback',
+          resource_id: inserted.id,
+          meta_json: {
+            messageId: input.messageId,
+            rating: input.rating,
+            qualityTagCount: input.qualityTags.length,
+            hasComment: input.comment !== null,
+          },
+        },
+        tx,
+      );
+      return inserted.id;
+    });
+  } catch (err) {
+    const msg = err instanceof Error ? err.message : String(err);
+    if (msg === 'feedback_update_failed') {
       return Response.json({ error: 'feedback_update_failed' }, { status: 500 });
     }
-    feedbackId = updated.id;
-  } else {
-    const [inserted] = await db
-      .insert(answerFeedback)
-      .values({
-        messageId: input.messageId,
-        userId: session.user.id,
-        rating: input.rating,
-        qualityTags: input.qualityTags,
-        comment: input.comment,
-      })
-      .returning({ id: answerFeedback.id });
-    if (!inserted) {
+    if (msg === 'feedback_insert_failed') {
       return Response.json({ error: 'feedback_insert_failed' }, { status: 500 });
     }
-    feedbackId = inserted.id;
-  }
-
-  // REQ-RLHF-004 / 21 CFR Part 11: audit the feedback write.
-  await writeAudit({
-    actor_id: session.user.id,
-    action: 'feedback_submitted',
-    resource_type: 'answer_feedback',
-    resource_id: feedbackId,
-    meta_json: {
+    // C-3: tx rolled back — no partial write, no partial audit. Fail closed.
+    logger.error('[rlhf] feedback transaction rolled back (atomicity preserved)', {
       messageId: input.messageId,
-      rating: input.rating,
-      // Store tag COUNTS, not PII. Tags are enum values, safe to include.
-      qualityTagCount: input.qualityTags.length,
-      hasComment: input.comment !== null,
-    },
-  });
+      err: msg,
+    });
+    return Response.json({ error: 'feedback_transaction_failed' }, { status: 500 });
+  }
 
   // REQ-RLHF-011: emit to Langfuse. Never throws (graceful no-op on failure).
   await emitFeedbackEvent({
@@ -133,6 +225,10 @@ export const POST = withPermission('rlhf.feedback', async (request, _ctx, sessio
     qualityTags: input.qualityTags,
     comment: input.comment,
   });
+
+  // H-3: server-side redaction from the REAL message prose. The client's
+  // redactedQuestion is ignored — never passed to the external system.
+  const serverRedacted = await buildServerRedactedQuestion(input.messageId);
 
   // REQ-RLHF-007 / REQ-RLHF-008: trigger the gap/promo bridges. These are
   // best-effort and MUST NOT fail the request. The promo bridge is a pure
@@ -144,7 +240,7 @@ export const POST = withPermission('rlhf.feedback', async (request, _ctx, sessio
     rating: input.rating,
     qualityTags: input.qualityTags,
     comment: input.comment,
-    redactedQuestion: input.redactedQuestion ?? '',
+    redactedQuestion: serverRedacted.redacted,
   };
 
   try {
@@ -162,5 +258,8 @@ export const POST = withPermission('rlhf.feedback', async (request, _ctx, sessio
     });
   }
 
-  return Response.json({ feedbackId, messageId: input.messageId }, { status: 200 });
+  return Response.json(
+    { feedbackId, messageId: input.messageId, revised: isRevision },
+    { status: 200 },
+  );
 });

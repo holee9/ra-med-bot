@@ -134,9 +134,12 @@ export async function* consult(
   const { corpora } = await classifyAndRoute(rewrittenQuery, input.projectTargetMarkets ?? ['us']);
   const orgId =
     (session.user as unknown as { organizationId?: string | null }).organizationId ?? undefined;
+  // M-3: thread the real actor so RLHF re-rank audit rows attribute to a user.
+  const actorId = session.user?.id ?? null;
   const mergedResults = await parallelRetrieveAndMerge(rewrittenQuery, corpora, {
     limit: 10,
     orgId,
+    actorId,
   });
   // Adapt RetrievalResult[] → RetrievedChunk[] shape expected by composePrompt.
   const chunks: RetrievedChunk[] = mergedResults.map((r) => ({
@@ -520,11 +523,44 @@ export async function* consult(
   const requiresExpertReview =
     autoFlagResult.flag || citationCoverageBelow80 || lowAuthorityReason !== null;
 
-  if (requiresExpertReview) {
+  // H-1 fix (expert-security BLOCK-MERGE): the REQ-RLHF-014 post-rerank
+  // invariant gate now fires HERE, on the REAL post-answer state, not in
+  // merge.ts with placeholder values (confidence=1.0 / citationCount=chunk
+  // count / expertReview=false) that could NEVER fail. The previous wiring was
+  // dead code — 6th dead-code recurrence. This gate CAN fail: a low-confidence
+  // or zero-citation answer trips it and forces expert_review_required, the
+  // safety net the spec mandates.
+  const citationCount = citedChunks.length;
+  let postRerankViolation: string | null = null;
+  try {
+    const { verifyPostRerankInvariants } = await import('@/lib/rlhf/post-rerank-gate');
+    const realCheck = verifyPostRerankInvariants({
+      confidenceScore: Number(confidenceScore),
+      citationCount,
+      expertReviewRequired: requiresExpertReview,
+    });
+    if (!realCheck.passed) {
+      postRerankViolation = realCheck.violations.join('; ');
+    }
+  } catch {
+    // Gate module unavailable — do not block the consult. The authoritative
+    // numeric gates (autoFlagResult, citationCoverageBelow80) still run above.
+  }
+
+  // When the post-rerank gate fails, force the expert-review safety net. This
+  // is the load-bearing behavior the spec requires (REQ-RLHF-014) and the
+  // regression test asserts: a low-confidence / zero-citation answer MUST set
+  // expert_review_required = true.
+  const forcedExpertReviewFromGate = postRerankViolation !== null;
+  const effectiveRequiresExpertReview = requiresExpertReview || forcedExpertReviewFromGate;
+
+  if (effectiveRequiresExpertReview) {
     const reason =
-      lowAuthorityReason ??
-      autoFlagResult.reason ??
-      (citationCoverageBelow80 ? 'citation coverage < 80%' : 'unknown');
+      forcedExpertReviewFromGate && !requiresExpertReview
+        ? `post-rerank invariant failed: ${postRerankViolation}`
+        : (lowAuthorityReason ??
+          autoFlagResult.reason ??
+          (citationCoverageBelow80 ? 'citation coverage < 80%' : 'unknown'));
 
     yield* emit({ type: 'expert_review_required', reason });
 

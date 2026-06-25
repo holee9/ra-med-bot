@@ -15,7 +15,6 @@
 
 import { db } from '@/lib/db/client';
 import { sourceSections } from '@/lib/db/schema';
-import { logger } from '@/lib/observability/logger';
 import {
   type PostRerankInvariantResult,
   verifyPostRerankInvariants,
@@ -92,22 +91,19 @@ export async function applyRlhfReranking<T extends RlhfRerankableResult>(
   const reranked = applyReranking(results, scores, { lambda: opts.lambda });
 
   // 3. Record the re-ranking (version metadata + 21 CFR Part 11 audit).
-  // Best-effort: a failure here MUST NOT break the retrieval path, but it IS
-  // logged so regulators can see when version tracking is degraded.
-  try {
-    await recordReranking({
-      orgId: opts.orgId,
-      submittedBy: opts.actorId,
-      lambda: opts.lambda ?? 0.2,
-      sectionCount: sectionIds.length,
-      appliedAt: new Date(),
-    });
-  } catch (err) {
-    logger.warn('[rlhf] recordReranking failed (retrieval continues, version tracking degraded)', {
-      orgId: opts.orgId,
-      err: err instanceof Error ? err.message : String(err),
-    });
-  }
+  // H-2 fix: recordReranking errors PROPAGATE. A failure here is a real health
+  // signal — the previous silent warn-and-continue masked 21 CFR Part 11
+  // audit-trail degradation (regulators would see feedback-driven re-ranks
+  // with no change_request + no audit row). The caller (merge.ts) wraps this
+  // whole path in its own try/catch that falls back to Cohere ordering, so
+  // retrieval still completes; but the error is NOT swallowed at this layer.
+  await recordReranking({
+    orgId: opts.orgId,
+    submittedBy: opts.actorId,
+    lambda: opts.lambda ?? 0.2,
+    sectionCount: sectionIds.length,
+    appliedAt: new Date(),
+  });
 
   // 4. REQ-RLHF-014: verify post-rerank invariants.
   const invariantCheck = verifyPostRerankInvariants(opts.postRerank);

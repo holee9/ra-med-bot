@@ -40,7 +40,9 @@ describe('recordReranking (REQ-RLHF-013, AC-06)', () => {
     vi.clearAllMocks();
   });
 
-  it('calls submitRlhfProposal with source=rlhf and writes reranking_applied audit', async () => {
+  it('calls submitRlhfProposal with source=rlhf and writes reranking_proposed audit', async () => {
+    const { __resetRerankDedupForTests } = await import('@/lib/rlhf/version-tracker');
+    __resetRerankDedupForTests();
     const result = await recordReranking({
       orgId: 'org-1',
       submittedBy: 'user-1',
@@ -57,10 +59,10 @@ describe('recordReranking (REQ-RLHF-013, AC-06)', () => {
         proposalText: expect.stringContaining('rlhf-reranking'),
       }),
     );
-    // 21 CFR Part 11 audit row — action is reranking_applied.
+    // 21 CFR Part 11 audit row — action is reranking_proposed (H-2 rename).
     expect(writeAudit).toHaveBeenCalledWith(
       expect.objectContaining({
-        action: 'reranking_applied',
+        action: 'reranking_proposed',
         resource_id: 'cr-1',
         meta_json: expect.objectContaining({ source: 'rlhf', lambda: 0.2, section_count: 42 }),
       }),
@@ -68,6 +70,8 @@ describe('recordReranking (REQ-RLHF-013, AC-06)', () => {
   });
 
   it('the audit meta records source=rlhf so regulators can distinguish RLHF re-ranks', async () => {
+    const { __resetRerankDedupForTests } = await import('@/lib/rlhf/version-tracker');
+    __resetRerankDedupForTests();
     await recordReranking({
       orgId: 'org-1',
       submittedBy: null,
@@ -78,8 +82,48 @@ describe('recordReranking (REQ-RLHF-013, AC-06)', () => {
     const mock = writeAudit as unknown as {
       mock: { calls: Array<Array<{ action: string; meta_json: { source: string } }>> };
     };
-    const call = mock.mock.calls.find((c) => c[0].action === 'reranking_applied');
-    expect(call?.[0].meta_json.source).toBe('rlhf');
+    const call = mock.mock.calls.find((c) => c[0]?.action === 'reranking_proposed');
+    expect(call?.[0]?.meta_json?.source).toBe('rlhf');
+  });
+
+  // H-2 regression: identical consecutive re-ranks MUST dedup (no duplicate
+  // pending change_request, no duplicate audit row). Before the fix every
+  // retrieval call inserted a fresh pending_review row — thousands/day.
+  it('H-2: identical consecutive calls do NOT create duplicate pending change_requests', async () => {
+    const { __resetRerankDedupForTests } = await import('@/lib/rlhf/version-tracker');
+    __resetRerankDedupForTests();
+    const descriptor = {
+      orgId: 'org-dedup',
+      submittedBy: 'user-1',
+      lambda: 0.2,
+      sectionCount: 5,
+      appliedAt: new Date('2026-06-25T00:00:00Z'),
+    };
+    const first = await recordReranking(descriptor);
+    const second = await recordReranking(descriptor);
+    expect(first.deduped).toBe(false);
+    expect(second.deduped).toBe(true);
+    expect(submitRlhfProposal).toHaveBeenCalledTimes(1);
+  });
+
+  it('H-2: a material change (different lambda) DOES record a fresh change_request', async () => {
+    const { __resetRerankDedupForTests } = await import('@/lib/rlhf/version-tracker');
+    __resetRerankDedupForTests();
+    await recordReranking({
+      orgId: 'org-mat',
+      submittedBy: 'user-1',
+      lambda: 0.2,
+      sectionCount: 5,
+      appliedAt: new Date('2026-06-25T00:00:00Z'),
+    });
+    await recordReranking({
+      orgId: 'org-mat',
+      submittedBy: 'user-1',
+      lambda: 0.5, // material weight change
+      sectionCount: 5,
+      appliedAt: new Date('2026-06-25T00:00:00Z'),
+    });
+    expect(submitRlhfProposal).toHaveBeenCalledTimes(2);
   });
 });
 

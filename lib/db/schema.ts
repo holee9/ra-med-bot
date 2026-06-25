@@ -372,10 +372,14 @@ export const auditActionEnum = pgEnum('audit_action', [
   'source.delta_sync_updated',
   // SPEC-REGULA-RLHF-001 — added via 0082_rlhf.sql (Issue #56, REQ-RLHF-013).
   // feedback_submitted: every feedback write (21 CFR Part 11 audit-material).
-  // reranking_applied / reranking_rolled_back: retrieval re-ranking version
-  // metadata + rollback (change-control invariant, REQ-RLHF-013/014).
+  //   The revision-vs-new distinction is carried in meta_json.revised (L-2),
+  //   not a separate enum value, to avoid churning the enum count.
+  // reranking_proposed: retrieval re-rank recorded as a PENDING change_request
+  //   (REQ-RLHF-013). Renamed from `reranking_applied` (H-2 fix) — the change
+  //   is never auto-applied, so the old name mis-stated state to regulators.
+  // reranking_rolled_back: re-ranking revert.
   'feedback_submitted',
-  'reranking_applied',
+  'reranking_proposed',
   'reranking_rolled_back',
 ]);
 

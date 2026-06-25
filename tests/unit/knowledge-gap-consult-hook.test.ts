@@ -70,7 +70,13 @@ describe('consult.ts knowledge-gap hook — DDD PRESERVE characterization (T1.3)
 
   it('suppresses structured block persistence and expert-review side effects in replay mode', () => {
     expect(SOURCE).toMatch(/if\s*\(!signal\?\.aborted\s*&&\s*!isReplay\)\s*\{/);
-    expect(SOURCE).toMatch(/if\s*\(requiresExpertReview\)\s*\{[\s\S]*?if\s*\(!isReplay\)\s*\{/);
+    // H-1 fix: the expert-review branch was renamed to
+    // `effectiveRequiresExpertReview` so the post-rerank invariant gate can
+    // also force the safety net. The structural invariant (branch contains an
+    // `!isReplay` guard) is preserved.
+    expect(SOURCE).toMatch(
+      /if\s*\(effectiveRequiresExpertReview\)\s*\{[\s\S]*?if\s*\(!isReplay\)\s*\{/,
+    );
   });
 
   it('does NOT introduce a new StreamEvent type (SSE contract preserved)', () => {

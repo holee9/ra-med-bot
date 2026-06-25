@@ -11,7 +11,11 @@ import { beforeEach, describe, expect, it, vi } from 'vitest';
 vi.mock('@/lib/rlhf/retrieval-hook', () => ({
   applyRlhfReranking: vi.fn(async (results: unknown[]) => ({
     results,
-    invariantCheck: { passed: true, violations: [], thresholds: { confidenceFloor: 0.7, minCitations: 1 } },
+    invariantCheck: {
+      passed: true,
+      violations: [],
+      thresholds: { confidenceFloor: 0.7, minCitations: 1 },
+    },
   })),
 }));
 
