@@ -2,39 +2,43 @@
 
 > 세션 연결용. 상세 맥락은 auto-memory `project-state.md`가 1차 진실원. 본 파일은 빠른 시작 요약.
 
-## 현재 세션 (2026-06-25) — PR #269 머지 (#239 Phase 2 나머지 3도메인 wiring)
+## 현재 세션 (2026-06-25) — #239 Phase 2 완전 종료 (PR #269·#270) + Phase 3 스코프 파악
 
-**main HEAD: `b42f05e`** (PR #269 squash). 오픈 PR 0건. main 클린. 회귀 **4299 passed** | 8 skipped.
+**main HEAD: `73e5882`** (PR #270 squash). 오픈 PR 0건. 회귀 **4315 passed** | 8 skipped.
 
-### ✅ PR #269 — #239 RLS Phase 2 나머지 3도메인 wiring (`b42f05e`)
-- knowledge-gap(3)·pms(3)·change-control(4) = **10 라우트** `withTenantScope` wiring. 14 files (10 routes + coverage gate + 3 test mocks).
-- SELECT는 `withTenantScope(orgId, async (dbs) => ...)` + app `eq(orgId)` defense-in-depth; mutation+audit는 `withTenantScope(orgId, async (tx) => { ...writeAudit({...}, tx) })` (C-3/H2 atomicity).
-- 정적 게이트 `WIRED_DOMAINS`에 3개 추가 → 잔류 PENDING: cyberdevice·model-governance·traceability.
-- sync Phase 0.55: expert-security PASS + evaluator PASS(98.75). 결함 0.
-- **★ 직검 (L-007 5회째)**: 구현 에이전트 "gates green" self-report → 오케스트레이터 `pnpm test` FULL 직검으로 **11 failures 포착**(test mock `withTenantScope` export 누락 3개 + change-control H-3 source-grep regex 구식) → 직접 fix → 4299 passed.
+### ✅ PR #269 — #239 Phase 2 나머지 3도메인 (kg/pms/cc) wiring (`b42f05e`)
+- 본 세션 전반. 10 라우트. 회귀 4299. (상세는 이전 섹션)
 
-### 🎯 다음 세션 시작 지점 (2026-06-25 갱신)
-- **main HEAD: `b42f05e`**. 회귀 **4299 passed** | 8 skipped. migration 0083, audit 194, PERMISSIONS 66(객체키)/71(runtime). RLS 여전히 **INERT**.
-- **★ #239 Phase 2 잔류 (PENDING)**: cyberdevice(6)·model-governance(6)·traceability(7) = **19 라우트**. 동일 패턴 wiring + 게이트 이동. 도메인별 PR.
-- **★ #239 Phase 3 (PENDING) → #239 CLOSE**: `SELECT rolname, rolbypassrls FROM pg_roles` 직검 → `=false`면 migration 0084 `FORCE ROW LEVEL SECURITY` (Option A), `=true`면 이중 클라이언트 (Option B). 카나리(rlhf+3도메인) + GUC 미설정 0행 단언.
+### ✅ PR #270 — #239 Phase 2 최종 3도메인 (cyberdevice/mg/trace) wiring (`73e5882`)
+- **전 7개 org-scoped 도메인 withTenantScope wiring 종료**. 16 files (11 routes wired + 5 mg no-op + coverage gate + 4 test).
+- cyberdevice 6·model-governance/change-request 1·traceability 4. 5개 mg 라우트는 DB op가 lib 위임(route 변경 없음).
+- coverage gate `stripLineComments` 헬퍼 추가(주석 prose false-positive 차단) + WIRED 7개 + PENDING 비움.
+- sync 0.55: expert-security PASS + evaluator BLOCK-MERGE(3 audit scope-밖 CRITICAL) → **직검으로 evaluator 과잉 판정**(3개 모두 read-only route, atomicity 대상 아님, RLS INERT, PR #269 동일 패턴) → expert-security 채택 머지.
+- 회귀 4315 passed (베이스라인 4299 → +16).
+
+### 🎯 다음 세션 시작 지점 (2026-06-25 갱신) — Phase 3 (회귀 매우 높음)
+- **main HEAD: `73e5882`**. 회귀 **4315 passed** | 8 skipped. migration 0083, audit 194. RLS 여전히 **INERT**.
+- **★ Phase 3 아키텍처 결정 (직검)**: 개발 DB role=`postgres`(superuser) → rolbypassrls=true → **Option A (FORCE ROW LEVEL SECURITY)** 확정. 운영 service-role이 별도 role이면 Option B 가능.
+- **★ Phase 3 prerequisites (직검 정량화)**:
+  1. **lib GUC wiring 16파일 / 17 db op** (회귀 리스크 최대): model-governance(rlhf-gate·rollback·change-workflow 6ops)·source-governance(review-workflow 3·delta-sync-hook)·ai(consult·retrievers)·cyberdevice/risk-linkage·capa/intake·clinical-investigation/linkage·corpus-license/entitlement·digest·knowledge-gap/clustering. 각 lib 함수가 route의 tx를 전달받거나 독자 withTenantScope 호출.
+  2. **audit write GUC 보장**: read-only route(matrix/export/diff)의 scope 밖 audit도 Phase 3 시 GUC 필요 (audit_logs RLS 정책 존재 migration 0001).
+  3. **FORCE RLS migration 0084** + 카나리(전 도메인 GUC 미설정 0행 단언).
 - **남은 OPEN priority/high**: #62·#51·#50·#49·#43·#42·#40·#39·#37·#36·#202·#1.
 - **DEFER**: #264·#65·#244·#245·#249·#57·#236·#238.
-- **non-blocking future**: lib `auditExportBlockedBatch`/`auditStaleBlockedBatch` writeAudit tx 누락(pre-existing, export route는 본 PR로 tx 전달 완료).
 - **★ tier1 착수 절차 (L-001 + L-007/008/009)**:
-  1. main 기반 `feat/issue-{N}` → 이슈 코멘트 + Gate 0.
+  1. main 기반 브랜치 + 이슈 코멘트 + Gate 0.
   2. 베이스라인 카운트 runtime 직검.
-  3. 구현 위임(regula-backend) 또는 직접 → 매 phase 게이트 직검.
-  4. sync Phase 0.55 expert-security + evaluator 병렬.
+  3. 구현 위임 → 매 phase 게이트 직검. **★ test mock 갱신을 에이전트에게 명시적 지시**(PR #270 교훈).
+  4. sync Phase 0.55 expert-security + evaluator 병렬. **★ 리뷰 불일치 시 오케스트레이터 직검**(route mutation 여부 + RLS 상태 + 기존 패턴)으로 판정.
   5. 게이트 직검: typecheck + lint(full) + test(FULL) + build.
-  6. **★ staged 범위 직검**(L-009) + PR → CI → squash merge.
-  7. **★ "완료" 보고 직검**(L-007) — 에이전트 self-report 불신(본 세션 게이트 green 오탐 → 11 failures 직검). main HEAD 기준.
-- **블로커(외부)**: hybrid-ra-saas 배포(#202 등) — T3610.
+  6. staged 범위 직검(L-009) + PR → CI → squash merge. (repo는 CI pending에도 admin 머지 허용)
+  7. "완료" 보고 직검(L-007) — main HEAD 기준.
 
-### 핵심 교훈 (본 세션 — L-007 5회 누적 검증)
-- **에이전트 게이트 self-report("green")도 오탐**: 본 세션에선 에이전트가 typecheck/lint/커버리지 게이트만 돌리고 full test를 "오케스트레이터가 함"으로 미룸 → 11개 integration test 실패를 놓침. **오케스트레이터 `pnpm test` FULL 직검이 유일한 진실원**.
-- **dead-code/source-grep 결함 클래스**: change-control H-3 테스트가 라우트 소스의 `db.transaction` 문자열을 매칭하다가 `withTenantScope` 교체로 깨짐 — "동작 아닌 문자열 매칭" 테스트는 리팩터 시 반드시 갱신.
-- **L-009**: staged 범위 직검이 migrations/ 누락·PR 범위 누락을 막는 유일한 수단 (본 세션 14 files 직검, migration 0 확인).
+### 핵심 교훈 (본 세션 — L-007 6회 누적)
+- **에이전트 게이트 self-report 오탐**: PR #269에선 11 failures(test mock 누락), PR #270에선 사전 지시로 0 failures. **오케스트레이터 `pnpm test` FULL 직검이 진실원**.
+- **보안 리뷰 불일치**: evaluator가 audit scope-밖을 CRITICAL로 과잉 판정. 직검(read-only route + RLS INERT + 기존 패턴)으로 정오탐. 관대/엄격 양 리뷰 모두 직검으로 교차 검증.
+- **라우트 수 직검**: traceability `-path '*traceability*'` 추정 7 → 정확 4 (BFF 경로 오탐 포함).
 
 ## 이전 세션 히스토리 (상세는 git log + project-state.md)
-- 2026-06-25(이전): 3 PR 머지 — #266 RLHF 복구 · #267 RLS Phase 1(WITH CHECK 20개) · #268 RLS Phase 2 rlhf 도메인.
+- 2026-06-25(이전): PR #269 (#239 Phase 2 kg/pms/cc). #266 RLHF 복구·#267 RLS Phase 1·#268 rlhf wiring.
 - 2026-06-24~25: 7-PR 파이프라인. 2026-06-23: tier0 #35 · tier1 #59·#47.
