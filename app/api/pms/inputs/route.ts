@@ -5,7 +5,7 @@
 
 import { writeAudit } from '@/lib/audit';
 import { withPermission } from '@/lib/auth/with-permission';
-import { db } from '@/lib/db/client';
+import { withTenantScope } from '@/lib/db/client';
 import { pmsInputs } from '@/lib/db/schema';
 import { normalizePmsInput, validatePmsInput } from '@/lib/pms/inputs';
 import { assertPmsProjectAccess } from '@/lib/pms/project-ownership';
@@ -58,9 +58,10 @@ async function postInputs(
   }
 
   // Mutation + audit in one transaction (H2 atomicity, 21 CFR Part 11).
+  // #239 Phase 2: withTenantScope sets app.current_org_id GUC for RLS enforce.
   let insertedId: string;
   try {
-    const result = await db.transaction(async (tx) => {
+    const result = await withTenantScope(organizationId, async (tx) => {
       const inserted = await tx
         .insert(pmsInputs)
         .values({

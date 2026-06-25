@@ -6,7 +6,7 @@
 
 import { withPermission } from '@/lib/auth/with-permission';
 import { fetchLinkedRiskItems } from '@/lib/change-control/risk-linkage';
-import { db } from '@/lib/db/client';
+import { withTenantScope } from '@/lib/db/client';
 import { changeAssessments, changeVerdictCitations, changeVerdicts } from '@/lib/db/schema';
 import { and, eq } from 'drizzle-orm';
 
@@ -26,45 +26,59 @@ async function getAssessment(
 
   const { assessmentId } = await ctx.params;
 
-  // Fetch the assessment with org scope (IDOR protection).
-  const assessmentRows = await db
-    .select()
-    .from(changeAssessments)
-    .where(and(eq(changeAssessments.id, assessmentId), eq(changeAssessments.orgId, organizationId)))
-    .limit(1);
+  // #239 Phase 2: withTenantScope sets app.current_org_id GUC for RLS enforce.
+  // App-level eq(changeAssessments.orgId, organizationId) retained as
+  // defense-in-depth (RLS is inert project-wide until service-role bypass is
+  // dropped).
+  const payload = await withTenantScope(organizationId, async (dbs) => {
+    // Fetch the assessment with org scope (IDOR protection).
+    const assessmentRows = await dbs
+      .select()
+      .from(changeAssessments)
+      .where(
+        and(eq(changeAssessments.id, assessmentId), eq(changeAssessments.orgId, organizationId)),
+      )
+      .limit(1);
 
-  if (assessmentRows.length === 0 || !assessmentRows[0]) {
+    if (assessmentRows.length === 0 || !assessmentRows[0]) {
+      return null;
+    }
+    const assessment = assessmentRows[0];
+
+    // Fetch verdicts.
+    const verdictRows = await dbs
+      .select()
+      .from(changeVerdicts)
+      .where(eq(changeVerdicts.assessmentId, assessmentId));
+
+    // Fetch citations per verdict in a single pass.
+    const verdictsWithCitations = await Promise.all(
+      verdictRows.map(async (v) => {
+        const citations = await dbs
+          .select()
+          .from(changeVerdictCitations)
+          .where(eq(changeVerdictCitations.verdictId, v.id));
+        return { ...v, citations };
+      }),
+    );
+
+    return { assessment, verdictsWithCitations };
+  });
+
+  if (!payload) {
     return Response.json({ error: 'Assessment not found' }, { status: 404 });
   }
-  const assessment = assessmentRows[0];
-
-  // Fetch verdicts.
-  const verdictRows = await db
-    .select()
-    .from(changeVerdicts)
-    .where(eq(changeVerdicts.assessmentId, assessmentId));
-
-  // Fetch citations per verdict in a single pass.
-  const verdictsWithCitations = await Promise.all(
-    verdictRows.map(async (v) => {
-      const citations = await db
-        .select()
-        .from(changeVerdictCitations)
-        .where(eq(changeVerdictCitations.verdictId, v.id));
-      return { ...v, citations };
-    }),
-  );
 
   // REQ-008: linked risk_items for re-evaluation panel (AC-06).
   const riskLinks = await fetchLinkedRiskItems(assessmentId, organizationId);
 
   return Response.json(
     {
-      assessment,
-      verdicts: verdictsWithCitations,
+      assessment: payload.assessment,
+      verdicts: payload.verdictsWithCitations,
       riskLinks,
       // REQ-011: provisional flag exposed for frontend gating.
-      isProvisional: assessment.status === 'provisional',
+      isProvisional: payload.assessment.status === 'provisional',
     },
     { status: 200 },
   );

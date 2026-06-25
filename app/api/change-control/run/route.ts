@@ -8,7 +8,7 @@ import { withPermission } from '@/lib/auth/with-permission';
 import { isValidChangeType } from '@/lib/change-control/classify';
 import { assessChange } from '@/lib/change-control/engine';
 import { resolveVersionMetadata } from '@/lib/change-control/version-metadata';
-import { db } from '@/lib/db/client';
+import { withTenantScope } from '@/lib/db/client';
 import {
   changeAssessments,
   changeVerdictCitations,
@@ -69,22 +69,25 @@ export const POST = withPermission('change.assess', async (req, _ctx, session) =
   const versions = resolveVersionMetadata();
 
   // Create the workflow_runs row (type 'change_control_assessment') for lifecycle.
-  const inserted = await db
-    .insert(workflowRuns)
-    .values({
-      userId: session.user.id,
-      organizationId,
-      projectId: body.projectId,
-      workflowType: 'change_control_assessment',
-      status: 'running',
-      inputJson: {
-        changeType: body.changeType,
-        description: body.description,
-        impactScope: body.impactScope,
-        targetMarkets: body.targetMarkets,
-      } as unknown as Record<string, unknown>,
-    })
-    .returning({ id: workflowRuns.id });
+  // #239 Phase 2: withTenantScope sets app.current_org_id GUC for RLS enforce.
+  const inserted = await withTenantScope(organizationId, async (tx) =>
+    tx
+      .insert(workflowRuns)
+      .values({
+        userId: session.user.id,
+        organizationId,
+        projectId: body.projectId,
+        workflowType: 'change_control_assessment',
+        status: 'running',
+        inputJson: {
+          changeType: body.changeType,
+          description: body.description,
+          impactScope: body.impactScope,
+          targetMarkets: body.targetMarkets,
+        } as unknown as Record<string, unknown>,
+      })
+      .returning({ id: workflowRuns.id }),
+  );
   const runId = inserted[0]?.id;
   if (!runId) {
     return Response.json({ error: 'Failed to create workflow run' }, { status: 500 });
@@ -130,9 +133,10 @@ export const POST = withPermission('change.assess', async (req, _ctx, session) =
       },
     );
 
-    // Persist assessment + verdicts + citations in a single transaction so a
-    // mid-write failure rolls back all 21 CFR Part 11 audit-material rows.
-    const assessmentRow = await db.transaction(async (tx) => {
+    // Persist assessment + verdicts + citations in a single tenant-scoped
+    // transaction so a mid-write failure rolls back all 21 CFR Part 11
+    // audit-material rows. withTenantScope sets app.current_org_id GUC.
+    const assessmentRow = await withTenantScope(organizationId, async (tx) => {
       const [assessment] = await tx
         .insert(changeAssessments)
         .values({
@@ -249,14 +253,16 @@ export const POST = withPermission('change.assess', async (req, _ctx, session) =
     }
 
     // Mark the workflow run complete.
-    await db
-      .update(workflowRuns)
-      .set({
-        status: 'approved',
-        resultJson: result as unknown as Record<string, unknown>,
-        completedAt: new Date(),
-      })
-      .where(sql`${workflowRuns.id} = ${runId}`);
+    await withTenantScope(organizationId, async (tx) =>
+      tx
+        .update(workflowRuns)
+        .set({
+          status: 'approved',
+          resultJson: result as unknown as Record<string, unknown>,
+          completedAt: new Date(),
+        })
+        .where(sql`${workflowRuns.id} = ${runId}`),
+    );
 
     return Response.json(
       { workflowRunId: runId, assessmentId: assessmentRow.assessmentId, result, versions },
@@ -271,12 +277,14 @@ export const POST = withPermission('change.assess', async (req, _ctx, session) =
     // transactions intentionally — the status update is idempotent and the
     // audit must never be lost (21 CFR Part 11: failure events are recordable).
     const message = err instanceof Error ? err.message : 'unknown_error';
-    await db
-      .update(workflowRuns)
-      .set({ status: 'failed', completedAt: new Date() })
-      .where(sql`${workflowRuns.id} = ${runId}`);
+    await withTenantScope(organizationId, async (tx) =>
+      tx
+        .update(workflowRuns)
+        .set({ status: 'failed', completedAt: new Date() })
+        .where(sql`${workflowRuns.id} = ${runId}`),
+    );
     try {
-      await db.transaction(async (tx) => {
+      await withTenantScope(organizationId, async (tx) => {
         await writeAudit(
           {
             actor_id: session.user.id,

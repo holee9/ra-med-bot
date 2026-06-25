@@ -42,7 +42,15 @@ export const POST = withPermission('knowledgegap.replay', async (_req, ctx, sess
   // markGapResolved so the queue row lookup is org-scoped. A row that does not
   // exist OR belongs to another org both surface as 404 — never 403, to avoid
   // leaking existence of cross-org queueIds.
+  // #239 Phase 2: the DB ops for replay live in lib/knowledge-gap/replay.ts
+  // (replayGapTest + markGapResolved), which receive orgId and scope their
+  // queries. This route has no direct db.* calls so the static coverage gate
+  // skips it; the orgId guard below still ensures no replay runs without a
+  // tenant context.
   const orgId = session.user.organizationId;
+  if (!orgId) {
+    return Response.json({ error: 'no_org_context' }, { status: 403 });
+  }
 
   let result: ReplayGapTestResult;
   try {

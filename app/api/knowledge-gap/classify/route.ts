@@ -18,7 +18,7 @@ export const runtime = 'nodejs';
 
 import { writeAudit } from '@/lib/audit';
 import { withPermission } from '@/lib/auth/with-permission';
-import { db } from '@/lib/db/client';
+import { withTenantScope } from '@/lib/db/client';
 import { unansweredQueue } from '@/lib/db/schema';
 import { and, eq } from 'drizzle-orm';
 import { z } from 'zod';
@@ -53,34 +53,51 @@ export const POST = withPermission('knowledgegap.classify', async (req, _ctx, se
   // leak the existence of a cross-org queueId. RLS also enforces this at the DB
   // layer; the explicit filter keeps the query plan cheap and unambiguous.
   const orgId = session.user.organizationId;
-  const [existing] = await db
-    .select({ id: unansweredQueue.id })
-    .from(unansweredQueue)
-    .where(
-      orgId !== undefined
-        ? and(eq(unansweredQueue.id, queueId), eq(unansweredQueue.orgId, orgId))
-        : eq(unansweredQueue.id, queueId),
-    );
-
-  if (!existing) {
-    return Response.json({ error: 'not_found', queueId }, { status: 404 });
+  if (!orgId) {
+    return Response.json({ error: 'no_org_context' }, { status: 403 });
   }
 
-  await db
-    .update(unansweredQueue)
-    .set({ classification, status: 'classified' })
-    .where(eq(unansweredQueue.id, queueId));
+  // #239 Phase 2: withTenantScope sets app.current_org_id GUC for RLS enforce.
+  // SELECT + UPDATE + writeAudit ride one tx (21 CFR Part 11 atomicity, C-3).
+  // App-level eq(unansweredQueue.orgId, orgId) retained as defense-in-depth
+  // (RLS is inert project-wide until service-role bypass is dropped).
+  try {
+    const found = await withTenantScope(orgId, async (tx) => {
+      const [existing] = await tx
+        .select({ id: unansweredQueue.id })
+        .from(unansweredQueue)
+        .where(and(eq(unansweredQueue.id, queueId), eq(unansweredQueue.orgId, orgId)));
 
-  await writeAudit({
-    actor_id: session.user.id,
-    action: 'knowledge_gap_classified',
-    resource_type: 'unanswered_queue',
-    resource_id: queueId,
-    meta_json: {
-      classification,
-      note: note ?? null,
-    },
-  });
+      if (!existing) return false;
+
+      await tx
+        .update(unansweredQueue)
+        .set({ classification, status: 'classified' })
+        .where(eq(unansweredQueue.id, queueId));
+
+      await writeAudit(
+        {
+          actor_id: session.user.id,
+          action: 'knowledge_gap_classified',
+          resource_type: 'unanswered_queue',
+          resource_id: queueId,
+          meta_json: {
+            classification,
+            note: note ?? null,
+          },
+        },
+        tx,
+      );
+      return true;
+    });
+
+    if (!found) {
+      return Response.json({ error: 'not_found', queueId }, { status: 404 });
+    }
+  } catch (err) {
+    console.error('knowledge_gap_classified failed (transaction rolled back)', err);
+    return Response.json({ error: 'classification_failed' }, { status: 500 });
+  }
 
   return Response.json({ queueId, classification, status: 'classified' });
 });
