@@ -1325,6 +1325,54 @@ describe('Migration 0075: traceability.matrix_viewed audit action (Issue #240)',
   });
 });
 
+// Migration 0083: RLS WITH CHECK clauses project-wide (SPEC-REGULA-RLS-ENFORCE-001, Issue #239, Phase 1)
+// Adds WITH CHECK to 20 policies that previously had USING only (INSERT/UPDATE not gated).
+// RLS remains INERT (service-role bypass) until Phase 3 (FORCE ROW LEVEL SECURITY).
+describe('Migration 0083: RLS WITH CHECK clauses project-wide (Issue #239)', () => {
+  it('migration file 0083_rls_with_check_clauses.sql exists', () => {
+    expect(fileExists('migrations/0083_rls_with_check_clauses.sql')).toBe(true);
+  });
+
+  it('issues exactly 20 ALTER POLICY statements with 20 WITH CHECK clauses', () => {
+    const sql = readText('migrations/0083_rls_with_check_clauses.sql');
+    const alterPolicy = sql.match(/ALTER POLICY/g) ?? [];
+    expect(alterPolicy).toHaveLength(20);
+    const withCheck = sql.match(/WITH CHECK \(/g) ?? [];
+    expect(withCheck).toHaveLength(20);
+  });
+
+  it.each([
+    ['organization_documents', '"tenant_isolation_documents"'],
+    ['document_chunks', '"tenant_isolation_chunks"'],
+    ['document_access_policies', '"tenant_isolation_access_policies"'],
+    ['ingest_jobs', '"tenant_isolation_ingest_jobs"'],
+    ['unanswered_queue', '"tenant_isolation_unanswered_queue"'],
+    ['device_classifications', '"tenant_isolation_device_classifications"'],
+    ['evidence_nodes', '"tenant_isolation_evidence_nodes"'],
+    ['evidence_edges', '"tenant_isolation_evidence_edges"'],
+    ['stale_flags', '"tenant_isolation_stale_flags"'],
+    ['prompt_registry', 'prompt_registry_org_isolation'],
+    ['model_pin', 'model_pin_org_isolation'],
+    ['change_request', 'change_request_org_isolation'],
+    ['approved_combination', 'approved_combination_org_isolation'],
+    ['threat_model', '"tenant_isolation_threat_model"'],
+    ['sbom', '"tenant_isolation_sbom"'],
+    ['cve_impact', '"tenant_isolation_cve_impact"'],
+    ['cyber_evidence_bundle', '"tenant_isolation_cyber_evidence_bundle"'],
+    ['source_license', '"tenant_isolation_source_license"'],
+    ['entitlement', '"tenant_isolation_entitlement"'],
+    ['answer_feedback', 'answer_feedback_org_isolation'],
+  ])('ALTER POLICY on %s (policy %s) includes WITH CHECK', (table, policy) => {
+    const sql = readText('migrations/0083_rls_with_check_clauses.sql');
+    expect(sql).toContain(`ALTER POLICY ${policy} ON ${table}`);
+  });
+
+  it('preserves answer_feedback EXISTS subquery in WITH CHECK (4-way org join)', () => {
+    const sql = readText('migrations/0083_rls_with_check_clauses.sql');
+    expect(sql).toMatch(/WITH CHECK \(\s*EXISTS/);
+  });
+});
+
 // Migration 0076: clinical investigation planner (SPEC-REGULA-CLINICAL-INVESTIGATION-001, Issue #69)
 describe('Migration 0076: clinical investigation planner (Issue #69)', () => {
   it('migration file 0076_clinical_investigation.sql exists', () => {
