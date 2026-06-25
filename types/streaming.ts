@@ -54,6 +54,10 @@ export interface SourceItem {
   url: string | null;
   anchor: string;
   offset: number;
+  // REQ-CORPUSLIC-007/011 — per-source usage-restriction notice attached by
+  // generateUsageNotice() at the answer/export path. Optional: present when a
+  // source_license row exists for the source.
+  usageNotice?: string;
 }
 
 export interface SourcesEvent {

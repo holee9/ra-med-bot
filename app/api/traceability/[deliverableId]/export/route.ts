@@ -45,7 +45,49 @@ export const GET = withPermission('traceability.view', async (req, ctx, session)
     return Response.json({ error: 'not_found' }, { status: 404 });
   }
 
-  const result = await exportPacket(packet, format);
+  // REQ-CORPUSLIC-007/011 — collect corpus sourceIds referenced by the packet
+  // (stale_source issues may reference source nodes). Run the export-rights
+  // gate; if any cited source is not export-entitled, abort with 403 + audit.
+  // Today the packet tree references deliverables (CER/DHF/risk), not corpus
+  // sources, so this is typically a no-op — but the gate is wired so a future
+  // source-cited packet cannot leak unentitled content.
+  const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+  const packetSourceIds = Array.from(
+    new Set(packet.issues.map((i) => i.detail).flatMap((d) => (UUID_RE.test(d) ? [d] : []))),
+  );
+
+  if (packetSourceIds.length > 0) {
+    const { verifyExportRights, auditExportBlockedBatch } = await import(
+      '@/lib/corpus-license/export-gate'
+    );
+    const exportGate = await verifyExportRights({
+      sourceIds: packetSourceIds,
+      orgId: organizationId,
+    });
+    if (!exportGate.allowed) {
+      await auditExportBlockedBatch({
+        userId: session.user.id,
+        blockedSources: exportGate.blockedSources,
+      });
+      return Response.json(
+        { error: 'export_license_blocked', blockedCount: exportGate.blockedSources.length },
+        { status: 403 },
+      );
+    }
+  }
+
+  // REQ-CORPUSLIC-007 — usage-restriction notices for any cited corpus sources.
+  let usageNotices: Array<{ sourceId: string; notice: string }> = [];
+  if (packetSourceIds.length > 0) {
+    try {
+      const { generateUsageNotice } = await import('@/lib/corpus-license/usage-notice');
+      usageNotices = await generateUsageNotice(packetSourceIds, organizationId);
+    } catch {
+      // License metadata unavailable — export proceeds without notices.
+    }
+  }
+
+  const result = await exportPacket(packet, format, usageNotices);
   if (!result.success || !result.content) {
     // L2 (#241): do NOT forward exporter internals to the client — log server-side only.
     // MEDIUM-1 (#241): strip CRLF/control chars + cap length to prevent log-injection

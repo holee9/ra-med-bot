@@ -37,7 +37,7 @@ describe('lib/ai/retrievers/mfds.ts (REQ-BREADTH-035)', () => {
     const retriever = new MfdsRetriever();
     await retriever.retrieve('의료기기 허가', { limit: 3 });
 
-    expect(mockedHybridSearch).toHaveBeenCalledWith('의료기기 허가', 'mfds', 3, 'all');
+    expect(mockedHybridSearch).toHaveBeenCalledWith('의료기기 허가', 'mfds', 3, 'all', undefined);
   });
 
   it('retrieve() returns RetrievalResult array shape', async () => {

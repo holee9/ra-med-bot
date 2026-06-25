@@ -131,7 +131,7 @@ export class InternalSopsRetriever implements IRetriever {
     }
 
     const list = rows as unknown as SopsRow[];
-    return list.map((r) => ({
+    let mapped = list.map((r) => ({
       id: r.section_id,
       content: r.text,
       score: r.combined_score,
@@ -145,5 +145,23 @@ export class InternalSopsRetriever implements IRetriever {
         url: r.url,
       },
     }));
+
+    // REQ-CORPUSLIC-008 — exclude expired/revoked-entitlement sources.
+    // Primary call site for filterExpiredSources on the internal-SOPs path.
+    // Defense-in-depth: if the license query fails (e.g. license table not yet
+    // migrated in a test/staging env), the retriever still returns results —
+    // RLS already enforces org isolation, and the filter is advisory here.
+    if (mapped.length > 0) {
+      try {
+        const { filterExpiredSources } = await import('@/lib/corpus-license/expiry-checker');
+        const sourceIds = Array.from(new Set(mapped.map((m) => m.sourceId)));
+        const eligible = await filterExpiredSources(sourceIds, orgId);
+        mapped = mapped.filter((m) => eligible.has(m.sourceId));
+      } catch {
+        // License metadata unavailable — fall through with unfiltered results.
+      }
+    }
+
+    return mapped;
   }
 }

@@ -378,6 +378,49 @@ export async function* consult(
   const externalCitations = await externalCitationsPromise;
   const allSourceItems = [...sourceItems, ...externalCitations];
 
+  // REQ-CORPUSLIC-007/011 — attach per-source usage-restriction notices.
+  // Primary call site for generateUsageNotice. Errors are swallowed so a
+  // license-db hiccup never breaks the answer path (the notice is advisory).
+  const orgIdForNotice = (session.user as { organizationId?: string | null }).organizationId;
+  if (orgIdForNotice && sourceItems.length > 0) {
+    try {
+      const { generateUsageNotice } = await import('@/lib/corpus-license/usage-notice');
+      const notices = await generateUsageNotice(
+        sourceItems.map((s) => s.id),
+        orgIdForNotice,
+      );
+      const noticeMap = new Map(notices.map((n) => [n.sourceId, n.notice]));
+      for (const item of allSourceItems) {
+        const text = noticeMap.get(item.id);
+        if (text) item.usageNotice = text;
+      }
+    } catch {
+      // License metadata unavailable — answer proceeds without notices.
+    }
+
+    // REQ-CORPUSLIC-013 — audit when an abstract-only source's full text is
+    // blocked at answer time (the consult path serves full section text by
+    // default; abstract-only licenses forbid that). Primary call site for
+    // auditAbstractOnlyEnforced. Swallowed: license-db hiccup never breaks answer.
+    try {
+      const { auditAbstractOnlyEnforced } = await import('@/lib/corpus-license/audit');
+      const { isFullTextBlocked, fetchPermittedUse } = await import(
+        '@/lib/corpus-license/permitted-use'
+      );
+      const actorId = session.user?.id;
+      if (actorId) {
+        for (const item of sourceItems) {
+          const policy = await fetchPermittedUse(item.id, orgIdForNotice);
+          if (policy?.abstractOnly && isFullTextBlocked(policy)) {
+            await auditAbstractOnlyEnforced({ userId: actorId, sourceId: item.id });
+          }
+        }
+      }
+    } catch {
+      // License metadata unavailable — skip audit (advisory).
+    }
+  }
+
   yield* emit({ type: 'sources', items: allSourceItems });
 
   // ---- Phase C: structured blocks (REQ-STRUCT-002, REQ-STRUCT-003) ----

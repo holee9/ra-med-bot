@@ -60,7 +60,13 @@ describe('lib/ai/retrievers/eu-mdr.ts (REQ-BREADTH-034)', () => {
     const retriever = new EuMdrRetriever();
     const results = await retriever.retrieve('safety requirements', { limit: 5 });
 
-    expect(mockedHybridSearch).toHaveBeenCalledWith('safety requirements', 'eu-mdr', 5, 'all');
+    expect(mockedHybridSearch).toHaveBeenCalledWith(
+      'safety requirements',
+      'eu-mdr',
+      5,
+      'all',
+      undefined,
+    );
     expect(results).toHaveLength(1);
     expect(results[0]).toMatchObject({
       id: 'sec-1',
@@ -80,6 +86,6 @@ describe('lib/ai/retrievers/eu-mdr.ts (REQ-BREADTH-034)', () => {
     const retriever = new EuMdrRetriever();
     await retriever.retrieve('query');
 
-    expect(mockedHybridSearch).toHaveBeenCalledWith('query', 'eu-mdr', 10, 'all');
+    expect(mockedHybridSearch).toHaveBeenCalledWith('query', 'eu-mdr', 10, 'all', undefined);
   });
 });

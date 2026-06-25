@@ -25,6 +25,14 @@ vi.mock('@/lib/auth/acl', () => ({
 const writeAuditMock = vi.fn(async () => {});
 vi.mock('@/lib/audit', () => ({ writeAudit: writeAuditMock }));
 
+// C-1: upload route now requires a pre-registered licensed sourceId. Mock the
+// license gate to allow ingestion so the e2e suite exercises the post-gate
+// extract/chunk/embed/persist path (the gate's domain logic is covered in
+// tests/integration/corpus-license.test.ts).
+vi.mock('@/lib/corpus-license/license-gate', () => ({
+  assertIngestionLicensed: vi.fn(async () => ({ allowed: true, licenseType: 'internal_sop' })),
+}));
+
 const insertedSources: unknown[] = [];
 const insertedSections: unknown[] = [];
 
@@ -87,6 +95,7 @@ function buildFormData(opts: {
   mime?: string;
   docClass?: string;
   filename?: string;
+  sourceId?: string;
 }): FormData {
   const fd = new FormData();
   const bytes = opts.bytes ?? readFileSync(FIXTURE_PATH);
@@ -96,6 +105,8 @@ function buildFormData(opts: {
     new File([new Uint8Array(bytes)], opts.filename ?? 'sample-regulatory.txt', { type: mime }),
   );
   fd.append('docClass', opts.docClass ?? 'internal_sop');
+  // C-1: a pre-registered licensed sourceId is required to pass the ingestion gate.
+  fd.append('sourceId', opts.sourceId ?? '00000000-0000-4000-8000-000000000001');
   return fd;
 }
 
@@ -132,7 +143,8 @@ describe('Document Ingestion E2E (REQ-QUAL-015..019)', () => {
     const res = await callPost(buildFormData({}));
     expect(res.status).toBe(201);
     const body = (await res.json()) as { sourceId: string; sectionCount: number };
-    expect(body.sourceId).toMatch(/^src-/);
+    // C-1: upload attaches sections to the pre-registered licensed sourceId.
+    expect(body.sourceId).toBe('00000000-0000-4000-8000-000000000001');
     expect(body.sectionCount).toBeGreaterThanOrEqual(1);
 
     expect(embedChunksMock).toHaveBeenCalledOnce();
@@ -176,11 +188,9 @@ describe('Document Ingestion E2E (REQ-QUAL-015..019)', () => {
     expect(persistedText).not.toContain('patient@example.com');
     expect(persistedText).not.toContain('123-45-6789');
 
-    expect(insertedSources[0]).toEqual(
-      expect.objectContaining({
-        title: '[REDACTED:EMAIL] [REDACTED:SSN].txt',
-      }),
-    );
+    // C-1: the upload route no longer creates a new sources row (the title
+    // redaction previously asserted via insertedSources is now covered by the
+    // filenameExt redaction in the audit meta + the persisted section text above).
     expect(writeAuditMock).toHaveBeenCalledWith(
       expect.objectContaining({
         action: 'document.redact',

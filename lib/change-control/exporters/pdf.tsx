@@ -66,6 +66,9 @@ export interface RiskLinkRecord {
 export interface ChangePdfExportOptions {
   /** Render a diagonal DRAFT watermark across the page (non-final assessments). */
   includeDraftWatermark: boolean;
+  /** REQ-CORPUSLIC-007/011 — per-source usage-restriction notices appended as a
+   * "Source Usage Restrictions" section so the exported PDF carries redistribution terms. */
+  usageNotices?: Array<{ sourceId: string; notice: string }>;
 }
 
 /** Human-readable labels for the 6 change classification types. */
@@ -257,6 +260,18 @@ export async function exportChangeAssessmentToPdf(
 
         <Text style={styles.sectionHeading}>Linked Risk Items (REQ-008)</Text>
         {riskLinkRows}
+
+        {/* REQ-CORPUSLIC-007/011 — per-source usage-restriction notices. */}
+        {options.usageNotices && options.usageNotices.length > 0 ? (
+          <>
+            <Text style={styles.sectionHeading}>Source Usage Restrictions</Text>
+            {options.usageNotices.map((n) => (
+              <Text key={`notice-${n.sourceId}`} style={styles.citationExcerpt}>
+                {n.notice}
+              </Text>
+            ))}
+          </>
+        ) : null}
 
         {/* REQ-010: provenance — model/prompt/template version metadata. */}
         <Text style={styles.sectionHeading}>Provenance</Text>

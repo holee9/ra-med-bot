@@ -14,7 +14,8 @@ export class PmdaRetriever implements IRetriever {
 
   async retrieve(query: string, opts: RetrieverOptions = {}): Promise<RetrievalResult[]> {
     const limit = opts.limit ?? 10;
-    const chunks = await hybridSearch(query, 'pmda' as never, limit, 'all');
+    // REQ-CORPUSLIC-008 — thread orgId so filterExpiredSources fires inside hybridSearch.
+    const chunks = await hybridSearch(query, 'pmda' as never, limit, 'all', opts.orgId);
     return chunks.map(toRetrievalResult);
   }
 }

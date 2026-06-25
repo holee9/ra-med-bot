@@ -347,6 +347,18 @@ export const auditActionEnum = pgEnum('audit_action', [
   // SPEC-REGULA-CYBERDEVICE-001 (Issue 67, H-2 fix) — added via
   // 0079_cyberdevice_linkage_hardening.sql: REQ-011 durable reassessment signal.
   'cyber.reassess_triggered',
+  // SPEC-REGULA-CORPUS-LICENSE-001 — added via 0080_corpus_license.sql
+  // (Issue 72, REQ-CORPUSLIC-010/012/014): 9 corpus-license lifecycle audit
+  // actions for 21 CFR Part 11 traceability of license/entitlement state.
+  'corpus.license_set',
+  'corpus.ingestion_blocked',
+  'corpus.full_text_blocked',
+  'corpus.entitlement_granted',
+  'corpus.entitlement_revoked',
+  'corpus.export_blocked',
+  'corpus.access_denied',
+  'corpus.expiry_warned',
+  'corpus.abstract_only_enforced',
 ]);
 
 // @MX:NOTE [AUTO] Knowledge gap enums — SPEC-REGULA-KNOWLEDGE-GAP-001 (Issue #35).
@@ -2807,5 +2819,95 @@ export const cyberEvidenceBundle = pgTable(
     samdIdx: index('idx_cyber_evidence_bundle_samd').on(t.linkedSamdId),
     dhfIdx: index('idx_cyber_evidence_bundle_dhf').on(t.linkedDhfId),
     submissionIdx: index('idx_cyber_evidence_bundle_submission').on(t.linkedSubmissionId),
+  }),
+);
+
+// @MX:NOTE [AUTO] Corpus license enums — SPEC-REGULA-CORPUS-LICENSE-001 (Issue #72).
+// @MX:SPEC SPEC-REGULA-CORPUS-LICENSE-001 (REQ-CORPUSLIC-001, REQ-CORPUSLIC-006)
+// @MX:REASON Drizzle pgEnum mirrors the SQL types created in 0080_corpus_license.sql.
+// Keep in lock-step with the migration or runtime inserts fail.
+// license_type: permitted-use policy group (paid standard / journal / internal SOP / open).
+// confidentiality_level: trade-secret protection scoping for internal SOPs.
+// entitlement_status: active / revoked / expired lifecycle for source access grants.
+export const licenseTypeEnum = pgEnum('license_type', [
+  'standard_paid',
+  'journal',
+  'internal_sop',
+  'open',
+]);
+export const confidentialityLevelEnum = pgEnum('confidentiality_level', [
+  'public',
+  'internal',
+  'trade_secret',
+]);
+export const entitlementStatusEnum = pgEnum('entitlement_status', ['active', 'revoked', 'expired']);
+
+// @MX:NOTE [AUTO] source_license — per-source license metadata gating ingest/search/export (REQ-CORPUSLIC-001).
+// @MX:SPEC SPEC-REGULA-CORPUS-LICENSE-001 (REQ-CORPUSLIC-001~014)
+// Links to #48 Source Governance (sources.id). permitted_use JSONB boolean map
+// is evaluated by lib/corpus-license/license-gate.ts before embedding/ingest.
+export const sourceLicense = pgTable(
+  'source_license',
+  {
+    id: uuid('id').defaultRandom().primaryKey(),
+    orgId: uuid('org_id')
+      .notNull()
+      .references(() => organizations.id, { onDelete: 'cascade' }),
+    sourceId: uuid('source_id')
+      .notNull()
+      .references(() => sources.id, { onDelete: 'cascade' }),
+    licenseType: licenseTypeEnum('license_type').notNull(),
+    entitlementRef: text('entitlement_ref'),
+    permittedUse: jsonb('permitted_use').notNull().default({
+      ingest: true,
+      embed: true,
+      search: true,
+      summarize: true,
+      export: true,
+    }),
+    fullTextAllowed: boolean('full_text_allowed').notNull().default(true),
+    abstractOnly: boolean('abstract_only').notNull().default(false),
+    confidentialityLevel: confidentialityLevelEnum('confidentiality_level')
+      .notNull()
+      .default('internal'),
+    expiryDate: date('expiry_date'),
+    createdBy: uuid('created_by')
+      .notNull()
+      .references(() => users.id),
+    createdAt: timestamp('created_at', { withTimezone: true, mode: 'date' }).notNull().defaultNow(),
+    updatedAt: timestamp('updated_at', { withTimezone: true, mode: 'date' }).notNull().defaultNow(),
+  },
+  (t) => ({
+    sourceUnique: unique('idx_source_license_source_unique').on(t.sourceId),
+    orgIdx: index('idx_source_license_org').on(t.orgId),
+    expiryIdx: index('idx_source_license_expiry').on(t.orgId, t.expiryDate),
+  }),
+);
+
+// @MX:NOTE [AUTO] entitlement — grant/revoke lifecycle for a source_license (REQ-CORPUSLIC-008).
+// @MX:SPEC SPEC-REGULA-CORPUS-LICENSE-001 (REQ-CORPUSLIC-008)
+// status 'revoked' / 'expired' excludes the source from corpus search.
+export const entitlement = pgTable(
+  'entitlement',
+  {
+    id: uuid('id').defaultRandom().primaryKey(),
+    orgId: uuid('org_id')
+      .notNull()
+      .references(() => organizations.id, { onDelete: 'cascade' }),
+    sourceLicenseId: uuid('source_license_id')
+      .notNull()
+      .references(() => sourceLicense.id, { onDelete: 'cascade' }),
+    status: entitlementStatusEnum('status').notNull().default('active'),
+    grantedBy: uuid('granted_by')
+      .notNull()
+      .references(() => users.id),
+    grantedAt: timestamp('granted_at', { withTimezone: true, mode: 'date' }).notNull().defaultNow(),
+    revokedBy: uuid('revoked_by').references(() => users.id),
+    revokedAt: timestamp('revoked_at', { withTimezone: true, mode: 'date' }),
+  },
+  (t) => ({
+    orgIdx: index('idx_entitlement_org').on(t.orgId),
+    licenseIdx: index('idx_entitlement_license').on(t.sourceLicenseId),
+    statusIdx: index('idx_entitlement_status').on(t.orgId, t.status),
   }),
 );

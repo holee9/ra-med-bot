@@ -58,7 +58,10 @@ export function sanitizeFilename(filename: string): string {
  * final "Compliance Notes" section. The same content string feeds both the
  * Markdown and PDF renderers so output stays consistent.
  */
-export function packetToMarkdown(packet: EvidencePacket): string {
+export function packetToMarkdown(
+  packet: EvidencePacket,
+  usageNotices: Array<{ sourceId: string; notice: string }> = [],
+): string {
   const d = packet.deliverable;
   const lines: string[] = [];
   lines.push(`# Evidence Packet — ${escapeMd(d.refTable)}:${escapeMd(d.refId)}`);
@@ -88,6 +91,17 @@ export function packetToMarkdown(packet: EvidencePacket): string {
     lines.push('## Compliance Notes');
     for (const issue of packet.issues) {
       lines.push(`- [${escapeMd(issue.kind)}] ${escapeMd(issue.detail)}`);
+    }
+    lines.push('');
+  }
+
+  // REQ-CORPUSLIC-007/011 — append per-source usage-restriction section when the
+  // caller derived corpus sourceIds from the packet (evidence nodes may
+  // reference corpus sources via artifactHash/refId in future expansions).
+  if (usageNotices.length > 0) {
+    lines.push('## Source Usage Restrictions');
+    for (const n of usageNotices) {
+      lines.push(`- ${escapeMd(n.notice)}`);
     }
     lines.push('');
   }
@@ -152,6 +166,7 @@ export function packetToExportData(packet: EvidencePacket): {
 export async function exportPacket(
   packet: EvidencePacket,
   format: PacketFormat,
+  usageNotices: Array<{ sourceId: string; notice: string }> = [],
 ): Promise<ExportResult> {
   const exportFormat = format === 'pdf' ? ExportFormat.PDF : ExportFormat.MARKDOWN;
   const options: ExportOptions = {
@@ -160,6 +175,6 @@ export async function exportPacket(
     includeTimestamp: true,
     customFilename: packetFilename(packet, format),
   };
-  const data = { content: packetToMarkdown(packet) };
+  const data = { content: packetToMarkdown(packet, usageNotices) };
   return defaultExportHub.export(data, options);
 }

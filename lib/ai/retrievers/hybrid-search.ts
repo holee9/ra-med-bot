@@ -55,6 +55,7 @@ export async function hybridSearch(
   _corpus: 'fda' | 'all',
   k: number,
   sourceFilter: 'all' | 'regs' | 'internal',
+  orgId?: string,
 ): Promise<RetrievedChunk[]> {
   // 1. Attempt embedding — may fail when OPENAI_API_KEY is unavailable.
   // @MX:NOTE Cast bridges v3 provider → v1 SDK type. See lib/ai/intent.ts.
@@ -181,5 +182,24 @@ export async function hybridSearch(
   });
 
   chunks.sort((a, b) => b.combined_score - a.combined_score);
+
+  // REQ-CORPUSLIC-008 — exclude expired/revoked-entitlement sources from search.
+  // Primary call site for filterExpiredSources. orgId is threaded from all
+  // per-corpus retrievers (fda/eu-mdr/mfds/nmpa/pmda) via RetrieverOptions and
+  // from consult.ts → parallelRetrieveAndMerge. PMS-report builder passes orgId
+  // directly. Defense-in-depth: a license-db hiccup never blocks retrieval
+  // (RLS still enforces org isolation).
+  if (orgId && chunks.length > 0) {
+    try {
+      const { filterExpiredSources } = await import('@/lib/corpus-license/expiry-checker');
+      const sourceIds = Array.from(new Set(chunks.map((c) => c.sourceId)));
+      const eligible = await filterExpiredSources(sourceIds, orgId);
+      const filtered = chunks.filter((c) => eligible.has(c.sourceId));
+      return filtered.slice(0, k);
+    } catch {
+      // License metadata unavailable — return unfiltered (RLS still isolates).
+    }
+  }
+
   return chunks.slice(0, k);
 }

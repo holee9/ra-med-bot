@@ -10,8 +10,9 @@ export async function searchFDACorpus(
   query: string,
   k: number,
   sourceFilter: 'all' | 'regs' | 'internal',
+  orgId?: string,
 ): Promise<RetrievedChunk[]> {
-  return hybridSearch(query, 'fda', k, sourceFilter);
+  return hybridSearch(query, 'fda', k, sourceFilter, orgId);
 }
 
 /**
@@ -23,7 +24,8 @@ export class FdaRetriever implements IRetriever {
 
   async retrieve(query: string, opts: RetrieverOptions = {}): Promise<RetrievalResult[]> {
     const limit = opts.limit ?? 10;
-    const chunks = await hybridSearch(query, 'fda', limit, 'all');
+    // REQ-CORPUSLIC-008 — thread orgId so filterExpiredSources fires inside hybridSearch.
+    const chunks = await hybridSearch(query, 'fda', limit, 'all', opts.orgId);
     return chunks.map(toRetrievalResult);
   }
 }

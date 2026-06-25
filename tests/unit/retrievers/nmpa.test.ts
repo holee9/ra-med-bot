@@ -33,7 +33,13 @@ describe('lib/ai/retrievers/nmpa.ts (REQ-BREADTH-036)', () => {
 
     const { NmpaRetriever } = await import('@/lib/ai/retrievers/nmpa');
     await new NmpaRetriever().retrieve('medical device registration', { limit: 8 });
-    expect(hybridSearch).toHaveBeenCalledWith('medical device registration', 'nmpa', 8, 'all');
+    expect(hybridSearch).toHaveBeenCalledWith(
+      'medical device registration',
+      'nmpa',
+      8,
+      'all',
+      undefined,
+    );
   });
 
   it('retrieve() maps hybridSearch results to RetrievalResult shape', async () => {

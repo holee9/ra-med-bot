@@ -4,6 +4,13 @@
 // Reuses chunkers registry (generic chunker for Radar documents) for text
 // segmentation. Embedding is deferred to the vectorstore layer so this module
 // stays pure and unit-testable without OpenAI dependency (Enforce Simplicity).
+//
+// @MX:TODO [AUTO] REQ-CORPUSLIC-002 follow-up: this incremental-crawler path
+// does NOT yet call assertIngestionLicensed. Seed scripts (scripts/seed-fda-corpus.ts,
+// scripts/seed-corpus.ts, scripts/ingest-gitea-wiki.ts) and this delta-sync path
+// assume pre-licensed curated sources — they ingest public regulatory text whose
+// license is registered out-of-band. The production upload route (C-1) and Inngest
+// worker (C-2) are the primary gated paths. Gating this crawler is a follow-up.
 
 import type { Chunk } from '../../ingest/chunkers/base';
 import { chunk } from '../../ingest/chunkers/index';
