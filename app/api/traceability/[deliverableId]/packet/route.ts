@@ -2,7 +2,7 @@
 // @MX:SPEC SPEC-REGULA-TRACEABILITY-001 (REQ-TRACEABILITY-006, REQ-TRACEABILITY-007)
 
 import { withPermission } from '@/lib/auth/with-permission';
-import { db } from '@/lib/db/client';
+import { withTenantScope } from '@/lib/db/client';
 import { getEvidencePacket } from '@/lib/traceability/evidence-packet';
 import { listStaleNodeIds } from '@/lib/traceability/stale-propagation';
 
@@ -18,11 +18,16 @@ export const GET = withPermission('traceability.view', async (_req, ctx, session
     return Response.json({ error: 'deliverableId required' }, { status: 400 });
   }
 
-  const staleNodeIds = await listStaleNodeIds(db, organizationId);
-  const packet = await getEvidencePacket(db, {
-    orgId: organizationId,
-    deliverableId,
-    staleNodeIds,
+  // #239 Phase 2: withTenantScope sets app.current_org_id GUC for RLS enforce.
+  // listStaleNodeIds + getEvidencePacket issue org-scoped reads via the passed
+  // handle; wrapping them sets the GUC so Phase 3 FORCE RLS will enforce isolation.
+  const packet = await withTenantScope(organizationId, async (dbs) => {
+    const staleNodeIds = await listStaleNodeIds(dbs, organizationId);
+    return getEvidencePacket(dbs, {
+      orgId: organizationId,
+      deliverableId,
+      staleNodeIds,
+    });
   });
   if (!packet) {
     // 404 (not 403) — avoid leaking deliverable existence across orgs.
