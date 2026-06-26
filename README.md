@@ -11,9 +11,37 @@
 
 ---
 
-## 구현 현황 대시보드 (2026-06-23 KST 기준)
+## 구현 현황 대시보드 (2026-06-26 KST 기준)
 
 상세 점검 기록: [`docs/implementation-status.md`](docs/implementation-status.md)
+
+### 최신 main 상태 (2026-06-26)
+
+현재 `main`은 PR #281(migration 0082/0054 fix-up)까지 반영된 상태입니다. **Knowledge/RAG 기능 그룹 3개 PR(#274/#276/#277)이 완성**되어 시맨틱 검색·답변 승격·RAG 통합(#50), 프로젝트 지속 컨텍스트 메모리(#51), 조화 표준 적용성·개정 추적기(#62)가 구현되었습니다. 이후 DB 스키마 fix-up PR #279/#281을 통해 **실사용 환경 500 에러 전부 해소**되었습니다(3 `/api/rlhf/*` + 4 `/api/ra/samd/*` 라이브 라우트). 2026-06-26 라이브 스모크 검증 기준 `/login` 200, 모든 페이지/API 라우트 정상, 회귀 테스트 4522 passed. **실사용 가능 상태**입니다(로그인·RA 채팅·RLHF·SaMD 라우트 정상).
+
+| 항목 | 상태 | 근거 |
+|---|---|---|
+| main 리뷰 기준 | PASS | `a7a77a3 fix(db): migration 0082/0054 fix-up` |
+| PR #281 | MERGED | Migration 0090: `answer_feedback.user_id`·`samd_assessments.org_id`/`created_by` text→uuid FK (3 RLHF + 4 SaMD 라우트 500 해소) |
+| PR #279 | MERGED | Migration 0089: `promoted_by` text→uuid + partial unique index + 실제 DB 적용 테스트 |
+| PR #277 | MERGED | SPEC-REGULA-STANDARDS-001 MVP — 조화 표준 적용성·개정 추적기 (#62 CLOSED) |
+| PR #276 | MERGED | SPEC-REGULA-PROJECT-MEMORY-001 — 프로젝트 지속 컨텍스트 메모리 (#51) |
+| PR #274 | MERGED | SPEC-REGULA-KNOWLEDGE-PROMO-001 — 시맨틱 검색·답변 승격·RAG 통합 (#50) |
+| 실사용 상태 | PASS | `/login` 200, 모든 페이지/API 라우트 정상 (로그인·RA 채팅·RLHF·SaMD), 500 해소 |
+| 로컬 단위 테스트 | PASS | `pnpm test`: 4,522 passed / 2 skipped (2026-06-26 회귀 검증) |
+| Knowledge/RAG 그룹 | PASS | Issues #50/#51/#62 전부 CLOSED, migrations 0086/0087/0088 적용 완료 |
+| Migration 0086 | PASS | 시맨틱 검색·답변 승격·RAG 통합 (`promoted_answers` 테이블 + RLS) |
+| Migration 0087 | PASS | 프로젝트 지속 컨텍스트 메모리 (`project_memory` 테이블 + RLS via projects→org_members) |
+| Migration 0088 | PASS | 조화 표준 적용성·개정 추적기 (4 표준 테이블 + 매핑 엔진 + Inngest cron) |
+| Migration 0089 | PASS | `promoted_by` text→uuid + partial unique index + 실제 DB 적용 테스트 |
+| Migration 0090 | PASS | `answer_feedback.user_id`·`samd_assessments.org_id`/`created_by` text→uuid FK |
+| CI Gates | PASS | 로컬 `biome check .`, `pnpm test`, `next build`; push 후 GitHub Actions에서 typecheck, lint, format, unit, build 재검증 |
+| E2E Tests | PASS | CI smoke/browser jobs success; staging URL 미설정 job은 의도적 skip |
+| Security Scan | PASS | Dependency Vulnerability Scan, Secret Detection 통과 |
+| Deploy | PASS | GitHub Actions deploy workflow success |
+| 총 migrations | 91 | 0001~0090 (Knowledge/RAG 3개 + fix-up 2개) |
+| 게이트 결과 | PASS | typecheck 0 · biome 0 · test 4522 passed · 2 skipped · build 0 |
+|  |
 
 ### 최신 main 상태 (2026-06-23)
 
@@ -21,7 +49,6 @@
 
 | 항목 | 상태 | 근거 |
 |---|---|---|
-| main 리뷰 기준 | PASS | `4f17b51 docs(qa): Gate 0 SPEC 승격 Draft→Active (#74)` |
 | PR #218 | MERGED | Gate 0 SPEC #74 Draft→Active — Gate 0~5 패밀리 전부 Active 통일 |
 | PR #217 | MERGED | Gate 5 SSoT 범위 정합 #213 (13→9건, per-row+summary 일치) |
 | PR #212 | MERGED | Gate 1-5 SPEC #75-79 Draft→Active 승격 + 문서 동기화 |
@@ -42,7 +69,6 @@
 | E2E Tests | PASS | CI smoke/browser jobs success; staging URL 미설정 job은 의도적 skip |
 | Security Scan | PASS | Dependency Vulnerability Scan, Secret Detection 통과 |
 | Deploy | PASS | GitHub Actions deploy workflow success |
-| 로컬 단위 테스트 | PASS | `pnpm test`: 2,766 passed / 7 skipped |
 | 권한 매트릭스 | PASS | `audit.read`, `audit.package.generate`, `signature.sign` 포함 — auditor role은 `additionalRoles` 경유로만 audit endpoint 접근 |
 | AuditAction enum | PASS | `signature.applied`, `signature.revoked`, `audit.denied`, `audit.package.generated` 포함 |
 
@@ -1117,9 +1143,14 @@ cp .env.example .env.local
 # Docker로 PostgreSQL 16 + pgvector 실행
 docker compose up -d
 
-# 마이그레이션 실행
+# 마이그레이션 실행 (권장 방법: SQL 일괄 적용)
+cat migrations/*.sql | psql "$DATABASE_URL" -v ON_ERROR_STOP=0
+
+# 또는 대안: drizzle-kit push (interactive, enum conflict 시 응답 필요)
 pnpm db:migrate
 ```
+
+> **참고**: 이 프로젝트는 hand-written migration files를 사용하며 drizzle-kit generate를 사용하지 않습니다 (`__drizzle_migrations` 테이블 없음). 권장 방법은 SQL 일괄 적용이며, `pnpm db:migrate`(= drizzle-kit push)는 대화형이고 enum conflict 시 응답이 필요하므로 운영 DB에는 비권장입니다. drizzle 명령을 직접 실행할 때 drizzle.config.ts는 `.env.local`을 자동 로드하지 않으므로 `set -a; source .env.local; set +a; <cmd>`로 환경 변수를 로드하세요.
 
 ### 5단계: 개발 서버 시작
 

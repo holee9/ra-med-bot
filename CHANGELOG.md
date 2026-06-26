@@ -7,6 +7,41 @@
 
 ---
 
+## [Unreleased] — Knowledge/RAG 완성 + 실사용 500 해소 (2026-06-26)
+
+> **Knowledge/RAG 기능 그룹 3/3 완료**(#50/#51/#62) 이후, DB 스키마 fix-up(#279/#281)으로 실사용 환경 500 에러를 해소했습니다. main `a7a77a3`, 회귀 4,522 passed / 2 skipped, 총 migration 91개(0001~0090).
+
+### Added
+
+- **시맨틱 검색·답변 승격·RAG 통합** (SPEC-REGULA-KNOWLEDGE-PROMO-001 — Issue #50, PR #274):
+  - Migration 0086: `promoted_answers` 테이블(승격된 답변 영속화, `promoted_by` FK→`users`, RLS) + 관련 enum/audit_action 확장
+  - 시맨틱 retriever가 기존 RAG 파이프라인에 통합되어 org-scoped 승격 답변 검색 지원 (FTS fallback 보존)
+
+- **프로젝트 지속 컨텍스트 메모리** (SPEC-REGULA-PROJECT-MEMORY-001 — Issue #51, PR #276):
+  - Migration 0087: `project_memory` 테이블 — `project_id` FK, `memory_type` enum, `key`/`value`, `source_conversation_id`(provenance, REQ-013), `created_by`, `status` enum(active/pending/invalidated), `valid_from`/`valid_until`, `UNIQUE NULLS NOT DISTINCT (project_id, key) WHERE status='active'`(동일 key 1-row active 보장, REQ-012) + RLS
+  - 컨설팅 시스템 프롬프트 주입(AC-02) + LLM 감지 → pending 제안(AC-03) + 승격 게이트
+
+- **조화 표준 적용성·개정 추적기 MVP** (SPEC-REGULA-STANDARDS-001 — Issue #62, PR #277 — CLOSED):
+  - Migration 0088: 4 표준 테이블 — `standards_org_catalog`, `standards_org_applicability`, `standards_updates`, `product_standards_compliance` + 4 enum + RLS + audit_action +4(mapping.generated/recognition.checked/revision.detected/alert.emitted)
+  - lib/standards: `mapping-engine`(applicability-engine 재사용 래퍼)·`transition-calculator`·`impact-analyzer`·`revision-detector`·`recognition-check`·`alert-pipeline`·`seed`
+  - Inngest cron `standards-revision-daily` + audit step
+  - MVP — 라이브 표준 크롤러/전수 데이터는 follow-up(#278 등)로 이월
+
+### Fixed
+
+- **DB 스키마 fix-up #1** (PR #279, migration 0089):
+  - 원인: migration 0086/0087에서 `promoted_by`(text)·`UNIQUE ... WHERE`(inline CONSTRAINT 부적합 문법) → 실DB CREATE TABLE 롤백 → `promoted_answers`/`project_memory` 부재
+  - 수정: `CREATE TABLE IF NOT EXISTS`(idempotent)로 corrected schema 재생성, `promoted_by`→uuid, 1-active-per-key 가드를 partial UNIQUE INDEX로 우회
+  - 회귀: 신규 real-DB 적용 테스트(`tests/integration/migrations-real-db.test.ts`) — 정적 SQL 파싱 테스트가 잡지 못한 타입 불일치 검증
+
+- **DB 스키마 fix-up #2** (PR #281, migration 0090 — Issue #280 partial):
+  - 원인: migration 0082/0054에서 `answer_feedback.user_id`·`samd_assessments.org_id`/`created_by`가 text → uuid PK FK mismatch → CREATE 롤백 → 테이블 부재 → 3 `/api/rlhf/*` + 4 `/api/ra/samd/*` 라이브 라우트 500
+  - 수정: `CREATE TABLE IF NOT EXISTS`(idempotent)로 corrected schema 재생성, 해당 컬럼 전부 uuid로修正(enum/RLS/인덱스/CHECK 원본 보존)
+  - 실사용 검증(2026-06-26 라이브 스모크): `/login` 200, 전 페이지/API 라우트 정상, 신규 로그 500 = 0
+  - `design_history_files`·`submission_packages`는 0-route(비실사용)로 Issue #280에서 계속 추적
+
+---
+
 ## [Unreleased] — Wave 5 (2026-06-20~24)
 
 > **Wave 5 규제 준수 축 완성**: Issue #88 전자서명(PR #204), Issue #87 Export Hub(PR #203), Issue #92 외부 감사관 뷰(PR #206), Issue #53 PMS(PR #246), Issue #54 Change Control(PR #54)가 main에 머지되었습니다. 21 CFR Part 11 §11.50/§11.70 전자서명, 다중 포맷 내보내기, 외부 감사관 read-only 페르소나 + 1-클릭 감사 패키지, EU MDR PMS/PMCF 자동화, 설계 변경 규제 영향 자동 평가가 통합되었습니다.
