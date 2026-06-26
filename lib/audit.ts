@@ -402,7 +402,16 @@ export type AuditAction =
   // (Issue #50, REQ-KNOWLEDGE-PROMO-013/014). Promotion / unpromotion is a
   // 21 CFR Part 11 audit-material record (who promoted what when).
   | 'answer_promoted'
-  | 'answer_unpromoted';
+  | 'answer_unpromoted'
+  // SPEC-REGULA-PROJECT-MEMORY-001 — added via 0087_project_memory.sql
+  // (Issue #51, REQ-007/008/009). Memory lifecycle is 21 CFR Part 11
+  // audit-material (who decided what when, for design-control consistency).
+  //   memory_created     — explicit RA-lead create OR pending->active approval (REQ-014)
+  //   memory_updated     — same-key supersession (REQ-012 invalidate+create in one tx)
+  //   memory_invalidated — soft-delete (valid_until + status), hard delete forbidden
+  | 'memory_created'
+  | 'memory_updated'
+  | 'memory_invalidated';
 
 export interface AuditEvent {
   /** User UUID, or null for system-initiated events. */

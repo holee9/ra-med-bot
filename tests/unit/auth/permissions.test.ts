@@ -78,14 +78,17 @@ const EXPECTED_ACTIONS: PermissionAction[] = [
   // SPEC-REGULA-KNOWLEDGE-PROMO-001 (Issue #50)
   'knowledgepromo.promote',
   'knowledgepromo.view',
+  // SPEC-REGULA-PROJECT-MEMORY-001 (Issue #51)
+  'projectmemory.manage',
+  'projectmemory.view',
 ];
 
 const VALID_ROLES = ['admin', 'qa-lead', 'ra-lead', 'ra-member', 'viewer', 'auditor'] as const;
 const VALID_SCOPES = ['org', 'project', 'user', 'none'] as const;
 
 describe('lib/auth/permissions.ts (REQ-ENTERPRISE-020) — PERMISSIONS matrix', () => {
-  it('PERMISSIONS contains exactly 73 entries', () => {
-    expect(Object.keys(PERMISSIONS)).toHaveLength(73); // +2 corpuslicense.* (#72) +2 sourcegov.* (#48) +1 rlhf.feedback (#56) +2 knowledgepromo.* (#50)
+  it('PERMISSIONS contains exactly 75 entries', () => {
+    expect(Object.keys(PERMISSIONS)).toHaveLength(75); // +2 corpuslicense.* (#72) +2 sourcegov.* (#48) +1 rlhf.feedback (#56) +2 knowledgepromo.* (#50)
   });
 
   it.each(EXPECTED_ACTIONS)('PERMISSIONS contains action: %s', (action) => {
