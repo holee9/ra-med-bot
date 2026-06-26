@@ -118,6 +118,24 @@ describe('lib/ai/router.ts (REQ-BREADTH-038)', () => {
     expect(result.corpora).toContain('internal-sops');
   });
 
+  // AC-04 dead-code regression (SPEC-REGULA-KNOWLEDGE-PROMO-001, REQ-009/010):
+  // org_promoted MUST be in the corpora set for every intent so
+  // PromotedAnswersRetriever actually fires in merge.ts. Before the 2026-06-26
+  // fix this assertion failed for all intents — the retriever was registered
+  // but never selected, making the entire knowledge-promo feature dead code.
+  it('classifyAndRoute always includes org_promoted corpus (AC-04 regression)', async () => {
+    const { generateText } = await import('ai');
+    const { classifyAndRoute } = await import('@/lib/ai/router');
+    const intents = ['regulation-lookup', 'strategy', 'comparison', 'timeline', 'general'];
+    for (const intent of intents) {
+      vi.mocked(generateText).mockResolvedValueOnce({
+        text: intent,
+      } as Awaited<ReturnType<typeof generateText>>);
+      const result = await classifyAndRoute('q', ['us']);
+      expect(result.corpora).toContain('org_promoted');
+    }
+  });
+
   it('intentToCorpora has entries for all expected intent types', async () => {
     const { intentToCorpora } = await import('@/lib/ai/router');
     const expectedIntents = ['regulation-lookup', 'strategy', 'comparison', 'timeline', 'general'];

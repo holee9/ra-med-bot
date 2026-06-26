@@ -44,6 +44,10 @@ export default async function AppLayout({ children }: { children: React.ReactNod
   // (rlhf.feedback submitters). The heatmap route uses audit.read, but feedback
   // submitters also see the nav to track answer quality.
   let showQualityHeatmap = false;
+  // SPEC-REGULA-KNOWLEDGE-PROMO-001 (Issue #50): Team Knowledge nav gated to
+  // ra-member+ (knowledgepromo.view). The library page itself also reads the
+  // role to decide whether to show the "팀 지식" tab.
+  let showTeamKnowledge = false;
   try {
     const { auth } = await import('@/lib/auth');
     const { hasRole } = await import('@/lib/auth/rbac');
@@ -61,6 +65,7 @@ export default async function AppLayout({ children }: { children: React.ReactNod
       showClinicalInvestigation = hasRole(userRole as Parameters<typeof hasRole>[0], 'ra-member');
       showGovernance = hasRole(userRole as Parameters<typeof hasRole>[0], 'ra-member');
       showQualityHeatmap = hasRole(userRole as Parameters<typeof hasRole>[0], 'ra-member');
+      showTeamKnowledge = hasRole(userRole as Parameters<typeof hasRole>[0], 'ra-member');
     }
     const department = (session?.user as { department?: string } | undefined)?.department;
     if (department) {
@@ -95,6 +100,7 @@ export default async function AppLayout({ children }: { children: React.ReactNod
         showClinicalInvestigation={showClinicalInvestigation}
         showGovernance={showGovernance}
         showQualityHeatmap={showQualityHeatmap}
+        showTeamKnowledge={showTeamKnowledge}
         initialLocale={initialLocale}
       />
       <div className="flex min-w-0 flex-1 flex-col">

@@ -142,7 +142,13 @@ export type PermissionAction =
   // SPEC-REGULA-RLHF-001 (Issue #56, REQ-RLHF-004): RLHF feedback submission.
   // ra-member+ — inline answer feedback is a team-wide activity. NOT granted
   // to viewer (feedback shapes retrieval re-ranking; needs active users).
-  | 'rlhf.feedback';
+  | 'rlhf.feedback'
+  // SPEC-REGULA-KNOWLEDGE-PROMO-001 (Issue #50, REQ-KNOWLEDGE-PROMO-007/008).
+  // promote: ra-lead/admin ONLY — promotion is a regulatory signoff decision
+  //          (21 CFR Part 11 audit-material). Mirrors label.approve / capa.close.
+  // view: ra-member+ — team knowledge library is transparent across the RA team.
+  | 'knowledgepromo.promote'
+  | 'knowledgepromo.view';
 
 export interface PermissionSpec {
   minRole: Role;
@@ -405,4 +411,22 @@ export const PERMISSIONS: Record<PermissionAction, PermissionSpec> = {
   // Inline answer feedback. ra-member+ — team-wide activity that shapes
   // retrieval re-ranking. NOT granted to viewer (feedback is an active signal).
   'rlhf.feedback': { minRole: 'ra-member', scope: 'org', resourceType: 'answerFeedback' },
+
+  // @MX:NOTE [AUTO] knowledgepromo.* — SPEC-REGULA-KNOWLEDGE-PROMO-001 (Issue #50).
+  // @MX:SPEC SPEC-REGULA-KNOWLEDGE-PROMO-001 (REQ-KNOWLEDGE-PROMO-007/008)
+  // promote: ra-lead ONLY — promotion is a 21 CFR Part 11 audit-material
+  //   regulatory signoff (Charter [지양-4] no auto-finalize). Mirrors
+  //   label.approve / capa.close / sourcegov.manage.
+  // view: ra-member+ — team knowledge library is transparent across the RA team
+  //   (REQ-008 / AC-06). NOT granted to viewer (library retrieval shapes RAG).
+  'knowledgepromo.promote': {
+    minRole: 'ra-lead',
+    scope: 'org',
+    resourceType: 'promotedAnswer',
+  },
+  'knowledgepromo.view': {
+    minRole: 'ra-member',
+    scope: 'org',
+    resourceType: 'promotedAnswer',
+  },
 };

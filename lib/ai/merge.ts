@@ -11,6 +11,9 @@ import { InternalSopsRetriever } from './retrievers/internal-sops';
 import { MfdsRetriever } from './retrievers/mfds';
 import { NmpaRetriever } from './retrievers/nmpa';
 import { PmdaRetriever } from './retrievers/pmda';
+// SPEC-REGULA-KNOWLEDGE-PROMO-001 (Issue #50, REQ-KNOWLEDGE-PROMO-009):
+// promoted answers retriever — higher weight than internal docs (REQ-010).
+import { PromotedAnswersRetriever } from './retrievers/promoted-answers';
 import type { IRetriever, RetrievalResult, RetrieverOptions } from './retrievers/types';
 
 /** Indicates whether a result came from public regulatory corpora or org-internal documents. */
@@ -35,6 +38,9 @@ const RETRIEVER_REGISTRY: Record<string, () => IRetriever> = {
   nmpa: () => new NmpaRetriever(),
   pmda: () => new PmdaRetriever(),
   'internal-sops': () => new InternalSopsRetriever(),
+  // SPEC-REGULA-KNOWLEDGE-PROMO-001 (Issue #50, REQ-KNOWLEDGE-PROMO-009/010):
+  // promoted answers corpus — gets org_ prefix so corpusType resolves to 'org'.
+  org_promoted: () => new PromotedAnswersRetriever(),
 };
 
 /**

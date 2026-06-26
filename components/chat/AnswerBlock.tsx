@@ -24,6 +24,7 @@ import type {
   TimelineEvent,
 } from '../../types/streaming';
 import { FeedbackControl } from '../answer-block/feedback-control';
+import { PromoteButton } from '../answer-block/promote-button';
 import { ExpertReviewCallout } from '../expert-review/ExpertReviewCallout';
 import { ExportHub } from '../export/ExportHub';
 import type { ExportArtifact } from '../export/FormatOptions';
@@ -70,6 +71,16 @@ interface AnswerBlockProps {
   related?: string[] | undefined;
   ragRoute?: RagRouteEvent | undefined;
   onSuggestionClick?: (text: string) => void;
+  // SPEC-REGULA-KNOWLEDGE-PROMO-001 (Issue #50, REQ-004/007): viewer role
+  // resolved server-side at the page parent (auth().user.role). Passed down so
+  // the PromoteButton client island can hide itself for non ra-lead/admin
+  // viewers without ever touching credentials. The promote API re-checks via
+  // withPermission, so a spoofed prop only yields a 403.
+  viewerRole?: string;
+  // Optional id of an existing promoted_answer for this message, so the button
+  // renders the "승격됨 / 취소" state on first paint. The page parent looks it up
+  // via /api/knowledge-promo/library (status='active').
+  promotedId?: string;
 }
 
 export function AnswerBlock({
@@ -88,6 +99,8 @@ export function AnswerBlock({
   related,
   ragRoute,
   onSuggestionClick,
+  viewerRole,
+  promotedId,
 }: AnswerBlockProps) {
   const [refinedProse, setRefinedProse] = useState<string | null>(null);
   const displayProse = refinedProse ?? prose;
@@ -262,6 +275,19 @@ export function AnswerBlock({
           record the feedback row. Gated server-side by rlhf.feedback; unauthorized
           roles still see the answer but this island's POST is 403-rejected. */}
       {messageId && <FeedbackControl messageId={messageId} />}
+
+      {/* SPEC-REGULA-KNOWLEDGE-PROMO-001 (Issue #50, REQ-004/007/011).
+          Role-gated promote/unpromote island. Renders null for ra-member/viewer
+          (Charter [지양-4]: no disabled affordance leaking the action). The
+          backend re-checks via withPermission('knowledgepromo.promote'). */}
+      {messageId && (
+        <PromoteButton
+          messageId={messageId}
+          viewerRole={viewerRole}
+          promotedId={promotedId}
+          sourceHref={conversationId ? `/chat/${conversationId}#msg-${messageId}` : undefined}
+        />
+      )}
 
       {/* DocViewer modal — lazy loaded */}
       <DocViewer />

@@ -75,14 +75,17 @@ const EXPECTED_ACTIONS: PermissionAction[] = [
   'sourcegov.view',
   // SPEC-REGULA-RLHF-001 (Issue #56)
   'rlhf.feedback',
+  // SPEC-REGULA-KNOWLEDGE-PROMO-001 (Issue #50)
+  'knowledgepromo.promote',
+  'knowledgepromo.view',
 ];
 
 const VALID_ROLES = ['admin', 'qa-lead', 'ra-lead', 'ra-member', 'viewer', 'auditor'] as const;
 const VALID_SCOPES = ['org', 'project', 'user', 'none'] as const;
 
 describe('lib/auth/permissions.ts (REQ-ENTERPRISE-020) — PERMISSIONS matrix', () => {
-  it('PERMISSIONS contains exactly 71 entries', () => {
-    expect(Object.keys(PERMISSIONS)).toHaveLength(71); // +2 corpuslicense.* (#72) +2 sourcegov.* (#48) +1 rlhf.feedback (#56)
+  it('PERMISSIONS contains exactly 73 entries', () => {
+    expect(Object.keys(PERMISSIONS)).toHaveLength(73); // +2 corpuslicense.* (#72) +2 sourcegov.* (#48) +1 rlhf.feedback (#56) +2 knowledgepromo.* (#50)
   });
 
   it.each(EXPECTED_ACTIONS)('PERMISSIONS contains action: %s', (action) => {
