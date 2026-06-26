@@ -29,4 +29,6 @@ export const INNGEST_EVENTS = {
   KNOWLEDGE_GAP_DIGEST_TRIGGER: 'knowledge-gap/digest.trigger',
   /** Fires daily (or on manual replay) to sweep due CAPA effectiveness checks. */
   CAPA_EFFECTIVENESS_REMINDER_TRIGGER: 'capa/effectiveness.reminder.trigger',
+  /** Fires daily (or on manual replay) to detect standards revisions (Issue #62). */
+  STANDARDS_REVISION_TRIGGER: 'standards/revision.trigger',
 } as const;

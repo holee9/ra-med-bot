@@ -411,7 +411,20 @@ export type AuditAction =
   //   memory_invalidated — soft-delete (valid_until + status), hard delete forbidden
   | 'memory_created'
   | 'memory_updated'
-  | 'memory_invalidated';
+  | 'memory_invalidated'
+  // SPEC-REGULA-STANDARDS-001 — added via 0088_standards.sql (Issue #62).
+  // Standards lifecycle is 21 CFR Part 11 audit-material (ISO 13485 design-input).
+  // Charter [지양-2] citation provenance — every applicable-standard result
+  // carries a catalog row reference. The mapping.generated audit row records
+  // WHO received WHICH applicable standards list, and WHEN.
+  //   standards.mapping.generated    — mapping engine produced an applicable list
+  //   standards.recognition.checked  — FDA recognition real-time check (or degraded)
+  //   standards.revision.detected    — revision detector noticed a new revision
+  //   standards.alert.emitted         — transition milestone alert (D-12/D-6/D-3)
+  | 'standards.mapping.generated'
+  | 'standards.recognition.checked'
+  | 'standards.revision.detected'
+  | 'standards.alert.emitted';
 
 export interface AuditEvent {
   /** User UUID, or null for system-initiated events. */
