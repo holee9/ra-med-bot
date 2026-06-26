@@ -2,42 +2,47 @@
 
 > 세션 연결용. 상세 맥락은 auto-memory `project-state.md`가 1차 진실원. 본 파일은 빠른 시작 요약.
 
-## 현재 세션 (2026-06-26) — Knowledge/RAG 그룹 자동 순차 루프 (ultracode)
+## 현재 세션 (2026-06-26) — Knowledge/RAG 그룹 자율 순차 루프 완료 (ultracode)
 
-사용자: `/moai ultracode "남은 작업 모두 완료까지 계속 가자"` → **Knowledge/RAG 그룹(#50→#51→#62) × 자동 순차 루프** 확정.
+사용자: `/moai ultracode "남은 작업 모두 완료까지 계속 가자"` → **Knowledge/RAG 그룹(#50→#51→#62) × 자율 순차 루프** → **3/3 전부 MERGED**.
 
-### ✅ #50 KNOWLEDGE-PROMO tier1 — MERGED PR #274 (`62a4e8c`, #50 CLOSED) [완료]
-- main HEAD `62a4e8c`. 회귀 **4399 passed** (+54). migration 0086, audit 196, 권한 73.
-- promoted_answers + 시맨틱/풀텍스트 검색 + 승격/취소 + RAG 통합(router org_promoted wiring) + 팀 지식 library 뷰.
-- 직검 캡처: 분산 카운트 단언(cyberdevice/capa)·retriever lazy import·**AC-04 dead-code**(evaluator 정오탐, router wiring fix).
-- DEFER → **#275**(REQ-002 messages embedding backfill).
+### ✅ 루프 완료 — 3 tier1 머지
+| 이슈 | PR | main HEAD | 회귀 | migration | audit | 권한 |
+|---|---|---|---|---|---|---|
+| #50 KNOWLEDGE-PROMO | #274 | `62a4e8c` | 4399 (+54) | 0086 | 196 | 73 |
+| #51 PROJECT-MEMORY | #276 | `a86c2b7` | 4472 (+73) | 0087 | 199 | 75 |
+| #62 STANDARDS MVP | #277 | `50b0545` | 4505 (+33) | 0088 | 203 | 77 |
 
-### ⏸️ #51 PROJECT-MEMORY tier1 — 백엔드+프론트 완료, 보안 리뷰 fix 대기 (미머지)
-- **브랜치 `feat/issue-51-project-memory`** (base main `62a4e8c`, 미머지). 회귀 브랜치 기준 **4439 passed** (+40).
-- migration 0087(project_memory + 2 enum + RLS + audit +3) + lib/project-memory 4모듈 + **AC-02/03 consult.ts 실제 wiring**(200-208 inject, 749-771 detect) + API 5종 + UI(projects/[id]/memory + ProjectMemoryClient).
-- 카운트: audit 196→199, 권한 73→75, migration 0087. **분산 단언 8개 파일 사전 주입으로 0 실패**(#50 교훈).
-- **★ 보안 리뷰 fix 대기 결함 4종 (머지 전 필수)**:
-  1. **H-1 보안**: `manager.ts:295-313 approveSuggestedMemory` idempotency dead-code(RETURNING post-SET → guard 절대 false). invalidated 재승인 = REQ-012/[지양-4] 우회. **fix: `WHERE status='pending'` + rowCount=0→409**.
-  2. **High (#50 dead-code 패턴)**: AC-02/03 통합 테스트 **없음**. 주석이 존재 안 하는 injector/extractor test 파일 참조. **fix: 실제 통합 테스트**(AC-02 prompt memory 포함, AC-03 detect→pending row). select-chain mock no-op이므로 실 행위 테스트 필수.
-  3. **Med**: `permissions.test.ts EXPECTED_ACTIONS`에 `projectmemory.manage/view` 누락. 추가.
-  4. **M-1**: 동일 key 동시 POST 23505 → 409.
-  5. Low: audit comment labels(projectmemory.*→memory_*) · extractor error log.
-- 게이트(현상태): typecheck 0 / lint full 0 / test FULL 4439 / build 0. **하지만 위 결함 fix 전 머지 금지**.
+**main HEAD 최종: `50b0545`**. 오픈 PR 0건. 회귀 **4505 passed** | 8 skipped. Inngest 5.
 
-### 🎯 다음 세션 시작 지점 (2026-06-26) — #51 fix → 머지 → #62
-1. **#51 백엔드 fix 위임**(결함 1-5 위 목록). ★결함 2(AC-02/03 통합 테스트)는 #50 교훈 — claim 아닌 실제 증명.
-2. 오케스트레이터 full test 직검 + lint full + build.
-3. staged 범위 직검(migrations/ 0087 포함) + PR + squash 머지(admin) + main ls-tree.
-4. #51 CLOSED 후 → **#62 STANDARDS tier1** 착수(ISO/IEC/EN/ASTM 표준 매핑). 같은 tier1 파이프라인.
-5. 루프 계속: 전략(#40/#42/#43)·기술부채(#39)·제출/검토(#37/#36)·시스템(#49/#1)·#202.
-- DEFER 누적: #275(REQ-002)·#264·#65·#244·#245·#249·#57·#236·#238.
+### ✅ #62 STANDARDS MVP — MERGED PR #277 (본 세션)
+- 4 표준 테이블(standards_org_*) + 매핑 엔진(applicability-engine 351 LOC 재사용, citation REQ-021) + transition-calculator + revision-detector(graceful stub) + recognition-check(FDA fallback) + Inngest cron(audit step) + API 5종 + UI.
+- **★ 직검**: 카운트 단언 잔존 0(grep, #50 교훈) · AC dead-code 방지(mapping-engine route 호출 + Inngest registry test). sync 0.55 expert-security PASS-WITH-CONDITIONS → H-1(countActiveAlerts delete) + M-3(cron audit, lazy import).
+- MVP: AC-01/02 PARTIAL(seeded core + API), AC-03/04/05/06 PASS. DEFER → **#278**(라이브 크롤러 + alert wiring) + #62-B~G.
 
-### 핵심 교훈 (본 세션 — dead-code 7-8회 + 분산 단언 + 보안 idempotency)
-- **AC ↔ 실제 호출 dead-code**: retriever registry 등록(#50) / 주석 참조 테스트 없음(#51) — claim≠증명. evaluator가 wiring/테스트 부재 포착. 오케스트레이터 직검(call site + 파일 존재)으로 정오탐 확인.
-- **분산 카운트 단언**: cyberdevice/capa 등 도메인 integration test에도 audit/perm 카운트 단언. #51은 strategy에 사전 주입→0 실패(#50은 15 failures).
-- **retriever import 함정**: db/client top-level = parseEnv 부작용. lazy import.
-- **approveSuggestedMemory idempotency**: RETURNING post-Set dead guard 패턴(신규 캡처). UPDATE WHERE 상태 조건 + rowCount로 검증.
-- **컨텍스트 한계 시 정확한 인계**: 결함 있는 코드 머지 X. state에 fix 대기 결함 명시 후 다음 세션.
+### ✅ #51 PROJECT-MEMORY — MERGED PR #276 (본 세션, 이전 세션 fix 후)
+- project_memory + 시스템 프롬프트 자동 주입(AC-02) + AI 감지→pending(AC-03, REQ-005) + RA Lead 관리 UI + audit.
+- **★ fix(이전 세션 리뷰 결함 5종)**: H-1 approveSuggestedMemory idempotency(`WHERE status='pending'`) · AC-02/03 통합 테스트 부재(#50 dead-code) → 실제 행위 테스트(injector/extractor) · permissions EXPECTED_ACTIONS · 23505→409.
+
+### 🎯 다음 세션 시작 지점 (2026-06-26) — 전략 그룹 등 루프 계속
+Knowledge/RAG 그룹 완료. **남은 OPEN priority/high**:
+- **전략 Killer Features**: #40 STRATEGY(멀티 관할권 규제 전략) · #42 CROSSMARKET(갭 분석) · #43 BATCH(배치 Q&A) — LLM 환각·인젝션 리스크 최대, [지양-2/4] 설계 부담 큼.
+- **기술부채**: #39 WORKFLOWS-LLM-002(510(k)/CER/PCCP executor 실구현) — 기존 도메인 강화, 회귀 낮음.
+- **제출/검토**: #37 SUBMISSION-LIFECYCLE · #36 REVIEW-OPS.
+- **시스템/외부**: #49 VALIDATION(IQ/OQ/PQ) · #1 ADR · #202 hybrid E2E(외부).
+- **DEFER 누적**: #275(REQ-002 messages embedding) · #278(=#62-A 라이브 크롤러) · #264·#65·#244·#245·#249·#57·#236·#238 · #62-B~G.
+
+### 추천 다음 작업
+1. **#39 WORKFLOWS-LLM-002** (기술부채, 회귀 낮음, 레버리지 즉각) 또는
+2. **#40 STRATEGY** (Killer Feature, 차별화 최대 — 단 LLM 리스크, #50/#51 풀 리뷰 필요).
+
+### 핵심 교훈 누적 (Knowledge/RAG 3사이클)
+- **AC ↔ 실제 호출 dead-code** (8회): retriever registry 등록(#50) / 주석 참조 테스트 없음(#51) / mapping-engine은 route 호출 확증(#62 성공). evaluator + 오케스트레이터 직검(call site + 파일 존재)이 정오탐 확인.
+- **분산 카운트 단언**: cyberdevice/capa/labeling 등 도메인 integration test에도 audit/perm 카운트. #50은 15 failures(full test 포착), #51/#62는 strategy 사전 주입→0 실패.
+- **retriever/lib import 함정**: db/client top-level = parseEnv 부작용. lazy import(#50 retriever, #62 cron audit).
+- **보안 idempotency**: approveSuggestedMemory RETURNING post-Set dead guard(#51) · countActiveAlerts org filter 누락(#62, 호출자 0 → delete). UPDATE WHERE 상태 조건 + rowCount.
+- **에이전트 lint "pre-existing" 오탐**: #51/#62 에이전트가 신규 파일 format/import 에러를 "pre-existing"으로 치부 → biome --write 직검 fix. 오케스트레이터 lint 직검 필수.
+- **MVP phasing**: 대형 SPEC(#62 4 테이블 + 크롤러)은 strategy가 MVP/DEFER 분할 → 단일 세션 가능. DEFER는 follow-up 이슈 + @MX:TODO 문서화.
 
 ## 이전 세션 히스토리
 - 2026-06-26 전반: #239 RLS Phase 1~4 + runbook 종료(PR #267~#273).
