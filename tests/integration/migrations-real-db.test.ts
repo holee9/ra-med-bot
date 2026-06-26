@@ -125,3 +125,124 @@ describe('migrations 0086/0087 fix-up — real-DB schema (Issues #50 / #51)', ()
     },
   );
 });
+
+// @MX:NOTE [AUTO] Real-DB regression for fix-up 0090 (L-010/L-011).
+// @MX:SPEC SPEC-REGULA-RLHF-001 / SPEC-REGULA-SAMD-001
+// @MX:REASON enterprise-migrations.test.ts only parses SQL textually, so it
+//           could not catch the 0082 answer_feedback.user_id text-vs-uuid nor
+//           the 0054 samd_assessments.org_id/created_by text-vs-uuid FK type
+//           mismatches. Both CREATE TABLE statements rolled back at runtime,
+//           leaving the tables ABSENT while the textual suite stayed green.
+//           3 live /api/rlhf/* routes + 4 live /api/ra/samd/* routes 500'd.
+//           This block asserts the 0090 fix-up created both tables with the
+//           corrected uuid FK columns. Mirrors the 0089 regression pattern.
+describe('migrations 0082/0054 fix-up — real-DB schema (Issues #56 RLHF / SaMD)', () => {
+  beforeAll(() => {
+    if (!process.env.DATABASE_URL) {
+      logger.warn(`Skipping: ${SKIP_REASON}`);
+    }
+  });
+
+  it.skipIf(!process.env.DATABASE_URL)(
+    'answer_feedback table exists (0082/0090 CREATE TABLE succeeded)',
+    async () => {
+      const db = await getDb();
+      const res = await db.execute(sql`
+        SELECT to_regclass('public.answer_feedback') AS exists
+      `);
+      const row = res[0] as { exists: string | null } | undefined;
+      expect(row?.exists, 'answer_feedback must exist in real DB').toBe('answer_feedback');
+    },
+  );
+
+  it.skipIf(!process.env.DATABASE_URL)(
+    'answer_feedback.user_id column is uuid, NOT text (0082 bug fix)',
+    async () => {
+      const db = await getDb();
+      const res = await db.execute(sql`
+        SELECT data_type, udt_name
+        FROM information_schema.columns
+        WHERE table_name = 'answer_feedback' AND column_name = 'user_id'
+      `);
+      const row = res[0] as { data_type: string; udt_name: string } | undefined;
+      expect(row, 'user_id column must exist').toBeDefined();
+      expect(row?.udt_name, 'user_id must be uuid (users.id is uuid)').toBe('uuid');
+    },
+  );
+
+  it.skipIf(!process.env.DATABASE_URL)(
+    'answer_feedback.user_id FK to users(id) is present (type-compatible)',
+    async () => {
+      const db = await getDb();
+      const res = await db.execute(sql`
+        SELECT 1 AS ok
+        FROM information_schema.table_constraints tc
+        JOIN information_schema.key_column_usage kcu
+          ON tc.constraint_name = kcu.constraint_name
+        WHERE tc.table_name = 'answer_feedback'
+          AND tc.constraint_type = 'FOREIGN KEY'
+          AND kcu.column_name = 'user_id'
+      `);
+      expect(res.length, 'answer_feedback.user_id FK must exist').toBeGreaterThan(0);
+    },
+  );
+
+  it.skipIf(!process.env.DATABASE_URL)(
+    'samd_assessments table exists (0054/0090 CREATE TABLE succeeded)',
+    async () => {
+      const db = await getDb();
+      const res = await db.execute(sql`
+        SELECT to_regclass('public.samd_assessments') AS exists
+      `);
+      const row = res[0] as { exists: string | null } | undefined;
+      expect(row?.exists, 'samd_assessments must exist in real DB').toBe('samd_assessments');
+    },
+  );
+
+  it.skipIf(!process.env.DATABASE_URL)(
+    'samd_assessments.org_id column is uuid, NOT text (0054 bug fix)',
+    async () => {
+      const db = await getDb();
+      const res = await db.execute(sql`
+        SELECT data_type, udt_name
+        FROM information_schema.columns
+        WHERE table_name = 'samd_assessments' AND column_name = 'org_id'
+      `);
+      const row = res[0] as { data_type: string; udt_name: string } | undefined;
+      expect(row, 'org_id column must exist').toBeDefined();
+      expect(row?.udt_name, 'org_id must be uuid (organizations.id is uuid)').toBe('uuid');
+    },
+  );
+
+  it.skipIf(!process.env.DATABASE_URL)(
+    'samd_assessments.org_id FK to organizations(id) is present (type-compatible)',
+    async () => {
+      const db = await getDb();
+      const res = await db.execute(sql`
+        SELECT 1 AS ok
+        FROM information_schema.table_constraints tc
+        JOIN information_schema.key_column_usage kcu
+          ON tc.constraint_name = kcu.constraint_name
+        WHERE tc.table_name = 'samd_assessments'
+          AND tc.constraint_type = 'FOREIGN KEY'
+          AND kcu.column_name = 'org_id'
+      `);
+      expect(res.length, 'samd_assessments.org_id FK must exist').toBeGreaterThan(0);
+    },
+  );
+
+  it.skipIf(!process.env.DATABASE_URL)(
+    'samd_assessments.created_by column is uuid, NOT text (0054 bug fix — same text-vs-uuid class)',
+    async () => {
+      const db = await getDb();
+      const res = await db.execute(sql`
+        SELECT udt_name
+        FROM information_schema.columns
+        WHERE table_name = 'samd_assessments' AND column_name = 'created_by'
+      `);
+      const row = res[0] as { udt_name: string } | undefined;
+      expect(row, 'created_by column must exist').toBeDefined();
+      expect(row?.udt_name, 'created_by must be uuid (users.id is uuid)').toBe('uuid');
+    },
+  );
+});

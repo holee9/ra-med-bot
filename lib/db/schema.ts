@@ -805,6 +805,13 @@ export const sourceSections = pgTable(
 // @MX:REASON One feedback row per user per message (UNIQUE). RLS is enabled in the
 //           migration (0082_rlhf.sql) at the SQL level — org isolation via the
 //           messages -> conversations -> org_members join.
+// @MX:WARN [AUTO] user_id is uuid, NOT text (L-010/L-011 fix-up 0090).
+// @MX:REASON users.id is uuid. Original 0082 declared user_id text -> uuid FK,
+//           which is a type mismatch — Postgres refused the FK and the entire
+//           CREATE TABLE rolled back, leaving answer_feedback ABSENT from the DB
+//           (3 live /api/rlhf/* routes 500'd). Fix-up 0090 recreated the table
+//           with user_id uuid. Schema mirrors the corrected migration. Do NOT
+//           revert to text.
 export const answerFeedback = pgTable(
   'answer_feedback',
   {
@@ -812,7 +819,7 @@ export const answerFeedback = pgTable(
     messageId: uuid('message_id')
       .notNull()
       .references(() => messages.id, { onDelete: 'cascade' }),
-    userId: text('user_id')
+    userId: uuid('user_id')
       .notNull()
       .references(() => users.id, { onDelete: 'cascade' }),
     rating: feedbackRatingEnum('rating').notNull(),
