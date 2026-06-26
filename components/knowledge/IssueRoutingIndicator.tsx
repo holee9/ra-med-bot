@@ -1,6 +1,6 @@
 // @MX:NOTE [AUTO] Issue Routing Indicator — shows ops loop indicator for owning-project routing.
-// Surfaces #157 (owning-project issue routing) status honestly.
-// @MX:SPEC Issue #158 (Group B2 - Knowledge ops loop indicator #157)
+// Surfaces 157 (owning-project issue routing) status honestly.
+// @MX:SPEC Issue #158 (Group B2 - Knowledge ops loop indicator 157)
 
 interface RoutingIndicatorProps {
   status: 'ready' | 'pending' | 'manual';
@@ -69,7 +69,7 @@ export function IssueRoutingIndicator() {
           rel="noopener noreferrer"
           className="text-brand-700 hover:underline"
         >
-          자동화 구현 이슈 (#157) 보기 →
+          자동화 구현 이슈 (157) 보기 →
         </a>
       </div>
     </section>

@@ -13,11 +13,11 @@ import {
 } from 'lucide-react';
 import Link from 'next/link';
 
-// @MX:NOTE [AUTO] HomePage — Issue #158 Group C (Home + Shell).
+// @MX:NOTE [AUTO] HomePage — Issue 158 Group C (Home + Shell).
 // Role-aware persona-based work start points.
 // Shows different entry points based on user role (ra-lead, admin, viewer, ra-member).
-// #157 owning-project routing indicator: honest "pending" status (backend not built).
-// @MX:SPEC Issue #158 (Group C - Home)
+// 157 owning-project routing indicator: honest "pending" status (backend not built).
+// @MX:SPEC Issue 158 (Group C - Home)
 
 type Role = 'admin' | 'qa-lead' | 'ra-lead' | 'ra-member' | 'viewer' | 'auditor';
 
@@ -163,14 +163,14 @@ export default async function HomePage() {
         </p>
       </header>
 
-      {/* #157 owning-project routing indicator - honest pending status */}
+      {/* 157 owning-project routing indicator - honest pending status */}
       <Callout variant="info" title="프로젝트 라우팅 상태">
         <div className="flex items-center gap-3">
           <ReadinessBadge status="pending" />
           <p className="text-sm">
             자동 프로젝트 라우팅은 현재 개발 중입니다 (
             <Link href="/expert-review" className="text-brand-700 underline hover:text-brand-800">
-              Issue #157
+              Issue 157
             </Link>
             ). 현재는 수동 라우팅만 지원됩니다.
           </p>

@@ -1,5 +1,5 @@
 // @MX:NOTE SourceCard tests — verification hints, type pill styling.
-// @MX:SPEC Issue #158
+// @MX:SPEC Issue 158
 
 /** @vitest-environment jsdom */
 import '@testing-library/jest-dom';
@@ -8,7 +8,7 @@ import { describe, expect, it } from 'vitest';
 import type { SourceItem } from '../../../types/streaming';
 import { SourceCard } from '../SourceCard';
 
-describe('SourceCard — Issue #158 enhancements', () => {
+describe('SourceCard — Issue 158 enhancements', () => {
   const mockSource: SourceItem = {
     id: '1',
     citeIndex: 1,

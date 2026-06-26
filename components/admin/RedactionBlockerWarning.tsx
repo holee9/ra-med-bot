@@ -1,6 +1,6 @@
-// @MX:NOTE [AUTO] Redaction Blocker Warning — production readiness blocker for #151.
+// @MX:NOTE [AUTO] Redaction Blocker Warning — production readiness blocker for 151.
 // Warns that 3-layer redaction path is not fully wired (sensitive content may not be redacted).
-// @MX:SPEC Issue #158 (Group B4 - Admin Documents #151 redaction blocker warning)
+// @MX:SPEC Issue #158 (Group B4 - Admin Documents 151 redaction blocker warning)
 
 import { Callout } from '@/components/ui/Callout';
 
@@ -34,7 +34,7 @@ export function RedactionBlockerWarning() {
             rel="noopener noreferrer"
             className="text-brand-700 hover:underline"
           >
-            관련 이슈 #151 보기 →
+            관련 이슈 151 보기 →
           </a>
         </div>
       </Callout>

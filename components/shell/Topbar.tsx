@@ -3,7 +3,7 @@
 // Phase 2 wiring.
 // T-007: ManualFlagButton (🚩) added (REQ-ENTERPRISE-028). The existing
 // "전문가 검토" button is preserved for backward compatibility with REQ-FND-020.
-// Issue #158 Group C: Added expert-review link (gated by role).
+// Issue 158 Group C: Added expert-review link (gated by role).
 
 // T-007 — [BEGIN T-007 addition REQ-ENTERPRISE-028]
 import TopbarClient from './TopbarClient';
@@ -42,7 +42,7 @@ export default async function Topbar() {
         >
           ☾
         </button>
-        {/* Issue #158 Group C: Expert-review link (gated by role) */}
+        {/* Issue 158 Group C: Expert-review link (gated by role) */}
         {showExpertReview && (
           <a
             href="/expert-review"
