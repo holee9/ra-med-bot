@@ -8,7 +8,7 @@
 //           are asserted on the REAL return value — not the source text.
 //           Mirrors tests/unit/retrievers/internal-sops.test.ts mock pattern.
 
-import { describe, expect, it, vi, beforeEach } from 'vitest';
+import { beforeEach, describe, expect, it, vi } from 'vitest';
 
 // Hoisted dbMock — vi.mock factories run before top-level const initialization.
 const { dbMock } = vi.hoisted(() => ({ dbMock: { execute: vi.fn() } }));

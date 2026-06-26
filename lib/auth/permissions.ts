@@ -148,7 +148,14 @@ export type PermissionAction =
   //          (21 CFR Part 11 audit-material). Mirrors label.approve / capa.close.
   // view: ra-member+ — team knowledge library is transparent across the RA team.
   | 'knowledgepromo.promote'
-  | 'knowledgepromo.view';
+  | 'knowledgepromo.view'
+  // Project memory actions (SPEC-REGULA-PROJECT-MEMORY-001, Issue #51)
+  // manage: ra-lead ONLY — memory create/update/invalidate/approve is a 21 CFR
+  //   Part 11 audit-material regulatory decision (Charter [지양-4] no auto-finalize).
+  //   Mirrors knowledgepromo.promote / label.approve.
+  // view: ra-member+ — project context is shared across the RA team.
+  | 'projectmemory.manage'
+  | 'projectmemory.view';
 
 export interface PermissionSpec {
   minRole: Role;
@@ -428,5 +435,23 @@ export const PERMISSIONS: Record<PermissionAction, PermissionSpec> = {
     minRole: 'ra-member',
     scope: 'org',
     resourceType: 'promotedAnswer',
+  },
+  // @MX:NOTE [AUTO] projectmemory.* — SPEC-REGULA-PROJECT-MEMORY-001 (Issue #51).
+  // @MX:SPEC SPEC-REGULA-PROJECT-MEMORY-001 (REQ-006, REQ-011, REQ-014)
+  // manage: ra-lead ONLY — memory create/update/invalidate/approve is a 21 CFR
+  //   Part 11 audit-material regulatory signoff (Charter [지양-4] no
+  //   auto-finalize). Mirrors knowledgepromo.promote / label.approve.
+  // view: ra-member+ — project context is shared across the RA team so any
+  //   member can see decisions and benefit from injection. NOT granted to
+  //   viewer (injection shapes RAG; viewer is read-only persona).
+  'projectmemory.manage': {
+    minRole: 'ra-lead',
+    scope: 'org',
+    resourceType: 'projectMemory',
+  },
+  'projectmemory.view': {
+    minRole: 'ra-member',
+    scope: 'org',
+    resourceType: 'projectMemory',
   },
 };

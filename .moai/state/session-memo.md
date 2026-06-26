@@ -2,45 +2,43 @@
 
 > 세션 연결용. 상세 맥락은 auto-memory `project-state.md`가 1차 진실원. 본 파일은 빠른 시작 요약.
 
-## 현재 세션 (2026-06-26) — #239 RLS Enforce 코드 작업 종료 (Phase 1·2·3·4-prep + runbook, PR #269~#273)
+## 현재 세션 (2026-06-26) — Knowledge/RAG 그룹 자동 순차 루프 (ultracode)
 
-**main HEAD: `d86ac83`**. 오픈 PR 0건. 회귀 **4345 passed** | 8 skipped (+56, 7 PR). **#239 CLOSED**.
+사용자: `/moai ultracode "남은 작업 모두 완료까지 계속 가자"` → **Knowledge/RAG 그룹(#50→#51→#62) × 자동 순차 루프** 확정.
 
-### ✅ 본 세션 PR 누적
-- **PR #269** — Phase 2 (kg/pms/cc) wiring (`b42f05e`) — 회귀 4299
-- **PR #270** — Phase 2 최종 (cyberdevice/mg/trace) wiring (`73e5882`) — Phase 2 완전 종료, 4315
-- **PR #271** — Phase 3 lib GUC wiring 14파일 (`b544479`) — 4315
-- **PR #272** — Phase 4 M-1 service-role bypass client auth.ts (`c41dd7c`) — 4315
-- **PR #273** — Phase 4 FORCE RLS(0084) + regula_app role(0085) + runbook (`d86ac83`) — 4345, migration 0084/0085
+### ✅ #50 KNOWLEDGE-PROMO tier1 — MERGED PR #274 (`62a4e8c`, #50 CLOSED) [완료]
+- main HEAD `62a4e8c`. 회귀 **4399 passed** (+54). migration 0086, audit 196, 권한 73.
+- promoted_answers + 시맨틱/풀텍스트 검색 + 승격/취소 + RAG 통합(router org_promoted wiring) + 팀 지식 library 뷰.
+- 직검 캡처: 분산 카운트 단언(cyberdevice/capa)·retriever lazy import·**AC-04 dead-code**(evaluator 정오탐, router wiring fix).
+- DEFER → **#275**(REQ-002 messages embedding backfill).
 
-### 🎯 다음 세션 시작 지점 (2026-06-26 갱신) — RLS 운영 enforce (인프라)
-- **main HEAD: `d86ac83`**. 회귀 **4345 passed**. migration 0085(최신), audit 194.
-- **★ RLS 실제 enforce = 운영 인프라** (`docs/phase-4-rls-enforce-runbook.md`):
-  1. ops: `ALTER ROLE regula_app WITH PASSWORD '<secrets>';` (migration 0085 placeholder)
-  2. env: `DATABASE_URL`(regula_app, BYPASSRLS=false, RLS-subject) + `SERVICE_DATABASE_URL`(superuser, auth.ts bypass) **이중 설정**
-  3. apply migration 0084(FORCE RLS) + 0085(app role)
-  4. 카나리: GUC set→자기 org만 / GUC unset→0 rows fail-closed (vitest 명세 runbook)
-  5. Rollback: `NO FORCE ROW LEVEL SECURITY` (가역)
-- **Known limits (runbook §8)**: M-2 sources/source_sections catalog(org_id IS NULL) 정책 점검 · weekly-digest cron cross-org enum serviceDb bypass · audit_logs RLS 대상 20개外(영향 없음).
-- **★ 코드는 전부 완료** (route 7도메인 + lib 14파일 + auth.ts service client + FORCE RLS/app role migration + runbook). RLS INERT 대기 상태. 운영 env 전환 한 번에 enforce.
-- **남은 OPEN priority/high**: #62·#51·#50·#49·#43·#42·#40·#39·#37·#36·#202·#1.
-- **DEFER**: #264·#65·#244·#245·#249·#57·#236·#238.
-- **★ tier1 착수 절차 (L-001 + L-007/008/009 — 본 세션 9회 직검 강화)**:
-  1. main 기반 브랜치 + 이슈 코멘트 + Gate 0.
-  2. 베이스라인 카운트 runtime 직검.
-  3. 구현 위임(regula-backend) → 매 phase 게이트 직검. **★ test mock 갱신 명시적 지시**(PR #270/#271 교훈).
-  4. sync Phase 0.55 expert-security + evaluator 병렬. **★ 리뷰 불일치 시 오케스트레이터 직검**(route mutation + RLS 상태 + 기존 패턴).
-  5. 게이트 직검: typecheck + lint(full) + test(FULL) + build.
-  6. staged 범위 직검(L-009, migrations/ 누락 방지) + PR → CI → squash merge (repo CI pending에도 admin 머지 허용).
-  7. "완료" 보고 직검(L-007) — main HEAD 기준.
+### ⏸️ #51 PROJECT-MEMORY tier1 — 백엔드+프론트 완료, 보안 리뷰 fix 대기 (미머지)
+- **브랜치 `feat/issue-51-project-memory`** (base main `62a4e8c`, 미머지). 회귀 브랜치 기준 **4439 passed** (+40).
+- migration 0087(project_memory + 2 enum + RLS + audit +3) + lib/project-memory 4모듈 + **AC-02/03 consult.ts 실제 wiring**(200-208 inject, 749-771 detect) + API 5종 + UI(projects/[id]/memory + ProjectMemoryClient).
+- 카운트: audit 196→199, 권한 73→75, migration 0087. **분산 단언 8개 파일 사전 주입으로 0 실패**(#50 교훈).
+- **★ 보안 리뷰 fix 대기 결함 4종 (머지 전 필수)**:
+  1. **H-1 보안**: `manager.ts:295-313 approveSuggestedMemory` idempotency dead-code(RETURNING post-SET → guard 절대 false). invalidated 재승인 = REQ-012/[지양-4] 우회. **fix: `WHERE status='pending'` + rowCount=0→409**.
+  2. **High (#50 dead-code 패턴)**: AC-02/03 통합 테스트 **없음**. 주석이 존재 안 하는 injector/extractor test 파일 참조. **fix: 실제 통합 테스트**(AC-02 prompt memory 포함, AC-03 detect→pending row). select-chain mock no-op이므로 실 행위 테스트 필수.
+  3. **Med**: `permissions.test.ts EXPECTED_ACTIONS`에 `projectmemory.manage/view` 누락. 추가.
+  4. **M-1**: 동일 key 동시 POST 23505 → 409.
+  5. Low: audit comment labels(projectmemory.*→memory_*) · extractor error log.
+- 게이트(현상태): typecheck 0 / lint full 0 / test FULL 4439 / build 0. **하지만 위 결함 fix 전 머지 금지**.
 
-### 핵심 교훈 (본 세션 — L-007 9회 누적 직검)
-- **에이전트 게이트 self-report 오탐**: PR #269 11 failures(test mock 누락) → PR #270/#271/#272 사전 지시로 0. **오케스트레이터 `pnpm test` FULL 직검이 진실원**.
-- **보안 리뷰 불일치 직검**: evaluator 과잉(audit scope-밖 CRITICAL) → 직검(read-only route + RLS INERT) 정오탐. expert-security 채택.
-- **라우트/lib/테이블 수 직검**: traceability 7→4·pms 4→3·FORCE RLS 대상 20개 정밀 매칭.
-- **Phase 4 근본 직검**: superuser BYPASSRLS → FORCE RLS 단독 무력. **DB role 변경(regula_app) + M-1 service client가 진짜 작업**. 본 세션 코드 완료, 운영 env 전환만 잔류.
-- **password 보안 직검**: migration 0085 real password 0 (placeholder + ALTER ROLE 의무화).
+### 🎯 다음 세션 시작 지점 (2026-06-26) — #51 fix → 머지 → #62
+1. **#51 백엔드 fix 위임**(결함 1-5 위 목록). ★결함 2(AC-02/03 통합 테스트)는 #50 교훈 — claim 아닌 실제 증명.
+2. 오케스트레이터 full test 직검 + lint full + build.
+3. staged 범위 직검(migrations/ 0087 포함) + PR + squash 머지(admin) + main ls-tree.
+4. #51 CLOSED 후 → **#62 STANDARDS tier1** 착수(ISO/IEC/EN/ASTM 표준 매핑). 같은 tier1 파이프라인.
+5. 루프 계속: 전략(#40/#42/#43)·기술부채(#39)·제출/검토(#37/#36)·시스템(#49/#1)·#202.
+- DEFER 누적: #275(REQ-002)·#264·#65·#244·#245·#249·#57·#236·#238.
 
-## 이전 세션 히스토리 (상세는 git log + project-state.md)
-- 2026-06-25: PR #269·#270 (#239 Phase 2). #266 RLHF 복구·#267 Phase 1·#268 rlhf.
-- 2026-06-24~25: 7-PR 파이프라인. 2026-06-23: tier0 #35 · tier1 #59·#47.
+### 핵심 교훈 (본 세션 — dead-code 7-8회 + 분산 단언 + 보안 idempotency)
+- **AC ↔ 실제 호출 dead-code**: retriever registry 등록(#50) / 주석 참조 테스트 없음(#51) — claim≠증명. evaluator가 wiring/테스트 부재 포착. 오케스트레이터 직검(call site + 파일 존재)으로 정오탐 확인.
+- **분산 카운트 단언**: cyberdevice/capa 등 도메인 integration test에도 audit/perm 카운트 단언. #51은 strategy에 사전 주입→0 실패(#50은 15 failures).
+- **retriever import 함정**: db/client top-level = parseEnv 부작용. lazy import.
+- **approveSuggestedMemory idempotency**: RETURNING post-Set dead guard 패턴(신규 캡처). UPDATE WHERE 상태 조건 + rowCount로 검증.
+- **컨텍스트 한계 시 정확한 인계**: 결함 있는 코드 머지 X. state에 fix 대기 결함 명시 후 다음 세션.
+
+## 이전 세션 히스토리
+- 2026-06-26 전반: #239 RLS Phase 1~4 + runbook 종료(PR #267~#273).
+- 2026-06-25: #269·#270·#266·#268. 2026-06-24~25: 7-PR 파이프라인. 2026-06-23: tier0 #35 · tier1 #59·#47.

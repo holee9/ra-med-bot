@@ -386,6 +386,15 @@ export const auditActionEnum = pgEnum('audit_action', [
   // 21 CFR Part 11 audit-material record (who promoted what when).
   'answer_promoted',
   'answer_unpromoted',
+  // SPEC-REGULA-PROJECT-MEMORY-001 — added via 0087_project_memory.sql
+  // (Issue #51, REQ-007/008/009). Memory lifecycle is 21 CFR Part 11
+  // audit-material (who decided what when, for design-control consistency).
+  //   memory_created    — explicit RA-lead create OR pending->active approval
+  //   memory_updated    — same-key supersession (invalidate old + create new, REQ-012)
+  //   memory_invalidated — soft-delete (valid_until + status); hard delete forbidden
+  'memory_created',
+  'memory_updated',
+  'memory_invalidated',
 ]);
 
 // @MX:NOTE [AUTO] Source governance enums — SPEC-REGULA-SOURCE-GOVERNANCE-001 (Issue #48).
@@ -845,6 +854,63 @@ export const promotedAnswers = pgTable(
     sourceMessageUnique: unique('promoted_answers_source_message_idx').on(t.sourceMessageId),
     // REQ-015 / AC-06: org-scoped active listing + tag filtering.
     orgActiveIdx: index('idx_promoted_answers_org_active').on(t.orgId, t.status),
+  }),
+);
+
+// @MX:NOTE [AUTO] project_memory — project-scoped RA decision memory (Issue #51).
+// @MX:SPEC SPEC-REGULA-PROJECT-MEMORY-001 (REQ-001, REQ-002, REQ-005, REQ-012)
+// Accumulates device classification / target markets / submission strategy /
+// predicate device / risk class decisions across sessions. Injected into the
+// system prompt at consult time (REQ-003) so AI answers stay consistent with
+// prior project decisions (ISO 13485 design control).
+//   status='pending' = AI-extracted suggestion (Charter [지양-4], NEVER auto-active)
+//   status='active'  = RA-lead-approved, eligible for injection
+//   status='invalidated' = superseded (REQ-012 history preservation, hard-delete forbidden)
+// UNIQUE NULLS NOT DISTINCT (project_id, key) WHERE status='active' is the
+// DB-level atomicity guard for same-key update (invalidate old + create new
+// in ONE tx). RLS inert project-wide (#239); JS org guard is authoritative.
+export const projectMemoryTypeEnum = pgEnum('project_memory_type', [
+  'device_classification',
+  'target_markets',
+  'submission_strategy',
+  'predicate_device',
+  'risk_class',
+  'custom',
+]);
+
+export const projectMemoryStatusEnum = pgEnum('project_memory_status', [
+  'active',
+  'pending',
+  'invalidated',
+]);
+
+export const projectMemory = pgTable(
+  'project_memory',
+  {
+    id: uuid('id').defaultRandom().primaryKey(),
+    projectId: uuid('project_id')
+      .notNull()
+      .references(() => projects.id, { onDelete: 'cascade' }),
+    memoryType: projectMemoryTypeEnum('memory_type').notNull(),
+    key: text('key').notNull(),
+    value: text('value').notNull(),
+    // REQ-013: provenance. NULL only for RA-lead manual entries.
+    sourceConversationId: uuid('source_conversation_id').references(() => conversations.id, {
+      onDelete: 'set null',
+    }),
+    createdBy: uuid('created_by')
+      .notNull()
+      .references(() => users.id),
+    status: projectMemoryStatusEnum('status').notNull().default('active'),
+    validFrom: timestamp('valid_from', { withTimezone: true, mode: 'date' }).notNull().defaultNow(),
+    validUntil: timestamp('valid_until', { withTimezone: true, mode: 'date' }),
+    createdAt: timestamp('created_at', { withTimezone: true, mode: 'date' }).notNull().defaultNow(),
+  },
+  (t) => ({
+    // §4.2: valid-memory lookup optimization.
+    lookupIdx: index('idx_project_memory_lookup').on(t.projectId, t.key, t.validUntil),
+    // Status filtering for pending review queue and active injection.
+    projectStatusIdx: index('idx_project_memory_project_status').on(t.projectId, t.status),
   }),
 );
 

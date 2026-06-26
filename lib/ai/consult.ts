@@ -187,9 +187,29 @@ export async function* consult(
   if (signal?.aborted) return;
   const composed = composePrompt(rewrittenQuery, intent, topChunks, input.locale);
 
+  // @MX:NOTE [AUTO] REQ-PROJECT-MEMORY-003 / AC-02 — project-memory injection.
+  // @MX:SPEC SPEC-REGULA-PROJECT-MEMORY-001 (REQ-003, REQ-010, AC-02)
+  // @MX:REASON New conversations MUST receive the project's accumulated RA
+  //   decisions so answers stay consistent with prior design-control choices
+  //   (ISO 13485). Lazy import (L-004) keeps lib/db/client out of the test-light
+  //   parse path. injectProjectMemory is best-effort: on failure it returns the
+  //   original prompt, so the consult stream is never blocked by memory lookup.
+  //   AC-02 dead-code prevention (L-008): this IS the call site — verified by
+  //   tests/unit/project-memory/injector.test.ts which spies on the dynamic
+  //   import('../project-memory/injector') through the consult pipeline.
+  let systemPromptText = composed.systemPrompt;
+  if (input.projectId && orgId) {
+    try {
+      const { injectProjectMemory } = await import('../project-memory/injector');
+      systemPromptText = await injectProjectMemory(systemPromptText, input.projectId, orgId);
+    } catch {
+      // Non-fatal: memory lookup failure MUST NOT block the consult stream.
+    }
+  }
+
   // Build Anthropic messages with cache_control on chunk context block.
   const systemMessages = [
-    { type: 'text' as const, text: composed.systemPrompt },
+    { type: 'text' as const, text: systemPromptText },
     ...(composed.chunkContext
       ? [
           {
@@ -715,6 +735,39 @@ export async function* consult(
         error: gapErr instanceof Error ? gapErr.message : String(gapErr),
         messageId,
         gapReason,
+      });
+    }
+  }
+
+  // ---- Stage 10: Project memory extraction (AC-03) ----
+  // @MX:NOTE [AUTO] REQ-PROJECT-MEMORY-004 / AC-03 — AI decision detection.
+  // @MX:SPEC SPEC-REGULA-PROJECT-MEMORY-001 (REQ-004, REQ-005, REQ-013, AC-03)
+  // @MX:REASON Fire-and-forget AFTER persistMessage + the user's done event so
+  //   extraction NEVER blocks the SSE stream. Charter [지양-4] / REQ-005: the
+  //   extractor ONLY writes status='pending' rows — never 'active'. RA-lead
+  //   must approve via /api/project-memory/suggest/approve (REQ-014). Provenance
+  //   (sourceConversationId) is recorded for every suggestion (REQ-013).
+  //   AC-03 dead-code prevention (L-008): this IS the call site — verified by
+  //   tests/unit/project-memory/extractor.test.ts which traces through the consult pipeline.
+  if (!signal?.aborted && !isReplay && input.projectId && orgId && cleaned) {
+    try {
+      const { detectDecisions, persistSuggestionsAsPending } = await import(
+        '../project-memory/extractor'
+      );
+      const suggestions = await detectDecisions(`${input.question}\n\n${cleaned}`);
+      if (suggestions.length > 0) {
+        await persistSuggestionsAsPending({
+          suggestions,
+          projectId: input.projectId,
+          conversationId,
+          orgId,
+          systemActorId: session.user?.id ?? '00000000-0000-0000-0000-000000000000',
+        });
+      }
+    } catch (memErr) {
+      logger.error('[consult] project memory extraction failed (non-fatal):', {
+        error: memErr instanceof Error ? memErr.message : String(memErr),
+        messageId,
       });
     }
   }

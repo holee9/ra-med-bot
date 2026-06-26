@@ -326,7 +326,7 @@ describe('lib/db/schema.ts Phase 5 additions', () => {
     const values = extractAuditActionEnumValues(src);
     const typeValues = extractAuditActionTypeValues(auditSrc);
     expect(values).toEqual(typeValues);
-    expect(values).toHaveLength(196); // +9 corpus.* (#72) +8 source.* (#48) +3 rlhf.* (#56) +2 knowledgepromo.* (#50)
+    expect(values).toHaveLength(199); // +3 memory_* (#51)
   });
 
   it.each(REQUIRED_RECOVERY_TABLES)(
@@ -382,7 +382,7 @@ describe('lib/audit.ts Phase 5 AuditAction type additions', () => {
         'change.export_blocked',
       ]),
     );
-    expect(values).toHaveLength(196); // +9 corpus.* (#72) +8 source.* (#48) +3 rlhf.* (#56) +2 knowledgepromo.* (#50)
+    expect(values).toHaveLength(199); // +3 memory_* (#51)
   });
 
   it.each(REQUIRED_RECOVERY_AUDIT_ACTIONS)(
@@ -1527,6 +1527,71 @@ describe('Migration 0086: knowledge promotion promoted_answers (Issue #50)', () 
     const sql = readText('migrations/0086_knowledge_promo.sql');
     const matches = sql.match(/ALTER TYPE audit_action ADD VALUE/g) ?? [];
     expect(matches).toHaveLength(2);
+  });
+});
+
+// Migration 0087: project memory — persistent context & decision accumulation
+// (SPEC-REGULA-PROJECT-MEMORY-001, Issue #51)
+describe('Migration 0087: project_memory (Issue #51)', () => {
+  it('migration file 0087_project_memory.sql exists', () => {
+    expect(fileExists('migrations/0087_project_memory.sql')).toBe(true);
+  });
+
+  it('creates project_memory_type enum with 6 values', () => {
+    const sql = readText('migrations/0087_project_memory.sql');
+    expect(sql).toMatch(/CREATE TYPE project_memory_type AS ENUM/);
+    expect(sql).toMatch(/device_classification/);
+    expect(sql).toMatch(/target_markets/);
+    expect(sql).toMatch(/submission_strategy/);
+    expect(sql).toMatch(/predicate_device/);
+    expect(sql).toMatch(/risk_class/);
+    expect(sql).toMatch(/custom/);
+  });
+
+  it('creates project_memory_status enum with active/pending/invalidated', () => {
+    const sql = readText('migrations/0087_project_memory.sql');
+    expect(sql).toMatch(/CREATE TYPE project_memory_status AS ENUM/);
+    expect(sql).toMatch(/'active'/);
+    expect(sql).toMatch(/'pending'/);
+    expect(sql).toMatch(/'invalidated'/);
+  });
+
+  it('creates project_memory table with required columns + FKs', () => {
+    const sql = readText('migrations/0087_project_memory.sql');
+    expect(sql).toMatch(/CREATE TABLE project_memory/);
+    expect(sql).toMatch(/project_id\s+uuid NOT NULL REFERENCES projects/);
+    expect(sql).toMatch(/source_conversation_id uuid REFERENCES conversations/);
+    expect(sql).toMatch(/created_by\s+uuid NOT NULL REFERENCES users/);
+    expect(sql).toMatch(/valid_from\s+timestamptz NOT NULL DEFAULT now\(\)/);
+    expect(sql).toMatch(/valid_until\s+timestamptz/);
+  });
+
+  it('enables RLS on project_memory with org isolation via projects join', () => {
+    const sql = readText('migrations/0087_project_memory.sql');
+    expect(sql).toMatch(/ALTER TABLE project_memory ENABLE ROW LEVEL SECURITY/);
+    expect(sql).toMatch(/CREATE POLICY project_memory_org_isolation/);
+    expect(sql).toMatch(/JOIN org_members om ON om.org_id = p.organization_id/);
+  });
+
+  it('adds lookup + project_status indexes', () => {
+    const sql = readText('migrations/0087_project_memory.sql');
+    expect(sql).toMatch(/idx_project_memory_lookup/);
+    expect(sql).toMatch(/idx_project_memory_project_status/);
+  });
+
+  it('adds UNIQUE partial index for one-active-per-key (REQ-012)', () => {
+    const sql = readText('migrations/0087_project_memory.sql');
+    expect(sql).toMatch(/UNIQUE NULLS NOT DISTINCT/);
+    expect(sql).toMatch(/project_id, key\).*WHERE status = 'active'/s);
+  });
+
+  it('adds exactly 3 ALTER TYPE audit_action statements (memory_*)', () => {
+    const sql = readText('migrations/0087_project_memory.sql');
+    const matches = sql.match(/ALTER TYPE audit_action ADD VALUE/g) ?? [];
+    expect(matches).toHaveLength(3);
+    expect(sql).toMatch(/'memory_created'/);
+    expect(sql).toMatch(/'memory_updated'/);
+    expect(sql).toMatch(/'memory_invalidated'/);
   });
 });
 
