@@ -70,6 +70,10 @@ interface SidebarProps {
   // (rlhf.feedback submitters). The page route uses audit.read, but ra-member+
   // feedback submitters also see the nav so they can track answer quality.
   showQualityHeatmap?: boolean;
+  // SPEC-REGULA-KNOWLEDGE-PROMO-001 (Issue #50): Team Knowledge (promoted
+  // answers library) nav gated to ra-member+ (knowledgepromo.view). Gated
+  // server-side and passed down.
+  showTeamKnowledge?: boolean;
   initialLocale?: string;
 }
 
@@ -86,6 +90,7 @@ export default function Sidebar(props?: SidebarProps) {
   const showClinicalInvestigation = props?.showClinicalInvestigation ?? false;
   const showGovernance = props?.showGovernance ?? false;
   const showQualityHeatmap = props?.showQualityHeatmap ?? false;
+  const showTeamKnowledge = props?.showTeamKnowledge ?? false;
   const currentProjectId = useUIStore((s) => s.currentProjectId);
   const setCurrentProjectId = useUIStore((s) => s.setCurrentProjectId);
   const { data = [] } = useProjects();
@@ -337,6 +342,20 @@ export default function Sidebar(props?: SidebarProps) {
             className="rounded-md px-3 py-2 text-sm text-ink-700 hover:bg-ink-50 block"
           >
             품질 히트맵
+          </Link>
+        </nav>
+      )}
+
+      {/* SPEC-REGULA-KNOWLEDGE-PROMO-001 (Issue #50): Team Knowledge (promoted
+          answers library) conditional link. Visible to ra-member+ (knowledgepromo.view). */}
+      {showTeamKnowledge && (
+        <nav className="px-2 py-1">
+          <Link
+            href="/library?tab=team"
+            data-testid="sidebar-team-knowledge-link"
+            className="rounded-md px-3 py-2 text-sm text-ink-700 hover:bg-ink-50 block"
+          >
+            팀 지식
           </Link>
         </nav>
       )}

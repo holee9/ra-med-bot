@@ -381,6 +381,11 @@ export const auditActionEnum = pgEnum('audit_action', [
   'feedback_submitted',
   'reranking_proposed',
   'reranking_rolled_back',
+  // SPEC-REGULA-KNOWLEDGE-PROMO-001 — added via 0086_knowledge_promo.sql
+  // (Issue #50, REQ-KNOWLEDGE-PROMO-013/014). Promotion / unpromotion is a
+  // 21 CFR Part 11 audit-material record (who promoted what when).
+  'answer_promoted',
+  'answer_unpromoted',
 ]);
 
 // @MX:NOTE [AUTO] Source governance enums — SPEC-REGULA-SOURCE-GOVERNANCE-001 (Issue #48).
@@ -421,6 +426,12 @@ export const qualityTagEnum = pgEnum('quality_tag', [
   'helpful',
   'excellent',
 ]);
+
+// @MX:NOTE [AUTO] Knowledge promotion enum — SPEC-REGULA-KNOWLEDGE-PROMO-001 (Issue #50).
+// @MX:SPEC SPEC-REGULA-KNOWLEDGE-PROMO-001 (REQ-KNOWLEDGE-PROMO-006, REQ-KNOWLEDGE-PROMO-014)
+// @MX:REASON Drizzle pgEnum mirrors the SQL type created in 0086_knowledge_promo.sql.
+// 'active' is eligible for RAG retrieval; 'unpromoted' is excluded (REQ-014 / AC-08).
+export const promotedAnswerStatusEnum = pgEnum('promoted_answer_status', ['active', 'unpromoted']);
 
 // @MX:NOTE [AUTO] Knowledge gap enums — SPEC-REGULA-KNOWLEDGE-GAP-001 (Issue #35).
 // @MX:SPEC SPEC-REGULA-KNOWLEDGE-GAP-001 (REQ-KNOWLEDGE-GAP-001, REQ-KNOWLEDGE-GAP-008)
@@ -795,6 +806,45 @@ export const answerFeedback = pgTable(
     messageIdx: index('idx_answer_feedback_message').on(t.messageId),
     createdIdx: index('idx_answer_feedback_created').on(t.createdAt),
     user_idx: index('idx_answer_feedback_user').on(t.userId),
+  }),
+);
+
+// @MX:NOTE [AUTO] promoted_answers — SPEC-REGULA-KNOWLEDGE-PROMO-001 (Issue #50).
+// @MX:SPEC SPEC-REGULA-KNOWLEDGE-PROMO-001 (REQ-006, REQ-007, REQ-013, REQ-014, AC-02, AC-07)
+// @MX:REASON Team knowledge library of promoted Q&A. UNIQUE(source_message_id)
+//           prevents duplicate promotion; re-promotion re-activates the row.
+//           RLS is enabled in 0086_knowledge_promo.sql at the SQL level; the
+//           query-layer eq(orgId) is the actual tenant boundary (#239 debt).
+//           embedding vector(1536) supports REQ-002 semantic search; messages
+//           themselves have no embedding column (design decision #1).
+export const promotedAnswers = pgTable(
+  'promoted_answers',
+  {
+    id: uuid('id').defaultRandom().primaryKey(),
+    orgId: uuid('org_id')
+      .notNull()
+      .references(() => organizations.id, { onDelete: 'cascade' }),
+    sourceMessageId: uuid('source_message_id')
+      .notNull()
+      .references(() => messages.id, { onDelete: 'cascade' }),
+    title: text('title').notNull(),
+    tags: text('tags').array().notNull().default(sql`'{}'::text[]`),
+    promotedBy: text('promoted_by')
+      .notNull()
+      .references(() => users.id, { onDelete: 'cascade' }),
+    promotedAt: timestamp('promoted_at', { withTimezone: true, mode: 'date' })
+      .notNull()
+      .defaultNow(),
+    status: promotedAnswerStatusEnum('status').notNull().default('active'),
+    // vector column — Drizzle does not introspect vector type; migration
+    // creates it. Kept as customType via vector() helper (see sources.embedding).
+    embedding: vector('embedding'),
+  },
+  (t) => ({
+    // UNIQUE(source_message_id) — one promoted row per source answer.
+    sourceMessageUnique: unique('promoted_answers_source_message_idx').on(t.sourceMessageId),
+    // REQ-015 / AC-06: org-scoped active listing + tag filtering.
+    orgActiveIdx: index('idx_promoted_answers_org_active').on(t.orgId, t.status),
   }),
 );
 

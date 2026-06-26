@@ -397,7 +397,12 @@ export type AuditAction =
   // reranking_rolled_back: re-ranking revert.
   | 'feedback_submitted'
   | 'reranking_proposed'
-  | 'reranking_rolled_back';
+  | 'reranking_rolled_back'
+  // SPEC-REGULA-KNOWLEDGE-PROMO-001 — added via 0086_knowledge_promo.sql
+  // (Issue #50, REQ-KNOWLEDGE-PROMO-013/014). Promotion / unpromotion is a
+  // 21 CFR Part 11 audit-material record (who promoted what when).
+  | 'answer_promoted'
+  | 'answer_unpromoted';
 
 export interface AuditEvent {
   /** User UUID, or null for system-initiated events. */

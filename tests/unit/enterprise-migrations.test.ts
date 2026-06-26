@@ -326,7 +326,7 @@ describe('lib/db/schema.ts Phase 5 additions', () => {
     const values = extractAuditActionEnumValues(src);
     const typeValues = extractAuditActionTypeValues(auditSrc);
     expect(values).toEqual(typeValues);
-    expect(values).toHaveLength(194); // +9 corpus.* (#72) +8 source.* (#48) +3 rlhf.* (#56)
+    expect(values).toHaveLength(196); // +9 corpus.* (#72) +8 source.* (#48) +3 rlhf.* (#56) +2 knowledgepromo.* (#50)
   });
 
   it.each(REQUIRED_RECOVERY_TABLES)(
@@ -382,7 +382,7 @@ describe('lib/audit.ts Phase 5 AuditAction type additions', () => {
         'change.export_blocked',
       ]),
     );
-    expect(values).toHaveLength(194); // +9 corpus.* (#72) +8 source.* (#48) +3 rlhf.* (#56)
+    expect(values).toHaveLength(196); // +9 corpus.* (#72) +8 source.* (#48) +3 rlhf.* (#56) +2 knowledgepromo.* (#50)
   });
 
   it.each(REQUIRED_RECOVERY_AUDIT_ACTIONS)(
@@ -1465,6 +1465,68 @@ describe('Migration 0085: non-superuser app role regula_app (Issue #239, Phase 4
   it('sets ALTER DEFAULT PRIVILEGES so future tables also grant regula_app', () => {
     const sql = readText('migrations/0085_app_role.sql');
     expect(sql).toMatch(/ALTER DEFAULT PRIVILEGES IN SCHEMA public[\s\S]*regula_app/);
+  });
+});
+
+// Migration 0086: knowledge promotion — semantic search & team knowledge library
+// (SPEC-REGULA-KNOWLEDGE-PROMO-001, Issue #50)
+describe('Migration 0086: knowledge promotion promoted_answers (Issue #50)', () => {
+  it('migration file 0086_knowledge_promo.sql exists', () => {
+    expect(fileExists('migrations/0086_knowledge_promo.sql')).toBe(true);
+  });
+
+  it('creates promoted_answer_status enum with active/unpromoted values', () => {
+    const sql = readText('migrations/0086_knowledge_promo.sql');
+    expect(sql).toMatch(/CREATE TYPE promoted_answer_status AS ENUM \('active', 'unpromoted'\)/);
+  });
+
+  it('creates promoted_answers table with UNIQUE(source_message_id)', () => {
+    const sql = readText('migrations/0086_knowledge_promo.sql');
+    expect(sql).toMatch(/CREATE TABLE promoted_answers/);
+    expect(sql).toMatch(/org_id\s+uuid NOT NULL REFERENCES organizations/);
+    expect(sql).toMatch(/source_message_id\s+uuid NOT NULL REFERENCES messages/);
+    expect(sql).toMatch(/promoted_by\s+text NOT NULL REFERENCES users/);
+    expect(sql).toMatch(/embedding\s+vector\(1536\)/);
+    expect(sql).toMatch(/UNIQUE\(source_message_id\)/);
+  });
+
+  it('enables RLS on promoted_answers with org isolation policy', () => {
+    const sql = readText('migrations/0086_knowledge_promo.sql');
+    expect(sql).toMatch(/ALTER TABLE promoted_answers ENABLE ROW LEVEL SECURITY/);
+    expect(sql).toMatch(/CREATE POLICY promoted_answers_org_isolation/);
+    // Join path messages -> conversations -> projects -> org_members
+    expect(sql).toMatch(/JOIN conversations c ON c.id = m.conversation_id/);
+  });
+
+  it('adds tags GIN index + org_active index + ivfflat embedding index', () => {
+    const sql = readText('migrations/0086_knowledge_promo.sql');
+    expect(sql).toMatch(/idx_promoted_answers_org_active/);
+    expect(sql).toMatch(/idx_promoted_answers_tags ON promoted_answers USING GIN\(tags\)/);
+    expect(sql).toMatch(/idx_promoted_answers_embedding/);
+    expect(sql).toMatch(/USING ivfflat \(embedding vector_cosine_ops\)/);
+  });
+
+  it('adds messages.content_tsv GENERATED tsvector column + GIN index', () => {
+    const sql = readText('migrations/0086_knowledge_promo.sql');
+    expect(sql).toMatch(/ADD COLUMN IF NOT EXISTS content_tsv tsvector/);
+    expect(sql).toMatch(/GENERATED ALWAYS AS \(to_tsvector\('english', content_prose\)\) STORED/);
+    expect(sql).toMatch(/idx_messages_content_tsv ON messages USING GIN\(content_tsv\)/);
+  });
+
+  it.each(['answer_promoted', 'answer_unpromoted'])(
+    'adds audit action %s to audit_action enum',
+    (action) => {
+      const sql = readText('migrations/0086_knowledge_promo.sql');
+      expect(sql).toMatch(
+        new RegExp(`ALTER TYPE audit_action ADD VALUE IF NOT EXISTS '${action}'`),
+      );
+    },
+  );
+
+  it('has exactly 2 ALTER TYPE audit_action statements', () => {
+    const sql = readText('migrations/0086_knowledge_promo.sql');
+    const matches = sql.match(/ALTER TYPE audit_action ADD VALUE/g) ?? [];
+    expect(matches).toHaveLength(2);
   });
 });
 

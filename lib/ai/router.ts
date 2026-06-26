@@ -31,8 +31,16 @@ const ROUTER_INTENTS: readonly RouterIntent[] = [
 
 /**
  * Maps each intent to the set of corpora that are most relevant.
- * `internal-sops` is always appended regardless of intent.
- * Phase 8E adds org-document corpora (REQ-DOC-068).
+ * `internal-sops` and `org_promoted` are always appended regardless of intent
+ * (see `classifyAndRoute`). Phase 8E adds org-document corpora (REQ-DOC-068).
+ *
+ * SPEC-REGULA-KNOWLEDGE-PROMO-001 (REQ-KNOWLEDGE-PROMO-009/010): `org_promoted`
+ * MUST be always-included — promoted answers are the team knowledge library
+ * and participate in every RAG retrieval (boosted higher than internal docs
+ * via PromotedAnswersRetriever.PROMOTED_BOOST_FACTOR). If `org_promoted` is
+ * only conditionally attached, PromotedAnswersRetriever never fires and the
+ * core value proposition of the knowledge-promo feature is silently absent
+ * (this was the AC-04 dead-code defect — fixed 2026-06-26).
  */
 export const intentToCorpora: Record<RouterIntent, string[]> = {
   'regulation-lookup': ['fda', 'eu-mdr', 'mfds', 'nmpa', 'pmda'],
@@ -71,7 +79,11 @@ Answer (one label only):`;
  * Classify the user's query using Claude Haiku, then map the intent to the
  * relevant corpora filtered by the project's target markets.
  *
- * `internal-sops` is always included in the returned corpora list.
+ * `internal-sops` and `org_promoted` are ALWAYS included in the returned
+ * corpora list (deduplicated). `internal-sops` gives every query a baseline
+ * of internal SOP coverage; `org_promoted` ensures the team knowledge library
+ * (promoted answers) participates in every RAG retrieval so that
+ * PromotedAnswersRetriever actually fires (REQ-KNOWLEDGE-PROMO-009/010, AC-04).
  *
  * @param query - The user's question.
  * @param projectTargetMarkets - Market codes from the project (e.g. ['us', 'eu']).
@@ -113,8 +125,13 @@ export async function classifyAndRoute(
       ? intentCorpora.filter((c) => marketCorpora.includes(c) || c === 'internal-sops')
       : intentCorpora;
 
-  // Deduplicate and always include internal-sops.
-  const corpus = [...new Set([...filtered, 'internal-sops'])];
+  // Deduplicate and always include internal-sops + org_promoted.
+  // REQ-KNOWLEDGE-PROMO-009: org_promoted always included so team knowledge
+  // participates in every RAG retrieval (boosted higher than internal docs
+  // via PromotedAnswersRetriever.PROMOTED_BOOST_FACTOR). Without this,
+  // PromotedAnswersRetriever is registered (merge.ts) but never selected,
+  // making AC-04 dead code.
+  const corpus = [...new Set([...filtered, 'internal-sops', 'org_promoted'])];
 
   return { intent, corpora: corpus };
 }
