@@ -1,8 +1,10 @@
+import { RedactionBlockerWarning } from '@/components/admin/RedactionBlockerWarning';
 import { auth } from '@/lib/auth';
 import type { DocClass } from '@/lib/ingest/doc-class';
 import { docClassLabels } from '@/lib/ingest/doc-class-labels';
 // @MX:NOTE [AUTO] Admin document upload page — R2 presigned URL flow with DocClass selection.
 // @MX:SPEC SPEC-REGULA-DOCINGEST-001 (REQ-DOC-073)
+// @MX:SPEC Issue #158 (Group B4 - Admin Documents #151 redaction blocker warning on upload)
 import { redirect } from 'next/navigation';
 
 export default async function AdminDocumentUploadPage() {
@@ -28,6 +30,8 @@ export default async function AdminDocumentUploadPage() {
           규제 문서를 업로드하면 자동으로 분류 및 처리됩니다.
         </p>
       </header>
+
+      <RedactionBlockerWarning />
 
       <form className="space-y-6">
         {/* DocClass selection */}

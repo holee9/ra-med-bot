@@ -1,9 +1,12 @@
+import { RedactionBlockerWarning } from '@/components/admin/RedactionBlockerWarning';
+import { SensitivityPolicyStatus } from '@/components/admin/SensitivityPolicyStatus';
 import { auth } from '@/lib/auth';
 import type { DocClass } from '@/lib/ingest/doc-class';
 import { docClassLabels } from '@/lib/ingest/doc-class-labels';
 import { ShieldCheck, Upload } from 'lucide-react';
 // @MX:NOTE [AUTO] Admin document list page — server component with client filtering.
 // @MX:SPEC SPEC-REGULA-DOCINGEST-001 (REQ-DOC-073)
+// @MX:SPEC Issue #158 (Group B4 - Admin Documents #151 redaction blocker warning, sensitivity policy status)
 import { redirect } from 'next/navigation';
 
 export default async function AdminDocumentsPage() {
@@ -35,6 +38,12 @@ export default async function AdminDocumentsPage() {
           문서 업로드
         </a>
       </header>
+
+      <RedactionBlockerWarning />
+
+      <section className="mb-6">
+        <SensitivityPolicyStatus policyConfigured={false} />
+      </section>
 
       <section className="mb-6 rounded-lg border border-border bg-card p-4">
         <div className="flex items-center gap-2 text-sm font-medium">
