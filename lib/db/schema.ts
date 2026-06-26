@@ -849,7 +849,12 @@ export const promotedAnswers = pgTable(
       .references(() => messages.id, { onDelete: 'cascade' }),
     title: text('title').notNull(),
     tags: text('tags').array().notNull().default(sql`'{}'::text[]`),
-    promotedBy: text('promoted_by')
+    // @MX:WARN [AUTO] promoted_by MUST be uuid, not text — users.id is uuid.
+    //   @MX:REASON 0086 originally declared text(), causing a text-vs-uuid FK
+    //     type mismatch that rolled back the entire CREATE TABLE in real PG.
+    //   Fixed in migration 0089 (0086 left as merged history). Drizzle FK type
+    //     now matches; typecheck prevents regression.
+    promotedBy: uuid('promoted_by')
       .notNull()
       .references(() => users.id, { onDelete: 'cascade' }),
     promotedAt: timestamp('promoted_at', { withTimezone: true, mode: 'date' })
