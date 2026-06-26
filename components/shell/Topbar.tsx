@@ -3,6 +3,7 @@
 // Phase 2 wiring.
 // T-007: ManualFlagButton (🚩) added (REQ-ENTERPRISE-028). The existing
 // "전문가 검토" button is preserved for backward compatibility with REQ-FND-020.
+// Issue #158 Group C: Added expert-review link (gated by role).
 
 // T-007 — [BEGIN T-007 addition REQ-ENTERPRISE-028]
 import TopbarClient from './TopbarClient';
@@ -10,11 +11,17 @@ import TopbarClient from './TopbarClient';
 
 export default async function Topbar() {
   let userInitial = 'U';
+  let showExpertReview = false;
   try {
     const { auth } = await import('@/lib/auth');
+    const { hasRole } = await import('@/lib/auth/rbac');
     const session = await auth();
     const name = (session?.user as { name?: string } | undefined)?.name ?? '';
     userInitial = name.charAt(0).toUpperCase() || 'U';
+    const userRole = (session?.user as { role?: string } | undefined)?.role;
+    if (userRole) {
+      showExpertReview = hasRole(userRole as Parameters<typeof hasRole>[0], 'ra-lead');
+    }
   } catch {
     // Non-critical in test/build environments
   }
@@ -35,13 +42,16 @@ export default async function Topbar() {
         >
           ☾
         </button>
-        {/* REQ-FND-020: preserved placeholder button */}
-        <button
-          type="button"
-          className="rounded-md border border-ink-200 px-3 py-1.5 text-sm font-medium text-ink-700 hover:bg-ink-50"
-        >
-          전문가 검토
-        </button>
+        {/* Issue #158 Group C: Expert-review link (gated by role) */}
+        {showExpertReview && (
+          <a
+            href="/expert-review"
+            className="rounded-md border border-ink-200 px-3 py-1.5 text-sm font-medium text-ink-700 hover:bg-ink-50"
+            aria-label="전문가 검토 대시보드로 이동"
+          >
+            전문가 검토
+          </a>
+        )}
         {/* T-007: Manual flag button for expert review (REQ-ENTERPRISE-028) */}
         <TopbarClient />
         {/* User avatar indicator — data-testid required by auth E2E spec */}

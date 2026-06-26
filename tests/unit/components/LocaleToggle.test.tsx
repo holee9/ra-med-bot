@@ -6,6 +6,13 @@
 import { cleanup, render, screen, waitFor } from '@testing-library/react';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
+// Issue #158 Group C: LocaleToggle now uses usePathname/useSearchParams to
+// preserve the return path. Provide router-free defaults so it renders in jsdom.
+vi.mock('next/navigation', () => ({
+  usePathname: () => '/',
+  useSearchParams: () => new URLSearchParams(),
+}));
+
 function clearLocaleCookie() {
   document.cookie = 'regula-locale=; expires=Thu, 01 Jan 1970 00:00:00 GMT; path=/';
 }

@@ -156,7 +156,8 @@ export default function Sidebar(props?: SidebarProps) {
 
   return (
     <aside
-      className="flex w-[260px] shrink-0 flex-col border-r border-ink-100 bg-surface-elevated"
+      className="flex shrink-0 flex-col border-r border-ink-100 bg-surface-elevated"
+      style={{ width: 'var(--nav-w)' }}
       aria-label="주 메뉴"
     >
       {/* project-header: shows selected project name across all pages */}

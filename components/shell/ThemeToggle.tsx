@@ -4,9 +4,11 @@
 // Reads theme from useUIStore and calls toggleTheme on click.
 // Sun icon shown in dark mode (invite to switch to light).
 // Moon icon shown in light mode (invite to switch to dark).
-// @MX:SPEC SPEC-REGULA-ENTERPRISE-001 (REQ-ENTERPRISE-032)
+// Issue #158 Group C: Applies data-theme attribute immediately on mount + toggle.
+// @MX:SPEC SPEC-REGULA-ENTERPRISE-001 (REQ-ENTERPRISE-032), Issue #158 (Group C)
 
 import { useUIStore } from '@/stores/ui';
+import { useEffect } from 'react';
 
 export default function ThemeToggle() {
   const theme = useUIStore((s) => s.theme);
@@ -14,6 +16,12 @@ export default function ThemeToggle() {
 
   const isDark = theme === 'dark';
   const ariaLabel = isDark ? '라이트 모드로 전환' : '다크 모드로 전환';
+
+  // Apply data-theme attribute immediately on mount and when theme changes
+  useEffect(() => {
+    const root = document.documentElement;
+    root.setAttribute('data-theme', theme);
+  }, [theme]);
 
   return (
     <button
