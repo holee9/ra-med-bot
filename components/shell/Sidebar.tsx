@@ -48,6 +48,10 @@ interface SidebarProps {
   // SPEC-REGULA-TRACEABILITY-001 (Issue #47): Traceability matrix is visible to
   // roles with traceability.view (ra-member+). Gated server-side and passed down.
   showTraceability?: boolean;
+  // SPEC-REGULA-STANDARDS-001 (Issue #62): Harmonized Standards Tracker is
+  // visible to roles with standards.read (viewer+). Gated server-side and
+  // passed down.
+  showStandards?: boolean;
   // SPEC-REGULA-PMS-001 (Issue #53): PMS Workbench is visible to roles with
   // pms.view (ra-member+). Gated server-side and passed down.
   showPms?: boolean;
@@ -83,6 +87,7 @@ export default function Sidebar(props?: SidebarProps) {
   const showKnowledgeGap = props?.showKnowledgeGap ?? false;
   const showClassify = props?.showClassify ?? false;
   const showTraceability = props?.showTraceability ?? false;
+  const showStandards = props?.showStandards ?? false;
   const showPms = props?.showPms ?? false;
   const showChangeControl = props?.showChangeControl ?? false;
   const showLabeling = props?.showLabeling ?? false;
@@ -225,6 +230,19 @@ export default function Sidebar(props?: SidebarProps) {
             className="rounded-md px-3 py-2 text-sm text-ink-700 hover:bg-ink-50 block"
           >
             추적 매트릭스
+          </Link>
+        </nav>
+      )}
+
+      {/* SPEC-REGULA-STANDARDS-001 (Issue #62): Harmonized Standards Tracker conditional link. */}
+      {showStandards && (
+        <nav className="px-2 py-1">
+          <Link
+            href="/workflows/standards"
+            data-testid="sidebar-standards-link"
+            className="rounded-md px-3 py-2 text-sm text-ink-700 hover:bg-ink-50 block"
+          >
+            조화 표준 추적기
           </Link>
         </nav>
       )}

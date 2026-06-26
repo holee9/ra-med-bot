@@ -602,18 +602,18 @@ describe('count-sync: audit_action (174→191) + PermissionAction (66→70)', ()
       /export const auditActionEnum = pgEnum\('audit_action', \[([\s\S]*?)\]\);/,
     );
     const vals = match?.[1]?.match(/'[a-z_.]+'/g) ?? [];
-    expect(vals.length).toBe(199);
+    expect(vals.length).toBe(203);
   });
 
   it('AuditAction type has 199 values (sync with schema enum)', () => {
     const src = readText('lib/audit.ts');
     const match = src.match(/export type AuditAction =\s*([\s\S]*?);/);
     const vals = match?.[1]?.match(/'[a-z_.]+'/g) ?? [];
-    expect(vals.length).toBe(199);
+    expect(vals.length).toBe(203);
   });
 
   it('PERMISSIONS matrix has 71 entries', () => {
-    expect(Object.keys(PERMISSIONS).length).toBe(75); // +2 knowledgepromo.* (#50)
+    expect(Object.keys(PERMISSIONS).length).toBe(77); // +2 knowledgepromo.* (#50) +2 standards.* (#62)
   });
 
   it('schema.ts defines all 4 cyberdevice tables', () => {

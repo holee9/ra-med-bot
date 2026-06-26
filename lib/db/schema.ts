@@ -395,6 +395,17 @@ export const auditActionEnum = pgEnum('audit_action', [
   'memory_created',
   'memory_updated',
   'memory_invalidated',
+  // SPEC-REGULA-STANDARDS-001 — added via 0088_standards.sql (Issue #62).
+  // Standards lifecycle is 21 CFR Part 11 audit-material (design-input records
+  // under ISO 13485 / 21 CFR 820.30). Charter [지양-2] citation provenance.
+  //   standards.mapping.generated    — mapping engine produced an applicable list
+  //   standards.recognition.checked  — FDA recognition real-time check (or degraded)
+  //   standards.revision.detected    — revision detector noticed a new revision
+  //   standards.alert.emitted         — transition milestone alert (D-12/D-6/D-3)
+  'standards.mapping.generated',
+  'standards.recognition.checked',
+  'standards.revision.detected',
+  'standards.alert.emitted',
 ]);
 
 // @MX:NOTE [AUTO] Source governance enums — SPEC-REGULA-SOURCE-GOVERNANCE-001 (Issue #48).
@@ -3141,5 +3152,169 @@ export const entitlement = pgTable(
     orgIdx: index('idx_entitlement_org').on(t.orgId),
     licenseIdx: index('idx_entitlement_license').on(t.sourceLicenseId),
     statusIdx: index('idx_entitlement_status').on(t.orgId, t.status),
+  }),
+);
+
+// @MX:NOTE [AUTO] Standards enums — SPEC-REGULA-STANDARDS-001 (Issue #62).
+// @MX:SPEC SPEC-REGULA-STANDARDS-001 (REQ-STANDARDS-008, REQ-STANDARDS-013, REQ-STANDARDS-015, REQ-STANDARDS-017)
+// @MX:REASON Drizzle pgEnum mirrors the SQL types created in 0088_standards.sql.
+// Keep in lock-step with the migration or runtime inserts fail.
+// standards_body: publisher (ISO/IEC/CEN/ASTM/other).
+// recognition_status: FDA recognition state — 'withdrawn' triggers warn+alternative (AC-06).
+// compliance_status: product×standard state for gap analysis (REQ-013).
+// alert_tier: notification routing for transition milestones (D-12/D-6/D-3, REQ-017/018).
+export const standardsBodyEnum = pgEnum('standards_body', ['ISO', 'IEC', 'CEN', 'ASTM', 'other']);
+export const standardsRecognitionStatusEnum = pgEnum('standards_recognition_status', [
+  'recognized',
+  'not_recognized',
+  'withdrawn',
+  'unknown',
+]);
+export const standardsComplianceStatusEnum = pgEnum('standards_compliance_status', [
+  'compliant',
+  'gap',
+  'unknown',
+  'not_applicable',
+]);
+export const standardsAlertTierEnum = pgEnum('standards_alert_tier', ['info', 'warn', 'critical']);
+
+// @MX:NOTE [AUTO] standards_org_catalog — org-scoped catalog metadata (REQ-STANDARDS-008).
+// @MX:SPEC SPEC-REGULA-STANDARDS-001 (REQ-STANDARDS-008, AC-01 PARTIAL)
+// Metadata only — full text NEVER stored (copyright). source_url links to publisher.
+// source='seed' | 'fda_api' | 'eu_oj' | 'manual' (Charter [지양-2] provenance).
+// Named standards_org_catalog to coexist with the pre-existing global
+// standards_catalog (migration 0047) — this table is org-scoped (RLS + org_id).
+export const standardsOrgCatalog = pgTable(
+  'standards_org_catalog',
+  {
+    id: uuid('id').defaultRandom().primaryKey(),
+    orgId: uuid('org_id')
+      .notNull()
+      .references(() => organizations.id, { onDelete: 'cascade' }),
+    standardNumber: text('standard_number').notNull(),
+    title: text('title').notNull(),
+    version: text('version').notNull(),
+    body: standardsBodyEnum('body').notNull(),
+    status: text('status').notNull().default('current'),
+    recognitionStatus: standardsRecognitionStatusEnum('recognition_status')
+      .notNull()
+      .default('unknown'),
+    euHarmonized: boolean('eu_harmonized').notNull().default(false),
+    source: text('source').notNull().default('seed'),
+    sourceUrl: text('source_url'),
+    scopeKeywords: text('scope_keywords').array().notNull().default(sql`ARRAY[]::text[]`),
+    createdAt: timestamp('created_at', { withTimezone: true, mode: 'date' }).notNull().defaultNow(),
+    updatedAt: timestamp('updated_at', { withTimezone: true, mode: 'date' }).notNull().defaultNow(),
+  },
+  (t) => ({
+    orgNumberVersionUnique: unique('standards_org_catalog_org_number_version_unique').on(
+      t.orgId,
+      t.standardNumber,
+      t.version,
+    ),
+    orgBodyIdx: index('idx_standards_org_catalog_org_body').on(t.orgId, t.body),
+    orgNumberIdx: index('idx_standards_org_catalog_org_number').on(t.orgId, t.standardNumber),
+  }),
+);
+
+// @MX:NOTE [AUTO] standards_org_applicability — device_profile → standard mapping rules (REQ-STANDARDS-001/004/005/006).
+// @MX:SPEC SPEC-REGULA-STANDARDS-001
+// rule_source='builtin' for engine defaults; 'custom' for org overrides.
+// pathway narrows to a regulatory pathway (fda_510k, eu_mdr_class_iii, ...).
+export const standardsOrgApplicability = pgTable(
+  'standards_org_applicability',
+  {
+    id: uuid('id').defaultRandom().primaryKey(),
+    orgId: uuid('org_id')
+      .notNull()
+      .references(() => organizations.id, { onDelete: 'cascade' }),
+    deviceProfileKey: text('device_profile_key').notNull(),
+    standardId: uuid('standard_id')
+      .notNull()
+      .references(() => standardsOrgCatalog.id, { onDelete: 'cascade' }),
+    isMandatory: boolean('is_mandatory').notNull().default(true),
+    applicabilityReason: text('applicability_reason').notNull(),
+    pathway: text('pathway').notNull().default('all'),
+    ruleSource: text('rule_source').notNull().default('builtin'),
+    createdAt: timestamp('created_at', { withTimezone: true, mode: 'date' }).notNull().defaultNow(),
+  },
+  (t) => ({
+    orgProfilePathStandardUnique: unique(
+      'standards_org_applicability_org_profile_pathway_standard_unique',
+    ).on(t.orgId, t.deviceProfileKey, t.pathway, t.standardId),
+    orgProfileIdx: index('idx_standards_org_applicability_org_profile').on(
+      t.orgId,
+      t.deviceProfileKey,
+    ),
+  }),
+);
+
+// @MX:NOTE [AUTO] standards_updates — revision history + transition timeline (REQ-STANDARDS-009/010/011).
+// @MX:SPEC SPEC-REGULA-STANDARDS-001
+// oj_publication_date / date_of_withdrawal drive D-12/D-6/D-3 alerts (AC-05).
+// alert_tier is the current tier for notification routing.
+export const standardsUpdates = pgTable(
+  'standards_updates',
+  {
+    id: uuid('id').defaultRandom().primaryKey(),
+    orgId: uuid('org_id')
+      .notNull()
+      .references(() => organizations.id, { onDelete: 'cascade' }),
+    standardId: uuid('standard_id')
+      .notNull()
+      .references(() => standardsOrgCatalog.id, { onDelete: 'cascade' }),
+    revisionLabel: text('revision_label').notNull(),
+    ojPublicationDate: date('oj_publication_date'),
+    dateOfWithdrawal: date('date_of_withdrawal'),
+    transitionEndDate: date('transition_end_date'),
+    impactSummary: text('impact_summary'),
+    detectedAt: timestamp('detected_at', { withTimezone: true, mode: 'date' })
+      .notNull()
+      .defaultNow(),
+    source: text('source').notNull().default('manual'),
+    alertTier: standardsAlertTierEnum('alert_tier').notNull().default('info'),
+    createdAt: timestamp('created_at', { withTimezone: true, mode: 'date' }).notNull().defaultNow(),
+  },
+  (t) => ({
+    orgStandardIdx: index('idx_standards_updates_org_standard').on(t.orgId, t.standardId),
+    orgAlertIdx: index('idx_standards_updates_org_alert').on(t.orgId, t.alertTier),
+  }),
+);
+
+// @MX:NOTE [AUTO] product_standards_compliance — product×standard compliance state (REQ-STANDARDS-013).
+// @MX:SPEC SPEC-REGULA-STANDARDS-001
+// product_id weak reference (no FK) to avoid cross-SPEC migration coupling.
+// last_assessed_at drives staleness checks in gap analysis.
+export const productStandardsCompliance = pgTable(
+  'product_standards_compliance',
+  {
+    id: uuid('id').defaultRandom().primaryKey(),
+    orgId: uuid('org_id')
+      .notNull()
+      .references(() => organizations.id, { onDelete: 'cascade' }),
+    projectId: uuid('project_id').references(() => projects.id, { onDelete: 'cascade' }),
+    productId: uuid('product_id').notNull(),
+    standardId: uuid('standard_id')
+      .notNull()
+      .references(() => standardsOrgCatalog.id, { onDelete: 'cascade' }),
+    complianceStatus: standardsComplianceStatusEnum('compliance_status')
+      .notNull()
+      .default('unknown'),
+    lastAssessedAt: timestamp('last_assessed_at', { withTimezone: true, mode: 'date' }),
+    notes: text('notes'),
+    createdAt: timestamp('created_at', { withTimezone: true, mode: 'date' }).notNull().defaultNow(),
+    updatedAt: timestamp('updated_at', { withTimezone: true, mode: 'date' }).notNull().defaultNow(),
+  },
+  (t) => ({
+    orgProductStandardUnique: unique('product_standards_compliance_org_product_standard_unique').on(
+      t.orgId,
+      t.productId,
+      t.standardId,
+    ),
+    orgProductIdx: index('idx_product_standards_compliance_org_product').on(t.orgId, t.productId),
+    orgStatusIdx: index('idx_product_standards_compliance_org_status').on(
+      t.orgId,
+      t.complianceStatus,
+    ),
   }),
 );

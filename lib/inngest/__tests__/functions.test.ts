@@ -29,7 +29,8 @@ describe('function registry', () => {
     expect(ids).toContain('knowledge-gap-daily-digest');
     expect(ids).toContain('docingest-upload-processed');
     expect(ids).toContain('capa-effectiveness-due-reminder');
-    expect(functions).toHaveLength(4); // +capa-effectiveness-due-reminder (CAPA-001, Issue #68)
+    expect(ids).toContain('standards-revision-daily');
+    expect(functions).toHaveLength(5); // +standards-revision-daily (STANDARDS-001, Issue #62)
   });
 
   it('weekly digest function is the same instance exported from its module', () => {

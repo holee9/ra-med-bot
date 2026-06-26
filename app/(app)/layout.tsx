@@ -28,6 +28,8 @@ export default async function AppLayout({ children }: { children: React.ReactNod
   let showClassify = false;
   // SPEC-REGULA-TRACEABILITY-001 (Issue #47): Traceability matrix nav gated to ra-member+ (traceability.view).
   let showTraceability = false;
+  // SPEC-REGULA-STANDARDS-001 (Issue #62): Harmonized Standards Tracker nav gated to viewer+ (standards.read).
+  let showStandards = false;
   // SPEC-REGULA-PMS-001 (Issue #53): PMS Workbench nav gated to ra-member+ (pms.view).
   let showPms = false;
   // SPEC-REGULA-CHANGE-CONTROL-001 (Issue #54): Change Control nav gated to ra-member+ (change.view).
@@ -58,6 +60,8 @@ export default async function AppLayout({ children }: { children: React.ReactNod
       showKnowledgeGap = hasRole(userRole as Parameters<typeof hasRole>[0], 'ra-member');
       showClassify = hasRole(userRole as Parameters<typeof hasRole>[0], 'ra-member');
       showTraceability = hasRole(userRole as Parameters<typeof hasRole>[0], 'ra-member');
+      // standards.read minRole is 'viewer' — broad read access (REQ-022).
+      showStandards = hasRole(userRole as Parameters<typeof hasRole>[0], 'viewer');
       showPms = hasRole(userRole as Parameters<typeof hasRole>[0], 'ra-member');
       showChangeControl = hasRole(userRole as Parameters<typeof hasRole>[0], 'ra-member');
       showLabeling = hasRole(userRole as Parameters<typeof hasRole>[0], 'ra-member');
@@ -93,6 +97,7 @@ export default async function AppLayout({ children }: { children: React.ReactNod
         showKnowledgeGap={showKnowledgeGap}
         showClassify={showClassify}
         showTraceability={showTraceability}
+        showStandards={showStandards}
         showPms={showPms}
         showChangeControl={showChangeControl}
         showLabeling={showLabeling}

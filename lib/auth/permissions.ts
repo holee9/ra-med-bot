@@ -155,7 +155,13 @@ export type PermissionAction =
   //   Mirrors knowledgepromo.promote / label.approve.
   // view: ra-member+ — project context is shared across the RA team.
   | 'projectmemory.manage'
-  | 'projectmemory.view';
+  | 'projectmemory.view'
+  // Standards actions (SPEC-REGULA-STANDARDS-001, Issue #62).
+  // manage: ra-lead ONLY — catalog/applicability-rule writes are audit-material.
+  // read: viewer+ — broad read access because applicable-standards results are
+  //   decision-support for the whole RA team (Charter [지양-4] RA Lead reviews).
+  | 'standards.manage'
+  | 'standards.read';
 
 export interface PermissionSpec {
   minRole: Role;
@@ -453,5 +459,22 @@ export const PERMISSIONS: Record<PermissionAction, PermissionSpec> = {
     minRole: 'ra-member',
     scope: 'org',
     resourceType: 'projectMemory',
+  },
+  // @MX:NOTE [AUTO] standards.* — SPEC-REGULA-STANDARDS-001 (Issue #62).
+  // @MX:SPEC SPEC-REGULA-STANDARDS-001 (REQ-STANDARDS-022, Charter [지양-4])
+  // manage: ra-lead ONLY — catalog/applicability-rule writes are audit-material
+  //   regulatory signoffs. Mirrors projectmemory.manage / knowledgepromo.promote.
+  // read: viewer+ — broad read access because applicable-standards results are
+  //   decision-support for the whole RA team (Charter [지양-4] RA Lead reviews,
+  //   but the list is transparent). Viewer can see but not act.
+  'standards.manage': {
+    minRole: 'ra-lead',
+    scope: 'org',
+    resourceType: 'standardsCatalog',
+  },
+  'standards.read': {
+    minRole: 'viewer',
+    scope: 'org',
+    resourceType: 'standardsCatalog',
   },
 };
