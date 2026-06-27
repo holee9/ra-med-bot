@@ -5,6 +5,7 @@
 // Manages tab switching between the 5 PMS workbench views:
 //   - PMS Report (MDCG 2022-21) — REQ-PMS-002
 //   - PMCF Plan (Annex XIV Part B) — REQ-PMS-003
+//   - PMCF Evaluation (plan vs collected data) — REQ-PMS-011
 //   - Inputs (complaint/vigilance) — REQ-PMS-005/006
 //   - Compliance (Article 83-86) — REQ-PMS-007
 //
@@ -13,11 +14,12 @@
 import { useEffect, useState } from 'react';
 import { CERLinkageIndicator } from './CERLinkageIndicator';
 import { CompliancePanel, type ComplianceResult } from './CompliancePanel';
+import { PmcfEvaluationBuilder } from './PmcfEvaluationBuilder';
 import { PmcfPlanBuilder } from './PmcfPlanBuilder';
 import { PmsInputsUploader } from './PmsInputsUploader';
 import { PmsReportWizard } from './PmsReportWizard';
 
-type TabId = 'pms-report' | 'pmcf-plan' | 'inputs' | 'compliance';
+type TabId = 'pms-report' | 'pmcf-plan' | 'pmcf-evaluation' | 'inputs' | 'compliance';
 
 interface TabConfig {
   id: TabId;
@@ -28,6 +30,7 @@ interface TabConfig {
 const TABS: readonly TabConfig[] = [
   { id: 'pms-report', label: 'PMS 보고서', testId: 'pms-tab-pms-report' },
   { id: 'pmcf-plan', label: 'PMCF 계획', testId: 'pms-tab-pmcf-plan' },
+  { id: 'pmcf-evaluation', label: 'PMCF 평가', testId: 'pms-tab-pmcf-evaluation' },
   { id: 'inputs', label: '데이터 입력', testId: 'pms-tab-inputs' },
   { id: 'compliance', label: '컴플라이언스', testId: 'pms-tab-compliance' },
 ] as const;
@@ -106,6 +109,18 @@ export function PmsWorkbench({ projectId, canManage, cerRefId, cerDeviceName }: 
       >
         {activeTab === 'pmcf-plan' && (
           <PmcfPlanBuilder projectId={projectId} canManage={canManage} />
+        )}
+      </div>
+
+      <div
+        role="tabpanel"
+        id="pms-tabpanel-pmcf-evaluation"
+        aria-labelledby="pms-tabbtn-pmcf-evaluation"
+        hidden={activeTab !== 'pmcf-evaluation'}
+        data-testid="pms-tabpanel-pmcf-evaluation"
+      >
+        {activeTab === 'pmcf-evaluation' && (
+          <PmcfEvaluationBuilder projectId={projectId} canManage={canManage} />
         )}
       </div>
 
