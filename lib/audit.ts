@@ -434,7 +434,13 @@ export type AuditAction =
   // rlhf.calibration_proposed: a confidence-calibration candidate was detected
   // and written as status=pending for RA-Lead governance review. Mirrors
   // `reranking_proposed` naming — a PENDING proposal, NEVER an applied change.
-  | 'rlhf.calibration_proposed';
+  | 'rlhf.calibration_proposed'
+  // SPEC-REGULA-RLHF-001 — Issue #264 sub-PR 3/3, added via 0096_rlhf_implicit_feedback.sql.
+  // rlhf.implicit_feedback_recorded: a user clicked "Regenerate answer" and the
+  // implicit downvote (rating = down, feedback_source = implicit_regenerate)
+  // was captured. DISTINCT from feedback_submitted so implicit-regenerate
+  // signals are auditable separately from explicit thumbs-up/down (21 CFR Part 11).
+  | 'rlhf.implicit_feedback_recorded';
 
 export interface AuditEvent {
   /** User UUID, or null for system-initiated events. */

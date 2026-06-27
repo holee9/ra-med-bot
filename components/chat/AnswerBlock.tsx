@@ -84,6 +84,13 @@ interface AnswerBlockProps {
   promotedId?: string;
   // Issue #158 — signature existence for TrustPanel
   signatureExists?: boolean;
+  // #264 sub-PR 3/3 — alternate answers. When provided, the "Regenerate
+  // answer" button becomes clickable and invokes this callback. The parent
+  // (ChatShell) is responsible for (a) firing the implicit downvote to
+  // /api/rlhf/feedback and (b) re-asking the original question via the
+  // existing streaming send path. When omitted, the button stays disabled
+  // (legacy / preview / history-static render).
+  onRegenerate?: () => void;
 }
 
 export function AnswerBlock({
@@ -105,8 +112,13 @@ export function AnswerBlock({
   viewerRole,
   promotedId,
   signatureExists = false,
+  onRegenerate,
 }: AnswerBlockProps) {
   const [refinedProse, setRefinedProse] = useState<string | null>(null);
+  // #264 sub-PR 3/3 — transient disabled state while the implicit feedback
+  // fire-and-forget + re-ask is in flight. Cleared on any terminal outcome
+  // (success or the optimistic re-ask path always runs even on fetch failure).
+  const [regenerating, setRegenerating] = useState(false);
   const displayProse = refinedProse ?? prose;
   const sourceCount = sources?.length ?? 0;
   const durationSec = durationMs !== null ? (durationMs / 1000).toFixed(1) : null;
@@ -154,9 +166,25 @@ export function AnswerBlock({
           />
           <button
             type="button"
-            className="rounded p-1 text-ink-400 hover:text-ink-700 transition-colors"
+            className="rounded p-1 text-ink-400 hover:text-ink-700 transition-colors disabled:cursor-not-allowed disabled:opacity-50 motion-safe:duration-200"
             aria-label="Regenerate answer"
-            disabled
+            disabled={!onRegenerate || regenerating}
+            onClick={
+              onRegenerate
+                ? () => {
+                    if (regenerating) return;
+                    setRegenerating(true);
+                    try {
+                      onRegenerate();
+                    } finally {
+                      // Optimistic — parent re-asks via streaming which swaps
+                      // the answer out; reset so the button is reusable if
+                      // the same answer re-renders.
+                      setRegenerating(false);
+                    }
+                  }
+                : undefined
+            }
           >
             <RefreshCw size={14} />
           </button>

@@ -326,7 +326,7 @@ describe('lib/db/schema.ts Phase 5 additions', () => {
     const values = extractAuditActionEnumValues(src);
     const typeValues = extractAuditActionTypeValues(auditSrc);
     expect(values).toEqual(typeValues);
-    expect(values).toHaveLength(206); // +3 memory_* (#51) +4 standards.* (#62) +1 rlhf.calibration_proposed (#264 sub-PR 2/3)
+    expect(values).toHaveLength(207); // +1 rlhf.calibration_proposed (#264 2/3) +1 rlhf.implicit_feedback_recorded (#264 3/3)
   });
 
   it.each(REQUIRED_RECOVERY_TABLES)(
@@ -382,7 +382,7 @@ describe('lib/audit.ts Phase 5 AuditAction type additions', () => {
         'change.export_blocked',
       ]),
     );
-    expect(values).toHaveLength(206); // +3 memory_* (#51) +4 standards.* (#62) +1 rlhf.calibration_proposed (#264 sub-PR 2/3)
+    expect(values).toHaveLength(207); // +1 rlhf.calibration_proposed (#264 2/3) +1 rlhf.implicit_feedback_recorded (#264 3/3)
   });
 
   it.each(REQUIRED_RECOVERY_AUDIT_ACTIONS)(
@@ -2325,5 +2325,74 @@ describe('Migration 0095: RLHF calibration candidates (Issue #264 sub-PR 2/3)', 
   it('lib/audit.ts AuditAction union includes rlhf.calibration_proposed', () => {
     const src = readText('lib/audit.ts');
     expect(src).toMatch(/'rlhf\.calibration_proposed'/);
+  });
+
+  // ------------------------------------------------------------------
+  // Issue #264 sub-PR 3/3 — implicit feedback (alternate answers)
+  // ------------------------------------------------------------------
+
+  it('migration file 0096_rlhf_implicit_feedback.sql exists', () => {
+    expect(fileExists('migrations/0096_rlhf_implicit_feedback.sql')).toBe(true);
+  });
+
+  it('0096 creates answer_feedback_source enum (2 values)', () => {
+    const sql = readText('migrations/0096_rlhf_implicit_feedback.sql');
+    expect(sql).toMatch(/CREATE TYPE answer_feedback_source AS ENUM/);
+    expect(sql).toMatch(/'explicit'/);
+    expect(sql).toMatch(/'implicit_regenerate'/);
+  });
+
+  it('0096 adds feedback_source + variation_dimensions columns', () => {
+    const sql = readText('migrations/0096_rlhf_implicit_feedback.sql');
+    expect(sql).toMatch(/ADD COLUMN IF NOT EXISTS feedback_source answer_feedback_source/);
+    expect(sql).toMatch(/NOT NULL DEFAULT 'explicit'/);
+    expect(sql).toMatch(/ADD COLUMN IF NOT EXISTS variation_dimensions jsonb/);
+  });
+
+  it('0096 drops the 2-col unique and adds a 3-col unique (idempotent)', () => {
+    const sql = readText('migrations/0096_rlhf_implicit_feedback.sql');
+    // Drizzle/schema.ts name (never existed in real DB but kept for robustness).
+    expect(sql).toMatch(/DROP CONSTRAINT IF EXISTS answer_feedback_message_user_idx/);
+    // CRITICAL: 0082 declared UNIQUE(message_id, user_id) INLINE, so Postgres
+    // auto-named it `answer_feedback_message_id_user_id_key` (the `_key` suffix).
+    // The original 0096 draft only dropped the Drizzle-name and missed this one,
+    // so the 2-col unique survived in real DB and explicit+implicit inserts 500'd.
+    // This assertion prevents that regression.
+    expect(sql).toMatch(/DROP CONSTRAINT IF EXISTS answer_feedback_message_id_user_id_key/);
+    expect(sql).toMatch(
+      /ADD CONSTRAINT answer_feedback_message_user_source_idx\s+UNIQUE \(message_id, user_id, feedback_source\)/,
+    );
+  });
+
+  it('0096 adds rlhf.implicit_feedback_recorded audit action (ALTER TYPE IF NOT EXISTS)', () => {
+    const sql = readText('migrations/0096_rlhf_implicit_feedback.sql');
+    expect(sql).toMatch(
+      /ALTER TYPE audit_action ADD VALUE IF NOT EXISTS 'rlhf\.implicit_feedback_recorded'/,
+    );
+  });
+
+  it('schema.ts feedbackSourceEnum mirrors migration (2 values)', () => {
+    const src = readText('lib/db/schema.ts');
+    expect(src).toMatch(/export const feedbackSourceEnum\s*=\s*pgEnum\('answer_feedback_source'/);
+    expect(src).toContain("'explicit'");
+    expect(src).toContain("'implicit_regenerate'");
+  });
+
+  it('schema.ts answerFeedback table has feedbackSource + variationDimensions columns', () => {
+    const src = readText('lib/db/schema.ts');
+    expect(src).toMatch(
+      /feedbackSource:\s*feedbackSourceEnum\('feedback_source'\)\.notNull\(\)\.default\('explicit'\)/,
+    );
+    expect(src).toMatch(/variationDimensions:\s*jsonb\('variation_dimensions'\)/);
+    // 3-column unique replaces the old 2-column unique.
+    expect(src).toMatch(
+      /messageUserSourceUnique:\s*unique\('answer_feedback_message_user_source_idx'\)\.on\(/,
+    );
+    expect(src).not.toMatch(/messageUserUnique:\s*unique\('answer_feedback_message_user_idx'\)/);
+  });
+
+  it('lib/audit.ts AuditAction union includes rlhf.implicit_feedback_recorded', () => {
+    const src = readText('lib/audit.ts');
+    expect(src).toMatch(/'rlhf\.implicit_feedback_recorded'/);
   });
 });

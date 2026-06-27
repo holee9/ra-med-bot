@@ -49,6 +49,14 @@ export interface FeedbackBridgeInput {
    * redact before passing (the knowledge-gap pipeline is PII-free by contract).
    */
   redactedQuestion: string;
+  /**
+   * Issue #264 sub-PR 3/3 (expert-security M-1 defense-in-depth): when true,
+   * the feedback originated from an implicit regenerate, NOT an explicit
+   * thumbs-up/down. Charter [지양-2] forbids auto gap/promo from implicit
+   * signals, so BOTH bridges self-suppress on this flag independent of the
+   * route-level guard (belt-and-suspenders: the route also short-circuits).
+   */
+  isImplicit?: boolean;
 }
 
 /**
@@ -84,6 +92,13 @@ export async function createGapIssueForLowRatedAnswer(
   input: FeedbackBridgeInput,
   opts: { client?: GitHubIssuesClient; clusterId?: string } = {},
 ): Promise<{ number: number; htmlUrl: string } | null> {
+  // Issue #264 (expert-security M-1): bridge-layer suppression for implicit
+  // feedback. Mirrors the existing null skip shape used when the feedback is
+  // not low-rated. The route also guards this (route.ts:318), but enforcing
+  // suppression HERE removes the dead-code hazard where a future maintainer
+  // could remove the route guard thinking the bridge self-polices via the
+  // rating check alone (implicit downvote passes isLowRatedFeedback).
+  if (input.isImplicit) return null;
   if (!isLowRatedFeedback(input)) return null;
 
   // Derive the machine reason from the dominant quality tag (first low-rated tag).
@@ -135,6 +150,11 @@ export interface PromotionCandidateDescriptor {
 export function proposePromotionCandidateForHighRatedAnswer(
   input: FeedbackBridgeInput,
 ): PromotionCandidateDescriptor | null {
+  // Issue #264 (expert-security M-1): implicit feedback NEVER promotes. Mirrors
+  // the existing null skip shape. The route also guards this (route.ts:320),
+  // but enforced HERE so the invariant holds even if a future caller invokes
+  // the bridge directly (e.g. a calibration daemon reading implicit rows).
+  if (input.isImplicit) return null;
   if (!isHighRatedFeedback(input)) return null;
 
   // REQ-RLHF-015 [HARD]: intentionally a pure descriptor. No DB write, no
