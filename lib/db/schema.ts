@@ -439,8 +439,9 @@ export const sourceApprovalStatusEnum = pgEnum('source_approval_status', [
 // @MX:REASON Drizzle pgEnum mirrors the SQL types created in 0082_rlhf.sql.
 // Keep in lock-step with the migration or runtime inserts fail.
 // feedback_rating: thumb up/down (REQ-RLHF-001).
-// quality_tag: EXACTLY 8 values — Issue #56 comment extras are deferred to a
-//              follow-up (RLHF-v2). Do NOT expand without a SPEC amendment.
+// quality_tag: 12 values — 8 original (Issue #56) + 4 confidence-breakdown
+//              dimensions (Issue #264 follow-up, sub-PR 1/3). Keep in lock-step
+//              with migration 0082 (CREATE TYPE) + 0093 (ALTER TYPE ADD VALUE).
 export const feedbackRatingEnum = pgEnum('feedback_rating', ['up', 'down']);
 export const qualityTagEnum = pgEnum('quality_tag', [
   'citation_missing',
@@ -451,6 +452,11 @@ export const qualityTagEnum = pgEnum('quality_tag', [
   'jurisdiction_mismatch',
   'helpful',
   'excellent',
+  // #264 confidence-breakdown dimensions (sub-PR 1/3):
+  'citation_coverage_low',
+  'source_recency_stale',
+  'source_authority_weak',
+  'source_agreement_conflict',
 ]);
 
 // @MX:NOTE [AUTO] Knowledge promotion enum — SPEC-REGULA-KNOWLEDGE-PROMO-001 (Issue #50).

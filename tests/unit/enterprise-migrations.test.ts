@@ -2204,3 +2204,30 @@ describe('Migration 0092: DHF + eSubmit text-vs-uuid FK fix (Issue #280)', () =>
     expect(src).toContain("packageId: text('package_id')");
   });
 });
+
+// ---------------------------------------------------------------------------
+// Migration 0093: RLHF quality_tag enum +4 confidence-breakdown (Issue #264 sub-PR 1/3)
+// ---------------------------------------------------------------------------
+describe('Migration 0093: RLHF quality_tag +4 confidence-breakdown (Issue #264)', () => {
+  it('migration file 0093_rlhf_quality_tags_plus4.sql exists', () => {
+    expect(fileExists('migrations/0093_rlhf_quality_tags_plus4.sql')).toBe(true);
+  });
+
+  it('adds 4 quality_tag enum values with ALTER TYPE IF NOT EXISTS', () => {
+    const sql = readText('migrations/0093_rlhf_quality_tags_plus4.sql');
+    expect(sql).toMatch(/ALTER TYPE quality_tag ADD VALUE IF NOT EXISTS 'citation_coverage_low'/);
+    expect(sql).toMatch(/ALTER TYPE quality_tag ADD VALUE IF NOT EXISTS 'source_recency_stale'/);
+    expect(sql).toMatch(/ALTER TYPE quality_tag ADD VALUE IF NOT EXISTS 'source_authority_weak'/);
+    expect(sql).toMatch(
+      /ALTER TYPE quality_tag ADD VALUE IF NOT EXISTS 'source_agreement_conflict'/,
+    );
+  });
+
+  it('schema.ts qualityTagEnum matches migration (12 values, #264 breakdown)', () => {
+    const src = readText('lib/db/schema.ts');
+    expect(src).toContain("'citation_coverage_low'");
+    expect(src).toContain("'source_recency_stale'");
+    expect(src).toContain("'source_authority_weak'");
+    expect(src).toContain("'source_agreement_conflict'");
+  });
+});

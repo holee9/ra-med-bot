@@ -39,7 +39,7 @@ describe('FeedbackControl (REQ-RLHF-003, AC-01)', () => {
     expect(screen.queryAllByRole('button', { name: /출처 누락/ }).length).toBe(0);
   });
 
-  it('shows 8 quality tags after selecting a rating', () => {
+  it('shows 12 quality tags after selecting a rating', () => {
     render(<FeedbackControl messageId="00000000-0000-0000-0000-000000000001" />);
     fireEvent.click(screen.getByRole('button', { name: '아쉬워요' }));
     expect(screen.getByTestId('feedback-tag-citation_missing')).toBeDefined();
@@ -47,7 +47,7 @@ describe('FeedbackControl (REQ-RLHF-003, AC-01)', () => {
     const tagButtons = screen
       .getAllByRole('button')
       .filter((b) => b.dataset.testid?.startsWith('feedback-tag-'));
-    expect(tagButtons.length).toBe(8);
+    expect(tagButtons.length).toBe(12);
   });
 
   it('submits up-rating feedback with selected tags and forwards the messageId', async () => {

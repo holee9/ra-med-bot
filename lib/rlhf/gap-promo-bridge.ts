@@ -24,6 +24,11 @@ export const LOW_RATED_TAGS = new Set([
   'answer_wrong',
   'outdated_info',
   'jurisdiction_mismatch',
+  // #264 confidence-breakdown dimensions — all low-quality signals (REQ-RLHF-007):
+  'citation_coverage_low',
+  'source_recency_stale',
+  'source_authority_weak',
+  'source_agreement_conflict',
 ]);
 
 /** Quality tags that mark an answer as high-rated (REQ-RLHF-008). */

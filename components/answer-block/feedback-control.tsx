@@ -5,7 +5,7 @@
 //
 // Architecture: client island rendered below the AnswerBlock prose. The userId
 // is resolved server-side at the API boundary (session.user.id) so this client
-// never handles credentials. qualityTags is limited to the 8-value enum via
+// never handles credentials. qualityTags is limited to the 12-value enum via
 // strict TypeScript + the API re-validates with zod (AC-02). The low-rated
 // acknowledgement surfaces REQ-RLHF-007 (knowledge-gap bridge) without any
 // client-side issue creation.
@@ -13,8 +13,8 @@
 import { ThumbsDown, ThumbsUp } from 'lucide-react';
 import { useState } from 'react';
 
-/** REQ-RLHF-002 / AC-02: EXACTLY 8 quality tag values (frozen enum). */
-export const QUALITY_TAGS_8 = [
+/** REQ-RLHF-002 / AC-02: 12 quality tag values (8 original + 4 Issue-264 breakdown). */
+export const QUALITY_TAGS_12 = [
   'citation_missing',
   'citation_wrong',
   'answer_incomplete',
@@ -23,9 +23,14 @@ export const QUALITY_TAGS_8 = [
   'jurisdiction_mismatch',
   'helpful',
   'excellent',
+  // #264 confidence-breakdown dimensions (sub-PR 1/3):
+  'citation_coverage_low',
+  'source_recency_stale',
+  'source_authority_weak',
+  'source_agreement_conflict',
 ] as const;
 
-export type QualityTag = (typeof QUALITY_TAGS_8)[number];
+export type QualityTag = (typeof QUALITY_TAGS_12)[number];
 
 const TAG_LABELS: Record<QualityTag, string> = {
   citation_missing: '출처 누락',
@@ -36,6 +41,11 @@ const TAG_LABELS: Record<QualityTag, string> = {
   jurisdiction_mismatch: '관할권 불일치',
   helpful: '유용함',
   excellent: '우수함',
+  // #264 confidence-breakdown labels:
+  citation_coverage_low: '인용 커버리지 낮음',
+  source_recency_stale: '출처 최신성 낮음',
+  source_authority_weak: '출처 권위 약함',
+  source_agreement_conflict: '출처 간 충돌',
 };
 
 /**
@@ -48,6 +58,11 @@ const GAP_SIGNAL_TAGS: ReadonlySet<QualityTag> = new Set<QualityTag>([
   'answer_wrong',
   'outdated_info',
   'jurisdiction_mismatch',
+  // #264 confidence-breakdown dimensions — all low-quality gap signals:
+  'citation_coverage_low',
+  'source_recency_stale',
+  'source_authority_weak',
+  'source_agreement_conflict',
 ]);
 
 interface FeedbackControlProps {
@@ -165,7 +180,7 @@ export function FeedbackControl({ messageId, redactedQuestion }: FeedbackControl
           <fieldset className="flex flex-col gap-2" aria-label="품질 태그">
             <legend className="sr-only">품질 태그 (여러 개 선택 가능)</legend>
             <div className="flex flex-wrap gap-1.5">
-              {QUALITY_TAGS_8.map((tag) => {
+              {QUALITY_TAGS_12.map((tag) => {
                 const active = selectedTags.includes(tag);
                 return (
                   <button

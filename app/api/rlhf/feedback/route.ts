@@ -28,8 +28,8 @@ import { emitFeedbackEvent } from '@/lib/rlhf/langfuse-emitter';
 import { and, eq } from 'drizzle-orm';
 import { z } from 'zod';
 
-/** REQ-RLHF-002 / AC-02: EXACTLY 8 quality tag values. */
-const QUALITY_TAGS_8 = [
+/** REQ-RLHF-002 / AC-02: 12 quality tag values (8 original + 4 Issue-264 breakdown). */
+const QUALITY_TAGS_12 = [
   'citation_missing',
   'citation_wrong',
   'answer_incomplete',
@@ -38,10 +38,14 @@ const QUALITY_TAGS_8 = [
   'jurisdiction_mismatch',
   'helpful',
   'excellent',
+  'citation_coverage_low',
+  'source_recency_stale',
+  'source_authority_weak',
+  'source_agreement_conflict',
 ] as const;
 
 /**
- * AC-02 invariant: the zod schema rejects any tag outside the 8-value enum.
+ * AC-02 invariant: the zod schema rejects any tag outside the 12-value enum.
  * The literal tuple (not a string[]) keeps the type narrow so TypeScript also
  * enforces exhaustiveness at compile time.
  *
@@ -52,7 +56,7 @@ const QUALITY_TAGS_8 = [
 const FeedbackRequestSchema = z.object({
   messageId: z.string().uuid(),
   rating: z.enum(['up', 'down']),
-  qualityTags: z.array(z.enum(QUALITY_TAGS_8)).default([]),
+  qualityTags: z.array(z.enum(QUALITY_TAGS_12)).default([]),
   comment: z.string().max(2000).nullable().default(null),
   /** @deprecated client-supplied redactedQuestion — server re-redacts from source. */
   redactedQuestion: z.string().max(500).optional(),
