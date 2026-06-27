@@ -412,6 +412,12 @@ export const auditActionEnum = pgEnum('audit_action', [
   //   owning_issue_creation_failed  — 3x retry exhausted; queue row stays in queued state
   'owning_issue_created',
   'owning_issue_creation_failed',
+  // SPEC-REGULA-RLHF-001 — Issue #264 sub-PR 2/3, added via 0095_rlhf_calibration_candidates.sql.
+  // rlhf.calibration_proposed: a confidence-calibration candidate was detected
+  // and written as status=pending for RA-Lead governance review (REQ-RLHF-005/015,
+  // Charter [지양-2]/[지양-4]). Mirrors `reranking_proposed` naming — PENDING
+  // proposal, NEVER an applied change.
+  'rlhf.calibration_proposed',
 ]);
 
 // @MX:NOTE [AUTO] Source governance enums — SPEC-REGULA-SOURCE-GOVERNANCE-001 (Issue #48).
@@ -457,6 +463,24 @@ export const qualityTagEnum = pgEnum('quality_tag', [
   'source_recency_stale',
   'source_authority_weak',
   'source_agreement_conflict',
+]);
+
+// @MX:NOTE [AUTO] Calibration candidate status enum — SPEC-REGULA-RLHF-001 (Issue #264 sub-PR 2/3).
+// @MX:SPEC SPEC-REGULA-RLHF-001 (REQ-RLHF-005, REQ-RLHF-015)
+// @MX:REASON Drizzle pgEnum mirrors the SQL type created in
+//           0095_rlhf_calibration_candidates.sql. Lifecycle (REQ-RLHF-015):
+//             pending                  — freshly detected, awaiting RA-Lead review
+//             reviewed                  — linked to a governance change_request
+//             dismissed                 — RA-Lead rejected (noise / no action)
+//             applied_via_governance    — #71 change-control approved + rolled out
+//           The detector ONLY inserts 'pending'. The applied_via_governance
+//           transition is set by the governance approve path, never by the
+//           calibration detector (Charter [지양-2]/[지양-4]).
+export const calibrationCandidateStatusEnum = pgEnum('calibration_candidate_status', [
+  'pending',
+  'reviewed',
+  'dismissed',
+  'applied_via_governance',
 ]);
 
 // @MX:NOTE [AUTO] Knowledge promotion enum — SPEC-REGULA-KNOWLEDGE-PROMO-001 (Issue #50).
@@ -849,6 +873,60 @@ export const answerFeedback = pgTable(
     messageIdx: index('idx_answer_feedback_message').on(t.messageId),
     createdIdx: index('idx_answer_feedback_created').on(t.createdAt),
     user_idx: index('idx_answer_feedback_user').on(t.userId),
+  }),
+);
+
+// @MX:NOTE [AUTO] calibration_candidates — SPEC-REGULA-RLHF-001 (Issue #264 sub-PR 2/3).
+// @MX:SPEC SPEC-REGULA-RLHF-001 (REQ-RLHF-005, REQ-RLHF-006, REQ-RLHF-014, REQ-RLHF-015)
+// @MX:REASON Confidence-calibration detection surface. Each row captures ONE
+//           observation: "in confidence bucket B, across N samples, the
+//           observed up-vote ratio was R". Overconfident / underconfident
+//           buckets become pending candidates for RA-Lead review.
+//           Charter [지양-2]: correction values are NEVER auto-applied —
+//           status starts at 'pending' and only transitions via governance.
+//           Charter [지양-4]: any applied change flows through #71
+//           MODEL-GOVERNANCE via the nullable governance_change_request_id FK.
+//           RLS is inert project-wide (#239 debt); query-layer eq(orgId) is
+//           the authoritative tenant boundary (mirrors answer_feedback).
+export const calibrationCandidates = pgTable(
+  'calibration_candidates',
+  {
+    id: uuid('id').defaultRandom().primaryKey(),
+    orgId: uuid('org_id')
+      .notNull()
+      .references(() => organizations.id, { onDelete: 'cascade' }),
+    // @MX:WARN [AUTO] confidence_bucket is text (half-open interval label),
+    //   NOT numeric — keeps candidate rows stable + human-readable in audit.
+    //   @MX:REASON the detector buckets confidence into named bands; storing
+    //     the label (not the raw score) matches detection granularity.
+    confidenceBucket: text('confidence_bucket').notNull(),
+    // Optional secondary dimension (default 'all' for the whole-bucket view).
+    sourceType: text('source_type').notNull().default('all'),
+    observedUpRatio: numeric('observed_up_ratio', { precision: 4, scale: 3 }),
+    sampleSize: integer('sample_size').notNull().default(0),
+    verdict: text('verdict').notNull(),
+    status: calibrationCandidateStatusEnum('status').notNull().default('pending'),
+    proposedBy: uuid('proposed_by').references(() => users.id, { onDelete: 'set null' }),
+    proposedAt: timestamp('proposed_at', { withTimezone: true, mode: 'date' })
+      .notNull()
+      .defaultNow(),
+    reviewedBy: uuid('reviewed_by').references(() => users.id, { onDelete: 'set null' }),
+    reviewedAt: timestamp('reviewed_at', { withTimezone: true, mode: 'date' }),
+    // Nullable link to #71 MODEL-GOVERNANCE change_request. Forward reference
+    // — changeRequest is defined later in this module (Drizzle resolves it).
+    governanceChangeRequestId: uuid('governance_change_request_id'),
+    reviewNotes: text('review_notes'),
+    createdAt: timestamp('created_at', { withTimezone: true, mode: 'date' }).notNull().defaultNow(),
+    updatedAt: timestamp('updated_at', { withTimezone: true, mode: 'date' }).notNull().defaultNow(),
+  },
+  (t) => ({
+    orgStatusIdx: index('idx_calibration_candidates_org_status').on(t.orgId, t.status),
+    orgBucketIdx: index('idx_calibration_candidates_org_bucket').on(
+      t.orgId,
+      t.confidenceBucket,
+      t.sourceType,
+    ),
+    proposedAtIdx: index('idx_calibration_candidates_proposed_at').on(t.proposedAt),
   }),
 );
 

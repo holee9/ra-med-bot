@@ -326,7 +326,7 @@ describe('lib/db/schema.ts Phase 5 additions', () => {
     const values = extractAuditActionEnumValues(src);
     const typeValues = extractAuditActionTypeValues(auditSrc);
     expect(values).toEqual(typeValues);
-    expect(values).toHaveLength(205); // +3 memory_* (#51) +4 standards.* (#62)
+    expect(values).toHaveLength(206); // +3 memory_* (#51) +4 standards.* (#62) +1 rlhf.calibration_proposed (#264 sub-PR 2/3)
   });
 
   it.each(REQUIRED_RECOVERY_TABLES)(
@@ -382,7 +382,7 @@ describe('lib/audit.ts Phase 5 AuditAction type additions', () => {
         'change.export_blocked',
       ]),
     );
-    expect(values).toHaveLength(205); // +3 memory_* (#51) +4 standards.* (#62)
+    expect(values).toHaveLength(206); // +3 memory_* (#51) +4 standards.* (#62) +1 rlhf.calibration_proposed (#264 sub-PR 2/3)
   });
 
   it.each(REQUIRED_RECOVERY_AUDIT_ACTIONS)(
@@ -2259,5 +2259,71 @@ describe('Migration 0094: messages embedding (Issue #275)', () => {
   it('schema.ts messages table has embedding column', () => {
     const src = readText('lib/db/schema.ts');
     expect(src).toContain('embedding: vector');
+  });
+});
+
+// ---------------------------------------------------------------------------
+// Migration 0095: RLHF confidence-calibration candidates (Issue #264 sub-PR 2/3)
+// ---------------------------------------------------------------------------
+describe('Migration 0095: RLHF calibration candidates (Issue #264 sub-PR 2/3)', () => {
+  it('migration file 0095_rlhf_calibration_candidates.sql exists', () => {
+    expect(fileExists('migrations/0095_rlhf_calibration_candidates.sql')).toBe(true);
+  });
+
+  it('creates calibration_candidate_status enum with 4 values', () => {
+    const sql = readText('migrations/0095_rlhf_calibration_candidates.sql');
+    expect(sql).toMatch(/CREATE TYPE calibration_candidate_status AS ENUM/);
+    expect(sql).toMatch(/'pending'/);
+    expect(sql).toMatch(/'reviewed'/);
+    expect(sql).toMatch(/'dismissed'/);
+    expect(sql).toMatch(/'applied_via_governance'/);
+  });
+
+  it('creates calibration_candidates table with org isolation + governance link', () => {
+    const sql = readText('migrations/0095_rlhf_calibration_candidates.sql');
+    expect(sql).toMatch(/CREATE TABLE calibration_candidates/);
+    expect(sql).toMatch(/org_id\s+uuid NOT NULL REFERENCES organizations/);
+    expect(sql).toMatch(/confidence_bucket\s+text NOT NULL/);
+    expect(sql).toMatch(/observed_up_ratio\s+numeric\(4,3\)/);
+    expect(sql).toMatch(/sample_size\s+integer NOT NULL DEFAULT 0/);
+    // Charter [지양-2]: status defaults to pending (never auto-applied).
+    expect(sql).toMatch(/status\s+calibration_candidate_status NOT NULL DEFAULT 'pending'/);
+    // Charter [지양-4]: nullable governance link to #71.
+    expect(sql).toMatch(/governance_change_request_id\s+uuid/);
+    // RLS enabled (defense-in-depth; #239 debt acknowledged).
+    expect(sql).toMatch(/ALTER TABLE calibration_candidates ENABLE ROW LEVEL SECURITY/);
+    expect(sql).toMatch(/CREATE POLICY calibration_candidates_org_isolation/);
+  });
+
+  it('adds rlhf.calibration_proposed audit action (ALTER TYPE IF NOT EXISTS)', () => {
+    const sql = readText('migrations/0095_rlhf_calibration_candidates.sql');
+    expect(sql).toMatch(
+      /ALTER TYPE audit_action ADD VALUE IF NOT EXISTS 'rlhf\.calibration_proposed'/,
+    );
+  });
+
+  it('schema.ts calibrationCandidateStatusEnum matches migration (4 values)', () => {
+    const src = readText('lib/db/schema.ts');
+    expect(src).toMatch(/export const calibrationCandidateStatusEnum\s*=\s*pgEnum/);
+    expect(src).toMatch(/calibration_candidate_status/);
+    expect(src).toContain("'pending'");
+    expect(src).toContain("'reviewed'");
+    expect(src).toContain("'dismissed'");
+    expect(src).toContain("'applied_via_governance'");
+  });
+
+  it('schema.ts calibrationCandidates table mirrors migration columns', () => {
+    const src = readText('lib/db/schema.ts');
+    expect(src).toMatch(/export const calibrationCandidates\s*=\s*pgTable/);
+    expect(src).toMatch(/'calibration_candidates'/);
+    expect(src).toMatch(/confidenceBucket:\s*text\('confidence_bucket'\)/);
+    expect(src).toMatch(/observedUpRatio:\s*numeric\('observed_up_ratio'/);
+    expect(src).toMatch(/calibrationCandidateStatusEnum\('status'\)/);
+    expect(src).toMatch(/governanceChangeRequestId:\s*uuid\('governance_change_request_id'\)/);
+  });
+
+  it('lib/audit.ts AuditAction union includes rlhf.calibration_proposed', () => {
+    const src = readText('lib/audit.ts');
+    expect(src).toMatch(/'rlhf\.calibration_proposed'/);
   });
 });
