@@ -1,12 +1,13 @@
-// @MX:NOTE [AUTO] Embedding helper for promoted answers.
-// @MX:SPEC SPEC-REGULA-KNOWLEDGE-PROMO-001 (REQ-KNOWLEDGE-PROMO-002, design decision #1)
+// @MX:NOTE [AUTO] Embedding helper for promoted answers and messages.
+// @MX:SPEC SPEC-REGULA-KNOWLEDGE-PROMO-001 (REQ-KNOWLEDGE-PROMO-002, REQ-002)
 // @MX:REASON promoted_answers.embedding is computed at promotion time from
-//           the source message prose. Returns null when OpenAI is unavailable
-//           (tests / no-key env) — promotion still succeeds, semantic search
-//           on that row is simply skipped until an embedding exists.
+//           the source message prose. messages.embedding is computed at
+//           persist time for assistant messages. Returns null when OpenAI is
+//           unavailable (tests / no-key env) — persist still succeeds.
 
 import { openai } from '@ai-sdk/openai';
 import { type EmbeddingModel, embed } from 'ai';
+import { logger } from '../observability/logger';
 
 /**
  * Embed `text` via text-embedding-3-small (1536 dims — matches vector(1536)).
@@ -33,4 +34,24 @@ export async function embedForPromotion(text: string): Promise<number[] | null> 
 export function toVectorLiteral(embedding: number[] | null): string | null {
   if (!embedding || embedding.length === 0) return null;
   return `[${embedding.join(',')}]`;
+}
+
+/**
+ * Embed `text` via text-embedding-3-small (1536 dims — matches vector(1536)).
+ * Used for messages.embedding at persist time. Returns null on failure with
+ * warning logged — message persist continues without embedding (graceful).
+ */
+export async function embedForMessage(text: string): Promise<number[] | null> {
+  if (!text) return null;
+  try {
+    const { embedding } = await embed({
+      model: openai.embedding('text-embedding-3-small') as unknown as EmbeddingModel<string>,
+      value: text,
+    });
+    return embedding;
+  } catch (error) {
+    logger.warn('Failed to generate embedding for message', { error });
+    // OpenAI key unavailable or transient failure — persist without embedding.
+    return null;
+  }
 }

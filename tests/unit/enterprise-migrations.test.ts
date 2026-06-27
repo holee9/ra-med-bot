@@ -2231,3 +2231,33 @@ describe('Migration 0093: RLHF quality_tag +4 confidence-breakdown (Issue #264)'
     expect(src).toContain("'source_agreement_conflict'");
   });
 });
+
+// ---------------------------------------------------------------------------
+// Migration 0094: messages embedding for REQ-002 semantic search (Issue #275)
+// ---------------------------------------------------------------------------
+describe('Migration 0094: messages embedding (Issue #275)', () => {
+  it('migration file 0094_messages_embedding.sql exists', () => {
+    expect(fileExists('migrations/0094_messages_embedding.sql')).toBe(true);
+  });
+
+  it('adds messages.embedding column with idempotent DO $$ block', () => {
+    const sql = readText('migrations/0094_messages_embedding.sql');
+    expect(sql).toMatch(/DO \$\$/);
+    expect(sql).toMatch(/information_schema\.columns/);
+    expect(sql).toMatch(/table_name = 'messages'/);
+    expect(sql).toMatch(/column_name = 'embedding'/);
+    expect(sql).toMatch(/ALTER TABLE messages ADD COLUMN embedding vector\(1536\)/);
+  });
+
+  it('creates ivfflat index with IF NOT EXISTS', () => {
+    const sql = readText('migrations/0094_messages_embedding.sql');
+    expect(sql).toMatch(/CREATE INDEX IF NOT EXISTS idx_messages_embedding/);
+    expect(sql).toMatch(/USING ivfflat \(embedding vector_cosine_ops\)/);
+    expect(sql).toMatch(/WITH \(lists = 10\)/);
+  });
+
+  it('schema.ts messages table has embedding column', () => {
+    const src = readText('lib/db/schema.ts');
+    expect(src).toContain('embedding: vector');
+  });
+});

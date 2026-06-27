@@ -1,11 +1,12 @@
 // @MX:NOTE [AUTO] Central Inngest function registry. The serve endpoint imports
 // this array so every registered function is exposed in one place.
-// @MX:SPEC SPEC-REGULA-DIGEST-001 / SPEC-REGULA-DOCINGEST-001 / SPEC-REGULA-KNOWLEDGE-GAP-001 / SPEC-REGULA-CAPA-001 / SPEC-REGULA-STANDARDS-001
+// @MX:SPEC SPEC-REGULA-DIGEST-001 / SPEC-REGULA-DOCINGEST-001 / SPEC-REGULA-KNOWLEDGE-GAP-001 / SPEC-REGULA-CAPA-001 / SPEC-REGULA-STANDARDS-001 / SPEC-REGULA-KNOWLEDGE-PROMO-001
 
 import { capaEffectivenessDueReminderFn } from './capa/effectiveness-due-reminder';
 import { knowledgeGapDailyDigestFn } from './digest/knowledge-gap-daily-digest';
 import { weeklyDigestFn } from './digest/weekly-digest';
 import { uploadProcessedFn } from './docingest/upload-processed';
+import { messagesEmbeddingBackfillJob } from './knowledge-promo/messages-embedding-backfill';
 import { standardsRevisionDailyFn } from './standards/standards-revision-daily';
 
 /**
@@ -18,4 +19,5 @@ export const functions = [
   uploadProcessedFn,
   capaEffectivenessDueReminderFn,
   standardsRevisionDailyFn,
+  messagesEmbeddingBackfillJob, // Issue NNN — messages embedding backfill
 ];
