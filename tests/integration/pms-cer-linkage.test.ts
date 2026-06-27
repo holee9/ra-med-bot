@@ -46,7 +46,7 @@ const PROJECT_ID = '00000000-0000-0000-0000-000000000001';
 const ORG_ID = 'aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa';
 
 describe('AC-04 / REQ-PMS-004 CER linkage (auto-linkage ACTIVE)', () => {
-  it('returns manual override cerData without DB lookup when provided', async () => {
+  it('returns manual override cerData without DB lookup when provided (path 1)', async () => {
     const manual = {
       cerId: 'manual-cer-1',
       deviceName: 'ManualDevice',
@@ -141,5 +141,48 @@ describe('AC-04 / REQ-PMS-004 CER linkage (auto-linkage ACTIVE)', () => {
     expect(result?.deviceName).toBe('');
     expect(result?.intendedUse).toBe('');
     expect(result?.riskProfile).toBe('');
+  });
+
+  it('returns null gracefully when DB query throws (path 3: DB error graceful)', async () => {
+    const dbMock = {
+      select: vi.fn(() => {
+        throw new Error('DB connection lost');
+      }),
+    };
+
+    const result = await resolveCerLinkage(
+      PROJECT_ID,
+      ORG_ID,
+      null,
+      dbMock as Parameters<typeof resolveCerLinkage>[3],
+    );
+
+    expect(result).toBeNull();
+  });
+
+  it('enforces org/project isolation: different project CER is NOT linked (path 2b)', async () => {
+    const OTHER_PROJECT_ID = '00000000-0000-0000-0000-000000000002';
+
+    // Clear cerRows - no CER run exists
+    cerRows = [];
+    const dbMock = makeDbMock();
+
+    const result = await resolveCerLinkage(OTHER_PROJECT_ID, ORG_ID, null, dbMock);
+
+    // No CER run for OTHER_PROJECT_ID
+    expect(result).toBeNull();
+  });
+
+  it('enforces org isolation: different org CER is NOT linked (path 2c)', async () => {
+    const OTHER_ORG_ID = 'bbbbbbbb-bbbb-bbbb-bbbb-bbbbbbbbbbbb';
+
+    // Clear cerRows - no CER run exists for this org
+    cerRows = [];
+    const dbMock = makeDbMock();
+
+    const result = await resolveCerLinkage(PROJECT_ID, OTHER_ORG_ID, null, dbMock);
+
+    // No CER run for OTHER_ORG_ID
+    expect(result).toBeNull();
   });
 });
