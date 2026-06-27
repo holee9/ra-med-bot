@@ -2089,3 +2089,118 @@ describe('Migration 0091: owning-project issue routing (Issue #157)', () => {
     expect(typeValues).toContain('owning_issue_creation_failed');
   });
 });
+
+// ---------------------------------------------------------------------------
+// Migration 0092: design_history_files + submission_packages text-vs-uuid FK fix (Issue #280)
+// ---------------------------------------------------------------------------
+describe('Migration 0092: DHF + eSubmit text-vs-uuid FK fix (Issue #280)', () => {
+  it('migration file 0092_fixup_dhf_esubmit_text_uuid.sql exists', () => {
+    expect(fileExists('migrations/0092_fixup_dhf_esubmit_text_uuid.sql')).toBe(true);
+  });
+
+  it('creates design_history_files with org_id uuid (not text)', () => {
+    const sql = readText('migrations/0092_fixup_dhf_esubmit_text_uuid.sql');
+    expect(sql).toMatch(/CREATE TABLE IF NOT EXISTS design_history_files/);
+    expect(sql).toMatch(/org_id uuid NOT NULL REFERENCES organizations\(id\) ON DELETE CASCADE/);
+  });
+
+  it('creates design_history_files with created_by uuid (not text)', () => {
+    const sql = readText('migrations/0092_fixup_dhf_esubmit_text_uuid.sql');
+    expect(sql).toMatch(/created_by uuid NOT NULL REFERENCES users\(id\)/);
+  });
+
+  it('creates design_inputs table (dhf_id TEXT matches design_history_files.id TEXT)', () => {
+    const sql = readText('migrations/0092_fixup_dhf_esubmit_text_uuid.sql');
+    expect(sql).toMatch(/CREATE TABLE IF NOT EXISTS design_inputs/);
+    expect(sql).toMatch(
+      /dhf_id TEXT NOT NULL REFERENCES design_history_files\(id\) ON DELETE CASCADE/,
+    );
+  });
+
+  it('creates design_verifications table', () => {
+    const sql = readText('migrations/0092_fixup_dhf_esubmit_text_uuid.sql');
+    expect(sql).toMatch(/CREATE TABLE IF NOT EXISTS design_verifications/);
+    expect(sql).toMatch(
+      /dhf_id TEXT NOT NULL REFERENCES design_history_files\(id\) ON DELETE CASCADE/,
+    );
+    expect(sql).toMatch(/design_input_id TEXT REFERENCES design_inputs\(id\)/);
+  });
+
+  it('creates design_reviews table', () => {
+    const sql = readText('migrations/0092_fixup_dhf_esubmit_text_uuid.sql');
+    expect(sql).toMatch(/CREATE TABLE IF NOT EXISTS design_reviews/);
+    expect(sql).toMatch(
+      /dhf_id TEXT NOT NULL REFERENCES design_history_files\(id\) ON DELETE CASCADE/,
+    );
+  });
+
+  it('creates submission_packages with org_id uuid (not text)', () => {
+    const sql = readText('migrations/0092_fixup_dhf_esubmit_text_uuid.sql');
+    expect(sql).toMatch(/CREATE TABLE IF NOT EXISTS submission_packages/);
+    expect(sql).toMatch(/org_id uuid NOT NULL REFERENCES organizations\(id\) ON DELETE CASCADE/);
+  });
+
+  it('creates submission_packages with created_by uuid (not text)', () => {
+    const sql = readText('migrations/0092_fixup_dhf_esubmit_text_uuid.sql');
+    expect(sql).toMatch(/created_by uuid NOT NULL REFERENCES users\(id\)/);
+  });
+
+  it('creates submission_interactions table (package_id TEXT matches submission_packages.id TEXT)', () => {
+    const sql = readText('migrations/0092_fixup_dhf_esubmit_text_uuid.sql');
+    expect(sql).toMatch(/CREATE TABLE IF NOT EXISTS submission_interactions/);
+    expect(sql).toMatch(
+      /package_id TEXT NOT NULL REFERENCES submission_packages\(id\) ON DELETE CASCADE/,
+    );
+  });
+
+  it('creates all 6 required indexes with IF NOT EXISTS', () => {
+    const sql = readText('migrations/0092_fixup_dhf_esubmit_text_uuid.sql');
+    expect(sql).toMatch(/CREATE INDEX IF NOT EXISTS idx_dhf_org ON design_history_files\(org_id\)/);
+    expect(sql).toMatch(
+      /CREATE INDEX IF NOT EXISTS idx_design_inputs_dhf ON design_inputs\(dhf_id\)/,
+    );
+    expect(sql).toMatch(
+      /CREATE INDEX IF NOT EXISTS idx_design_verifications_dhf ON design_verifications\(dhf_id\)/,
+    );
+    expect(sql).toMatch(
+      /CREATE INDEX IF NOT EXISTS idx_design_reviews_dhf ON design_reviews\(dhf_id\)/,
+    );
+    expect(sql).toMatch(
+      /CREATE INDEX IF NOT EXISTS idx_submission_packages_org ON submission_packages\(org_id\)/,
+    );
+    expect(sql).toMatch(
+      /CREATE INDEX IF NOT EXISTS idx_submission_interactions_pkg ON submission_interactions\(package_id\)/,
+    );
+  });
+
+  it('adds 4 DHF audit_action enum values with IF NOT EXISTS', () => {
+    const sql = readText('migrations/0092_fixup_dhf_esubmit_text_uuid.sql');
+    expect(sql).toMatch(/ALTER TYPE audit_action ADD VALUE IF NOT EXISTS 'dhf_created'/);
+    expect(sql).toMatch(/ALTER TYPE audit_action ADD VALUE IF NOT EXISTS 'dhf_updated'/);
+    expect(sql).toMatch(/ALTER TYPE audit_action ADD VALUE IF NOT EXISTS 'dhf_design_freeze'/);
+    expect(sql).toMatch(/ALTER TYPE audit_action ADD VALUE IF NOT EXISTS 'dhf_review_approved'/);
+  });
+
+  it('schema.ts designHistoryFiles matches migration (org_id uuid, created_by uuid)', () => {
+    const src = readText('lib/db/schema.ts');
+    expect(src).toContain("orgId: uuid('org_id')");
+    expect(src).toContain("createdBy: uuid('created_by')");
+  });
+
+  it('schema.ts submissionPackages matches migration (org_id uuid, created_by uuid)', () => {
+    const src = readText('lib/db/schema.ts');
+    expect(src).toContain("orgId: uuid('org_id')");
+    expect(src).toContain("createdBy: uuid('created_by')");
+  });
+
+  it('schema.ts designInputs/designVerifications/designReviews match migration', () => {
+    const src = readText('lib/db/schema.ts');
+    expect(src).toContain("dhfId: text('dhf_id')");
+    expect(src).toContain("designInputId: text('design_input_id')");
+  });
+
+  it('schema.ts submissionInteractions matches migration (package_id TEXT)', () => {
+    const src = readText('lib/db/schema.ts');
+    expect(src).toContain("packageId: text('package_id')");
+  });
+});
