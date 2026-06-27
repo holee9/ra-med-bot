@@ -48,8 +48,13 @@ Do **not** commit real secrets. Use Vercel project settings or your secret manag
 | `OWNING_ISSUE_GITHUB_TOKEN` | Issue-write PAT for the 4 owning-project repos (#157). Separate from `KNOWLEDGE_GAP_GITHUB_TOKEN` (triage) and `READ_GITHUB_TOKEN` (read-only). | Optional | Optional | Required when `ROUTING_ENABLED=true` | Yes |
 | `OWNING_ISSUE_GITHUB_REPO_RA_PROJECT` | Target repo (`owner/name`) for regulation knowledge gaps routed to ra-project | Optional | Optional | `acme/ra-project` | No |
 | `OWNING_ISSUE_GITHUB_REPO_MD_PROCESS` | Target repo for internal policy/process gaps routed to MD-process | Optional | Optional | `acme/MD-process` | No |
-| `OWNING_ISSUE_GITHUB_REPO_GITEA_WIKI` | Target repo for wiki content gaps routed to gitea ra-llm-wiki | Optional | Optional | `acme/ra-llm-wiki` | No |
+| `OWNING_ISSUE_GITHUB_REPO_GITEA_WIKI` | Target repo for wiki content gaps routed to gitea ra-llm-wiki **when Gitea issue-write is not configured** (GitHub fallback path) | Optional | Optional | `acme/ra-llm-wiki` | No |
 | `OWNING_ISSUE_GITHUB_REPO_HYBRID` | Target repo for backend/API bugs routed to hybrid-ra-saas | Optional | Optional | `acme/hybrid-ra-saas` | No |
+| `GITEA_URL` | Base URL of the Gitea instance hosting `ra-llm-wiki`. Read scope (AC3) — used by `scripts/ingest-gitea-wiki.ts` for GraphQL wiki fetch. Must be `https://`. | Optional | Optional | `https://gitea.example.com` | No |
+| `GITEA_TOKEN` | Read-only PAT for Gitea wiki ingestion (AC3). Scope: read repository contents only. NEVER used for issue writes. | Optional | Optional | Required when Gitea wiki ingestion enabled | Yes |
+| `GITEA_WIKI_REPO` | `owner/name` of the Gitea wiki repository to ingest (read scope). Also used as the issue-create fallback when `GITEA_ISSUE_REPO` is unset. | Optional | Optional | `DR_RnD/ra-llm-wiki` | No |
+| `GITEA_ISSUE_TOKEN` | Write-scope PAT for Gitea issue creation (AC4). Scope: `write:issue` on the target repo. **Separated from `GITEA_TOKEN` (read) for least privilege.** When unset, `gitea-wiki` target degrades to `queue`. | Optional | Optional | Required when `ROUTING_ENABLED=true` and `gitea-wiki` target is in use | Yes |
+| `GITEA_ISSUE_REPO` | `owner/name` of the Gitea repo where wiki-gap issues are filed (AC4). Falls back to `GITEA_WIKI_REPO` when unset. | Optional | Optional | `DR_RnD/regula-issues` | No |
 | `READ_GITHUB_TOKEN` | Read-only PAT for source ingestion. Least privilege — never used for issue writes. | Optional | Optional | Required for FDA/EU MDR ingestion | Yes |
 | `SKIP_ENV_VALIDATION` | Build-only validation bypass flag. Must be paired with `REGULA_ALLOW_ENV_VALIDATION_SKIP=build`. | Only for `pnpm build` | CI build only | CI build only | No |
 | `REGULA_ALLOW_ENV_VALIDATION_SKIP` | Guard that makes the env validation bypass explicit for Next build route-data collection. | `build` only with `SKIP_ENV_VALIDATION=1` | `build` only | `build` only | No |
@@ -76,7 +81,8 @@ Do **not** commit real secrets. Use Vercel project settings or your secret manag
 
 ### Secret rotation
 
-- Rotate `AUTH_SECRET`, `ANTHROPIC_API_KEY`, `OPENAI_API_KEY`, `HYBRID_RA_API_TOKEN`, `REGULA_API_KEY`, and `CRAWL_PUSH_SECRET` at least quarterly.
+- Rotate `AUTH_SECRET`, `ANTHROPIC_API_KEY`, `OPENAI_API_KEY`, `HYBRID_RA_API_TOKEN`, `REGULA_API_KEY`, `CRAWL_PUSH_SECRET`, `GITEA_TOKEN`, and `GITEA_ISSUE_TOKEN` at least quarterly.
+- `GITEA_TOKEN` (read) and `GITEA_ISSUE_TOKEN` (write) are independent PATs — rotate them on separate schedules so a leaked read token never grants issue-write.
 - After rotation: update Vercel env vars, then redeploy.
 - For webhook secret rotation, update the sending hybrid-ra-saas deployment and receiving Regula deployment during the same maintenance window.
 

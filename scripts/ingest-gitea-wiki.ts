@@ -7,12 +7,20 @@
 //   pnpm tsx scripts/ingest-gitea-wiki.ts
 //
 // Requires: GITEA_URL, GITEA_TOKEN, GITEA_WIKI_REPO in environment
+//
+// @MX:ANCHOR [AUTO] Read-only Gitea wiki ingestion — hardened fetch path.
+// @MX:REASON fan_in will grow (ingest cron, admin retry, replay). Security-critical:
+//   Gitea error bodies have been observed to echo the Authorization header back.
+//   This module MUST sanitize every thrown error so tokens never reach logs/Sentry.
 
 import { randomUUID } from 'node:crypto';
 import { eq } from 'drizzle-orm';
+import { withRetry } from '../lib/api/error-handling';
 import { db } from '../lib/db/client';
 import { sourceSections, sources } from '../lib/db/schema';
 import { getEnv } from '../lib/env';
+import { sanitizeGiteaErrorBody } from '../lib/gitea/sanitize';
+import { assertGiteaUrlAllowed } from '../lib/gitea/url-guard';
 import { makeGenericChunker } from '../lib/ingest/chunkers/generic';
 import { DocClass } from '../lib/ingest/doc-class';
 import { logger } from '../lib/observability/logger';
@@ -36,9 +44,23 @@ interface GiteaWikiResponse {
   };
 }
 
+// @MX:NOTE [AUTO] Token-leak sanitizer + URL guard are shared via lib/gitea/*.
+// @MX:REASON Some Gitea error responses echo the request Authorization header in
+//   the response body (e.g. `Authorization: token <TOKEN>` in 401 debug pages).
+//   Interpolating raw errorText into a thrown Error would leak the token to
+//   Sentry, logs, and operators. The sanitizer (stripTokens / sanitizeGiteaErrorBody)
+//   is shared with the issue-write path so the two cannot drift. The URL guard
+//   applies the SAME policy as the issue path (https OR internal host) — the read
+//   token is no less sensitive than the write token.
+
 /**
  * Fetch all wiki pages from Gitea repository.
  * Uses GraphQL API to fetch page paths, SHAs, and content.
+ *
+ * Hardened (AC3): wrapped in `withRetry` (3 attempts, 1s base delay) so
+ * transient 5xx/ network blips don't abort an ingestion run. Every thrown
+ * error is passed through `sanitizeGiteaErrorBody` so credential leaks in
+ * upstream error bodies are stripped before reaching logs/Sentry.
  */
 async function fetchGiteaWikiPages(): Promise<GiteaWikiPage[]> {
   const env = getEnv();
@@ -50,6 +72,21 @@ async function fetchGiteaWikiPages(): Promise<GiteaWikiPage[]> {
     throw new Error(
       'Gitea credentials not configured. Set GITEA_URL, GITEA_TOKEN, and GITEA_WIKI_REPO.',
     );
+  }
+
+  // SECURITY: SSRF guard — same policy as the issue-write path. GITEA_TOKEN is
+  // a read PAT and travels as an Authorization header; it must never be sent
+  // to a public untrusted HTTP host. Allow https OR an internal/private host.
+  // Coherence: previously the read path had no guard while the issue path did,
+  // an incoherent policy for the same env var.
+  try {
+    assertGiteaUrlAllowed(giteaUrl);
+  } catch (err) {
+    // Sanitize for operator logs — the message from assertGiteaUrlAllowed is
+    // already generic (no raw URL echoed), but we truncate for safety.
+    const reason = err instanceof Error ? err.message.slice(0, 200) : String(err);
+    logger.warn(`Gitea wiki ingestion skipped: ${reason}`);
+    throw new Error(reason);
   }
 
   const query = `
@@ -68,25 +105,34 @@ async function fetchGiteaWikiPages(): Promise<GiteaWikiPage[]> {
     }
   `;
 
-  const response = await fetch(`${giteaUrl}/api/graphql`, {
-    method: 'POST',
-    headers: {
-      'Content-Type': 'application/json',
-      Authorization: `token ${giteaToken}`,
+  // withRetry retries on 5xx / network errors and rethrows on 4xx immediately.
+  // The inner closure throws a sanitized Error so the retry loop's `lastError`
+  // (and the final rethrow) never carries the raw Authorization header.
+  return withRetry(
+    async () => {
+      const response = await fetch(`${giteaUrl}/api/graphql`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          Authorization: `token ${giteaToken}`,
+        },
+        body: JSON.stringify({ query }),
+      });
+
+      if (!response.ok) {
+        const errorText = await response.text();
+        const safeBody = sanitizeGiteaErrorBody(errorText);
+        // SECURITY: status code is safe; body is redacted + truncated.
+        // NEVER interpolate giteaToken or the raw errorText here.
+        throw new Error(`Gitea API error: ${response.status} ${safeBody}`);
+      }
+
+      const data: GiteaWikiResponse = await response.json();
+      logger.info(`Fetched ${data.data.repository.wiki.pages.nodes.length} wiki pages from Gitea`);
+      return data.data.repository.wiki.pages.nodes;
     },
-    body: JSON.stringify({ query }),
-  });
-
-  if (!response.ok) {
-    const errorText = await response.text();
-    throw new Error(`Gitea API error: ${response.status} ${errorText}`);
-  }
-
-  const data: GiteaWikiResponse = await response.json();
-
-  logger.info(`Fetched ${data.data.repository.wiki.pages.nodes.length} wiki pages from Gitea`);
-
-  return data.data.repository.wiki.pages.nodes;
+    { maxAttempts: 3, delayMs: 1000 },
+  );
 }
 
 /**

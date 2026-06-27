@@ -197,6 +197,53 @@ docker exec regula pnpm run ingest:ra-project
 
 ---
 
+## Gitea wiki ingestion runbook (#155)
+
+### 개요
+
+Gitea 호스트의 `ra-llm-wiki` 저장소를 읽기 전용으로 ingestion 하고, wiki
+콘텐츠 갭으로 분류된 미답변 질문을 Gitea 이슈로 자동 생성한다.
+
+### 사전 준비 (환경 변수)
+
+| 변수 | 스코프 | 비고 |
+|------|--------|------|
+| `GITEA_URL` | read | Gitea 인스턴스 베이스 URL (`https://` 필수) |
+| `GITEA_TOKEN` | read | wiki 읽기 전용 PAT. `read:repository` 스코프 |
+| `GITEA_WIKI_REPO` | read | ingestion 대상 (`owner/name`) |
+| `GITEA_ISSUE_TOKEN` | write | 이슈 생성용 PAT. `write:issue` 스코프. `GITEA_TOKEN`과 **반드시 분리** |
+| `GITEA_ISSUE_REPO` | write | 이슈를 파일 저장소. 미설정 시 `GITEA_WIKI_REPO`로 폴백 |
+
+읽기/쓰기 토큰 분리는 최소 권한 원칙 — 실수로 read 토큰이 유출돼도
+이슈 생성 권한은 갖지 못한다.
+
+### ingestion 실행
+
+```bash
+pnpm tsx scripts/ingest-gitea-wiki.ts
+```
+
+- 위키 페이지를 GraphQL API (`{GITEA_URL}/api/graphql`)로 fetch
+- `withRetry` (3회, 1s 지수 백오프)로 일시적 5xx/네트워크 오류 흡수
+- 각 페이지를 chunking → `source_sections` 에 삽입 (provenance 포함)
+- 실패 시 throw 된 에러 메시지는 토큰 누출 방지를 위해 정제됨
+
+### 장애 대응 (triage)
+
+| 증상 | 원인 | 조치 |
+|------|------|------|
+| `Gitea credentials not configured` | env 누락 | `GITEA_URL`/`TOKEN`/`WIKI_REPO` 확인 |
+| `Gitea API error: 401` | 토큰 만료 / 권한 부족 | PAT 재발급 (`read:repository` 스코프) |
+| `Gitea API error: 5xx` 후 3회 재시도 실패 | Gitea 서버 장애 | Gitea 헬스 체크 → 복구 후 재실행 |
+| 이슈가 `queue` 로 라우팅 됨 | `GITEA_ISSUE_TOKEN` 미설정 | write 토큰 설정 후 재처리 |
+| `audit_logs` 에 `owning_issue_creation_failed` | Gitea 이슈 API 3회 실패 | audit `meta_json.error` 확인 → Gitea 권한/네트워크 점검 |
+
+> 주의: Gitea 에러 응답이 `Authorization` 헤더를 에코하는 케이스가 관찰됨.
+> 모든 throw 메시지는 `[REDACTED]` 처리되므로 로그/Sentry 에 토큰이
+> 노출되지 않는다. 그래도 토큰 재발급은 분기 1회 권장.
+
+---
+
 ## 관련 문서
 
 - [시스템 마스터 아키텍처](../docs/시스템_아키텍처.md)

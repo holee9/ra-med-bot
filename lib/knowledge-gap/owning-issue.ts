@@ -14,6 +14,7 @@
 import { writeAudit } from '@/lib/audit';
 import { db } from '@/lib/db/client';
 import { unansweredQueue } from '@/lib/db/schema';
+import { sanitizeGiteaErrorBody } from '@/lib/gitea/sanitize';
 import { eq } from 'drizzle-orm';
 import type { GapIssueContext, GitHubIssuesClient } from './github-issue';
 import { type OwningTarget, readOwningRepoConfig } from './owning-repos';
@@ -26,6 +27,12 @@ const TARGET_LABEL: Record<Exclude<OwningTarget, 'queue'>, string> = {
   'hybrid-ra-saas': 'hybrid-ra-saas',
 };
 
+// @MX:NOTE [AUTO] Token-leak sanitizer is shared via lib/gitea/sanitize.ts.
+// @MX:REASON Gitea 4xx/5xx error bodies have been observed to echo the request
+//   Authorization header. Throwing the raw body into an Error would leak the
+//   token to Sentry and audit_logs.meta_json. The sanitizer module is
+//   dependency-free so the two hot paths (issue-write + read) fail independently.
+
 /** Result of createOwningIssue — null when unconfigured or after retry exhaustion. */
 export interface OwningIssueResult {
   /** GitHub issue number — needed for link-back comments on the owning side. */
@@ -35,50 +42,82 @@ export interface OwningIssueResult {
 }
 
 /**
- * Per-target GitHub client. Reuses the GitHubIssuesClient interface but binds
- * to OWNING_ISSUE_GITHUB_TOKEN and the target's repo+apiBase. When the target
- * is unconfigured (readOwningRepoConfig returns null), methods return the same
- * NULL_GITHUB_RESULT sentinel shape so callers detect "no-op" uniformly.
+ * Per-target issue client. Speaks GitHub REST or Gitea REST depending on the
+ * provider resolved by readOwningRepoConfig. Binds to the provider-appropriate
+ * token (OWNING_ISSUE_GITHUB_TOKEN for GitHub, GITEA_ISSUE_TOKEN for Gitea).
+ * When the target is unconfigured (readOwningRepoConfig returns null), methods
+ * return the NULL_GITHUB_RESULT sentinel shape so callers detect "no-op".
+ *
+ * Provider dialect differences:
+ *   - GitHub: `POST {apiBase}/repos/{repo}/issues`, `Authorization: Bearer <T>`,
+ *     labels as `string[]`, response `{ number, html_url }`.
+ *   - Gitea:  `POST {apiBase}/api/v1/repos/{repo}/issues`, `Authorization: token <T>`,
+ *     labels as `{ name: string }[]`, response `{ number, html_url }` (same field name —
+ *     Gitea mirrors GitHub's shape for the issue resource).
+ *
+ * SECURITY: error bodies are sanitized before being thrown — Gitea error
+ * responses have been observed to echo the request Authorization header.
  */
 export function targetGithubClient(
   target: Exclude<OwningTarget, 'queue'>,
 ): GitHubIssuesClient & { configured: boolean } {
   const cfg = readOwningRepoConfig(target);
+  const isGitea = cfg?.provider === 'gitea';
+
+  // Gitea error bodies can echo the Authorization header — strip tokens from
+  // any thrown message before it reaches audit meta or Sentry.
+  const safeError = (label: string, status: number, rawBody: string): Error =>
+    new Error(`${label} failed: ${status} ${sanitizeGiteaErrorBody(rawBody)}`);
+
   return {
     configured: cfg !== null,
     async createIssue({ title, body, labels }) {
       if (!cfg) return { number: -1, htmlUrl: '' };
-      const res = await fetch(`${cfg.apiBase}/repos/${cfg.repo}/issues`, {
+      const endpoint = isGitea
+        ? `${cfg.apiBase}/api/v1/repos/${cfg.repo}/issues`
+        : `${cfg.apiBase}/repos/${cfg.repo}/issues`;
+      // Gitea expects labels as `{ name }` objects; GitHub accepts plain strings.
+      const labelsPayload = isGitea ? labels.map((name) => ({ name })) : [...labels];
+      const res = await fetch(endpoint, {
         method: 'POST',
         headers: {
-          Accept: 'application/vnd.github+json',
-          Authorization: `Bearer ${cfg.token}`,
-          'X-GitHub-Api-Version': '2022-11-28',
+          Accept: isGitea ? 'application/json' : 'application/vnd.github+json',
+          Authorization: isGitea ? `token ${cfg.token}` : `Bearer ${cfg.token}`,
+          ...(!isGitea && { 'X-GitHub-Api-Version': '2022-11-28' }),
           'Content-Type': 'application/json',
         },
-        body: JSON.stringify({ title, body, labels: [...labels] }),
+        body: JSON.stringify({ title, body, labels: labelsPayload }),
       });
       if (!res.ok) {
-        throw new Error(`GitHub createIssue (${target}) failed: ${res.status} ${await res.text()}`);
+        throw safeError(
+          `${isGitea ? 'Gitea' : 'GitHub'} createIssue (${target})`,
+          res.status,
+          await res.text(),
+        );
       }
       const json = (await res.json()) as { number: number; html_url: string };
       return { number: json.number, htmlUrl: json.html_url };
     },
     async createComment({ issueNumber, body }) {
       if (!cfg) return { htmlUrl: '' };
-      const res = await fetch(`${cfg.apiBase}/repos/${cfg.repo}/issues/${issueNumber}/comments`, {
+      const endpoint = isGitea
+        ? `${cfg.apiBase}/api/v1/repos/${cfg.repo}/issues/${issueNumber}/comments`
+        : `${cfg.apiBase}/repos/${cfg.repo}/issues/${issueNumber}/comments`;
+      const res = await fetch(endpoint, {
         method: 'POST',
         headers: {
-          Accept: 'application/vnd.github+json',
-          Authorization: `Bearer ${cfg.token}`,
-          'X-GitHub-Api-Version': '2022-11-28',
+          Accept: isGitea ? 'application/json' : 'application/vnd.github+json',
+          Authorization: isGitea ? `token ${cfg.token}` : `Bearer ${cfg.token}`,
+          ...(!isGitea && { 'X-GitHub-Api-Version': '2022-11-28' }),
           'Content-Type': 'application/json',
         },
         body: JSON.stringify({ body }),
       });
       if (!res.ok) {
-        throw new Error(
-          `GitHub createComment (${target}) failed: ${res.status} ${await res.text()}`,
+        throw safeError(
+          `${isGitea ? 'Gitea' : 'GitHub'} createComment (${target})`,
+          res.status,
+          await res.text(),
         );
       }
       const json = (await res.json()) as { html_url: string };
