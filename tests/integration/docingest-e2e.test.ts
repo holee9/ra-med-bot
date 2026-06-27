@@ -132,6 +132,11 @@ describe('Document Ingestion E2E (REQ-QUAL-015..019)', () => {
   });
 
   afterEach(() => {
+    // resetModules clears the cached route module so the next test re-evaluates
+    // vi.mock/vi.doUnmock bindings (e.g. workers-ai). Without this, tests after
+    // AC5 inherit its doUnmock'd module and the stub stays bound, masking
+    // redaction regressions behind RBAC-passing assertions.
+    vi.resetModules();
     vi.unstubAllEnvs();
   });
 
@@ -203,6 +208,70 @@ describe('Document Ingestion E2E (REQ-QUAL-015..019)', () => {
         meta_json: expect.not.objectContaining({ filename: expect.any(String) }),
       }),
     );
+  });
+
+  it('redacts phone, URL, MRN identifiers and patient names across layers (AC5)', async () => {
+    authMock.mockResolvedValue({
+      user: { id: 'user-1', role: 'admin', organizationId: 'org-1' },
+    });
+
+    // Layer 2 (Workers AI) returns [] in CI because CF_WORKERS_AI_TOKEN is
+    // unset. To exercise name redaction + redaction_maps pair collection on the
+    // span path, stub the module to surface a PERSON span for "John Smith".
+    vi.doMock('@/lib/ingest/pii/workers-ai', () => ({
+      detectPiiWorkersAi: vi.fn(async (text: string) => {
+        const idx = text.indexOf('John Smith');
+        if (idx < 0) return [];
+        return [
+          {
+            entity: 'PERSON',
+            start: idx,
+            end: idx + 'John Smith'.length,
+            text: 'John Smith',
+            score: 0.92,
+          },
+        ];
+      }),
+    }));
+    vi.resetModules();
+
+    const piiText = Buffer.from(
+      'Patient John Smith called from (555) 123-4567. ' +
+        'Portal: https://patient-portal.example.org/x. ' +
+        'MRN: 12345678.',
+    );
+    const res = await callPost(
+      buildFormData({
+        bytes: piiText,
+        filename: 'phi-multi-identifier.txt',
+        docClass: 'internal_sop',
+      }),
+    );
+
+    expect(res.status).toBe(201);
+    const embeddedTexts = embedChunksMock.mock.calls[0]?.[0] as string[];
+    const embedded = embeddedTexts.join('\n');
+
+    // AC5: each raw identifier is absent from the embedded text.
+    expect(embedded).not.toContain('(555) 123-4567');
+    expect(embedded).not.toContain('https://patient-portal.example.org/x');
+    expect(embedded).not.toContain('MRN: 12345678');
+    expect(embedded).not.toContain('John Smith');
+
+    // AC5: each layer produced its corresponding placeholder.
+    expect(embedded).toContain('[REDACTED:PHONE]');
+    expect(embedded).toContain('[REDACTED:URL]');
+    expect(embedded).toContain('[REDACTED:MRN]');
+    expect(embedded).toContain('[REDACTED:PERSON]');
+
+    // source_sections persistence must also be free of raw identifiers.
+    const sectionRows = insertedSections.at(-1) as Array<{ text: string }>;
+    const persistedText = sectionRows.map((row) => row.text).join('\n');
+    expect(persistedText).not.toContain('(555) 123-4567');
+    expect(persistedText).not.toContain('John Smith');
+    expect(persistedText).not.toContain('MRN: 12345678');
+
+    vi.doUnmock('@/lib/ingest/pii/workers-ai');
   });
 
   it('returns 403 for non-admin role (REQ-QUAL-018)', async () => {
