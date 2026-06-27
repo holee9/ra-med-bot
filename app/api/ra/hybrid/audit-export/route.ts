@@ -4,6 +4,7 @@ export const runtime = 'nodejs';
 
 import { HybridRaClientError, createHybridRaClient } from '@/lib/api/hybrid-ra-client';
 import { withPermission } from '@/lib/auth/with-permission';
+import { recordIntegrationGap } from '@/lib/knowledge-gap/integration-gap';
 import { z } from 'zod';
 
 const ExportSchema = z.object({
@@ -12,7 +13,7 @@ const ExportSchema = z.object({
   format: z.enum(['csv', 'json']).optional(),
 });
 
-export const POST = withPermission('audit.package.generate', async (request) => {
+export const POST = withPermission('audit.package.generate', async (request, _ctx, session) => {
   let body: unknown;
   try {
     body = (await request.json()) as unknown;
@@ -36,11 +37,22 @@ export const POST = withPermission('audit.package.generate', async (request) => 
       return Response.json({ status: 'unconfigured' }, { status: 200 });
     }
     const e = err instanceof HybridRaClientError ? err : null;
+    const kind = e?.kind ?? 'server_error';
+    // Issue #156 AC4 — record non-unconfigured hybrid errors into the audit trail.
+    if (e) {
+      await recordIntegrationGap({
+        kind,
+        endpoint: e.endpoint,
+        statusCode: e.statusCode,
+        tenantId: process.env.HYBRID_RA_TENANT_ID ?? null,
+        actorId: session.user.id ?? null,
+      });
+    }
     return Response.json(
       {
         status: 'error',
         message: e?.message ?? 'Unknown error',
-        kind: e?.kind ?? 'server_error',
+        kind,
       },
       { status: 502 },
     );

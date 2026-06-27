@@ -44,6 +44,13 @@ Do **not** commit real secrets. Use Vercel project settings or your secret manag
 | `HYBRID_RA_TENANT_ID` | Tenant scope sent as `X-Tenant-Id` to hybrid-ra-saas | Optional local tenant | Preview tenant ID | Production tenant ID — T3610 로컬(.env.local)에 SET됨(실제 프로덕션). GitHub Actions Vercel 배포는 현재 Secrets 미설정으로 스킵. | Yes |
 | `REGULA_API_KEY` | Shared secret for `POST /api/webhooks/audit` and `POST /api/webhooks/ifu` from hybrid-ra-saas customer runtime | Optional local test secret | Preview webhook secret | Production webhook secret | Yes |
 | `CRAWL_PUSH_SECRET` | Shared secret for `POST /api/webhooks/knowledge-sync` from hybrid-ra-saas cloud control plane | Optional local test secret | Preview crawl push secret | Production crawl push secret | Yes |
+| `ROUTING_ENABLED` | Master switch for owning-project issue routing (#157). Default off. Set `true` to enable classifier + owning-issue creation + cross-link. | `false` | `false` | `true` (after owning repos configured) | No |
+| `OWNING_ISSUE_GITHUB_TOKEN` | Issue-write PAT for the 4 owning-project repos (#157). Separate from `KNOWLEDGE_GAP_GITHUB_TOKEN` (triage) and `READ_GITHUB_TOKEN` (read-only). | Optional | Optional | Required when `ROUTING_ENABLED=true` | Yes |
+| `OWNING_ISSUE_GITHUB_REPO_RA_PROJECT` | Target repo (`owner/name`) for regulation knowledge gaps routed to ra-project | Optional | Optional | `acme/ra-project` | No |
+| `OWNING_ISSUE_GITHUB_REPO_MD_PROCESS` | Target repo for internal policy/process gaps routed to MD-process | Optional | Optional | `acme/MD-process` | No |
+| `OWNING_ISSUE_GITHUB_REPO_GITEA_WIKI` | Target repo for wiki content gaps routed to gitea ra-llm-wiki | Optional | Optional | `acme/ra-llm-wiki` | No |
+| `OWNING_ISSUE_GITHUB_REPO_HYBRID` | Target repo for backend/API bugs routed to hybrid-ra-saas | Optional | Optional | `acme/hybrid-ra-saas` | No |
+| `READ_GITHUB_TOKEN` | Read-only PAT for source ingestion. Least privilege — never used for issue writes. | Optional | Optional | Required for FDA/EU MDR ingestion | Yes |
 | `SKIP_ENV_VALIDATION` | Build-only validation bypass flag. Must be paired with `REGULA_ALLOW_ENV_VALIDATION_SKIP=build`. | Only for `pnpm build` | CI build only | CI build only | No |
 | `REGULA_ALLOW_ENV_VALIDATION_SKIP` | Guard that makes the env validation bypass explicit for Next build route-data collection. | `build` only with `SKIP_ENV_VALIDATION=1` | `build` only | `build` only | No |
 
