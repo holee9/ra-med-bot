@@ -424,7 +424,12 @@ export type AuditAction =
   | 'standards.mapping.generated'
   | 'standards.recognition.checked'
   | 'standards.revision.detected'
-  | 'standards.alert.emitted';
+  | 'standards.alert.emitted'
+  // Issue #157 — owning-project issue routing (cross-repo GitHub issue automation).
+  //   owning_issue_created          — owning issue opened in target repo (ra-project/MD-process/gitea-wiki/hybrid-ra-saas)
+  //   owning_issue_creation_failed  — retry exhausted, degraded to queue, capture not aborted
+  | 'owning_issue_created'
+  | 'owning_issue_creation_failed';
 
 export interface AuditEvent {
   /** User UUID, or null for system-initiated events. */

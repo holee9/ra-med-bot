@@ -326,7 +326,7 @@ describe('lib/db/schema.ts Phase 5 additions', () => {
     const values = extractAuditActionEnumValues(src);
     const typeValues = extractAuditActionTypeValues(auditSrc);
     expect(values).toEqual(typeValues);
-    expect(values).toHaveLength(203); // +3 memory_* (#51) +4 standards.* (#62)
+    expect(values).toHaveLength(205); // +3 memory_* (#51) +4 standards.* (#62)
   });
 
   it.each(REQUIRED_RECOVERY_TABLES)(
@@ -382,7 +382,7 @@ describe('lib/audit.ts Phase 5 AuditAction type additions', () => {
         'change.export_blocked',
       ]),
     );
-    expect(values).toHaveLength(203); // +3 memory_* (#51) +4 standards.* (#62)
+    expect(values).toHaveLength(205); // +3 memory_* (#51) +4 standards.* (#62)
   });
 
   it.each(REQUIRED_RECOVERY_AUDIT_ACTIONS)(
@@ -2042,5 +2042,50 @@ describe('Migration 0059: source provenance fields (Issue #154, REQ-INTEGRATION-
     for (const col of ['chunkHash', 'sectionPath', 'ingestionRunId', 'ingestedAt']) {
       expect(src).toContain(`${col}:`);
     }
+  });
+});
+
+// ---------------------------------------------------------------------------
+// Migration 0091: owning-project issue routing (#157)
+// ---------------------------------------------------------------------------
+describe('Migration 0091: owning-project issue routing (Issue #157)', () => {
+  it('migration file 0091_owning_issue.sql exists', () => {
+    expect(fileExists('migrations/0091_owning_issue.sql')).toBe(true);
+  });
+
+  it('adds owning_issue_url + owning_issue_target columns to unanswered_queue (idempotent)', () => {
+    const sql = readText('migrations/0091_owning_issue.sql');
+    expect(sql).toMatch(
+      /ALTER TABLE unanswered_queue\s+ADD COLUMN IF NOT EXISTS owning_issue_url text/,
+    );
+    expect(sql).toMatch(
+      /ALTER TABLE unanswered_queue\s+ADD COLUMN IF NOT EXISTS owning_issue_target text/,
+    );
+  });
+
+  it('adds owning_issue_created + owning_issue_creation_failed to audit_action (idempotent)', () => {
+    const sql = readText('migrations/0091_owning_issue.sql');
+    expect(sql).toMatch(/ALTER TYPE audit_action ADD VALUE IF NOT EXISTS 'owning_issue_created'/);
+    expect(sql).toMatch(
+      /ALTER TYPE audit_action ADD VALUE IF NOT EXISTS 'owning_issue_creation_failed'/,
+    );
+  });
+
+  it('schema.ts defines matching columns on unansweredQueue', () => {
+    const src = readText('lib/db/schema.ts');
+    expect(src).toContain("owningIssueUrl: text('owning_issue_url')");
+    expect(src).toContain("owningIssueTarget: text('owning_issue_target')");
+  });
+
+  it('schema.ts auditActionEnum + audit.ts AuditAction type include both new actions', () => {
+    const schemaSrc = readText('lib/db/schema.ts');
+    const enumValues = extractAuditActionEnumValues(schemaSrc);
+    expect(enumValues).toContain('owning_issue_created');
+    expect(enumValues).toContain('owning_issue_creation_failed');
+
+    const auditSrc = readText('lib/audit.ts');
+    const typeValues = extractAuditActionTypeValues(auditSrc);
+    expect(typeValues).toContain('owning_issue_created');
+    expect(typeValues).toContain('owning_issue_creation_failed');
   });
 });

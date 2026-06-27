@@ -406,6 +406,12 @@ export const auditActionEnum = pgEnum('audit_action', [
   'standards.recognition.checked',
   'standards.revision.detected',
   'standards.alert.emitted',
+  // Issue #157 — owning-project issue routing. Two lifecycle actions for the
+  // cross-repo issue creation flow (21 CFR Part 11 traceability).
+  //   owning_issue_created          — owning issue successfully opened in target repo
+  //   owning_issue_creation_failed  — 3x retry exhausted; queue row stays in queued state
+  'owning_issue_created',
+  'owning_issue_creation_failed',
 ]);
 
 // @MX:NOTE [AUTO] Source governance enums — SPEC-REGULA-SOURCE-GOVERNANCE-001 (Issue #48).
@@ -1127,6 +1133,10 @@ export const unansweredQueue = pgTable(
     clusterId: text('cluster_id'),
     githubIssueNumber: integer('github_issue_number'),
     classification: gapClassificationEnum('classification'),
+    // Issue #157 — owning-project routing. Null until createOwningIssue succeeds.
+    // owningIssueTarget stores the OwningTarget enum ('ra-project'|'md-process'|'gitea-wiki'|'hybrid-ra-saas').
+    owningIssueUrl: text('owning_issue_url'),
+    owningIssueTarget: text('owning_issue_target'),
     status: gapStatusEnum('status').notNull().default('open'),
     createdAt: timestamp('created_at', { withTimezone: true, mode: 'date' }).notNull().defaultNow(),
     resolvedAt: timestamp('resolved_at', { withTimezone: true, mode: 'date' }),

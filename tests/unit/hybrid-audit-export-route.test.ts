@@ -34,6 +34,11 @@ vi.mock('@/lib/auth/with-permission', () => ({
   withPermission: withPermissionMock,
 }));
 
+// Issue #156 AC4 — recorder is best-effort; mock so route tests don't pull env validation.
+vi.mock('@/lib/knowledge-gap/integration-gap', () => ({
+  recordIntegrationGap: vi.fn().mockResolvedValue(undefined),
+}));
+
 const { POST } = await import('@/app/api/ra/hybrid/audit-export/route');
 
 function makeReq(body: unknown): Request {

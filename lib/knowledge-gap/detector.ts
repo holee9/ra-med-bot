@@ -174,6 +174,48 @@ export async function captureKnowledgeGap(ctx: CaptureContext): Promise<CaptureK
       .update(unansweredQueue)
       .set({ githubIssueNumber })
       .where(eq(unansweredQueue.id, queueId));
+
+    // Issue #157 — owning-project routing. Dark behind ROUTING_ENABLED env flag
+    // (default off) so behavior is unchanged when the feature is not configured.
+    // When on: classify the gap, create the owning issue (idempotent + retried),
+    // and post mutual cross-link comments. Failures are swallowed inside
+    // createOwningIssue / linkBackIssues so captureKnowledgeGap never crashes.
+    if (process.env.ROUTING_ENABLED === 'true' && githubIssueNumber > 0) {
+      try {
+        const triageRepo = process.env.KNOWLEDGE_GAP_GITHUB_REPO ?? '';
+        const triageIssueUrl = triageRepo
+          ? `https://github.com/${triageRepo}/issues/${githubIssueNumber}`
+          : '';
+
+        const { classifyOwningTarget } = await import('./router');
+        const { createOwningIssue } = await import('./owning-issue');
+        const { linkBackIssues } = await import('./link-back');
+
+        const target = classifyOwningTarget({
+          redactedQuestion: redacted,
+          reason: ctx.reason,
+        });
+
+        if (target !== 'queue' && triageIssueUrl) {
+          const owning = await createOwningIssue(target, {
+            queueId,
+            redactedQuestion: redacted,
+            redactionHash: hash,
+            reason: ctx.reason,
+            clusterId,
+            conversationId: ctx.conversationId,
+            messageId: ctx.messageId,
+            triageIssueUrl,
+            actorId: ctx.actorId,
+          });
+          if (owning) {
+            await linkBackIssues(githubIssueNumber, owning);
+          }
+        }
+      } catch {
+        // Best-effort — routing must never abort captureKnowledgeGap.
+      }
+    }
   }
 
   return {
