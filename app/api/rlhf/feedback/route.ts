@@ -1,6 +1,7 @@
 // @MX:NOTE [AUTO] POST /api/rlhf/feedback — answer feedback submission.
-// @MX:SPEC SPEC-REGULA-RLHF-001 (REQ-RLHF-003, REQ-RLHF-004, REQ-RLHF-011, AC-01, AC-02)
-// @MX:REASON Validates qualityTags against the 8-value enum (AC-02 invariant at
+// @MX:SPEC SPEC-REGULA-RLHF-001 (REQ-RLHF-003, REQ-RLHF-004, REQ-RLHF-005,
+//           REQ-RLHF-009, REQ-RLHF-011, REQ-RLHF-015, AC-01, AC-02)
+// @MX:REASON Validates qualityTags against the 12-value enum (AC-02 invariant at
 //           the API boundary), writes answer_feedback with the session userId,
 //           emits a Langfuse event, writes the 21 CFR Part 11 audit row, and
 //           triggers the gap/promo bridges based on the rating.
@@ -11,6 +12,15 @@
 //   H-3: PII redaction — DO NOT trust client redactedQuestion; look up the real
 //        message prose server-side and run it through the #35 redactor.
 //   L-2: update branch uses a distinct `feedback_revised` audit action.
+//
+// Issue #264 sub-PR 3/3 — implicit feedback (alternate answers):
+//   The route now accepts optional `source` ('explicit' default | 'implicit_regenerate')
+//   and optional `variationDimensions`. When source='implicit_regenerate', the
+//   route records rating='down' with feedback_source='implicit_regenerate' and
+//   a DISTINCT audit action (rlhf.implicit_feedback_recorded) so implicit
+//   signals are auditable separately from explicit thumbs-up/down. The UNIQUE
+//   constraint (message_id, user_id, feedback_source) lets one explicit + one
+//   implicit row per (message, user) coexist without 409.
 
 import { writeAudit } from '@/lib/audit';
 import { withPermission } from '@/lib/auth/with-permission';
@@ -60,6 +70,29 @@ const FeedbackRequestSchema = z.object({
   comment: z.string().max(2000).nullable().default(null),
   /** @deprecated client-supplied redactedQuestion — server re-redacts from source. */
   redactedQuestion: z.string().max(500).optional(),
+  /**
+   * Issue #264 sub-PR 3/3: origin channel of the feedback.
+   *   'explicit' (default) — thumbs up/down submitted by the user.
+   *   'implicit_regenerate' — user clicked "Regenerate answer". The route
+   *     FORCES rating='down' on this path (the regeneration IS the implicit
+   *     downvote; the client does NOT send an explicit thumbs-down).
+   */
+  source: z.enum(['explicit', 'implicit_regenerate']).default('explicit'),
+  /**
+   * Issue #264 sub-PR 3/3: optional client metadata describing which retrieval
+   * /generation dimension differed on the regenerated attempt. All fields
+   * optional. Persisted as jsonb; NULL for explicit feedback without context.
+   */
+  variationDimensions: z
+    .object({
+      region: z.string().max(64).optional(),
+      corpus: z.string().max(64).optional(),
+      model: z.string().max(64).optional(),
+    })
+    .strict()
+    .optional()
+    .nullable()
+    .default(null),
 });
 
 /**
@@ -108,6 +141,14 @@ export const POST = withPermission('rlhf.feedback', async (request, _ctx, sessio
   }
   const input = parsed.data;
 
+  // Issue #264 sub-PR 3/3: when source='implicit_regenerate', the regeneration
+  // IS the implicit downvote — the client does NOT send an explicit
+  // thumbs-down. Force rating='down' on this path so the implicit signal is
+  // always captured as a negative rating regardless of the client payload.
+  // Explicit feedback trusts the client rating as before.
+  const isImplicit = input.source === 'implicit_regenerate';
+  const effectiveRating = isImplicit ? 'down' : input.rating;
+
   // C-1 IDOR guard: verify the message belongs to the caller's org BEFORE any
   // write. RLS is inert project-wide (#239 debt), so this query-layer join is
   // the ONLY tenant boundary.
@@ -120,8 +161,10 @@ export const POST = withPermission('rlhf.feedback', async (request, _ctx, sessio
     return accessDenied;
   }
 
-  // Upsert: one feedback row per (messageId, userId). If the user already left
-  // feedback on this message, replace it. This matches the UNIQUE constraint.
+  // Upsert: one feedback row per (messageId, userId, feedback_source). The
+  // existing-row lookup MUST scope by feedback_source so an explicit row and
+  // an implicit row for the same (message, user) do not collide. Matches the
+  // 3-column UNIQUE constraint added in migration 0096.
   const existing = await db
     .select({ id: answerFeedback.id })
     .from(answerFeedback)
@@ -129,12 +172,20 @@ export const POST = withPermission('rlhf.feedback', async (request, _ctx, sessio
       and(
         eq(answerFeedback.messageId, input.messageId),
         eq(answerFeedback.userId, session.user.id),
+        eq(answerFeedback.feedbackSource, input.source),
       ),
     )
     .limit(1);
 
   const existingRow = existing[0];
   const isRevision = Boolean(existingRow);
+
+  // Issue #264 sub-PR 3/3: implicit feedback uses a DISTINCT audit action so
+  // regulators can separate implicit-regenerate signals from explicit
+  // thumbs-up/down submissions (21 CFR Part 11).
+  const auditAction = isImplicit
+    ? ('rlhf.implicit_feedback_recorded' as const)
+    : ('feedback_submitted' as const);
 
   // C-3: wrap the mutation + the 21 CFR Part 11 audit row in ONE transaction so
   // a crash between them cannot leave a feedback row with no audit trail. The
@@ -146,13 +197,14 @@ export const POST = withPermission('rlhf.feedback', async (request, _ctx, sessio
       if (existingRow) {
         // L-2: the audit row carries `revised: true` in meta_json so regulators
         // can tell initial submissions apart from changed minds without adding
-        // a separate enum value (keeps the enum count at 194).
+        // a separate enum value.
         const [updated] = await tx
           .update(answerFeedback)
           .set({
-            rating: input.rating,
+            rating: effectiveRating,
             qualityTags: input.qualityTags,
             comment: input.comment,
+            variationDimensions: input.variationDimensions,
           })
           .where(eq(answerFeedback.id, existingRow.id))
           .returning({ id: answerFeedback.id });
@@ -162,14 +214,16 @@ export const POST = withPermission('rlhf.feedback', async (request, _ctx, sessio
         await writeAudit(
           {
             actor_id: session.user.id,
-            action: 'feedback_submitted',
+            action: auditAction,
             resource_type: 'answer_feedback',
             resource_id: updated.id,
             meta_json: {
               messageId: input.messageId,
-              rating: input.rating,
+              rating: effectiveRating,
+              feedbackSource: input.source,
               qualityTagCount: input.qualityTags.length,
               hasComment: input.comment !== null,
+              hasVariationDimensions: input.variationDimensions !== null,
               revised: true,
             },
           },
@@ -182,9 +236,11 @@ export const POST = withPermission('rlhf.feedback', async (request, _ctx, sessio
         .values({
           messageId: input.messageId,
           userId: session.user.id,
-          rating: input.rating,
+          rating: effectiveRating,
           qualityTags: input.qualityTags,
           comment: input.comment,
+          feedbackSource: input.source,
+          variationDimensions: input.variationDimensions,
         })
         .returning({ id: answerFeedback.id });
       if (!inserted) {
@@ -193,14 +249,16 @@ export const POST = withPermission('rlhf.feedback', async (request, _ctx, sessio
       await writeAudit(
         {
           actor_id: session.user.id,
-          action: 'feedback_submitted',
+          action: auditAction,
           resource_type: 'answer_feedback',
           resource_id: inserted.id,
           meta_json: {
             messageId: input.messageId,
-            rating: input.rating,
+            rating: effectiveRating,
+            feedbackSource: input.source,
             qualityTagCount: input.qualityTags.length,
             hasComment: input.comment !== null,
+            hasVariationDimensions: input.variationDimensions !== null,
           },
         },
         tx,
@@ -227,7 +285,7 @@ export const POST = withPermission('rlhf.feedback', async (request, _ctx, sessio
   await emitFeedbackEvent({
     messageId: input.messageId,
     userId: session.user.id,
-    rating: input.rating,
+    rating: effectiveRating,
     qualityTags: input.qualityTags,
     comment: input.comment,
   });
@@ -239,23 +297,34 @@ export const POST = withPermission('rlhf.feedback', async (request, _ctx, sessio
   // REQ-RLHF-007 / REQ-RLHF-008: trigger the gap/promo bridges. These are
   // best-effort and MUST NOT fail the request. The promo bridge is a pure
   // descriptor (REQ-RLHF-015 HARD — no auto-confirm).
+  // Charter [지양-2]: implicit feedback NEVER auto-triggers calibration or
+  // promotion — it is a signal, not an action. The bridge input marks
+  // `isImplicit` so downstream consumers (gap/promo) can choose to suppress
+  // auto-actions for implicit rows. The promo bridge is descriptor-only for
+  // explicit too, so the practical effect today is gap-bridge suppression for
+  // implicit downvotes (regeneration is not a quality complaint).
   const bridgeInput = {
     messageId: input.messageId,
     conversationId: '', // not needed for the bridge decision logic
     userId: session.user.id,
-    rating: input.rating,
+    rating: effectiveRating,
     qualityTags: input.qualityTags,
     comment: input.comment,
     redactedQuestion: serverRedacted.redacted,
+    isImplicit,
   };
 
   try {
-    if (input.rating === 'down') {
+    if (effectiveRating === 'down' && !isImplicit) {
       await createGapIssueForLowRatedAnswer(bridgeInput);
-    } else if (input.rating === 'up') {
+    } else if (effectiveRating === 'up' && !isImplicit) {
       // Descriptor only — no DB write, no side effect.
       proposePromotionCandidateForHighRatedAnswer(bridgeInput);
     }
+    // Implicit feedback: no bridge action. The signal is captured in
+    // answer_feedback + audit; downstream aggregation/calibration reads it
+    // by virtue of rating='down'. Auto-triggering gap/promo from implicit
+    // rows would violate Charter [지양-2] (no fake trust).
   } catch (err) {
     // Bridges are best-effort; a GitHub/Langfuse hiccup must not fail feedback.
     logger.warn('[rlhf] gap/promo bridge failed (best-effort)', {

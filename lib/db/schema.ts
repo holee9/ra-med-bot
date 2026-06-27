@@ -418,6 +418,12 @@ export const auditActionEnum = pgEnum('audit_action', [
   // Charter [지양-2]/[지양-4]). Mirrors `reranking_proposed` naming — PENDING
   // proposal, NEVER an applied change.
   'rlhf.calibration_proposed',
+  // SPEC-REGULA-RLHF-001 — Issue #264 sub-PR 3/3, added via 0096_rlhf_implicit_feedback.sql.
+  // rlhf.implicit_feedback_recorded: a user clicked "Regenerate answer" and the
+  // implicit downvote was captured. DISTINCT from feedback_submitted so
+  // regulators can separate implicit-regenerate signals from explicit
+  // thumbs-up/down submissions in the audit trail (21 CFR Part 11).
+  'rlhf.implicit_feedback_recorded',
 ]);
 
 // @MX:NOTE [AUTO] Source governance enums — SPEC-REGULA-SOURCE-GOVERNANCE-001 (Issue #48).
@@ -449,6 +455,17 @@ export const sourceApprovalStatusEnum = pgEnum('source_approval_status', [
 //              dimensions (Issue #264 follow-up, sub-PR 1/3). Keep in lock-step
 //              with migration 0082 (CREATE TYPE) + 0093 (ALTER TYPE ADD VALUE).
 export const feedbackRatingEnum = pgEnum('feedback_rating', ['up', 'down']);
+
+// @MX:NOTE [AUTO] feedbackSourceEnum — SPEC-REGULA-RLHF-001 (Issue #264 sub-PR 3/3).
+// @MX:REASON Mirrors answer_feedback_source created in 0096_rlhf_implicit_feedback.sql.
+//           'explicit' = thumbs up/down (default, back-compat). 'implicit_regenerate'
+//           = user clicked "Regenerate answer" — the regeneration IS the implicit
+//           downvote. Distinguishes the two channels in aggregation/audit without
+//           excluding either (rating='down' flows into the SAME score regardless).
+export const feedbackSourceEnum = pgEnum('answer_feedback_source', [
+  'explicit',
+  'implicit_regenerate',
+]);
 export const qualityTagEnum = pgEnum('quality_tag', [
   'citation_missing',
   'citation_wrong',
@@ -865,11 +882,29 @@ export const answerFeedback = pgTable(
     rating: feedbackRatingEnum('rating').notNull(),
     qualityTags: qualityTagEnum('quality_tags').array().notNull().default(sql`'{}'::quality_tag[]`),
     comment: text('comment'),
+    // @MX:NOTE [AUTO] feedbackSource — origin channel (0096, Issue #264 sub-PR 3/3).
+    //   'explicit' default preserves back-compat for pre-0096 rows. The route
+    //   scopes existing-row lookups by this column so explicit + implicit rows
+    //   for the same (message, user) coexist without 409.
+    feedbackSource: feedbackSourceEnum('feedback_source').notNull().default('explicit'),
+    // @MX:NOTE [AUTO] variationDimensions — optional client metadata describing
+    //   which retrieval/generation dimension differed on the regenerated attempt
+    //   (region/corpus/model). NULLABLE; explicit feedback never sets it.
+    variationDimensions: jsonb('variation_dimensions'),
     createdAt: timestamp('created_at', { withTimezone: true, mode: 'date' }).notNull().defaultNow(),
   },
   (t) => ({
-    // UNIQUE(message_id, user_id) — one feedback per user per message.
-    messageUserUnique: unique('answer_feedback_message_user_idx').on(t.messageId, t.userId),
+    // @MX:WARN [AUTO] UNIQUE(message_id, user_id, feedback_source) — replaces the
+    //   original 2-column unique (0082). One explicit + one implicit_regenerate
+    //   row per (message, user) coexist. Migration 0096 DROPs the old constraint
+    //   name and ADDs this one.
+    //   @MX:REASON A user who left explicit feedback AND later regenerates must
+    //     not collide (409). The 3-column key lets both signals persist.
+    messageUserSourceUnique: unique('answer_feedback_message_user_source_idx').on(
+      t.messageId,
+      t.userId,
+      t.feedbackSource,
+    ),
     messageIdx: index('idx_answer_feedback_message').on(t.messageId),
     createdIdx: index('idx_answer_feedback_created').on(t.createdAt),
     user_idx: index('idx_answer_feedback_user').on(t.userId),
