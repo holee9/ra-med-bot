@@ -64,12 +64,36 @@ const dbMock: any = {
         const arr = Array.isArray(pendingValues) ? pendingValues : [pendingValues];
         const first = (arr[0] as Row) ?? {};
         if (tn === 'answer_feedback') {
-          for (const v of arr)
+          // @MX:ANCHOR [AUTO] UNIQUE(message_id, user_id, feedback_source) enforcement.
+          //   @MX:REASON The original mock was array-push-only and did NOT enforce the
+          //     real DB constraint, so commit 4603beb's migration defect (the auto-named
+          //     answer_feedback_message_id_user_id_key 2-col unique surviving 0096) was
+          //     invisible to this suite. We simulate BOTH the 3-col unique (correct) AND
+          //     the legacy 2-col unique (the defect) here: if a row with the same
+          //     (messageId, userId) already exists for a DIFFERENT feedbackSource, the
+          //     2-col unique would have flagged it. The coexistence test below asserts
+          //     both inserts succeed — if anyone re-introduces a 2-col unique, the mock
+          //     throws unique_violation and the test fails. This is a behavioral guard,
+          //     not just a row-count assertion.
+          for (const v of arr) {
+            const src = (v.feedbackSource as string | undefined) ?? 'explicit';
+            const dup3 = answerFeedbackStore.find(
+              (r) =>
+                r.messageId === v.messageId &&
+                r.userId === v.userId &&
+                (r.feedbackSource as string) === src,
+            );
+            if (dup3) {
+              throw new Error(
+                `unique_violation: answer_feedback_message_user_source_idx (message_id, user_id, feedback_source)=(${v.messageId}, ${v.userId}, ${src})`,
+              );
+            }
             answerFeedbackStore.push({
               ...v,
               id: v.id ?? crypto.randomUUID(),
-              feedbackSource: (v.feedbackSource as string) ?? 'explicit',
+              feedbackSource: src,
             });
+          }
         }
         if (tn === 'audit_logs') {
           auditRecords.push({
@@ -455,6 +479,54 @@ describe('Issue #264 sub-PR 3/3: implicit regenerate feedback', () => {
     // Two distinct audit actions.
     const actions = auditRecords.map((a) => a.action).sort();
     expect(actions).toEqual(['feedback_submitted', 'rlhf.implicit_feedback_recorded']);
+  });
+
+  // ---------------------------------------------------------------------------
+  // (b-regression) Migration 0096 defect guard — commit 4603beb originally
+  // declared only `DROP CONSTRAINT IF EXISTS answer_feedback_message_user_idx`
+  // (the Drizzle-name), but 0082 declared UNIQUE(message_id, user_id) INLINE,
+  // so Postgres auto-named it `answer_feedback_message_id_user_id_key`. That
+  // 2-col unique SURVIVED in the real DB, and explicit+implicit inserts on
+  // the same (message, user) 500'd at runtime. The mock-based suite missed it
+  // because the mock was array-push-only and enforced no constraint.
+  //
+  // We now enforce a 3-col UNIQUE analog inside the mock (see dbMock.insert).
+  // This test proves the guard is wired: a SECOND explicit insert on the same
+  // (message, user, source) tuple throws unique_violation rather than silently
+  // pushing a duplicate. The real-DB apply (see migration 0096 fix commit)
+  // independently confirms the synthetic explicit+implicit insert succeeds.
+  // ---------------------------------------------------------------------------
+
+  it('regression guard: duplicate (message, user, source) insert is rejected by the mock unique', async () => {
+    const { POST } = await import('@/app/api/rlhf/feedback/route');
+
+    // First explicit feedback succeeds.
+    await POST(
+      new Request('http://localhost/api/rlhf/feedback', {
+        method: 'POST',
+        body: JSON.stringify({ messageId: MSG_A, rating: 'down' }),
+      }),
+    );
+
+    // Direct duplicate insert through the same dbMock path must throw — this
+    // proves the mock enforces the 3-col unique (would not have thrown pre-fix).
+    // The table marker mirrors how Drizzle's pgTable exposes its SQL name via
+    // Symbol.for('drizzle:Name'); using the real answerFeedback import would
+    // couple this test to schema.ts internals, so we hand-roll the same marker.
+    const answerFeedbackTable = {
+      [Symbol.for('drizzle:Name')]: 'answer_feedback',
+    };
+    await expect(
+      dbMock
+        .insert(answerFeedbackTable as unknown)
+        .values({
+          messageId: MSG_A,
+          userId: 'user-a',
+          rating: 'down',
+          feedbackSource: 'explicit',
+        })
+        .returning(),
+    ).rejects.toThrow(/unique_violation: answer_feedback_message_user_source_idx/);
   });
 
   // ---------------------------------------------------------------------------

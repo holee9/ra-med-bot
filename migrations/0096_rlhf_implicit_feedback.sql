@@ -70,8 +70,22 @@ ALTER TABLE answer_feedback
 --
 -- Idempotent: DROP IF EXISTS + ADD IF NOT EXISTS. The constraint is named
 -- explicitly so future migrations can target it without ambiguity.
+--
+-- NOTE: 0082 declared UNIQUE(message_id, user_id) INLINE, so Postgres
+-- auto-named it `answer_feedback_message_id_user_id_key` (the `_key` suffix
+-- is the Postgres convention for inline-table constraints). The earlier
+-- draft of this migration only dropped `answer_feedback_message_user_idx`
+-- (the name Drizzle/schema.ts would have produced for a named constraint),
+-- which does NOT exist in the real DB — so the auto-named 2-column unique
+-- survived and explicit+implicit inserts on the same (message, user) 500'd.
+-- Drop BOTH names with IF EXISTS so the migration is robust regardless of
+-- which form a given environment happens to have (idempotent re-runs are
+-- a hard requirement for the migration gate).
 ALTER TABLE answer_feedback
   DROP CONSTRAINT IF EXISTS answer_feedback_message_user_idx;
+
+ALTER TABLE answer_feedback
+  DROP CONSTRAINT IF EXISTS answer_feedback_message_id_user_id_key;
 
 ALTER TABLE answer_feedback
   DROP CONSTRAINT IF EXISTS answer_feedback_message_user_source_idx;

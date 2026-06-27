@@ -2351,7 +2351,14 @@ describe('Migration 0095: RLHF calibration candidates (Issue #264 sub-PR 2/3)', 
 
   it('0096 drops the 2-col unique and adds a 3-col unique (idempotent)', () => {
     const sql = readText('migrations/0096_rlhf_implicit_feedback.sql');
+    // Drizzle/schema.ts name (never existed in real DB but kept for robustness).
     expect(sql).toMatch(/DROP CONSTRAINT IF EXISTS answer_feedback_message_user_idx/);
+    // CRITICAL: 0082 declared UNIQUE(message_id, user_id) INLINE, so Postgres
+    // auto-named it `answer_feedback_message_id_user_id_key` (the `_key` suffix).
+    // The original 0096 draft only dropped the Drizzle-name and missed this one,
+    // so the 2-col unique survived in real DB and explicit+implicit inserts 500'd.
+    // This assertion prevents that regression.
+    expect(sql).toMatch(/DROP CONSTRAINT IF EXISTS answer_feedback_message_id_user_id_key/);
     expect(sql).toMatch(
       /ADD CONSTRAINT answer_feedback_message_user_source_idx\s+UNIQUE \(message_id, user_id, feedback_source\)/,
     );
