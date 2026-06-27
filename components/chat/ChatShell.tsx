@@ -7,6 +7,7 @@ import { useUIStore } from '@/stores/ui';
 import { AlertCircle, RefreshCw } from 'lucide-react';
 import { useCallback, useEffect, useState } from 'react';
 import { useStreamingAnswer } from '../../hooks/useStreamingAnswer';
+import { fireImplicitRegenerateFeedback } from '../../lib/rlhf/regenerate';
 import { AnswerBlock } from './AnswerBlock';
 import { Callout } from './Callout';
 import { Composer } from './Composer';
@@ -64,6 +65,30 @@ export function ChatShell() {
     });
     setInputValue('');
   }, [inputValue, isStreaming, sourceFilter, meta, start]);
+
+  // #264 sub-PR 3/3 — alternate answers. "Regenerate answer" fires an implicit
+  // downvote (best-effort telemetry, fire-and-forget) then re-asks the SAME
+  // original question via the existing streaming send path. No new SSE/answer
+  // pipeline is constructed here; we reuse start() so the new answer lands in
+  // the same prose/structured state and AnswerBlock re-renders normally.
+  // Charter [지양-2]: the implicit signal never alters what the user sees —
+  // no badge manipulation, no "marked bad" UI.
+  const handleRegenerate = useCallback(() => {
+    const questionToResubmit = lastSubmittedQuestion;
+    const answerMessageId = meta?.messageId;
+    if (!questionToResubmit || isStreaming) return;
+    if (answerMessageId) {
+      // Fire-and-forget — never blocks the re-ask. Errors (403/404/network)
+      // only surface in dev console. The new RAG run proceeds regardless.
+      void fireImplicitRegenerateFeedback(answerMessageId);
+    }
+    start({
+      question: questionToResubmit,
+      sourceFilter,
+      locale: 'ko',
+      conversationId: meta?.conversationId,
+    });
+  }, [lastSubmittedQuestion, isStreaming, meta, sourceFilter, start]);
 
   const showEmptyState = !hasSubmitted && isIdle;
   const showAnswer = hasSubmitted && prose.length > 0;
@@ -156,6 +181,7 @@ export function ChatShell() {
             conversationId={meta?.conversationId}
             messageId={meta?.messageId}
             ragRoute={ragRoute}
+            onRegenerate={handleRegenerate}
           />
         </div>
       )}
