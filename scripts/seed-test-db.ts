@@ -51,7 +51,7 @@ async function main(): Promise<void> {
           ),
           (
             ${VIEWER_ID}, 'viewer@example.test', 'Viewer', 'viewer', 'en', 'system', 'External',
-            null, 'active', false
+            ${passwordHash}, 'active', false
           ),
           (
             ${ADMIN_ID}, 'admin@example.test', 'Admin', 'admin', 'ko', 'system', 'RA',
