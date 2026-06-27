@@ -86,9 +86,18 @@ const envSchema = z.object({
 
   // Optional: Gitea wiki ingestion (Issue #155).
   // These stay optional so deployments without Gitea wiki still boot cleanly.
+  // GITEA_URL/TOKEN/WIKI_REPO are the read-only ingestion scope (AC3).
   GITEA_URL: z.string().url().optional(),
   GITEA_TOKEN: z.string().optional(),
   GITEA_WIKI_REPO: z.string().optional(),
+
+  // Optional: Gitea issue creation — write scope (Issue #155 AC4).
+  // Separated from GITEA_TOKEN (read) for least-privilege: the ingestion
+  // script never needs issue-write, and the issue provider never needs
+  // wiki-read. When unset, owning-repos.readOwningRepoConfig returns null
+  // for 'gitea-wiki' and the router degrades to 'queue' (safe fallback).
+  GITEA_ISSUE_TOKEN: z.string().optional(),
+  GITEA_ISSUE_REPO: z.string().optional(),
 });
 
 export type Env = z.infer<typeof envSchema>;
@@ -147,6 +156,9 @@ export function parseEnv(source: NodeJS.ProcessEnv = process.env): Env {
     GITEA_URL: source.GITEA_URL,
     GITEA_TOKEN: source.GITEA_TOKEN,
     GITEA_WIKI_REPO: source.GITEA_WIKI_REPO,
+    // Gitea issue-write scope (AC4) — independent from the read scope above.
+    GITEA_ISSUE_TOKEN: source.GITEA_ISSUE_TOKEN,
+    GITEA_ISSUE_REPO: source.GITEA_ISSUE_REPO,
   });
 }
 

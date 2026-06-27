@@ -131,4 +131,42 @@ describe('parseEnv', () => {
       expect(issues.length).toBeGreaterThanOrEqual(6);
     }
   });
+
+  describe('Gitea vars (Issue #155)', () => {
+    it('accepts valid GITEA_URL / GITEA_TOKEN / GITEA_WIKI_REPO (read scope)', () => {
+      const env = parseEnv({
+        ...validEnv,
+        GITEA_URL: 'https://gitea.example.com',
+        GITEA_TOKEN: 'gitea-read-pat',
+        GITEA_WIKI_REPO: 'DR_RnD/ra-llm-wiki',
+      });
+      expect(env.GITEA_URL).toBe('https://gitea.example.com');
+      expect(env.GITEA_TOKEN).toBe('gitea-read-pat');
+      expect(env.GITEA_WIKI_REPO).toBe('DR_RnD/ra-llm-wiki');
+    });
+
+    it('throws ZodError when GITEA_URL is not a URL', () => {
+      expect(() => parseEnv({ ...validEnv, GITEA_URL: 'not-a-url' })).toThrow(ZodError);
+    });
+
+    it('accepts the optional issue-write vars GITEA_ISSUE_TOKEN / GITEA_ISSUE_REPO', () => {
+      const env = parseEnv({
+        ...validEnv,
+        GITEA_URL: 'https://gitea.example.com',
+        GITEA_ISSUE_TOKEN: 'gitea-issue-pat',
+        GITEA_ISSUE_REPO: 'DR_RnD/regula-issues',
+      });
+      expect(env.GITEA_ISSUE_TOKEN).toBe('gitea-issue-pat');
+      expect(env.GITEA_ISSUE_REPO).toBe('DR_RnD/regula-issues');
+    });
+
+    it('leaves Gitea vars undefined when unset (deployments without Gitea boot cleanly)', () => {
+      const env = parseEnv(validEnv);
+      expect(env.GITEA_URL).toBeUndefined();
+      expect(env.GITEA_TOKEN).toBeUndefined();
+      expect(env.GITEA_WIKI_REPO).toBeUndefined();
+      expect(env.GITEA_ISSUE_TOKEN).toBeUndefined();
+      expect(env.GITEA_ISSUE_REPO).toBeUndefined();
+    });
+  });
 });

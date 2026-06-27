@@ -141,6 +141,7 @@ describe('owning-repos.readOwningRepoConfig — token separation + null on uncon
       repo: 'acme/ra-project',
       apiBase: 'https://github.example.com',
       token: 'owning-pat',
+      provider: 'github',
     });
   });
 
@@ -174,6 +175,231 @@ describe('owning-repos.readOwningRepoConfig — token separation + null on uncon
     // OWNING_ISSUE_GITHUB_TOKEN cleared to '' in beforeEach.
     const { readOwningRepoConfig } = await import('../../lib/knowledge-gap/owning-repos');
     expect(readOwningRepoConfig('gitea-wiki')).toBeNull();
+  });
+});
+
+// ---------------------------------------------------------------------------
+// owning-repos: Gitea provider for 'gitea-wiki' target (Issue #155 AC4)
+// ---------------------------------------------------------------------------
+describe('owning-repos.readOwningRepoConfig — Gitea provider for gitea-wiki (#155 AC4)', () => {
+  const GITEA_KEYS = [
+    'GITEA_URL',
+    'GITEA_TOKEN',
+    'GITEA_WIKI_REPO',
+    'GITEA_ISSUE_TOKEN',
+    'GITEA_ISSUE_REPO',
+    // Also clear the GitHub-path env so we can prove the Gitea path wins.
+    'OWNING_ISSUE_GITHUB_REPO_GITEA_WIKI',
+    'OWNING_ISSUE_GITHUB_TOKEN',
+    'OWNING_ISSUE_GITHUB_API_BASE_GITEA_WIKI',
+  ];
+
+  beforeEach(() => {
+    for (const k of GITEA_KEYS) process.env[k] = '';
+    vi.resetModules();
+  });
+  afterEach(() => {
+    for (const k of GITEA_KEYS) process.env[k] = '';
+    vi.restoreAllMocks();
+  });
+
+  it('returns a Gitea config sourced from GITEA_URL / GITEA_ISSUE_TOKEN / GITEA_ISSUE_REPO', async () => {
+    process.env.GITEA_URL = 'https://gitea.example.com';
+    process.env.GITEA_ISSUE_TOKEN = 'gitea-issue-pat';
+    process.env.GITEA_ISSUE_REPO = 'DR_RnD/regula-issues';
+    const { readOwningRepoConfig } = await import('../../lib/knowledge-gap/owning-repos');
+    const cfg = readOwningRepoConfig('gitea-wiki');
+    expect(cfg).toEqual({
+      repo: 'DR_RnD/regula-issues',
+      apiBase: 'https://gitea.example.com',
+      token: 'gitea-issue-pat',
+      provider: 'gitea',
+    });
+  });
+
+  it('falls back to GITEA_WIKI_REPO when GITEA_ISSUE_REPO is unset', async () => {
+    process.env.GITEA_URL = 'https://gitea.example.com';
+    process.env.GITEA_ISSUE_TOKEN = 'gitea-issue-pat';
+    process.env.GITEA_WIKI_REPO = 'DR_RnD/ra-llm-wiki';
+    const { readOwningRepoConfig } = await import('../../lib/knowledge-gap/owning-repos');
+    expect(readOwningRepoConfig('gitea-wiki')?.repo).toBe('DR_RnD/ra-llm-wiki');
+  });
+
+  it('returns null (degrade to queue) when GITEA_ISSUE_TOKEN is unset, even if read GITEA_TOKEN is present', async () => {
+    process.env.GITEA_URL = 'https://gitea.example.com';
+    process.env.GITEA_TOKEN = 'read-only-pat';
+    process.env.GITEA_ISSUE_REPO = 'DR_RnD/regula-issues';
+    // GITEA_ISSUE_TOKEN intentionally unset — read scope must NOT satisfy write need.
+    const { readOwningRepoConfig } = await import('../../lib/knowledge-gap/owning-repos');
+    expect(readOwningRepoConfig('gitea-wiki')).toBeNull();
+  });
+
+  it('returns null when GITEA_URL is a public http host (SSRF guard)', async () => {
+    // SECURITY: the read PAT travels as an Authorization header. A public
+    // untrusted HTTP host would leak it on the wire — must be rejected.
+    process.env.GITEA_URL = 'http://evil.example.com';
+    process.env.GITEA_ISSUE_TOKEN = 'gitea-issue-pat';
+    process.env.GITEA_ISSUE_REPO = 'DR_RnD/regula-issues';
+    const { readOwningRepoConfig } = await import('../../lib/knowledge-gap/owning-repos');
+    expect(readOwningRepoConfig('gitea-wiki')).toBeNull();
+  });
+
+  it('allows GITEA_URL as an internal http host (deployed LAN Gitea, .env.example:89)', async () => {
+    // The actual deployed Gitea is http://diskstation:7001 (plain HTTP on the
+    // LAN). A blanket https-only rejection silently disables the integration
+    // with the repo's own documented config. The SSRF guard is preserved for
+    // the real threat surface (public HTTP); internal hosts are trusted.
+    process.env.GITEA_URL = 'http://diskstation:7001';
+    process.env.GITEA_ISSUE_TOKEN = 'gitea-issue-pat';
+    process.env.GITEA_ISSUE_REPO = 'DR_RnD/regula-issues';
+    const { readOwningRepoConfig } = await import('../../lib/knowledge-gap/owning-repos');
+    const cfg = readOwningRepoConfig('gitea-wiki');
+    expect(cfg).not.toBeNull();
+    expect(cfg?.apiBase).toBe('http://diskstation:7001');
+    expect(cfg?.provider).toBe('gitea');
+  });
+
+  it.each([
+    'http://localhost:3000',
+    'http://127.0.0.1:3000',
+    'http://10.0.0.5:3000',
+    'http://192.168.1.10:3000',
+    'http://172.16.5.5:3000',
+    'http://gitea.local',
+    'http://build.internal',
+  ])('allows GITEA_URL as internal host %s (SSRF guard preserves LAN trust)', async (url) => {
+    process.env.GITEA_URL = url;
+    process.env.GITEA_ISSUE_TOKEN = 'gitea-issue-pat';
+    process.env.GITEA_ISSUE_REPO = 'DR_RnD/regula-issues';
+    const { readOwningRepoConfig } = await import('../../lib/knowledge-gap/owning-repos');
+    const cfg = readOwningRepoConfig('gitea-wiki');
+    expect(cfg).not.toBeNull();
+    expect(cfg?.apiBase).toBe(url);
+  });
+});
+
+// ---------------------------------------------------------------------------
+// owning-issue.targetGithubClient — Gitea dialect for gitea-wiki (#155 AC4)
+// ---------------------------------------------------------------------------
+const giteaFetchMock = vi.hoisted(() => vi.fn());
+vi.stubGlobal('fetch', giteaFetchMock);
+
+describe('owning-issue.targetGithubClient — Gitea dialect for gitea-wiki (#155 AC4)', () => {
+  const GITEA_KEYS = [
+    'GITEA_URL',
+    'GITEA_TOKEN',
+    'GITEA_WIKI_REPO',
+    'GITEA_ISSUE_TOKEN',
+    'GITEA_ISSUE_REPO',
+    'OWNING_ISSUE_GITHUB_REPO_GITEA_WIKI',
+    'OWNING_ISSUE_GITHUB_TOKEN',
+  ];
+
+  beforeEach(() => {
+    for (const k of GITEA_KEYS) process.env[k] = '';
+    giteaFetchMock.mockReset();
+  });
+  afterEach(() => {
+    for (const k of GITEA_KEYS) process.env[k] = '';
+  });
+
+  it('hits {GITEA_URL}/api/v1/repos/{repo}/issues and uses GITEA_ISSUE_TOKEN (not GITEA_TOKEN, not KNOWLEDGE_GAP_GITHUB_TOKEN)', async () => {
+    process.env.GITEA_URL = 'https://gitea.example.com';
+    process.env.GITEA_ISSUE_TOKEN = 'gitea-issue-pat';
+    process.env.GITEA_ISSUE_REPO = 'DR_RnD/regula-issues';
+    // Decoys that must NOT be used:
+    process.env.GITEA_TOKEN = 'read-only-decoy';
+    process.env.KNOWLEDGE_GAP_GITHUB_TOKEN = 'triage-decoy';
+
+    giteaFetchMock.mockResolvedValueOnce(
+      new Response(
+        JSON.stringify({
+          number: 7,
+          html_url: 'https://gitea.example.com/DR_RnD/regula-issues/issues/7',
+        }),
+        {
+          status: 201,
+          headers: { 'Content-Type': 'application/json' },
+        },
+      ),
+    );
+
+    const { targetGithubClient } = await import('../../lib/knowledge-gap/owning-issue');
+    const client = targetGithubClient('gitea-wiki');
+    expect(client.configured).toBe(true);
+
+    const result = await client.createIssue({
+      title: '[gitea-wiki][low_confidence] knowledge-gap routed',
+      body: 'triage: https://github.com/acme/triage/issues/5',
+      labels: ['knowledge-gap', 'ra-auto-route'],
+    });
+
+    expect(result).toEqual({
+      number: 7,
+      htmlUrl: 'https://gitea.example.com/DR_RnD/regula-issues/issues/7',
+    });
+
+    const [url, init] = giteaFetchMock.mock.calls[0] as [string, RequestInit];
+    expect(url).toBe('https://gitea.example.com/api/v1/repos/DR_RnD/regula-issues/issues');
+    const headers = init.headers as Record<string, string>;
+    // Gitea dialect: `token <T>`, never `Bearer`.
+    expect(headers.Authorization).toBe('token gitea-issue-pat');
+    expect(headers.Authorization).not.toContain('read-only-decoy');
+    expect(headers.Authorization).not.toContain('triage-decoy');
+    // Labels are sent as `{ name }` objects on the Gitea dialect.
+    const body = JSON.parse(init.body as string) as { labels: unknown[] };
+    expect(body.labels).toEqual([{ name: 'knowledge-gap' }, { name: 'ra-auto-route' }]);
+  });
+
+  it('returns the GitHub-shaped {number, html_url} from the Gitea response (same field name)', async () => {
+    process.env.GITEA_URL = 'https://gitea.example.com';
+    process.env.GITEA_ISSUE_TOKEN = 'gitea-issue-pat';
+    process.env.GITEA_ISSUE_REPO = 'DR_RnD/regula-issues';
+
+    giteaFetchMock.mockResolvedValueOnce(
+      new Response(
+        JSON.stringify({
+          number: 42,
+          html_url: 'https://gitea.example.com/DR_RnD/regula-issues/issues/42',
+        }),
+        {
+          status: 201,
+        },
+      ),
+    );
+
+    const { targetGithubClient } = await import('../../lib/knowledge-gap/owning-issue');
+    const result = await targetGithubClient('gitea-wiki').createIssue({
+      title: 't',
+      body: 'b',
+      labels: [],
+    });
+    // Gitea and GitHub both expose `html_url` on the issue resource — no mapping needed.
+    expect(result.htmlUrl).toBe('https://gitea.example.com/DR_RnD/regula-issues/issues/42');
+    expect(result.number).toBe(42);
+  });
+
+  it('sanitizes token from Gitea error body before throwing (Gitea echoes Authorization header)', async () => {
+    process.env.GITEA_URL = 'https://gitea.example.com';
+    process.env.GITEA_ISSUE_TOKEN = 'gitea-issue-pat-secret-value';
+    process.env.GITEA_ISSUE_REPO = 'DR_RnD/regula-issues';
+
+    const leakingBody = 'Authorization: token gitea-issue-pat-secret-value plus extra detail';
+    giteaFetchMock.mockResolvedValueOnce(
+      new Response(leakingBody, { status: 500, headers: { 'Content-Type': 'text/plain' } }),
+    );
+
+    const { targetGithubClient } = await import('../../lib/knowledge-gap/owning-issue');
+    await expect(
+      targetGithubClient('gitea-wiki').createIssue({ title: 't', body: 'b', labels: [] }),
+    ).rejects.toThrow(/Gitea createIssue/);
+
+    // The token substring must not appear in the thrown message.
+    try {
+      await targetGithubClient('gitea-wiki').createIssue({ title: 't', body: 'b', labels: [] });
+    } catch (err) {
+      expect((err as Error).message).not.toContain('gitea-issue-pat-secret-value');
+    }
   });
 });
 
