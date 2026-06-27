@@ -429,7 +429,12 @@ export type AuditAction =
   //   owning_issue_created          — owning issue opened in target repo (ra-project/MD-process/gitea-wiki/hybrid-ra-saas)
   //   owning_issue_creation_failed  — retry exhausted, degraded to queue, capture not aborted
   | 'owning_issue_created'
-  | 'owning_issue_creation_failed';
+  | 'owning_issue_creation_failed'
+  // SPEC-REGULA-RLHF-001 — Issue #264 sub-PR 2/3, added via 0095_rlhf_calibration_candidates.sql.
+  // rlhf.calibration_proposed: a confidence-calibration candidate was detected
+  // and written as status=pending for RA-Lead governance review. Mirrors
+  // `reranking_proposed` naming — a PENDING proposal, NEVER an applied change.
+  | 'rlhf.calibration_proposed';
 
 export interface AuditEvent {
   /** User UUID, or null for system-initiated events. */

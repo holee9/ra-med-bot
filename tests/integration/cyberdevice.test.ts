@@ -602,14 +602,14 @@ describe('count-sync: audit_action (174→191) + PermissionAction (66→70)', ()
       /export const auditActionEnum = pgEnum\('audit_action', \[([\s\S]*?)\]\);/,
     );
     const vals = match?.[1]?.match(/'[a-z_.]+'/g) ?? [];
-    expect(vals.length).toBe(205);
+    expect(vals.length).toBe(206); // +1 rlhf.calibration_proposed (Issue #264 sub-PR 2/3)
   });
 
   it('AuditAction type has 199 values (sync with schema enum)', () => {
     const src = readText('lib/audit.ts');
     const match = src.match(/export type AuditAction =\s*([\s\S]*?);/);
     const vals = match?.[1]?.match(/'[a-z_.]+'/g) ?? [];
-    expect(vals.length).toBe(205);
+    expect(vals.length).toBe(206); // +1 rlhf.calibration_proposed (Issue #264 sub-PR 2/3)
   });
 
   it('PERMISSIONS matrix has 71 entries', () => {
