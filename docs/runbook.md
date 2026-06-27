@@ -398,4 +398,30 @@ If a security incident is suspected:
 
 ---
 
+## Re-seed local corpus
+
+When the ra-project or MD-process SOPs change, re-seed the local corpus so
+citations reflect the latest content. Each re-seed writes fresh provenance
+fields (migration 0059) so citations remain reproducible.
+
+```bash
+# 1. Set the env vars (required in production, dev falls back with a warning)
+export RA_PROJECT_PATH=/path/to/ra-project
+export MD_PROCESS_PATH=/path/to/MD-process
+export DATABASE_URL=postgresql://user:pass@localhost:5432/regula
+export OPENAI_API_KEY=sk-...   # optional; FTS-only mode if absent
+
+# 2. Run the seed script
+pnpm tsx scripts/seed-local-docs.ts
+```
+
+The script upserts `sources` rows (reusing existing rows by title) and inserts
+fresh `source_sections` with a new `ingestion_run_id` on each run. Duplicate
+`(source_id, anchor)` rows are skipped (unique constraint).
+
+See [docs/knowledge-source-boundary.md](./knowledge-source-boundary.md) for the
+provenance column contract.
+
+---
+
 *Last updated: 2026-06-17 | Regula v1.0.0*

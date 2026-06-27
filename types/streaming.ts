@@ -58,6 +58,14 @@ export interface SourceItem {
   // generateUsageNotice() at the answer/export path. Optional: present when a
   // source_license row exists for the source.
   usageNotice?: string;
+  // REQ-INTEGRATION-001 — provenance for reproducible citations:
+  // host > repo > ref/commit > path > anchor. Optional: present when the
+  // source row carries provenance fields (migration 0059).
+  sourceHost?: string | null;
+  sourceOwner?: string | null;
+  sourceRepo?: string | null;
+  sourceRef?: string | null;
+  sourcePath?: string | null;
 }
 
 export interface SourcesEvent {

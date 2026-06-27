@@ -25,6 +25,11 @@ interface SopsRow extends Record<string, unknown> {
   year: number | null;
   type: string;
   url: string | null;
+  source_host: string | null;
+  source_owner: string | null;
+  source_repo: string | null;
+  source_ref: string | null;
+  source_path: string | null;
 }
 
 /**
@@ -99,7 +104,12 @@ export class InternalSopsRetriever implements IRetriever {
             s.title         AS title,
             s.year          AS year,
             s.type::text    AS type,
-            s.url           AS url
+            s.url           AS url,
+            s.source_host   AS source_host,
+            s.source_owner  AS source_owner,
+            s.source_repo   AS source_repo,
+            s.source_ref    AS source_ref,
+            s.source_path   AS source_path
           FROM source_sections ss
           INNER JOIN sources s ON s.id = ss.source_id
           LEFT JOIN vec ON vec.section_id = ss.id
@@ -121,7 +131,12 @@ export class InternalSopsRetriever implements IRetriever {
           s.title         AS title,
           s.year          AS year,
           s.type::text    AS type,
-          s.url           AS url
+          s.url           AS url,
+          s.source_host   AS source_host,
+          s.source_owner  AS source_owner,
+          s.source_repo   AS source_repo,
+          s.source_ref    AS source_ref,
+          s.source_path   AS source_path
         FROM source_sections ss
         INNER JOIN sources s ON s.id = ss.source_id
         WHERE to_tsvector('english', ss.text) @@ websearch_to_tsquery('english', ${query})
@@ -147,6 +162,11 @@ export class InternalSopsRetriever implements IRetriever {
         year: r.year,
         type: r.type,
         url: r.url,
+        sourceHost: r.source_host ?? null,
+        sourceOwner: r.source_owner ?? null,
+        sourceRepo: r.source_repo ?? null,
+        sourceRef: r.source_ref ?? null,
+        sourcePath: r.source_path ?? null,
       },
     }));
 

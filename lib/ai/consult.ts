@@ -156,6 +156,11 @@ export async function* consult(
     year: (r.metadata.year as number | null | undefined) ?? null,
     type: (r.metadata.type as string | undefined) ?? '',
     url: (r.metadata.url as string | null | undefined) ?? null,
+    sourceHost: (r.metadata.sourceHost as string | null | undefined) ?? null,
+    sourceOwner: (r.metadata.sourceOwner as string | null | undefined) ?? null,
+    sourceRepo: (r.metadata.sourceRepo as string | null | undefined) ?? null,
+    sourceRef: (r.metadata.sourceRef as string | null | undefined) ?? null,
+    sourcePath: (r.metadata.sourcePath as string | null | undefined) ?? null,
   }));
   const searchElapsed = Date.now() - searchStart;
   if (searchElapsed < TRACE_MIN_DELAY_MS) await sleep(TRACE_MIN_DELAY_MS - searchElapsed);
@@ -393,6 +398,11 @@ export async function* consult(
     url: c.url,
     anchor: c.anchor,
     offset: c.offset,
+    sourceHost: c.sourceHost ?? null,
+    sourceOwner: c.sourceOwner ?? null,
+    sourceRepo: c.sourceRepo ?? null,
+    sourceRef: c.sourceRef ?? null,
+    sourcePath: c.sourcePath ?? null,
   }));
   sourceItems.sort((a, b) => a.citeIndex - b.citeIndex);
 

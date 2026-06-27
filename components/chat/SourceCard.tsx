@@ -3,7 +3,7 @@
 // @MX:NOTE SourceCard — displays a retrieved source with metadata.
 // @MX:SPEC SPEC-REGULA-CHAT-001 (REQ-CHAT-045)
 
-import { AlertCircle, ExternalLink, ShieldCheck } from 'lucide-react';
+import { AlertCircle, ExternalLink, FileCode, ShieldCheck } from 'lucide-react';
 import { useDocViewer } from '../../hooks/useDocViewer';
 import type { SourceItem } from '../../types/streaming';
 
@@ -30,6 +30,21 @@ export function SourceCard({ source }: SourceCardProps) {
   const hasAnchor = source.anchor && source.anchor.length > 0;
   const hasOffset = source.offset > 0;
   const isVerifiable = hasAnchor && hasOffset;
+
+  // Provenance trace: host > owner/repo @ ref : path (REQ-INTEGRATION-001)
+  const provenanceParts: string[] = [];
+  if (source.sourceRepo) {
+    provenanceParts.push(
+      [source.sourceOwner, source.sourceRepo].filter(Boolean).join('/') || source.sourceRepo,
+    );
+  }
+  if (source.sourceRef) provenanceParts.push(`@${source.sourceRef.substring(0, 8)}`);
+  const repoRef = provenanceParts.join('');
+  const pathPart = source.sourcePath ? `:${source.sourcePath}` : '';
+  const provenanceLabel = [repoRef, pathPart].filter(Boolean).join('') || source.sourceHost || '';
+  const hasProvenance = Boolean(
+    source.sourceHost || source.sourceRepo || source.sourceRef || source.sourcePath,
+  );
 
   function handleOpen() {
     open(source.citeIndex, source.offset ?? 0, source.id);
@@ -71,6 +86,18 @@ export function SourceCard({ source }: SourceCardProps) {
       >
         {source.title}
       </button>
+
+      {/* Provenance — host>owner/repo@ref path (REQ-INTEGRATION-001) */}
+      {hasProvenance && (
+        <div
+          className="flex items-center gap-1 text-[10px] text-ink-400"
+          data-testid="citation-provenance"
+          title={provenanceLabel}
+        >
+          <FileCode size={10} className="text-ink-400" aria-hidden="true" />
+          <span className="font-mono truncate">{provenanceLabel}</span>
+        </div>
+      )}
 
       {/* Year + verification hint + external link */}
       <div className="flex items-center justify-between">
