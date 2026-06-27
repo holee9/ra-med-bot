@@ -166,7 +166,10 @@ export const POST = withPermission('sources.ingest', async (req, _ctx, session) 
   // ---------------------------------------------------------------------
   let redaction: Awaited<ReturnType<typeof redactPiiForIngest>>;
   try {
-    redaction = await redactPiiForIngest(rawText, docClass);
+    redaction = await redactPiiForIngest(rawText, docClass, {
+      documentId: existingSourceId,
+      saveMap: true,
+    });
   } catch (err) {
     return Response.json(
       { error: 'redaction_failed', detail: err instanceof Error ? err.message : 'unknown' },
@@ -265,6 +268,11 @@ export const POST = withPermission('sources.ingest', async (req, _ctx, session) 
       layersRun: redaction.layersRun,
       redactionCount: redaction.redactionCount,
       sensitivityLevel: redaction.sensitivityLevel,
+      // 21 CFR Part 11 — record whether the reversibility map was actually
+      // persisted. mapPersisted=false means no reversible artifact exists for
+      // this document (PII_MAP_KEY unset, DB write failed, or zero pairs).
+      mapPersisted: redaction.mapPersisted,
+      mapPersistedCount: redaction.mapPersistedCount,
     },
   });
 
