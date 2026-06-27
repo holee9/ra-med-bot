@@ -12,6 +12,8 @@ import { describe, expect, it, vi } from 'vitest';
 vi.mock('next/navigation', () => ({
   useRouter: () => ({ push: vi.fn(), replace: vi.fn(), prefetch: vi.fn() }),
   usePathname: () => '/',
+  // Issue #158 Group C: LocaleToggle uses useSearchParams to preserve return path.
+  useSearchParams: () => new URLSearchParams(),
 }));
 
 vi.mock('next-auth/react', () => ({
@@ -19,6 +21,16 @@ vi.mock('next-auth/react', () => ({
   signIn: vi.fn(),
   signOut: vi.fn(),
   useSession: () => ({ data: null, status: 'unauthenticated' }),
+}));
+
+// Issue #158 Group C: Home + Topbar are server components that call auth() and
+// gate the expert-review link by ra-lead role. Provide an ra-lead session so
+// the shell renders role-aware content (REQ-FND-016, REQ-FND-020).
+vi.mock('@/lib/auth', () => ({
+  auth: async () => ({ user: { role: 'ra-lead' } }),
+}));
+vi.mock('@/lib/auth/rbac', () => ({
+  hasRole: (role: string, required: string) => role === required,
 }));
 
 // next/font/google is a build-time module; mock it to plain objects.
@@ -157,7 +169,8 @@ describe('app/(app)/layout.tsx — REQ-FND-013, 014', () => {
 describe('app/(app)/page.tsx — REQ-FND-016', () => {
   it('renders without error', async () => {
     const mod = await import('../../app/(app)/page');
-    const tree = mod.default();
+    // Home is an async server component (awaits auth() for role-aware entries).
+    const tree = await mod.default();
     render(tree);
     // No assertion on text — just that render does not throw.
     expect(tree).toBeTruthy();

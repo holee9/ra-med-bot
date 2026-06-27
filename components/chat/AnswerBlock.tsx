@@ -37,6 +37,7 @@ import { RagRouteBadge } from './RagRouteBadge';
 import { SourcesGrid } from './SourcesGrid';
 import { SuggestionPill } from './SuggestionPill';
 import { Timeline } from './Timeline';
+import { TrustPanel } from './TrustPanel';
 
 // REQ-CHAT-030 — allow <sup class="cite" data-source data-offset> attributes.
 // Rationale: Citation markup is produced by Regula's own pipeline; sanitization
@@ -81,6 +82,8 @@ interface AnswerBlockProps {
   // renders the "승격됨 / 취소" state on first paint. The page parent looks it up
   // via /api/knowledge-promo/library (status='active').
   promotedId?: string;
+  // Issue #158 — signature existence for TrustPanel
+  signatureExists?: boolean;
 }
 
 export function AnswerBlock({
@@ -101,6 +104,7 @@ export function AnswerBlock({
   onSuggestionClick,
   viewerRole,
   promotedId,
+  signatureExists = false,
 }: AnswerBlockProps) {
   const [refinedProse, setRefinedProse] = useState<string | null>(null);
   const displayProse = refinedProse ?? prose;
@@ -121,11 +125,17 @@ export function AnswerBlock({
 
   return (
     <article className="flex flex-col gap-4">
-      {/* Section 1: Meta row */}
+      {/* Section 1: TrustPanel — aggregated trust signals */}
+      <TrustPanel
+        confidence={confidence}
+        sources={sources}
+        reviewStatus={expertReviewRequired ? 'pending' : 'none'}
+        signatureExists={signatureExists}
+        ragRoute={ragRoute}
+      />
+
+      {/* Section 2: Meta row (condensed) */}
       <div className="flex flex-wrap items-center gap-3 text-xs text-ink-500">
-        {confidence && <ConfidenceBadge level={confidence.level} score={confidence.score} />}
-        {ragRoute && <RagRouteBadge route={ragRoute} />}
-        <span>{sourceCount} 출처</span>
         {durationSec && <span>분석 {durationSec}s</span>}
         {/* Action buttons — copy / export / regenerate */}
         <div className="ml-auto flex gap-2">

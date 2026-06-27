@@ -13,6 +13,22 @@ export default function ChatPage() {
           규제 질문을 입력하면 조직 범위에 맞는 source, citation, confidence, 전문가 검토 필요
           여부를 함께 확인합니다.
         </p>
+
+        {/* Chat entry affordance strip */}
+        <div className="mt-8 flex flex-wrap items-center justify-center gap-3 text-xs text-ink-500">
+          <div className="flex items-center gap-1.5 rounded-full border border-ink-200 bg-ink-50 px-3 py-1.5">
+            <span className="text-success-600">✓</span>
+            <span>증거 기반 답변</span>
+          </div>
+          <div className="flex items-center gap-1.5 rounded-full border border-ink-200 bg-ink-50 px-3 py-1.5">
+            <span className="text-amber-600">⚠</span>
+            <span>규제 판단 불가 — 의사결정 보조용</span>
+          </div>
+          <div className="flex items-center gap-1.5 rounded-full border border-ink-200 bg-ink-50 px-3 py-1.5">
+            <span className="text-brand-600">📚</span>
+            <span>MD-process · ra-project · FDA · EU MDR</span>
+          </div>
+        </div>
       </section>
 
       {/* Client shell owns all interactive state */}

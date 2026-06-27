@@ -1,5 +1,6 @@
 'use client';
 
+import { OperationalReadiness } from '@/components/dashboard/OperationalReadiness';
 import { useDashboardStats } from '@/lib/queries/useDashboardStats';
 import { useProjects } from '@/lib/queries/useProjects';
 import { useUpdates } from '@/lib/queries/useUpdates';
@@ -65,6 +66,8 @@ export default function DashboardPage() {
           </article>
         ))}
       </div>
+
+      <OperationalReadiness />
     </section>
   );
 }

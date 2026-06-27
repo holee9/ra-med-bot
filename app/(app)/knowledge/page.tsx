@@ -1,8 +1,11 @@
 // @MX:NOTE [AUTO] Knowledge base page — switched from hard-coded corpus list to dynamic API-backed view.
 // @MX:SPEC SPEC-REGULA-RELEASE-HARDENING-001 (TASK-002)
 // @MX:SPEC Issue #199 (Hybrid RA sync status section added)
+// @MX:SPEC Issue #158 (Group B2 - Knowledge readiness surfaces: provenance hints, ingestion totals, pending badges, ops loop)
 
 import { HybridSyncStatus } from '@/components/knowledge/HybridSyncStatus';
+import { IssueRoutingIndicator } from '@/components/knowledge/IssueRoutingIndicator';
+import { SourceIngestionStatus } from '@/components/knowledge/SourceIngestionStatus';
 import { headers } from 'next/headers';
 import { Suspense } from 'react';
 
@@ -177,6 +180,10 @@ export default function KnowledgePage() {
         <h2 className="mb-2 text-sm font-semibold text-ink-900">Hybrid RA 동기화 상태</h2>
         <HybridSyncStatus />
       </section>
+
+      <SourceIngestionStatus />
+
+      <IssueRoutingIndicator />
 
       <Suspense fallback={<CorpusGridFallback />}>
         <CorpusGrid />
