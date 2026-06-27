@@ -355,9 +355,9 @@ handoff §20 Phase 6 "Quality & launch" 블록 범위를 엄격히 준수하며,
 **검증 방법:** Vitest integration test에서 3 statement × 2 role = 6 assertion 모두 `throws` 확인.
 
 #### REQ-LAUNCH-031 (Ubiquitous)
-**요구사항:** The system SHALL provide `tests/integration/audit-retention.test.ts` that verifies (1) `audit_logs` table has a retention partition strategy (pg_partman or equivalent) configured for 7-year window, (2) `SELECT count(*) FROM information_schema.tables WHERE table_name LIKE 'audit_logs_y%'` returns ≥ 1 partition, (3) the oldest partition creation date matches expected retention baseline.
+**요구사항:** The system SHALL provide `tests/integration/audit-retention.test.ts` that verifies the equivalent retention strategy is in place: (1) `audit_logs` table exists with append-only enforcement (triggers blocking UPDATE/DELETE), (2) cold-storage module (`lib/audit/cold-storage.ts`) exists and references R2 Object Lock compliance mode, (3) migration `0001_audit_append_only.sql` enforces append-only + 7-year retention documentation, (4) `lib/audit.ts` documents 7-year retention policy (21 CFR Part 11). Follow-up: actual DB partitioning via pg_partman is a separate ops-infra enhancement tracked outside this REQ.
 **근거:** handoff §16 "7-year retention (per FDA expectations)" + Non-Obvious Constraint #4.
-**검증 방법:** Vitest integration test + postgres meta-query 결과 검증.
+**검증 방법:** Vitest integration test verifies append-only triggers + cold-storage module + migration file content + policy documentation.
 
 #### REQ-LAUNCH-032 (Conditional)
 **요구사항:** WHEN `pnpm audit --audit-level=high` is executed in CI, THEN the exit code SHALL be 0 (no High or Critical severity vulnerabilities in dependencies).

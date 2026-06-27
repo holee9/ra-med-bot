@@ -1,6 +1,6 @@
 // @MX:SPEC REQ-CLINLIT-021~025
 
-import { describe, expect, it, vi } from 'vitest';
+import { beforeEach, describe, expect, it, vi } from 'vitest';
 
 vi.mock('ai', () => ({
   generateObject: vi.fn(),
@@ -111,12 +111,12 @@ describe('synthesizeEvidence', () => {
 });
 
 describe('screenArticles (via screening-pipeline)', () => {
-  it('maps decisions correctly for each article', async () => {
-    vi.mock('ai', () => ({
-      generateObject: vi.fn(),
-    }));
+  beforeEach(() => {
+    vi.clearAllMocks();
+  });
 
-    // Import inline to pick up fresh mock.
+  it('maps decisions correctly for each article', async () => {
+    // Import once to pick up the top-level mock.
     const { screenArticles } = await import('../../../lib/cer/screening-pipeline');
 
     vi.mocked(generateObject).mockResolvedValueOnce({
