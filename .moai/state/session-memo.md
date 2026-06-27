@@ -2,48 +2,38 @@
 
 > 세션 연결용. 상세 맥락은 auto-memory `project-state.md`가 1차 진실원. 본 파일은 빠른 시작 요약.
 
-## 현재 세션 (2026-06-26) — Knowledge/RAG 그룹 자율 순차 루프 완료 (ultracode)
+## 현재 세션 (2026-06-27) — #158 후속 백엔드 7개(#149~#157) 전부 완료
 
-사용자: `/moai ultracode "남은 작업 모두 완료까지 계속 가자"` → **Knowledge/RAG 그룹(#50→#51→#62) × 자율 순차 루프** → **3/3 전부 MERGED**.
+사용자: `/moai ultracode "남은 작업 모두 완료까지 계속 가자"` → 진입 그룹 선택(AskUserQuestion: **#158 후속 백엔드 #149~#157**) → **7개 전부 완료**.
 
-### ✅ 루프 완료 — 3 tier1 머지
-| 이슈 | PR | main HEAD | 회귀 | migration | audit | 권한 |
-|---|---|---|---|---|---|---|
-| #50 KNOWLEDGE-PROMO | #274 | `62a4e8c` | 4399 (+54) | 0086 | 196 | 73 |
-| #51 PROJECT-MEMORY | #276 | `a86c2b7` | 4472 (+73) | 0087 | 199 | 75 |
-| #62 STANDARDS MVP | #277 | `50b0545` | 4505 (+33) | 0088 | 203 | 77 |
+### ✅ 완료 — main HEAD `f1a5aa8` · OPEN PR 0건 · **#158 CLOSED**
+| 이슈 | 결과 | PR / 비고 |
+|---|---|---|
+| #149 quality gate | closed (코드 0) | 2주 전 상태(243fcda) 오탐 정정, main 기준 게이트 green 직검 |
+| #150 RBAC membership | closed (코드 0) | Next.js 15 Promise params + isProjectMember 이미 구현 |
+| #151 redaction map | MERGED | PR #286 — saveRedactionMap 활성화 + Part 11 audit(mapPersisted) |
+| #154 provenance + IDOR | MERGED | PR #287 — citation provenance + cross-org filter(RLS 허위 주석 정정) |
+| #156 hybrid adapter | closed | AC4(hybrid error→integration-gap)를 #157로 통합, AC1/2/3/5 MET |
+| #157 owning routing + #156 AC4 | MERGED | PR #288 — 4-way 결정적 router + link-back + integration-gap recorder + migration 0091 + token 분리 |
+| #155 Gitea provider | MERGED | PR #289 — ingestion hardening + Gitea issue provider + lib/gitea/url-guard(internal host SSRF 정책) |
 
-**main HEAD 최종: `50b0545`**. 오픈 PR 0건. 회귀 **4505 passed** | 8 skipped. Inngest 5.
+### ★ 핵심 패턴 (L-007 정신)
+- 이슈 기준 커밋이 2주 전(243fcda) → **read-only 워크플로우(5에이전트 병렬)** 로 현재 main 잔존 상태 직검 → 대부분 "이미 60~95% 구현, 좁은 갭". #149/#150/#156은 코드 변경 없이 close.
+- 매 PR 오케스트레이터 게이트 직견(typecheck/lint(biome+lint:hex)/test FULL/build skip L-012) + expert-security. #155는 **BLOCK-MERGE**(internal Gitea http SSRF reject) → fix(lib/gitea/url-guard internal host 허용) → 재리뷰 PASS.
+- migration 0091 실DB 적용(L-010): **docker exec psql** 경로(host psl 없음, L-006 대안 성공).
 
-### ✅ #62 STANDARDS MVP — MERGED PR #277 (본 세션)
-- 4 표준 테이블(standards_org_*) + 매핑 엔진(applicability-engine 351 LOC 재사용, citation REQ-021) + transition-calculator + revision-detector(graceful stub) + recognition-check(FDA fallback) + Inngest cron(audit step) + API 5종 + UI.
-- **★ 직검**: 카운트 단언 잔존 0(grep, #50 교훈) · AC dead-code 방지(mapping-engine route 호출 + Inngest registry test). sync 0.55 expert-security PASS-WITH-CONDITIONS → H-1(countActiveAlerts delete) + M-3(cron audit, lazy import).
-- MVP: AC-01/02 PARTIAL(seeded core + API), AC-03/04/05/06 PASS. DEFER → **#278**(라이브 크롤러 + alert wiring) + #62-B~G.
+### 회귀
+- main 기준 **4638 passed | 21 skipped** (+111 vs 4527).
+- 사전 존재 결함 2건(#283): audit-retention(파티션 guard) + evidence-synthesis(CER 매핑) — 환경 의존, 본 작업 무관.
 
-### ✅ #51 PROJECT-MEMORY — MERGED PR #276 (본 세션, 이전 세션 fix 후)
-- project_memory + 시스템 프롬프트 자동 주입(AC-02) + AI 감지→pending(AC-03, REQ-005) + RA Lead 관리 UI + audit.
-- **★ fix(이전 세션 리뷰 결함 5종)**: H-1 approveSuggestedMemory idempotency(`WHERE status='pending'`) · AC-02/03 통합 테스트 부재(#50 dead-code) → 실제 행위 테스트(injector/extractor) · permissions EXPECTED_ACTIONS · 23505→409.
-
-### 🎯 다음 세션 시작 지점 (2026-06-26) — 전략 그룹 등 루프 계속
-Knowledge/RAG 그룹 완료. **남은 OPEN priority/high**:
-- **전략 Killer Features**: #40 STRATEGY(멀티 관할권 규제 전략) · #42 CROSSMARKET(갭 분석) · #43 BATCH(배치 Q&A) — LLM 환각·인젝션 리스크 최대, [지양-2/4] 설계 부담 큼.
-- **기술부채**: #39 WORKFLOWS-LLM-002(510(k)/CER/PCCP executor 실구현) — 기존 도메인 강화, 회귀 낮음.
-- **제출/검토**: #37 SUBMISSION-LIFECYCLE · #36 REVIEW-OPS.
-- **시스템/외부**: #49 VALIDATION(IQ/OQ/PQ) · #1 ADR · #202 hybrid E2E(외부).
-- **DEFER 누적**: #275(REQ-002 messages embedding) · #278(=#62-A 라이브 크롤러) · #264·#65·#244·#245·#249·#57·#236·#238 · #62-B~G.
-
-### 추천 다음 작업
-1. **#39 WORKFLOWS-LLM-002** (기술부채, 회귀 낮음, 레버리지 즉각) 또는
-2. **#40 STRATEGY** (Killer Feature, 차별화 최대 — 단 LLM 리스크, #50/#51 풀 리뷰 필요).
-
-### 핵심 교훈 누적 (Knowledge/RAG 3사이클)
-- **AC ↔ 실제 호출 dead-code** (8회): retriever registry 등록(#50) / 주석 참조 테스트 없음(#51) / mapping-engine은 route 호출 확증(#62 성공). evaluator + 오케스트레이터 직검(call site + 파일 존재)이 정오탐 확인.
-- **분산 카운트 단언**: cyberdevice/capa/labeling 등 도메인 integration test에도 audit/perm 카운트. #50은 15 failures(full test 포착), #51/#62는 strategy 사전 주입→0 실패.
-- **retriever/lib import 함정**: db/client top-level = parseEnv 부작용. lazy import(#50 retriever, #62 cron audit).
-- **보안 idempotency**: approveSuggestedMemory RETURNING post-Set dead guard(#51) · countActiveAlerts org filter 누락(#62, 호출자 0 → delete). UPDATE WHERE 상태 조건 + rowCount.
-- **에이전트 lint "pre-existing" 오탐**: #51/#62 에이전트가 신규 파일 format/import 에러를 "pre-existing"으로 치부 → biome --write 직검 fix. 오케스트레이터 lint 직검 필수.
-- **MVP phasing**: 대형 SPEC(#62 4 테이블 + 크롤러)은 strategy가 MVP/DEFER 분할 → 단일 세션 가능. DEFER는 follow-up 이슈 + @MX:TODO 문서화.
+### 🎯 다음 세션 시작 지점 (2026-06-27)
+- **#158 CLOSED** — 페르소나 85% UI(#285) + 백엔드 후속(#286~#289) 전부 완료.
+- **전략 Killer Features**(LLM 환각·인젝션 리스크 최대, 별도 세션 + 풀 리뷰): #40 STRATEGY · #42 CROSSMARKET · #43 BATCH.
+- **기술부채**(회귀 낮음, 즉각 레버리지): #39 WORKFLOWS-LLM-002(510(k)/CER/PCCP executor 실구현).
+- **시스템/외부**: #49 VALIDATION(IQ/OQ/PQ) · #202 hybrid E2E · #283(사전 존재 테스트 실패 2건).
+- **follow-up**: #278(Standards 라이브 크롤러) · #275(messages backfill) · #264(RLHF) · #280(samd org_id text) · #284(viewer seed).
 
 ## 이전 세션 히스토리
-- 2026-06-26 전반: #239 RLS Phase 1~4 + runbook 종료(PR #267~#273).
-- 2026-06-25: #269·#270·#266·#268. 2026-06-24~25: 7-PR 파이프라인. 2026-06-23: tier0 #35 · tier1 #59·#47.
+- 2026-06-27 전반: #158 UI 개편 PR #285/#282 머지.
+- 2026-06-26: #239 RLS Phase 1~4 + Knowledge/RAG #50/#51/#62. DB fix-up #279/#281.
+- 2026-06-25: #269/#270/#266/#268. 2026-06-24~25: 7-PR 파이프라인. 2026-06-23: tier0 #35 · tier1 #59/#47.
