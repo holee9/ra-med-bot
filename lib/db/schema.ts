@@ -659,6 +659,10 @@ export const messages = pgTable(
     tokensOut: integer('tokens_out'),
     model: text('model'),
     metaJson: jsonb('meta_json'),
+    // SPEC-REGULA-KNOWLEDGE-PROMO-001 (REQ-002): embedding for semantic search.
+    // Added via Issue #275 to enable general-conversation semantic search.
+    // Nullable — backfilled async via Inngest job (nullable for OpenAI unavailability).
+    embedding: vector('embedding'),
     createdAt: timestamp('created_at', { withTimezone: true, mode: 'date' }).notNull().defaultNow(),
   },
   (t) => ({
@@ -855,7 +859,8 @@ export const answerFeedback = pgTable(
 //           RLS is enabled in 0086_knowledge_promo.sql at the SQL level; the
 //           query-layer eq(orgId) is the actual tenant boundary (#239 debt).
 //           embedding vector(1536) supports REQ-002 semantic search; messages
-//           themselves have no embedding column (design decision #1).
+//           embedding added via Issue #275 for REQ-002 full semantic search;
+//           nullable — backfilled async via Inngest job.
 export const promotedAnswers = pgTable(
   'promoted_answers',
   {

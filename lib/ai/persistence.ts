@@ -3,9 +3,11 @@
 // regulatory record gap; we keep the three inserts in one transaction so the
 // audit trail and the user-visible answer never diverge.
 // @MX:SPEC SPEC-REGULA-CHAT-001 (REQ-CHAT-018, REQ-CHAT-023, REQ-CHAT-028)
+// @MX:SPEC SPEC-REGULA-KNOWLEDGE-PROMO-001 (REQ-002 — messages embedding)
 
 import { db } from '../db/client';
 import { messageBlocks, messageSources, messages } from '../db/schema';
+import { embedForMessage } from '../knowledge-promo/embedding';
 import type { Violation } from './citation-enforce';
 import type { RetrievedChunk } from './retrievers/hybrid-search';
 
@@ -27,6 +29,11 @@ export interface PersistMessageParams {
 }
 
 export async function persistMessage(params: PersistMessageParams): Promise<void> {
+  // REQ-002: Compute embedding before transaction (non-blocking OpenAI call).
+  // Failure is graceful — null embedding is acceptable; semantic search is
+  // degraded but not broken. Persist continues regardless.
+  const embedding = await embedForMessage(params.cleanedProse);
+
   await db.transaction(async (tx) => {
     // 1. messages row — assistant turn.
     await tx.insert(messages).values({
@@ -43,6 +50,7 @@ export async function persistMessage(params: PersistMessageParams): Promise<void
       tokensOut: params.tokensOut,
       model: params.model,
       metaJson: { violations: params.violations },
+      embedding, // REQ-002: nullable vector(1536) for semantic search
     });
 
     // 2. message_sources rows — one per cited chunk (citeIndex preserved).
