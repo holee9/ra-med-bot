@@ -1981,3 +1981,66 @@ describe('SPEC-REGULA-SOURCE-GOVERNANCE-001 (Issue #48, migration 0081)', () => 
     }
   });
 });
+
+describe('Migration 0059: source provenance fields (Issue #154, REQ-INTEGRATION-001)', () => {
+  it('migration file 0059_provenance_fields.sql exists', () => {
+    expect(fileExists('migrations/0059_provenance_fields.sql')).toBe(true);
+  });
+
+  it('adds 9 provenance columns to sources table', () => {
+    const sql = readText('migrations/0059_provenance_fields.sql');
+    const addColumnCount = (sql.match(/ADD COLUMN/g) ?? []).length;
+    expect(addColumnCount).toBeGreaterThanOrEqual(13);
+    for (const col of [
+      'source_host',
+      'source_owner',
+      'source_repo',
+      'source_branch',
+      'source_ref',
+      'source_path',
+      'content_hash',
+      'ingestion_run_id',
+      'ingested_at',
+    ]) {
+      expect(sql).toMatch(new RegExp(`ADD COLUMN\\s+${col}\\s+(TEXT|UUID|TIMESTAMPTZ)`));
+    }
+  });
+
+  it('adds 4 provenance columns to source_sections table', () => {
+    const sql = readText('migrations/0059_provenance_fields.sql');
+    for (const col of ['chunk_hash', 'section_path', 'ingestion_run_id', 'ingested_at']) {
+      expect(sql).toMatch(new RegExp(`ADD COLUMN\\s+${col}\\s+(TEXT|UUID|TIMESTAMPTZ)`));
+    }
+  });
+
+  it('creates the 3 provenance indexes', () => {
+    const sql = readText('migrations/0059_provenance_fields.sql');
+    expect(sql).toMatch(/CREATE INDEX\s+idx_sources_host\s+ON sources\s*\(\s*source_host\s*\)/);
+    expect(sql).toMatch(
+      /CREATE INDEX\s+idx_sources_ingestion\s+ON sources\s*\(\s*ingestion_run_id\s*\)/,
+    );
+    expect(sql).toMatch(
+      /CREATE INDEX\s+idx_source_sections_ingestion\s+ON source_sections\s*\(\s*ingestion_run_id\s*\)/,
+    );
+  });
+
+  it('schema.ts defines matching provenance columns on sources + source_sections', () => {
+    const src = readText('lib/db/schema.ts');
+    for (const col of [
+      'sourceHost',
+      'sourceOwner',
+      'sourceRepo',
+      'sourceBranch',
+      'sourceRef',
+      'sourcePath',
+      'contentHash',
+      'ingestionRunId',
+      'ingestedAt',
+    ]) {
+      expect(src).toContain(`${col}:`);
+    }
+    for (const col of ['chunkHash', 'sectionPath', 'ingestionRunId', 'ingestedAt']) {
+      expect(src).toContain(`${col}:`);
+    }
+  });
+});

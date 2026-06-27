@@ -26,6 +26,13 @@ export interface RetrievedChunk {
   year: number | null;
   type: string;
   url: string | null;
+  // REQ-INTEGRATION-001 — provenance for reproducible citations.
+  // Optional: absent for external/legacy sources without Git provenance.
+  sourceHost?: string | null;
+  sourceOwner?: string | null;
+  sourceRepo?: string | null;
+  sourceRef?: string | null;
+  sourcePath?: string | null;
 }
 
 interface HybridRow extends Record<string, unknown> {
@@ -40,6 +47,11 @@ interface HybridRow extends Record<string, unknown> {
   year: number | null;
   type: string;
   url: string | null;
+  source_host: string | null;
+  source_owner: string | null;
+  source_repo: string | null;
+  source_ref: string | null;
+  source_path: string | null;
 }
 
 /**
@@ -87,9 +99,22 @@ export async function hybridSearch(
   }
 
   // 4. Query — hybrid (pgvector cosine + FTS) when embedding available, FTS-only otherwise.
-  // The raw SQL is org-scoped via RLS; when orgId is supplied, wrap in
-  // withTenantScope so the GUC is set. When orgId is absent, fall back to the
-  // global db handle (defense-in-depth still applies via sources/app-level gates).
+  //
+  // @MX:WARN [AUTO] App-level org isolation is mandatory here. RLS on
+  // sources/source_sections is NOT enabled (these tables are absent from the
+  // FORCE-RLS list in migrations/0084_force_rls.sql). The only isolation
+  // boundary is the explicit `AND s.organization_id = ${orgId}` filter in every
+  // WHERE clause. Never remove or weaken these filters — doing so is a
+  // cross-org data-leak security regression (IDOR class).
+  // @MX:REASON RLS is inert project-wide; the app-level filter is the sole defense.
+  // @MX:SPEC SPEC-REGULA-CHAT-001 (REQ-CHAT-019 — org-scoped retrieval)
+  //
+  // When orgId is supplied we ALSO wrap in withTenantScope (defense-in-depth:
+  // the GUC is set for any future RLS activation, and the app-level filter is
+  // the live gate). When orgId is absent (project-wide corpus paths only), the
+  // query proceeds without the org filter — callers must ensure orgId is
+  // always threaded for any per-org retrieval.
+  const orgFilter = orgId ? sql`AND s.organization_id = ${orgId}` : sql``;
   type ExecHandle = Pick<typeof db, 'execute'>;
   const runQueryOnHandle = async (client: ExecHandle): Promise<unknown> => {
     if (embeddingLiteral !== null) {
@@ -103,6 +128,7 @@ export async function hybridSearch(
           INNER JOIN sources s ON s.id = ss.source_id
           WHERE ss.embedding IS NOT NULL
             ${typeFilter}
+            ${orgFilter}
           ORDER BY ss.embedding <=> ${embeddingLiteral}::vector
           LIMIT ${k * 4}
         ),
@@ -114,6 +140,7 @@ export async function hybridSearch(
           INNER JOIN sources s ON s.id = ss.source_id
           WHERE to_tsvector('english', ss.text) @@ websearch_to_tsquery('english', ${ftsQuery})
             ${typeFilter}
+            ${orgFilter}
           ORDER BY fts_score DESC
           LIMIT ${k * 4}
         )
@@ -128,12 +155,18 @@ export async function hybridSearch(
           s.title          AS title,
           s.year           AS year,
           s.type::text     AS type,
-          s.url            AS url
+          s.url            AS url,
+          s.source_host    AS source_host,
+          s.source_owner   AS source_owner,
+          s.source_repo    AS source_repo,
+          s.source_ref     AS source_ref,
+          s.source_path    AS source_path
         FROM source_sections ss
         INNER JOIN sources s ON s.id = ss.source_id
         LEFT JOIN vec ON vec.section_id = ss.id
         LEFT JOIN fts ON fts.section_id = ss.id
         WHERE (vec.vec_score IS NOT NULL OR fts.fts_score IS NOT NULL)
+          ${orgFilter}
         LIMIT ${k * 4}
       `);
     }
@@ -150,11 +183,17 @@ export async function hybridSearch(
         s.title          AS title,
         s.year           AS year,
         s.type::text     AS type,
-        s.url            AS url
+        s.url            AS url,
+        s.source_host    AS source_host,
+        s.source_owner   AS source_owner,
+        s.source_repo    AS source_repo,
+        s.source_ref     AS source_ref,
+        s.source_path    AS source_path
       FROM source_sections ss
       INNER JOIN sources s ON s.id = ss.source_id
       WHERE to_tsvector('english', ss.text) @@ websearch_to_tsquery('english', ${ftsQuery})
         ${typeFilter}
+        ${orgFilter}
       ORDER BY fts_score DESC
       LIMIT ${k * 4}
     `);
@@ -189,6 +228,11 @@ export async function hybridSearch(
       year: r.year,
       type: r.type,
       url: r.url,
+      sourceHost: r.source_host ?? null,
+      sourceOwner: r.source_owner ?? null,
+      sourceRepo: r.source_repo ?? null,
+      sourceRef: r.source_ref ?? null,
+      sourcePath: r.source_path ?? null,
     };
   });
 
@@ -198,8 +242,10 @@ export async function hybridSearch(
   // Primary call site for filterExpiredSources. orgId is threaded from all
   // per-corpus retrievers (fda/eu-mdr/mfds/nmpa/pmda) via RetrieverOptions and
   // from consult.ts → parallelRetrieveAndMerge. PMS-report builder passes orgId
-  // directly. Defense-in-depth: a license-db hiccup never blocks retrieval
-  // (RLS still enforces org isolation).
+  // directly. Defense-in-depth: a license-db hiccup never blocks retrieval —
+  // the app-level `s.organization_id` filter in the SQL WHERE clause is the
+  // primary org-isolation gate (RLS is inert on sources/source_sections; see
+  // migrations/0084_force_rls.sql).
   //
   // REQ-SOURCE-GOV-005/009 — compose with the governance gate (filterGovernanceEligible)
   // via composeRetrievalGates: superseded + pending_review/rejected sources are
@@ -213,7 +259,9 @@ export async function hybridSearch(
       const filtered = chunks.filter((c) => eligible.has(c.sourceId));
       return filtered.slice(0, k);
     } catch {
-      // License / governance metadata unavailable — return unfiltered (RLS still isolates).
+      // License / governance metadata unavailable — return unfiltered. Org
+      // isolation still holds: the SQL WHERE clause already gated rows by
+      // s.organization_id at fetch time (not by RLS).
     }
   }
 
