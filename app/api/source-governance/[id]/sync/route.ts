@@ -63,10 +63,14 @@ export const POST = withPermission('sourcegov.manage', async (req, ctx, session)
   }
 
   if (result.status === 'failed') {
-    return Response.json(
-      { error: 'sync_failed', errorMessage: result.errorMessage, runId: result.runId },
-      { status: 500 },
-    );
+    // @MX:NOTE [AUTO] M-1 (expert-security): do NOT echo errorMessage to the
+    // caller. A mid-pipeline DB/driver error could expose connection strings,
+    // schema names, or table names. The detailed message is already captured
+    // server-side: orchestrator.ts writes it to corpus_sync_runs.errorMessage
+    // AND to the corpus.sync_failed audit meta_json.error, and emits a
+    // logger.error. The HTTP response carries only a generic error + runId
+    // (runId lets ops cross-reference the server-side detail).
+    return Response.json({ error: 'sync_failed', runId: result.runId }, { status: 500 });
   }
 
   return Response.json(result, { status: 200 });
