@@ -11,39 +11,106 @@
 
 ---
 
-## 구현 현황 대시보드 (2026-06-26 KST 기준)
+## 구현 현황 대시보드 (2026-06-28 KST 기준)
 
 상세 점검 기록: [`docs/implementation-status.md`](docs/implementation-status.md)
 
-### 최신 main 상태 (2026-06-26)
+### 최신 main 상태 (2026-06-28)
 
-현재 `main`은 PR #281(migration 0082/0054 fix-up)까지 반영된 상태입니다. **Knowledge/RAG 기능 그룹 3개 PR(#274/#276/#277)이 완성**되어 시맨틱 검색·답변 승격·RAG 통합(#50), 프로젝트 지속 컨텍스트 메모리(#51), 조화 표준 적용성·개정 추적기(#62)가 구현되었습니다. 이후 DB 스키마 fix-up PR #279/#281을 통해 **실사용 환경 500 에러 전부 해소**되었습니다(3 `/api/rlhf/*` + 4 `/api/ra/samd/*` 라이브 라우트). 2026-06-26 라이브 스모크 검증 기준 `/login` 200, 모든 페이지/API 라우트 정상, 회귀 테스트 4522 passed. **실사용 가능 상태**입니다(로그인·RA 채팅·RLHF·SaMD 라우트 정상).
+현재 `main`은 PR #304(delta-sync orchestrator)까지 반영된 상태입니다. **v1.0.0 구현 종료 / Charter MVP 완성** — 이번 세션 8개 PR(#295~#304)가 머지되어 RLHF calibration/alternate-answers, PMCF 워크벤치, PMS E2E, supersession write path, eSubmit labeling bridge, **0077 syntax fix(프로덕션 #71 500 해소)**, delta-sync orchestrator(AC-05 live)가 완성되었습니다. 2026-06-28 기준 회귀 4,772 passed | 21 skipped, migration 최신 0098. **실사용 가능 상태**가 유지되며, Charter MVP 범위 핵심 자동화(RAG Q&A·CER·Predicate·PCCP·Standards·Expert Review·Part 11)는 모두 구현 완료되었습니다. 남은 external-dependency(외부 API/배포 필요)와 optional-extension(Charter non-core) 이슈로 v1.0.0 이후 로드맵에 포함되지 않습니다.
 
 | 항목 | 상태 | 근거 |
 |---|---|---|
-| main 리뷰 기준 | PASS | `a7a77a3 fix(db): migration 0082/0054 fix-up` |
-| PR #281 | MERGED | Migration 0090: `answer_feedback.user_id`·`samd_assessments.org_id`/`created_by` text→uuid FK (3 RLHF + 4 SaMD 라우트 500 해소) |
-| PR #279 | MERGED | Migration 0089: `promoted_by` text→uuid + partial unique index + 실제 DB 적용 테스트 |
-| PR #277 | MERGED | SPEC-REGULA-STANDARDS-001 MVP — 조화 표준 적용성·개정 추적기 (#62 CLOSED) |
-| PR #276 | MERGED | SPEC-REGULA-PROJECT-MEMORY-001 — 프로젝트 지속 컨텍스트 메모리 (#51) |
-| PR #274 | MERGED | SPEC-REGULA-KNOWLEDGE-PROMO-001 — 시맨틱 검색·답변 승격·RAG 통합 (#50) |
-| 실사용 상태 | PASS | `/login` 200, 모든 페이지/API 라우트 정상 (로그인·RA 채팅·RLHF·SaMD), 500 해소 |
-| 로컬 단위 테스트 | PASS | `pnpm test`: 4,522 passed / 2 skipped (2026-06-26 회귀 검증) |
-| Knowledge/RAG 그룹 | PASS | Issues #50/#51/#62 전부 CLOSED, migrations 0086/0087/0088 적용 완료 |
-| Migration 0086 | PASS | 시맨틱 검색·답변 승격·RAG 통합 (`promoted_answers` 테이블 + RLS) |
-| Migration 0087 | PASS | 프로젝트 지속 컨텍스트 메모리 (`project_memory` 테이블 + RLS via projects→org_members) |
-| Migration 0088 | PASS | 조화 표준 적용성·개정 추적기 (4 표준 테이블 + 매핑 엔진 + Inngest cron) |
-| Migration 0089 | PASS | `promoted_by` text→uuid + partial unique index + 실제 DB 적용 테스트 |
-| Migration 0090 | PASS | `answer_feedback.user_id`·`samd_assessments.org_id`/`created_by` text→uuid FK |
+| main 리뷰 기준 | PASS | `4680712 feat(delta-sync): runDeltaSync orchestrator + manual API` |
+| PR #304 | MERGED | Delta-sync orchestrator(runDeltaSync + POST /api/source-governance/[id]/sync 수동 트리거, Issue #238 AC-05 라이브, M-1/M-2 fix) |
+| PR #303 | MERGED | **0077 ON DELETE 따옴표 구문 에러 fix** → 프로덕션 #71 model-gov 라우트 500 해소 |
+| PR #302 | MERGED | eSubmit labeling bridge stub→real (migration 0097 `label.esubmit_forwarded`, AC-07 검증 완료) |
+| PR #301 | MERGED | Supersession write path(sections delete + superseded audit) + retriever [지양-2] filter |
+| PR #299 | MERGED | PMS E2E(pms-workflow.spec.ts) + CER linkage 수동 연계 |
+| PR #298 | MERGED | PMCF Evaluation 워크벤치 탭(PmcfEvaluationBuilder + PmsWorkbench 5탭) |
+| PR #297 | MERGED | Alternate answers implicit feedback (migration 0096 `feedback_source` enum + 3-col unique + regenerate wiring) |
+| PR #295 | MERGED | RLHF confidence calibration (migration 0095 `calibration_candidates` + detector/proposal Part 11 + GET API) |
+| 실사용 상태 | PASS | 프로덕션 #71 model-gov 라우트 500 해소(0077 syntax fix), 전 페이지/API 라우트 정상, **실사용 가능 상태 유지** |
+| 로컬 단위 테스트 | PASS | `pnpm test`: 4,772 passed / 21 skipped (2026-06-28 회귀 검증) |
+| Migration 0095 | PASS | RLHF calibration_candidates 테이블(confidence_bucket, observed_up_ratio, sample_size, governance_change_request_id FK) + audit rlhf.calibration_proposed |
+| Migration 0096 | PASS | answer_feedback feedback_source enum(explicit/implicit_regenerate) + 3-col unique(message_id,user_id,feedback_source) + audit rlhf.implicit_feedback_recorded |
+| Migration 0097 | PASS | audit_action label.esubmit_forwarded (eSubmit labeling bridge stub→real) |
+| Migration 0098 | PASS | audit_action traceability.section_superseded (delta-sync M-2 Part 11) |
 | CI Gates | PASS | 로컬 `biome check .`, `pnpm test`, `next build`; push 후 GitHub Actions에서 typecheck, lint, format, unit, build 재검증 |
 | E2E Tests | PASS | CI smoke/browser jobs success; staging URL 미설정 job은 의도적 skip |
 | Security Scan | PASS | Dependency Vulnerability Scan, Secret Detection 통과 |
 | Deploy | PASS | GitHub Actions deploy workflow success |
-| 총 migrations | 91 | 0001~0090 (Knowledge/RAG 3개 + fix-up 2개) |
-| 게이트 결과 | PASS | typecheck 0 · biome 0 · test 4522 passed · 2 skipped · build 0 |
+| 총 migrations | 98 | 0001~0098 (Knowledge/RAG 3개 + fix-up 2개 + 이번 세션 4개) |
+| 게이트 결과 | PASS | typecheck 0 · biome 0 · test 4772 passed · 21 skipped · build 0 |
+| Charter MVP | PASS | RAG Q&A·CER·Predicate·PCCP·Standards·Expert Review·Part 11 핵심 자동화 완성 |
 |  |
 
-### 최신 main 상태 (2026-06-23)
+## v1.0.0 — 구현 종료 (Charter MVP 완성)
+
+**2026-06-28 릴리즈**: Regula v1.0.0 구현 종료. Charter MVP 범위 핵심 자동화(RAG Q&A·CER·Predicate·PCCP·Standards·Expert Review·Part 11) 모두 완성. **실사용 가능 상태** 유지. 이번 세션(#295~#304) 8개 PR로 RLHF calibration/alternate-answers, PMCF 워크벤치, PMS E2E, supersession write path, eSubmit labeling bridge, **0077 syntax fix(프로덕션 #71 500 해소)**, delta-sync orchestrator(AC-05 live)가 완성되었습니다.
+
+### 이번 세션 주요 완료 기능
+
+| PR | Issue | 완료 내용 |
+|---|------|----------|
+| #295 | #264 sub 2/3 | RLHF confidence calibration (migration 0095 + detector/proposal + GET API) |
+| #297 | #264 sub 3/3 | Alternate answers implicit feedback (migration 0096 + 3-col unique + regenerate wiring) |
+| #298 | #244 | PMCF Evaluation 워크벤치 탭 (PmcfEvaluationBuilder + PmsWorkbench 5탭) |
+| #299 | #245 | PMS E2E (pms-workflow.spec.ts) + CER linkage 수동 연계 |
+| #301 | #238 | Supersession write path + retriever [지양-2] filter + hook wiring |
+| #302 | #249 | eSubmit labeling bridge stub→real (migration 0097 `label.esubmit_forwarded`) + AC-07 검증 |
+| #303 | #296 | **0077 ON DELETE 따옴표 구문 에러 fix → 프로덕션 #71 model-gov 라우트 500 해소** |
+| #304 | #300 | Delta-sync orchestrator (runDeltaSync) + 수동 API + M-1/M-2 (#238 AC-05 live) |
+
+### Charter MVP 완료 범위
+
+**완성 핵심 자동화**:
+- ✅ RAG Q&A(시맨틱 검색·답변 승격)
+- ✅ CER·Predicate·PCCP 문서 생성
+- ✅ Standards 적용성·개정 추적기
+- ✅ Expert Review 게이팅
+- ✅ 21 CFR Part 11 전자서명·답변 잠금
+- ✅ External Auditor read-only 페르소나
+
+**RLHF 품질 개선** (이번 세션):
+- ✅ Confidence calibration detector + proposal API
+- ✅ Alternate answers implicit feedback (자동 regenerate)
+
+**PMS/PMCF 보강** (이번 세션):
+- ✅ PMCF Evaluation 워크벤치 탭
+- ✅ PMS E2E + CER 수동 연계
+
+**Traceability 개선** (이번 세션):
+- ✅ Supersession write path (sections delete + superseded audit)
+- ✅ Retriever [지양-2] filter (지양되지 않은 섹션 자동 제외)
+- ✅ Delta-sync orchestrator (자동/수동 runDeltaSync, AC-05 라이브)
+
+**Production 안정화** (이번 세션):
+- ✅ 0077 ON DELETE 따옴표 구문 에러 fix → **프로덕션 #71 model-gov 라우트 500 해소**
+- ✅ eSubmit labeling bridge stub→real (라벨링 비용 정규 완화)
+
+### Post-1.0.0 로드맵
+
+다음 이슈들은 v1.0.0 범위에서 제외되었습니다(external-dependency + optional-extension):
+
+**External-dependency** (코드만으로 완료 불가, 외부 API/ToS/배포 필요):
+- #278 Standards live crawler (외부 API/ToS)
+- #236 CLASSIFY deterministic + FDA Product Code DB external seed
+- #202 Hybrid RA E2E (외부 deploy)
+- #9 Cloudflare Hybrid Phase 7
+- #25 COEDIT (Cloudflare DO)
+
+**Optional extensions** (Charter non-core, 완성도 선택):
+- #39 WORKFLOWS-LLM
+- #40/#42/#43 Killer Features
+- #36/#37/#38 ops/lifecycle/analytics
+- #49 VALIDATION
+- #55 ROI
+- #70 REIMBURSEMENT
+
+상세 로드맵은 README 하단 "개발 로드맵" 섹션 참조.
+
+### 최신 main 상태 (2026-06-21)
 
 현재 `main`은 PR #218(Gate 0 SPEC 승격)까지 반영된 상태입니다. Wave 5 규제 준수 축(ESIG #88 / Export Hub #87 / Auditor View #92) 완성에 이어 개인 RA 라이브러리(#86), 규제 캘린더(#44), 코퍼스 증분 동기화(#45)가 머지되었고, QA 게이트 프레임워크가 정비되어 **Gate 0~5 SPEC 6개가 모두 Active**로 승격되었습니다(#212 Gate 1-5, #217 Gate 5 SSoT 정합, #218 Gate 0). 2026-06-21 기준 main의 `CI`, `Security Scan`, `E2E Tests`, `Deploy`가 모두 통과했습니다.
 

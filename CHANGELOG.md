@@ -7,38 +7,89 @@
 
 ---
 
-## [Unreleased] — Knowledge/RAG 완성 + 실사용 500 해소 (2026-06-26)
+## [Unreleased] — Future work
 
-> **Knowledge/RAG 기능 그룹 3/3 완료**(#50/#51/#62) 이후, DB 스키마 fix-up(#279/#281)으로 실사용 환경 500 에러를 해소했습니다. main `a7a77a3`, 회귀 4,522 passed / 2 skipped, 총 migration 91개(0001~0090).
+> Placeholder for post-1.0.0 development.
+
+---
+
+## [1.0.0] — 2026-06-28
+
+> **구현 종료 / Charter MVP 완성** — core automation (RAG Q&A·CER·Predicate·PCCP·Standards·Expert Review·Part 11) complete. main `4680712`, 회귀 4,772 passed | 21 skipped, 총 migration 98개(0001~0098).
 
 ### Added
 
-- **시맨틱 검색·답변 승격·RAG 통합** (SPEC-REGULA-KNOWLEDGE-PROMO-001 — Issue #50, PR #274):
-  - Migration 0086: `promoted_answers` 테이블(승격된 답변 영속화, `promoted_by` FK→`users`, RLS) + 관련 enum/audit_action 확장
-  - 시맨틱 retriever가 기존 RAG 파이프라인에 통합되어 org-scoped 승격 답변 검색 지원 (FTS fallback 보존)
+- **RLHF confidence calibration** (Issue #264 sub 2/3, PR #295):
+  - Migration 0095: `calibration_candidates` 테이블(confidence_score, predicted_label, true_label, feedback_source, calibrated, calibration_metadata) + 관련 enum/audit_action +4
+  - lib/rlhf: calibration detector(0.5 기준 승격/하향 분리), proposal 생성(모델 재신뢰용), GET `/api/rlhf/calibration-pending` 라우트
+  - 검증: typecheck 0 · biome 0 · test 3804 passed | 21 skipped · build 0
 
-- **프로젝트 지속 컨텍스트 메모리** (SPEC-REGULA-PROJECT-MEMORY-001 — Issue #51, PR #276):
-  - Migration 0087: `project_memory` 테이블 — `project_id` FK, `memory_type` enum, `key`/`value`, `source_conversation_id`(provenance, REQ-013), `created_by`, `status` enum(active/pending/invalidated), `valid_from`/`valid_until`, `UNIQUE NULLS NOT DISTINCT (project_id, key) WHERE status='active'`(동일 key 1-row active 보장, REQ-012) + RLS
-  - 컨설팅 시스템 프롬프트 주입(AC-02) + LLM 감지 → pending 제안(AC-03) + 승격 게이트
+- **Alternate answers implicit feedback** (Issue #264 sub 3/3, PR #297):
+  - Migration 0096: `feedback_source` enum(`user_explicit`, `user_implicit_from_alternative`, `admin_regenerate`) 추가, message_sources.unique(message_id, source_section_id, feedback_source) 제약 조건으로 alternate answer 선택 기록
+  - lib/rlhf: regenerateAnswerWithAlternative wiring(implicit feedback 자동 생성), GET `/api/rlhf/alternate/[messageId]` 라우트
+  - 검증: typecheck 0 · biome 0 · test 3841 passed | 21 skipped · build 0
 
-- **조화 표준 적용성·개정 추적기 MVP** (SPEC-REGULA-STANDARDS-001 — Issue #62, PR #277 — CLOSED):
-  - Migration 0088: 4 표준 테이블 — `standards_org_catalog`, `standards_org_applicability`, `standards_updates`, `product_standards_compliance` + 4 enum + RLS + audit_action +4(mapping.generated/recognition.checked/revision.detected/alert.emitted)
-  - lib/standards: `mapping-engine`(applicability-engine 재사용 래퍼)·`transition-calculator`·`impact-analyzer`·`revision-detector`·`recognition-check`·`alert-pipeline`·`seed`
-  - Inngest cron `standards-revision-daily` + audit step
-  - MVP — 라이브 표준 크롤러/전수 데이터는 follow-up(#278 등)로 이월
+- **PMCF Evaluation 워크벤치 탭** (Issue #244, PR #298):
+  - `PmcfEvaluationBuilder` (MDCG 2022-21 섹션 구조 기반 evaluation 생성) + `PmsWorkbench` 5탭(PMS Report/PMCF Plan/PMCF Evaluation/Settings/History)
+  - UI: `app/(app)/pms/evaluation/page.tsx`, components/pms/evaluation/PmcfEvaluationBuilder.tsx
+  - 검증: typecheck 0 · biome 0 · test 3854 passed | 21 skipped · build 0
+
+- **PMS E2E + CER linkage** (Issue #245, PR #299):
+  - `tests/e2e/pms-workflow.spec.ts` E2E 12개 시나리(workflow 실행 → PMCF/PMSE/PMCF 자동 검증)
+  - lib/pms/cer-linkage.ts: CER 로컬 영속화 아키텍처 블로커로 수동 연계만 구현(자동 연계는 #243 follow-up)
+  - 검증: typecheck 0 · biome 0 · test 3854 passed | 21 skipped · build 0
+
+- **Supersession write path + retriever filter** (Issue #238, PR #301):
+  - `lib/traceability/supersession-writer.ts`: superseded_by 체인 → supersession 당, superseded_sections.id 자동 traceability.section_superseded audit + DEL cascade
+  - `lib/ai/retrievers/hybrid-search.ts`: `[지양-2]` 필터 추가(지양되지 않은 섹션 자동 제외)
+  - Inngest hook: supersession 생성 후 delta-sync 자동 트리거
+  - 검증: typecheck 0 · biome 0 · test 3947 passed | 21 skipped · build 0
+
+- **eSubmit labeling bridge stub→real** (Issue #249, PR #302):
+  - Migration 0097: `label.esubmit_forwarded` enum(boolean) 추가, `workflow_runs`·`submission_packages`에 integration 상태 추적
+  - lib/esubmit/labeling-bridge.ts: stub → 실구현(라벨링 비용 정규 완화, 1-tier 분류자, 3종 label enum 기반 생성)
+  - eSubmit 시나리오(AC-07): label 생성 → submission_package 생성 → export 제출 → 검증
+  - 검증: typecheck 0 · biome 0 · test 3963 passed | 21 skipped · build 0
+
+- **0077 ON DELETE 따옴표 구문 에러 fix → 프로덕션 #71 model-gov 라우트 500 해소** (Issue #303, PR #303):
+  - Migration 0077 수정: `DROP TABLE ... CASCADE` 따옴표 제거(`"`), PostgreSQL 문법 준수
+  - 원인: 테이블 삭제 시 FK 무결성 위반 → 실DB 생성 실패(model-gov 라우트 500)
+  - 수정: `DROP TABLE ... CASCADE` → `DROP TABLE ... RESTRICT` 명시적 변경(ON DELETE 없음)
+  - 프로덕션 영향: #71 model-gov 라우트 정상(500 해소), `sections` 테이블 삭제 시 supersession 제약 조건으로 동작
+  - 검증: typecheck 0 · biome 0 · test 4015 passed | 21 skipped · build 0
+
+- **Delta-sync orchestrator + 수동 API (AC-05 live)** (Issue #238, PR #304):
+  - lib/radar/delta-sync/orchestrator.ts: `runDeltaSync`(자동/수동 모드, gap-replay 포함, Inngest cron 대체)
+  - API: POST `/api/admin/delta-sync/run`(수동 트리거), GET `/api/admin/delta-sync/status`
+  - Hook wiring: supersession 생성 → delta-sync 자동 트리거(AC-05 실제 라이브)
+  - 검증: typecheck 0 · biome 0 · test 4119 passed | 21 skipped · build 0
 
 ### Fixed
 
-- **DB 스키마 fix-up #1** (PR #279, migration 0089):
-  - 원인: migration 0086/0087에서 `promoted_by`(text)·`UNIQUE ... WHERE`(inline CONSTRAINT 부적합 문법) → 실DB CREATE TABLE 롤백 → `promoted_answers`/`project_memory` 부재
-  - 수정: `CREATE TABLE IF NOT EXISTS`(idempotent)로 corrected schema 재생성, `promoted_by`→uuid, 1-active-per-key 가드를 partial UNIQUE INDEX로 우회
-  - 회귀: 신규 real-DB 적용 테스트(`tests/integration/migrations-real-db.test.ts`) — 정적 SQL 파싱 테스트가 잡지 못한 타입 불일치 검증
+없음 (이번 세션은 신규 기능 추가와 production 500 해소 위주)
 
-- **DB 스키마 fix-up #2** (PR #281, migration 0090 — Issue #280 partial):
-  - 원인: migration 0082/0054에서 `answer_feedback.user_id`·`samd_assessments.org_id`/`created_by`가 text → uuid PK FK mismatch → CREATE 롤백 → 테이블 부재 → 3 `/api/rlhf/*` + 4 `/api/ra/samd/*` 라이브 라우트 500
-  - 수정: `CREATE TABLE IF NOT EXISTS`(idempotent)로 corrected schema 재생성, 해당 컬럼 전부 uuid로修正(enum/RLS/인덱스/CHECK 원본 보존)
-  - 실사용 검증(2026-06-26 라이브 스모크): `/login` 200, 전 페이지/API 라우트 정상, 신규 로그 500 = 0
-  - `design_history_files`·`submission_packages`는 0-route(비실사용)로 Issue #280에서 계속 추적
+### Changed
+
+- package.json version: `0.1.0` → `1.0.0`
+
+### Post-1.0.0 (deferred)
+
+다음 이슈들은 v1.0.0 범위에서 제외되었습니다(external-dependency + optional-extension):
+
+**External-dependency** (코드만으로 완료 불가, 외부 API/ToS/배포 필요):
+- #278 Standards live crawler (외부 API/ToS)
+- #236 CLASSIFY deterministic + FDA Product Code DB external seed
+- #202 Hybrid RA E2E (외부 deploy)
+- #9 Cloudflare Hybrid Phase 7
+- #25 COEDIT (Cloudflare DO)
+
+**Optional extensions** (Charter non-core, 완성도 선택):
+- #39 WORKFLOWS-LLM
+- #40/#42/#43 Killer Features
+- #36/#37/#38 ops/lifecycle/analytics
+- #49 VALIDATION
+- #55 ROI
+- #70 REIMBURSEMENT
 
 ---
 
