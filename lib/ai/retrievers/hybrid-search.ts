@@ -115,6 +115,12 @@ export async function hybridSearch(
   // query proceeds without the org filter — callers must ensure orgId is
   // always threaded for any per-org retrieval.
   const orgFilter = orgId ? sql`AND s.organization_id = ${orgId}` : sql``;
+  // REQ-DELTA-005 / [지양-2] — exclude superseded source_sections from retrieval.
+  // When delta-sync refreshes a source, old chunks get superseded_by set while the
+  // source row stays active. The source-level governance gate (filterGovernanceEligible)
+  // does NOT catch section-level supersession within an active source, so this SQL
+  // filter is mandatory — otherwise stale chunks surface in RAG = fake trust.
+  const supersededFilter = sql`AND ss.superseded_by IS NULL`;
   type ExecHandle = Pick<typeof db, 'execute'>;
   const runQueryOnHandle = async (client: ExecHandle): Promise<unknown> => {
     if (embeddingLiteral !== null) {
@@ -129,6 +135,7 @@ export async function hybridSearch(
           WHERE ss.embedding IS NOT NULL
             ${typeFilter}
             ${orgFilter}
+            ${supersededFilter}
           ORDER BY ss.embedding <=> ${embeddingLiteral}::vector
           LIMIT ${k * 4}
         ),
@@ -141,6 +148,7 @@ export async function hybridSearch(
           WHERE to_tsvector('english', ss.text) @@ websearch_to_tsquery('english', ${ftsQuery})
             ${typeFilter}
             ${orgFilter}
+            ${supersededFilter}
           ORDER BY fts_score DESC
           LIMIT ${k * 4}
         )
@@ -167,6 +175,7 @@ export async function hybridSearch(
         LEFT JOIN fts ON fts.section_id = ss.id
         WHERE (vec.vec_score IS NOT NULL OR fts.fts_score IS NOT NULL)
           ${orgFilter}
+          ${supersededFilter}
         LIMIT ${k * 4}
       `);
     }
@@ -194,6 +203,7 @@ export async function hybridSearch(
       WHERE to_tsvector('english', ss.text) @@ websearch_to_tsquery('english', ${ftsQuery})
         ${typeFilter}
         ${orgFilter}
+        ${supersededFilter}
       ORDER BY fts_score DESC
       LIMIT ${k * 4}
     `);

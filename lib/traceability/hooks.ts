@@ -26,13 +26,12 @@ import type { StaleReason } from './stale-reason';
  *
  * Never throws — supersession must not crash the parent sync job.
  */
-// @MX:TODO [AUTO] AC-05 trigger unwired — call site pending delta-sync supersession write (#45).
-// @MX:REASON This hook is defined but has ZERO call sites. The supersession
-//           write path (source_sections.superseded_by) does not exist yet —
-//           it is #45's job. Once #45 lands, wire this hook at the supersession
-//           write site in lib/radar/delta-sync. Tracked as a follow-up issue.
+// @MX:NOTE [AUTO] AC-05 wired — call site: lib/radar/delta-sync/ingest.ts
+//   `applyOutdateOperations` fires this hook after the supersession tx commits
+//   (#238). The hook is lazy-imported so the delta-sync pure-function tests stay
+//   decoupled from the traceability graph. Hook is non-blocking: failures are
+//   captured as an audit row inside the hook, never crash the parent sync.
 // @MX:SPEC SPEC-REGULA-TRACEABILITY-001 (REQ-TRACEABILITY-009, AC-05)
-// @MX:PRIORITY medium
 export async function onSourceSectionSuperseded(opts: {
   orgId: string;
   refId: string;

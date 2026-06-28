@@ -79,6 +79,7 @@ export class InternalSopsRetriever implements IRetriever {
             WHERE ss.embedding IS NOT NULL
               AND s.organization_id = ${orgId}
               AND s.type = 'Internal'
+              AND ss.superseded_by IS NULL
             ORDER BY ss.embedding <=> ${embeddingLiteral}::vector
             LIMIT ${limit * 4}
           ),
@@ -91,6 +92,7 @@ export class InternalSopsRetriever implements IRetriever {
             WHERE to_tsvector('english', ss.text) @@ websearch_to_tsquery('english', ${query})
               AND s.organization_id = ${orgId}
               AND s.type = 'Internal'
+              AND ss.superseded_by IS NULL
             ORDER BY fts_score DESC
             LIMIT ${limit * 4}
           )
@@ -115,6 +117,7 @@ export class InternalSopsRetriever implements IRetriever {
           LEFT JOIN vec ON vec.section_id = ss.id
           LEFT JOIN fts ON fts.section_id = ss.id
           WHERE (vec.section_id IS NOT NULL OR fts.section_id IS NOT NULL)
+            AND ss.superseded_by IS NULL
           ORDER BY combined_score DESC
           LIMIT ${limit}
         `);
@@ -142,6 +145,7 @@ export class InternalSopsRetriever implements IRetriever {
         WHERE to_tsvector('english', ss.text) @@ websearch_to_tsquery('english', ${query})
           AND s.organization_id = ${orgId}
           AND s.type = 'Internal'
+          AND ss.superseded_by IS NULL
         ORDER BY combined_score DESC
         LIMIT ${limit}
       `);
