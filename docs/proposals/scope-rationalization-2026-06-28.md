@@ -175,7 +175,7 @@ Design Handoff가 명시적으로 **"Out of MVP scope"** 로 분류한 15개 후
 
 ### 계층 1 — UI 표면 정리 (저비용, 즉시 가시 효과)
 
-사이드바 24개 → **RA Lead 중심 10~12개로 축소**. RETIRE/FREEZE 대상은 role-gating으로 숨김.
+사이드바 조건부 14개 중 FREEZE/RETIRE **8개를 feature flag off로 숨김 → 24개 → 16개** (ra.lead, department=RA 기준: NAV_ITEMS 10 + 조건부 KEEP 6). **NAV_ITEMS 10개는 `@MX:ANCHOR`·REQ-FND-019로 고정**(`frontend-shell.test.ts`가 순서·구성 검증)이라 본 제안에서 건드리지 않음. (※ 이전 "10~12개 축소" 표기는 NAV_ITEMS 고정을 간과한 오류 — 2026-06-28 정정)
 
 ```
 [RA Lead 기본 네비 — 10개]
