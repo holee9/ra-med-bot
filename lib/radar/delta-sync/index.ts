@@ -37,3 +37,12 @@ export {
   type GapReplayInput,
   type GapReplayResult,
 } from './gap-replay';
+
+export {
+  runDeltaSync,
+  resolveExistingChunkIds,
+  upsertEmbeddingsWithRetry,
+  type RunDeltaSyncInput,
+  type RunDeltaSyncResult,
+  type RunDeltaSyncStatus,
+} from './orchestrator';

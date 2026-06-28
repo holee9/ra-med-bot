@@ -638,3 +638,81 @@ describe('BEHAVIORAL M-3: review-due query uses interval arithmetic (REQ-SOURCE-
     expect(src).toMatch(/last_reviewed_at.*interval|now\(\).*days/is);
   });
 });
+
+// ---------------------------------------------------------------------------
+// BEHAVIORAL M-1 (expert-security): sync route must NOT leak internal
+// errorMessage to the HTTP response body. A mid-pipeline DB/driver error can
+// contain connection strings or schema names; only a generic error + runId
+// may cross the wire. The detailed message stays server-side (orchestrator
+// audit meta_json + logger.error).
+// ---------------------------------------------------------------------------
+describe('BEHAVIORAL M-1: sync route does not leak errorMessage (expert-security)', () => {
+  it('source-level: 500 response body omits errorMessage key entirely', () => {
+    const src = readText('app/api/source-governance/[id]/sync/route.ts');
+    // The fix removes `errorMessage: result.errorMessage` from the Response.json
+    // call in the failed branch. Assert the literal is gone — dead-code guard.
+    expect(src).not.toMatch(/errorMessage:\s*result\.errorMessage/);
+  });
+
+  it('behavioral: 500 response body excludes raw internal error sentinel', async () => {
+    // Sentinel that a raw DB/driver error might contain — must never reach the
+    // HTTP caller.
+    const SENTINEL = 'postgres://user:secret-pass@db-host:5432/regula';
+    const INTERNAL_ERROR = `relation "secret_table" does not exist — ${SENTINEL}`;
+
+    // Stub withPermission into a passthrough (no RBAC, synthetic session) so
+    // the route can be invoked directly. The handler signature is preserved.
+    vi.doMock('@/lib/auth/with-permission', () => ({
+      withPermission:
+        (
+          _action: string,
+          handler: (req: Request, ctx: unknown, session: unknown) => Promise<Response>,
+        ) =>
+        (req: Request, ctx: unknown) =>
+          handler(req, ctx, {
+            user: { id: 'user-ra-1', role: 'ra-lead', organizationId: 'org-1' },
+          }),
+    }));
+
+    // Stub runDeltaSync to return a failed result whose errorMessage carries
+    // the sentinel. This mirrors the real orchestrator failure shape.
+    vi.doMock('@/lib/radar/delta-sync', () => ({
+      runDeltaSync: vi.fn(async () => ({
+        runId: 'run-leak-1',
+        status: 'failed',
+        change: 'unchanged',
+        chunksAdded: 0,
+        chunksOutdated: 0,
+        chunksUnchanged: 0,
+        errorMessage: INTERNAL_ERROR,
+      })),
+    }));
+
+    vi.resetModules();
+    const { POST } = (await import('@/app/api/source-governance/[id]/sync/route')) as {
+      POST: (req: Request, ctx: unknown) => Promise<Response>;
+    };
+
+    const req = new Request('https://example.com/api/source-governance/src-1/sync', {
+      method: 'POST',
+      body: JSON.stringify({
+        crawlerName: 'fda',
+        sourceUrl: 'https://example.com/fda',
+        rawContent: 'payload',
+      }),
+      headers: { 'Content-Type': 'application/json' },
+    });
+    const res = await POST(req, { params: { id: 'src-1' } });
+    const bodyText = await res.text();
+
+    expect(res.status).toBe(500);
+    // Body shape: only generic error + runId.
+    const body = JSON.parse(bodyText) as { error?: string; runId?: string; errorMessage?: string };
+    expect(body).toEqual({ error: 'sync_failed', runId: 'run-leak-1' });
+    expect(body.errorMessage).toBeUndefined();
+    // The sentinel must not leak through the wire under any key.
+    expect(bodyText).not.toContain(SENTINEL);
+    expect(bodyText).not.toContain('secret_table');
+    expect(bodyText).not.toContain('secret-pass');
+  });
+});

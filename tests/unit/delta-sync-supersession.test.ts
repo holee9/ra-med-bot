@@ -17,15 +17,20 @@ import { beforeEach, describe, expect, it, vi } from 'vitest';
 
 // --- Mocks ---------------------------------------------------------------
 
-// Stub the traceability hook BEFORE importing the function under test, so the
-// dynamic `await import('@/lib/traceability/hooks')` inside applyOutdateOperations
-// resolves to this mock. The hook is non-blocking by contract; we test both the
-// success path and the throw path (which the real hook would swallow internally,
-// but applyOutdateOperations adds its own try/catch around the boundary too).
-const onSourceSectionSupersededMock = vi.fn();
+// M-2 (Issue #300): applyOutdateOperations now calls writeAudit inside the tx
+// for EACH newly-superseded section (traceability.section_superseded). Mocked
+// at the module boundary so the test never touches a real connection. Uses
+// vi.hoisted because vi.mock factories are hoisted above const declarations.
+const { onSourceSectionSupersededMock, writeAuditMock } = vi.hoisted(() => ({
+  onSourceSectionSupersededMock: vi.fn(),
+  writeAuditMock: vi.fn().mockResolvedValue(undefined),
+}));
+
 vi.mock('@/lib/traceability/hooks', () => ({
   onSourceSectionSuperseded: onSourceSectionSupersededMock,
 }));
+
+vi.mock('@/lib/audit', () => ({ writeAudit: writeAuditMock }));
 
 // Capture the tx callback so each test can invoke it with a controlled mock tx.
 let capturedTxCallback: ((tx: unknown) => Promise<unknown>) | null = null;
@@ -33,7 +38,15 @@ const updateChain = {
   set: vi.fn().mockReturnThis(),
   where: vi.fn().mockImplementation(() => Promise.resolve({ rowCount: 1 })),
 };
-const mockTx = { update: vi.fn().mockReturnValue(updateChain) };
+// M-2 (Issue #300): writeAudit now rides the supersession tx for each newly-
+// superseded section. The mock tx must expose an insert-shaped handle so the
+// in-tx audit row write resolves without a real connection.
+const mockTx = {
+  update: vi.fn().mockReturnValue(updateChain),
+  insert: vi.fn().mockReturnValue({
+    values: vi.fn().mockResolvedValue(undefined),
+  }),
+};
 
 vi.mock('@/lib/db/client', () => ({
   db: {},
@@ -71,6 +84,7 @@ describe('delta-sync supersession write path — E. applyOutdateOperations (AC-0
     // Default: each update matches exactly 1 row (the "newly superseded" path).
     updateChain.where.mockImplementation(() => Promise.resolve({ rowCount: 1 }));
     onSourceSectionSupersededMock.mockResolvedValue({ propagated: true, affectedCount: 2 });
+    writeAuditMock.mockResolvedValue(undefined);
   });
 
   it('empty existingChunkIds short-circuits with zero db calls', async () => {
@@ -160,6 +174,75 @@ describe('delta-sync supersession write path — E. applyOutdateOperations (AC-0
 
     expect(withTenantScope).toHaveBeenCalledWith('org-eu', expect.any(Function));
     expect(capturedTxCallback).not.toBeNull();
+  });
+});
+
+// ---------------------------------------------------------------------------
+// M-2 (Issue #300): traceability.section_superseded — Part 11 audit per section,
+// independent of evidence_node existence. Closes the gap where
+// onSourceSectionSuperseded early-returns when no deliverable cited the section.
+// ---------------------------------------------------------------------------
+describe('M-2 audit — traceability.section_superseded per newly-superseded section', () => {
+  beforeEach(() => {
+    vi.clearAllMocks();
+    updateChain.where.mockImplementation(() => Promise.resolve({ rowCount: 1 }));
+    onSourceSectionSupersededMock.mockResolvedValue({ propagated: true, affectedCount: 0 });
+  });
+
+  it('emits one traceability.section_superseded audit row per newly-superseded section (in-tx)', async () => {
+    await applyOutdateOperations({
+      orgId: 'org-1',
+      existingChunkIds: ['sec-a', 'sec-b', 'sec-c'],
+      newIngestionRunId: 'run-99',
+      actorId: 'user-1',
+    });
+
+    const sectionAuditCalls = writeAuditMock.mock.calls.filter(
+      (c) => (c[0] as { action: string }).action === 'traceability.section_superseded',
+    );
+    expect(sectionAuditCalls).toHaveLength(3);
+    // Each call passes the tx (atomicity — rides the supersession tx).
+    expect(sectionAuditCalls[0]?.[1]).toBe(mockTx);
+    expect(sectionAuditCalls[0]?.[0]).toMatchObject({
+      action: 'traceability.section_superseded',
+      resource_type: 'source_section',
+      resource_id: 'sec-a',
+    });
+  });
+
+  it('does NOT emit section_superseded for already-superseded sections (rowCount=0 idempotent)', async () => {
+    updateChain.where.mockImplementation(() => Promise.resolve({ rowCount: 0 }));
+
+    await applyOutdateOperations({
+      orgId: 'org-1',
+      existingChunkIds: ['sec-already'],
+      newIngestionRunId: 'run-100',
+      actorId: null,
+    });
+
+    const sectionAuditCalls = writeAuditMock.mock.calls.filter(
+      (c) => (c[0] as { action: string }).action === 'traceability.section_superseded',
+    );
+    expect(sectionAuditCalls).toHaveLength(0);
+  });
+
+  it('audit fires even when the post-commit hook finds no evidence_node (the M-2 gap)', async () => {
+    // Hook returns propagated:false — simulating the no-evidence_node early-return.
+    onSourceSectionSupersededMock.mockResolvedValue({ propagated: false, affectedCount: 0 });
+
+    await applyOutdateOperations({
+      orgId: 'org-1',
+      existingChunkIds: ['sec-orphan'],
+      newIngestionRunId: 'run-101',
+      actorId: 'user-2',
+    });
+
+    // The supersession is STILL auditable via traceability.section_superseded,
+    // even though the stale-propagation hook did nothing.
+    const sectionAuditCalls = writeAuditMock.mock.calls.filter(
+      (c) => (c[0] as { action: string }).action === 'traceability.section_superseded',
+    );
+    expect(sectionAuditCalls).toHaveLength(1);
   });
 });
 
