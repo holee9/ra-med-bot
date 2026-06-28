@@ -228,6 +228,12 @@ export type AuditAction =
   | 'traceability.packet_exported'
   | 'traceability.stale_propagated'
   | 'traceability.matrix_viewed'
+  // SPEC-REGULA-TRACEABILITY-001 — M-2 fix (Issue #300, migration 0098).
+  //   traceability.section_superseded — fired inside the supersession tx for
+  //   EACH newly-superseded source_section, independent of evidence_node
+  //   existence. Closes the Part 11 gap where onSourceSectionSuperseded
+  //   early-returns when no deliverable has cited the section.
+  | 'traceability.section_superseded'
   // SPEC-REGULA-PMS-001 (Issue #53, REQ-PMS-010). EU MDR Article 83-86
   // PMS/PMCF state-transition audit trail (21 CFR Part 11).
   | 'pms.report_created'
