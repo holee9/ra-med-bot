@@ -15,7 +15,7 @@
 //   AC-04 — comparative/superiority detection (detectComparativeClaim)
 //   AC-05 — KO↔EN translation diff (detectSemanticDiff)
 //   AC-06 — change-control linkage (linkLabelingChangeToChangeControl → assessChange)
-//   AC-07 — eSubmit forward hook stub (forwardLabelingToESubmit)
+//   AC-07 — eSubmit forward hook (forwardLabelingToESubmit, activated #249)
 //   AC-08 — RBAC: label.approve restricted to ra-lead (PERMISSIONS matrix)
 
 import fs from 'node:fs';
@@ -25,7 +25,6 @@ import { assessChange } from '@/lib/change-control/engine';
 import { linkLabelingChangeToChangeControl } from '@/lib/labeling/change-control-link';
 import { isUnsupportedClaim, validateClaimCitations } from '@/lib/labeling/claim-validator';
 import { detectComparativeClaim } from '@/lib/labeling/comparable-detector';
-import { forwardLabelingToESubmit } from '@/lib/labeling/esubmit-bridge';
 import {
   ALL_LABELING_JURISDICTIONS,
   REQUIRED_LABEL_ELEMENTS,
@@ -239,17 +238,44 @@ describe('AC-06: change-control linkage (REQ-008)', () => {
 });
 
 // ---------------------------------------------------------------------------
-// AC-07: eSubmit forward hook stub (REQ-009)
+// AC-07: eSubmit forward hook (REQ-009, activated #249)
+// Source-level guards — the full DB-backed roundtrip lives in
+// tests/integration/labeling-esubmit-bridge.test.ts.
 // ---------------------------------------------------------------------------
-describe('AC-07: eSubmit forward hook stub (REQ-009)', () => {
-  it('returns forwarded=false with stub detail (no throw)', async () => {
-    const result = await forwardLabelingToESubmit({
-      documentId: 'doc-1',
-      projectId: 'proj-1',
-      orgId: 'org-1',
-    });
-    expect(result.forwarded).toBe(false);
-    expect(result.detail).toBe('esubmit_not_implemented_stub_invoked');
+describe('AC-07: eSubmit forward hook (REQ-009)', () => {
+  it('forwardLabelingToESubmit signature accepts documentId/projectId/orgId/actorId', () => {
+    // Source-level guard against signature drift — the approve route passes
+    // actorId so the 21 CFR Part 11 audit row is attributable.
+    const src = readText('lib/labeling/esubmit-bridge.ts');
+    expect(src).toMatch(/forwardLabelingToESubmit\(params:\s*\{/);
+    expect(src).toMatch(/documentId:\s*string/);
+    expect(src).toMatch(/projectId:\s*string/);
+    expect(src).toMatch(/orgId:\s*string/);
+    expect(src).toMatch(/actorId\?:\s*string/);
+  });
+
+  it('approve route passes actorId into forwardLabelingToESubmit', () => {
+    const src = readText('app/api/labeling/documents/[id]/approve/route.ts');
+    expect(src).toMatch(/forwardLabelingToESubmit\([\s\S]*actorId:\s*session\.user\.id/);
+  });
+
+  it('bridge writes label.esubmit_forwarded audit action', () => {
+    const src = readText('lib/labeling/esubmit-bridge.ts');
+    expect(src).toMatch(/action:\s*'label\.esubmit_forwarded'/);
+  });
+
+  it('approve route threads esubmitForwarded + esubmitDetail into the response', () => {
+    const src = readText('app/api/labeling/documents/[id]/approve/route.ts');
+    expect(src).toMatch(/esubmitForwarded:\s*esubmitResult\.forwarded/);
+    expect(src).toMatch(/esubmitDetail:\s*esubmitResult\.detail/);
+  });
+
+  it('bridge failure is non-fatal — wrapped in try/catch, returns forwarded:false', () => {
+    // Source-level guard: the bridge body must not let exceptions escape.
+    const src = readText('lib/labeling/esubmit-bridge.ts');
+    expect(src).toMatch(/try\s*\{/);
+    expect(src).toMatch(/catch\s*\(err\)/);
+    expect(src).toMatch(/forwarded:\s*false,\s*detail:\s*`esubmit_forward_failed/);
   });
 });
 

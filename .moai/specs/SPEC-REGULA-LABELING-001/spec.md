@@ -100,7 +100,7 @@ Regula가 분류, CER, PCCP, DHF, 전자 제출까지 지원해도 실제 제품
 | AC-04 | comparative/superiority claim 자동 경고 표시 | unit test |
 | AC-05 | 한/영 라벨 의미 차이 검출 및 승인 로그 기록 | integration test |
 | AC-06 | 라벨링 변경 → Change Control 자동 생성 또는 연결 | E2E test |
-| AC-07 | 승인본이 전자 제출 패키지에 포함됨 | integration test |
+| AC-07 | 승인본이 전자 제출 패키지에 포함됨 | integration test ✅ (#249 — bridge activated) |
 | AC-08 | 권한 없는 승인 시도 거부됨 | RBAC negative test |
 
 ---
@@ -142,5 +142,5 @@ lib/db/schema/labeling.ts
 - #42 Crossmarket (관할권별 라벨링 갭 분석)
 - #47 Traceability (claim ↔ evidence 연결)
 - #54 Change Control (라벨링 변경 영향 평가)
-- #65 eSubmit (제출 패키지 포함)
+- #65 eSubmit (제출 패키지 포함) — 활성화 via #249 (라벨링 승인 → package_manifest append)
 - #64 DHF (설계 산출물 및 변경 이력 연결)
