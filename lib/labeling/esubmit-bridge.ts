@@ -46,6 +46,24 @@ export interface ESubmitBridgeResult {
 const MIN_SECTION_CHARS = 20;
 
 /**
+ * @MX:NOTE [AUTO] Reserved manifest keys — forwarding must NEVER clobber these.
+ * @MX:REASON [AUTO] Defense-in-depth (M-1): today the labeling_sections.section_type
+ *           CHECK constraint (5-value allowlist) blocks `__proto__`/`constructor`
+ *           and these reserved names from ever reaching the append loop. But a
+ *           FUTURE migration widening the allowlist could let a section type
+ *           collide with submission metadata keys (`_origin`, `_projectId`,
+ *           `labeling_documents`) or validator-consumed keys (`predicate_device`
+ *           — see lib/esubmit/validators.ts). The bridge would then silently
+ *           overwrite submission package metadata. Skip reserved keys explicitly.
+ */
+const RESERVED_MANIFEST_KEYS = new Set([
+  '_origin',
+  '_projectId',
+  'labeling_documents',
+  'predicate_device',
+]);
+
+/**
  * REQ-009: forward an approved labeling document into the project's eSubmit
  * submission package. Appends each approved section into package_manifest as a
  * top-level key (so validateSubmissionPackage sees them), records provenance
@@ -132,9 +150,12 @@ export async function forwardLabelingToESubmit(params: {
             deviceName: doc.productName,
             version: '1.0',
             // createdBy is NOT NULL. Prefer the approved-by user (the RA-lead
-            // who approved the labeling); fall back to the caller actor, then
-            // the document's creator (guaranteed non-null by schema).
-            createdBy: doc.approvedBy ?? actorId ?? doc.createdBy,
+            // who approved the labeling); fall back to the document's creator
+            // (guaranteed non-null and same-org as the document). The actorId
+            // fallback was dropped (M-2): actorId could reference a cross-org
+            // user if a future caller passed a mismatched (orgId, actorId)
+            // pair. actorId is still used for the AUDIT row actor_id below.
+            createdBy: doc.approvedBy ?? doc.createdBy,
             packageManifest: {
               _origin: 'labeling_approval',
               _projectId: projectId,
@@ -154,7 +175,12 @@ export async function forwardLabelingToESubmit(params: {
       }
 
       // 4. Append labeling sections as top-level manifest keys.
+      // @MX:WARN [AUTO] Skip reserved keys (M-1): a section_type collision with
+      //       _origin / _projectId / labeling_documents / predicate_device MUST
+      //       NOT clobber submission metadata. The DB CHECK blocks these today,
+      //       but this guard survives a future allowlist widening.
       for (const s of sectionEntries) {
+        if (RESERVED_MANIFEST_KEYS.has(s.sectionType)) continue;
         manifest[s.sectionType] = s.content;
       }
 

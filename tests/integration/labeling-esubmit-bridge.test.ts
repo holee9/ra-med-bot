@@ -524,3 +524,128 @@ describe('AC-07: manifest shape passes validateSubmissionPackage', () => {
     expect(forwardedSectionIssues).toHaveLength(0);
   });
 });
+
+// ---------------------------------------------------------------------------
+// M-1: reserved manifest-key collision guard
+// ---------------------------------------------------------------------------
+// The append loop `manifest[s.sectionType] = s.content` runs after the package
+// is seeded with linkage metadata (_origin, _projectId, labeling_documents) and
+// a validator-consumed key (predicate_device). The DB CHECK on section_type
+// blocks these names today, but a future migration widening the allowlist could
+// let a section_type collide. This test simulates that future state by seeding
+// a section whose section_type IS a reserved key, and asserts the metadata the
+// bridge wrote in step 3 survives the append loop in step 4.
+//
+// Approach: integration-level (forwardLabelingToESubmit is not decomposed into
+// an exportable append-only helper; the loop lives inside the transaction). We
+// drive the guard through the real forward path by pushing a reserved-named
+// section into labelingSectionsStore before the call. The mock layer passes
+// the section through to the bridge verbatim (no section_type filtering at the
+// DB layer in this harness), which is exactly the future-DB-CHECK-widened
+// scenario we want to defend against.
+describe('M-1: reserved manifest-key collision guard (AC-07 defense-in-depth)', () => {
+  it('does NOT clobber _origin/_projectId/_labeling_documents/predicate_device when a section type collides', async () => {
+    seedApprovedLabelingDoc();
+    // Simulate a future DB allowlist that permits reserved-named section types.
+    labelingSectionsStore.push(
+      {
+        id: 'sec-reserved-origin',
+        org_id: ORG_A,
+        document_id: DOC_A,
+        section_type: '_origin',
+        content: 'attacker-controlled origin value that must NOT overwrite the linkage meta',
+      },
+      {
+        id: 'sec-reserved-pid',
+        org_id: ORG_A,
+        document_id: DOC_A,
+        section_type: '_projectId',
+        content: 'attacker-controlled projectId that must NOT overwrite the linkage meta',
+      },
+      {
+        id: 'sec-reserved-labeling-docs',
+        org_id: ORG_A,
+        document_id: DOC_A,
+        section_type: 'labeling_documents',
+        content: 'must NOT clobber the provenance array',
+      },
+      {
+        id: 'sec-reserved-predicate',
+        org_id: ORG_A,
+        document_id: DOC_A,
+        section_type: 'predicate_device',
+        content: 'a predicate-device section that must NOT silently overwrite validator key',
+      },
+    );
+
+    const { forwardLabelingToESubmit } = await import('@/lib/labeling/esubmit-bridge');
+    const result = await forwardLabelingToESubmit({
+      documentId: DOC_A,
+      projectId: PROJECT_ID,
+      orgId: ORG_A,
+      actorId: USER_A,
+    });
+    expect(result.forwarded).toBe(true);
+
+    const pkg = requirePackage(0);
+    const manifest = pkg.package_manifest;
+
+    // Reserved linkage metadata survived the append loop intact.
+    expect(manifest._origin).toBe('labeling_approval');
+    expect(manifest._projectId).toBe(PROJECT_ID);
+
+    // Provenance array is a real array with one entry — NOT clobbered by the
+    // reserved section_type='labeling_documents' content string.
+    const labelingDocs = manifest.labeling_documents as unknown;
+    expect(Array.isArray(labelingDocs)).toBe(true);
+    expect(labelingDocs as Array<Record<string, unknown>>).toHaveLength(1);
+    expect((labelingDocs as Array<Record<string, unknown>>)[0]?.documentId).toBe(DOC_A);
+
+    // Non-reserved sections still appended (the guard skips only reserved keys).
+    expect(manifest.device_description).toMatch(/CardioSense Pro/);
+    expect(manifest.intended_use).toMatch(/arrhythmias/);
+
+    // predicate_device reserved key was NOT set to the section content (the
+    // validator in lib/esubmit/validators.ts would otherwise see a non-PMA
+    // string in place of its expected predicate_device shape). The bridge
+    // never sets predicate_device at all here (no explicit seed), so it must
+    // remain undefined.
+    expect(manifest.predicate_device).toBeUndefined();
+  });
+});
+
+// ---------------------------------------------------------------------------
+// M-2: createdBy cross-org fallback narrowing
+// ---------------------------------------------------------------------------
+// The package's submission_packages.created_by column was previously
+// `doc.approvedBy ?? actorId ?? doc.createdBy`. The actorId fallback was a
+// cross-org risk if a future caller passed a mismatched (orgId, actorId)
+// pair. Now it is `doc.approvedBy ?? doc.createdBy`, both guaranteed same-org
+// as the document. actorId must still flow to the AUDIT row actor_id.
+describe('M-2: createdBy is sourced from document, actorId still threads to audit', () => {
+  it('package.created_by = doc.approvedBy (no actorId fallback), audit actor_id = actorId', async () => {
+    seedApprovedLabelingDoc(); // approved_by = USER_A, created_by = USER_A
+    const { forwardLabelingToESubmit } = await import('@/lib/labeling/esubmit-bridge');
+
+    // A hypothetical cross-org caller passes actorId pointing to a user in
+    // another org. The package.created_by must NOT pick this up.
+    const CROSS_ORG_ACTOR = '99999999-9999-9999-9999-999999999999';
+    const result = await forwardLabelingToESubmit({
+      documentId: DOC_A,
+      projectId: PROJECT_ID,
+      orgId: ORG_A,
+      actorId: CROSS_ORG_ACTOR,
+    });
+    expect(result.forwarded).toBe(true);
+
+    const pkg = requirePackage(0);
+    // created_by sourced from doc.approvedBy (USER_A) — NOT the cross-org actor.
+    expect(pkg.created_by).toBe(USER_A);
+
+    // But the audit row's actor_id MUST still be the caller (the human who
+    // triggered the forward), even if they are not the package creator.
+    expect(auditRecords).toHaveLength(1);
+    expect(auditRecords[0]?.actor_id).toBe(CROSS_ORG_ACTOR);
+    expect(auditRecords[0]?.action).toBe('label.esubmit_forwarded');
+  });
+});
