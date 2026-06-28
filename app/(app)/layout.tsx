@@ -8,6 +8,7 @@
 
 import Sidebar from '@/components/shell/Sidebar';
 import Topbar from '@/components/shell/Topbar';
+import type { Role } from '@/lib/auth/rbac';
 import { FEATURE_FLAGS } from '@/lib/feature-flags';
 import type { Metadata } from 'next';
 import { cookies } from 'next/headers';
@@ -51,18 +52,22 @@ export default async function AppLayout({ children }: { children: React.ReactNod
   // ra-member+ (knowledgepromo.view). The library page itself also reads the
   // role to decide whether to show the "팀 지식" tab.
   let showTeamKnowledge = false;
+  // 2026-06-29: userRole을 try 밖에서 선언 (Sidebar userRole prop 전달용)
+  let userRole: Role | undefined;
   try {
     const { auth } = await import('@/lib/auth');
     const { hasRole } = await import('@/lib/auth/rbac');
     const session = await auth();
-    const userRole = (session?.user as { role?: string } | undefined)?.role;
+    userRole = (session?.user as { role?: string } | undefined)?.role as Role | undefined;
     if (userRole) {
       showExpertReview = hasRole(userRole as Parameters<typeof hasRole>[0], 'ra-lead');
       showKnowledgeGap = hasRole(userRole as Parameters<typeof hasRole>[0], 'ra-member');
       showClassify = hasRole(userRole as Parameters<typeof hasRole>[0], 'ra-member');
       showTraceability = hasRole(userRole as Parameters<typeof hasRole>[0], 'ra-member');
-      // standards.read minRole is 'viewer' — broad read access (REQ-022).
-      showStandards = hasRole(userRole as Parameters<typeof hasRole>[0], 'viewer');
+      // @MX:NOTE [AUTO] showStandards raised to ra-member (2026-06-29) — 전사 직원
+      // (viewer) 사이드바에서 조화 표준 추적기 제외 (RA/엔지니어 전문). Standards API는
+      // 여전히 viewer 조회 가능(permission)하나 사이드바 노출은 ra-member+.
+      showStandards = hasRole(userRole as Parameters<typeof hasRole>[0], 'ra-member');
       // Scope rationalization (2026-06-28): FREEZE/RETIRE domains are AND-gated
       // with FEATURE_FLAGS so the nav link hides when the flag is OFF, regardless
       // of role. Re-enable via NEXT_PUBLIC_FEATURE_<NAME>=true (code preserved).
@@ -124,6 +129,7 @@ export default async function AppLayout({ children }: { children: React.ReactNod
         showGovernance={showGovernance}
         showQualityHeatmap={showQualityHeatmap}
         showTeamKnowledge={showTeamKnowledge}
+        userRole={(userRole ?? 'viewer') as Role}
         initialLocale={initialLocale}
       />
       <div className="flex min-w-0 flex-1 flex-col">

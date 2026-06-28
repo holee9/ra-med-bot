@@ -7,6 +7,7 @@
 // which calls auth() server-side.
 // Wave 1: project-switcher dropdown + locale-aware nav-chat testid added.
 
+import { type Role, hasRole } from '@/lib/auth/rbac';
 import { useProjects } from '@/lib/queries/useProjects';
 import type { ProjectSummary } from '@/lib/queries/useProjects';
 import { useUIStore } from '@/stores/ui';
@@ -15,21 +16,24 @@ import { ChevronDown } from 'lucide-react';
 import Link from 'next/link';
 import { useEffect, useRef, useState } from 'react';
 
-type NavItem = { label: string; href: string; testId?: string };
+type NavItem = { label: string; href: string; testId?: string; minRole?: Role };
 
 // @MX:ANCHOR Order is contractually fixed by REQ-FND-019; tests assert it.
 // @MX:REASON Reordering breaks UX expectations and the frontend-shell test.
+// @MX:NOTE [AUTO] minRole per item (2026-06-29) — 사이드바 3계층 (전사 인허가 도우미):
+// viewer(전사 직원)는 minRole:'viewer' 항목만 (6개: 홈·채팅·히스토리·지식베이스·규제업데이트·설정).
+// ra-member+에 내라이브러리·규제캘린더·템플릿·대시보드 추가. 순서는 불변(REQ-FND-019).
 const NAV_ITEMS: NavItem[] = [
-  { label: '홈', href: '/' },
-  { label: '새 상담', href: '/chat', testId: 'nav-chat' },
-  { label: '히스토리', href: '/history' },
-  { label: '내 라이브러리', href: '/library', testId: 'nav-library' },
-  { label: '규제 캘린더', href: '/calendar', testId: 'nav-calendar' },
-  { label: '템플릿', href: '/templates' },
-  { label: '지식 베이스', href: '/knowledge' },
-  { label: '규제 업데이트', href: '/updates' },
-  { label: '대시보드', href: '/dashboard' },
-  { label: '설정', href: '/settings' },
+  { label: '홈', href: '/', minRole: 'viewer' },
+  { label: '새 상담', href: '/chat', testId: 'nav-chat', minRole: 'viewer' },
+  { label: '히스토리', href: '/history', minRole: 'viewer' },
+  { label: '내 라이브러리', href: '/library', testId: 'nav-library', minRole: 'ra-member' },
+  { label: '규제 캘린더', href: '/calendar', testId: 'nav-calendar', minRole: 'ra-member' },
+  { label: '템플릿', href: '/templates', minRole: 'ra-member' },
+  { label: '지식 베이스', href: '/knowledge', minRole: 'viewer' },
+  { label: '규제 업데이트', href: '/updates', minRole: 'viewer' },
+  { label: '대시보드', href: '/dashboard', minRole: 'ra-member' },
+  { label: '설정', href: '/settings', minRole: 'viewer' },
 ];
 
 const CHAT_LABELS: Record<string, string> = { ko: '채팅', en: 'Chat' };
@@ -78,6 +82,8 @@ interface SidebarProps {
   // answers library) nav gated to ra-member+ (knowledgepromo.view). Gated
   // server-side and passed down.
   showTeamKnowledge?: boolean;
+  // 2026-06-29 사이드바 3계층: NAV_ITEMS를 userRole로 필터 (viewer 6 / ra-member+ 추가)
+  userRole?: Role;
   initialLocale?: string;
 }
 
@@ -96,6 +102,8 @@ export default function Sidebar(props?: SidebarProps) {
   const showGovernance = props?.showGovernance ?? false;
   const showQualityHeatmap = props?.showQualityHeatmap ?? false;
   const showTeamKnowledge = props?.showTeamKnowledge ?? false;
+  // 2026-06-29: default 'viewer' (최소 권한 — 명시적 role 없으면 전사 직원 사이드바).
+  const userRole: Role = props?.userRole ?? 'viewer';
   const currentProjectId = useUIStore((s) => s.currentProjectId);
   const setCurrentProjectId = useUIStore((s) => s.setCurrentProjectId);
   const { data = [] } = useProjects();
@@ -181,19 +189,21 @@ export default function Sidebar(props?: SidebarProps) {
       </div>
 
       <nav aria-label="메인 내비게이션" className="flex flex-col gap-1 px-2 py-2">
-        {NAV_ITEMS.map((item) => {
-          const label = item.testId === 'nav-chat' ? chatLabel : item.label;
-          return (
-            <Link
-              key={item.href}
-              href={item.href}
-              data-testid={item.testId}
-              className="rounded-md px-3 py-2 text-sm text-ink-700 hover:bg-ink-50"
-            >
-              {label}
-            </Link>
-          );
-        })}
+        {NAV_ITEMS.filter((item) => !item.minRole || hasRole(userRole, item.minRole)).map(
+          (item) => {
+            const label = item.testId === 'nav-chat' ? chatLabel : item.label;
+            return (
+              <Link
+                key={item.href}
+                href={item.href}
+                data-testid={item.testId}
+                className="rounded-md px-3 py-2 text-sm text-ink-700 hover:bg-ink-50"
+              >
+                {label}
+              </Link>
+            );
+          },
+        )}
       </nav>
 
       {/* SPEC-REGULA-KNOWLEDGE-GAP-001: Knowledge Gap queue link (Issue #35). */}

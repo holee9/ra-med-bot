@@ -132,8 +132,21 @@ describe('lib/auth/permissions.ts (REQ-ENTERPRISE-020) — PERMISSIONS matrix', 
   });
 
   describe('specific minRole values from SPEC', () => {
-    it('consult.create requires ra-member', () => {
-      expect(PERMISSIONS['consult.create'].minRole).toBe('ra-member');
+    // 2026-06-28 전사 인허가 도우미 정체성: RA 분산을 위해 consult/conversation.view/classify.view → viewer
+    it('consult.create requires viewer (전사 직원 Q&A 개방, rate limit 30/min 보호)', () => {
+      expect(PERMISSIONS['consult.create'].minRole).toBe('viewer');
+    });
+
+    it('conversation.view requires viewer (전사 직원 Q&A 히스토리 조회)', () => {
+      expect(PERMISSIONS['conversation.view'].minRole).toBe('viewer');
+    });
+
+    it('classify.view requires ra-member (2026-06-29 정정: 사이드바 showClassify와 정렬)', () => {
+      expect(PERMISSIONS['classify.view'].minRole).toBe('ra-member');
+    });
+
+    it('classify.generate requires ra-lead (지양-4: 분류 판단은 RA 담당자)', () => {
+      expect(PERMISSIONS['classify.generate'].minRole).toBe('ra-lead');
     });
 
     it('conversation.delete requires ra-lead', () => {

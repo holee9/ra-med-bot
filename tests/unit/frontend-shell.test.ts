@@ -30,7 +30,19 @@ vi.mock('@/lib/auth', () => ({
   auth: async () => ({ user: { role: 'ra-lead' } }),
 }));
 vi.mock('@/lib/auth/rbac', () => ({
-  hasRole: (role: string, required: string) => role === required,
+  // 2026-06-29: 실제 ROLE_HIERARCHY 반영 (ra-lead >= ra-member 등).
+  // 단순 === 비교 시 ra-lead가 ra-member 항목을 통과 못 함 (사이드바 필터 테스트 실패).
+  hasRole: (role: string, required: string) => {
+    const H: Record<string, number> = {
+      admin: 4,
+      'ra-lead': 3,
+      'qa-lead': 2.5,
+      'ra-member': 2,
+      viewer: 1,
+      auditor: 0.5,
+    };
+    return (H[role] ?? 0) >= (H[required] ?? 0);
+  },
 }));
 
 // next/font/google is a build-time module; mock it to plain objects.
@@ -227,7 +239,9 @@ describe('app/(auth)/login/page.tsx — REQ-FND-018, 058', () => {
 describe('components/shell/Sidebar.tsx — REQ-FND-019', () => {
   it('renders all 10 navigation links in correct order', async () => {
     const mod = await import('../../components/shell/Sidebar');
-    const { container } = render(React.createElement(mod.default));
+    const Sidebar = mod.default as React.ComponentType<{ userRole?: string }>;
+    // ra-lead sees all 10 NAV links (REQ-FND-019 순서 계약)
+    const { container } = render(React.createElement(Sidebar, { userRole: 'ra-lead' }));
     // Scope to the <nav> region so the primary "새 상담" action button
     // (rendered outside <nav>) is excluded from the ordering assertion.
     const nav = container.querySelector('nav');
@@ -259,6 +273,21 @@ describe('components/shell/Sidebar.tsx — REQ-FND-019', () => {
       expect(link.getAttribute('href')).toBe(href);
       expect(link.textContent).toContain(label);
     }
+  });
+
+  // 2026-06-29 전사 인허가 도우미: viewer(전사 직원)는 6개 NAV만
+  // (홈·채팅·히스토리·지식베이스·규제업데이트·설정). ra-member+에 추가 항목.
+  it('renders 6 navigation links for viewer (전사 직원)', async () => {
+    const mod = await import('../../components/shell/Sidebar');
+    const Sidebar = mod.default as React.ComponentType<{ userRole?: string }>;
+    const { container } = render(React.createElement(Sidebar, { userRole: 'viewer' }));
+    const nav = container.querySelector('nav');
+    expect(nav).not.toBeNull();
+    if (!nav) return;
+    const navLinks = Array.from(nav.querySelectorAll('a'));
+    expect(navLinks.length).toBe(6);
+    const hrefs = navLinks.map((l) => l.getAttribute('href'));
+    expect(hrefs).toEqual(['/', '/chat', '/history', '/knowledge', '/updates', '/settings']);
   });
 });
 

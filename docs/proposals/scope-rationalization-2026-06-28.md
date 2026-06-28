@@ -1,7 +1,8 @@
 # Regula 범위 합리화 제안서 (Scope Rationalization)
 
 > **작성일**: 2026-06-28
-> **상태**: ✅ 채택됨 (Adopted) — 2026-06-28. Step 1-2 구현 완료 (feature flag 8종 도입 + layout.tsx 게이팅 → FREEZE/RETIRE 8개 사이드바 링크 숨김). Step 3-4 진행 중.
+> **상태**: ✅ 채택됨 (Adopted) — 2026-06-28.
+> **2026-06-29 정체성 교정**: 본 제안의 "RA 워크스테이션 회귀" 프레이밍은 **부분 정정** — 사용자 명확화한 진짜 목표는 **"전사 인허가 도우미(RA 담당자 업무 분산)"**. 이에 따라 P0(전사 직원 viewer Q&A 권한 개방: consult.create/conversation.view) + P1(사이드바 3계층 role-gating, viewer 6개) 추가 구현. Charter 메모리(`product-charter`) 교정 — 1순위 RA Lead → 1순위 전사 직원 Q&A.
 > **작성자**: MoAI 오케스트레이터 (사용자 요청: `/moai:design --path B`)
 > **근거**: Design Handoff + `.moai/specs/CHARTER.md` + 현재 코드베이스 정량 분석
 > **원칙**: "무리하지 않게 안전하게" — 물리적 삭제가 아닌 **숨김 + 동결 + 문서화**
