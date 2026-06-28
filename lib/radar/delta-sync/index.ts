@@ -12,11 +12,13 @@ export {
 } from './detector';
 
 export {
+  applyOutdateOperations,
   assembleEmbeddedChunks,
   buildOutdateOperations,
   chunkForDelta,
   type ChunkDelta,
   type EmbeddedChunk,
+  type SupersessionResult,
 } from './ingest';
 
 export {

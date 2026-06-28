@@ -12,6 +12,9 @@
 // license is registered out-of-band. The production upload route (C-1) and Inngest
 // worker (C-2) are the primary gated paths. Gating this crawler is a follow-up.
 
+import { withTenantScope } from '@/lib/db/client';
+import { sourceSections } from '@/lib/db/schema';
+import { and, eq, isNull } from 'drizzle-orm';
 import type { Chunk } from '../../ingest/chunkers/base';
 import { chunk } from '../../ingest/chunkers/index';
 import { DocClass } from '../../ingest/doc-class';
@@ -52,6 +55,119 @@ export function buildOutdateOperations(
     supersededBy: newIngestionRunId,
     updatedAt,
   }));
+}
+
+/**
+ * Result of persisting a single section's supersession + firing its hook.
+ */
+export interface SupersessionResult {
+  /** Section id that was processed. */
+  sectionId: string;
+  /** True when this tx actually set superseded_by (false = already superseded, no-op). */
+  applied: boolean;
+  /** Stale-propagation hook outcome for this section. */
+  propagation: { propagated: boolean; affectedCount: number };
+}
+
+/**
+ * @MX:ANCHOR [AUTO] AC-05 supersession write path — persists `source_sections.superseded_by`
+ *   within an org-scoped transaction and fires `onSourceSectionSuperseded` after commit.
+ * @MX:REASON This is the missing production write path for #45 delta-sync: the pure
+ *   `buildOutdateOperations` computed the operations but nothing applied them. This
+ *   function is the single call site that connects delta-sync → DB → traceability
+ *   hook (SPEC-REGULA-TRACEABILITY-001 AC-05). fan_in will reach 3+ once the corpus
+ *   crawler orchestrator (#45 follow-up) and gap-replay (#35) call it.
+ * @MX:WARN [AUTO] Hook fires AFTER the tx commits, not inside it. The hook uses the
+ *   db singleton for `propagateStaleFromNode` (stale_flags + audit), which cannot
+ *   share the supersession tx. A hook failure MUST NOT roll back the supersession —
+ *   the hook is non-blocking by design (wraps its own errors in an audit row + returns).
+ *   This is the correct atomicity boundary: the supersession is the fact; stale
+ *   propagation is a downstream effect.
+ * @MX:SPEC SPEC-REGULA-TRACEABILITY-001 (AC-05, REQ-TRACEABILITY-009)
+ *           SPEC-REGULA-DELTA-SYNC-001 (REQ-DELTA-005, REQ-DELTA-006)
+ *
+ * Idempotent: the WHERE clause guards on `superseded_by IS NULL`, so re-running
+ * the same delta against already-superseded sections is a no-op (returns applied=0).
+ *
+ * Org isolation: the UPDATE runs inside `withTenantScope(orgId)` which sets the
+ * `app.current_org_id` GUC for RLS enforcement, matching every other org-scoped write.
+ *
+ * @returns summary with per-section results + total applied count.
+ */
+export async function applyOutdateOperations(params: {
+  orgId: string;
+  existingChunkIds: string[];
+  newIngestionRunId: string;
+  /** User/system that triggered the sync. Threaded to the hook for audit. null = system. */
+  actorId: string | null;
+}): Promise<{ applied: number; results: SupersessionResult[] }> {
+  if (params.existingChunkIds.length === 0) {
+    return { applied: 0, results: [] };
+  }
+
+  const operations = buildOutdateOperations(params.existingChunkIds, params.newIngestionRunId);
+
+  // Phase 1 — persist the supersession in an org-scoped tx.
+  // We capture which rows were actually touched so the hook only fires for
+  // newly-superseded sections (idempotency: a re-run touches zero rows).
+  const newlySuperseded = await withTenantScope(params.orgId, async (tx) => {
+    const touched: string[] = [];
+    for (const op of operations) {
+      const result = await tx
+        .update(sourceSections)
+        .set({
+          superseded_by: op.supersededBy,
+          updated_at: op.updatedAt,
+        })
+        .where(and(eq(sourceSections.id, op.id), isNull(sourceSections.superseded_by)));
+      // drizzle returns rowCount on execute; if the row was already superseded
+      // the WHERE matches nothing and rowCount is 0 — that's the idempotent path.
+      const affected = (result as unknown as { rowCount?: number }).rowCount ?? 0;
+      if (affected > 0) {
+        touched.push(op.id);
+      }
+    }
+    return touched;
+  });
+
+  // Phase 2 — fire the stale-propagation hook AFTER the tx commits.
+  // Non-blocking: a hook failure is logged as an audit row inside the hook,
+  // never propagated. The supersession is already durable at this point.
+  const results: SupersessionResult[] = [];
+  for (const op of operations) {
+    const applied = newlySuperseded.includes(op.id);
+    let propagation = { propagated: false, affectedCount: 0 };
+    if (applied) {
+      try {
+        propagation = await onSourceSectionSupersededHook({
+          orgId: params.orgId,
+          refId: op.id,
+          actorId: params.actorId,
+        });
+      } catch {
+        // Defense-in-depth: the hook itself never throws, but if the dynamic
+        // import boundary fails we still must not crash the sync.
+        propagation = { propagated: false, affectedCount: 0 };
+      }
+    }
+    results.push({ sectionId: op.id, applied, propagation });
+  }
+
+  return { applied: newlySuperseded.length, results };
+}
+
+/**
+ * Thin indirection so unit tests can mock the hook without importing the full
+ * traceability graph (which pulls env-validated db). The real implementation is
+ * lazily imported at call time to avoid a circular import at module load.
+ */
+async function onSourceSectionSupersededHook(opts: {
+  orgId: string;
+  refId: string;
+  actorId: string | null;
+}): Promise<{ propagated: boolean; affectedCount: number }> {
+  const { onSourceSectionSuperseded } = await import('@/lib/traceability/hooks');
+  return onSourceSectionSuperseded(opts);
 }
 
 /**
