@@ -65,7 +65,7 @@ CREATE TABLE prompt_registry (
   content text NOT NULL,
   version integer NOT NULL,
   created_at timestamptz NOT NULL DEFAULT now(),
-  created_by uuid REFERENCES users(id) ON DELETE 'set null'
+  created_by uuid REFERENCES users(id) ON DELETE SET NULL
 );
 
 CREATE INDEX idx_prompt_registry_org_kind_hash ON prompt_registry(org_id, kind, content_hash);
@@ -80,7 +80,7 @@ CREATE TABLE model_pin (
   model_version text NOT NULL,
   retrieval_config jsonb NOT NULL DEFAULT '{}'::jsonb,
   created_at timestamptz NOT NULL DEFAULT now(),
-  created_by uuid REFERENCES users(id) ON DELETE 'set null'
+  created_by uuid REFERENCES users(id) ON DELETE SET NULL
 );
 
 CREATE INDEX idx_model_pin_org ON model_pin(org_id);
@@ -89,16 +89,16 @@ CREATE INDEX idx_model_pin_org ON model_pin(org_id);
 CREATE TABLE change_request (
   id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
   org_id uuid NOT NULL REFERENCES organizations(id) ON DELETE CASCADE,
-  prompt_id uuid REFERENCES prompt_registry(id) ON DELETE 'restrict',
-  model_pin_id uuid REFERENCES model_pin(id) ON DELETE 'restrict',
+  prompt_id uuid REFERENCES prompt_registry(id) ON DELETE RESTRICT,
+  model_pin_id uuid REFERENCES model_pin(id) ON DELETE RESTRICT,
   eval_run_id text,
   eval_status eval_status NOT NULL DEFAULT 'pending',
   eval_result_ref text,
   approval_status modelgov_approval_status NOT NULL DEFAULT 'pending_review',
-  approver_id uuid REFERENCES users(id) ON DELETE 'set null',
+  approver_id uuid REFERENCES users(id) ON DELETE SET NULL,
   approved_at timestamptz,
   created_at timestamptz NOT NULL DEFAULT now(),
-  created_by uuid REFERENCES users(id) ON DELETE 'set null'
+  created_by uuid REFERENCES users(id) ON DELETE SET NULL
 );
 
 CREATE INDEX idx_change_request_org ON change_request(org_id);
@@ -109,12 +109,12 @@ CREATE INDEX idx_change_request_org_status ON change_request(org_id, approval_st
 CREATE TABLE approved_combination (
   id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
   org_id uuid NOT NULL REFERENCES organizations(id) ON DELETE CASCADE,
-  prompt_id uuid NOT NULL REFERENCES prompt_registry(id) ON DELETE 'restrict',
-  model_pin_id uuid NOT NULL REFERENCES model_pin(id) ON DELETE 'restrict',
+  prompt_id uuid NOT NULL REFERENCES prompt_registry(id) ON DELETE RESTRICT,
+  model_pin_id uuid NOT NULL REFERENCES model_pin(id) ON DELETE RESTRICT,
   active boolean NOT NULL DEFAULT false,
   approved_at timestamptz NOT NULL DEFAULT now(),
-  superseded_by uuid REFERENCES approved_combination(id) ON DELETE 'set null',
-  change_request_id uuid REFERENCES change_request(id) ON DELETE 'set null'
+  superseded_by uuid REFERENCES approved_combination(id) ON DELETE SET NULL,
+  change_request_id uuid REFERENCES change_request(id) ON DELETE SET NULL
 );
 
 CREATE INDEX idx_approved_combination_org_active ON approved_combination(org_id, active);
