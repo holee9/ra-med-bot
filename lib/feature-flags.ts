@@ -6,8 +6,28 @@
 // Default: all flags disabled in production.
 
 export const FEATURE_FLAGS = {
+  // --- Corpus availability (RC1) ---
+  // Default: all flags disabled in production.
   EU_ECTD_CORPUS: process.env.NEXT_PUBLIC_FEATURE_EU_ECTD === 'true',
   FDA_ESTAR_CORPUS: process.env.NEXT_PUBLIC_FEATURE_FDA_ESTAR === 'true',
+
+  // --- Scope rationalization (2026-06-28) ---
+  // @MX:NOTE [AUTO] FREEZE/RETIRE sidebar domains — gated OFF by default.
+  // @MX:SPEC docs/proposals/scope-rationalization-2026-06-28.md
+  // These nav links belong to Charter out-of-scope (QMS per 지양-3) or
+  // enterprise-infra domains over-provisioned for a 6-8 person internal team.
+  // Re-enable per-domain via env (NEXT_PUBLIC_FEATURE_<NAME>=true) to restore
+  // the nav link WITHOUT code changes — this is the "detach" mechanism:
+  // code preserved, UI hidden, env-toggled. Role gating in app/(app)/layout.tsx
+  // is AND-composed with these flags (role gate AND feature gate).
+  PMS_WORKBENCH: process.env.NEXT_PUBLIC_FEATURE_PMS_WORKBENCH === 'true',
+  CHANGE_CONTROL: process.env.NEXT_PUBLIC_FEATURE_CHANGE_CONTROL === 'true',
+  LABELING: process.env.NEXT_PUBLIC_FEATURE_LABELING === 'true',
+  CAPA: process.env.NEXT_PUBLIC_FEATURE_CAPA === 'true',
+  CLINICAL_INVESTIGATION: process.env.NEXT_PUBLIC_FEATURE_CLINICAL_INVESTIGATION === 'true',
+  SOURCE_GOVERNANCE: process.env.NEXT_PUBLIC_FEATURE_SOURCE_GOVERNANCE === 'true',
+  QUALITY_HEATMAP: process.env.NEXT_PUBLIC_FEATURE_QUALITY_HEATMAP === 'true',
+  TEAM_KNOWLEDGE: process.env.NEXT_PUBLIC_FEATURE_TEAM_KNOWLEDGE === 'true',
 } as const;
 
 export type FeatureFlag = keyof typeof FEATURE_FLAGS;

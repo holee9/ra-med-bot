@@ -49,6 +49,8 @@
 
 **2026-06-28 릴리즈**: Regula v1.0.0 구현 종료. Charter MVP 범위 핵심 자동화(RAG Q&A·CER·Predicate·PCCP·Standards·Expert Review·Part 11) 모두 완성. **실사용 가능 상태** 유지. 이번 세션(#295~#304) 8개 PR로 RLHF calibration/alternate-answers, PMCF 워크벤치, PMS E2E, supersession write path, eSubmit labeling bridge, **0077 syntax fix(프로덕션 #71 500 해소)**, delta-sync orchestrator(AC-05 live)가 완성되었습니다.
 
+**운영 범위 합리화 (2026-06-28)**: Charter 핵심 정체성("좁고 깊은 RA 문서 작성 워크스테이션")으로 회귀. FREEZE/RETIRE 8개 사이드바 도메인(PMS·변경관리·라벨링·CAPA·임상조사·거버넌스·품질히트맵·팀지식)을 feature flag 기본 off로 숨김 — **코드 보존, env 토글로 복구 가능**. Charter 지양-3(QMS 아님)/지양-5(SaaS 아님) 운영 한정 명시. 상세: [제안서](docs/proposals/scope-rationalization-2026-06-28.md) · [운영 범위 경계](docs/scope-boundary.md).
+
 ### 이번 세션 주요 완료 기능
 
 | PR | Issue | 완료 내용 |

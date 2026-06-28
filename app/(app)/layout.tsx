@@ -8,6 +8,7 @@
 
 import Sidebar from '@/components/shell/Sidebar';
 import Topbar from '@/components/shell/Topbar';
+import { FEATURE_FLAGS } from '@/lib/feature-flags';
 import type { Metadata } from 'next';
 import { cookies } from 'next/headers';
 import { redirect } from 'next/navigation';
@@ -62,14 +63,31 @@ export default async function AppLayout({ children }: { children: React.ReactNod
       showTraceability = hasRole(userRole as Parameters<typeof hasRole>[0], 'ra-member');
       // standards.read minRole is 'viewer' — broad read access (REQ-022).
       showStandards = hasRole(userRole as Parameters<typeof hasRole>[0], 'viewer');
-      showPms = hasRole(userRole as Parameters<typeof hasRole>[0], 'ra-member');
-      showChangeControl = hasRole(userRole as Parameters<typeof hasRole>[0], 'ra-member');
-      showLabeling = hasRole(userRole as Parameters<typeof hasRole>[0], 'ra-member');
-      showCapa = hasRole(userRole as Parameters<typeof hasRole>[0], 'ra-member');
-      showClinicalInvestigation = hasRole(userRole as Parameters<typeof hasRole>[0], 'ra-member');
-      showGovernance = hasRole(userRole as Parameters<typeof hasRole>[0], 'ra-member');
-      showQualityHeatmap = hasRole(userRole as Parameters<typeof hasRole>[0], 'ra-member');
-      showTeamKnowledge = hasRole(userRole as Parameters<typeof hasRole>[0], 'ra-member');
+      // Scope rationalization (2026-06-28): FREEZE/RETIRE domains are AND-gated
+      // with FEATURE_FLAGS so the nav link hides when the flag is OFF, regardless
+      // of role. Re-enable via NEXT_PUBLIC_FEATURE_<NAME>=true (code preserved).
+      showPms =
+        hasRole(userRole as Parameters<typeof hasRole>[0], 'ra-member') &&
+        FEATURE_FLAGS.PMS_WORKBENCH;
+      showChangeControl =
+        hasRole(userRole as Parameters<typeof hasRole>[0], 'ra-member') &&
+        FEATURE_FLAGS.CHANGE_CONTROL;
+      showLabeling =
+        hasRole(userRole as Parameters<typeof hasRole>[0], 'ra-member') && FEATURE_FLAGS.LABELING;
+      showCapa =
+        hasRole(userRole as Parameters<typeof hasRole>[0], 'ra-member') && FEATURE_FLAGS.CAPA;
+      showClinicalInvestigation =
+        hasRole(userRole as Parameters<typeof hasRole>[0], 'ra-member') &&
+        FEATURE_FLAGS.CLINICAL_INVESTIGATION;
+      showGovernance =
+        hasRole(userRole as Parameters<typeof hasRole>[0], 'ra-member') &&
+        FEATURE_FLAGS.SOURCE_GOVERNANCE;
+      showQualityHeatmap =
+        hasRole(userRole as Parameters<typeof hasRole>[0], 'ra-member') &&
+        FEATURE_FLAGS.QUALITY_HEATMAP;
+      showTeamKnowledge =
+        hasRole(userRole as Parameters<typeof hasRole>[0], 'ra-member') &&
+        FEATURE_FLAGS.TEAM_KNOWLEDGE;
     }
     const department = (session?.user as { department?: string } | undefined)?.department;
     if (department) {
