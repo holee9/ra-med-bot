@@ -1,0 +1,24 @@
+-- Migration: label.esubmit_forwarded audit action — Issue #249
+-- SPEC: SPEC-REGULA-LABELING-001 (REQ-009, AC-07)
+--
+-- Scope:
+--   1. audit_action enum +1 (label.esubmit_forwarded)
+--
+-- Background:
+--   The eSubmit labeling bridge (#249) activates the previously-stubbed
+--   forwardLabelingToESubmit hook. When an RA-lead approves a labeling
+--   document, the approved sections are appended into the project's
+--   submission_packages.package_manifest jsonb, and a 21 CFR Part 11 audit
+--   row is written so the forward is traceable to an actor + timestamp.
+--
+-- Charter anchors:
+--   [지양-2] Provenance preserved — manifest.labeling_documents[] records
+--            documentId, jurisdiction, approvedBy, approvedAt, sectionTypes.
+--   [지양-4] Only approved labeling is forwarded (the approve route gates this).
+--
+-- Compatibility:
+--   Additive enum extension. Idempotent (IF NOT EXISTS). No schema change to
+--   submission_packages — the linkage lives in package_manifest jsonb
+--   (_projectId, _origin, labeling_documents[]).
+
+ALTER TYPE audit_action ADD VALUE IF NOT EXISTS 'label.esubmit_forwarded';

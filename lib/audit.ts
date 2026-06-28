@@ -261,12 +261,14 @@ export type AuditAction =
   //   label.translation_diff_detected   — semantic diff detected in translation (REQ-007)
   //   label.approved                    — RA-lead approved labeling document (REQ-012)
   //   label.export_blocked              — export denied: unsupported claims exist (REQ-006)
+  //   label.esubmit_forwarded           — approved labeling forwarded into eSubmit package (REQ-009, AC-07)
   | 'label.document_created'
   | 'label.claim_validated'
   | 'label.claim_citation_rejected'
   | 'label.translation_diff_detected'
   | 'label.approved'
   | 'label.export_blocked'
+  | 'label.esubmit_forwarded'
   // SPEC-REGULA-CAPA-001 (Issue #68, REQ-CAPA-010). 7 complaint/CAPA lifecycle
   // audit actions for 21 CFR Part 11 traceability. Mirror the schema enum.
   //   complaint.intake_created             — new structured complaint inserted (REQ-001)

@@ -205,9 +205,6 @@ export function LabelingWorkbench({
                 <CheckCircle2 aria-hidden="true" size={14} />
               )}
               승인 (RA Lead)
-              <span className="ml-1 rounded-xs bg-amber-100 px-1.5 py-0.5 text-[10px] text-amber-800">
-                eSubmit Beta
-              </span>
             </button>
           )}
           <button

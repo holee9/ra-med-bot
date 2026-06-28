@@ -293,6 +293,9 @@ export const auditActionEnum = pgEnum('audit_action', [
   'label.translation_diff_detected',
   'label.approved',
   'label.export_blocked',
+  // SPEC-REGULA-LABELING-001 — added via 0097_label_esubmit_forwarded.sql (REQ-009, AC-07):
+  //   label.esubmit_forwarded — approved labeling folded into submission package manifest
+  'label.esubmit_forwarded',
   // SPEC-REGULA-CAPA-001 — added via 0073_capa.sql (REQ-CAPA-010):
   // 7 complaint/capa lifecycle audit actions for 21 CFR Part 11 traceability.
   //   complaint.intake_created             — new structured complaint inserted (REQ-001)

@@ -157,11 +157,14 @@ export const POST = withPermission('label.approve', async (_req, ctx, session) =
       );
     });
 
-    // REQ-009: forward to eSubmit (stub — #65 not yet implemented).
+    // REQ-009 / AC-07: forward the approved labeling into the project's eSubmit
+    // submission package (non-fatal hook). Runs OUTSIDE the approval tx so the
+    // 21 CFR Part 11 audit integrity of the approval is never compromised.
     const esubmitResult = await forwardLabelingToESubmit({
       documentId,
       projectId: doc.projectId,
       orgId: organizationId,
+      actorId: session.user.id,
     });
 
     // REQ-008 / AC-06: link the labeling change to #54 Change Control. Runs
