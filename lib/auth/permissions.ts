@@ -58,6 +58,8 @@ export type PermissionAction =
   | 'knowledgegap.classify'
   | 'knowledgegap.view'
   | 'knowledgegap.replay'
+  | 'knowledgesources.manage'
+  | 'knowledgesources.view'
   // Classification wizard actions (SPEC-REGULA-CLASSIFY-001, Issue #59)
   // generate: ra-lead only — classification drives regulatory pathway decisions.
   // view: ra-member+ — transparent across the RA team.
@@ -305,6 +307,9 @@ export const PERMISSIONS: Record<PermissionAction, PermissionSpec> = {
   // classify + replay: ra-lead only — classification is a judgment call that drives
   // KB augmentation, and replay triggers resolution that closes GitHub issues.
   'knowledgegap.view': { minRole: 'ra-member', scope: 'org', resourceType: 'knowledgeGap' },
+  // Issue #307: 지식베이스 연결(git repo) 관리. ra-lead 관리, ra-member+ 조회.
+  'knowledgesources.manage': { minRole: 'ra-lead', scope: 'org', resourceType: 'knowledgeSource' },
+  'knowledgesources.view': { minRole: 'ra-member', scope: 'org', resourceType: 'knowledgeSource' },
   'knowledgegap.classify': { minRole: 'ra-lead', scope: 'org', resourceType: 'knowledgeGap' },
   'knowledgegap.replay': { minRole: 'ra-lead', scope: 'org', resourceType: 'knowledgeGap' },
 
