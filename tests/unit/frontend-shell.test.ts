@@ -30,7 +30,19 @@ vi.mock('@/lib/auth', () => ({
   auth: async () => ({ user: { role: 'ra-lead' } }),
 }));
 vi.mock('@/lib/auth/rbac', () => ({
-  hasRole: (role: string, required: string) => role === required,
+  // 2026-06-29: 실제 ROLE_HIERARCHY 반영 (ra-lead >= ra-member 등).
+  // 단순 === 비교 시 ra-lead가 ra-member 항목을 통과 못 함 (사이드바 필터 테스트 실패).
+  hasRole: (role: string, required: string) => {
+    const H: Record<string, number> = {
+      admin: 4,
+      'ra-lead': 3,
+      'qa-lead': 2.5,
+      'ra-member': 2,
+      viewer: 1,
+      auditor: 0.5,
+    };
+    return (H[role] ?? 0) >= (H[required] ?? 0);
+  },
 }));
 
 // next/font/google is a build-time module; mock it to plain objects.
@@ -225,9 +237,11 @@ describe('app/(auth)/login/page.tsx — REQ-FND-018, 058', () => {
 });
 
 describe('components/shell/Sidebar.tsx — REQ-FND-019', () => {
-  it('renders all 10 navigation links in correct order', async () => {
+  it('renders 4 navigation links in correct order', async () => {
     const mod = await import('../../components/shell/Sidebar');
-    const { container } = render(React.createElement(mod.default));
+    const Sidebar = mod.default as React.ComponentType<{ userRole?: string }>;
+    // Scope rationalization (2026-06-29 Issue #306): NAV 4개 핵심 (홈·채팅·히스토리·설정)
+    const { container } = render(React.createElement(Sidebar, { userRole: 'ra-lead' }));
     // Scope to the <nav> region so the primary "새 상담" action button
     // (rendered outside <nav>) is excluded from the ordering assertion.
     const nav = container.querySelector('nav');
@@ -240,12 +254,6 @@ describe('components/shell/Sidebar.tsx — REQ-FND-019', () => {
       ['홈', '/'],
       ['채팅', '/chat'], // ko locale label (CHAT_LABELS.ko = '채팅')
       ['히스토리', '/history'],
-      ['내 라이브러리', '/library'], // SPEC-REGULA-PERSONAL-LIB-001
-      ['규제 캘린더', '/calendar'], // SPEC-REGULA-CALENDAR-001
-      ['템플릿', '/templates'],
-      ['지식 베이스', '/knowledge'],
-      ['규제 업데이트', '/updates'],
-      ['대시보드', '/dashboard'],
       ['설정', '/settings'],
     ];
     expect(navLinks.length).toBe(expected.length);
@@ -259,6 +267,34 @@ describe('components/shell/Sidebar.tsx — REQ-FND-019', () => {
       expect(link.getAttribute('href')).toBe(href);
       expect(link.textContent).toContain(label);
     }
+  });
+
+  // Scope rationalization (2026-06-29 Issue #306): viewer(전사 직원)는 4개 NAV만 (홈·채팅·히스토리·설정).
+  it('renders 4 navigation links for viewer (전사 직원)', async () => {
+    const mod = await import('../../components/shell/Sidebar');
+    const Sidebar = mod.default as React.ComponentType<{ userRole?: string }>;
+    const { container } = render(React.createElement(Sidebar, { userRole: 'viewer' }));
+    const nav = container.querySelector('nav');
+    expect(nav).not.toBeNull();
+    if (!nav) return;
+    const navLinks = Array.from(nav.querySelectorAll('a'));
+    expect(navLinks.length).toBe(4);
+    const hrefs = navLinks.map((l) => l.getAttribute('href'));
+    expect(hrefs).toEqual(['/', '/chat', '/history', '/settings']);
+  });
+
+  // Scope rationalization (2026-06-29 Issue #306): ra-member+에 Authoring/Evidence 조건부 노출
+  it('renders Authoring/Evidence links for ra-member', async () => {
+    const mod = await import('../../components/shell/Sidebar');
+    const Sidebar = mod.default as React.ComponentType<{
+      showAuthoring?: boolean;
+      showEvidence?: boolean;
+    }>;
+    const { container } = render(
+      React.createElement(Sidebar, { showAuthoring: true, showEvidence: true }),
+    );
+    expect(container.querySelector('[data-testid="sidebar-authoring-link"]')).not.toBeNull();
+    expect(container.querySelector('[data-testid="sidebar-evidence-link"]')).not.toBeNull();
   });
 });
 

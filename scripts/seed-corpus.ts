@@ -1,6 +1,7 @@
-// @MX:NOTE [AUTO] Multi-corpus seeder for SPEC-REGULA-QUALITY-001 (REQ-QUAL-001..005).
-// Populates `sources` and `source_sections` with five regulatory corpora:
-// FDA, EU MDR, MFDS (Korean), NMPA (Chinese), PMDA (Japanese).
+// @MX:NOTE [AUTO] Multi-corpus seeder — TEST FIXTURE ONLY (2026-06-29, Issue #306).
+// ⚠️ 운영 DB에서는 사용 금지: 지식베이스는 git repo 연동(설정 > 지식베이스 연결)로만 구축.
+// 본 스크립트는 테스트 DB(test:e2e:setup)의 fixture 전용. 운영 코퍼스는 git repo 연동 후 채움.
+// (이전: SPEC-REGULA-QUALITY-001 REQ-QUAL-001..005 multi-corpus seeder — 5개 규제 코퍼스)
 // @MX:SPEC SPEC-REGULA-QUALITY-001 (REQ-QUAL-001..005)
 //
 // Run: pnpm db:seed:corpus  (alias for `tsx scripts/seed-corpus.ts`)

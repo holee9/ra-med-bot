@@ -9,6 +9,7 @@ const RA_LEAD_ID = '10000000-0000-4000-8000-000000000101';
 const VIEWER_ID = '10000000-0000-4000-8000-000000000102';
 const ADMIN_ID = '10000000-0000-4000-8000-000000000103';
 const EVALUATOR_ID = '10000000-0000-4000-8000-000000000104';
+const QUEST_ID = '10000000-0000-4000-8000-000000000105';
 const PROJECT_ID = '10000000-0000-4000-8000-000000000201';
 const CONVERSATION_ID = '10000000-0000-4000-8000-000000000301';
 const USER_MESSAGE_ID = '10000000-0000-4000-8000-000000000401';
@@ -18,6 +19,8 @@ const CHAT_QUERY_AUDIT_LOG_ID = '10000000-0000-4000-8000-000000000502';
 
 // Fixed password for the E2E ra-lead test user — matches E2E_TEST_USER_PASSWORD in .env.test
 const E2E_PASSWORD = 'TestE2EPassword123!';
+// guest 계정 전용 비밀번호 (전사 일반 직원 화면 확인용, 2026-06-29 사용자 요청)
+const QUEST_PASSWORD = 'abyz@guest';
 
 async function main(): Promise<void> {
   const databaseUrl = process.env.DATABASE_URL;
@@ -28,6 +31,7 @@ async function main(): Promise<void> {
 
   const sql = postgres(databaseUrl, { max: 1 });
   const passwordHash = await bcrypt.hash(E2E_PASSWORD, 12);
+  const questHash = await bcrypt.hash(QUEST_PASSWORD, 12);
 
   try {
     await sql.begin(async (tx) => {
@@ -60,6 +64,10 @@ async function main(): Promise<void> {
           (
             ${EVALUATOR_ID}, 'evaluator@example.test', 'Evaluator', 'admin', 'ko', 'system', 'RA',
             ${passwordHash}, 'active', false
+          ),
+          (
+            ${QUEST_ID}, 'guest@example.test', 'Guest', 'viewer', 'ko', 'system', null,
+            ${questHash}, 'active', false
           )
         on conflict (id) do update set
           email = excluded.email,
@@ -110,7 +118,8 @@ async function main(): Promise<void> {
           (${RA_LEAD_ID}, ${ORG_ID}),
           (${VIEWER_ID}, ${ORG_ID}),
           (${ADMIN_ID}, ${ORG_ID}),
-          (${EVALUATOR_ID}, ${ORG_ID})
+          (${EVALUATOR_ID}, ${ORG_ID}),
+          (${QUEST_ID}, ${ORG_ID})
         on conflict do nothing
       `;
 
@@ -120,7 +129,8 @@ async function main(): Promise<void> {
           (${RA_LEAD_ID}, ${PROJECT_ID}),
           (${VIEWER_ID}, ${PROJECT_ID}),
           (${ADMIN_ID}, ${PROJECT_ID}),
-          (${EVALUATOR_ID}, ${PROJECT_ID})
+          (${EVALUATOR_ID}, ${PROJECT_ID}),
+          (${QUEST_ID}, ${PROJECT_ID})
         on conflict do nothing
       `;
 

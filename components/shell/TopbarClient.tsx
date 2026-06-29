@@ -5,6 +5,7 @@
 // ThemeToggle: allows switching between light and dark modes.
 // @MX:SPEC SPEC-REGULA-ENTERPRISE-001 (REQ-ENTERPRISE-028, REQ-ENTERPRISE-035)
 
+import { signOut } from 'next-auth/react';
 import { useState } from 'react';
 import { LocaleToggle } from './LocaleToggle';
 import ThemeToggle from './ThemeToggle';
@@ -58,6 +59,16 @@ export default function TopbarClient() {
         className="rounded-md border border-ink-200 px-2 py-1.5 text-xs text-ink-700 hover:bg-ink-50"
       >
         🚩
+      </button>
+      {/* 2026-06-29 로그아웃 버튼 추가 (signOut → /login). 전사 직원 UX 결함 해소. */}
+      <button
+        type="button"
+        aria-label="로그아웃"
+        data-testid="topbar-logout-button"
+        onClick={() => signOut({ callbackUrl: '/login' })}
+        className="rounded-md border border-ink-200 px-2 py-1.5 text-xs text-ink-700 hover:bg-ink-50"
+      >
+        로그아웃
       </button>
 
       {dialog.open && (

@@ -187,10 +187,15 @@ export function roleSatisfiesPermission(userRole: Role, spec: PermissionSpec): b
 export const PERMISSIONS: Record<PermissionAction, PermissionSpec> = {
   // @MX:ANCHOR consult.create requires global scope for routes without project ID
   // @MX:REASON Routes like /api/ra/consult, refine, workflows need org-level access (REQ-CHAT-001)
-  'consult.create': { minRole: 'ra-member', scope: 'org', resourceType: 'consult' },
+  // @MX:NOTE [AUTO] opened to viewer (2026-06-28) — 전사 인허가 도우미 정체성:
+  // RA 담당자 업무 포화 분산을 위해 전사 직원(viewer)이 Q&A 셀프서비스.
+  // Rate limit 30/min/user (app/api/ra/consult/route.ts)로 LLM 비용/남용 방지.
+  'consult.create': { minRole: 'viewer', scope: 'org', resourceType: 'consult' },
 
   // conversation actions
-  'conversation.view': { minRole: 'ra-member', scope: 'org', resourceType: 'conversation' },
+  // @MX:NOTE [AUTO] conversation.view opened to viewer (2026-06-28) — 전사 직원이
+  // 본인 Q&A 히스토리 조회 가능 (RA 분산). conversation.delete는 ra-lead 유지.
+  'conversation.view': { minRole: 'viewer', scope: 'org', resourceType: 'conversation' },
   'conversation.delete': { minRole: 'ra-lead', scope: 'org', resourceType: 'conversation' },
 
   // expertReview actions
@@ -306,8 +311,9 @@ export const PERMISSIONS: Record<PermissionAction, PermissionSpec> = {
   // @MX:NOTE [AUTO] classify.* — SPEC-REGULA-CLASSIFY-001 (Issue #59).
   // @MX:SPEC SPEC-REGULA-CLASSIFY-001
   // generate: ra-lead only — multi-jurisdiction classification drives submission
-  // pathway decisions (510(k)/PMA/CE etc.), so it is a judgment call.
-  // view: ra-member+ — classification results are shared across the RA team.
+  // pathway decisions (510(k)/PMA/CE etc.), so it is a judgment call (지양-4).
+  // view: ra-member+ (2026-06-29 정정) — 전사 직원(viewer) 사이드바에서 기기 분류 제외됨.
+  // 일관성: 사이드바 showClassify(ra-member)와 정렬. 전사 직원은 /chat Q&A로 분류 질문.
   'classify.generate': { minRole: 'ra-lead', scope: 'org', resourceType: 'deviceClassification' },
   'classify.view': { minRole: 'ra-member', scope: 'org', resourceType: 'deviceClassification' },
 

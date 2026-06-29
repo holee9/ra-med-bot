@@ -8,6 +8,8 @@
 
 import Sidebar from '@/components/shell/Sidebar';
 import Topbar from '@/components/shell/Topbar';
+import type { Role } from '@/lib/auth/rbac';
+import { FEATURE_FLAGS } from '@/lib/feature-flags';
 import type { Metadata } from 'next';
 import { cookies } from 'next/headers';
 import { redirect } from 'next/navigation';
@@ -50,26 +52,53 @@ export default async function AppLayout({ children }: { children: React.ReactNod
   // ra-member+ (knowledgepromo.view). The library page itself also reads the
   // role to decide whether to show the "팀 지식" tab.
   let showTeamKnowledge = false;
+  // Scope rationalization (2026-06-29 Issue #306): Authoring/Evidence nav gated to ra-member.
+  let showAuthoring = false;
+  let showEvidence = false;
+  // 2026-06-29: userRole을 try 밖에서 선언 (Sidebar userRole prop 전달용)
+  let userRole: Role | undefined;
   try {
     const { auth } = await import('@/lib/auth');
     const { hasRole } = await import('@/lib/auth/rbac');
     const session = await auth();
-    const userRole = (session?.user as { role?: string } | undefined)?.role;
+    userRole = (session?.user as { role?: string } | undefined)?.role as Role | undefined;
     if (userRole) {
       showExpertReview = hasRole(userRole as Parameters<typeof hasRole>[0], 'ra-lead');
       showKnowledgeGap = hasRole(userRole as Parameters<typeof hasRole>[0], 'ra-member');
       showClassify = hasRole(userRole as Parameters<typeof hasRole>[0], 'ra-member');
       showTraceability = hasRole(userRole as Parameters<typeof hasRole>[0], 'ra-member');
-      // standards.read minRole is 'viewer' — broad read access (REQ-022).
-      showStandards = hasRole(userRole as Parameters<typeof hasRole>[0], 'viewer');
-      showPms = hasRole(userRole as Parameters<typeof hasRole>[0], 'ra-member');
-      showChangeControl = hasRole(userRole as Parameters<typeof hasRole>[0], 'ra-member');
-      showLabeling = hasRole(userRole as Parameters<typeof hasRole>[0], 'ra-member');
-      showCapa = hasRole(userRole as Parameters<typeof hasRole>[0], 'ra-member');
-      showClinicalInvestigation = hasRole(userRole as Parameters<typeof hasRole>[0], 'ra-member');
-      showGovernance = hasRole(userRole as Parameters<typeof hasRole>[0], 'ra-member');
-      showQualityHeatmap = hasRole(userRole as Parameters<typeof hasRole>[0], 'ra-member');
-      showTeamKnowledge = hasRole(userRole as Parameters<typeof hasRole>[0], 'ra-member');
+      // @MX:NOTE [AUTO] showStandards raised to ra-member (2026-06-29) — 전사 직원
+      // (viewer) 사이드바에서 조화 표준 추적기 제외 (RA/엔지니어 전문). Standards API는
+      // 여전히 viewer 조회 가능(permission)하나 사이드바 노출은 ra-member+.
+      showStandards = hasRole(userRole as Parameters<typeof hasRole>[0], 'ra-member');
+      // Scope rationalization (2026-06-28): FREEZE/RETIRE domains are AND-gated
+      // with FEATURE_FLAGS so the nav link hides when the flag is OFF, regardless
+      // of role. Re-enable via NEXT_PUBLIC_FEATURE_<NAME>=true (code preserved).
+      showPms =
+        hasRole(userRole as Parameters<typeof hasRole>[0], 'ra-member') &&
+        FEATURE_FLAGS.PMS_WORKBENCH;
+      showChangeControl =
+        hasRole(userRole as Parameters<typeof hasRole>[0], 'ra-member') &&
+        FEATURE_FLAGS.CHANGE_CONTROL;
+      showLabeling =
+        hasRole(userRole as Parameters<typeof hasRole>[0], 'ra-member') && FEATURE_FLAGS.LABELING;
+      showCapa =
+        hasRole(userRole as Parameters<typeof hasRole>[0], 'ra-member') && FEATURE_FLAGS.CAPA;
+      showClinicalInvestigation =
+        hasRole(userRole as Parameters<typeof hasRole>[0], 'ra-member') &&
+        FEATURE_FLAGS.CLINICAL_INVESTIGATION;
+      showGovernance =
+        hasRole(userRole as Parameters<typeof hasRole>[0], 'ra-member') &&
+        FEATURE_FLAGS.SOURCE_GOVERNANCE;
+      showQualityHeatmap =
+        hasRole(userRole as Parameters<typeof hasRole>[0], 'ra-member') &&
+        FEATURE_FLAGS.QUALITY_HEATMAP;
+      showTeamKnowledge =
+        hasRole(userRole as Parameters<typeof hasRole>[0], 'ra-member') &&
+        FEATURE_FLAGS.TEAM_KNOWLEDGE;
+      // Scope rationalization (2026-06-29 Issue #306): Authoring/Evidence for ra-member+.
+      showAuthoring = hasRole(userRole as Parameters<typeof hasRole>[0], 'ra-member');
+      showEvidence = hasRole(userRole as Parameters<typeof hasRole>[0], 'ra-member');
     }
     const department = (session?.user as { department?: string } | undefined)?.department;
     if (department) {
@@ -106,6 +135,9 @@ export default async function AppLayout({ children }: { children: React.ReactNod
         showGovernance={showGovernance}
         showQualityHeatmap={showQualityHeatmap}
         showTeamKnowledge={showTeamKnowledge}
+        showAuthoring={showAuthoring}
+        showEvidence={showEvidence}
+        userRole={(userRole ?? 'viewer') as Role}
         initialLocale={initialLocale}
       />
       <div className="flex min-w-0 flex-1 flex-col">

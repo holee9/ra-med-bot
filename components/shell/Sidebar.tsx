@@ -7,6 +7,7 @@
 // which calls auth() server-side.
 // Wave 1: project-switcher dropdown + locale-aware nav-chat testid added.
 
+import { type Role, hasRole } from '@/lib/auth/rbac';
 import { useProjects } from '@/lib/queries/useProjects';
 import type { ProjectSummary } from '@/lib/queries/useProjects';
 import { useUIStore } from '@/stores/ui';
@@ -15,21 +16,16 @@ import { ChevronDown } from 'lucide-react';
 import Link from 'next/link';
 import { useEffect, useRef, useState } from 'react';
 
-type NavItem = { label: string; href: string; testId?: string };
+type NavItem = { label: string; href: string; testId?: string; minRole?: Role };
 
 // @MX:ANCHOR Order is contractually fixed by REQ-FND-019; tests assert it.
 // @MX:REASON Reordering breaks UX expectations and the frontend-shell test.
+// @MX:NOTE [AUTO] Scope rationalization (2026-06-29 Issue #306) — NAV 4개 핵심 (홈·채팅·히스토리·설정).
 const NAV_ITEMS: NavItem[] = [
-  { label: '홈', href: '/' },
-  { label: '새 상담', href: '/chat', testId: 'nav-chat' },
-  { label: '히스토리', href: '/history' },
-  { label: '내 라이브러리', href: '/library', testId: 'nav-library' },
-  { label: '규제 캘린더', href: '/calendar', testId: 'nav-calendar' },
-  { label: '템플릿', href: '/templates' },
-  { label: '지식 베이스', href: '/knowledge' },
-  { label: '규제 업데이트', href: '/updates' },
-  { label: '대시보드', href: '/dashboard' },
-  { label: '설정', href: '/settings' },
+  { label: '홈', href: '/', minRole: 'viewer' },
+  { label: '새 상담', href: '/chat', testId: 'nav-chat', minRole: 'viewer' },
+  { label: '히스토리', href: '/history', minRole: 'viewer' },
+  { label: '설정', href: '/settings', minRole: 'viewer' },
 ];
 
 const CHAT_LABELS: Record<string, string> = { ko: '채팅', en: 'Chat' };
@@ -78,6 +74,11 @@ interface SidebarProps {
   // answers library) nav gated to ra-member+ (knowledgepromo.view). Gated
   // server-side and passed down.
   showTeamKnowledge?: boolean;
+  // Scope rationalization (2026-06-29 Issue #306): Authoring/Evidence conditional nav.
+  showAuthoring?: boolean;
+  showEvidence?: boolean;
+  // 2026-06-29 사이드바 3계층: NAV_ITEMS를 userRole로 필터 (viewer 4 / ra-member+ 조건부)
+  userRole?: Role;
   initialLocale?: string;
 }
 
@@ -96,6 +97,11 @@ export default function Sidebar(props?: SidebarProps) {
   const showGovernance = props?.showGovernance ?? false;
   const showQualityHeatmap = props?.showQualityHeatmap ?? false;
   const showTeamKnowledge = props?.showTeamKnowledge ?? false;
+  // Scope rationalization (2026-06-29 Issue #306): Authoring/Evidence conditional props.
+  const showAuthoring = props?.showAuthoring ?? false;
+  const showEvidence = props?.showEvidence ?? false;
+  // 2026-06-29: default 'viewer' (최소 권한 — 명시적 role 없으면 전사 직원 사이드바).
+  const userRole: Role = props?.userRole ?? 'viewer';
   const currentProjectId = useUIStore((s) => s.currentProjectId);
   const setCurrentProjectId = useUIStore((s) => s.setCurrentProjectId);
   const { data = [] } = useProjects();
@@ -181,19 +187,21 @@ export default function Sidebar(props?: SidebarProps) {
       </div>
 
       <nav aria-label="메인 내비게이션" className="flex flex-col gap-1 px-2 py-2">
-        {NAV_ITEMS.map((item) => {
-          const label = item.testId === 'nav-chat' ? chatLabel : item.label;
-          return (
-            <Link
-              key={item.href}
-              href={item.href}
-              data-testid={item.testId}
-              className="rounded-md px-3 py-2 text-sm text-ink-700 hover:bg-ink-50"
-            >
-              {label}
-            </Link>
-          );
-        })}
+        {NAV_ITEMS.filter((item) => !item.minRole || hasRole(userRole, item.minRole)).map(
+          (item) => {
+            const label = item.testId === 'nav-chat' ? chatLabel : item.label;
+            return (
+              <Link
+                key={item.href}
+                href={item.href}
+                data-testid={item.testId}
+                className="rounded-md px-3 py-2 text-sm text-ink-700 hover:bg-ink-50"
+              >
+                {label}
+              </Link>
+            );
+          },
+        )}
       </nav>
 
       {/* SPEC-REGULA-KNOWLEDGE-GAP-001: Knowledge Gap queue link (Issue #35). */}
@@ -379,70 +387,97 @@ export default function Sidebar(props?: SidebarProps) {
         </nav>
       )}
 
-      {/* REQ-BREADTH-044: Project switcher dropdown.
-          Uses <details>/<summary> for hydration-safe toggle — Playwright can open
-          the dropdown before React attaches onClick (native browser behavior). */}
-      <section className="mt-2 px-2 py-2">
-        <p className="mb-1 px-3 text-[10px] uppercase tracking-widest text-ink-500">프로젝트</p>
-        <details ref={dropdownRef} className="relative">
-          <summary
-            data-testid="project-switcher"
-            aria-haspopup="listbox"
-            className="flex w-full cursor-pointer list-none items-center justify-between rounded-md px-3 py-2 text-sm text-ink-700 hover:bg-ink-50"
+      {/* Scope rationalization (Issue-306): Authoring/Evidence conditional nav. */}
+      {showAuthoring && (
+        <nav className="px-2 py-1">
+          <Link
+            href="/workflows/authoring"
+            data-testid="sidebar-authoring-link"
+            className="rounded-md px-3 py-2 text-sm text-ink-700 hover:bg-ink-50 block"
           >
-            <span className="truncate">
-              {currentProject ? currentProject.name : '프로젝트 선택'}
-            </span>
-            <ChevronDown size={14} className="shrink-0 text-ink-400" />
-          </summary>
+            인허가 문서 생성
+          </Link>
+        </nav>
+      )}
 
-          <ul
-            data-testid="project-list"
-            role="menu"
-            aria-label="프로젝트 목록"
-            tabIndex={-1}
-            className="absolute left-0 right-0 top-full z-10 mt-1 max-h-56 overflow-y-auto rounded-md border border-ink-200 bg-white py-1 shadow-md"
+      {showEvidence && (
+        <nav className="px-2 py-1">
+          <Link
+            href="/workflows/evidence"
+            data-testid="sidebar-evidence-link"
+            className="rounded-md px-3 py-2 text-sm text-ink-700 hover:bg-ink-50 block"
           >
-            {projects.length === 0 ? (
-              <li className="px-3 py-2 text-xs text-ink-500">
-                <p>프로젝트 없음</p>
-                <button
-                  type="button"
-                  data-testid="project-empty-create"
-                  disabled={creatingProject}
-                  onClick={() => void createDefaultProject()}
-                  className="mt-2 rounded border border-brand-200 bg-brand-50 px-2 py-1 text-xs font-medium text-brand-700 hover:bg-brand-100 disabled:opacity-60"
-                >
-                  {creatingProject ? '생성 중...' : '기본 프로젝트 만들기'}
-                </button>
-              </li>
-            ) : (
-              projects.map((project) => {
-                const isActive = project.id === currentProjectId;
-                return (
-                  <li key={project.id}>
-                    <button
-                      type="button"
-                      data-testid="project-item"
-                      role="menuitem"
-                      aria-current={isActive ? 'true' : undefined}
-                      onClick={() => {
-                        setCurrentProjectId(project.id);
-                        if (dropdownRef.current) dropdownRef.current.open = false;
-                      }}
-                      className={`w-full px-3 py-2 text-left text-sm transition-colors hover:bg-ink-50 ${
-                        isActive ? 'font-medium text-brand-700' : 'text-ink-700'
-                      }`}
-                    >
-                      {project.name}
-                    </button>
-                  </li>
-                );
-              })
-            )}
-          </ul>
-        </details>
-      </section>
+            근거 관리
+          </Link>
+        </nav>
+      )}
+
+      {/* REQ-BREADTH-044: Project switcher dropdown.
+          2026-06-29: viewer(전사 직원) 숨김 — 프로젝트는 RA 전문 맥락(project memory +
+          internal-docs 스코프). 일반 직원은 자연어 제품 언급으로 Q&A (projectId optional). */}
+      {hasRole(userRole, 'ra-member') && (
+        <section className="mt-2 px-2 py-2">
+          <p className="mb-1 px-3 text-[10px] uppercase tracking-widest text-ink-500">프로젝트</p>
+          <details ref={dropdownRef} className="relative">
+            <summary
+              data-testid="project-switcher"
+              aria-haspopup="listbox"
+              className="flex w-full cursor-pointer list-none items-center justify-between rounded-md px-3 py-2 text-sm text-ink-700 hover:bg-ink-50"
+            >
+              <span className="truncate">
+                {currentProject ? currentProject.name : '프로젝트 선택'}
+              </span>
+              <ChevronDown size={14} className="shrink-0 text-ink-400" />
+            </summary>
+
+            <ul
+              data-testid="project-list"
+              role="menu"
+              aria-label="프로젝트 목록"
+              tabIndex={-1}
+              className="absolute left-0 right-0 top-full z-10 mt-1 max-h-56 overflow-y-auto rounded-md border border-ink-200 bg-white py-1 shadow-md"
+            >
+              {projects.length === 0 ? (
+                <li className="px-3 py-2 text-xs text-ink-500">
+                  <p>프로젝트 없음</p>
+                  <button
+                    type="button"
+                    data-testid="project-empty-create"
+                    disabled={creatingProject}
+                    onClick={() => void createDefaultProject()}
+                    className="mt-2 rounded border border-brand-200 bg-brand-50 px-2 py-1 text-xs font-medium text-brand-700 hover:bg-brand-100 disabled:opacity-60"
+                  >
+                    {creatingProject ? '생성 중...' : '기본 프로젝트 만들기'}
+                  </button>
+                </li>
+              ) : (
+                projects.map((project) => {
+                  const isActive = project.id === currentProjectId;
+                  return (
+                    <li key={project.id}>
+                      <button
+                        type="button"
+                        data-testid="project-item"
+                        role="menuitem"
+                        aria-current={isActive ? 'true' : undefined}
+                        onClick={() => {
+                          setCurrentProjectId(project.id);
+                          if (dropdownRef.current) dropdownRef.current.open = false;
+                        }}
+                        className={`w-full px-3 py-2 text-left text-sm transition-colors hover:bg-ink-50 ${
+                          isActive ? 'font-medium text-brand-700' : 'text-ink-700'
+                        }`}
+                      >
+                        {project.name}
+                      </button>
+                    </li>
+                  );
+                })
+              )}
+            </ul>
+          </details>
+        </section>
+      )}
     </aside>
   );
 }
