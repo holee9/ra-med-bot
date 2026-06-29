@@ -19,8 +19,8 @@ const CHAT_QUERY_AUDIT_LOG_ID = '10000000-0000-4000-8000-000000000502';
 
 // Fixed password for the E2E ra-lead test user — matches E2E_TEST_USER_PASSWORD in .env.test
 const E2E_PASSWORD = 'TestE2EPassword123!';
-// quest 계정 전용 비밀번호 (전사 일반 직원 화면 확인용, 2026-06-29 사용자 요청)
-const QUEST_PASSWORD = 'abyz@quest';
+// guest 계정 전용 비밀번호 (전사 일반 직원 화면 확인용, 2026-06-29 사용자 요청)
+const QUEST_PASSWORD = 'abyz@guest';
 
 async function main(): Promise<void> {
   const databaseUrl = process.env.DATABASE_URL;
@@ -66,7 +66,7 @@ async function main(): Promise<void> {
             ${passwordHash}, 'active', false
           ),
           (
-            ${QUEST_ID}, 'quest@example.test', 'Quest', 'viewer', 'ko', 'system', null,
+            ${QUEST_ID}, 'guest@example.test', 'Guest', 'viewer', 'ko', 'system', null,
             ${questHash}, 'active', false
           )
         on conflict (id) do update set
