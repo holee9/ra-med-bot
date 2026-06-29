@@ -20,19 +20,11 @@ type NavItem = { label: string; href: string; testId?: string; minRole?: Role };
 
 // @MX:ANCHOR Order is contractually fixed by REQ-FND-019; tests assert it.
 // @MX:REASON Reordering breaks UX expectations and the frontend-shell test.
-// @MX:NOTE [AUTO] minRole per item (2026-06-29) — 사이드바 3계층 (전사 인허가 도우미):
-// viewer(전사 직원)는 minRole:'viewer' 항목만 (6개: 홈·채팅·히스토리·지식베이스·규제업데이트·설정).
-// ra-member+에 내라이브러리·규제캘린더·템플릿·대시보드 추가. 순서는 불변(REQ-FND-019).
+// @MX:NOTE [AUTO] Scope rationalization (2026-06-29 Issue #306) — NAV 4개 핵심 (홈·채팅·히스토리·설정).
 const NAV_ITEMS: NavItem[] = [
   { label: '홈', href: '/', minRole: 'viewer' },
   { label: '새 상담', href: '/chat', testId: 'nav-chat', minRole: 'viewer' },
   { label: '히스토리', href: '/history', minRole: 'viewer' },
-  { label: '내 라이브러리', href: '/library', testId: 'nav-library', minRole: 'ra-member' },
-  { label: '규제 캘린더', href: '/calendar', testId: 'nav-calendar', minRole: 'ra-member' },
-  { label: '템플릿', href: '/templates', minRole: 'ra-member' },
-  { label: '지식 베이스', href: '/knowledge', minRole: 'ra-member' },
-  { label: '규제 업데이트', href: '/updates', minRole: 'ra-member' },
-  { label: '대시보드', href: '/dashboard', minRole: 'ra-member' },
   { label: '설정', href: '/settings', minRole: 'viewer' },
 ];
 
@@ -82,7 +74,10 @@ interface SidebarProps {
   // answers library) nav gated to ra-member+ (knowledgepromo.view). Gated
   // server-side and passed down.
   showTeamKnowledge?: boolean;
-  // 2026-06-29 사이드바 3계층: NAV_ITEMS를 userRole로 필터 (viewer 6 / ra-member+ 추가)
+  // Scope rationalization (2026-06-29 Issue #306): Authoring/Evidence conditional nav.
+  showAuthoring?: boolean;
+  showEvidence?: boolean;
+  // 2026-06-29 사이드바 3계층: NAV_ITEMS를 userRole로 필터 (viewer 4 / ra-member+ 조건부)
   userRole?: Role;
   initialLocale?: string;
 }
@@ -102,6 +97,9 @@ export default function Sidebar(props?: SidebarProps) {
   const showGovernance = props?.showGovernance ?? false;
   const showQualityHeatmap = props?.showQualityHeatmap ?? false;
   const showTeamKnowledge = props?.showTeamKnowledge ?? false;
+  // Scope rationalization (2026-06-29 Issue #306): Authoring/Evidence conditional props.
+  const showAuthoring = props?.showAuthoring ?? false;
+  const showEvidence = props?.showEvidence ?? false;
   // 2026-06-29: default 'viewer' (최소 권한 — 명시적 role 없으면 전사 직원 사이드바).
   const userRole: Role = props?.userRole ?? 'viewer';
   const currentProjectId = useUIStore((s) => s.currentProjectId);
@@ -385,6 +383,31 @@ export default function Sidebar(props?: SidebarProps) {
             className="rounded-md px-3 py-2 text-sm text-ink-700 hover:bg-ink-50 block"
           >
             팀 지식
+          </Link>
+        </nav>
+      )}
+
+      {/* Scope rationalization (Issue-306): Authoring/Evidence conditional nav. */}
+      {showAuthoring && (
+        <nav className="px-2 py-1">
+          <Link
+            href="/workflows/authoring"
+            data-testid="sidebar-authoring-link"
+            className="rounded-md px-3 py-2 text-sm text-ink-700 hover:bg-ink-50 block"
+          >
+            인허가 문서 생성
+          </Link>
+        </nav>
+      )}
+
+      {showEvidence && (
+        <nav className="px-2 py-1">
+          <Link
+            href="/workflows/evidence"
+            data-testid="sidebar-evidence-link"
+            className="rounded-md px-3 py-2 text-sm text-ink-700 hover:bg-ink-50 block"
+          >
+            근거 관리
           </Link>
         </nav>
       )}

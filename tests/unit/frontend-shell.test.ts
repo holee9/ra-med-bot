@@ -237,10 +237,10 @@ describe('app/(auth)/login/page.tsx — REQ-FND-018, 058', () => {
 });
 
 describe('components/shell/Sidebar.tsx — REQ-FND-019', () => {
-  it('renders all 10 navigation links in correct order', async () => {
+  it('renders 4 navigation links in correct order', async () => {
     const mod = await import('../../components/shell/Sidebar');
     const Sidebar = mod.default as React.ComponentType<{ userRole?: string }>;
-    // ra-lead sees all 10 NAV links (REQ-FND-019 순서 계약)
+    // Scope rationalization (2026-06-29 Issue #306): NAV 4개 핵심 (홈·채팅·히스토리·설정)
     const { container } = render(React.createElement(Sidebar, { userRole: 'ra-lead' }));
     // Scope to the <nav> region so the primary "새 상담" action button
     // (rendered outside <nav>) is excluded from the ordering assertion.
@@ -254,12 +254,6 @@ describe('components/shell/Sidebar.tsx — REQ-FND-019', () => {
       ['홈', '/'],
       ['채팅', '/chat'], // ko locale label (CHAT_LABELS.ko = '채팅')
       ['히스토리', '/history'],
-      ['내 라이브러리', '/library'], // SPEC-REGULA-PERSONAL-LIB-001
-      ['규제 캘린더', '/calendar'], // SPEC-REGULA-CALENDAR-001
-      ['템플릿', '/templates'],
-      ['지식 베이스', '/knowledge'],
-      ['규제 업데이트', '/updates'],
-      ['대시보드', '/dashboard'],
       ['설정', '/settings'],
     ];
     expect(navLinks.length).toBe(expected.length);
@@ -275,8 +269,7 @@ describe('components/shell/Sidebar.tsx — REQ-FND-019', () => {
     }
   });
 
-  // 2026-06-29 전사 인허가 도우미: viewer(전사 직원)는 4개 NAV만
-  // (홈·채팅·히스토리·설정). 지식베이스·규제업데이트·프로젝트 스위처는 ra-member+ (RA 전문).
+  // Scope rationalization (2026-06-29 Issue #306): viewer(전사 직원)는 4개 NAV만 (홈·채팅·히스토리·설정).
   it('renders 4 navigation links for viewer (전사 직원)', async () => {
     const mod = await import('../../components/shell/Sidebar');
     const Sidebar = mod.default as React.ComponentType<{ userRole?: string }>;
@@ -288,6 +281,20 @@ describe('components/shell/Sidebar.tsx — REQ-FND-019', () => {
     expect(navLinks.length).toBe(4);
     const hrefs = navLinks.map((l) => l.getAttribute('href'));
     expect(hrefs).toEqual(['/', '/chat', '/history', '/settings']);
+  });
+
+  // Scope rationalization (2026-06-29 Issue #306): ra-member+에 Authoring/Evidence 조건부 노출
+  it('renders Authoring/Evidence links for ra-member', async () => {
+    const mod = await import('../../components/shell/Sidebar');
+    const Sidebar = mod.default as React.ComponentType<{
+      showAuthoring?: boolean;
+      showEvidence?: boolean;
+    }>;
+    const { container } = render(
+      React.createElement(Sidebar, { showAuthoring: true, showEvidence: true }),
+    );
+    expect(container.querySelector('[data-testid="sidebar-authoring-link"]')).not.toBeNull();
+    expect(container.querySelector('[data-testid="sidebar-evidence-link"]')).not.toBeNull();
   });
 });
 

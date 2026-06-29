@@ -52,6 +52,9 @@ export default async function AppLayout({ children }: { children: React.ReactNod
   // ra-member+ (knowledgepromo.view). The library page itself also reads the
   // role to decide whether to show the "팀 지식" tab.
   let showTeamKnowledge = false;
+  // Scope rationalization (2026-06-29 Issue #306): Authoring/Evidence nav gated to ra-member.
+  let showAuthoring = false;
+  let showEvidence = false;
   // 2026-06-29: userRole을 try 밖에서 선언 (Sidebar userRole prop 전달용)
   let userRole: Role | undefined;
   try {
@@ -93,6 +96,9 @@ export default async function AppLayout({ children }: { children: React.ReactNod
       showTeamKnowledge =
         hasRole(userRole as Parameters<typeof hasRole>[0], 'ra-member') &&
         FEATURE_FLAGS.TEAM_KNOWLEDGE;
+      // Scope rationalization (2026-06-29 Issue #306): Authoring/Evidence for ra-member+.
+      showAuthoring = hasRole(userRole as Parameters<typeof hasRole>[0], 'ra-member');
+      showEvidence = hasRole(userRole as Parameters<typeof hasRole>[0], 'ra-member');
     }
     const department = (session?.user as { department?: string } | undefined)?.department;
     if (department) {
@@ -129,6 +135,8 @@ export default async function AppLayout({ children }: { children: React.ReactNod
         showGovernance={showGovernance}
         showQualityHeatmap={showQualityHeatmap}
         showTeamKnowledge={showTeamKnowledge}
+        showAuthoring={showAuthoring}
+        showEvidence={showEvidence}
         userRole={(userRole ?? 'viewer') as Role}
         initialLocale={initialLocale}
       />
