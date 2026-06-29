@@ -1,17 +1,33 @@
-# Regula — 의료기기 RA 전문가 AI 챗봇
+# Regula — 전사 인허가 도우미 (Company-wide Regulatory Assistant)
 
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
 [![Next.js](https://img.shields.io/badge/Next.js-15-black)](https://nextjs.org/)
 [![TypeScript](https://img.shields.io/badge/TypeScript-5.4-blue)](https://www.typescriptlang.org/)
 [![abyz-lab](https://img.shields.io/badge/abyz--lab-Sonnet%204.5-orange)](https://abyz-lab.work)
 
-> 사내 직원이 규제 질의를 제출하면, **MD-process(회사 정책·SOP)와 ra-project(RA 전문 지식베이스)를 Agent가 탐색**하여 팩트 기반·출처 명시 답변을 제공하는 전문 가이드 시스템. 단순 챗봇이 아닌 **두 지식 레포를 knowledge source로 통합 운영하는 인허가 전문 가이드**.
+> **전사 직원 인허가 Q&A 도우미** + **RA 담당자 인허가 문서 생성**(hybrid-ra-saas Azure SaaS 연동). 전사 직원이 규제 질의를 제출하면 **MD-process(회사 정책·SOP)와 git repo 지식베이스**를 Agent가 탐색하여 팩트 기반·출처 명시 답변을 제공. RA 담당자의 인허가 문서 작성 업무를 분산하는 전문 가이드 시스템.
 >
-> 브레인스토밍 확정 문서: [`.moai/plans/brainstorming-2026-05-02.md`](.moai/plans/brainstorming-2026-05-02.md)
+> **정체성 최종 확정 (2026-06-29)**: 사용자 연속 점검으로 사이트 정체성이 최종 확정되었습니다. 상세는 [`docs/proposals/scope-rationalization-2026-06-28.md`](docs/proposals/scope-rationalization-2026-06-28.md) 및 [`docs/scope-boundary.md`](docs/scope-boundary.md) 참조.
 
 ---
 
-## 구현 현황 대시보드 (2026-06-28 KST 기준)
+## 구현 현황 대시보드 (2026-06-29 KST 기준)
+
+### 전사 인허가 도우미 정체성 최종 확정 (2026-06-29)
+
+**사용자 연속 점검으로 사이트 정체성이 최종 확정되었습니다**:
+
+- **정체성**: 전사 직원 인허가 Q&A 도우미(RA 담당자 업무 분산) + RA 담당자 인허가 문서 생성(hybrid-ra-saas Azure SaaS 연동)
+- **주 사용자 교정**: 1순위는 전사 직원(viewer), 2순위는 RA 담당자
+- **사이드바 구조**: viewer는 4개(홈·채팅·히스토리·설정), RA 담당자는 전문가 검토·Authoring·Evidence·Traceability·프로젝트 스위처 추가
+- **지식베이스 핵심**: git repo 연동이 주 소스, 매주 자동 동기화, 마지막 동기화 날짜 표시
+- **seed 코퍼스 제거**: seed-corpus.ts 하드코딩 샘플(4755청크) 제거, 진짜 repo 코퍼스로 대체
+
+상세 내용은 다음 문서를 참조하세요:
+- **범위 합리화 제안서**: [`docs/proposals/scope-rationalization-2026-06-28.md`](docs/proposals/scope-rationalization-2026-06-28.md)
+- **운영 범위 경계**: [`docs/scope-boundary.md`](docs/scope-boundary.md)
+
+---
 
 상세 점검 기록: [`docs/implementation-status.md`](docs/implementation-status.md)
 
@@ -45,11 +61,19 @@
 | Charter MVP | PASS | RAG Q&A·CER·Predicate·PCCP·Standards·Expert Review·Part 11 핵심 자동화 완성 |
 |  |
 
-## v1.0.0 — 구현 종료 (Charter MVP 완성)
+## v1.0.0 — 구현 종료 (Charter MVP 완성 + 정체성 최종 확정)
 
-**2026-06-28 릴리즈**: Regula v1.0.0 구현 종료. Charter MVP 범위 핵심 자동화(RAG Q&A·CER·Predicate·PCCP·Standards·Expert Review·Part 11) 모두 완성. **실사용 가능 상태** 유지. 이번 세션(#295~#304) 8개 PR로 RLHF calibration/alternate-answers, PMCF 워크벤치, PMS E2E, supersession write path, eSubmit labeling bridge, **0077 syntax fix(프로덕션 #71 500 해소)**, delta-sync orchestrator(AC-05 live)가 완성되었습니다.
+**2026-06-29 릴리즈**: Regula v1.0.0 구현 종료 + 전사 인허가 도우미 정체성 최종 확정. Charter MVP 범위 핵심 자동화(RAG Q&A·CER·Predicate·PCCP·Standards·Expert Review·Part 11) 모두 완성. **실사용 가능 상태** 유지.
 
-**운영 범위 합리화 (2026-06-28)**: Charter 핵심 정체성("좁고 깊은 RA 문서 작성 워크스테이션")으로 회귀. FREEZE/RETIRE 8개 사이드바 도메인(PMS·변경관리·라벨링·CAPA·임상조사·거버넌스·품질히트맵·팀지식)을 feature flag 기본 off로 숨김 — **코드 보존, env 토글로 복구 가능**. Charter 지양-3(QMS 아님)/지양-5(SaaS 아님) 운영 한정 명시. 상세: [제안서](docs/proposals/scope-rationalization-2026-06-28.md) · [운영 범위 경계](docs/scope-boundary.md).
+**정체성 교정 (2026-06-29)**: 이번 세션에서 사이트 정체성이 최종 확정되었습니다.
+- **전사 인허가 도우미**: viewer(전사 직원) Q&A 셀프서비스로 RA 담당자 업무 병목 분산
+- **RA 문서 생성**: RA 담당자 전문 워크벤치(Authoring·Evidence·Traceability) + hybrid-ra-saas 연동
+- **지식베이스 git 연동**: repo가 주 소스, 매주 자동 동기화, 마지막 동기화 날짜 표시
+
+**운영 범위 합리화 (2026-06-28 → 2026-06-29 정체성 교정)**:
+- **Charter 회귀**: "좁고 깊은 RA 문서 작성 워크스테이션" → **"전사 인허가 도우미(RA 업무 분산)"**로 정체성 재정립
+- **사이드바 정리**: FREEZE/RETIRE 8개 도메인(PMS·변경관리·라벨링·CAPA·임상조사·거버넌스·품질히트맵·팀지식) feature flag 기본 off — **코드 보존, env 토글로 복구 가능**
+- **운영 한정 명시**: Charter 지양-3(QMS 아님)/지양-5(SaaS 아님). 상세: [제안서](docs/proposals/scope-rationalization-2026-06-28.md) · [운영 범위 경계](docs/scope-boundary.md)
 
 ### 이번 세션 주요 완료 기능
 
@@ -556,7 +580,7 @@ GET  /api/auth/session             → {"user":{"name":"Drake Lee","email":"drak
 
 ## 개요
 
-Regula는 의료기기 규제(RA) 도메인에 특화된 AI 전문가 시스템입니다.
+Regula는 **전사 직원 인허가 Q&A 셀프서비스**와 **RA 담당자 인허가 문서 생성**을 지원하는 AI 시스템입니다.
 
 ### 핵심 가치 제안
 
@@ -566,12 +590,16 @@ Regula는 의료기기 규제(RA) 도메인에 특화된 AI 전문가 시스템�
 | **Context-aware** | 프로젝트·제품 클래스·목표 시장 반영 |
 | **Expert-reviewable** | 낮은 신뢰도/고위험 답변 → 인간 RA 검토 자동 플래그 |
 | **Actionable** | 텍스트만이 아닌 체크리스트·비교표·제출 타임라인 제공 |
+| **Git Repo Primary** | 지식베이스의 **주/유일 소스는 git repo 연동**. 공개 repo는 git URL만, private는 org 토큰 옵션. 매주 자동 동기화(Inngest weekly cron) + 마지막 동기화 날짜 표시. |
 
-### 타깃 사용자
+### 타깃 사용자 (최종 확정 — 2026-06-29)
 
-- **주 사용자**: RA Lead (1~2명) → 규제 문서 자동화, Predicate 분석, CER/PCCP 빌더, Expert Review 게이팅 (전체 기능의 80%+ 담당)
-- **부 사용자**: 개발/QA팀 비RA 전문가 → RA 전문 지식 없이 규제 질의 → 근거 기반 답변
-- **3차 사용자**: 해외 딜러/컨설턴트 → 특정 시장 규제 명확화, 초대된 문서 읽기/코멘트
+| 순위 | 사용자 | 주요 역할 | 사이드바 |
+|------|--------|----------|----------|
+| **1순위** | 전사 직원 (viewer, 다수) | 인허가 Q&A 셀프서비스 → **RA 담당자 업무 병목 분산** | **4개**: 홈 · 채팅(Q&A) · 히스토리 · 설정 |
+| **2순위** | RA 담당자 (ra-member/lead, 1~3명) | 전문 워크벤치(Authoring·Evidence·Traceability) + 전사 Q&A 승격(전문가검토) | viewer 4개 + 전문가 검토 · Authoring(hybrid-ra-saas) · Evidence · Traceability · 프로젝트 스위처 |
+
+> **정정**: 이전 "RA Lead 80%+" 기술 중심 설명을 **사용자 중심으로 재정립**. 진짜 목표는 "전사 인허가 도우미"로서 RA 담당자의 업무 포화를 분산하는 것.
 
 ---
 

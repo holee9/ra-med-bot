@@ -1,7 +1,8 @@
 # Regula 운영 범위 경계 (Scope Boundary Memo)
 
 > **작성일**: 2026-06-28
-> **목적**: Charter(`.moai/specs/CHARTER.md`) 5대 지양점 중 구현 과정에서 경계가 모호해진 2종(지양-3, 지양-5)의 **운영 한정 선언**. 코드를 삭제하지 않고 정체성을 명확히 하여 향후 에이전트/개발자의 범위 오해를 방지.
+> **최종 확정**: 2026-06-29 — 전사 인허가 도우미 정체성 반영
+> **목적**: Charter(`.moai/specs/CHARTER.md`) 기반 정체성 최종 확정. 지식베이스 git 연동, 사이드바 role 구조, 사용자 우선순위 명시. 코드를 삭제하지 않고 정체성을 명확히 하여 향후 에이전트/개발자의 범위 오해를 방지.
 > **근거 제안서**: [`docs/proposals/scope-rationalization-2026-06-28.md`](proposals/scope-rationalization-2026-06-28.md)
 
 ---
@@ -35,9 +36,41 @@ Charter는 "abyz 내부 6~8명용 설계. 외부 고객 온보딩, 결제, 다�
 
 ---
 
-## 3. Charter 핵심 정체성 (재확인)
+## 3. Charter 핵심 정체성 (최종 확정 — 2026-06-29)
 
-본 경계 선언은 Charter 핵심 5대 자동화(RAG Q&A·CER·Predicate·PCCP·규제 모니터링)와 5대 불변 아키텍처(Expert Review Gate·Part 11 감사·Draft watermark·인용 강제·Article 61(4))를 **훼손하지 않습니다**. 정리는 "좁고 깊은 RA 문서 작성 워크스테이션" 정체성으로의 **회귀**입니다.
+### 3.1 서비스 정체성 (최종)
+
+본 경계 선언은 Charter 핵심 5대 자동화(RAG Q&A·CER·Predicate·PCCP·규제 모니터링)와 5대 불변 아키텍처(Expert Review Gate·Part 11 감사·Draft watermark·인용 강제·Article 61(4))를 **훼손하지 않습니다**.
+
+**최종 확정된 정체성**: **"전사 인허가 도우미(RA 담당자 업무 분산) + RA 담당자 인허가 문서 생성(hybrid-ra-saas Azure SaaS 연동)"**
+
+이는 "좁고 깊은 RA 문서 작성 워크스테이션" 기술 중심 정의에서 **사용자 중심으로 재정립**된 것입니다.
+
+### 3.2 주 사용자 (최종 확정)
+
+| 순위 | 사용자 | 주요 역할 | 사이드바 |
+|------|--------|----------|----------|
+| **1순위** | 전사 직원 (viewer, 다수) | 인허가 Q&A 셀프서비스 → **RA 담당자 업무 병목 분산** | **4개**: 홈 · 채팅(Q&A) · 히스토리 · 설정 |
+| **2순위** | RA 담당자 (ra-member/lead, 1~3명) | 전문 워크벤치(Authoring·Evidence·Traceability) + 전사 Q&A 승격(전문가검토) | viewer 4개 + 전문가 검토 · Authoring(hybrid-ra-saas) · Evidence · Traceability · 프로젝트 스위처 |
+
+> **정정**: 이전 "RA Lead 80%+" 기술 중심 설명을 **사용자 중심으로 재정립**. 진짜 목표는 "전사 인허가 도우미"로서 RA 담당자의 업무 포화를 분산하는 것.
+
+### 3.3 지식베이스 (최종 확정)
+
+**git repo 연동 = 지식베이스 유일/주 소스**:
+- 공개 repo: git URL만(인증 없이 clone)
+- private repo: org 토큰 옵션
+- 매주 자동 동기화(Inngest weekly cron)
+- **각 repo별 마지막 동기화 날짜 필수 표시**
+
+**연동 전 지식베이스 상태**:
+- 연동 전엔 지식베이스 빈 상태가 **정상**
+- 구현+연동 후에야 사이트가 지식베이스 참고
+
+**seed 코퍼스 제거**:
+- seed-corpus.ts 하드코딩 샘플(4755청크) 제거
+- 진짜 repo 코퍼스로 대체
+- 평균 420자의 얕은 발췌 → 팩트 기반 깊은 코퍼스
 
 ---
 
