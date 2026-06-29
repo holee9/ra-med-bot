@@ -431,6 +431,15 @@ export const auditActionEnum = pgEnum('audit_action', [
   // regulators can separate implicit-regenerate signals from explicit
   // thumbs-up/down submissions in the audit trail (21 CFR Part 11).
   'rlhf.implicit_feedback_recorded',
+  // SPEC-REGULA-KNOWLEDGE-SOURCES-001 — Issue #307, added via 0099_knowledge_sources.sql.
+  // knowledge_source.created: RA-lead registered a git repo knowledge source.
+  // knowledge_source.deleted: RA-lead removed a knowledge source.
+  // knowledge_source.synced: System (manual or cron) successfully synced a repo.
+  // knowledge_source.sync_failed: Sync failed after retries (with error details).
+  'knowledge_source.created',
+  'knowledge_source.deleted',
+  'knowledge_source.synced',
+  'knowledge_source.sync_failed',
 ]);
 
 // @MX:NOTE [AUTO] Source governance enums — SPEC-REGULA-SOURCE-GOVERNANCE-001 (Issue #48).

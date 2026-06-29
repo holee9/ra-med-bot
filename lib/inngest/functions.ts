@@ -6,6 +6,7 @@ import { capaEffectivenessDueReminderFn } from './capa/effectiveness-due-reminde
 import { knowledgeGapDailyDigestFn } from './digest/knowledge-gap-daily-digest';
 import { weeklyDigestFn } from './digest/weekly-digest';
 import { uploadProcessedFn } from './docingest/upload-processed';
+import { knowledgeSourcesWeeklySyncFn } from './knowledge-sources/weekly-sync';
 import { messagesEmbeddingBackfillJob } from './knowledge-promo/messages-embedding-backfill';
 import { standardsRevisionDailyFn } from './standards/standards-revision-daily';
 
@@ -19,5 +20,6 @@ export const functions = [
   uploadProcessedFn,
   capaEffectivenessDueReminderFn,
   standardsRevisionDailyFn,
+  knowledgeSourcesWeeklySyncFn, // Issue #307 — knowledge sources weekly sync
   messagesEmbeddingBackfillJob, // Issue NNN — messages embedding backfill
 ];

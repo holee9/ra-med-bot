@@ -448,7 +448,16 @@ export type AuditAction =
   // implicit downvote (rating = down, feedback_source = implicit_regenerate)
   // was captured. DISTINCT from feedback_submitted so implicit-regenerate
   // signals are auditable separately from explicit thumbs-up/down (21 CFR Part 11).
-  | 'rlhf.implicit_feedback_recorded';
+  | 'rlhf.implicit_feedback_recorded'
+  // SPEC-REGULA-KNOWLEDGE-SOURCES-001 — Issue #307, added via knowledge-sources migration.
+  // knowledge_source.created: RA-lead registered a git repo knowledge source.
+  // knowledge_source.deleted: RA-lead removed a knowledge source.
+  // knowledge_source.synced: System (manual or cron) successfully synced a repo.
+  // knowledge_source.sync_failed: Sync failed after retries (with error details).
+  | 'knowledge_source.created'
+  | 'knowledge_source.deleted'
+  | 'knowledge_source.synced'
+  | 'knowledge_source.sync_failed';
 
 export interface AuditEvent {
   /** User UUID, or null for system-initiated events. */
