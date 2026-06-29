@@ -158,14 +158,14 @@ describe('ProjectChip (REQ-BREADTH-045)', () => {
 describe('Sidebar project switching (REQ-BREADTH-044)', () => {
   it('renders real project names from useProjects', async () => {
     const Sidebar = (await import('@/components/shell/Sidebar')).default;
-    render(<Sidebar />);
+    render(<Sidebar userRole="ra-lead" />);
     expect(screen.getByText('프로젝트 A')).toBeDefined();
     expect(screen.getByText('프로젝트 B')).toBeDefined();
   });
 
   it('clicking a project sets currentProjectId', async () => {
     const Sidebar = (await import('@/components/shell/Sidebar')).default;
-    render(<Sidebar />);
+    render(<Sidebar userRole="ra-lead" />);
 
     const projAButton =
       screen.getByText('프로젝트 A').closest('button') ?? screen.getByText('프로젝트 A');
@@ -177,7 +177,7 @@ describe('Sidebar project switching (REQ-BREADTH-044)', () => {
   it('active project is visually highlighted', async () => {
     mockCurrentProjectId = 'proj-1';
     const Sidebar = (await import('@/components/shell/Sidebar')).default;
-    const { container } = render(<Sidebar />);
+    const { container } = render(<Sidebar userRole="ra-lead" />);
 
     // Active project should have aria-current="true" or data-active attribute
     const activeEl = container.querySelector('[data-active="true"], [aria-current="true"]');
@@ -194,7 +194,7 @@ describe('Sidebar project switching (REQ-BREADTH-044)', () => {
     vi.stubGlobal('fetch', fetchMock);
 
     const Sidebar = (await import('@/components/shell/Sidebar')).default;
-    render(<Sidebar />);
+    render(<Sidebar userRole="ra-lead" />);
 
     await act(async () => {
       fireEvent.click(screen.getByTestId('project-empty-create'));
