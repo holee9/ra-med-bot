@@ -3471,3 +3471,24 @@ export const productStandardsCompliance = pgTable(
     ),
   }),
 );
+
+// Issue #307: 설정 지식베이스 연결 (git repo 동기화 설정). 코퍼스 청크는 sources/source_sections.
+export const knowledgeSources = pgTable('knowledge_sources', {
+  id: uuid('id').defaultRandom().primaryKey(),
+  organizationId: uuid('organization_id')
+    .notNull()
+    .references(() => organizations.id, { onDelete: 'cascade' }),
+  gitUrl: text('git_url').notNull(),
+  branch: text('branch').notNull().default('main'),
+  sourceHost: text('source_host'),
+  sourceOwner: text('source_owner'),
+  sourceRepo: text('source_repo'),
+  lastSyncedAt: timestamp('last_synced_at', { withTimezone: true, mode: 'date' }),
+  syncStatus: text('sync_status').notNull().default('idle'),
+  authTokenEncrypted: text('auth_token_encrypted'),
+  createdBy: uuid('created_by')
+    .notNull()
+    .references(() => users.id),
+  createdAt: timestamp('created_at', { withTimezone: true, mode: 'date' }).notNull().defaultNow(),
+  updatedAt: timestamp('updated_at', { withTimezone: true, mode: 'date' }).notNull().defaultNow(),
+});
