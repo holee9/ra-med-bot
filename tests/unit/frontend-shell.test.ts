@@ -275,9 +275,9 @@ describe('components/shell/Sidebar.tsx — REQ-FND-019', () => {
     }
   });
 
-  // 2026-06-29 전사 인허가 도우미: viewer(전사 직원)는 6개 NAV만
-  // (홈·채팅·히스토리·지식베이스·규제업데이트·설정). ra-member+에 추가 항목.
-  it('renders 6 navigation links for viewer (전사 직원)', async () => {
+  // 2026-06-29 전사 인허가 도우미: viewer(전사 직원)는 4개 NAV만
+  // (홈·채팅·히스토리·설정). 지식베이스·규제업데이트·프로젝트 스위처는 ra-member+ (RA 전문).
+  it('renders 4 navigation links for viewer (전사 직원)', async () => {
     const mod = await import('../../components/shell/Sidebar');
     const Sidebar = mod.default as React.ComponentType<{ userRole?: string }>;
     const { container } = render(React.createElement(Sidebar, { userRole: 'viewer' }));
@@ -285,9 +285,9 @@ describe('components/shell/Sidebar.tsx — REQ-FND-019', () => {
     expect(nav).not.toBeNull();
     if (!nav) return;
     const navLinks = Array.from(nav.querySelectorAll('a'));
-    expect(navLinks.length).toBe(6);
+    expect(navLinks.length).toBe(4);
     const hrefs = navLinks.map((l) => l.getAttribute('href'));
-    expect(hrefs).toEqual(['/', '/chat', '/history', '/knowledge', '/updates', '/settings']);
+    expect(hrefs).toEqual(['/', '/chat', '/history', '/settings']);
   });
 });
 

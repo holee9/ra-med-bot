@@ -30,8 +30,8 @@ const NAV_ITEMS: NavItem[] = [
   { label: '내 라이브러리', href: '/library', testId: 'nav-library', minRole: 'ra-member' },
   { label: '규제 캘린더', href: '/calendar', testId: 'nav-calendar', minRole: 'ra-member' },
   { label: '템플릿', href: '/templates', minRole: 'ra-member' },
-  { label: '지식 베이스', href: '/knowledge', minRole: 'viewer' },
-  { label: '규제 업데이트', href: '/updates', minRole: 'viewer' },
+  { label: '지식 베이스', href: '/knowledge', minRole: 'ra-member' },
+  { label: '규제 업데이트', href: '/updates', minRole: 'ra-member' },
   { label: '대시보드', href: '/dashboard', minRole: 'ra-member' },
   { label: '설정', href: '/settings', minRole: 'viewer' },
 ];
@@ -390,69 +390,71 @@ export default function Sidebar(props?: SidebarProps) {
       )}
 
       {/* REQ-BREADTH-044: Project switcher dropdown.
-          Uses <details>/<summary> for hydration-safe toggle — Playwright can open
-          the dropdown before React attaches onClick (native browser behavior). */}
-      <section className="mt-2 px-2 py-2">
-        <p className="mb-1 px-3 text-[10px] uppercase tracking-widest text-ink-500">프로젝트</p>
-        <details ref={dropdownRef} className="relative">
-          <summary
-            data-testid="project-switcher"
-            aria-haspopup="listbox"
-            className="flex w-full cursor-pointer list-none items-center justify-between rounded-md px-3 py-2 text-sm text-ink-700 hover:bg-ink-50"
-          >
-            <span className="truncate">
-              {currentProject ? currentProject.name : '프로젝트 선택'}
-            </span>
-            <ChevronDown size={14} className="shrink-0 text-ink-400" />
-          </summary>
+          2026-06-29: viewer(전사 직원) 숨김 — 프로젝트는 RA 전문 맥락(project memory +
+          internal-docs 스코프). 일반 직원은 자연어 제품 언급으로 Q&A (projectId optional). */}
+      {hasRole(userRole, 'ra-member') && (
+        <section className="mt-2 px-2 py-2">
+          <p className="mb-1 px-3 text-[10px] uppercase tracking-widest text-ink-500">프로젝트</p>
+          <details ref={dropdownRef} className="relative">
+            <summary
+              data-testid="project-switcher"
+              aria-haspopup="listbox"
+              className="flex w-full cursor-pointer list-none items-center justify-between rounded-md px-3 py-2 text-sm text-ink-700 hover:bg-ink-50"
+            >
+              <span className="truncate">
+                {currentProject ? currentProject.name : '프로젝트 선택'}
+              </span>
+              <ChevronDown size={14} className="shrink-0 text-ink-400" />
+            </summary>
 
-          <ul
-            data-testid="project-list"
-            role="menu"
-            aria-label="프로젝트 목록"
-            tabIndex={-1}
-            className="absolute left-0 right-0 top-full z-10 mt-1 max-h-56 overflow-y-auto rounded-md border border-ink-200 bg-white py-1 shadow-md"
-          >
-            {projects.length === 0 ? (
-              <li className="px-3 py-2 text-xs text-ink-500">
-                <p>프로젝트 없음</p>
-                <button
-                  type="button"
-                  data-testid="project-empty-create"
-                  disabled={creatingProject}
-                  onClick={() => void createDefaultProject()}
-                  className="mt-2 rounded border border-brand-200 bg-brand-50 px-2 py-1 text-xs font-medium text-brand-700 hover:bg-brand-100 disabled:opacity-60"
-                >
-                  {creatingProject ? '생성 중...' : '기본 프로젝트 만들기'}
-                </button>
-              </li>
-            ) : (
-              projects.map((project) => {
-                const isActive = project.id === currentProjectId;
-                return (
-                  <li key={project.id}>
-                    <button
-                      type="button"
-                      data-testid="project-item"
-                      role="menuitem"
-                      aria-current={isActive ? 'true' : undefined}
-                      onClick={() => {
-                        setCurrentProjectId(project.id);
-                        if (dropdownRef.current) dropdownRef.current.open = false;
-                      }}
-                      className={`w-full px-3 py-2 text-left text-sm transition-colors hover:bg-ink-50 ${
-                        isActive ? 'font-medium text-brand-700' : 'text-ink-700'
-                      }`}
-                    >
-                      {project.name}
-                    </button>
-                  </li>
-                );
-              })
-            )}
-          </ul>
-        </details>
-      </section>
+            <ul
+              data-testid="project-list"
+              role="menu"
+              aria-label="프로젝트 목록"
+              tabIndex={-1}
+              className="absolute left-0 right-0 top-full z-10 mt-1 max-h-56 overflow-y-auto rounded-md border border-ink-200 bg-white py-1 shadow-md"
+            >
+              {projects.length === 0 ? (
+                <li className="px-3 py-2 text-xs text-ink-500">
+                  <p>프로젝트 없음</p>
+                  <button
+                    type="button"
+                    data-testid="project-empty-create"
+                    disabled={creatingProject}
+                    onClick={() => void createDefaultProject()}
+                    className="mt-2 rounded border border-brand-200 bg-brand-50 px-2 py-1 text-xs font-medium text-brand-700 hover:bg-brand-100 disabled:opacity-60"
+                  >
+                    {creatingProject ? '생성 중...' : '기본 프로젝트 만들기'}
+                  </button>
+                </li>
+              ) : (
+                projects.map((project) => {
+                  const isActive = project.id === currentProjectId;
+                  return (
+                    <li key={project.id}>
+                      <button
+                        type="button"
+                        data-testid="project-item"
+                        role="menuitem"
+                        aria-current={isActive ? 'true' : undefined}
+                        onClick={() => {
+                          setCurrentProjectId(project.id);
+                          if (dropdownRef.current) dropdownRef.current.open = false;
+                        }}
+                        className={`w-full px-3 py-2 text-left text-sm transition-colors hover:bg-ink-50 ${
+                          isActive ? 'font-medium text-brand-700' : 'text-ink-700'
+                        }`}
+                      >
+                        {project.name}
+                      </button>
+                    </li>
+                  );
+                })
+              )}
+            </ul>
+          </details>
+        </section>
+      )}
     </aside>
   );
 }
