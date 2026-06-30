@@ -300,6 +300,14 @@ export const auditActionEnum = pgEnum('audit_action', [
   // SPEC-REGULA-LABELING-001 — added via 0097_label_esubmit_forwarded.sql (REQ-009, AC-07):
   //   label.esubmit_forwarded — approved labeling folded into submission package manifest
   'label.esubmit_forwarded',
+  // Issue #307 — knowledge_sources 동기화 (0099_knowledge_sources.sql):
+  'knowledge_source.created',
+  'knowledge_source.updated',
+  'knowledge_source.deleted',
+  'knowledge_source.synced',
+  // lock-step 보정 (DB에 있으나 schema 누락, #56 RLHF reranking).
+  // rlhf.* 는 이미 하단(quality_gap_audit_actions 등)에 정의됨 — 중복 제거.
+  'reranking_applied',
   // SPEC-REGULA-CAPA-001 — added via 0073_capa.sql (REQ-CAPA-010):
   // 7 complaint/capa lifecycle audit actions for 21 CFR Part 11 traceability.
   //   complaint.intake_created             — new structured complaint inserted (REQ-001)

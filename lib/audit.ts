@@ -275,6 +275,11 @@ export type AuditAction =
   | 'label.approved'
   | 'label.export_blocked'
   | 'label.esubmit_forwarded'
+  // Issue #307 — knowledge_sources 동기화 (0099_knowledge_sources.sql):
+  | 'knowledge_source.created'
+  | 'knowledge_source.updated'
+  | 'knowledge_source.deleted'
+  | 'knowledge_source.synced'
   // SPEC-REGULA-CAPA-001 (Issue #68, REQ-CAPA-010). 7 complaint/CAPA lifecycle
   // audit actions for 21 CFR Part 11 traceability. Mirror the schema enum.
   //   complaint.intake_created             — new structured complaint inserted (REQ-001)
@@ -448,7 +453,8 @@ export type AuditAction =
   // implicit downvote (rating = down, feedback_source = implicit_regenerate)
   // was captured. DISTINCT from feedback_submitted so implicit-regenerate
   // signals are auditable separately from explicit thumbs-up/down (21 CFR Part 11).
-  | 'rlhf.implicit_feedback_recorded';
+  | 'rlhf.implicit_feedback_recorded'
+  | 'reranking_applied';
 
 export interface AuditEvent {
   /** User UUID, or null for system-initiated events. */
