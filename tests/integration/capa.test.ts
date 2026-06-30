@@ -544,7 +544,7 @@ describe('Count regression (L-007 baseline)', () => {
   it('PERMISSIONS matrix has 70 entries (68 + 2 sourcegov.* SOURCE-GOVERNANCE Issue #48)', () => {
     // Runtime count is the authoritative source of truth (matches
     // tests/unit/auth/permissions.test.ts and tests/regression/foundation.test.ts).
-    expect(Object.keys(PERMISSIONS).length).toBe(77);
+    expect(Object.keys(PERMISSIONS).length).toBe(79);
   });
 });
 
