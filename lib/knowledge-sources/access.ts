@@ -14,10 +14,7 @@ import { eq } from 'drizzle-orm';
  * @param orgId - Organization ID to verify
  * @throws Error with 'not_found' or 'org_mismatch' code
  */
-export async function assertKnowledgeSourceInOrg(
-  id: string,
-  orgId: string,
-): Promise<void> {
+export async function assertKnowledgeSourceInOrg(id: string, orgId: string): Promise<void> {
   const source = await db
     .select({ organizationId: knowledgeSources.organizationId })
     .from(knowledgeSources)

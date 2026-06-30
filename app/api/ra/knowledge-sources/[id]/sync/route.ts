@@ -8,7 +8,7 @@ import { assertKnowledgeSourceInOrg } from '@/lib/knowledge-sources/access';
 import { syncKnowledgeSource } from '@/lib/knowledge-sources/sync';
 import { eq } from 'drizzle-orm';
 
-export const POST = withPermission('knowledgesources.manage', async (req, ctx, session) => {
+export const POST = withPermission('knowledgesources.manage', async (_req, ctx, session) => {
   const orgId = session.user.organizationId;
 
   if (!orgId) {

@@ -4,13 +4,13 @@
 // @MX:REASON RCE 방지 — gitUrl/branch는 사용자 제어 입력. exec 문자열 보간은 shell injection.
 
 import { execFile } from 'node:child_process';
-import { promisify } from 'node:util';
 import { mkdir, rm } from 'node:fs/promises';
 import { join } from 'node:path';
+import { promisify } from 'node:util';
+import { writeAudit } from '@/lib/audit';
 import { db } from '@/lib/db/client';
 import { knowledgeSources } from '@/lib/db/schema';
 import { eq } from 'drizzle-orm';
-import { writeAudit } from '@/lib/audit';
 import { parseGitUrl } from './parse-git-url';
 
 const execFileAsync = promisify(execFile);
@@ -49,7 +49,10 @@ export async function syncKnowledgeSource(source: {
   orgId: string;
 }): Promise<void> {
   const startTime = new Date();
-  const tmpDir = join(process.env.TMPDIR || '/tmp', `knowledge-source-${source.id}-${startTime.getTime()}`);
+  const tmpDir = join(
+    process.env.TMPDIR || '/tmp',
+    `knowledge-source-${source.id}-${startTime.getTime()}`,
+  );
 
   try {
     // Step 1: Clone repository (execFile + validation — RCE 방어)
@@ -150,10 +153,14 @@ async function cloneRepo(
   }
 
   // execFile 인자 배열 — shell 미사용 → injection 불가.
-  await execFileAsync('git', ['clone', '--depth', '1', '--single-branch', '--branch', branch, cloneUrl, targetDir], {
-    timeout: 60_000,
-    maxBuffer: 10 * 1024 * 1024,
-  });
+  await execFileAsync(
+    'git',
+    ['clone', '--depth', '1', '--single-branch', '--branch', branch, cloneUrl, targetDir],
+    {
+      timeout: 60_000,
+      maxBuffer: 10 * 1024 * 1024,
+    },
+  );
 }
 
 /**

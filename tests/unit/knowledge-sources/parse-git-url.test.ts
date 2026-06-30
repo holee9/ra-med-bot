@@ -1,8 +1,8 @@
 // @MX:NOTE [AUTO] Unit tests for parseGitUrl — validates HTTPS/SSH parsing.
 // @MX:SPEC Issue #307 D-2 (Knowledge Sources API)
 
-import { describe, it, expect } from 'vitest';
 import { parseGitUrl } from '@/lib/knowledge-sources/parse-git-url';
+import { describe, expect, it } from 'vitest';
 
 describe('parseGitUrl', () => {
   describe('HTTPS URLs', () => {

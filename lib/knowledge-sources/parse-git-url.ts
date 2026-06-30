@@ -23,25 +23,26 @@ export function parseGitUrl(gitUrl: string): ParsedGitUrl | null {
   if (!gitUrl) return null;
 
   // HTTPS format: https://github.com/owner/repo(.git)
+  // Regex has exactly 3 capturing groups; on a successful match, indices 1-3
+  // are guaranteed-defined strings. Guards below keep the type system honest
+  // without changing runtime behavior.
   const httpsRegex = /^https:\/\/([^\/]+)\/([^\/]+)\/([^\/]+?)(\.git)?$/;
   const httpsMatch = gitUrl.match(httpsRegex);
-  if (httpsMatch) {
-    return {
-      host: httpsMatch[1]!,
-      owner: httpsMatch[2]!,
-      repo: httpsMatch[3]!,
-    };
+  const httpsHost = httpsMatch?.[1];
+  const httpsOwner = httpsMatch?.[2];
+  const httpsRepo = httpsMatch?.[3];
+  if (httpsHost && httpsOwner && httpsRepo) {
+    return { host: httpsHost, owner: httpsOwner, repo: httpsRepo };
   }
 
   // SSH format: git@github.com:owner/repo(.git)
   const sshRegex = /^git@([^:]+):([^\/]+)\/([^\/]+?)(\.git)?$/;
   const sshMatch = gitUrl.match(sshRegex);
-  if (sshMatch) {
-    return {
-      host: sshMatch[1]!,
-      owner: sshMatch[2]!,
-      repo: sshMatch[3]!,
-    };
+  const sshHost = sshMatch?.[1];
+  const sshOwner = sshMatch?.[2];
+  const sshRepo = sshMatch?.[3];
+  if (sshHost && sshOwner && sshRepo) {
+    return { host: sshHost, owner: sshOwner, repo: sshRepo };
   }
 
   return null;

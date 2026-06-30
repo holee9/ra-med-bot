@@ -2,10 +2,10 @@
 // @MX:SPEC Issue #307 D-2 (Knowledge Sources API)
 // @MX:NOTE [AUTO] handler 3인자 (req, ctx, session) — capa 패턴 준수 (InnerHandler 시그니처).
 
+import { writeAudit } from '@/lib/audit';
 import { withPermission } from '@/lib/auth/with-permission';
 import { db } from '@/lib/db/client';
 import { knowledgeSources } from '@/lib/db/schema';
-import { writeAudit } from '@/lib/audit';
 import { parseGitUrl } from '@/lib/knowledge-sources/parse-git-url';
 import { eq } from 'drizzle-orm';
 

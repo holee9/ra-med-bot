@@ -1,14 +1,14 @@
 // @MX:NOTE [AUTO] DELETE /api/ra/knowledge-sources/[id] — delete knowledge source.
 // @MX:SPEC Issue #307 D-2 (Knowledge Sources API)
 
+import { writeAudit } from '@/lib/audit';
 import { withPermission } from '@/lib/auth/with-permission';
 import { db } from '@/lib/db/client';
 import { knowledgeSources } from '@/lib/db/schema';
-import { writeAudit } from '@/lib/audit';
 import { assertKnowledgeSourceInOrg } from '@/lib/knowledge-sources/access';
 import { eq } from 'drizzle-orm';
 
-export const DELETE = withPermission('knowledgesources.manage', async (req, ctx, session) => {
+export const DELETE = withPermission('knowledgesources.manage', async (_req, ctx, session) => {
   const orgId = session.user.organizationId;
   const userId = session.user.id;
 
@@ -51,7 +51,10 @@ export const DELETE = withPermission('knowledgesources.manage', async (req, ctx,
     }
     console.error('Failed to delete knowledge source:', error);
     return Response.json(
-      { error: 'failed_to_delete_source', details: error instanceof Error ? error.message : String(error) },
+      {
+        error: 'failed_to_delete_source',
+        details: error instanceof Error ? error.message : String(error),
+      },
       { status: 500 },
     );
   }

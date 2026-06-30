@@ -1,10 +1,10 @@
 // @MX:NOTE [AUTO] Weekly cron function for knowledge sources sync.
 // @MX:SPEC Issue #307 D-2 (Knowledge Sources API)
 
-import { and, eq } from 'drizzle-orm';
 import { knowledgeSources } from '@/lib/db/schema';
-import { inngest } from '../client';
 import { syncKnowledgeSource } from '@/lib/knowledge-sources/sync';
+import { and, eq } from 'drizzle-orm';
+import { inngest } from '../client';
 
 /** Cron schedule: every week on Monday at 00:00 UTC. */
 export const KNOWLEDGE_SOURCES_CRON_SCHEDULE = '0 0 * * 1';

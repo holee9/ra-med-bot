@@ -14,17 +14,117 @@ const root = path.resolve(__dirname, '..', '..');
 const readText = (rel: string): string => fs.readFileSync(path.join(root, rel), 'utf8');
 const fileExists = (rel: string): boolean => fs.existsSync(path.join(root, rel));
 
+// Strip block comments (/* */) and line comments (//) while preserving string
+// literals, so `]` / `;` appearing inside comments or strings do not truncate
+// extraction. Without this, non-greedy regexes stop at the first `]` / `;`
+// inside a comment and undercount (the bug behind the previous 204/212 failure).
+const stripComments = (src: string): string => {
+  let out = '';
+  let i = 0;
+  let inStr: string | null = null;
+  while (i < src.length) {
+    const c = src[i];
+    const next = src[i + 1];
+    if (inStr) {
+      out += c;
+      if (c === '\\') {
+        out += next ?? '';
+        i += 2;
+        continue;
+      }
+      if (c === inStr) inStr = null;
+      i += 1;
+      continue;
+    }
+    if (c === '"' || c === "'" || c === '`') {
+      inStr = c;
+      out += c;
+      i += 1;
+      continue;
+    }
+    if (c === '/' && next === '/') {
+      while (i < src.length && src[i] !== '\n') i += 1;
+      continue;
+    }
+    if (c === '/' && next === '*') {
+      i += 2;
+      while (i < src.length && !(src[i] === '*' && src[i + 1] === '/')) i += 1;
+      i += 2;
+      continue;
+    }
+    out += c;
+    i += 1;
+  }
+  return out;
+};
+
 const extractAuditActionEnumValues = (src: string): string[] => {
-  const enumSection = src.match(/export const auditActionEnum\s*=[\s\S]*?\]/);
-  expect(enumSection, 'auditActionEnum not found').toBeTruthy();
-  const valueMatches = (enumSection as RegExpMatchArray)[0].match(/'[^']+'/g) ?? [];
-  return valueMatches.slice(1).map((value) => value.slice(1, -1));
+  const cleaned = stripComments(src);
+  const start = cleaned.indexOf("pgEnum('audit_action',");
+  expect(start, 'auditActionEnum not found').toBeGreaterThan(-1);
+  const arrStart = cleaned.indexOf('[', start);
+  expect(arrStart, 'auditActionEnum array open not found').toBeGreaterThan(-1);
+  // Track bracket depth and string state to find the matching closing `]`.
+  let depth = 0;
+  let inStr: string | null = null;
+  let arrEnd = -1;
+  for (let i = arrStart; i < cleaned.length; i += 1) {
+    const c = cleaned[i];
+    if (inStr) {
+      if (c === '\\') {
+        i += 1;
+        continue;
+      }
+      if (c === inStr) inStr = null;
+      continue;
+    }
+    if (c === '"' || c === "'" || c === '`') {
+      inStr = c;
+      continue;
+    }
+    if (c === '[') depth += 1;
+    else if (c === ']') {
+      depth -= 1;
+      if (depth === 0) {
+        arrEnd = i;
+        break;
+      }
+    }
+  }
+  expect(arrEnd, 'auditActionEnum array close not found').toBeGreaterThan(-1);
+  const arrBody = cleaned.slice(arrStart, arrEnd + 1);
+  return (arrBody.match(/'[^']+'/g) ?? []).map((value) => value.slice(1, -1));
 };
 
 const extractAuditActionTypeValues = (src: string): string[] => {
-  const typeMatch = src.match(/export type AuditAction\s*=\s*([\s\S]*?);/);
-  expect(typeMatch, 'AuditAction type not found').toBeTruthy();
-  const typeBody = (typeMatch as RegExpMatchArray)[1] as string;
+  const cleaned = stripComments(src);
+  const match = cleaned.match(/export type AuditAction\s*=\s*/);
+  expect(match, 'AuditAction type not found').toBeTruthy();
+  const start = ((match as RegExpMatchArray).index ?? -1) + (match as RegExpMatchArray)[0].length;
+  // Find the real terminating `;` at top level (strings tracked, comments already stripped).
+  let inStr: string | null = null;
+  let end = -1;
+  for (let i = start; i < cleaned.length; i += 1) {
+    const c = cleaned[i];
+    if (inStr) {
+      if (c === '\\') {
+        i += 1;
+        continue;
+      }
+      if (c === inStr) inStr = null;
+      continue;
+    }
+    if (c === '"' || c === "'" || c === '`') {
+      inStr = c;
+      continue;
+    }
+    if (c === ';') {
+      end = i;
+      break;
+    }
+  }
+  expect(end, 'AuditAction type terminator not found').toBeGreaterThan(-1);
+  const typeBody = cleaned.slice(start, end);
   return (typeBody.match(/'[^']+'/g) ?? []).map((value) => value.slice(1, -1));
 };
 
@@ -325,8 +425,12 @@ describe('lib/db/schema.ts Phase 5 additions', () => {
     const auditSrc = readText('lib/audit.ts');
     const values = extractAuditActionEnumValues(src);
     const typeValues = extractAuditActionTypeValues(auditSrc);
-    expect(values).toEqual(typeValues);
+    // Lock-step = both declarations hold the same SET of audit actions. Declaration
+    // order is NOT required to match (enum and type legitimately group migrations
+    // differently with interspersed comments). Set-equality is the correct check.
+    expect(new Set(values)).toEqual(new Set(typeValues));
     expect(values).toHaveLength(214); // +1 rlhf.calibration_proposed (#264 2/3) +1 rlhf.implicit_feedback_recorded (#264 3/3) +1 label.esubmit_forwarded (#249) +1 traceability.section_superseded (#300 M-2)
+    expect(typeValues).toHaveLength(214);
   });
 
   it.each(REQUIRED_RECOVERY_TABLES)(
