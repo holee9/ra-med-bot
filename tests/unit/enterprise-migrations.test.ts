@@ -15,7 +15,7 @@ const readText = (rel: string): string => fs.readFileSync(path.join(root, rel), 
 const fileExists = (rel: string): boolean => fs.existsSync(path.join(root, rel));
 
 const extractAuditActionEnumValues = (src: string): string[] => {
-  const enumSection = src.match(/export const auditActionEnum\s*=[\s\S]*?(?=\n\/\/|\nexport|$)/);
+  const enumSection = src.match(/export const auditActionEnum\s*=[\s\S]*?\]/);
   expect(enumSection, 'auditActionEnum not found').toBeTruthy();
   const valueMatches = (enumSection as RegExpMatchArray)[0].match(/'[^']+'/g) ?? [];
   return valueMatches.slice(1).map((value) => value.slice(1, -1));
@@ -326,7 +326,7 @@ describe('lib/db/schema.ts Phase 5 additions', () => {
     const values = extractAuditActionEnumValues(src);
     const typeValues = extractAuditActionTypeValues(auditSrc);
     expect(values).toEqual(typeValues);
-    expect(values).toHaveLength(209); // +1 rlhf.calibration_proposed (#264 2/3) +1 rlhf.implicit_feedback_recorded (#264 3/3) +1 label.esubmit_forwarded (#249) +1 traceability.section_superseded (#300 M-2)
+    expect(values).toHaveLength(214); // +1 rlhf.calibration_proposed (#264 2/3) +1 rlhf.implicit_feedback_recorded (#264 3/3) +1 label.esubmit_forwarded (#249) +1 traceability.section_superseded (#300 M-2)
   });
 
   it.each(REQUIRED_RECOVERY_TABLES)(
@@ -382,7 +382,7 @@ describe('lib/audit.ts Phase 5 AuditAction type additions', () => {
         'change.export_blocked',
       ]),
     );
-    expect(values).toHaveLength(209); // +1 rlhf.calibration_proposed (#264 2/3) +1 rlhf.implicit_feedback_recorded (#264 3/3) +1 label.esubmit_forwarded (#249) +1 traceability.section_superseded (#300 M-2)
+    expect(values).toHaveLength(214); // +1 rlhf.calibration_proposed (#264 2/3) +1 rlhf.implicit_feedback_recorded (#264 3/3) +1 label.esubmit_forwarded (#249) +1 traceability.section_superseded (#300 M-2)
   });
 
   it.each(REQUIRED_RECOVERY_AUDIT_ACTIONS)(

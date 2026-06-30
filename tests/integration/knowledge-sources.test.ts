@@ -14,27 +14,26 @@ import { vi } from 'vitest';
 // Mock auth module
 vi.mock('@/lib/auth');
 
-// Mock withPermission to bypass actual auth checks
-vi.mock('@/lib/auth/with-permission', async () => ({
-  withPermission: (action: string, handler: any) => handler,
+// Mock withPermission — capa 패턴: currentSession 주입 (handler 3인자, 반환 2인자 Next.js).
+let currentSession: any = null;
+vi.mock('@/lib/auth/with-permission', () => ({
+  withPermission: (_action: string, handler: any) =>
+    async (req: Request, ctx: any) => handler(req, ctx, currentSession),
 }));
 
-const { withPermission } = await import('@/lib/auth/with-permission');
-
-// Mock session creator
+// Mock session creator — currentSession 설정 + { session, userId } 반환
 function createMockSession(orgId?: string): { session: any; userId: string } {
   const userId = randomUUID();
-  return {
-    session: {
-      user: {
-        id: userId,
-        role: 'ra-lead' as const,
-        organizationId: orgId || randomUUID(),
-        email: 'test@example.com',
-      },
+  const session = {
+    user: {
+      id: userId,
+      role: 'ra-lead' as const,
+      organizationId: orgId || randomUUID(),
+      email: 'test@example.com',
     },
-    userId,
   };
+  currentSession = session;
+  return { session, userId };
 }
 
 describe('Knowledge Sources API', () => {
@@ -61,7 +60,7 @@ describe('Knowledge Sources API', () => {
         }),
       });
 
-      const response = await POST(request, {}, session);
+      const response = await POST(request, {});
       const data = await response.json();
 
       expect(response.status).toBe(201);
@@ -84,7 +83,7 @@ describe('Knowledge Sources API', () => {
         }),
       });
 
-      const response = await POST(request, {}, session);
+      const response = await POST(request, {});
       const data = await response.json();
 
       expect(response.status).toBe(400);
@@ -102,7 +101,7 @@ describe('Knowledge Sources API', () => {
         }),
       });
 
-      await POST(request, {}, session);
+      await POST(request, {});
 
       const audits = await db
         .select()
@@ -127,11 +126,11 @@ describe('Knowledge Sources API', () => {
           branch: 'main',
           organizationId: testOrgId,
           createdBy: userId,
-          syncStatus: 'pending',
+          syncStatus: 'idle',
         });
 
       const request = new Request('http://localhost/api/ra/knowledge-sources');
-      const response = await GET(request, {}, session);
+      const response = await GET(request, {});
       const data = await response.json();
 
       expect(response.status).toBe(200);
@@ -153,7 +152,7 @@ describe('Knowledge Sources API', () => {
           branch: 'main',
           organizationId: testOrgId,
           createdBy: userId,
-          syncStatus: 'pending',
+          syncStatus: 'idle',
         })
         .returning();
 
@@ -165,7 +164,7 @@ describe('Knowledge Sources API', () => {
         method: 'DELETE',
       });
 
-      const response = await DELETE_ID(request, { params: Promise.resolve({ id: source.id }) }, session);
+      const response = await DELETE_ID(request, { params: Promise.resolve({ id: source.id }) });
       const data = await response.json();
 
       expect(response.status).toBe(200);
@@ -179,7 +178,7 @@ describe('Knowledge Sources API', () => {
         method: 'DELETE',
       });
 
-      const response = await DELETE_ID(request, { params: Promise.resolve({ id: 'non-existent' }) }, session);
+      const response = await DELETE_ID(request, { params: Promise.resolve({ id: 'non-existent' }) });
       const data = await response.json();
 
       expect(response.status).toBe(404);
@@ -198,7 +197,7 @@ describe('Knowledge Sources API', () => {
           branch: 'main',
           organizationId: differentOrgId,
           createdBy: userId,
-          syncStatus: 'pending',
+          syncStatus: 'idle',
         })
         .returning();
 
@@ -210,7 +209,7 @@ describe('Knowledge Sources API', () => {
         method: 'DELETE',
       });
 
-      const response = await DELETE_ID(request, { params: Promise.resolve({ id: source.id }) }, session);
+      const response = await DELETE_ID(request, { params: Promise.resolve({ id: source.id }) });
       const data = await response.json();
 
       expect(response.status).toBe(403);
@@ -247,7 +246,7 @@ describe('Knowledge Sources API', () => {
       const mockSync = vi.mocked(syncKnowledgeSource);
       mockSync.mockResolvedValue(undefined);
 
-      const response = await POST_SYNC(request, { params: Promise.resolve({ id: source.id }) }, session);
+      const response = await POST_SYNC(request, { params: Promise.resolve({ id: source.id }) });
       const data = await response.json();
 
       expect(response.status).toBe(200);
