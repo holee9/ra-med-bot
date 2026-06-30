@@ -613,7 +613,7 @@ describe('count-sync: audit_action (174→192) + PermissionAction (66→70)', ()
   });
 
   it('PERMISSIONS matrix has 71 entries', () => {
-    expect(Object.keys(PERMISSIONS).length).toBe(77); // +2 knowledgepromo.* (#50) +2 standards.* (#62)
+    expect(Object.keys(PERMISSIONS).length).toBe(79); // +2 knowledgepromo.* (#50) +2 standards.* (#62)
   });
 
   it('schema.ts defines all 4 cyberdevice tables', () => {
