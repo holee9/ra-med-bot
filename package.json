@@ -98,6 +98,7 @@
     "next": "^15.5.18",
     "next-auth": "^5.0.0-beta.20",
     "next-intl": "^4.11.0",
+    "ollama-ai-provider": "^1.2.0",
     "pdf-parse": "^2.4.5",
     "postgres": "^3.4.4",
     "posthog-js": "^1.372.6",

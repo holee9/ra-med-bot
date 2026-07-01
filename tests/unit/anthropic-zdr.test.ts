@@ -26,8 +26,11 @@ describe('On-prem LLM no-egress (gx10 redesign, issue #318)', () => {
     expect(existsSync(providerFile)).toBe(true);
     const content = readFileSync(providerFile, 'utf-8');
 
-    // The ollama branch must build an OpenAI-compatible client pointed at the on-prem URL.
-    expect(content).toContain('createOpenAI');
+    // Phase B fixup: chat uses ollama-ai-provider (createOllama, native /api/chat)
+    // — @ai-sdk/openai is incompatible with Ollama's response shape. Embedding
+    // still uses createOpenAI for the OpenAI-compatible /v1/embeddings dimension param.
+    expect(content).toContain('createOllama');
+    expect(content).toContain('ollama-ai-provider');
     expect(content).toContain('OLLAMA_BASE_URL');
     // Default model is the gx10 on-prem gpt-oss:120b.
     expect(content).toContain('gpt-oss:120b');
