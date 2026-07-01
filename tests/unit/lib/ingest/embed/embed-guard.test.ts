@@ -3,16 +3,11 @@
 
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 
-vi.mock('openai', () => ({
-  default: vi.fn().mockImplementation(() => ({
-    embeddings: {
-      create: vi.fn().mockImplementation(({ input }: { input: string[] }) =>
-        Promise.resolve({
-          data: input.map(() => ({ embedding: new Array(1536).fill(0.1) })),
-        }),
-      ),
-    },
-  })),
+// Phase A: batch embedding centralized in lib/ai/embedding-provider.
+const { mockEmbedBatch } = vi.hoisted(() => ({ mockEmbedBatch: vi.fn() }));
+vi.mock('@/lib/ai/embedding-provider', () => ({
+  embedBatchTexts: mockEmbedBatch,
+  getEmbeddingModelId: () => 'text-embedding-3-small',
 }));
 
 import { embedChunks } from '@/lib/ingest/embed';
@@ -20,6 +15,9 @@ import { embedChunks } from '@/lib/ingest/embed';
 describe('Embed-time PII Guard', () => {
   beforeEach(() => {
     vi.clearAllMocks();
+    mockEmbedBatch.mockImplementation((texts: string[]) =>
+      Promise.resolve(texts.map(() => new Array(1536).fill(0.1))),
+    );
   });
 
   describe('Enhanced PII detection', () => {

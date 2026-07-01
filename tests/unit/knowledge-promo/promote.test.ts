@@ -249,10 +249,13 @@ vi.mock('@/lib/auth/with-permission', () => ({
   ),
 }));
 
-// OpenAI embedding is unavailable in tests — promoteAnswer must still succeed.
-vi.mock('@ai-sdk/openai', () => ({ openai: { embedding: () => ({}) } }));
+// Embedding model stub (Phase A: centralized in lib/ai/embedding-provider).
+// embed() is mocked to reject so embedForPromotion returns null gracefully.
+vi.mock('@/lib/ai/embedding-provider', () => ({
+  getEmbeddingModel: () => ({}),
+}));
 vi.mock('ai', () => ({
-  embed: vi.fn().mockRejectedValue(new Error('no-openai-key')),
+  embed: vi.fn().mockRejectedValue(new Error('no-embedding-key')),
 }));
 
 vi.mock('@/lib/observability/logger', () => ({

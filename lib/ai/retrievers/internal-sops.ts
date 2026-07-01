@@ -8,10 +8,10 @@
 // @MX:REASON SQL-level WHERE prevents cross-org data from ever reaching application memory.
 // @MX:SPEC SPEC-REGULA-BREADTH-001 (REQ-BREADTH-037, REQ-BREADTH-043)
 
-import { openai } from '@ai-sdk/openai';
 import { type EmbeddingModel, embed } from 'ai';
 import { sql } from 'drizzle-orm';
 import { type db, withTenantScope } from '../../db/client';
+import { getEmbeddingModel } from '../embedding-provider';
 import type { IRetriever, RetrievalResult, RetrieverOptions } from './types';
 
 interface SopsRow extends Record<string, unknown> {
@@ -51,16 +51,16 @@ export class InternalSopsRetriever implements IRetriever {
     const limit = opts.limit ?? 10;
     const orgId = opts.orgId;
 
-    // Embed the query — falls back to FTS-only when OpenAI key is unavailable.
+    // Embed the query — falls back to FTS-only when the embedding API is unavailable.
     let embeddingLiteral: string | null = null;
     try {
       const { embedding } = await embed({
-        model: openai.embedding('text-embedding-3-small') as unknown as EmbeddingModel<string>,
+        model: getEmbeddingModel() as unknown as EmbeddingModel<string>,
         value: query,
       });
       embeddingLiteral = `[${embedding.join(',')}]`;
     } catch {
-      // OpenAI key unavailable — fall through to FTS-only retrieval.
+      // Embedding API unavailable — fall through to FTS-only retrieval.
     }
 
     // SQL-level org isolation: WHERE ss.org_id = orgId.

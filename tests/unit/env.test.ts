@@ -15,7 +15,8 @@ const validEnv: NodeJS.ProcessEnv = {
   AUTH_MICROSOFT_SECRET: 'ms-secret',
   AUTH_GOOGLE_ID: 'g-id',
   AUTH_GOOGLE_SECRET: 'g-secret',
-  // Phase 2 LLM provider keys — required by lib/env.ts envSchema.
+  // Phase 2 LLM provider keys. ANTHROPIC_API_KEY still required;
+  // OPENAI_API_KEY is optional post-Phase-A (embedding → GitHub Models).
   ANTHROPIC_API_KEY: 'sk-ant-test',
   OPENAI_API_KEY: 'sk-test',
 };
@@ -25,6 +26,12 @@ describe('parseEnv', () => {
     const env = parseEnv(validEnv);
     expect(env.DATABASE_URL).toBe(validEnv.DATABASE_URL);
     expect(env.AUTH_SECRET).toHaveLength(32);
+  });
+
+  it('parses env without OPENAI_API_KEY (Phase A — embedding now via GitHub Models)', () => {
+    const { OPENAI_API_KEY: _omit, ...rest } = validEnv;
+    const env = parseEnv(rest);
+    expect(env.OPENAI_API_KEY).toBeUndefined();
   });
 
   it('throws ZodError when DATABASE_URL is missing', () => {

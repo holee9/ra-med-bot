@@ -21,11 +21,9 @@ vi.mock('@/lib/db/client', () => ({
   ),
 }));
 
-// Stub OpenAI embedding model — the retriever calls embed() for the query.
-vi.mock('@ai-sdk/openai', () => ({
-  openai: {
-    embedding: vi.fn().mockReturnValue('mock-embedding-model'),
-  },
+// Stub embedding model (Phase A: centralized in lib/ai/embedding-provider).
+vi.mock('@/lib/ai/embedding-provider', () => ({
+  getEmbeddingModel: vi.fn().mockReturnValue('mock-embedding-model'),
 }));
 
 vi.mock('ai', () => ({

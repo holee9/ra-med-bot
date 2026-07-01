@@ -4,10 +4,10 @@
 // Phase 4 when corpus-specific retrievers are added.
 // @MX:SPEC SPEC-REGULA-CHAT-001 (REQ-CHAT-013, REQ-CHAT-014, REQ-CHAT-019)
 
-import { openai } from '@ai-sdk/openai';
 import { type EmbeddingModel, embed } from 'ai';
 import { sql } from 'drizzle-orm';
 import { db, withTenantScope } from '../../db/client';
+import { getEmbeddingModel } from '../embedding-provider';
 
 export interface RetrievedChunk {
   sectionId: string;
@@ -69,17 +69,17 @@ export async function hybridSearch(
   sourceFilter: 'all' | 'regs' | 'internal',
   orgId?: string,
 ): Promise<RetrievedChunk[]> {
-  // 1. Attempt embedding — may fail when OPENAI_API_KEY is unavailable.
+  // 1. Attempt embedding — may fail when the embedding API key is unavailable.
   // @MX:NOTE Cast bridges v3 provider → v1 SDK type. See lib/ai/intent.ts.
   let embeddingLiteral: string | null = null;
   try {
     const { embedding } = await embed({
-      model: openai.embedding('text-embedding-3-small') as unknown as EmbeddingModel<string>,
+      model: getEmbeddingModel() as unknown as EmbeddingModel<string>,
       value: query,
     });
     embeddingLiteral = `[${embedding.join(',')}]`;
   } catch {
-    // OpenAI key unavailable — fall through to FTS-only retrieval.
+    // Embedding API unavailable — fall through to FTS-only retrieval.
   }
 
   // 2. Build OR-joined FTS query for better recall (prevents AND requiring all terms).

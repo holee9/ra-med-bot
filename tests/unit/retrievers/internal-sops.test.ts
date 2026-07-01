@@ -20,15 +20,13 @@ vi.mock('@/lib/db/client', () => ({
   ),
 }));
 
-// Mock OpenAI embedding.
+// Mock embedding model (Phase A: centralized in lib/ai/embedding-provider).
 vi.mock('ai', () => ({
   embed: vi.fn(),
 }));
 
-vi.mock('@ai-sdk/openai', () => ({
-  openai: {
-    embedding: vi.fn().mockReturnValue('mock-embedding-model'),
-  },
+vi.mock('@/lib/ai/embedding-provider', () => ({
+  getEmbeddingModel: vi.fn().mockReturnValue('mock-embedding-model'),
 }));
 
 describe('lib/ai/retrievers/internal-sops.ts (REQ-BREADTH-037, REQ-BREADTH-043)', () => {

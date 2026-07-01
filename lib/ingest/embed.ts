@@ -1,11 +1,11 @@
-// @MX:ANCHOR [AUTO] OpenAI embedding with PII guard — defense-in-depth before embedding.
+// @MX:ANCHOR [AUTO] Embedding with PII guard — defense-in-depth before embedding.
 // @MX:REASON fan_in >= 3: chunkers output flows here, then to document_chunks insert and retriever.
 // @MX:SPEC SPEC-REGULA-DOCINGEST-001 (REQ-DOC-035)
-import OpenAI from 'openai';
+// @MX:NOTE [AUTO] Phase A: batch embedding centralized in lib/ai/embedding-provider
+//           (GitHub Models API, OpenAI-compatible). PII guard UNCHANGED — still an external API.
+import { embedBatchTexts } from '../ai/embedding-provider';
 
 const BATCH_SIZE = 100;
-const MAX_RETRIES = 3;
-const MODEL = 'text-embedding-3-small';
 
 // PII guard patterns — defense-in-depth before sending to external API
 // Enhanced 3-layer guard matching SPEC-REGULA-DOCINGEST-001 REQ-DOC-035
@@ -37,43 +37,10 @@ function detectPii(text: string): { found: boolean; pattern: string } {
   return { found: false, pattern: '' };
 }
 
-let openaiClient: OpenAI | null = null;
-
-function getClient(): OpenAI {
-  if (!openaiClient) {
-    openaiClient = new OpenAI({
-      apiKey: process.env.OPENAI_API_KEY ?? 'no-key-in-test',
-    });
-  }
-  return openaiClient;
-}
-
-async function embedBatch(texts: string[]): Promise<number[][]> {
-  const client = getClient();
-  let lastError: unknown;
-
-  for (let attempt = 0; attempt < MAX_RETRIES; attempt++) {
-    try {
-      const response = await client.embeddings.create({
-        model: MODEL,
-        input: texts,
-      });
-      return response.data.map((d) => d.embedding);
-    } catch (err) {
-      lastError = err;
-      if (attempt < MAX_RETRIES - 1) {
-        await new Promise((r) => setTimeout(r, 2 ** attempt * 500));
-      }
-    }
-  }
-
-  throw new Error(`Embedding failed after ${MAX_RETRIES} attempts: ${lastError}`);
-}
-
 /**
- * Embed an array of text chunks using OpenAI text-embedding-3-small.
+ * Embed an array of text chunks using text-embedding-3-small via GitHub Models.
  * Applies PII guard before sending — throws if SSN or email pattern detected.
- * Batches inputs in groups of 100.
+ * Batches inputs in groups of 100. Delegates retry/backoff to embedBatchTexts.
  */
 export async function embedChunks(texts: string[]): Promise<number[][]> {
   if (texts.length === 0) return [];
@@ -88,11 +55,11 @@ export async function embedChunks(texts: string[]): Promise<number[][]> {
     }
   }
 
-  // Process in batches
+  // Process in batches — embedBatchTexts handles retry/backoff per batch.
   const results: number[][] = [];
   for (let i = 0; i < texts.length; i += BATCH_SIZE) {
     const batch = texts.slice(i, i + BATCH_SIZE);
-    const embeddings = await embedBatch(batch);
+    const embeddings = await embedBatchTexts(batch);
     results.push(...embeddings);
   }
 

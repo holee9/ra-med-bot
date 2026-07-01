@@ -7,9 +7,9 @@
 // @MX:WARN [AUTO] org_id isolation is enforced in the SQL WHERE clause.
 // @MX:REASON SQL-level WHERE prevents cross-org rows from ever reaching app memory.
 
-import { openai } from '@ai-sdk/openai';
 import { type EmbeddingModel, embed } from 'ai';
 import { sql } from 'drizzle-orm';
+import { getEmbeddingModel } from '../ai/embedding-provider';
 import { type db, withTenantScope } from '../db/client';
 import { toVectorLiteral } from './embedding';
 
@@ -92,12 +92,12 @@ export async function searchPromotedSemantic(params: SearchParams): Promise<Prom
   let embedding: number[] | null = null;
   try {
     const { embedding: vec } = await embed({
-      model: openai.embedding('text-embedding-3-small') as unknown as EmbeddingModel<string>,
+      model: getEmbeddingModel() as unknown as EmbeddingModel<string>,
       value: query,
     });
     embedding = vec;
   } catch {
-    return []; // OpenAI unavailable — semantic search unavailable.
+    return []; // Embedding API unavailable — semantic search unavailable.
   }
   const vectorLiteral = toVectorLiteral(embedding);
   if (!vectorLiteral) return [];
@@ -148,12 +148,12 @@ export async function searchMessagesSemantic(params: SearchParams): Promise<Mess
   let embedding: number[] | null = null;
   try {
     const { embedding: vec } = await embed({
-      model: openai.embedding('text-embedding-3-small') as unknown as EmbeddingModel<string>,
+      model: getEmbeddingModel() as unknown as EmbeddingModel<string>,
       value: query,
     });
     embedding = vec;
   } catch {
-    return []; // OpenAI unavailable — semantic search unavailable.
+    return []; // Embedding API unavailable — semantic search unavailable.
   }
   const vectorLiteral = toVectorLiteral(embedding);
   if (!vectorLiteral) return [];

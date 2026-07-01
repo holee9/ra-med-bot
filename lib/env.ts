@@ -61,14 +61,28 @@ const envSchema = z.object({
     .refine(isDevPlaceholderForbidden, devPlaceholderMessage('AUTH_GOOGLE_SECRET')),
 
   // Phase 2 LLM providers.
+  // @MX:NOTE [AUTO] Phase A: OPENAI_API_KEY no longer required for production.
+  //           Embedding now routes through GitHub Models API (GITHUB_MODELS_TOKEN).
+  //           Retained as optional for LLM_PROVIDER=openai fallback in lib/ai/llm-provider.ts.
+  //           Phase C will remove this + the openai case entirely once deps are cleaned.
   ANTHROPIC_API_KEY: z
     .string()
     .min(1, 'ANTHROPIC_API_KEY is required')
     .refine(isDevPlaceholderForbidden, devPlaceholderMessage('ANTHROPIC_API_KEY')),
   OPENAI_API_KEY: z
     .string()
-    .min(1, 'OPENAI_API_KEY is required')
-    .refine(isDevPlaceholderForbidden, devPlaceholderMessage('OPENAI_API_KEY')),
+    .refine(isDevPlaceholderForbidden, devPlaceholderMessage('OPENAI_API_KEY'))
+    .optional(),
+
+  // Phase A — GitHub Models embedding (OpenAI-compatible endpoint).
+  // Optional now so the app boots without a token in dev/test; the embedding
+  // provider falls back to a 'no-key-in-test' sentinel. Production must set this.
+  GITHUB_MODELS_TOKEN: z
+    .string()
+    .refine(isDevPlaceholderForbidden, devPlaceholderMessage('GITHUB_MODELS_TOKEN'))
+    .optional(),
+  EMBEDDING_BASE_URL: z.string().optional(),
+  EMBEDDING_MODEL: z.string().optional(),
 
   // Optional: label shown in the UI for the LLM model.
   NEXT_PUBLIC_LLM_MODEL_LABEL: z.string().optional(),
@@ -146,6 +160,9 @@ export function parseEnv(source: NodeJS.ProcessEnv = process.env): Env {
     AUTH_GOOGLE_SECRET: source.AUTH_GOOGLE_SECRET,
     ANTHROPIC_API_KEY: source.ANTHROPIC_API_KEY,
     OPENAI_API_KEY: source.OPENAI_API_KEY,
+    GITHUB_MODELS_TOKEN: source.GITHUB_MODELS_TOKEN,
+    EMBEDDING_BASE_URL: source.EMBEDDING_BASE_URL,
+    EMBEDDING_MODEL: source.EMBEDDING_MODEL,
     NEXT_PUBLIC_LLM_MODEL_LABEL: source.NEXT_PUBLIC_LLM_MODEL_LABEL,
     HYBRID_RA_API_BASE_URL: source.HYBRID_RA_API_BASE_URL,
     HYBRID_RA_API_TOKEN: source.HYBRID_RA_API_TOKEN,

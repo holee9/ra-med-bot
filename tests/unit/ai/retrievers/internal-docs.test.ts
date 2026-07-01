@@ -19,14 +19,10 @@ vi.mock('../../../../lib/acl/document-acl', () => ({
   }),
 }));
 
-vi.mock('openai', () => ({
-  default: vi.fn().mockImplementation(() => ({
-    embeddings: {
-      create: vi.fn().mockResolvedValue({
-        data: [{ embedding: new Array(1536).fill(0.1) }],
-      }),
-    },
-  })),
+// Phase A: batch embedding centralized in lib/ai/embedding-provider.
+vi.mock('@/lib/ai/embedding-provider', () => ({
+  embedBatchTexts: vi.fn().mockResolvedValue([new Array(1536).fill(0.1)]),
+  getEmbeddingModelId: () => 'text-embedding-3-small',
 }));
 
 import { internalDocsRetrieve } from '../../../../lib/ai/retrievers/internal-docs';

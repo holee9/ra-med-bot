@@ -5,8 +5,8 @@
 //           persist time for assistant messages. Returns null when OpenAI is
 //           unavailable (tests / no-key env) — persist still succeeds.
 
-import { openai } from '@ai-sdk/openai';
 import { type EmbeddingModel, embed } from 'ai';
+import { getEmbeddingModel } from '../ai/embedding-provider';
 import { logger } from '../observability/logger';
 
 /**
@@ -17,12 +17,12 @@ export async function embedForPromotion(text: string): Promise<number[] | null> 
   if (!text) return null;
   try {
     const { embedding } = await embed({
-      model: openai.embedding('text-embedding-3-small') as unknown as EmbeddingModel<string>,
+      model: getEmbeddingModel() as unknown as EmbeddingModel<string>,
       value: text,
     });
     return embedding;
   } catch {
-    // OpenAI key unavailable or transient failure — promote without embedding.
+    // Embedding API unavailable or transient failure — promote without embedding.
     return null;
   }
 }
@@ -45,13 +45,13 @@ export async function embedForMessage(text: string): Promise<number[] | null> {
   if (!text) return null;
   try {
     const { embedding } = await embed({
-      model: openai.embedding('text-embedding-3-small') as unknown as EmbeddingModel<string>,
+      model: getEmbeddingModel() as unknown as EmbeddingModel<string>,
       value: text,
     });
     return embedding;
   } catch (error) {
     logger.warn('Failed to generate embedding for message', { error });
-    // OpenAI key unavailable or transient failure — persist without embedding.
+    // Embedding API unavailable or transient failure — persist without embedding.
     return null;
   }
 }

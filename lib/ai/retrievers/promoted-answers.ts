@@ -9,7 +9,6 @@
 //           reaching application memory.
 // @MX:SPEC SPEC-REGULA-KNOWLEDGE-PROMO-001 (REQ-009, REQ-010, REQ-011, REQ-014, AC-04, AC-05, AC-08)
 
-import { openai } from '@ai-sdk/openai';
 import { type EmbeddingModel, embed } from 'ai';
 import { sql } from 'drizzle-orm';
 // @MX:WARN [AUTO] db/client import MUST stay lazy (inside retrieve()).
@@ -21,6 +20,7 @@ import type { db } from '../../db/client';
 // builder instead of inlining `[${embedding.join(',')}]` so the format lives
 // in one place (lib/knowledge-promo/embedding.ts toVectorLiteral).
 import { toVectorLiteral } from '../../knowledge-promo/embedding';
+import { getEmbeddingModel } from '../embedding-provider';
 import type { IRetriever, RetrievalResult, RetrieverOptions } from './types';
 
 /**
@@ -64,12 +64,12 @@ export class PromotedAnswersRetriever implements IRetriever {
     let embedding: number[] | null = null;
     try {
       const { embedding: vec } = await embed({
-        model: openai.embedding('text-embedding-3-small') as unknown as EmbeddingModel<string>,
+        model: getEmbeddingModel() as unknown as EmbeddingModel<string>,
         value: query,
       });
       embedding = vec;
     } catch {
-      // OpenAI key unavailable — promoted semantic retrieval unavailable.
+      // Embedding API unavailable — promoted semantic retrieval unavailable.
       return [];
     }
     const vectorLiteral = toVectorLiteral(embedding);

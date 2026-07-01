@@ -29,15 +29,13 @@ vi.mock('@/lib/db/client', () => ({
   ),
 }));
 
-// Mock OpenAI embedding — the hybrid path requires a successful embed().
+// Mock embedding model (Phase A: centralized in lib/ai/embedding-provider).
 vi.mock('ai', () => ({
   embed: vi.fn(),
 }));
 
-vi.mock('@ai-sdk/openai', () => ({
-  openai: {
-    embedding: vi.fn().mockReturnValue('mock-embedding-model'),
-  },
+vi.mock('@/lib/ai/embedding-provider', () => ({
+  getEmbeddingModel: vi.fn().mockReturnValue('mock-embedding-model'),
 }));
 
 // Suppress the dynamic governance-gate import so the test never hits a real

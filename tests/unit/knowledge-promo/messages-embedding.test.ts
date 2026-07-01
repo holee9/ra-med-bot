@@ -14,13 +14,11 @@ import { searchMessagesSemantic } from '@/lib/knowledge-promo/semantic-search';
 import { eq } from 'drizzle-orm';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
-// Mock OpenAI
-vi.mock('@ai-sdk/openai', () => ({
-  openai: {
-    embedding: vi.fn(() => ({
-      doEmbed: async () => ({ embedding: [0.1, 0.2, 0.3] }),
-    })),
-  },
+// Mock embedding provider (Phase A: centralized in lib/ai/embedding-provider).
+vi.mock('@/lib/ai/embedding-provider', () => ({
+  getEmbeddingModel: vi.fn(() => ({
+    doEmbed: async () => ({ embedding: [0.1, 0.2, 0.3] }),
+  })),
 }));
 
 vi.mock('ai', () => ({

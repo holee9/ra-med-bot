@@ -1,16 +1,13 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 
-// Mock OpenAI — returns embeddings matching the input batch size
-vi.mock('openai', () => ({
-  default: vi.fn().mockImplementation(() => ({
-    embeddings: {
-      create: vi.fn().mockImplementation(({ input }: { input: string[] }) => {
-        return Promise.resolve({
-          data: input.map(() => ({ embedding: new Array(1536).fill(0.1) })),
-        });
-      }),
-    },
-  })),
+// Mock the embedding provider seam (Phase A: centralized in lib/ai/embedding-provider).
+// embed.ts calls embedBatchTexts(...) — we stub it to return 1536-dim vectors
+// matching the input size. vi.hoisted ensures the mock fn exists before the
+// hoisted vi.mock factory runs.
+const { mockEmbedBatch } = vi.hoisted(() => ({ mockEmbedBatch: vi.fn() }));
+vi.mock('@/lib/ai/embedding-provider', () => ({
+  embedBatchTexts: mockEmbedBatch,
+  getEmbeddingModelId: () => 'text-embedding-3-small',
 }));
 
 import { embedChunks } from '../../../lib/ingest/embed';
@@ -18,6 +15,9 @@ import { embedChunks } from '../../../lib/ingest/embed';
 describe('embedChunks', () => {
   beforeEach(() => {
     vi.clearAllMocks();
+    mockEmbedBatch.mockImplementation((texts: string[]) =>
+      Promise.resolve(texts.map(() => new Array(1536).fill(0.1))),
+    );
   });
 
   it('returns array of embedding vectors', async () => {

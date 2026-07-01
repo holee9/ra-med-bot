@@ -19,6 +19,7 @@ declare module 'openai' {
 
   interface OpenAIOptions {
     apiKey?: string;
+    baseURL?: string;
   }
 
   class OpenAI {
