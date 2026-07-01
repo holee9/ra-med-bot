@@ -3,59 +3,88 @@
 // @MX:REASON fan_in >= 3: lib/ingest/embed.ts, lib/knowledge-promo/embedding.ts,
 //           lib/knowledge-promo/semantic-search.ts, and all retrievers
 //           (hybrid-search, promoted-answers, internal-sops) route through here.
-//           Swapping the backend (GitHub Models API, OpenAI-compatible) is an
+//           Swapping the backend (gx10 Ollama, OpenAI-compatible) is an
 //           env-level change in this file alone.
-// @MX:SPEC SPEC-LLM-MIGRATION-A (Phase A: OpenAI → GitHub Models embedding)
+// @MX:SPEC SPEC-LLM-MIGRATION-A (Phase A-revised: GitHub Models → gx10 Ollama qwen3-embedding)
 
 import { createOpenAI } from '@ai-sdk/openai';
 import { type EmbeddingModel, embedMany } from 'ai';
 
-// @MX:NOTE [AUTO] GitHub Models API is an OpenAI-compatible inference endpoint.
-// Defaults match the Regula charter (abyz internal, text-embedding-3-small 1536-dim).
-// The token is a GitHub PAT with Models scope; supplied by the operator via .env.local.
-const DEFAULT_BASE_URL = 'https://models.github.ai/inference';
-const DEFAULT_MODEL = 'text-embedding-3-small';
-const NO_KEY_FALLBACK = 'no-key-in-test';
+// @MX:NOTE [AUTO] gx10 Ollama exposes an OpenAI-compatible /v1/embeddings endpoint.
+// qwen3-embedding natively outputs 4096 dims but supports MRL truncation via the
+// `dimensions` request param. We truncate to 1536 to keep pgvector vector(1536)
+// (lib/db/schema.ts + schema-docingest.ts) byte-compatible — no migration needed,
+// corpus stays valid. Local-network (192.168.100.x) trust; Ollama ignores the API
+// key but @ai-sdk/openai requires a string, so a sentinel is supplied.
+// Direct-verified 2026-07-01: dim=1536 truncation returns 1536-dim vectors (L-013).
+const DEFAULT_BASE_URL = 'http://192.168.100.1:11434/v1';
+const DEFAULT_MODEL = 'qwen3-embedding:latest';
+const EMBEDDING_DIMENSIONS = 1536;
+const NO_KEY_FALLBACK = 'ollama';
 const DEFAULT_MAX_RETRIES = 3;
 
 /**
- * Base URL for the embedding API. Overridable via EMBEDDING_BASE_URL for
- * testing or Azure AI Foundry migration (Phase D+).
+ * Base URL for the embedding API. Defaults to the gx10 Ollama OpenAI-compatible
+ * endpoint. Overridable via EMBEDDING_BASE_URL.
  */
 export function getEmbeddingBaseUrl(): string {
   return process.env.EMBEDDING_BASE_URL ?? DEFAULT_BASE_URL;
 }
 
 /**
- * Embedding model id. Defaults to text-embedding-3-small (1536-dim, matches
- * pgvector vector(1536) in lib/db/schema.ts + schema-docingest.ts).
+ * Embedding model id. Defaults to qwen3-embedding:latest on gx10. Output dim is
+ * truncated to EMBEDDING_DIMENSIONS (MRL) so vectors match pgvector vector(1536).
  */
 export function getEmbeddingModelId(): string {
   return process.env.EMBEDDING_MODEL ?? DEFAULT_MODEL;
 }
 
 /**
- * API key (GitHub PAT with Models scope). Falls back to a sentinel so unit
- * tests can import this module without a real key — the SDK constructor
- * requires a string but never validates until a request is made.
+ * API key. Ollama on the local GX10 network is keyless (OLLAMA_HOST=0.0.0.0,
+ * 192.168.100.x trust), but the SDK constructor requires a string. Falls back to
+ * a sentinel so unit tests can import this module without a real key — the value
+ * is never validated until a request is made (and Ollama ignores it then).
  */
 export function getEmbeddingApiKey(): string {
-  return process.env.GITHUB_MODELS_TOKEN ?? NO_KEY_FALLBACK;
+  return process.env.EMBEDDING_API_KEY ?? NO_KEY_FALLBACK;
 }
 
 let aiSdkProvider: ReturnType<typeof createOpenAI> | null = null;
 
 /**
- * Lazy singleton for the @ai-sdk/openai provider configured against the
- * GitHub Models endpoint. Used by retrievers (via getEmbeddingModel) and
- * the batch embedder (via embedBatchTexts).
+ * Lazy singleton for the @ai-sdk/openai provider configured against the gx10
+ * Ollama endpoint. Used by retrievers (via getEmbeddingModel) and the batch
+ * embedder (via embedBatchTexts).
  */
 function getAiSdkProvider(): ReturnType<typeof createOpenAI> {
   if (!aiSdkProvider) {
     aiSdkProvider = createOpenAI({
       baseURL: getEmbeddingBaseUrl(),
       apiKey: getEmbeddingApiKey(),
-      name: 'github-models',
+      name: 'gx10-ollama',
+      // @MX:WARN Inject MRL truncation (dimensions:1536) into every /v1/embeddings
+      //      request at the fetch layer — single source of truth.
+      // @MX:REASON @ai-sdk/openai ^3 accepts `dimensions` only as a per-call
+      //      providerOption (`providerOptions.openai.dimensions`), not as a model
+      //      setting. Centralizing it via fetch middleware means every consumer
+      //      (embedBatchTexts, retrievers, knowledge-promo, ingest) emits 1536-dim
+      //      vectors without each having to thread providerOptions through its
+      //      embed/embedMany call. Direct-verified against gx10 2026-07-01 (L-013).
+      fetch: async (url, init) => {
+        const urlStr = typeof url === 'string' ? url : url.toString();
+        if (init?.body && urlStr.includes('/embeddings')) {
+          try {
+            const body = JSON.parse(String(init.body)) as Record<string, unknown>;
+            if (body.dimensions === undefined) {
+              body.dimensions = EMBEDDING_DIMENSIONS;
+              init = { ...init, body: JSON.stringify(body) };
+            }
+          } catch {
+            // Non-JSON body (e.g. multipart) — pass through unchanged.
+          }
+        }
+        return globalThis.fetch(url as RequestInfo, init);
+      },
     });
   }
   return aiSdkProvider;
@@ -69,15 +98,17 @@ function getAiSdkProvider(): ReturnType<typeof createOpenAI> {
 export type EmbeddingModelInstance = ReturnType<ReturnType<typeof createOpenAI>['embedding']>;
 
 /**
- * Returns the centralized ai-sdk embedding model (text-embedding-3-small by
- * default). Every retriever/knowledge-promo consumer should import this
- * instead of `openai.embedding(...)` from @ai-sdk/openai directly, so the
- * backend is swappable at the env level.
+ * Returns the centralized ai-sdk embedding model (qwen3-embedding on gx10,
+ * truncated to 1536 dims via MRL). Every retriever/knowledge-promo consumer
+ * should import this instead of `openai.embedding(...)` from @ai-sdk/openai
+ * directly, so the backend is swappable at the env level.
  *
- * Same model id as before Phase A → vectors are byte-equivalent; no
- * re-embedding of the (currently empty) corpus is required.
+ * MRL truncation keeps pgvector vector(1536) byte-compatible — no schema
+ * migration and no re-embedding of the (currently empty) corpus is required.
  */
 export function getEmbeddingModel(): EmbeddingModelInstance {
+  // `dimensions` truncation is applied at the fetch layer (see getAiSdkProvider),
+  // not here — @ai-sdk/openai ^3 embedding() takes only the model id.
   return getAiSdkProvider().embedding(getEmbeddingModelId());
 }
 

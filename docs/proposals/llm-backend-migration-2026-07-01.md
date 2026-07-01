@@ -805,10 +805,12 @@ hermes `_COPILOT_MODEL_ALIASES` (`models.py:2977`) 기준. **임베딩은 Copilo
 | 계층 | 기존 (superseded) | 최종 (gx10) |
 |------|-------------------|-------------|
 | chat LLM | Anthropic Claude 11사이트 + Ollama llama3.2 fallback | **gpt-oss:120b** (단일 모델, 사이트별 모델 차이 없음) |
-| embedding | GitHub Models `text-embedding-3-small` (1536차원) | **qwen3-embedding:latest** (2880차원) |
+| embedding | GitHub Models `text-embedding-3-small` (1536차원) | **qwen3-embedding:latest** (4096 풀 → **MRL 1536 truncate**) |
 | 외부 의존 | OpenAI API, Anthropic API, GitHub Models PAT | **없음** (gx10 단일 홉) |
 
-### 12.2 Phase A-revised — 임베딩 gx10 전환 + 차원 마이그레이션 1536→2880
+### 12.2 Phase A-revised — 임베딩 gx10 전환 + MRL 1536 truncate (migration 불필요) — 구현 완료 2026-07-01
+
+> **[SUPERSEDED — 2026-07-01 직견 정정, L-013]** 본래 "1536→2880 migration"으로 설계했으나 구현 단계 오케스트레이터 직견으로 정정: (1) 2880은 `gpt-oss:120b` 모델 카드의 hidden `embedding_length`이지 qwen3-embedding 출력 차원이 아님 — qwen3-embedding:latest 실제 출력 = **4096**(`/v1/embeddings` 직접 호출 확인). (2) qwen3-embedding은 **MRL(Matryoshka) 지원** → `dimensions` 파라미터로 1536 truncate 가능(직견: dim=1536 요청 → 1536 반환). 따라서 **pgvector vector(1536) 유지, migration 불필요, 코퍼스 무결**. 차원 선택의 gx10 로드 영향은 직견 0(truncate는 forward pass 후 슬라이스). 아래 12.2.1/12.2.2의 2880 기반 코드/SQL 예시는 **historical(구 설계안)**이며, 실제 구현은 `lib/ai/embedding-provider.ts`의 **fetch 미들웨어** 방식(`createOpenAI({ fetch })`에서 모든 `/v1/embeddings` 요청 body에 `dimensions:1536` 강제 주입 — `@ai-sdk/openai` ^3이 `embedding()` 1-arg만 지원하므로 consumer per-call providerOptions 대신 단일 지점 처리). 게이트 직견: typecheck/lint exit 0 · full `pnpm test` 4822 passed · gx10 실호출 `embedBatchTexts` dim=1536 × 2 확인.
 
 #### 12.2.1 embedding-provider.ts 변경
 
@@ -833,7 +835,7 @@ export function getEmbeddingApiKey(): string {
 
 > **대체 경로 (직접 /api/embeddings)**: Ollama 네이티브 엔드포인트 `POST http://192.168.100.1:11434/api/embeddings` (`{model, prompt}` → `{embedding: number[]}`). @ai-sdk/openai 경로가 차원·배치 처리 호환성 문제를 보일 경우에만 고려. 기본은 createOpenAI 재사용.
 
-#### 12.2.2 pgvector 차원 마이그레이션 1536→2880 (정확한 SQL/코드 형태)
+#### 12.2.2 pgvector 차원 마이그레이션 1536→2880 — ❌ SUPERSEDED (위 정정 노트 참조, migration 불필요)
 
 **현황 (직검 — migrations/ 디렉토리 + schema 파일)**: `vector(1536)` 하드코딩 5개 컬럼 (messages.embedding 포함 시 6개 migration 정의, schema.ts customType 사용 5곳).
 
