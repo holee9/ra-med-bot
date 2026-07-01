@@ -159,7 +159,25 @@ async function insertChunks(
   chunks: Array<{ text: string; metadata: Record<string, unknown> }>,
   _embeddings: number[][],
 ): Promise<number> {
-  // In production: batch insert into document_chunks table via withTenantScope
+  // Issue 314: this stub intentionally does NOT use the shared
+  // insertSourceSections helper (lib/ingest/source-sections-upsert.ts) because
+  // the DOCINGEST Phase 3 path lacks the provenance a source_sections row needs:
+  //   - no sources row is created/attached in this pipeline (unlike sync.ts
+  //     which calls resolveOrCreateFileSource); source_sections.source_id is
+  //     NOT NULL with a FK to sources.id.
+  //   - the stub signature drops sourceId/anchor/sectionPath/ingestionRunId/
+  //     chunkHash entirely.
+  // This stub targets a DIFFERENT table than the shared helper. The DOCINGEST
+  // upload path persists to document_chunks (defined in migrations/0015 + 0017,
+  // RLS-enforced via the tenant_isolation_chunks policy), whereas
+  // insertSourceSections writes source_sections (which requires a sources-row
+  // FK + provenance: anchor/sectionPath/ingestionRunId/chunkHash). This stub's
+  // signature (documentId, orgId, chunks, embeddings) drops all source_sections
+  // provenance fields, so it cannot reuse the source_sections helper. Real
+  // implementation requires the R2-backed extract→chunk→embed pipeline writing
+  // document_chunks (DOCINGEST Phase 3). Wiring a fake source_sections insert
+  // here would violate the retriever's data contract. Returning chunks.length
+  // is the honest stub until Phase 3 lands.
   return chunks.length;
 }
 

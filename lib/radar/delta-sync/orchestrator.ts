@@ -24,8 +24,11 @@
 //   when no deliverable cited the section (the supersession itself was unaudited).
 
 import { writeAudit } from '@/lib/audit';
-import { withTenantScope } from '@/lib/db/client';
 import { corpusSyncRuns, sourceSections, sources } from '@/lib/db/schema';
+import {
+  type SourceSectionInsertRow,
+  insertSourceSections,
+} from '@/lib/ingest/source-sections-upsert';
 import { logger } from '@/lib/observability/logger';
 import { and, desc, eq, isNull } from 'drizzle-orm';
 import { embedChunks } from '../../ingest/embed';
@@ -212,37 +215,31 @@ export async function runDeltaSync(input: RunDeltaSyncInput): Promise<RunDeltaSy
       ingestionRunId: runId,
     });
 
-    // 7c. INSERT new source_sections (org-scoped tx). The "added" path mirrors
-    //     scripts/seed-fda-corpus.ts. sectionPath/tokenCount come from chunker
-    //     metadata; anchor is synthesized from the chunk index for uniqueness.
-    const insertedSections = await withTenantScope(orgId, async (tx) => {
-      const rows: { id: string }[] = [];
-      for (let i = 0; i < embedded.length; i++) {
-        const ec = embedded[i];
-        if (!ec) continue;
-        const meta = ec.metadata as {
-          sectionPath?: string;
-          tokenCount?: number;
-        };
-        const ins = await tx
-          .insert(sourceSections)
-          .values({
-            sourceId,
-            anchor: `delta-${runId.slice(0, 8)}-${i}`,
-            heading: (meta.sectionPath as string) ?? null,
-            text: ec.text,
-            embedding: ec.embedding,
-            sectionPath: (meta.sectionPath as string) ?? null,
-            ingestionRunId: runId,
-            ingestedAt: new Date(),
-            chunkHash: computeChunkHash(ec.text),
-          })
-          .returning({ id: sourceSections.id });
-        const r = ins[0];
-        if (r) rows.push(r);
-      }
-      return rows;
-    });
+    // 7c. INSERT new source_sections (org-scoped tx). Issue #314: delegates to
+    //     the shared insertSourceSections helper used by knowledge-sources sync.
+    //     anchor/sectionPath provenance keys remain caller-specific (delta-run
+    //     based) while the tx boundary + batch insert + id collection are
+    //     centralized.
+    const insertRows: SourceSectionInsertRow[] = [];
+    for (let i = 0; i < embedded.length; i++) {
+      const ec = embedded[i];
+      if (!ec) continue;
+      const meta = ec.metadata as {
+        sectionPath?: string;
+        tokenCount?: number;
+      };
+      insertRows.push({
+        sourceId,
+        anchor: `delta-${runId.slice(0, 8)}-${i}`,
+        heading: (meta.sectionPath as string) ?? null,
+        text: ec.text,
+        embedding: ec.embedding,
+        sectionPath: (meta.sectionPath as string) ?? null,
+        ingestionRunId: runId,
+        chunkHash: computeChunkHash(ec.text),
+      });
+    }
+    const insertedSections = await insertSourceSections(orgId, insertRows);
 
     // 7d. applyOutdateOperations — the #238 live call site. Org-scoped tx +
     //     non-blocking hook. M-2 audit (traceability.section_superseded per
