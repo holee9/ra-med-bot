@@ -3,13 +3,12 @@
 // @MX:SPEC: SPEC-REGULA-DIGEST-001
 
 import crypto from 'node:crypto';
-import Anthropic from '@anthropic-ai/sdk';
+import { generateText } from 'ai';
 import { and, desc, eq, gte, lte } from 'drizzle-orm';
+import { getLlmModel } from '../ai/llm-provider';
 import { withTenantScope } from '../db/client';
 import { orgUpdateRelevance, regulatoryUpdates, weeklyDigests } from '../db/schema';
 import { logger } from '../observability/logger';
-
-const client = new Anthropic();
 
 export interface DigestUpdate {
   id: string;
@@ -88,25 +87,20 @@ async function generateImpactSummary(update: {
 
   for (let attempt = 0; attempt < maxRetries; attempt++) {
     try {
-      const response = await Promise.race<Anthropic.Messages.Message>([
-        client.messages.create(
+      const response = await generateText({
+        model: getLlmModel(),
+        maxTokens: 256,
+        abortSignal: AbortSignal.timeout(30000),
+        messages: [
           {
-            model: 'claude-sonnet-4-6',
-            max_tokens: 256,
-            messages: [
-              {
-                role: 'user',
-                content: `You are a regulatory affairs expert. Summarize the impact of this regulatory update in 2-3 sentences, focusing on "so what does this mean for a medical device company?"\n\nTitle: ${update.title}\nRegion: ${update.region}\nContent: ${update.rawContentEn ?? update.title}\n\nProvide only the 2-3 sentence summary, no preamble:`,
-              },
-            ],
+            role: 'user',
+            content: `You are a regulatory affairs expert. Summarize the impact of this regulatory update in 2-3 sentences, focusing on "so what does this mean for a medical device company?"\n\nTitle: ${update.title}\nRegion: ${update.region}\nContent: ${update.rawContentEn ?? update.title}\n\nProvide only the 2-3 sentence summary, no preamble:`,
           },
-          { timeout: 30000 },
-        ),
-        new Promise((_, reject) => setTimeout(() => reject(new Error('Request timeout')), 30000)),
-      ]);
+        ],
+      });
 
-      const firstBlock = response.content[0];
-      return firstBlock?.type === 'text' ? firstBlock.text.trim() : MOCK_IMPACT_SUMMARY;
+      const text = response.text?.trim() ?? '';
+      return text || MOCK_IMPACT_SUMMARY;
     } catch (err) {
       const isLastAttempt = attempt === maxRetries - 1;
 

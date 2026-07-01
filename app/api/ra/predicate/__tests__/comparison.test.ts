@@ -163,11 +163,6 @@ vi.mock('@/lib/predicate/comparison-builder', () => ({
   createComparisonBuilder: vi.fn(() => ({ buildComparison })),
 }));
 
-// --- Mock shared Anthropic client (builder factory arg) ---
-vi.mock('@/lib/ai/anthropic-client', () => ({
-  sharedAnthropicClient: {},
-}));
-
 const dbModule = (await import('@/lib/db/client')) as unknown as {
   __setSelectMode: (m: 'department' | 'history' | 'state') => void;
 };

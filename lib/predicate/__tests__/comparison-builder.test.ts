@@ -3,8 +3,17 @@
 // SPEC-REGULA-PREDICATE-001 (REQ-PRE-013 5-dimension structure,
 // REQ-PRE-016 LLM-assisted suggestions, REQ-PRE-018 1-3 predicates).
 
-import type Anthropic from '@anthropic-ai/sdk';
-import { describe, expect, it, vi } from 'vitest';
+import type { LanguageModel } from 'ai';
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
+
+// Mock generateText from the ai package. The builder now calls generateText
+// internally with an injected LanguageModel, so we intercept at the ai module
+// boundary rather than stubbing the model object.
+const { mockGenerateText } = vi.hoisted(() => ({ mockGenerateText: vi.fn() }));
+vi.mock('ai', () => ({
+  generateText: (...args: unknown[]) => mockGenerateText(...args),
+}));
+
 import { createComparisonBuilder } from '../comparison-builder';
 import type { ComparisonDimension, PredicateCandidate } from '../types';
 
@@ -15,6 +24,9 @@ const ALL_DIMENSIONS: ComparisonDimension[] = [
   'materials',
   'performance',
 ];
+
+/** A no-op LanguageModel stub. The real LLM call is intercepted by mockGenerateText. */
+const STUB_MODEL = {} as LanguageModel;
 
 /** Build a predicate candidate with deterministic, distinguishable text. */
 function candidate(k: string): PredicateCandidate {
@@ -42,47 +54,36 @@ function subjectInputs(): Record<ComparisonDimension, string> {
 }
 
 /**
- * Build a mock Anthropic client whose messages.create returns a JSON object
- * mapping each dimension to a suggestion string. The builder is expected to
- * issue exactly ONE call regardless of dimension count.
+ * Configure the generateText mock to return a JSON object mapping each
+ * dimension to a suggestion string. The builder is expected to issue exactly
+ * ONE call regardless of dimension count.
  */
-function mockAnthropic(): {
-  client: Anthropic;
-  create: ReturnType<
-    typeof vi.fn<[unknown], Promise<{ content: Array<{ type: string; text: string }> }>>
-  >;
-} {
+function mockHappyGenerateText(): void {
   const suggestions = ALL_DIMENSIONS.reduce<Record<string, string>>((acc, dim) => {
     acc[dim] = `LLM suggestion for ${dim}`;
     return acc;
   }, {});
 
-  const create = vi.fn<[unknown], Promise<{ content: Array<{ type: string; text: string }> }>>(
-    async () => ({
-      content: [{ type: 'text', text: JSON.stringify(suggestions) }],
-    }),
-  );
-
-  const client = { messages: { create } } as unknown as Anthropic;
-  return { client, create };
+  mockGenerateText.mockResolvedValue({ text: JSON.stringify(suggestions) });
 }
 
-/** A mock Anthropic client that always throws — for graceful degradation. */
-function failingAnthropic(): {
-  client: Anthropic;
-  create: ReturnType<typeof vi.fn<[unknown], Promise<unknown>>>;
-} {
-  const create = vi.fn<[unknown], Promise<unknown>>(async (): Promise<unknown> => {
-    throw new Error('Anthropic API unavailable');
-  });
-  const client = { messages: { create } } as unknown as Anthropic;
-  return { client, create };
+/** Configure generateText to throw — for graceful degradation. */
+function mockFailingGenerateText(): void {
+  mockGenerateText.mockRejectedValue(new Error('LLM API unavailable'));
 }
 
 describe('createComparisonBuilder', () => {
+  beforeEach(() => {
+    mockGenerateText.mockReset();
+  });
+
+  afterEach(() => {
+    vi.clearAllMocks();
+  });
+
   it('produces exactly 5 cells, one per dimension, with a single predicate', async () => {
-    const { client } = mockAnthropic();
-    const builder = createComparisonBuilder(client);
+    mockHappyGenerateText();
+    const builder = createComparisonBuilder(STUB_MODEL);
 
     const result = await builder.buildComparison({
       subject_device_name: 'My Subject Device',
@@ -98,8 +99,8 @@ describe('createComparisonBuilder', () => {
   });
 
   it('maps predicate_texts one entry per predicate (3 predicates)', async () => {
-    const { client } = mockAnthropic();
-    const builder = createComparisonBuilder(client);
+    mockHappyGenerateText();
+    const builder = createComparisonBuilder(STUB_MODEL);
 
     const result = await builder.buildComparison({
       subject_device_name: 'My Subject Device',
@@ -120,8 +121,8 @@ describe('createComparisonBuilder', () => {
   });
 
   it('rejects more than 3 predicates with "최대 3개" error', async () => {
-    const { client } = mockAnthropic();
-    const builder = createComparisonBuilder(client);
+    mockHappyGenerateText();
+    const builder = createComparisonBuilder(STUB_MODEL);
 
     await expect(
       builder.buildComparison({
@@ -138,8 +139,8 @@ describe('createComparisonBuilder', () => {
   });
 
   it('starts every cell.approved as an empty array (never auto-approved)', async () => {
-    const { client } = mockAnthropic();
-    const builder = createComparisonBuilder(client);
+    mockHappyGenerateText();
+    const builder = createComparisonBuilder(STUB_MODEL);
 
     const result = await builder.buildComparison({
       subject_device_name: 'My Subject Device',
@@ -154,8 +155,8 @@ describe('createComparisonBuilder', () => {
   });
 
   it('populates llm_suggestions (one per dimension) from a single LLM call', async () => {
-    const { client, create } = mockAnthropic();
-    const builder = createComparisonBuilder(client);
+    mockHappyGenerateText();
+    const builder = createComparisonBuilder(STUB_MODEL);
 
     const result = await builder.buildComparison({
       subject_device_name: 'My Subject Device',
@@ -164,7 +165,7 @@ describe('createComparisonBuilder', () => {
     });
 
     // REQ-PRE-016: batch into ONE API call, not 5.
-    expect(create).toHaveBeenCalledTimes(1);
+    expect(mockGenerateText).toHaveBeenCalledTimes(1);
     for (const cell of result.cells) {
       expect(cell.llm_suggestions).toBeDefined();
       expect(cell.llm_suggestions).toHaveLength(1);
@@ -172,9 +173,9 @@ describe('createComparisonBuilder', () => {
     }
   });
 
-  it('uses the exact claude-haiku-4-5-20251001 model id', async () => {
-    const { client, create } = mockAnthropic();
-    const builder = createComparisonBuilder(client);
+  it('issues exactly one generateText call (single batched request)', async () => {
+    mockHappyGenerateText();
+    const builder = createComparisonBuilder(STUB_MODEL);
 
     await builder.buildComparison({
       subject_device_name: 'My Subject Device',
@@ -182,14 +183,12 @@ describe('createComparisonBuilder', () => {
       selected_predicates: [candidate('K111')],
     });
 
-    const callArg = create.mock.calls[0]?.[0] as { model: string } | undefined;
-    if (!callArg) throw new Error('Expected Anthropic create to be called');
-    expect(callArg.model).toBe('claude-haiku-4-5-20251001');
+    expect(mockGenerateText).toHaveBeenCalledTimes(1);
   });
 
   it('degrades gracefully when the LLM throws (still returns a comparison)', async () => {
-    const { client } = failingAnthropic();
-    const builder = createComparisonBuilder(client);
+    mockFailingGenerateText();
+    const builder = createComparisonBuilder(STUB_MODEL);
 
     const result = await builder.buildComparison({
       subject_device_name: 'My Subject Device',
@@ -207,8 +206,8 @@ describe('createComparisonBuilder', () => {
   });
 
   it('maps subject_text from subject_inputs for each dimension', async () => {
-    const { client } = mockAnthropic();
-    const builder = createComparisonBuilder(client);
+    mockHappyGenerateText();
+    const builder = createComparisonBuilder(STUB_MODEL);
     const inputs = subjectInputs();
 
     const result = await builder.buildComparison({
@@ -223,8 +222,8 @@ describe('createComparisonBuilder', () => {
   });
 
   it('returns subject_device_name, selected_predicates, and a Date created_at', async () => {
-    const { client } = mockAnthropic();
-    const builder = createComparisonBuilder(client);
+    mockHappyGenerateText();
+    const builder = createComparisonBuilder(STUB_MODEL);
     const predicates = [candidate('K111'), candidate('K222')];
 
     const result = await builder.buildComparison({

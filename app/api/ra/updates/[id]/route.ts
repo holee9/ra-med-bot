@@ -2,8 +2,9 @@
 // @MX:SPEC SPEC-REGULA-RADAR-001
 
 import { logger } from '@/lib/observability/logger';
+import { generateText } from 'ai';
 import { eq } from 'drizzle-orm';
-import { sharedAnthropicClient } from '../../../../../lib/ai/anthropic-client';
+import { getLlmModel } from '../../../../../lib/ai/llm-provider';
 import { withPermission } from '../../../../../lib/auth/with-permission';
 import { db } from '../../../../../lib/db/client';
 import { regulatoryUpdates } from '../../../../../lib/db/schema';
@@ -31,12 +32,12 @@ export const GET = withPermission('dashboard.view', async (req, ctx) => {
 
   let impactAnalysisText = update.impactAnalysisText;
 
-  // On-demand Sonnet impact analysis if not cached and requested
+  // On-demand main-model impact analysis if not cached and requested
   if (requestAnalysis && !impactAnalysisText) {
     try {
-      const response = await sharedAnthropicClient.messages.create({
-        model: 'claude-sonnet-4-5',
-        max_tokens: 1024,
+      const response = await generateText({
+        model: getLlmModel(),
+        maxTokens: 1024,
         messages: [
           {
             role: 'user',
@@ -52,9 +53,9 @@ Provide a concise 3-5 sentence impact analysis covering: what changed, who is af
         ],
       });
 
-      const raw = response.content[0];
-      if (raw && raw.type === 'text') {
-        impactAnalysisText = raw.text;
+      const text = response.text?.trim() ?? '';
+      if (text) {
+        impactAnalysisText = text;
 
         // Cache the analysis back to DB
         await db

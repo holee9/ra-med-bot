@@ -6,7 +6,8 @@
 // Abort signal must propagate to prevent orphaned Haiku calls.
 // @MX:SPEC SPEC-REGULA-STRUCTURED-001 (REQ-STRUCT-001~010)
 
-import Anthropic from '@anthropic-ai/sdk';
+import { generateText } from 'ai';
+import type { LanguageModel } from 'ai';
 import { logger } from '../../lib/observability/logger';
 import type {
   ChecklistEvent,
@@ -14,6 +15,7 @@ import type {
   RelatedEvent,
   TimelineEvent,
 } from '../../types/streaming';
+import { getLlmFastModel } from './llm-provider';
 import {
   buildChecklistClassifier,
   buildChecklistGenerator,
@@ -62,18 +64,17 @@ export class OrderViolationError extends Error {
 }
 
 // ---------------------------------------------------------------------------
-// Haiku model constant
-// Pinned to claude-haiku-3-5; referenced from lib/ai/models.ts if it exists.
+// Token budget constants
 // ---------------------------------------------------------------------------
-const HAIKU_MODEL = 'claude-haiku-4-5';
 const MAX_INPUT_TOKENS = 4096;
 const MAX_OUTPUT_TOKENS = 2048;
 
 // ---------------------------------------------------------------------------
-// Internal helper: call Haiku with a single prompt, return text response.
+// Internal helper: call the fast model with a single prompt, return text.
+// AbortSignal is propagated to prevent orphaned LLM calls on client disconnect.
 // ---------------------------------------------------------------------------
-async function callHaiku(
-  client: Anthropic,
+async function callFast(
+  model: LanguageModel,
   prompt: string,
   signal: AbortSignal | undefined,
 ): Promise<string> {
@@ -81,29 +82,25 @@ async function callHaiku(
   const truncatedPrompt =
     prompt.length > MAX_INPUT_TOKENS * 4 ? prompt.slice(0, MAX_INPUT_TOKENS * 4) : prompt;
 
-  const response = await client.messages.create(
-    {
-      model: HAIKU_MODEL,
-      max_tokens: MAX_OUTPUT_TOKENS,
-      messages: [{ role: 'user', content: truncatedPrompt }],
-    },
-    signal ? { signal } : undefined,
-  );
+  const response = await generateText({
+    model,
+    maxTokens: MAX_OUTPUT_TOKENS,
+    abortSignal: signal,
+    messages: [{ role: 'user', content: truncatedPrompt }],
+  });
 
-  const content = response.content[0];
-  if (content?.type === 'text') return content.text;
-  return '';
+  return response.text ?? '';
 }
 
 // ---------------------------------------------------------------------------
-// Internal helper: call classifier, return true if Haiku says 'yes'.
+// Internal helper: call classifier, return true if the model says 'yes'.
 // ---------------------------------------------------------------------------
 async function classify(
-  client: Anthropic,
+  model: LanguageModel,
   prompt: string,
   signal: AbortSignal | undefined,
 ): Promise<boolean> {
-  const text = await callHaiku(client, prompt, signal);
+  const text = await callFast(model, prompt, signal);
   return /^\s*yes\s*$/i.test(text.trim());
 }
 
@@ -112,12 +109,12 @@ async function classify(
 // Returns null on parse failure (REQ-STRUCT-006: skip on Zod parse error).
 // ---------------------------------------------------------------------------
 async function generate<T>(
-  client: Anthropic,
+  model: LanguageModel,
   prompt: string,
   schema: { safeParse: (data: unknown) => { success: boolean; data?: T } },
   signal: AbortSignal | undefined,
 ): Promise<T | null> {
-  const raw = await callHaiku(client, prompt, signal);
+  const raw = await callFast(model, prompt, signal);
 
   // Strip markdown code fences if present
   const cleaned = raw
@@ -150,7 +147,7 @@ export async function* generateStructuredBlocks(
   input: StructuredInput,
   signal?: AbortSignal,
 ): AsyncGenerator<BlockEvent> {
-  const client = new Anthropic();
+  const model = getLlmFastModel();
   const promptInput = {
     question: input.question,
     prose: input.prose,
@@ -161,11 +158,11 @@ export async function* generateStructuredBlocks(
   // --- checklist (classifier first) ---
   if (!signal?.aborted) {
     try {
-      const shouldEmit = await classify(client, buildChecklistClassifier(promptInput), signal);
+      const shouldEmit = await classify(model, buildChecklistClassifier(promptInput), signal);
 
       if (shouldEmit && !signal?.aborted) {
         const block = await generate(
-          client,
+          model,
           buildChecklistGenerator(promptInput),
           ChecklistBlockSchema,
           signal,
@@ -184,11 +181,11 @@ export async function* generateStructuredBlocks(
   // --- comparison (classifier first) ---
   if (!signal?.aborted) {
     try {
-      const shouldEmit = await classify(client, buildComparisonClassifier(promptInput), signal);
+      const shouldEmit = await classify(model, buildComparisonClassifier(promptInput), signal);
 
       if (shouldEmit && !signal?.aborted) {
         const block = await generate(
-          client,
+          model,
           buildComparisonGenerator(promptInput),
           ComparisonBlockSchema,
           signal,
@@ -212,11 +209,11 @@ export async function* generateStructuredBlocks(
   // --- timeline (classifier first) ---
   if (!signal?.aborted) {
     try {
-      const shouldEmit = await classify(client, buildTimelineClassifier(promptInput), signal);
+      const shouldEmit = await classify(model, buildTimelineClassifier(promptInput), signal);
 
       if (shouldEmit && !signal?.aborted) {
         const block = await generate(
-          client,
+          model,
           buildTimelineGenerator(promptInput),
           TimelineBlockSchema,
           signal,
@@ -236,7 +233,7 @@ export async function* generateStructuredBlocks(
   if (!signal?.aborted) {
     try {
       let block = await generate(
-        client,
+        model,
         buildRelatedGenerator(promptInput),
         RelatedBlockSchema,
         signal,
@@ -245,7 +242,7 @@ export async function* generateStructuredBlocks(
       // Retry once if fewer than 3 items (REQ-STRUCT-008)
       if (block === null && !signal?.aborted) {
         const retryPrompt = `${buildRelatedGenerator(promptInput)}\n\n반드시 3~5개를 생성하라.`;
-        block = await generate(client, retryPrompt, RelatedBlockSchema, signal);
+        block = await generate(model, retryPrompt, RelatedBlockSchema, signal);
       }
 
       if (block && !signal?.aborted) {

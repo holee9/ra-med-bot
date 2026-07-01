@@ -4,12 +4,9 @@
  */
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 
-vi.mock('../../lib/ai/anthropic-client', () => ({
-  sharedAnthropicClient: {
-    messages: {
-      create: vi.fn(),
-    },
-  },
+const mockGenerateText = vi.fn();
+vi.mock('ai', () => ({
+  generateText: (...args: unknown[]) => mockGenerateText(...args),
 }));
 
 const mockPortfolio = {
@@ -41,10 +38,9 @@ describe('Relevance Scorer', () => {
   });
 
   it('should return high impact_score for highly relevant updates', async () => {
-    const { sharedAnthropicClient } = await import('../../lib/ai/anthropic-client');
-    vi.mocked(sharedAnthropicClient.messages.create).mockResolvedValue({
-      content: [{ type: 'text', text: JSON.stringify({ score: 0.92, reasoning: 'Direct match' }) }],
-    } as unknown as Awaited<ReturnType<typeof sharedAnthropicClient.messages.create>>);
+    mockGenerateText.mockResolvedValue({
+      text: JSON.stringify({ score: 0.92, reasoning: 'Direct match' }),
+    });
 
     const { scoreRelevance } = await import('../../lib/radar/relevance-scorer');
 

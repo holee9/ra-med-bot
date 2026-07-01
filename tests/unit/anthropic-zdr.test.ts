@@ -1,8 +1,13 @@
-// @MX:NOTE [AUTO] Anthropic ZDR mode verification — REQ-LAUNCH-035.
-// @MX:SPEC SPEC-REGULA-LAUNCH-001 (REQ-LAUNCH-035)
-// Verifies that the Anthropic SDK client is configured with the
-// zero-data-retention beta header so PHI/PII prompts are not retained.
-// No live API calls — reads source file content.
+// @MX:NOTE [AUTO] On-prem LLM no-egress verification — supersedes REQ-LAUNCH-035 (ZDR).
+// @MX:SPEC SPEC-REGULA-LAUNCH-001 (REQ-LAUNCH-035, superseded by gx10 on-prem redesign, issue #318)
+//
+// The original ZDR (zero-data-retention) requirement was an Anthropic-cloud mitigation.
+// The gx10 redesign moves the chat/generation LLM layer to an on-prem Ollama instance
+// (gpt-oss:120b) with no external egress, making ZDR moot. This test now verifies that
+// (a) the legacy Anthropic ZDR singleton has been removed, and (b) the LLM provider
+// routes to the on-prem endpoint with no cloud SDK instantiation in the chat layer.
+//
+// No live API calls — reads source files only.
 
 import { existsSync, readFileSync } from 'node:fs';
 import path from 'node:path';
@@ -10,68 +15,31 @@ import { describe, expect, it } from 'vitest';
 
 const ROOT = path.resolve(__dirname, '..', '..');
 
-// Candidate files where ZDR config might live.
-const CANDIDATE_PATHS = [
-  'lib/ai/anthropic-client.ts',
-  'lib/ai/structured-blocks.ts',
-  'lib/ai/consult.ts',
-  'lib/ai/client.ts',
-];
-
-function findZdrConfig(): { file: string; content: string } | null {
-  for (const rel of CANDIDATE_PATHS) {
-    const abs = path.join(ROOT, rel);
-    if (existsSync(abs)) {
-      const content = readFileSync(abs, 'utf-8');
-      // ZDR is configured via the anthropic-beta header or a dedicated config file.
-      if (
-        content.includes('zero-data-retention') ||
-        content.includes('anthropic-beta') ||
-        content.includes('zdr')
-      ) {
-        return { file: rel, content };
-      }
-    }
-  }
-  return null;
-}
-
-describe('Anthropic ZDR configuration (REQ-LAUNCH-035)', () => {
-  it('a ZDR config file exists in lib/ai/', () => {
-    // The ZDR config may live in lib/ai/anthropic-client.ts (dedicated) or
-    // inline in structured-blocks.ts / consult.ts.
-    const result = findZdrConfig();
-    expect(
-      result,
-      'Expected a file in lib/ai/ to configure zero-data-retention. ' +
-        'Create lib/ai/anthropic-client.ts with the anthropic-beta header.',
-    ).not.toBeNull();
+describe('On-prem LLM no-egress (gx10 redesign, issue #318)', () => {
+  it('the legacy Anthropic ZDR singleton has been removed', () => {
+    const legacyClient = path.join(ROOT, 'lib/ai/anthropic-client.ts');
+    expect(existsSync(legacyClient), 'lib/ai/anthropic-client.ts must be deleted').toBe(false);
   });
 
-  it('ZDR config contains zero-data-retention beta header', () => {
-    const result = findZdrConfig();
-    if (!result) {
-      // This will fail because the previous test already failed.
-      expect(result).not.toBeNull();
-      return;
-    }
-    expect(result.content).toContain('zero-data-retention');
+  it('llm-provider routes to the on-prem Ollama endpoint by default', () => {
+    const providerFile = path.join(ROOT, 'lib/ai/llm-provider.ts');
+    expect(existsSync(providerFile)).toBe(true);
+    const content = readFileSync(providerFile, 'utf-8');
+
+    // The ollama branch must build an OpenAI-compatible client pointed at the on-prem URL.
+    expect(content).toContain('createOpenAI');
+    expect(content).toContain('OLLAMA_BASE_URL');
+    // Default model is the gx10 on-prem gpt-oss:120b.
+    expect(content).toContain('gpt-oss:120b');
   });
 
-  it('ZDR config passes the header to the Anthropic SDK constructor or per-request', () => {
-    const result = findZdrConfig();
-    if (!result) {
-      expect(result).not.toBeNull();
-      return;
-    }
-    // Header must appear as a string value, not just a comment.
-    const content = result.content;
-    // Accept: defaultHeaders, headers: { anthropic-beta }, or similar patterns.
-    const hasHeaderConfig =
-      content.includes('defaultHeaders') ||
-      content.includes("'anthropic-beta'") ||
-      content.includes('"anthropic-beta"') ||
-      content.includes('betas');
-    expect(hasHeaderConfig).toBe(true);
+  it('the chat layer does not instantiate the Anthropic SDK at runtime', () => {
+    const providerFile = path.join(ROOT, 'lib/ai/llm-provider.ts');
+    const content = readFileSync(providerFile, 'utf-8');
+    // The anthropic branch must be lazy (require()-gated) so it is never loaded
+    // when LLM_PROVIDER is ollama (the on-prem default). A static top-level
+    // import would pull the SDK into the runtime graph unconditionally.
+    expect(content).not.toMatch(/^import.*@ai-sdk\/anthropic/m);
+    expect(content).toContain("require('@ai-sdk/anthropic')");
   });
 });

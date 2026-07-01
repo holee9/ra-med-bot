@@ -1,10 +1,9 @@
-// @MX:ANCHOR: [AUTO] parseDeviceIntent — Haiku AI intent extraction for device description
+import { getLlmFastModel } from '@/lib/ai/llm-provider';
+// @MX:ANCHOR: [AUTO] parseDeviceIntent — fast LLM intent extraction for device description
 // @MX:REASON: External AI API boundary; called by classification route; E2E_TEST_MODE guard required
 // @MX:SPEC: SPEC-REGULA-CLASSIFY-001 REQ-CLASSIFY-010
-import Anthropic from '@anthropic-ai/sdk';
+import { generateText } from 'ai';
 import type { DeviceInput } from './classification-engine';
-
-const client = new Anthropic();
 
 // E2E_TEST_MODE mock — returns deterministic output for test environments.
 const MOCK_DEVICE_INPUT: Omit<DeviceInput, 'deviceDescription'> = {
@@ -22,9 +21,9 @@ export async function parseDeviceIntent(
     return { ...MOCK_DEVICE_INPUT };
   }
 
-  const response = await client.messages.create({
-    model: 'claude-haiku-4-5-20251001',
-    max_tokens: 512,
+  const { text: raw } = await generateText({
+    model: getLlmFastModel(),
+    maxTokens: 512,
     messages: [
       {
         role: 'user',
@@ -42,9 +41,7 @@ JSON response only, no explanation:`,
     ],
   });
 
-  const firstBlock = response.content[0];
-  const text =
-    firstBlock !== undefined && firstBlock.type === 'text' ? firstBlock.text.trim() : '{}';
+  const text = raw?.trim() || '{}';
   try {
     const parsed = JSON.parse(text) as Record<string, unknown>;
     return {

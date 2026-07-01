@@ -2,7 +2,8 @@
 // @MX:REASON Called by radar-score-consumer worker and tests. fan_in >= 3.
 // @MX:SPEC SPEC-REGULA-RADAR-001
 
-import { sharedAnthropicClient } from '@/lib/ai/anthropic-client';
+import { getLlmFastModel } from '@/lib/ai/llm-provider';
+import { generateText } from 'ai';
 import type { OrgPortfolio } from './portfolio-loader';
 
 export interface UpdateForScoring {
@@ -86,16 +87,16 @@ Company Portfolio:
 
 Respond ONLY with JSON: {"score": number (0.0-1.0), "reasoning": "brief explanation"}`;
 
-  const response = await sharedAnthropicClient.messages.create({
-    model: 'claude-haiku-4-5',
-    max_tokens: 256,
+  const response = await generateText({
+    model: getLlmFastModel(),
+    maxTokens: 256,
     messages: [{ role: 'user', content: prompt }],
   });
 
-  const rawBlock = response.content[0];
-  if (!rawBlock || rawBlock.type !== 'text') throw new Error('Unexpected LLM response');
+  const rawText = response.text?.trim() ?? '';
+  if (!rawText) throw new Error('Unexpected LLM response');
 
-  const parsed = JSON.parse(rawBlock.text) as { score: number; reasoning?: string };
+  const parsed = JSON.parse(rawText) as { score: number; reasoning?: string };
   return {
     impact_score: Math.min(1, Math.max(0, parsed.score)),
     reasoning: parsed.reasoning,

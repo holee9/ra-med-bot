@@ -1,9 +1,10 @@
 // POST /api/ra/radar/search — natural language search with Haiku intent parse.
 // @MX:SPEC SPEC-REGULA-RADAR-001
 
+import { generateText } from 'ai';
 import { desc, ilike, or } from 'drizzle-orm';
 import { z } from 'zod';
-import { sharedAnthropicClient } from '../../../../../lib/ai/anthropic-client';
+import { getLlmFastModel } from '../../../../../lib/ai/llm-provider';
 import { writeAudit } from '../../../../../lib/audit';
 import { withPermission } from '../../../../../lib/auth/with-permission';
 import { db } from '../../../../../lib/db/client';
@@ -29,12 +30,12 @@ export const POST = withPermission('dashboard.view', async (req, _ctx, session) 
 
   const { query } = parsed.data;
 
-  // Step 1: Haiku parses natural language intent
+  // Step 1: fast LLM parses natural language intent
   let intent: ParsedIntent = { keywords: [query] };
   try {
-    const intentResponse = await sharedAnthropicClient.messages.create({
-      model: 'claude-haiku-4-5',
-      max_tokens: 256,
+    const intentResponse = await generateText({
+      model: getLlmFastModel(),
+      maxTokens: 256,
       messages: [
         {
           role: 'user',
@@ -47,9 +48,9 @@ Respond ONLY with JSON:
       ],
     });
 
-    const raw = intentResponse.content[0];
-    if (raw && raw.type === 'text') {
-      intent = JSON.parse(raw.text) as ParsedIntent;
+    const raw = intentResponse.text?.trim() ?? '';
+    if (raw) {
+      intent = JSON.parse(raw) as ParsedIntent;
     }
   } catch {
     // Fall back to keyword-only search

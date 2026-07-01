@@ -3,7 +3,8 @@
 // fan_in >= 3 expected (worker, tests, relevance-scorer).
 // @MX:SPEC SPEC-REGULA-RADAR-001 (REQ-RADAR-004..009)
 
-import { sharedAnthropicClient } from '@/lib/ai/anthropic-client';
+import { getLlmFastModel } from '@/lib/ai/llm-provider';
+import { generateText } from 'ai';
 import {
   TIER1_SYSTEM_PROMPT,
   TIER2_SYSTEM_PROMPT,
@@ -37,6 +38,34 @@ export interface Tier1ClassificationResult extends Tier1Result {
 }
 
 /**
+ * Shared tier call: runs the fast model with a tier-specific system prompt
+ * and returns the raw text output. Throws on empty response.
+ */
+async function runTier(
+  systemPrompt: string,
+  input: RawUpdateInput,
+  tierName: string,
+): Promise<string> {
+  const response = await generateText({
+    model: getLlmFastModel(),
+    maxTokens: 256,
+    system: systemPrompt,
+    messages: [
+      {
+        role: 'user',
+        content: `Title: ${input.title}\n\nContent excerpt: ${(input.raw_content ?? '').slice(0, 500)}`,
+      },
+    ],
+  });
+
+  const text = response.text?.trim() ?? '';
+  if (!text) {
+    throw new Error(`Unexpected response type from ${tierName} classifier`);
+  }
+  return text;
+}
+
+/**
  * Tier 1: Binary relevance check — is this document about medical devices?
  *
  * CRITICAL safety net: if title or raw_content contains recall keywords,
@@ -46,24 +75,9 @@ export async function classifyTier1(input: RawUpdateInput): Promise<Tier1Classif
   const combinedText = `${input.title}\n${input.raw_content ?? ''}`;
   const keywordMatch = containsRecallKeyword(combinedText);
 
-  const response = await sharedAnthropicClient.messages.create({
-    model: 'claude-haiku-4-5',
-    max_tokens: 256,
-    system: TIER1_SYSTEM_PROMPT,
-    messages: [
-      {
-        role: 'user',
-        content: `Title: ${input.title}\n\nContent excerpt: ${(input.raw_content ?? '').slice(0, 500)}`,
-      },
-    ],
-  });
+  const rawText = await runTier(TIER1_SYSTEM_PROMPT, input, 'Tier 1');
 
-  const rawBlock = response.content[0];
-  if (!rawBlock || rawBlock.type !== 'text') {
-    throw new Error('Unexpected response type from Tier 1 classifier');
-  }
-
-  const parsed = Tier1Schema.parse(JSON.parse(rawBlock.text));
+  const parsed = Tier1Schema.parse(JSON.parse(rawText));
 
   if (keywordMatch && !parsed.relevant) {
     return { ...parsed, relevant: true, forced_by_keyword: true };
@@ -77,24 +91,8 @@ export async function classifyTier1(input: RawUpdateInput): Promise<Tier1Classif
  * Only called when Tier 1 returns relevant=true.
  */
 export async function classifyTier2(input: RawUpdateInput): Promise<Tier2Result> {
-  const response = await sharedAnthropicClient.messages.create({
-    model: 'claude-haiku-4-5',
-    max_tokens: 256,
-    system: TIER2_SYSTEM_PROMPT,
-    messages: [
-      {
-        role: 'user',
-        content: `Title: ${input.title}\n\nContent excerpt: ${(input.raw_content ?? '').slice(0, 500)}`,
-      },
-    ],
-  });
-
-  const rawBlock = response.content[0];
-  if (!rawBlock || rawBlock.type !== 'text') {
-    throw new Error('Unexpected response type from Tier 2 classifier');
-  }
-
-  return Tier2Schema.parse(JSON.parse(rawBlock.text));
+  const rawText = await runTier(TIER2_SYSTEM_PROMPT, input, 'Tier 2');
+  return Tier2Schema.parse(JSON.parse(rawText));
 }
 
 /**
@@ -102,24 +100,8 @@ export async function classifyTier2(input: RawUpdateInput): Promise<Tier2Result>
  * Only called when Tier 1 returns relevant=true.
  */
 export async function classifyTier3(input: RawUpdateInput): Promise<Tier3Result> {
-  const response = await sharedAnthropicClient.messages.create({
-    model: 'claude-haiku-4-5',
-    max_tokens: 256,
-    system: TIER3_SYSTEM_PROMPT,
-    messages: [
-      {
-        role: 'user',
-        content: `Title: ${input.title}\n\nContent excerpt: ${(input.raw_content ?? '').slice(0, 500)}`,
-      },
-    ],
-  });
-
-  const rawBlock = response.content[0];
-  if (!rawBlock || rawBlock.type !== 'text') {
-    throw new Error('Unexpected response type from Tier 3 classifier');
-  }
-
-  return Tier3Schema.parse(JSON.parse(rawBlock.text));
+  const rawText = await runTier(TIER3_SYSTEM_PROMPT, input, 'Tier 3');
+  return Tier3Schema.parse(JSON.parse(rawText));
 }
 
 export interface ClassificationResult {

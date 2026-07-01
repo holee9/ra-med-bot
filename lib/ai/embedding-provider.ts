@@ -56,6 +56,28 @@ let aiSdkProvider: ReturnType<typeof createOpenAI> | null = null;
  * Ollama endpoint. Used by retrievers (via getEmbeddingModel) and the batch
  * embedder (via embedBatchTexts).
  */
+/**
+ * Wraps a fetch init so that MRL truncation (`dimensions: 1536`) is injected into
+ * every `/v1/embeddings` request body. Returns the init unchanged for non-embedding
+ * requests or already-configured bodies. Used as the `createOpenAI` fetch middleware
+ * so every consumer (embedBatchTexts, retrievers, knowledge-promo, ingest) emits
+ * 1536-dim vectors without per-call providerOptions plumbing.
+ */
+function withEmbeddingDimensions(
+  url: string,
+  init: RequestInit | undefined,
+): RequestInit | undefined {
+  if (!init?.body || !url.includes('/embeddings')) return init;
+  try {
+    const parsed = JSON.parse(String(init.body)) as Record<string, unknown>;
+    if (parsed.dimensions !== undefined) return init;
+    return { ...init, body: JSON.stringify({ ...parsed, dimensions: EMBEDDING_DIMENSIONS }) };
+  } catch {
+    // Non-JSON body (e.g. multipart) — pass through unchanged.
+    return init;
+  }
+}
+
 function getAiSdkProvider(): ReturnType<typeof createOpenAI> {
   if (!aiSdkProvider) {
     aiSdkProvider = createOpenAI({
@@ -72,18 +94,7 @@ function getAiSdkProvider(): ReturnType<typeof createOpenAI> {
       //      embed/embedMany call. Direct-verified against gx10 2026-07-01 (L-013).
       fetch: async (url, init) => {
         const urlStr = typeof url === 'string' ? url : url.toString();
-        if (init?.body && urlStr.includes('/embeddings')) {
-          try {
-            const body = JSON.parse(String(init.body)) as Record<string, unknown>;
-            if (body.dimensions === undefined) {
-              body.dimensions = EMBEDDING_DIMENSIONS;
-              init = { ...init, body: JSON.stringify(body) };
-            }
-          } catch {
-            // Non-JSON body (e.g. multipart) — pass through unchanged.
-          }
-        }
-        return globalThis.fetch(url as RequestInfo, init);
+        return globalThis.fetch(url as RequestInfo, withEmbeddingDimensions(urlStr, init));
       },
     });
   }

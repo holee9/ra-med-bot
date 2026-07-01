@@ -30,7 +30,7 @@ function buildModel(role: 'main' | 'fast'): LanguageModel {
   switch (provider) {
     case 'ollama': {
       const baseURL = process.env.OLLAMA_BASE_URL ?? 'http://localhost:11434/v1';
-      const mainModel = process.env.OLLAMA_MODEL ?? 'llama3.2';
+      const mainModel = process.env.OLLAMA_MODEL ?? 'gpt-oss:120b';
       const fastModel = process.env.OLLAMA_FAST_MODEL ?? mainModel;
       const modelName = role === 'fast' ? fastModel : mainModel;
       // Ollama exposes an OpenAI-compatible endpoint; apiKey is ignored but required by the SDK.
@@ -55,7 +55,7 @@ function buildModel(role: 'main' | 'fast'): LanguageModel {
     default: {
       // Unknown provider — fall back to Ollama so the pipeline never crashes hard.
       const baseURL = process.env.OLLAMA_BASE_URL ?? 'http://localhost:11434/v1';
-      const modelName = process.env.OLLAMA_MODEL ?? 'llama3.2';
+      const modelName = process.env.OLLAMA_MODEL ?? 'gpt-oss:120b';
       const ollama = createOpenAI({ baseURL, apiKey: 'ollama' });
       return ollama(modelName) as unknown as LanguageModel;
     }

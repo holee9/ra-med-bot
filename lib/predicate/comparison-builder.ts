@@ -8,16 +8,14 @@
 // and approval are UI responsibilities, not handled here). LLM suggestions are
 // advisory only and are fetched in a single batched API call.
 
-import type Anthropic from '@anthropic-ai/sdk';
+import { generateText } from 'ai';
+import type { LanguageModel } from 'ai';
 import type {
   ComparisonCell,
   ComparisonDimension,
   PredicateCandidate,
   PredicateComparison,
 } from './types';
-
-/** Exact Haiku model id mandated by SPEC REQ-PRE-016. */
-const HAIKU_MODEL = 'claude-haiku-4-5-20251001';
 
 /** Maximum number of predicates that may be compared at once (REQ-PRE-018). */
 const MAX_PREDICATES = 3;
@@ -53,11 +51,11 @@ export interface ComparisonBuilder {
 }
 
 /**
- * Create a comparison builder bound to an Anthropic client. The client is used
+ * Create a comparison builder bound to a language model. The model is used
  * only for advisory suggestion generation; comparison structure is built
  * deterministically and never depends on a successful LLM call.
  */
-export function createComparisonBuilder(anthropicClient: Anthropic): ComparisonBuilder {
+export function createComparisonBuilder(model: LanguageModel): ComparisonBuilder {
   return {
     async buildComparison(input: BuildComparisonInput): Promise<PredicateComparison> {
       const { subject_device_name, subject_inputs, selected_predicates } = input;
@@ -67,7 +65,7 @@ export function createComparisonBuilder(anthropicClient: Anthropic): ComparisonB
       }
 
       const suggestions = await fetchSuggestions(
-        anthropicClient,
+        model,
         subject_device_name,
         subject_inputs,
         selected_predicates,
@@ -104,23 +102,23 @@ export function createComparisonBuilder(anthropicClient: Anthropic): ComparisonB
  * degrades gracefully to a comparison without suggestions (REQ-PRE-016).
  */
 async function fetchSuggestions(
-  client: Anthropic,
+  model: LanguageModel,
   subjectName: string,
   subjectInputs: Record<ComparisonDimension, string>,
   predicates: PredicateCandidate[],
 ): Promise<Record<ComparisonDimension, string> | undefined> {
   try {
     const prompt = buildPrompt(subjectName, subjectInputs, predicates);
-    const response = await client.messages.create({
-      model: HAIKU_MODEL,
-      max_tokens: MAX_OUTPUT_TOKENS,
+    const response = await generateText({
+      model,
+      maxTokens: MAX_OUTPUT_TOKENS,
       messages: [{ role: 'user', content: prompt }],
     });
 
-    const block = response.content[0];
-    if (!block || block.type !== 'text') return undefined;
+    const text = response.text?.trim() ?? '';
+    if (!text) return undefined;
 
-    return parseSuggestions(block.text);
+    return parseSuggestions(text);
   } catch {
     return undefined;
   }

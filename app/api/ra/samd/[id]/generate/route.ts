@@ -1,16 +1,17 @@
-// POST /api/ra/samd/[id]/generate — generate model card, checklist, monitoring plan via Haiku.
+// POST /api/ra/samd/[id]/generate — generate model card, checklist, monitoring plan via fast LLM.
 // Streams SSE progress events; stores results in generated_* JSONB columns.
 // @MX:ANCHOR [AUTO] SSE AI generation route for SaMD artifacts
-// @MX:REASON External Anthropic call + DB write; fan_in >= 3 via wizard, re-generate button, API.
+// @MX:REASON External LLM call + DB write; fan_in >= 3 via wizard, re-generate button, API.
 // @MX:SPEC SPEC-REGULA-SAMD-001
 
 export const runtime = 'nodejs';
 
-import { sharedAnthropicClient } from '@/lib/ai/anthropic-client';
+import { getLlmFastModel } from '@/lib/ai/llm-provider';
 import { writeAudit } from '@/lib/audit';
 import { withPermission } from '@/lib/auth/with-permission';
 import { db } from '@/lib/db/client';
 import { samdAssessments } from '@/lib/db/schema';
+import { generateText } from 'ai';
 import { and, eq } from 'drizzle-orm';
 
 const SSE_HEADERS = {
@@ -57,9 +58,9 @@ export const POST = withPermission('dashboard.view', async (_req, ctx, session) 
         send('progress', { step: 'model_card', message: 'Generating AI/ML Model Card...' });
 
         // --- Model Card ---
-        const modelCardResponse = await sharedAnthropicClient.messages.create({
-          model: 'claude-haiku-4-5-20251001',
-          max_tokens: 1500,
+        const modelCardResponse = await generateText({
+          model: getLlmFastModel(),
+          maxTokens: 1500,
           messages: [
             {
               role: 'user',
@@ -90,21 +91,21 @@ Return only the JSON object, no markdown.`,
         });
 
         let modelCard: unknown = null;
-        const mcRaw = modelCardResponse.content[0];
-        if (mcRaw?.type === 'text') {
+        const mcText = modelCardResponse.text?.trim() ?? '';
+        if (mcText) {
           try {
-            modelCard = JSON.parse(mcRaw.text);
+            modelCard = JSON.parse(mcText);
           } catch {
-            modelCard = { raw: mcRaw.text };
+            modelCard = { raw: mcText };
           }
         }
 
         send('progress', { step: 'checklist', message: 'Generating regulatory checklist...' });
 
         // --- Checklist ---
-        const checklistResponse = await sharedAnthropicClient.messages.create({
-          model: 'claude-haiku-4-5-20251001',
-          max_tokens: 2000,
+        const checklistResponse = await generateText({
+          model: getLlmFastModel(),
+          maxTokens: 2000,
           messages: [
             {
               role: 'user',
@@ -130,21 +131,21 @@ Include 10-15 key items. Return only the JSON array.`,
         });
 
         let checklist: unknown = null;
-        const clRaw = checklistResponse.content[0];
-        if (clRaw?.type === 'text') {
+        const clText = checklistResponse.text?.trim() ?? '';
+        if (clText) {
           try {
-            checklist = JSON.parse(clRaw.text);
+            checklist = JSON.parse(clText);
           } catch {
-            checklist = { raw: clRaw.text };
+            checklist = { raw: clText };
           }
         }
 
         send('progress', { step: 'monitoring_plan', message: 'Generating monitoring plan...' });
 
         // --- Monitoring Plan ---
-        const monitoringResponse = await sharedAnthropicClient.messages.create({
-          model: 'claude-haiku-4-5-20251001',
-          max_tokens: 1500,
+        const monitoringResponse = await generateText({
+          model: getLlmFastModel(),
+          maxTokens: 1500,
           messages: [
             {
               role: 'user',
@@ -169,12 +170,12 @@ Return only the JSON object.`,
         });
 
         let monitoringPlan: unknown = null;
-        const mpRaw = monitoringResponse.content[0];
-        if (mpRaw?.type === 'text') {
+        const mpText = monitoringResponse.text?.trim() ?? '';
+        if (mpText) {
           try {
-            monitoringPlan = JSON.parse(mpRaw.text);
+            monitoringPlan = JSON.parse(mpText);
           } catch {
-            monitoringPlan = { raw: mpRaw.text };
+            monitoringPlan = { raw: mpText };
           }
         }
 

@@ -9,7 +9,7 @@
 // which is not edge-runtime compatible.
 export const runtime = 'nodejs';
 
-import { sharedAnthropicClient } from '@/lib/ai/anthropic-client';
+import { getLlmFastModel } from '@/lib/ai/llm-provider';
 import { writeAudit } from '@/lib/audit';
 import { canManageComparisons, canViewComparisons } from '@/lib/auth/predicate-permissions';
 import { withPermission } from '@/lib/auth/with-permission';
@@ -92,7 +92,7 @@ export const POST = withPermission('workflow.execute', async (req, _ctx, session
   }
 
   const predicates = candidatesFromKNumbers(selected_predicate_knumbers);
-  const builder = createComparisonBuilder(sharedAnthropicClient);
+  const builder = createComparisonBuilder(getLlmFastModel());
   const comparison = await builder.buildComparison({
     subject_device_name,
     subject_inputs: subject_inputs as Record<ComparisonDimension, string>,

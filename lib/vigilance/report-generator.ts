@@ -2,10 +2,11 @@
 // @MX:REASON Sole function generating regulated report drafts; called by route handler and exports.
 // @MX:SPEC SPEC-REGULA-VIGILANCE-001 (REQ-VIG-011~020)
 //
-// Uses claude-sonnet-4-5 (or env override) to produce structured field-by-field drafts.
+// Uses the main LLM model to produce structured field-by-field drafts.
 // E2E_TEST_MODE returns deterministic mock drafts without LLM calls.
 
-import { sharedAnthropicClient } from '@/lib/ai/anthropic-client';
+import { getLlmModel } from '@/lib/ai/llm-provider';
+import { generateText } from 'ai';
 import type { AdverseEventInput, ReportabilityDecision } from './reportability-engine';
 
 export type ReportType = 'fda_mdr' | 'eu_mdv' | 'fsca';
@@ -186,26 +187,25 @@ export async function generateReportDraft(
     };
   }
 
-  const model = process.env.ANTHROPIC_MODEL ?? 'claude-sonnet-4-5';
   const prompt = buildPrompt(event, reportType);
 
-  const response = await sharedAnthropicClient.messages.create({
-    model,
-    max_tokens: 1024,
+  const response = await generateText({
+    model: getLlmModel(),
+    maxTokens: 1024,
     messages: [{ role: 'user', content: prompt }],
   });
 
-  const rawBlock = response.content[0];
-  if (!rawBlock || rawBlock.type !== 'text') {
+  const text = response.text?.trim() ?? '';
+  if (!text) {
     throw new Error(`Unexpected response type from report generator for ${reportType}`);
   }
 
   let draftContent: Record<string, string>;
   try {
-    draftContent = JSON.parse(rawBlock.text) as Record<string, string>;
+    draftContent = JSON.parse(text) as Record<string, string>;
   } catch {
     // If JSON parse fails, wrap the raw text as a single field
-    draftContent = { raw_draft: rawBlock.text };
+    draftContent = { raw_draft: text };
   }
 
   return {

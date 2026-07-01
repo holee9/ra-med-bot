@@ -4,25 +4,24 @@
  */
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 
-// Mock Anthropic client
-vi.mock('../../lib/ai/anthropic-client', () => ({
-  sharedAnthropicClient: {
-    messages: {
-      create: vi.fn(),
-    },
-  },
+// Mock generateText from the ai package (replaces former Anthropic SDK mock).
+const mockGenerateText = vi.fn();
+vi.mock('ai', () => ({
+  generateText: (...args: unknown[]) => mockGenerateText(...args),
 }));
+
+function mockTierResponse(payload: unknown): void {
+  mockGenerateText.mockResolvedValue({ text: JSON.stringify(payload) });
+}
 
 describe('Classifier — Tier 1 (Medical Device Relevance)', () => {
   beforeEach(() => {
     vi.resetModules();
+    mockGenerateText.mockReset();
   });
 
   it('should return relevant=true for medical device regulation titles', async () => {
-    const { sharedAnthropicClient } = await import('../../lib/ai/anthropic-client');
-    vi.mocked(sharedAnthropicClient.messages.create).mockResolvedValue({
-      content: [{ type: 'text', text: JSON.stringify({ relevant: true, confidence: 0.97 }) }],
-    } as unknown as Awaited<ReturnType<typeof sharedAnthropicClient.messages.create>>);
+    mockTierResponse({ relevant: true, confidence: 0.97 });
 
     const { classifyTier1 } = await import('../../lib/radar/classifier');
 
@@ -35,10 +34,7 @@ describe('Classifier — Tier 1 (Medical Device Relevance)', () => {
   });
 
   it('should return relevant=false for clearly unrelated titles', async () => {
-    const { sharedAnthropicClient } = await import('../../lib/ai/anthropic-client');
-    vi.mocked(sharedAnthropicClient.messages.create).mockResolvedValue({
-      content: [{ type: 'text', text: JSON.stringify({ relevant: false, confidence: 0.98 }) }],
-    } as unknown as Awaited<ReturnType<typeof sharedAnthropicClient.messages.create>>);
+    mockTierResponse({ relevant: false, confidence: 0.98 });
 
     const { classifyTier1 } = await import('../../lib/radar/classifier');
 
@@ -51,11 +47,8 @@ describe('Classifier — Tier 1 (Medical Device Relevance)', () => {
   });
 
   it('should force relevant=true when title contains "recall" keyword (safety net)', async () => {
-    const { sharedAnthropicClient } = await import('../../lib/ai/anthropic-client');
     // LLM says NOT relevant, but keyword check should override
-    vi.mocked(sharedAnthropicClient.messages.create).mockResolvedValue({
-      content: [{ type: 'text', text: JSON.stringify({ relevant: false, confidence: 0.7 }) }],
-    } as unknown as Awaited<ReturnType<typeof sharedAnthropicClient.messages.create>>);
+    mockTierResponse({ relevant: false, confidence: 0.7 });
 
     const { classifyTier1 } = await import('../../lib/radar/classifier');
 
@@ -69,10 +62,7 @@ describe('Classifier — Tier 1 (Medical Device Relevance)', () => {
   });
 
   it('should force relevant=true when content contains Korean recall keyword 리콜', async () => {
-    const { sharedAnthropicClient } = await import('../../lib/ai/anthropic-client');
-    vi.mocked(sharedAnthropicClient.messages.create).mockResolvedValue({
-      content: [{ type: 'text', text: JSON.stringify({ relevant: false, confidence: 0.6 }) }],
-    } as unknown as Awaited<ReturnType<typeof sharedAnthropicClient.messages.create>>);
+    mockTierResponse({ relevant: false, confidence: 0.6 });
 
     const { classifyTier1 } = await import('../../lib/radar/classifier');
 
@@ -89,22 +79,15 @@ describe('Classifier — Tier 1 (Medical Device Relevance)', () => {
 describe('Classifier — Tier 2 (Device Class & Product Category)', () => {
   beforeEach(() => {
     vi.resetModules();
+    mockGenerateText.mockReset();
   });
 
   it('should classify device class from relevant regulatory document', async () => {
-    const { sharedAnthropicClient } = await import('../../lib/ai/anthropic-client');
-    vi.mocked(sharedAnthropicClient.messages.create).mockResolvedValue({
-      content: [
-        {
-          type: 'text',
-          text: JSON.stringify({
-            device_class: 'II',
-            product_categories: ['diagnostic_imaging', 'software'],
-            confidence: 0.88,
-          }),
-        },
-      ],
-    } as unknown as Awaited<ReturnType<typeof sharedAnthropicClient.messages.create>>);
+    mockTierResponse({
+      device_class: 'II',
+      product_categories: ['diagnostic_imaging', 'software'],
+      confidence: 0.88,
+    });
 
     const { classifyTier2 } = await import('../../lib/radar/classifier');
 
@@ -121,21 +104,11 @@ describe('Classifier — Tier 2 (Device Class & Product Category)', () => {
 describe('Classifier — Tier 3 (Impact Type)', () => {
   beforeEach(() => {
     vi.resetModules();
+    mockGenerateText.mockReset();
   });
 
   it('should classify impact type as recall for recall documents', async () => {
-    const { sharedAnthropicClient } = await import('../../lib/ai/anthropic-client');
-    vi.mocked(sharedAnthropicClient.messages.create).mockResolvedValue({
-      content: [
-        {
-          type: 'text',
-          text: JSON.stringify({
-            impact_type: 'recall',
-            confidence: 0.96,
-          }),
-        },
-      ],
-    } as unknown as Awaited<ReturnType<typeof sharedAnthropicClient.messages.create>>);
+    mockTierResponse({ impact_type: 'recall', confidence: 0.96 });
 
     const { classifyTier3 } = await import('../../lib/radar/classifier');
 
@@ -148,18 +121,7 @@ describe('Classifier — Tier 3 (Impact Type)', () => {
   });
 
   it('should classify impact type as legislation for regulatory rules', async () => {
-    const { sharedAnthropicClient } = await import('../../lib/ai/anthropic-client');
-    vi.mocked(sharedAnthropicClient.messages.create).mockResolvedValue({
-      content: [
-        {
-          type: 'text',
-          text: JSON.stringify({
-            impact_type: 'legislation',
-            confidence: 0.93,
-          }),
-        },
-      ],
-    } as unknown as Awaited<ReturnType<typeof sharedAnthropicClient.messages.create>>);
+    mockTierResponse({ impact_type: 'legislation', confidence: 0.93 });
 
     const { classifyTier3 } = await import('../../lib/radar/classifier');
 
