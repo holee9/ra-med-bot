@@ -768,4 +768,346 @@ hermes `_COPILOT_MODEL_ALIASES` (`models.py:2977`) 기준. **임베딩은 Copilo
 
 ---
 
+## 12. gx10 전용 전면 재설계 (2026-07-01) — 최종 방침
+
+> **선행 섹션 폐기**: 섹션 11(Copilot 구독 경로), 섹션 3~10의 GitHub Models / OpenAI / Anthropic 기반 설계는 모두 **superseded**. 본 섹션은 사용자의 비타협 방침(외부 API 전면 배제, 과금 0, 온프레미스)을 충족하는 유일한 경로다.
+>
+> **검증 기준**: gx10 인프라 모든 주장은 2026-07-01 오케스트레이터 직검 데이터 기반 (L-013 준수 — 재추측 금지). 코드 상태는 `lib/ai/embedding-provider.ts`, `lib/ai/llm-provider.ts`, `lib/db/schema*.ts`, `migrations/`, `lib/env.ts`, `package.json` 직접 read로 확인.
+
+### 12.1 목표 아키텍처 — gx10 Ollama 단일 백엔드
+
+```
+┌──────────────────────────────────────────────────────────────┐
+│  Regula (T3610, Next.js)  192.168.100.200                     │
+│  ├─ chat (11개 사이트 + intent/router/consult)                │
+│  │   → OLLAMA_BASE_URL=http://192.168.100.1:11434/v1          │
+│  │     OLLAMA_MODEL=gpt-oss:120b                              │
+│  └─ embedding (retrievers 3 + knowledge-promo 2 + ingest)     │
+│      → EMBEDDING_BASE_URL=http://192.168.100.1:11434/v1       │
+│        EMBEDDING_MODEL=qwen3-embedding:latest                 │
+└──────────────────┬───────────────────────────────────────────┘
+                   │ 2.5G 직결 (ping 0.9ms 측정)
+                   ▼
+┌──────────────────────────────────────────────────────────────┐
+│  gx10 (NVIDIA GB10 Grace Blackwell)  192.168.100.1            │
+│  Ollama 0.0.0.0:11434 (OPENAI 호환 /v1/* + 네이티브 /api/*)   │
+│  ├─ gpt-oss:120b       (116.8B MXFP4, ctx 131072, reasoning)  │
+│  └─ qwen3-embedding    (2880차원)                              │
+│  최적화: KEEP_ALIVE=2h NUM_PARALLEL=2 MAX_LOADED_MODELS=3     │
+│          FLASH_ATTENTION=1                                     │
+└──────────────────────────────────────────────────────────────┘
+
+외부 API 호출: 0건 (OpenAI / Anthropic / GitHub Models / Copilot 전부 배제)
+과금: 0 (월구독·사용량과금 전부)
+인증: 무 (192.168.100.x 로컬망 신뢰 — OLLAMA_HOST=0.0.0.0 이미 설정됨)
+```
+
+| 계층 | 기존 (superseded) | 최종 (gx10) |
+|------|-------------------|-------------|
+| chat LLM | Anthropic Claude 11사이트 + Ollama llama3.2 fallback | **gpt-oss:120b** (단일 모델, 사이트별 모델 차이 없음) |
+| embedding | GitHub Models `text-embedding-3-small` (1536차원) | **qwen3-embedding:latest** (2880차원) |
+| 외부 의존 | OpenAI API, Anthropic API, GitHub Models PAT | **없음** (gx10 단일 홉) |
+
+### 12.2 Phase A-revised — 임베딩 gx10 전환 + 차원 마이그레이션 1536→2880
+
+#### 12.2.1 embedding-provider.ts 변경
+
+현재 `lib/ai/embedding-provider.ts` (직검):
+- `DEFAULT_BASE_URL = 'https://models.github.ai/inference'`
+- `DEFAULT_MODEL = 'text-embedding-3-small'`
+- API key: `GITHUB_MODELS_TOKEN` (필수, 테스트용 sentinel 폴백)
+
+변경 후 (gx10):
+```typescript
+const DEFAULT_BASE_URL = 'http://192.168.100.1:11434/v1';  // gx10 Ollama
+const DEFAULT_MODEL = 'qwen3-embedding:latest';            // 2880차원
+const NO_KEY_FALLBACK = 'ollama';  // Ollama은 key 무시, SDK는 문자열 요구
+
+export function getEmbeddingApiKey(): string {
+  // 로컬망 — 인증 불필요. SDK 생성자는 문자열을 요구하지만 요청 시 검증 안 함.
+  return process.env.EMBEDDING_API_KEY ?? NO_KEY_FALLBACK;
+}
+```
+
+`createOpenAI` 재사용 유지 (`@ai-sdk/openai` — Ollama /v1/embeddings는 OpenAI 호환). `embedMany` 호출부는 동일 — 차원만 1536→2880로 증가, 반환 타입 `number[][]`은 그대로.
+
+> **대체 경로 (직접 /api/embeddings)**: Ollama 네이티브 엔드포인트 `POST http://192.168.100.1:11434/api/embeddings` (`{model, prompt}` → `{embedding: number[]}`). @ai-sdk/openai 경로가 차원·배치 처리 호환성 문제를 보일 경우에만 고려. 기본은 createOpenAI 재사용.
+
+#### 12.2.2 pgvector 차원 마이그레이션 1536→2880 (정확한 SQL/코드 형태)
+
+**현황 (직검 — migrations/ 디렉토리 + schema 파일)**: `vector(1536)` 하드코딩 5개 컬럼 (messages.embedding 포함 시 6개 migration 정의, schema.ts customType 사용 5곳).
+
+| 컬럼 | migration 파일 | 인덱스 |
+|------|---------------|--------|
+| `sources.embedding` | `migrations/0000_init.sql:99` | (0000_init.sql 내 ivfflat) |
+| `source_sections.embedding` | `migrations/0000_init.sql:132` | (0000_init.sql 내 ivfflat) |
+| `promoted_answers.embedding` | `migrations/0086_knowledge_promo.sql:46` + `0089_fixup` | `idx_promoted_answers_embedding` (ivfflat, vector_cosine_ops) |
+| `document_chunks.embedding` | `migrations/0014_docingest_schema.sql:63` | `idx_document_chunks_embedding_hnsw` (hnsw, vector_cosine_ops) |
+| `messages.embedding` | `migrations/0094_messages_embedding.sql:37` | `idx_messages_embedding` (ivfflat, vector_cosine_ops) |
+
+**제약**: pgvector는 차원 축소/확대를 `ALTER COLUMN ... TYPE`로 직접 지원하지 않음 (벡터 캐스트 손실). 코퍼스가 0행이므로 **DROP COLUMN + ADD COLUMN**이 가장 깨끗한 경로.
+
+**신규 migration SQL** (`migrations/00XX_embedding_dim_2880.sql`):
+
+```sql
+-- §0 전제: 코퍼스 0행 (데이터 이동 0). 운영 적용 전 SELECT count()로 0 확인 필수.
+
+-- §1 차원 변경 (DROP + ADD — pgvector는 ALTER TYPE 차원 변경 미지원)
+ALTER TABLE sources            DROP COLUMN embedding, ADD COLUMN embedding vector(2880);
+ALTER TABLE source_sections    DROP COLUMN embedding, ADD COLUMN embedding vector(2880);
+ALTER TABLE promoted_answers   DROP COLUMN embedding, ADD COLUMN embedding vector(2880);
+ALTER TABLE document_chunks    DROP COLUMN embedding, ADD COLUMN embedding vector(2880);
+ALTER TABLE messages           DROP COLUMN embedding, ADD COLUMN embedding vector(2880);
+
+-- §2 인덱스 재구축 (기존 정의 준용 — 0000_init / 0086 / 0089 / 0014 / 0094)
+CREATE INDEX IF NOT EXISTS idx_sources_embedding
+  ON sources USING hnsw (embedding vector_cosine_ops);
+CREATE INDEX IF NOT EXISTS idx_source_sections_embedding
+  ON source_sections USING hnsw (embedding vector_cosine_ops);
+CREATE INDEX IF NOT EXISTS idx_promoted_answers_embedding
+  ON promoted_answers USING ivfflat (embedding vector_cosine_ops) WITH (lists = 10);
+CREATE INDEX IF NOT EXISTS idx_document_chunks_embedding_hnsw
+  ON document_chunks USING hnsw (embedding vector_cosine_ops);
+CREATE INDEX IF NOT EXISTS idx_messages_embedding
+  ON messages USING ivfflat (embedding vector_cosine_ops) WITH (lists = 10);
+```
+
+> **인덱스 타입 주의**: 기존 sources/source_sections 인덱스 타입은 `migrations/0000_init.sql` 하단에서 확인 필요 (ivfflat vs hnsw). 위 SQL은 hnsw로 표기했으나, 구현 시 기존 정의를 준용할 것. document_chunks는 hnsw 확정 (`0014:73`). promoted_answers/messages는 ivfflat lists=10 확정.
+
+**schema 코드 변경**:
+
+`lib/db/schema-docingest.ts:36`:
+```typescript
+// before
+dataType() { return 'vector(1536)'; }
+// after
+dataType() { return 'vector(2880)'; }
+```
+
+`lib/db/schema.ts` customType (line 42-56): `dataType()`는 이미 generic `'vector'` 반환 (Drizzle Kit push:pg 호환성). **변경 불필요** — 차원은 migration SQL이 통제. 다음 주석 업데이트만:
+- `schema.ts:19` 주석 `pgvector(1536)` → `pgvector(2880)`
+- `schema.ts:44` 주석 `vector(1536) dimension` → `vector(2880) dimension`
+- `schema.ts:1003` 주석 `embedding vector(1536)` → `embedding vector(2880)`
+
+**검증 (구현 시)**:
+1. `pnpm drizzle-kit push:pg` 로컬 DB 적용 — 차원 2880 반영 확인 (`\d sources`, `\d document_chunks`)
+2. `SELECT vector_dims(embedding) FROM sources LIMIT 1` → 2880 (L-010: migration 실DB 적용 테스트 필수)
+3. embedBatchTexts 1회 호출 → 반환 벡터 길이 2880 확인
+
+### 12.3 Phase B-revised — chat gx10 전환 (Anthropic 11사이트 → gpt-oss:120b)
+
+#### 12.3.1 llm-provider.ts 변경
+
+현재 (직검): Ollama 분기 존재, 기본 `OLLAMA_BASE_URL=http://localhost:11434/v1`, `OLLAMA_MODEL=llama3.2`.
+
+변경 (기본값만 — 로직 동일):
+```bash
+# .env.local (gx10)
+OLLAMA_PROVIDER=ollama                          # 또는 LLM_PROVIDER=ollama (기존 키명)
+OLLAMA_BASE_URL=http://192.168.100.1:11434/v1   # localhost → gx10
+OLLAMA_MODEL=gpt-oss:120b                       # llama3.2 → gpt-oss
+OLLAMA_FAST_MODEL=gpt-oss:120b                  # 동일 모델 (사이트별 차이 없음)
+```
+
+`buildModel()`의 `case 'ollama'` 로직은 변경 없음 — `createOpenAI({ baseURL, apiKey: 'ollama' })` 재사용.
+
+#### 12.3.2 Anthropic 11사이트 통합 마이그레이션
+
+**현재 모델 분포 (직검)**:
+
+| 모델 ID | 사용 사이트 |
+|---------|------------|
+| `claude-haiku-4-5-20251001` | intent-parser, comparison-builder, samd/generate ×3 |
+| `claude-haiku-4-5` | relevance-scorer, classifier ×3, structured-blocks, radar/search |
+| `claude-sonnet-4-5` | report-generator, updates/[id] |
+| `claude-sonnet-4-6` | digest-generator |
+
+**매핑 정책**: 11사이트 전부 `getLlmModel()` 또는 `getLlmFastModel()` 경유 **단일 `gpt-oss:120b`** 로 통일. 사이트별 모델 차이 없음 — gpt-oss:120b가 하나의 모델로 haiku/sonnet 역할을 모두 커버 (116.8B 파라미터로 충분한 용량).
+
+**사이트별 변경 패턴** (예시 — `lib/classification/intent-parser.ts`):
+
+```typescript
+// before (직검 line 4, 7, 26)
+import Anthropic from '@anthropic-ai/sdk';
+const client = new Anthropic();
+// ...
+const response = await client.messages.create({
+  model: 'claude-haiku-4-5-20251001',
+  messages: [{ role: 'user', content: prompt }],
+  max_tokens: 1024,
+});
+const text = response.content[0].text;
+
+// after
+import { generateText } from 'ai';
+import { getLlmFastModel } from '@/lib/ai/llm-provider';
+// ...
+const { text } = await generateText({
+  model: getLlmFastModel(),   // gpt-oss:120b
+  messages: [{ role: 'user', content: prompt }],
+  maxTokens: 1024,
+});
+```
+
+> **max_tokens → maxTokens**: Anthropic SDK (`max_tokens`)와 @ai-sdk (`maxTokens`) 키명 차이. 11사이트 전부 검증 필요.
+
+**11사이트 파일별 변경 요약**:
+
+| # | 파일 | 현재 패턴 | 변경 |
+|---|------|-----------|------|
+| 1 | `lib/classification/intent-parser.ts` | `new Anthropic()` + `messages.create` | `generateText({ model: getLlmFastModel() })`. JSON 파싱 로직 유지. |
+| 2 | `lib/vigilance/report-generator.ts` | `sharedAnthropicClient.messages.create` | `generateText({ model: getLlmModel() })` |
+| 3 | `lib/digest/digest-generator.ts` | `new Anthropic()` + `messages.create` | `generateText({ model: getLlmModel() })` |
+| 4 | `lib/radar/relevance-scorer.ts` | `sharedAnthropicClient.messages.create` | `generateText({ model: getLlmFastModel() })` |
+| 5 | `lib/predicate/comparison-builder.ts` | `createComparisonBuilder(anthropicClient)` 주입 | 인터페이스를 `LanguageModel` 주입으로 변경, `getLlmFastModel()` 사용 |
+| 6 | `lib/radar/classifier.ts` ×3 | `sharedAnthropicClient.messages.create` ×3 | `generateText({ model: getLlmFastModel() })` ×3. **3-tier 회귀 리스크 최대** — gpt-oss reasoning 품질 검증 필수. |
+| 7 | `lib/ai/structured-blocks.ts` | `new Anthropic()` + AbortSignal | `generateText({ model: getLlmFastModel(), abortSignal })`. AbortSignal 전파 로직 유지 (`@MX:WARN`). |
+| 8 | `app/api/ra/updates/[id]/route.ts` | `sharedAnthropicClient.messages.create` | `generateText({ model: getLlmModel() })` |
+| 9 | `app/api/ra/samd/[id]/generate/route.ts` ×3 | `sharedAnthropicClient.messages.create` ×3 | `generateText({ model: getLlmFastModel() })` ×3 |
+| 10 | `app/api/ra/predicate/comparison/route.ts` | `createComparisonBuilder(sharedAnthropicClient)` | `createComparisonBuilder(getLlmFastModel())` 또는 builder 내부에서 호출 |
+| 11 | `app/api/ra/radar/search/route.ts` | `sharedAnthropicClient.messages.create` | `generateText({ model: getLlmFastModel() })` |
+| (del) | `lib/ai/anthropic-client.ts` | ZDR 헤더 싱글톤 | **삭제** (grep 잔여 0건 확인 후). ZDR은 온프레미스 gx10으로 대체 — 외부 전송 자체가 없음. |
+
+#### 12.3.3 gpt-oss reasoning 필드 처리 방안 (구체)
+
+**문제**: gpt-oss:120b는 thinking-capable 모델. Ollama OpenAI 호환 `/v1/chat/completions` 응답에 `reasoning` trace가 포함됨 (직검: capabilities에 `thinking` 명시).
+
+**응답 스키마 차이**:
+```
+Ollama /v1/chat/completions (gpt-oss:120b):
+{
+  "choices": [{
+    "message": {
+      "role": "assistant",
+      "content": "<최종 답변>",           ← @ai-sdk/openai가 result.text로 추출
+      "reasoning": "<사고 과정 trace>"      ← @ai-sdk/openai v3 기본 무시
+    }
+  }]
+}
+```
+
+**3계층 처리 방안**:
+
+**계층 1 — 기본 경로 (권장)**: `@ai-sdk/openai` `generateText`/`streamText`가 `choices[0].message.content`를 `result.text`로 자동 추출. `reasoning` 필드는 무시됨. 11사이트의 기존 메시지 기반 로직(JSON 파싱, 텍스트 추출)이 그대로 동작. **추가 코드 불필요**.
+
+**계층 2 — 관측 가능성 (선택)**: 디버깅·감사를 위해 reasoning trace를 로깅. `generateText`의 `onFinish` 콜백에서 raw response 접근:
+```typescript
+const { text } = await generateText({
+  model: getLlmFastModel(),
+  messages,
+  onFinish({ rawResponse }) {
+    // PHI 미포함 내부 개발 자료만 — 로컬 로그 안전
+    const reasoning = (rawResponse as any)?.choices?.[0]?.message?.reasoning;
+    if (reasoning && process.env.LLM_LOG_REASONING === '1') {
+      console.debug('[gpt-oss reasoning]', reasoning.slice(0, 500));
+    }
+  },
+});
+```
+> **PHI 안전**: Regula는 환자 정보 미취급 (내부 개발 제품 자료만). reasoning 로깅은 로컬 파일로 한정, 외부 전송 없음. `LLM_LOG_REASONING` 기본 off.
+
+**계층 3 — 빈 content 폴백 (방어)**: 일부 thinking 모델 설정에서 최종 답변이 `reasoning`에 들어가고 `content`가 빈 문자열이 되는 엣지 케이스. provider 래퍼로 방어:
+```typescript
+// lib/ai/llm-provider.ts에 추가 (선택)
+export function getLlmModelWithReasoningFallback(): LanguageModel {
+  const base = getLlmModel();
+  // @ai-sdk middleware 패턴: content가 빈 경우 reasoning을 content로 승격
+  // 실제 빈 content가 관찰되는 경우에만 활성화
+  return base;  // 기본은 래핑 없음 — 계층 1로 충분 확인 후 제거
+}
+```
+> **권장**: 계층 1로 시작. 빈 content가 실제 관찰되면(구현 단계实测) 계층 3 추가. 선행 추측 금지 (L-013).
+
+**구조화 출력 강화 (선택)**: gpt-oss는 `tools` capability 지원. intent-parser/structured-blocks/classifier의 JSON 파싱을 `generateObject` + Zod 스키마로 전환 시, reasoning 없이 구조화된 객체 직접 반환. 기존 프롬프트 기반 JSON 파싱보다 견고. 단, 프롬프트 재튜닝 필요 — Phase B 안에는 포함하지 않고 후속 개선으로 권장.
+
+### 12.4 Phase C — 외부 API 키·의존성 제거
+
+**환경 변수 (lib/env.ts)**:
+- `ANTHROPIC_API_KEY` — **제거** (현재 `env.ts:68-71` 필수 스키마 → optional 후 제거)
+- `OPENAI_API_KEY` — **제거** (현재 `env.ts:76-78` optional → 제거)
+- `GITHUB_MODELS_TOKEN` — **제거** (현재 `env.ts:83-85` optional → 제거)
+- `OLLAMA_BASE_URL`, `OLLAMA_MODEL`, `OLLAMA_FAST_MODEL` — **추가** (llm-provider용, optional with gx10 기본값)
+- `EMBEDDING_API_KEY` — **추가** (optional, sentinel 폴백 유지). 또는 `EMBEDDING_BASE_URL`/`EMBEDDING_MODEL`만으로 Ollama keyless 운영.
+
+**package.json 의존성 (직검 line 71-73)**:
+- `@ai-sdk/anthropic` (`^3.0.74`) — **제거**
+- `@anthropic-ai/sdk` (`^0.27.0`) — **제거**
+- `@ai-sdk/openai` (`^3.0.58`) — **유지** (llm-provider Ollama 경로 + embedding-provider 모두 `createOpenAI` 사용)
+- `ai` — **유지** (`generateText`, `embedMany`, `LanguageModel` 타입)
+
+**검증 (구현 시)**:
+```bash
+grep -rn "sharedAnthropicClient\|@anthropic-ai/sdk\|new Anthropic\|@ai-sdk/anthropic" lib/ app/ --include='*.ts'
+# 결과 0건이어야 함 (타입 전용 import 포함)
+```
+
+### 12.5 환경변수 최종 매핑 테이블
+
+| 변수 | 현재 상태 | 최종 (gx10) | 비고 |
+|------|-----------|-------------|------|
+| `ANTHROPIC_API_KEY` | 필수 (env.ts:68) | **제거** | Phase C |
+| `OPENAI_API_KEY` | optional (env.ts:76) | **제거** | Phase C |
+| `GITHUB_MODELS_TOKEN` | optional (env.ts:83) | **제거** | Phase A-revised |
+| `EMBEDDING_BASE_URL` | optional (env.ts:87) | `http://192.168.100.1:11434/v1` | 기본값 변경 |
+| `EMBEDDING_MODEL` | optional (env.ts:88) | `qwen3-embedding:latest` | 기본값 변경, 2880차원 |
+| `EMBEDDING_API_KEY` | (없음) | **추가** (optional, sentinel 폴백) | Ollama keyless 대응 |
+| `OLLAMA_BASE_URL` | (llm-provider만, `localhost:11434`) | `http://192.168.100.1:11434/v1` | env.ts에 정식 추가 권장 |
+| `OLLAMA_MODEL` | (llm-provider만, `llama3.2`) | `gpt-oss:120b` | env.ts에 정식 추가 권장 |
+| `OLLAMA_FAST_MODEL` | (llm-provider만) | `gpt-oss:120b` | 동일 모델 |
+| `LLM_PROVIDER` | optional, 기본 `ollama` | `ollama` (고정) | openai/anthropic case 제거 |
+| `LLM_LOG_REASONING` | (없음) | **추가** (optional, 기본 off) | 계층 2 관측 |
+| `COPILOT_GITHUB_TOKEN` | (섹션 11, 미구현) | **추가 안 함** | Copilot 경로 폐기 |
+
+### 12.6 네트워크 / 보안
+
+**토폴로지**:
+- gx10 = `192.168.100.1` (2.5G 직결, aarch64 Ubuntu 6.17, driver 580)
+- Regula T3610 = `192.168.100.200` (현재 장비, ping 0.9ms 측정)
+- 단일 홉: T3610 → gx10 (외부 네트워크 경유 없음)
+
+**Ollama 노출**:
+- `OLLAMA_HOST=0.0.0.0:11434` (gx10에서 이미 설정 — 직검 확인)
+- 인증 무: 로컬망(192.168.100.x) 신뢰 전제. 외부 인터넷에서 접근 불가 (Cloudflare Tunnel은 Regula T3610 Next.js 앱만 노출, gx10:11434 노출 안 함).
+
+**권장 방화벽 정책**:
+- gx10 측: `192.168.100.0/24`에서만 11434 접근 허용 (ufw 또는 nftables). `0.0.0.0` 바인드이므로 망 분리 없으면 같은 L2 누구나 접근 가능 — 로컬망이 신뢰 가능한 홈/사내망인지 확인.
+- Regula T3610 측: Cloudflare Tunnel은 443(Next.js)만 노출. gx10:11434는 터널에 등록 안 함 (내부망 전용).
+
+**PHI / 데이터 정책**:
+- Regula는 환자 정보 미취급 (내부 개발 제품 자료만 — Charter 준거).
+-gx10 Ollama는 요청/응답을 디스크에 영구 저장하지 않음 (KEEP_ALIVE=2h는 메모리 캐시만). ZDR 헤더 불필요 — 온프레미스이므로 외부 전송 자체가 없음.
+- 기존 `anthropic-client.ts`의 `zero-data-retention` 헤더는 의미 상소실 (외부 전송 없음) → 삭제.
+
+### 12.7 위험 + 완화
+
+| 위험 | 심각도 | 완화 |
+|------|--------|------|
+| **gx10 단일 장애점** — Ollama down 시 chat·embedding 전체 마비 | **High** | (1) gx10 Ollama 헬스체크 스크립트 (`GET /v1/models` 주기 호출). (2) 장애 시 사용자에게 런타임 에러 노출 (fallback LLM 없음 — 외부 API 배제 방침상 대안 없음). (3) gx10 재부팅 시 Ollama 자동 시작 (systemd 서비스 등록 권장). |
+| **gpt-oss reasoning 파싱** — 빈 content 엣지 케이스 | Medium | 계층 3 폴백 래퍼 (12.3.3). 단, 실제 관찰 시에만 활성화 — 선행 추측 금지 (L-013). |
+| **2880차원 pgvector 인덱스 메모리** — hnsw/ivfflat 메모리 증가 (~1.9x) | Medium | 코퍼스가 내부 문서 수십~수백 건 규모 (Charter 6-8명 내부 도구). 메모리 영향 미미. 대규모 확장 시 lists 재튜닝 또는 hnsw `m`/`ef_construction` 조정. |
+| **동시성 병목** — `NUM_PARALLEL=2` vs 6-8명 동시 사용자 | Medium | (1) gpt-oss:120b는 116.8B 모델 — GB10 VRAM 제약상 NUM_PARALLEL=2가 안정 한계. (2) 요청 큐잉으로 직렬화 (Ollama가 내부 큐 처리). (3) 지연 시 사용자에게 "처리 중" 스트리밍 표시. (4) 병목 시 gx10에 두 번째 모델 인스턴스 또는 더 작은 fast 모델(qwen3 등) 병행 — 단 품질 저하 명시. |
+| **gpt-oss 한국어 RA 도메인 품질 미검증 사이트** — classifier 3-tier 등 | Medium | gpt-oss:120b가 510(k) predicate 질문에 정확한 한국어 답변 검증됨 (직검). 단, classifier 3-tier의 세부 프롬프트는 회귀 테스트 필수 — 품질 열화 시 프롬프트 재튜닝 (Claude→gpt-oss 스타일 차이). |
+| **차원 마이그레이션 실패** — 기존 1536 벡터 잔존 | Low | 코퍼스 0행이므로 잔존 데이터 없음. migration 후 `SELECT vector_dims(embedding) FROM <table> LIMIT 1` = 2880 확인 (L-010). |
+
+### 12.8 단계별 롤백 플랜
+
+| Phase | 롤백 대상 | 롤백 절차 |
+|-------|-----------|-----------|
+| **A-revised** (embedding) | 차원 2880→1536 + GitHub Models 복귀 | (1) migration 되돌리기: `ALTER TABLE ... DROP COLUMN embedding, ADD COLUMN embedding vector(1536)` + 인덱스 재구축. (2) `schema-docingest.ts:36` `vector(2880)` → `vector(1536)`. (3) embedding-provider.ts 기본값 복귀: `models.github.ai/inference` + `text-embedding-3-small`. (4) `GITHUB_MODELS_TOKEN` 재주입. |
+| **B-revised** (chat) | gpt-oss → Anthropic 복귀 | (1) 11사이트 `git revert` (파일별 독립). (2) `lib/ai/anthropic-client.ts` 복원 (삭제 전 보존 권장). (3) `ANTHROPIC_API_KEY` 재주입. (4) `@anthropic-ai/sdk`, `@ai-sdk/anthropic` 의존성 복원. |
+| **C** (의존성 제거) | 의존성·키 복원 | `package.json`에서 제거한 패키지 재추가. `ANTHROPIC_API_KEY`/`OPENAI_API_KEY` 스키마 복원. |
+
+> **주의**: Phase A-revised 롤백은 차원 축소를 동반하므로, 2880 벡터가 이미 insert된 경우 데이터 손실 발생. 코퍼스 0행 전제이므로 실제로는 영향 없으나, 운영 적용 후에는 롤백 비용이 급증 — A-revised는 신중한 검증 후 적용.
+
+### 12.9 명시적 비목표 (Non-Goals)
+
+1. **hermes 수정 X** — hermes(`~/.hermes/hermes-agent/`)는 참고용 패턴 소스일 뿐, Regula 코드베이스와 무관. hermes 파일 일체 수정 안 함.
+2. **환자 데이터 도입 X** — Regula는 내부 개발 제품 자료만 취급 (Charter). PHI 도메인은 별도 #10에서 축소 처리. gx10 백엔드 교체가 PHI 취급을 시작하는 것 아님.
+3. **외부 API X** — OpenAI, Anthropic, GitHub Models, GitHub Copilot 전부 배제. 비타협 방침 (월구독·사용량과금 0).
+4. **gpt-oss 프롬프트 재튜닝 자동화 X** — 11사이트 마이그레이션 시 프롬프트는 기존 Claude용 그대로 유지. 품질 열화가 관찰되면 개별 사이트에서 수동 튜닝 (자동화된 프롬프트 변환 도구 도입 안 함).
+5. **generateObject 전환 X** — intent-parser/structured-blocks의 JSON 파싱을 generateObject+Zod로 전환하지 않음 (12.3.3에서 후속 개선으로만 권장, Phase B 범위 밖).
+6. **gx10 클러스터링 X** — 단일 gx10 인스턴스. 다중 노드 분산 추론(high-availability cluster)은 구축 안 함 — 단일 장애점 수용.
+
+---
+
 **문서 끝. 구현은 별도 후속 태스크에서 수행.**
