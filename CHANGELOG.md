@@ -72,6 +72,29 @@
 
 - package.json version: `0.1.0` → `1.0.0`
 
+### Added
+
+- **고아 출처 정리 크론 (orphan sources cleanup)** (Issue 313, PR 315):
+  - Migration 0101: `source_approval_status` enum에 `sunset` 추가, `audit_action` enum에 `source.orphan_sunsetted` 추가
+  - Inngest 일일 크론(`orphan-cleanup`, 03:00 UTC): 모든 `source_sections`가 superseded된 출처 감지 → `approval_status='sunset'`, `sunset_date=today`로 자동 전이
+  - Org 스코프 검증(`withTenantScope`), 21 CFR Part 11 audit(`source.orphan_sunsetted`, tx-scoped)
+  - Retriever 제외: `lib/source-governance/retrieval-gate.ts` 기존 `approvalStatus !== 'approved'` 필터로 sunset 출처 RAG 자동 제외
+  - 검증: typecheck 0 · biome 0 · test 4815 passed | 21 skipped · build 0
+
+- **insertSourceSections 공유 헬퍼** (Issue 314, PR 316, 순수 리팩토리):
+  - `lib/ingest/source-sections-upsert.ts`: `insertSourceSections(orgId, rows)` 신규 — org-scoped tx + batch insert + id 수집 추출
+  - `lib/knowledge-sources/sync.ts`(ingestOneFile step h) + `lib/radar/delta-sync/orchestrator.ts`(runDeltaSync step 7c) 중복 제거
+  - `@MX:ANCHOR` 추가(fan_in=2)
+  - 행동 등가성 검증: 동일한 row 값, tx 경계, 반환 shape. 4815 passed 회귀 없음
+  - 참고: 원본 #314 본문의 `upload-processed.ts insertChunks` 재배열은 다른 테이블(`document_chunks`) 대상이라 제외
+
+### Fixed
+
+- **타입 정의 drift 수정** (보안 감사 M-1, 미커밋):
+  - `lib/source-governance/types.ts:28`: `approvalStatusSchema` Zod enum에 `'sunset'` 누락(migration 0101 이후 SQL enum과 불일치)
+  - `'sunset'` 추가로 단일 진실 공급원(Single Source of Truth) 거울 복원
+  - 현재 런타임 소비자 없음(정의 전용), 파일 내부 주석("Mirror of source_approval_status SQL enum") 위반 수정
+
 ### Post-1.0.0 (deferred)
 
 다음 이슈들은 v1.0.0 범위에서 제외되었습니다(external-dependency + optional-extension):

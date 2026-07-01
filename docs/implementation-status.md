@@ -18,6 +18,8 @@ E2E user validation framework and Traceability integration surface. PR #177 was
 closed as superseded because its substantive Traceability changes were already
 present on main and the branch was stale/conflicting.
 
+**2026-07-01 Post-1.0.0 Updates**: Issues #313 (orphan sources cleanup cron), #314 (insertSourceSections shared helper), and security audit finding M-1 (type definition drift fix) were documented. PR #315 (orphan cleanup) and PR #316 (shared helper refactor) were merged to main. Migration 0101 added `sunset` to `source_approval_status` enum and `source.orphan_sunsetted` to `audit_action` enum. Inngest cron `orphan-cleanup` (03:00 UTC) now auto-transitions sources where all sections are superseded to `approval_status='sunset'` with `sunset_date=today`.
+
 PR #186 (Predicate Visualization) was completed and merged to main, adding
 interactive chart-first view for Predicate comparison results with Bar/Radar/Table
 modes, Before-After comparison, and demo animation capabilities.
@@ -100,6 +102,9 @@ and closed-loop replay verification. Awaiting security review and merge.
 | Onboarding E2E seed (#163) | COMPLETE | globalSetup.ts bootstrapProjects + empty-state CTA in Sidebar |
 | Knowledge Gap Loop (#35) | COMPLETE (PR #234 pending merge) | 4-condition detection, clustering, GitHub auto-issue, classify UI, daily digest, gap-replay closed loop |
 | **Change Control (#54)** | **COMPLETE** (2026-06-24) | 설계 변경 규제 영향 자동 평가기 — migration 0071(workflow_type +1, audit_action +6, 테이블 4 + RLS), lib/change-control 8모듈(types/classify/engine/jurisdictions/verdict/version-metadata/risk-linkage), API 4종(run/[id]/review/export), UI(app/(app)/change-control), 권한 change.assess/view/export. **결정 근거**: createHybridRaFetch 실구현(H-1), CLASSIFY/PMS 패턴 재사용(jurisdictions verdict 로직). **보안 fix**: C-1 IDOR(assertPmsProjectAccess) · H-1 실제 LLM wiring(REQ-006 reject live) · H-2 프롬프트 인젝션(<change_description>+UNTRUSTED DATA) · H-3 catch audit tx · H-4 change.export_blocked audit · M-1 risk-linkage org 검증. **게이트**: 3571 passed | 7 skipped · build 0. **AC 완료**: AC-01~04·06~08 ✅ · AC-05 ⏸️ DEFERRED(JSON shape만, 실제 PDF → #247) |
+| **Knowledge Sources Orphan Cleanup (#313)** | **COMPLETE** (2026-07-01) | 고아 출처 정리 크론 — migration 0101(source_approval_status.enum+sunset, audit_action.enum+source.orphan_sunsetted), Inngest 일일 크론(orphan-cleanup, 03:00 UTC), 모든 source_sections가 superseded된 출처 자동 감지(sunset 상태로 전이, sunset_date=today), org 스코프(withTenantScope), 21 CFR Part 11 audit(tx-scoped), retriever 자동 제외(`approvalStatus !== 'approved'` 기존 필터). **결정 근거**: D-2b follow-up 삭제 파일 잔존 정리. **게이트**: 4815 passed | 21 skipped · build 0 |
+| **insertSourceSections Shared Helper (#314)** | **COMPLETE** (2026-07-01) | 공유 헬퍼 리팩토리 — lib/ingest/source-sections-upsert.ts 신규(insertSourceSections orgId rows 함수), lib/knowledge-sources/sync.ts(h step) + lib/radar/delta-sync/orchestrator.ts(7c step) 중복 제거, @MX:ANCHOR(fan_in=2), 행동 등가성 검증(동일 row/tx/shape), 4815 passed 회귀 없음. **참고**: #314 본문의 upload-processed.ts insertChunks 재배열은 document_chunks 테이블 대상이라 제외 |
+| **Type Definition Drift Fix (M-1)** | **COMPLETE** (2026-07-01, 미커밋) | lib/source-governance/types.ts:28 approvalStatusSchema Zod enum에 sunset 추가(migration 0101 이후 SQL enum과 불일치 수정), 단일 진실 공급원 거울 복원("Mirror of source_approval_status SQL enum" 주석 준수). 런타임 소비자 없음(정의 전용). |
 | Work gate | #18 active | mandatory before new P0 work |
 
 ## SPEC-REGULA-CAPA-001 (#68) — 불만·CAPA 폐루프 관리

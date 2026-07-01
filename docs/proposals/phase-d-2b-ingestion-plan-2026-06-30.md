@@ -301,7 +301,11 @@ When `syncKnowledgeSource` runs again (weekly cron or manual):
    follow-up task can `UPDATE sources SET sunsetDate` for orphaned rows; out of
    scope for D-2b (logged as a known limitation, §7).
 
-### 4.6 The DOCINGEST upload-path stub (`insertChunks`)
+### 4.6 Orphan cleanup follow-up (RESOLVED 2026-07-01 via Issue 313/PR 315)
+
+**Follow-up 완료**: Inngest 일일 크론(orphan-cleanup, 03:00 UTC)이 모든 `source_sections`가 superseded된 출처를 감지하여 `approval_status='sunset'`, `sunset_date=today`로 자동 전이. Sunset된 출처는 retriever에서 자동 제외(`approvalStatus !== 'approved'` 필터). Migration 0101에서 `source_approval_status` enum에 `sunset` 추가, `audit_action` enum에 `source.orphan_sunsetted` 추가. §7의 "orphan cleanup out of scope" 제약 조건이 해결됨.
+
+### 4.7 The DOCINGEST upload-path stub (`insertChunks`)
 
 `lib/inngest/docingest/upload-processed.ts:156-164` has a **stub `insertChunks`**
 that returns `chunks.length` without writing to the DB. This is a pre-existing
@@ -379,7 +383,7 @@ Add a `describe('syncKnowledgeSource → ingestDocuments')` block that:
 | 2 | **Embedding cost / OpenAI outage** — repo with 500 files × 20 chunks = 10k embeddings (~$0.02). API failure mid-run. | Medium | `embedChunks` already retries (`MAX_RETRIES=3`, exponential backoff). Per-file try/catch (§3.6) ensures partial success. Failed files recorded in `corpus_sync_runs.error_message`. |
 | 3 | **PII leakage / 21 CFR Part 11 reversibility** — repo content may contain PII; `saveMap` option omitted means no reversibility map for knowledge-source ingestion. | High | `redactPiiForIngest` runs **before** embed for every file (AC-4). `embedChunks` has a defense-in-depth PII guard that throws on detection. **Accepted risk**: knowledge-source repos are curated internal SOPs/guidance, not user-uploaded PHI; the `redaction_maps` reversibility artifact is scoped to DOCINGEST uploads (`documentId`-keyed) and does not map cleanly to repo files. Documented in audit `meta_json.saveMap=false`. |
 | 4 | **Supersession correctness** — re-sync could orphan old chunks if `resolveExistingChunkIds` misses them (e.g., sourceId mismatch). | High | `fileSourceId` is resolved deterministically by `(orgId, sourceHost, sourceOwner, sourceRepo, sourcePath)` query — stable across syncs. `resolveExistingChunkIds` is org-scoped via JOIN (M-1 fix). AC-5 unit test covers the round-trip. |
-| 5 | **Deleted-file orphans** — a file removed from the repo between syncs leaves its `sources` row + superseded sections in the DB (no garbage collection). | Low | Accepted limitation. Sections are superseded (excluded from retrieval via `superseded_by IS NULL` filter). `sources.approvalStatus='pending_review'` means they never reach the retriever until an RA owner approves. Follow-up issue for orphan cleanup (out of scope for D-2b). |
+| 5 | **Deleted-file orphans** — a file removed from the repo between syncs leaves its `sources` row + superseded sections in the DB (no garbage collection). | Low | **RESOLVED** (2026-07-01 via Issue 313/PR 315): Inngest 일일 크론(orphan-cleanup, 03:00 UTC)이 모든 source_sections가 superseded된 출처를 감지하여 `approval_status='sunset'`, `sunset_date=today`로 자동 전이. Sections are superseded (excluded from retrieval via `superseded_by IS NULL` filter). Sunset된 출처는 retriever에서 자동 제외(`approvalStatus !== 'approved'` 필터). |
 | 6 | **Migration needs** — does D-2b require a new column? | Medium | **No.** All required columns exist: `sources.sourcePath/Host/Owner/Repo/Branch` (provenance), `sources.contentHash`, `source_sections.chunkHash/sectionPath/superseded_by/ingestionRunId`. **Zero migrations needed.** |
 | 7 | **Concurrency with weekly cron** — cron could fire while a manual sync is in progress. | Low | `knowledge_sources.syncStatus` is the implicit lock: if `syncStatus='syncing'`, the cron step skips (the weekly-sync Inngest function already filters `syncStatus='synced'`). D-2b should set `syncStatus='syncing'` at the start of `syncKnowledgeSource` (small enhancement to the existing flow). |
 
@@ -430,7 +434,7 @@ tests mirroring `tests/integration/knowledge-sources.test.ts` mocking strategy."
 |---|---|---|
 | Q1 | Is the 1 knowledge_source : N sources (per-file) modeling acceptable, or should we use 1 sources row per repo (whole-repo supersession)? | **Per-file** (recommended — preserves file-level traceability). |
 | Q2 | Should `syncStatus='syncing'` be set at sync start (concurrency lock, Risk 7)? | **Yes** — small enhancement to `syncKnowledgeSource`. |
-| Q3 | Should orphan `sources` rows for deleted files be cleaned up in D-2b or deferred? | **Deferred** — follow-up issue. |
+| Q3 | Should orphan `sources` rows for deleted files be cleaned up in D-2b or deferred? | **RESOLVED** (2026-07-01 via Issue 313/PR 315): Inngest 일일 크론(orphan-cleanup)이 sunset 상태로 자동 전이. |
 | Q4 | Is the omission of `saveMap` (Part 11 reversibility) for knowledge-source ingestion acceptable? | **Yes** — documented in audit; repo content is curated internal guidance, not user PHI. |
 
 ---
