@@ -517,4 +517,255 @@ A를 먼저 수행하는 근거: OpenAI 제거라는 **사용자 비타협적 �
 
 ---
 
+## 11. Phase B 전면 수정 — Anthropic → GitHub Copilot 구독 (revised per hermes pattern 2026-07-01)
+
+> **수정 배경**: 원래 Phase B는 "Anthropic 11개 사이트 → Ollama(llama3.2)" 였으나, Claude→로컬 3B 모델로의 품질 회귀가 심각하다는 판단으로 사용자가 방향을 변경했다. 로컬 도구 **hermes**(`~/.hermes/hermes-agent/`)가 이미 GitHub Copilot 구독을 Claude/GPT 백엔드로 사용하는 패턴을 구현하고 있어, 이를 Regula(TypeScript/Next.js)로 포팅한다.
+>
+> **검증 기준**: 본 섹션의 모든 hermes 파생 주장은 2026-07-01 실제 파일 read로 확인 (L-013). 엔드포인트 추측 없음.
+
+### 11.1 hermes 패턴 요약 (검증 완료)
+
+hermes는 Copilot 접근에 **두 경로**를 가진다:
+
+| 경로 | 엔드포인트 | 용도 | Regula 적합도 |
+|------|-----------|------|---------------|
+| **직접 API** | `https://api.githubcopilot.com/chat/completions` (OpenAI 호환) | chat_completions 모드 — Claude/GPT/Gemini 모두 처리 | **적합** (서버 사이드 REST 호출) |
+| ACP 서브프로세스 | `copilot --acp --stdio` (JSON-RPC over stdio) | Copilot CLI 바이너리를 요청마다 spawn | 부적합 (Next.js 서버에서 CLI 바이너리 관리 불가) |
+
+→ Regula는 **직접 API 경로만** 사용한다.
+
+**인증 3단계** (hermes `copilot_auth.py` 검증):
+
+1. **OAuth device-code flow** → `gho_` 토큰 획득
+   - client_id: `Ov23li8tweQw6odWQebz` (opencode/Copilot CLI 공용 ID)
+   - `POST https://github.com/login/device/code` (client_id + scope=`read:user`)
+   - 사용자가 `https://github.com/login/device`에서 user_code 입력 후授权
+   - `POST https://github.com/login/oauth/access_token` (grant_type=`urn:ietf:params:oauth:grant-type:device_code`) → `gho_...` 반환
+   - **주의**: classic PAT(`ghp_`)는 Copilot API가 거부. `github_pat_`(fine-grained), `ghu_`(App)는 허용.
+2. **토큰 교환** (매 요청이 아님, 캐시됨): `gho_` → 단기 Copilot API JWT
+   - `GET https://api.github.com/copilot_internal/v2/token`
+   - headers: `Authorization: token <gho_>`, `User-Agent: GitHubCopilotChat/0.26.7`, `Editor-Version: vscode/1.104.1`
+   - 응답: `{token: "tid=...;exp=...", expires_at: <epoch>}` (~30분 TTL, 세미콜론 구분 문자열)
+   - 캐시: 만료 2분 전 자동 갱신 (`_JWT_REFRESH_MARGIN_SECONDS = 120`)
+3. **API 호출**: 교환된 JWT를 `Authorization: Bearer <jwt>`로 `/chat/completions` 전송
+
+**필수 헤더** (`copilot_request_headers`, `models.py:2612`):
+
+```
+Editor-Version: vscode/1.104.1
+User-Agent: <식별자>/1.0
+Copilot-Integration-Id: vscode-chat
+Openai-Intent: conversation-edits
+x-initiator: agent  (또는 user)
+Authorization: Bearer <교환된-Copilot-JWT>
+```
+
+### 11.2 로컬 환경 검증 (중요 — 인증 옵션 분기)
+
+`~/.config/gh/hosts.yml`의 holee9 / hnabyz-bot 토큰은 **모두 `ghp_`** (classic PAT) 이다. Copilot API는 `ghp_`를 거부하므로, **"옵션 (a) gh auth token 재사용"은 현재 불가능**.
+
+→ 옵션 (b) device-code flow 1회 실행 → `gho_` 획득 → `.env`의 `COPILOT_GITHUB_TOKEN`에 저장이 유일한 실행 가능 경로.
+
+hermes-gateway 서비스(PID 1606230)가 이미 `/opt/hermes-ra/hermes-api-server.py`로 구동 중이므로, hermes 자체는 이미 유효한 Copilot 인증 경로를 확보하고 있음 — Regula는 동일한 GitHub 계정(holee9)의 구독을 공유하되, 토큰은 Regula 전용으로 별도 획득 권장 (서비스별 토큰 분리).
+
+### 11.3 추천 Chat/LLM 백엔드 역할 분담 (사용자 위임 조정안)
+
+사용자의 원래 위임은 "chat=Ollama, local" + "Copilot 구독" 두 소스였다. 이를 **명시적 3-티어**로 분해한다 (이전 "chat=Ollama" 단일화 결정을 조용히 덮어쓰지 않음 — 11개 사이트를 별도 "domain LLM" 티어로 프레이밍):
+
+| 티어 | 백엔드 | 대상 | 근거 |
+|------|--------|------|------|
+| **General chat** | Ollama `llama3.2` (T3610 로컬) | `consult.ts`, `llm-provider.ts` 기본값, `intent.ts`, `router.ts`, CER pipeline 3종, project-memory | 비용 $0, PII 온프레미스, 이미 80% 와이어링. 일반 RA 컨설팅 대화는 품질 허용치 충족. |
+| **Domain LLM (고위험/구조화)** | **Copilot 구독 (Claude)** — 신규 `copilot-provider.ts` | 섹션 1.2의 **11개 Anthropic 사이트** (classifier 3-tier, structured-blocks, report-generator, digest, relevance-scorer, intent-parser, comparison-builder, 4개 API 라우트) | Claude 품질 유지 = 동작 보존(behavior-preserving). llama3.2로 이관 시 3-tier 분류기/JSON 구조화 출력 회귀 리스크 최대. |
+| **Embedding** | GitHub Models `text-embedding-3-small` | Phase A 완료 (변경 없음) | 임베딩 특화 모델, 1536차원 유지. |
+| **Offline fallback** | Ollama (domain LLM 티어의 fallback) | Copilot 가용성 상실 시 11개 사이트를 일시적 Ollama 경로로 강하 | 품질 저하 감수, 운영 연속성 확보. `COPILOT_FALLBACK_TO_OLLAMA=true` 시 활성화. |
+
+**이 분담이 사용자 위임을 존중하는 방식**:
+- "chat=Ollama" 결정 유지 — 일반 대화/컨설팅은 Ollama.
+- "Copilot 구독"은 11개 도메인 LLM 사이트 전용 — Claude 품질이 비즈니스 판단(레이더 분류, 구조화 리포트, SAMD 생성)에 직결되는 영역.
+- Ollama는 domain LLM 티어의 안전망(off-ramp)으로 유지 — Copilot 단절 시에도 시스템이 멈추지 않음.
+
+### 11.4 신규 `lib/ai/copilot-provider.ts` 설계 (TypeScript 포팅)
+
+> 본 설계는 코드 구현이 아닌 인터페이스/동작 명세. 구현은 별도 태스크.
+
+#### 11.4.1 인증 모듈 (`lib/ai/copilot-auth.ts` — 분리 권장)
+
+```typescript
+// 책임: gho_ 토큰 → 단기 Copilot API JWT 교환 + 캐시 + 자동 갱신
+
+const TOKEN_EXCHANGE_URL = 'https://api.github.com/copilot_internal/v2/token';
+const JWT_REFRESH_MARGIN_MS = 120_000; // 만료 2분 전 갱신
+
+interface CopilotJwt { token: string; expiresAt: number; }
+
+let cached: CopilotJwt | null = null;
+
+export async function getCopilotApiToken(): Promise<string> {
+  const raw = process.env.COPILOT_GITHUB_TOKEN;
+  if (!raw) throw new Error('COPILOT_GITHUB_TOKEN unset (device-code flow로 gho_ 획득 필요)');
+  if (cached && Date.now() < cached.expiresAt - JWT_REFRESH_MARGIN_MS) return cached.token;
+  // GET TOKEN_EXCHANGE_URL with headers: Authorization: token <gho_>, User-Agent, Editor-Version
+  // parse {token, expires_at} → cache → return token
+}
+
+// 1회성 설정 스크립트 (lib/ai/copilot-device-login.ts) — CLI에서 실행, .env에 기록
+// device-code flow → gho_ 획득 → 사용자가 .env에 COPILOT_GITHUB_TOKEN=gho_... 기록
+```
+
+**인증 옵션 평가** (hermes 검증 기준):
+
+| 옵션 | 실행 가능성 | 비고 |
+|------|------------|------|
+| (a) `gh auth token` / `hosts.yml` 재사용 | **불가** (현재 토큰이 `ghp_`) | hosts.yml 토큰이 classic PAT라 거부됨. `gh auth login`을 device-code 흐름으로 재실행하면 `gho_`로 교체되지만, hermes/기존 gh 워크플로에 영향. |
+| (b) device-code flow 1회 서버 실행 | **권장** | Regula 전용 `gho_` 획득 → `COPILOT_GITHUB_TOKEN` env로 저장. 서버 부팅 시 만료 확인 불필요 (`gho_`는 장수명, 교환 JWT가 자동 갱신). |
+| (c) env `COPILOT_TOKEN` 직접 입력 | 가능 (보조) | (b)의 저장 경로. 사용자가 직접 `gho_`를 발급받아 입력해도 됨. |
+
+**토큰 갱신/로테이션 전략**:
+- `gho_` 자체: 장수명 OAuth 토큰 (만료 없음, GitHub 계정에서 수동 revoke 시까지 유효). 분기 1회 유효성 점검 권장.
+- 교환 JWT: ~30분 TTL, 프로세스 내 캐시, 만료 2분 전 백그라운드 갱신. Next.js 서버 재시작 시 캐시 초기화(무해 — 첫 요청에서 재교환).
+- 다중 계정 로테이션(선택): `COPILOT_GITHUB_TOKENS="gho_...1,gho_...2"` 쉼표 구분 지원 시 429 시 다음 토큰으로 회전. 6-8명 동시 사용 환경에서 AI Credits 분산. v1은 단일 토큰, 향후 확장.
+
+#### 11.4.2 ACP 클라이언트 (직접 API 포팅 — `lib/ai/copilot-provider.ts`)
+
+hermes `CopilotACPClient`(ACP 서브프로세스)가 아닌, `copilot` provider profile(직접 REST)을 포팅한다.
+
+```typescript
+// 핵심: @ai-sdk/openai의 createOpenAI를 Copilot 엔드포인트로 재목적화
+// Claude 모델은 chat_completions 모드로 처리 (hermes _should_use_copilot_responses_api는
+// GPT-5+만 true, Claude는 chat_completions 분기 — 확인 완료)
+
+import { createOpenAI } from '@ai-sdk/openai';
+import type { LanguageModel } from 'ai';
+
+const COPILOT_BASE_URL = 'https://api.githubcopilot.com';
+const COPILOT_EDITOR_VERSION = 'vscode/1.104.1';
+
+export function getCopilotModel(modelId: string): LanguageModel {
+  const normalized = normalizeCopilotModelId(modelId); // 하이픈→점 표기 변환
+  const client = createOpenAI({
+    baseURL: COPILOT_BASE_URL, // /chat/completions, /models 경로는 SDK가 추가
+    apiKey: 'copilot', // placeholder — 실제 토큰은 fetch 헤더로 주입
+    headers: copilotHeaders(), // 아래 동적 헤더
+    fetch: copilotFetchWrapper, // 매 요청 getCopilotApiToken() 호출 + Authorization 주입
+  });
+  return client(normalized) as unknown as LanguageModel;
+}
+
+function copilotHeaders(): Record<string, string> {
+  return {
+    'Editor-Version': COPILOT_EDITOR_VERSION,
+    'User-Agent': 'Regula/1.0',
+    'Copilot-Integration-Id': 'vscode-chat',
+    'Openai-Intent': 'conversation-edits',
+    'x-initiator': 'agent',
+  };
+}
+
+// fetch wrapper: 매 요청마다 getCopilotApiToken() → Authorization: Bearer <jwt> 주입
+// (createOpenAI의 headers는 정적이므로, 동적 토큰은 fetch 오버라이드로)
+async function copilotFetchWrapper(input: RequestInfo | URL, init?: RequestInit): Promise<Response> {
+  const jwt = await getCopilotApiToken();
+  const headers = new Headers(init?.headers);
+  headers.set('Authorization', `Bearer ${jwt}`);
+  return globalThis.fetch(input, { ...init, headers });
+}
+```
+
+#### 11.4.3 모델 카탈로그 매핑 (검증 완료)
+
+hermes `_COPILOT_MODEL_ALIASES` (`models.py:2977`) 기준. **임베딩은 Copilot에 없음** — Phase A GitHub Models가 임베딩을 담당 (변경 없음).
+
+| Regula 현재 ID (하이픈) | Copilot ID (점 표기) | 사이트 |
+|--------------------------|---------------------|--------|
+| `claude-haiku-4-5-20251001` | `claude-haiku-4.5` | intent-parser, comparison-builder, samd/generate×3 |
+| `claude-haiku-4-5` | `claude-haiku-4.5` | relevance-scorer, classifier×3, structured-blocks, radar/search |
+| `claude-sonnet-4-5` | `claude-sonnet-4.5` | report-generator, updates/[id] |
+| `claude-sonnet-4-6` | `claude-sonnet-4.6` | digest-generator |
+
+`normalizeCopilotModelId()` 로직 (hermes 검증):
+1. `claude-X-Y` → `claude-X.Y` (하이픈→점, 메이저.마이너)
+2. 날짜 접미사(`-20251001`) 제거
+3. Copilot `/models` 카탈로그로 존재 확인 (부팅 시 1회, 캐시)
+
+#### 11.4.4 11개 사이트 파일별 마이그레이션 (동작 보존)
+
+각 사이트는 `sharedAnthropicClient.messages.create({model, messages, ...})` → `generateText({model: getCopilotModel('claude-...'), messages, ...})` 또는 `streamText`로 교체. **동일 Claude 패밀리이므로 프롬프트 재튜닝 불필요** (Ollama 이관 시 필요했던 튜닝 제거 — 이것이 Copilot 경로의 핵심 이점).
+
+| # | 파일 | 현재 모델 | 변경 요약 |
+|---|------|-----------|-----------|
+| 1 | `lib/classification/intent-parser.ts` | `claude-haiku-4-5-20251001` | `new Anthropic()` → `getCopilotModel('claude-haiku-4.5')`. JSON 파싱 로직 유지. |
+| 2 | `lib/vigilance/report-generator.ts` | `claude-sonnet-4-5` | `sharedAnthropicClient` → `getCopilotModel('claude-sonnet-4.5')`. |
+| 3 | `lib/digest/digest-generator.ts` | `claude-sonnet-4-6` | `new Anthropic()` → `getCopilotModel('claude-sonnet-4.6')`. |
+| 4 | `lib/radar/relevance-scorer.ts` | `claude-haiku-4-5` | `sharedAnthropicClient` → `getCopilotModel('claude-haiku-4.5')`. |
+| 5 | `lib/predicate/comparison-builder.ts` | `claude-haiku-4-5-20251001` | `anthropicClient` 주입 → `getCopilotModel()` 사용. 인터페이스 단순화. |
+| 6 | `lib/radar/classifier.ts` ×3 | `claude-haiku-4-5` | 3-tier 각 `getCopilotModel()`. **가장 높은 회귀 리스크** — 그러나 Claude 유지로 프롬프트 변경 불필요 (Ollama 대비 리스크 대폭 감소). |
+| 7 | `lib/ai/structured-blocks.ts` | `claude-haiku-4-5` | `new Anthropic()` → `getCopilotModel()`. AbortSignal 전파 로직 유지 (`@MX:WARN`). |
+| 8 | `app/api/ra/updates/[id]/route.ts` | `claude-sonnet-4-5` | `sharedAnthropicClient` → `getCopilotModel()`. |
+| 9 | `app/api/ra/samd/[id]/generate/route.ts` ×3 | `claude-haiku-4-5-20251001` | `sharedAnthropicClient` ×3 → `getCopilotModel()`. |
+| 10 | `app/api/ra/predicate/comparison/route.ts` | (주입) | `createComparisonBuilder(sharedAnthropicClient)` → `getCopilotModel()` 주입. |
+| 11 | `app/api/ra/radar/search/route.ts` | `claude-haiku-4-5` | `sharedAnthropicClient` → `getCopilotModel()`. |
+| (def) | `lib/ai/anthropic-client.ts` | (ZDR 헤더) | 11사이트 통합 후 **삭제**. Copilot 경로는 ZDR 헤더 대신 Copilot의 자체 데이터 정책 적용. |
+
+**Ollama fallback 통합**: `getCopilotModel()` 내부에서 `try { copilot 호출 } catch { if (COPILOT_FALLBACK_TO_OLLAMA) return getLlmFastModel() }` 래핑 (선택). 단, 품질 저하 명시적 로깅 필수.
+
+#### 11.4.5 레이트 리미트 / ToS 리스크 (구현 전 사용자 결정 필요 — 핵심 미해결 항목)
+
+> 이 항목은 hand-wave 하지 않음. 사용자가 구현 전 명시적으로 결정해야 할 사안.
+
+**리스크 1 — Copilot 구독 ToS의 "IDE 내 사용" 조항**:
+- GitHub Copilot ToS는 역사적으로 "지원되는 IDE 내에서의 사용"을 전제. `api.github.com/copilot_internal/v2/token` 엔드포인트명의 `_internal` 접미사는 이 API가 1차 소비자(VS Code CLI)용임을 시사.
+- **완화 요인 (2026-07-01 웹 검색)**: 2026-06-01부터 Copilot이 **사용량 기반 과금(AI Credits, 토큰 metered)**으로 전환. 이는 "공정 사용" 모호성을 토큰 단위 명시 과금으로 해소 — 자동화된 백엔드 호출도 이제 단순히 토큰만큼 과금됨.
+- **잔존 리스크**: GitHub가 언제든 `copilot_internal` API를 지원 IDE 검증(gate) 뒤로 숨길 수 있음. hermes/opencode 등 비-IDE 도구들이 현재 작동하므로 GitHub이 관대히 허용 중이지만, 정책 변경 시 Regula의 11개 사이트가 동시에 중단될 수 있음.
+
+**리스크 2 — 단일 구독으로 6-8명 동시 사용 시 AI Credits 고갈**:
+- 11개 사이트는 고빈도는 아니지만(분당 수 회), classifier 3-tier + SAMD 3회 호출 + structured-blocks는 단일 컨설팅 세션에서 다중 호출을 유발할 수 있음.
+- Copilot Pro 등급의 AI Credits 한도가 내부 도구 6-8명의 도메인 LLM 호출을 감당하는지 미확인. Pro+/Business 등급이 필요할 수 있음.
+
+**리스크 3 — 데이터 정책 (ZDR 대체)**:
+- 기존 `anthropic-client.ts`는 `anthropic-beta: zero-data-retention` 헤더로 PHI/PII 보호. Copilot 경로는 Anthropic ZDR 대신 **GitHub Copilot의 데이터 정책**(REQ-LAUNCH-035 준거성 별도 검증 필요)이 적용됨.
+- Copilot Trust Center FAQ(2026-07-01 확인)에 따르면 프롬프트/응답은 모델 훈련에 사용되지 않으나, PHI가 포함된 레이더/리포트 생성 시 별도 DPA(데이터 처리 합의) 검토 권장.
+
+**사용자 결정 필요 항목** (구현 전):
+1. Copilot 구독 등급(Pro / Pro+ / Business) 중 어느 것으로 11개 사이트를 감쌀 것인가? AI Credits 예산 확보 필요.
+2. `copilot_internal` API 사용에 대한 ToS 리스크를 수용할 것인가? (수용 시 Ollama fallback을 필수 안전망으로 구현 권장)
+3. PHI/PII 포함 프롬프트의 Copilot 전송이 내부 규정(REQ-LAUNCH-035 ZDR 요구사항)에 부합하는가? (불가 시 일부 사이트는 Ollama 잔류 또는 데이터 마스킹 전송 필요)
+
+#### 11.4.6 롤백
+
+- 파일별 `git revert` (11개 사이트 각각 독립).
+- `ANTHROPIC_API_KEY` 경로 재활성화: `lib/ai/anthropic-client.ts`를 삭제 전까지 보존하면, `package.json`의 `@anthropic-ai/sdk`가 남아있는 동안 즉시 원복 가능.
+- 환경 변수: `COPILOT_GITHUB_TOKEN` 제거 → Copilot 경로 비활성화. 동시에 `ANTHROPIC_API_KEY` 재주입으로 Anthropic 직접 경로 복원.
+
+### 11.5 수정된 Phase 순서
+
+| Phase | 내용 | 상태 |
+|-------|------|------|
+| **A** | Embedding → GitHub Models (`text-embedding-3-small`, 1536차원 유지) | **완료** (섹션 3.2, 기존 설계 참조) |
+| **B-revised** | **Anthropic 11개 사이트 → Copilot 구독 (Claude)** — 신규 `copilot-provider.ts` + `copilot-auth.ts` 포팅. 동일 Claude 패바리리 유지로 프롬프트 재튜닝 불필요. | 설계 완료 (본 섹션). 구현 전 ToS 결정(11.4.5) 대기. |
+| **C** | `@anthropic-ai/sdk` + `ANTHROPIC_API_KEY` 경로 제거. `package.json`에서 `@ai-sdk/anthropic`, `@anthropic-ai/sdk` 제거. `copilot-provider.ts`가 Anthropic SDK를 대체. **`@ai-sdk/openai`는 유지** — Ollama 경로 + Copilot 경로 모두 `createOpenAI` 사용. | B-revised 완료 후. |
+
+**Phase B-revised 세부 순서** (리스크 낮은 순):
+
+1. `lib/ai/copilot-auth.ts` + `lib/ai/copilot-provider.ts` 신규 — 단위 테스트(토큰 교환, 모델 ID 정규화) 선행
+2. `lib/predicate/comparison-builder.ts` — 타입 주입, 영향 제한적
+3. `lib/classification/intent-parser.ts` — 단순 분류 1회
+4. `lib/vigilance/report-generator.ts` — 단일 호출
+5. `lib/digest/digest-generator.ts` — 단일 호출
+6. `lib/radar/relevance-scorer.ts` — 단일 호출
+7. `app/api/ra/radar/search/route.ts` — 단일 API 라우트
+8. `app/api/ra/updates/[id]/route.ts` — 단일 API 라우트
+9. `app/api/ra/predicate/comparison/route.ts` — 주입 패턴
+10. `app/api/ra/samd/[id]/generate/route.ts` ×3 — 다중 호출 API
+11. `lib/ai/structured-blocks.ts` — AbortSignal 전파 주의
+12. `lib/radar/classifier.ts` ×3 — **3-tier, 최종 검증**
+13. `lib/ai/anthropic-client.ts` — 삭제 (grep 잔여 0건 확인 후)
+
+**완료 기준**:
+- `grep -rn "sharedAnthropicClient\|@anthropic-ai/sdk\|new Anthropic" lib/ app/ --include='*.ts'` 결과 0건 (타입 전용 import 포함)
+- `COPILOT_GITHUB_TOKEN`만으로 11개 사이트 정상 동작
+- classifier 3-tier 회귀 테스트 통과 (Claude 품질 유지이므로 Ollama 대비 회귀 최소)
+- structured-blocks AbortSignal 전파 정상
+
+---
+
 **문서 끝. 구현은 별도 후속 태스크에서 수행.**
