@@ -1,35 +1,40 @@
-# Session Memo
+# Session Memo — 2026-07-01 종료 (Phase D 완결 + E2E)
 
-> 세션 연결용. 상세 맥락은 auto-memory `project-state.md`가 1차 진실원. 본 파일은 빠른 시작 요약.
+> 세션 연결용. 상세 맥락은 auto-memory `project-state.md`가 1차 진실원. 본 파일은 빠른 시작 요약. 다음 세션이 가장 먼저 읽을 파일.
 
-## 현재 세션 (2026-06-27~28) — 자율 순차 6종 + 발견 2종 = 8종 완료
+## 현재 상태 (main 안정)
+- main HEAD `9087157` (Phase D 완결: D-1 데이터 · D-2a API · D-2b ingestion + UI 전부 main)
+- 회귀 **4814 passed** | 21 skipped | 0 failed · typecheck/lint exit 0 · migration 최신 `0100_audit_action_lockstep.sql`
+- OPEN PR 0건 · OPEN 이슈 priority/high 9 + medium 7 + follow-up **#312~#314**
 
-사용자 `/moai ultracode "남은 작업 완료까지 계속 가자"` → "자율 순차 6종" → 발견 이슈 #296/#300까지 연장 처리. main `582c41b` → **`44eb47f`**. `next dev`(pid 1662627) 구동 중 → L-012 build skip.
+## Phase D (#307) 결과 — 본 세션 완결
+- D-1 데이터 모델(PR #308/#309) · D-2a route/audit/sync/cron(#310) · D-2b ingestion + 설정 UI(#311) 전부 main 머지
+- **E2E 파이프라인 실동작 검증**(격리 DB `regula_e2e_test`, #312 코멘트): clone → scan → extract → chunk → embed 전 단계 도달 + per-file 격리 + failed/syncing 상태 전이 + corpus_sync_runs + RCE 방어 보존 전부 확인
+- **유일 블로커(비-코드)**: `.env.local` `OPENAI_API_KEY` = dev-placeholder → OpenAI 401. 실제 유효 key 필요.
 
-### ✅ 8종 전부 MERGED · 회귀 4656 → **4772 passed** (+116) · migration 0089→0098 (+9)
-| 이슈 | PR | 핵심 |
-|---|---|---|
-| #264 sub 2/3 RLHF calibration | #295 | migration 0095 calibration_candidates + detector/proposal(Part 11) + GET API. [지양-2/4] 자동 반영 0. |
-| #264 sub 3/3 alternate answers | #297 | migration 0096 feedback_source enum + 3-col unique + audit + regenerate wiring + bridge defense-in-depth. ★ 실DB unique 결함 fix. |
-| #244 PMCF 워크벤치 | #298 | PmcfEvaluationBuilder + PmsWorkbench 5탭. pure frontend. |
-| #245 PMS E2E + CER | #299 | pms-workflow.spec.ts(6) + CER linkage integration +2. E2E CI 위임. |
-| #238 supersession write path | #301 | applyOutdateOperations + retriever [지양-2] 필터 + hook wiring. ★ dead-code 한계 → #300로 해소. |
-| #249 eSubmit labeling | #302 | forwardLabelingToESubmit stub→real + migration 0097 + AC-07 ✅. ★ 이슈 전제 시대착오(#65 실제 구현). |
-| **#296** 0077 DB fix | **#303** | ★ 0077 `ON DELETE 'set null'` 따옴표 구문 에러(10곳) → 프로덕션 DB model-gov 테이블 4개 부재 → **#71 라우트 6종 런타임 500 해소**. CI mock DB가 놓침(L-010). |
-| **#300** delta-sync 진입점 | **#304** | runDeltaSync orchestrator + 수동 API + M-1(org-scope)/M-2(section_superseded audit migration 0098). ★ applyOutdateOperations(#238) **live call site 확보 → AC-05 자동 stale 전파 실제 작동**. |
+## 🎯 다음 세션 시작점 (권장 순서)
+1. **#312 운영 연동**(Phase D 완결, 사용자 가치 최대) — `.env.local`에 실제 `OPENAI_API_KEY` 설정 + 규제 repo 연결 → 코퍼스 채움 + 사이트 RAG 작동 최종 확인. E2E script는 일회성이라 삭제했으나 #312 코멘트에 재작성 가이드(격리 DB + `syncKnowledgeSource` 직접 호출 패턴) 있음.
+2. 회귀 낮은 follow-up: **#313** orphan cron · **#314** insertChunks 추출
+3. priority/high 풀사이클: **#49** VALIDATION(IQ/OQ/PQ) · **#36** REVIEW-OPS · **#37** SUBMISSION-LIFECYCLE — SPEC 문서 기반 manager-strategy 설계 선행
+4. LLM 계열(회귀 높음, 별도 세션 + sync 0.55 expert-security 필수): **#39** WORKFLOWS-LLM · **#40** STRATEGY · **#42** CROSSMARKET · **#43** BATCH
 
-audit enum +4 (rlhf.calibration_proposed, rlhf.implicit_feedback_recorded, label.esubmit_forwarded, traceability.section_superseded).
+## 환경 주의사항 (직검 정정, 중요)
+- **DB 컨테이너 2개**: `regula-test-db`(pg16, 운영 앱 DB = `.env.local DATABASE_URL` localhost:5432/regula_test) + `honcho-postgres-1`(pg15, 5433, **별도 honcho 서비스 — regula 무관**). 과거 메모 "5433 regula"는 오탐(정정됨).
+- **격리 테스트 DB**: `regula_e2e_test`(regula_test 스키마 복제로 생성, 운영 미영향, 유지). 재검증용 — DATABASE_URL에서 `regula_test`→`regula_e2e_test` override로 사용. `docker exec regula-test-db psql -U postgres -d regula_e2e_test`.
+- **배포**: 로컬 Next.js + Cloudflare Tunnel(regula.abyz-lab.work). Vercel/Cloudflare CI는 secrets 미설정 → 스킵, 실배포 없음.
+- **운영 DB 코퍼스 빈 상태**(seed 제거, 사용자 의도) → #312 연동(실제 repo + key) 후 사이트 RAG 작동 개시.
 
-### ★ 핵심 패턴 / 발견 (본 세션)
-- **직견이 만든 차이 (L-007/010)**: (a) #296 — 0077 따옴표 구문 에러로 프로덕션 DB 테이블 부재 → #71 라우트 500. CI mock DB + 정적 테스트 통과, **실DB 직견 + 마이그레이션 재적용**만 포착. (b) #297 — 0082 auto-name unique 잔존 → 실DB 직견. (c) #300 — applyOutdateOperations dead-code → 프로덕션 호출부 grep으로 포착(7회 패턴), live call site 구현으로 폐쇄.
-- **이슈 전제 시대착오 정정**: #249 "#65 미구현 블로커" → 직견 #65 실제 구현됨. #238/#300 "wiring만" → write path 자체/dead-code. 코드 직견이 이슈 본문보다 진실.
-- 매 PR 게이트 직견(typecheck/lint+hex/full test/실DB/main ls-tree) + expert-security(RLHF/regulative/RAG 필수).
+## 미해결/주의 (다음 세션에 알 것)
+- **ingestDocuments**: 파이프라인 완성(main, PR #311). 실제 코퍼스 채움은 #312 환경(key+repo) 후. `lib/ingest` 재사용(composable), migration 불필요(컬럼 사전 존재), cloneRepo RCE 방어 원형 보존. 설계: `docs/proposals/phase-d-2b-ingestion-plan-2026-06-30.md`.
+- **헬퍼 lock-step 단언**: D-2a(#310)에서 `toEqual`(순서) → `Set`(집합) 변경(schema/type 선언 순서 idx 147 `reranking_applied` 상이는 본질 아님). 추후 순서 의존 복구 필요 시 schema/audit 재정렬(scope 확장).
+- **L-013 재확인(본 세션 결정적)**: 세션 메모 "4777 green" 오탐 → 직검 시 lint FAIL 20 + test 2 failed 포착 → 2 PR(#310/#311) 게이트 회복. mock 아닌 **실제 ingestion 실행**으로 파이프라인 검증 필수(정적 테스트 + CI mock + self-report 3중 맹점).
 
-### 🎯 다음 세션 시작 지점 (2026-06-28)
-- **외부 의존 4종 (코드만으로 자율 완료 불가)**: #236(CLASSIFY deterministic + FDA Product Code DB 외부 seed) · #278(Standards 라이브 크롤러 외부 API/ToS) · #39(WORKFLOWS-LLM executor large+의존 미구현) · #202(Hybrid RA E2E 외부 배포).
-- **전략 Killer Features (LLM 리스크)**: #40 STRATEGY · #42 CROSSMARKET · #43 BATCH.
-- 회귀 **4772 passed**. main HEAD `44eb47f`. migration 최신 0098.
+## 직검 교훈 누적 ([[lessons]])
+- L-007(게이트/카운트/결함 직검) · L-009(staged 범위 직검) · L-010(migration 실DB) · L-012(next dev 중 build 금지) · L-013(정적+CI mock+self-report 맹점) — 본 세션 D-2 전 구간 재확인.
+- 본 세션 결정적 패턴: **회귀 높은 ingestion/RAG 변경은 격리 DB + 실제 파이프라인 실행(외부 clone/embed 호출)으로 검증** — CI mock 통과가 실동작 보장 아님(L-013 확장).
 
 ## 이전 세션 히스토리
-- 2026-06-27: #264 sub 1/3(PR #293) + #284/#280 fix-up + #283 test debt + #158 백엔드 7개. 회귀 4656.
-- 2026-06-26: #239 RLS Phase 1~4 + Knowledge/RAG #50/#51/#62 + DB fix-up #279/#281.
+- **2026-06-29~30**: A-C 정체성 교정(PR #305) + Phase D-1 데이터 모델(#308/#309) + D-2a WIP 시작.
+- **2026-06-27~28**: 자율 순차 8종(#264 sub2/3 · #244 · #245 · #238 · #249 · #296 · #300) MERGED, 회귀 4772, migration 0098. ★ #296 실DB 구문 에러 → #71 런타임 500 해소, #300 dead-code 폐쇄(L-007/010).
+- **2026-06-27**: #264 sub 1/3(PR #293) + #284/#280 fix-up + #283 test debt + #158 백엔드 7개.
+- **2026-06-26**: #239 RLS Phase 1~4 + Knowledge/RAG #50/#51/#62 + DB fix-up #279/#281.
