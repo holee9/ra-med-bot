@@ -1,63 +1,42 @@
 // @MX:ANCHOR [AUTO] LLM provider abstraction — single source of model instantiation.
-// @MX:REASON fan_in >= 3: intent.ts, router.ts, consult.ts. Swap the provider at env level.
-// Supported: ollama (default, local) | openai | anthropic
-// Future: oauth-subscription (REQ-LLM-OAUTH, planned)
+// @MX:REASON fan_in >= 3: intent.ts, router.ts, consult.ts, and every Phase B-migrated
+//           site (11 call sites) route through here. gx10 Ollama is the sole chat backend.
+// @MX:SPEC SPEC-LLM-MIGRATION-BC (Phase C: 외부 API 키/의존성 제거 — ollama-only)
 
 import { createOpenAI } from '@ai-sdk/openai';
 import type { LanguageModel } from 'ai';
 
-export type LlmProviderName = 'ollama' | 'openai' | 'anthropic';
+// gx10 Ollama is the only supported chat backend (#318 — 외부 API 전면 배제, 과금 0).
+// LLM_PROVIDER is retained in .env.local for operator visibility but has no
+// routing effect; any value resolves to the gx10 Ollama client below so the
+// pipeline never crashes hard. Direct-verified 2026-07-01.
+const DEFAULT_OLLAMA_BASE_URL = 'http://192.168.100.1:11434/v1';
+const DEFAULT_OLLAMA_MODEL = 'gpt-oss:120b';
 
 /**
  * Returns the main (smart) language model for prose generation.
- * Configured via LLM_PROVIDER + provider-specific env vars.
+ * Both main and fast resolve to gx10 gpt-oss:120b unless OLLAMA_FAST_MODEL
+ * overrides the fast role.
  */
 export function getLlmModel(): LanguageModel {
   return buildModel('main');
 }
 
 /**
- * Returns the fast (small) language model for intent classification and routing.
- * Falls back to the main model when no fast model is configured.
+ * Returns the fast language model for intent classification and routing.
+ * Falls back to the main model when OLLAMA_FAST_MODEL is unset.
  */
 export function getLlmFastModel(): LanguageModel {
   return buildModel('fast');
 }
 
 function buildModel(role: 'main' | 'fast'): LanguageModel {
-  const provider = (process.env.LLM_PROVIDER ?? 'ollama') as LlmProviderName;
-
-  switch (provider) {
-    case 'ollama': {
-      const baseURL = process.env.OLLAMA_BASE_URL ?? 'http://localhost:11434/v1';
-      const mainModel = process.env.OLLAMA_MODEL ?? 'gpt-oss:120b';
-      const fastModel = process.env.OLLAMA_FAST_MODEL ?? mainModel;
-      const modelName = role === 'fast' ? fastModel : mainModel;
-      // Ollama exposes an OpenAI-compatible endpoint; apiKey is ignored but required by the SDK.
-      const ollama = createOpenAI({ baseURL, apiKey: 'ollama' });
-      return ollama(modelName) as unknown as LanguageModel;
-    }
-
-    case 'openai': {
-      const { openai } = require('@ai-sdk/openai') as typeof import('@ai-sdk/openai');
-      const mainModel = process.env.OPENAI_MODEL ?? 'gpt-4o-mini';
-      const fastModel = process.env.OPENAI_FAST_MODEL ?? mainModel;
-      return openai(role === 'fast' ? fastModel : mainModel) as unknown as LanguageModel;
-    }
-
-    case 'anthropic': {
-      const { anthropic } = require('@ai-sdk/anthropic') as typeof import('@ai-sdk/anthropic');
-      const mainModel = process.env.ANTHROPIC_MODEL ?? 'claude-sonnet-4-5';
-      const fastModel = process.env.ANTHROPIC_FAST_MODEL ?? 'claude-haiku-4-5';
-      return anthropic(role === 'fast' ? fastModel : mainModel) as unknown as LanguageModel;
-    }
-
-    default: {
-      // Unknown provider — fall back to Ollama so the pipeline never crashes hard.
-      const baseURL = process.env.OLLAMA_BASE_URL ?? 'http://localhost:11434/v1';
-      const modelName = process.env.OLLAMA_MODEL ?? 'gpt-oss:120b';
-      const ollama = createOpenAI({ baseURL, apiKey: 'ollama' });
-      return ollama(modelName) as unknown as LanguageModel;
-    }
-  }
+  const baseURL = process.env.OLLAMA_BASE_URL ?? DEFAULT_OLLAMA_BASE_URL;
+  const mainModel = process.env.OLLAMA_MODEL ?? DEFAULT_OLLAMA_MODEL;
+  const fastModel = process.env.OLLAMA_FAST_MODEL ?? mainModel;
+  const modelName = role === 'fast' ? fastModel : mainModel;
+  // gx10 Ollama exposes an OpenAI-compatible endpoint; apiKey is ignored on the
+  // local 192.168.100.x trust network but required as a string by the SDK.
+  const ollama = createOpenAI({ baseURL, apiKey: 'ollama', name: 'gx10-ollama' });
+  return ollama(modelName) as unknown as LanguageModel;
 }

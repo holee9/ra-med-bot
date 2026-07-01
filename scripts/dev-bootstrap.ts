@@ -29,9 +29,9 @@ const PLACEHOLDERS: Record<string, string> = {
   AUTH_GOOGLE_ID: 'dev-placeholder-google',
   AUTH_GOOGLE_SECRET: 'dev-placeholder-google-secret',
 
-  // LLM providers
-  ANTHROPIC_API_KEY: 'dev-placeholder-anthropic',
-  OPENAI_API_KEY: 'dev-placeholder-openai',
+  // LLM providers — Phase C (#318): external API keys removed (gx10 Ollama is
+  // keyless). Only Cohere (rerank) retains a placeholder; chat/embedding use
+  // gx10 defaults from .env.example OLLAMA_*/EMBEDDING_* (no placeholder needed).
   COHERE_API_KEY: 'dev-placeholder-cohere',
 
   // Observability

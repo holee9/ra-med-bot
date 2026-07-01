@@ -68,9 +68,7 @@
     "audit:check": "pnpm ci:audit"
   },
   "dependencies": {
-    "@ai-sdk/anthropic": "^3.0.74",
     "@ai-sdk/openai": "^3.0.58",
-    "@anthropic-ai/sdk": "^0.27.0",
     "@auth/drizzle-adapter": "^1.4.0",
     "@fontsource/pretendard": "^5.0.0",
     "@hookform/resolvers": "^3.9.0",

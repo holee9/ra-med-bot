@@ -33,13 +33,14 @@ describe('On-prem LLM no-egress (gx10 redesign, issue #318)', () => {
     expect(content).toContain('gpt-oss:120b');
   });
 
-  it('the chat layer does not instantiate the Anthropic SDK at runtime', () => {
+  it('the chat layer has no Anthropic SDK reference at all (Phase C, #318)', () => {
     const providerFile = path.join(ROOT, 'lib/ai/llm-provider.ts');
     const content = readFileSync(providerFile, 'utf-8');
-    // The anthropic branch must be lazy (require()-gated) so it is never loaded
-    // when LLM_PROVIDER is ollama (the on-prem default). A static top-level
-    // import would pull the SDK into the runtime graph unconditionally.
-    expect(content).not.toMatch(/^import.*@ai-sdk\/anthropic/m);
-    expect(content).toContain("require('@ai-sdk/anthropic')");
+    // Phase C removed the anthropic branch + the @ai-sdk/anthropic dep entirely.
+    // No import, no require, no provider case — gx10 Ollama is the sole backend.
+    expect(content).not.toMatch(/@ai-sdk\/anthropic/);
+    expect(content).not.toMatch(/@anthropic-ai\/sdk/);
+    expect(content).not.toMatch(/case 'anthropic'/);
+    expect(content).toContain('gpt-oss:120b');
   });
 });

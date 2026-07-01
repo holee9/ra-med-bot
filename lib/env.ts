@@ -60,29 +60,19 @@ const envSchema = z.object({
     .min(1, 'AUTH_GOOGLE_SECRET is required')
     .refine(isDevPlaceholderForbidden, devPlaceholderMessage('AUTH_GOOGLE_SECRET')),
 
-  // Phase 2 LLM providers.
-  // @MX:NOTE [AUTO] Phase A: OPENAI_API_KEY no longer required for production.
-  //           Embedding now routes through GitHub Models API (GITHUB_MODELS_TOKEN).
-  //           Retained as optional for LLM_PROVIDER=openai fallback in lib/ai/llm-provider.ts.
-  //           Phase C will remove this + the openai case entirely once deps are cleaned.
-  ANTHROPIC_API_KEY: z
-    .string()
-    .min(1, 'ANTHROPIC_API_KEY is required')
-    .refine(isDevPlaceholderForbidden, devPlaceholderMessage('ANTHROPIC_API_KEY')),
-  OPENAI_API_KEY: z
-    .string()
-    .refine(isDevPlaceholderForbidden, devPlaceholderMessage('OPENAI_API_KEY'))
-    .optional(),
-
-  // Phase A — GitHub Models embedding (OpenAI-compatible endpoint).
-  // Optional now so the app boots without a token in dev/test; the embedding
-  // provider falls back to a 'no-key-in-test' sentinel. Production must set this.
-  GITHUB_MODELS_TOKEN: z
-    .string()
-    .refine(isDevPlaceholderForbidden, devPlaceholderMessage('GITHUB_MODELS_TOKEN'))
-    .optional(),
+  // Phase C (#318): external LLM API keys fully removed — gx10 Ollama is the
+  // sole chat + embedding backend (on-prem, keyless on the 192.168.100.x trust
+  // network). ANTHROPIC_API_KEY / OPENAI_API_KEY / GITHUB_MODELS_TOKEN are gone.
+  // @MX:NOTE [AUTO] All optional — defaults in lib/ai/llm-provider.ts and
+  //           lib/ai/embedding-provider.ts point at gx10 (http://192.168.100.1:11434/v1)
+  //           so the app boots with an empty .env.local in the gx10 environment.
+  LLM_PROVIDER: z.string().optional(), // retained for operator visibility; no routing effect (ollama-only)
+  OLLAMA_BASE_URL: z.string().optional(),
+  OLLAMA_MODEL: z.string().optional(),
+  OLLAMA_FAST_MODEL: z.string().optional(),
   EMBEDDING_BASE_URL: z.string().optional(),
   EMBEDDING_MODEL: z.string().optional(),
+  EMBEDDING_API_KEY: z.string().optional(), // gx10 is keyless; sentinel fallback in embedding-provider
 
   // Optional: label shown in the UI for the LLM model.
   NEXT_PUBLIC_LLM_MODEL_LABEL: z.string().optional(),
@@ -158,11 +148,13 @@ export function parseEnv(source: NodeJS.ProcessEnv = process.env): Env {
     AUTH_MICROSOFT_SECRET: microsoftSecret,
     AUTH_GOOGLE_ID: source.AUTH_GOOGLE_ID,
     AUTH_GOOGLE_SECRET: source.AUTH_GOOGLE_SECRET,
-    ANTHROPIC_API_KEY: source.ANTHROPIC_API_KEY,
-    OPENAI_API_KEY: source.OPENAI_API_KEY,
-    GITHUB_MODELS_TOKEN: source.GITHUB_MODELS_TOKEN,
+    LLM_PROVIDER: source.LLM_PROVIDER,
+    OLLAMA_BASE_URL: source.OLLAMA_BASE_URL,
+    OLLAMA_MODEL: source.OLLAMA_MODEL,
+    OLLAMA_FAST_MODEL: source.OLLAMA_FAST_MODEL,
     EMBEDDING_BASE_URL: source.EMBEDDING_BASE_URL,
     EMBEDDING_MODEL: source.EMBEDDING_MODEL,
+    EMBEDDING_API_KEY: source.EMBEDDING_API_KEY,
     NEXT_PUBLIC_LLM_MODEL_LABEL: source.NEXT_PUBLIC_LLM_MODEL_LABEL,
     HYBRID_RA_API_BASE_URL: source.HYBRID_RA_API_BASE_URL,
     HYBRID_RA_API_TOKEN: source.HYBRID_RA_API_TOKEN,

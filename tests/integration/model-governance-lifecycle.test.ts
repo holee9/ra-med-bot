@@ -250,9 +250,10 @@ describe('SPEC-REGULA-MODEL-GOVERNANCE-001 — mock-DB lifecycle (AC-02/03/06/07
       ]);
     };
 
-    // Runtime is configured to openai/gpt-4o-mini → mismatch.
-    vi.stubEnv('LLM_PROVIDER', 'openai');
-    vi.stubEnv('OPENAI_MODEL', 'gpt-4o-mini');
+    // Runtime is configured to ollama/gpt-oss:120b → mismatch vs approved ollama/llama3.2.
+    // (Phase C, #318: runtime-model is ollama-only; OLLAMA_MODEL drives the mismatch.)
+    vi.stubEnv('LLM_PROVIDER', 'ollama');
+    vi.stubEnv('OLLAMA_MODEL', 'gpt-oss:120b');
 
     const { assertApprovedCombination, RuntimeBlockError } = await import(
       '@/lib/model-governance/runtime-guard'
@@ -264,7 +265,7 @@ describe('SPEC-REGULA-MODEL-GOVERNANCE-001 — mock-DB lifecycle (AC-02/03/06/07
       await assertApprovedCombination({ orgId: 'org-A' });
     } catch (err) {
       expect((err as Error).message).toContain('model_mismatch');
-      expect((err as Error).message).toContain('openai/gpt-4o-mini');
+      expect((err as Error).message).toContain('ollama/gpt-oss:120b');
       expect((err as Error).message).toContain('ollama/llama3.2');
     }
 
@@ -447,19 +448,17 @@ describe('SPEC-REGULA-MODEL-GOVERNANCE-001 — mock-DB lifecycle (AC-02/03/06/07
 });
 
 describe('SPEC-REGULA-MODEL-GOVERNANCE-001 — runtime-model helper (C2 pure)', () => {
-  it('getRuntimeModel resolves ollama default', async () => {
-    vi.stubEnv('LLM_PROVIDER', 'ollama');
-    vi.stubEnv('OLLAMA_MODEL', 'llama3.2');
+  it('getRuntimeModel resolves ollama default (gx10 gpt-oss:120b, Phase C)', async () => {
+    vi.stubEnv('OLLAMA_MODEL', 'gpt-oss:120b');
     const { getRuntimeModel } = await import('@/lib/model-governance/runtime-model');
-    expect(getRuntimeModel()).toEqual({ provider: 'ollama', modelId: 'llama3.2' });
+    expect(getRuntimeModel()).toEqual({ provider: 'ollama', modelId: 'gpt-oss:120b' });
     vi.unstubAllEnvs();
   });
 
-  it('getRuntimeModel resolves openai with defaults', async () => {
-    vi.stubEnv('LLM_PROVIDER', 'openai');
-    vi.stubEnv('OPENAI_MODEL', 'gpt-4o');
+  it('getRuntimeModel honors OLLAMA_MODEL override (Phase C: ollama-only)', async () => {
+    vi.stubEnv('OLLAMA_MODEL', 'qwen3:32b');
     const { getRuntimeModel } = await import('@/lib/model-governance/runtime-model');
-    expect(getRuntimeModel()).toEqual({ provider: 'openai', modelId: 'gpt-4o' });
+    expect(getRuntimeModel()).toEqual({ provider: 'ollama', modelId: 'qwen3:32b' });
     vi.unstubAllEnvs();
   });
 

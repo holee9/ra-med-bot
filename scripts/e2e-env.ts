@@ -15,8 +15,9 @@ const REQUIRED_E2E_ENV = [
   'AUTH_MICROSOFT_SECRET',
   'AUTH_GOOGLE_ID',
   'AUTH_GOOGLE_SECRET',
-  'ANTHROPIC_API_KEY',
-  'OPENAI_API_KEY',
+  // Phase C (#318): gx10 Ollama is keyless on the local network — no external
+  // LLM API keys are required for E2E. Chat/embedding resolve via .env.local
+  // OLLAMA_*/EMBEDDING_* (optional, gx10 defaults).
 ] as const;
 
 function unquote(value: string): string {

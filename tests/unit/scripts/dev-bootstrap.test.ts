@@ -1,6 +1,8 @@
 // @MX:NOTE Dev bootstrap tests — REQ-QUAL-026.
 // Verifies idempotency, placeholder substitution, and that generated content
 // includes the `dev-placeholder-*` markers lib/env.ts rejects in production.
+// Phase C (#318): ANTHROPIC/OPENAI placeholders removed (gx10 Ollama is keyless);
+// Cohere (rerank) is the remaining LLM-adjacent placeholder.
 
 import { describe, expect, it } from 'vitest';
 import { generateEnvLocal, transformLine } from '../../../scripts/dev-bootstrap';
@@ -15,15 +17,9 @@ describe('transformLine', () => {
     expect(transformLine(comment)).toBe(comment);
   });
 
-  it('substitutes ANTHROPIC_API_KEY with the dev placeholder', () => {
-    expect(transformLine('ANTHROPIC_API_KEY=sk-ant-replace-with-real-key')).toBe(
-      'ANTHROPIC_API_KEY=dev-placeholder-anthropic',
-    );
-  });
-
-  it('substitutes OPENAI_API_KEY with the dev placeholder', () => {
-    expect(transformLine('OPENAI_API_KEY=sk-replace')).toBe(
-      'OPENAI_API_KEY=dev-placeholder-openai',
+  it('substitutes COHERE_API_KEY with the dev placeholder', () => {
+    expect(transformLine('COHERE_API_KEY=cohere-replace')).toBe(
+      'COHERE_API_KEY=dev-placeholder-cohere',
     );
   });
 
@@ -53,8 +49,7 @@ describe('generateEnvLocal', () => {
     'DATABASE_URL=postgresql://user:password@localhost:5432/regula',
     '',
     'AUTH_SECRET=replace-with-32-plus-character-random-string',
-    'ANTHROPIC_API_KEY=sk-ant-replace-with-real-key',
-    'OPENAI_API_KEY=sk-replace',
+    'COHERE_API_KEY=cohere-replace',
     'NEXT_PUBLIC_SENTRY_DSN=',
   ].join('\n');
 
@@ -65,8 +60,7 @@ describe('generateEnvLocal', () => {
 
   it('contains dev-placeholder-* markers for sensitive keys', () => {
     const out = generateEnvLocal(sampleExample);
-    expect(out).toContain('ANTHROPIC_API_KEY=dev-placeholder-anthropic');
-    expect(out).toContain('OPENAI_API_KEY=dev-placeholder-openai');
+    expect(out).toContain('COHERE_API_KEY=dev-placeholder-cohere');
     expect(out).toContain('NEXT_PUBLIC_SENTRY_DSN=dev-placeholder-sentry');
   });
 
@@ -79,9 +73,9 @@ describe('generateEnvLocal', () => {
     const out = generateEnvLocal(sampleExample);
     const dbIdx = out.indexOf('DATABASE_URL=');
     const authIdx = out.indexOf('AUTH_SECRET=');
-    const anthropicIdx = out.indexOf('ANTHROPIC_API_KEY=');
+    const cohereIdx = out.indexOf('COHERE_API_KEY=');
     expect(dbIdx).toBeLessThan(authIdx);
-    expect(authIdx).toBeLessThan(anthropicIdx);
+    expect(authIdx).toBeLessThan(cohereIdx);
   });
 
   it('produces idempotent output for the same input', () => {

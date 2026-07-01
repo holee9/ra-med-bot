@@ -15,10 +15,8 @@ const validEnv: NodeJS.ProcessEnv = {
   AUTH_MICROSOFT_SECRET: 'ms-secret',
   AUTH_GOOGLE_ID: 'g-id',
   AUTH_GOOGLE_SECRET: 'g-secret',
-  // Phase 2 LLM provider keys. ANTHROPIC_API_KEY still required;
-  // OPENAI_API_KEY is optional post-Phase-A (embedding → GitHub Models).
-  ANTHROPIC_API_KEY: 'sk-ant-test',
-  OPENAI_API_KEY: 'sk-test',
+  // Phase C (#318): external LLM keys removed — gx10 Ollama is keyless.
+  // OLLAMA_*/EMBEDDING_* are optional (gx10 defaults in lib/env.ts schema).
 };
 
 describe('parseEnv', () => {
@@ -28,10 +26,10 @@ describe('parseEnv', () => {
     expect(env.AUTH_SECRET).toHaveLength(32);
   });
 
-  it('parses env without OPENAI_API_KEY (Phase A — embedding now via GitHub Models)', () => {
-    const { OPENAI_API_KEY: _omit, ...rest } = validEnv;
-    const env = parseEnv(rest);
-    expect(env.OPENAI_API_KEY).toBeUndefined();
+  it('parses env without OLLAMA_BASE_URL (gx10 defaults apply, Phase C)', () => {
+    const env = parseEnv(validEnv);
+    expect(env.OLLAMA_BASE_URL).toBeUndefined();
+    expect(env.OLLAMA_MODEL).toBeUndefined();
   });
 
   it('throws ZodError when DATABASE_URL is missing', () => {
@@ -91,18 +89,6 @@ describe('parseEnv', () => {
       vi.unstubAllEnvs();
     });
 
-    it('rejects ANTHROPIC_API_KEY=dev-placeholder-anthropic in production', () => {
-      expect(() =>
-        parseEnv({ ...validEnv, ANTHROPIC_API_KEY: 'dev-placeholder-anthropic' }),
-      ).toThrow(ZodError);
-    });
-
-    it('rejects OPENAI_API_KEY dev-placeholder in production', () => {
-      expect(() => parseEnv({ ...validEnv, OPENAI_API_KEY: 'dev-placeholder-openai' })).toThrow(
-        ZodError,
-      );
-    });
-
     it('rejects AUTH_SECRET dev-placeholder in production', () => {
       expect(() =>
         parseEnv({ ...validEnv, AUTH_SECRET: 'dev-placeholder-auth-secret-padded-to-32-chars' }),
@@ -117,12 +103,8 @@ describe('parseEnv', () => {
 
     it('accepts dev-placeholder values when NODE_ENV is not production', () => {
       vi.stubEnv('NODE_ENV', 'development');
-      const env = parseEnv({
-        ...validEnv,
-        ANTHROPIC_API_KEY: 'dev-placeholder-anthropic',
-        OPENAI_API_KEY: 'dev-placeholder-openai',
-      });
-      expect(env.ANTHROPIC_API_KEY).toBe('dev-placeholder-anthropic');
+      const env = parseEnv({ ...validEnv, AUTH_GOOGLE_ID: 'dev-placeholder-google' });
+      expect(env.AUTH_GOOGLE_ID).toBe('dev-placeholder-google');
     });
   });
 
