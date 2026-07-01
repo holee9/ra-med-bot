@@ -1,0 +1,39 @@
+-- 0101_source_orphan_sunset.sql
+-- Issue 313: orphan sources cleanup cron.
+--
+-- Background:
+--   Phase D-2b (#307, PR #311) implemented re-sync supersession for
+--   source_sections via applyOutdateOperations (sync.ts:472). When a file is
+--   deleted from the repo, its source_sections rows are superseded (excluded
+--   from retrieval via superseded_by IS NULL filter). But the parent sources
+--   row remains as an ORPHAN — no active section, yet sources.approvalStatus
+--   stays at its prior value and the row lingers indefinitely.
+--
+--   sources.approvalStatus='pending_review' is the final retrieval gate
+--   (retrieval-gate.ts: approvalStatus !== 'approved' excludes from search),
+--   so orphan accumulation does not cause incorrect RAG results today. But
+--   long-term accumulation pollutes the source catalog and makes audit
+--   trails ambiguous ("was this source ever active?").
+--
+-- Scope:
+--   1. source_approval_status ADD VALUE 'sunset' — a dedicated value for
+--      cron-driven orphan cleanup. Semantically DISTINCT from 'rejected'
+--      (which means a human RA owner rejected a pending_review source during
+--      the approval workflow). 'sunset' means the system cron detected all
+--      sections are superseded and the source is no longer authoritative.
+--      The retrieval gate (retrieval-gate.ts:119) already excludes any
+--      status !== 'approved', so 'sunset' is permanently excluded from RAG
+--      search without requiring a retriever logic change.
+--   2. audit_action ADD VALUE 'source.orphan_sunsetted' — 21 CFR Part 11
+--      audit-material record for the cron-driven sunset batch. DISTINCT from
+--      'source.superseded' (which means replaced by a newer source version)
+--      and 'source.rejected' (human RA-owner rejection) so regulators can
+--      distinguish the three lifecycle events in the audit trail.
+--
+-- Compatibility:
+--   Backwards compatible — both are ADD VALUE (enum extension). Existing rows
+--   keep their current approval_status / the new value only applies to rows
+--   the cron touches. Idempotent via IF NOT EXISTS.
+
+ALTER TYPE source_approval_status ADD VALUE IF NOT EXISTS 'sunset';
+ALTER TYPE audit_action ADD VALUE IF NOT EXISTS 'source.orphan_sunsetted';

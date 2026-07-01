@@ -429,8 +429,8 @@ describe('lib/db/schema.ts Phase 5 additions', () => {
     // order is NOT required to match (enum and type legitimately group migrations
     // differently with interspersed comments). Set-equality is the correct check.
     expect(new Set(values)).toEqual(new Set(typeValues));
-    expect(values).toHaveLength(214); // +1 rlhf.calibration_proposed (#264 2/3) +1 rlhf.implicit_feedback_recorded (#264 3/3) +1 label.esubmit_forwarded (#249) +1 traceability.section_superseded (#300 M-2)
-    expect(typeValues).toHaveLength(214);
+    expect(values).toHaveLength(215); // +1 rlhf.calibration_proposed (#264 2/3) +1 rlhf.implicit_feedback_recorded (#264 3/3) +1 label.esubmit_forwarded (#249) +1 traceability.section_superseded (#300 M-2) +1 source.orphan_sunsetted (Issue 313)
+    expect(typeValues).toHaveLength(215);
   });
 
   it.each(REQUIRED_RECOVERY_TABLES)(
@@ -486,7 +486,7 @@ describe('lib/audit.ts Phase 5 AuditAction type additions', () => {
         'change.export_blocked',
       ]),
     );
-    expect(values).toHaveLength(214); // +1 rlhf.calibration_proposed (#264 2/3) +1 rlhf.implicit_feedback_recorded (#264 3/3) +1 label.esubmit_forwarded (#249) +1 traceability.section_superseded (#300 M-2)
+    expect(values).toHaveLength(215); // +1 rlhf.calibration_proposed (#264 2/3) +1 rlhf.implicit_feedback_recorded (#264 3/3) +1 label.esubmit_forwarded (#249) +1 traceability.section_superseded (#300 M-2) +1 source.orphan_sunsetted (Issue 313)
   });
 
   it.each(REQUIRED_RECOVERY_AUDIT_ACTIONS)(

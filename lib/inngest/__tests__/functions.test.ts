@@ -31,7 +31,8 @@ describe('function registry', () => {
     expect(ids).toContain('capa-effectiveness-due-reminder');
     expect(ids).toContain('standards-revision-daily');
     expect(ids).toContain('messages-embedding-backfill');
-    expect(functions).toHaveLength(6); // +standards-revision-daily Issue 62 +messages-embedding-backfill Issue 275
+    expect(ids).toContain('knowledge-sources-orphan-cleanup');
+    expect(functions).toHaveLength(7); // +standards-revision-daily Issue 62 +messages-embedding-backfill Issue 275 +orphan-cleanup Issue 313
   });
 
   it('weekly digest function is the same instance exported from its module', () => {
