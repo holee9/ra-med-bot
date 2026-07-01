@@ -10,14 +10,18 @@ import { mkdir, rm } from 'node:fs/promises';
 import { basename, extname, join, relative } from 'node:path';
 import { promisify } from 'node:util';
 import { writeAudit } from '@/lib/audit';
-import { db, withTenantScope } from '@/lib/db/client';
-import { corpusSyncRuns, knowledgeSources, sourceSections, sources } from '@/lib/db/schema';
+import { db } from '@/lib/db/client';
+import { corpusSyncRuns, knowledgeSources, sources } from '@/lib/db/schema';
 import { chunk } from '@/lib/ingest/chunkers';
 import { DocClass } from '@/lib/ingest/doc-class';
 import { classifyDocument } from '@/lib/ingest/doc-classifier';
 import { embedChunks } from '@/lib/ingest/embed';
 import { extractText } from '@/lib/ingest/extract';
 import { redactPiiForIngest } from '@/lib/ingest/pii/redact';
+import {
+  type SourceSectionInsertRow,
+  insertSourceSections,
+} from '@/lib/ingest/source-sections-upsert';
 import { logger } from '@/lib/observability/logger';
 import { applyOutdateOperations } from '@/lib/radar/delta-sync/ingest';
 import { resolveExistingChunkIds } from '@/lib/radar/delta-sync/orchestrator';
@@ -438,33 +442,28 @@ async function ingestOneFile(
   // g. Resolve existing chunk ids for supersession (org-scoped JOIN — M-1).
   const existingChunkIds = await resolveExistingChunkIds(fileSourceId, ctx.orgId);
 
-  // h. INSERT new source_sections (org-scoped tx) — mirrors orchestrator 7c.
-  const insertedSections = await withTenantScope(ctx.orgId, async (tx) => {
-    const rows: { id: string }[] = [];
-    for (let i = 0; i < chunks.length; i++) {
-      const c = chunks[i];
-      const emb = embeddings[i];
-      if (!c || !emb) continue;
-      const meta = c.metadata as { sectionPath?: string; tokenCount?: number };
-      const ins = await tx
-        .insert(sourceSections)
-        .values({
-          sourceId: fileSourceId,
-          anchor: `${sha8(file.relPath)}-${i}`,
-          heading: meta.sectionPath ?? null,
-          text: c.text,
-          embedding: emb,
-          sectionPath: `${file.relPath}#${meta.sectionPath ?? 'chunk'}`,
-          ingestionRunId: ctx.runId,
-          ingestedAt: new Date(),
-          chunkHash: computeChunkHash(c.text),
-        })
-        .returning({ id: sourceSections.id });
-      const r = ins[0];
-      if (r) rows.push(r);
-    }
-    return rows;
-  });
+  // h. INSERT new source_sections (org-scoped tx). Issue #314: delegates to the
+  // shared insertSourceSections helper used by delta-sync orchestrator 7c. The
+  // anchor/sectionPath provenance keys remain caller-specific (file-path based)
+  // while the tx boundary + batch insert + id collection are centralized.
+  const insertRows: SourceSectionInsertRow[] = [];
+  for (let i = 0; i < chunks.length; i++) {
+    const c = chunks[i];
+    const emb = embeddings[i];
+    if (!c || !emb) continue;
+    const meta = c.metadata as { sectionPath?: string; tokenCount?: number };
+    insertRows.push({
+      sourceId: fileSourceId,
+      anchor: `${sha8(file.relPath)}-${i}`,
+      heading: meta.sectionPath ?? null,
+      text: c.text,
+      embedding: emb,
+      sectionPath: `${file.relPath}#${meta.sectionPath ?? 'chunk'}`,
+      ingestionRunId: ctx.runId,
+      chunkHash: computeChunkHash(c.text),
+    });
+  }
+  const insertedSections = await insertSourceSections(ctx.orgId, insertRows);
 
   // i. Supersede prior chunks for this file (re-sync path). Mirrors 7d.
   let outdatedApplied = 0;
