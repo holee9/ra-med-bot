@@ -13,6 +13,22 @@
 
 ## 구현 현황 대시보드 (2026-06-29 KST 기준)
 
+### 2026-07-01 — gx10 온프레미스 LLM 단일화 (#318) + 환자정보 도메인 제거 (#319)
+
+**#318 LLM 백엔드 전환 (4-Phase, main_direct)**: 외부 API(OpenAI/Anthropic/GitHub Models) 전면 배제 → **gx10 온프레미스 Ollama 단일 백엔드**. 과금 0, ToS 안전, 환자 정보 미취급(내부 개발 제품 자료만).
+
+- **임베딩**: qwen3-embedding:latest (MRL 1536 truncate, pgvector 무변경) via @ai-sdk/openai `/v1/embeddings`
+- **chat**: gpt-oss:120b (116.8B MXFP4) via **ollama-ai-provider** (native `/api/chat`). @ai-sdk/openai v3 ↔ Ollama 비호환(content/usage null) 직견 → ollama-ai-provider로 해결
+- **의존성 제거**: @ai-sdk/anthropic, @anthropic-ai/sdk 삭제 · llm-provider ollama-only · env 외부 키 3종 제거
+- 커밋: fcaf8ae(A) · 6930305(B) · c27f955(C) · 3ef2a83(fixup)
+
+**#319 SPEC-REGULA-PHI-REMOVAL-001 — 환자정보 취급 도메인 전면 제거**: Regula 정체성(환자 정보 미취급) 정합. vigilance + capa + ingest/pii + pmcf/pms 도메인 138 files 제거(+1017/-16112), **실DB 10 테이블 DROP**(migration 0102/0103). CER(MDR Annex XIV 규제 문서)·generic 유틸(project-ownership)·외부 규제 문서 RAG ingestion은 보존. SPEC: `.moai/specs/SPEC-REGULA-PHI-REMOVAL-001/spec.md`
+
+- 게이트 직견: typecheck 0 · lint 0 · **full test 4510 passed · 0 failed** · gx10 live chat "OK"+embed 1536 · next dev /login 200
+- main HEAD `4c30b85`. 상세: `.moai/state/session-memo.md`
+
+---
+
 ### 2026-07-01 — Phase D 코드 완결 + sync 점검
 
 **Phase D(#307) 코드 완결**: 3개 PR로 knowledge-sources 도메인 마무리.
@@ -91,7 +107,7 @@
 
 **운영 범위 합리화 (2026-06-28 → 2026-06-29 정체성 교정)**:
 - **Charter 회귀**: "좁고 깊은 RA 문서 작성 워크스테이션" → **"전사 인허가 도우미(RA 업무 분산)"**로 정체성 재정립
-- **사이드바 정리**: FREEZE/RETIRE 8개 도메인(PMS·변경관리·라벨링·CAPA·임상조사·거버넌스·품질히트맵·팀지식) feature flag 기본 off — **코드 보존, env 토글로 복구 가능**
+- **사이드바 정리**: 환자정보 취급 도메인(PMS·CAPA·Vigilance·PMCF·PII redaction)은 **코드 전면 제거** (SPEC-REGULA-PHI-REMOVAL-001, #319 — Regula는 환자 정보 미취급). 라벨링·임상조사·거버넌스·품질히트맵·팀지식은 feature flag 기본 off
 - **운영 한정 명시**: Charter 지양-3(QMS 아님)/지양-5(SaaS 아님). 상세: [제안서](docs/proposals/scope-rationalization-2026-06-28.md) · [운영 범위 경계](docs/scope-boundary.md)
 
 ### 이번 세션 주요 완료 기능
@@ -767,12 +783,12 @@ graph TB
 - **DB**: PostgreSQL 16 + pgvector
 - **Auth**: Auth.js v5 (SAML/OIDC SSO)
 
-### AI / RAG (멀티 LLM 전략)
-- **추론/생성**: abyz-lab Sonnet 4.5 (규제 분석, citation 포함 답변) | abyz-lab.work
-- **분류/라우팅**: abyz-lab Haiku 4.5 (의도 분류, 쿼리 재작성)
-- **Embedding**: OpenAI text-embedding-3
-- **Orchestration**: LangChain / LlamaIndex (TS)
-- **Reranking**: Cohere Rerank
+### AI / RAG (gx10 온프레미스 단일 백엔드 — #318, 2026-07-01)
+- **chat/생성**: gx10 Ollama **gpt-oss:120b** (116.8B MXFP4, reasoning) via ollama-ai-provider (native `/api/chat`). 외부 API 0건 · 과금 0
+- **Embedding**: gx10 Ollama **qwen3-embedding:latest** (MRL 1536 truncate, pgvector vector(1536) 호환) via @ai-sdk/openai `/v1/embeddings`
+- **인프라**: NVIDIA GB10 Grace Blackwell @ 192.168.100.1:11434 (2.5G 직결, keyless 로컬망 신뢰)
+- **Orchestration**: LangChain / LlamaIndex (TS) · **Reranking**: Cohere Rerank
+- (이전 Anthropic Sonnet/Haiku + OpenAI 전환 완료 — 외부 의존성·키 전부 제거)
 
 ### Infra
 - **개발 환경**: Docker (PostgreSQL 16 + pgvector) + 로컬 Node.js (Next.js dev server)
