@@ -24,7 +24,6 @@ import { chunk } from '@/lib/ingest/chunkers';
 import { DocClass } from '@/lib/ingest/doc-class';
 import { embedChunks } from '@/lib/ingest/embed';
 import { SUPPORTED_MIME_TYPES, extractText } from '@/lib/ingest/extract';
-import { redactPiiForIngest, redactRegexPii } from '@/lib/ingest/pii/redact';
 import { z } from 'zod';
 
 // REQ-QUAL-019 — configurable size cap (default 10MB to match handoff §16).
@@ -92,7 +91,7 @@ export const POST = withPermission('sources.ingest', async (req, _ctx, session) 
       meta_json: {
         reason: 'no_licensed_source',
         docClass,
-        fileName: redactRegexPii(file.name).text,
+        fileName: file.name,
       },
     });
     return Response.json(
@@ -160,29 +159,14 @@ export const POST = withPermission('sources.ingest', async (req, _ctx, session) 
   }
 
   // ---------------------------------------------------------------------
-  // 4. Redact + chunk + embed.
-  //    The sync admin upload and async Inngest path share redactPiiForIngest()
-  //    so source_sections and embedding inputs never receive known PII patterns.
+  // 4. Chunk + embed.
+  //    SPEC-REGULA-PHI-REMOVAL-001: PII redaction removed — Regula ingests
+  //    internal RA documents (510(k), certifications, SOPs) and does not
+  //    handle patient information. The embed layer retains its own defense-
+  //    in-depth PII guard.
   // ---------------------------------------------------------------------
-  let redaction: Awaited<ReturnType<typeof redactPiiForIngest>>;
-  try {
-    redaction = await redactPiiForIngest(rawText, docClass, {
-      documentId: existingSourceId,
-      saveMap: true,
-    });
-  } catch (err) {
-    return Response.json(
-      { error: 'redaction_failed', detail: err instanceof Error ? err.message : 'unknown' },
-      { status: 422 },
-    );
-  }
-
-  if (redaction.text.trim().length === 0) {
-    return Response.json({ error: 'redaction_produced_empty' }, { status: 422 });
-  }
-
   const orgId = session.user.organizationId ?? '';
-  const chunks = chunk(docClass, redaction.text, { orgId, uploadedBy: session.user.id });
+  const chunks = chunk(docClass, rawText, { orgId, uploadedBy: session.user.id });
   if (chunks.length === 0) {
     return Response.json({ error: 'chunking_produced_empty' }, { status: 422 });
   }
@@ -255,24 +239,6 @@ export const POST = withPermission('sources.ingest', async (req, _ctx, session) 
         ? (file.name.split('.').pop()?.slice(0, 32) ?? null)
         : null,
       filenameLength: file.name.length,
-    },
-  });
-
-  await writeAudit({
-    action: 'document.redact',
-    actor_id: session.user.id,
-    resource_type: 'source',
-    resource_id: result.sourceId,
-    meta_json: {
-      docClass,
-      layersRun: redaction.layersRun,
-      redactionCount: redaction.redactionCount,
-      sensitivityLevel: redaction.sensitivityLevel,
-      // 21 CFR Part 11 — record whether the reversibility map was actually
-      // persisted. mapPersisted=false means no reversible artifact exists for
-      // this document (PII_MAP_KEY unset, DB write failed, or zero pairs).
-      mapPersisted: redaction.mapPersisted,
-      mapPersistedCount: redaction.mapPersistedCount,
     },
   });
 

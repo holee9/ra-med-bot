@@ -234,17 +234,8 @@ export type AuditAction =
   //   existence. Closes the Part 11 gap where onSourceSectionSuperseded
   //   early-returns when no deliverable has cited the section.
   | 'traceability.section_superseded'
-  // SPEC-REGULA-PMS-001 (Issue #53, REQ-PMS-010). EU MDR Article 83-86
-  // PMS/PMCF state-transition audit trail (21 CFR Part 11).
-  | 'pms.report_created'
-  | 'pms.compliance_checked'
-  | 'pms.report_exported'
-  | 'pms.report_export_denied'
-  | 'pms.report_closed'
-  | 'pms.input_uploaded'
-  | 'pmcf.plan_created'
-  | 'pmcf.evaluation_drafted'
-  | 'pms.cer_linked'
+  // SPEC-REGULA-PHI-REMOVAL-001 (Issue #319): pms.*/pmcf.* audit actions
+  // removed — PMS/PMCF domain deleted (patient/clinical-subject data).
   // SPEC-REGULA-CHANGE-CONTROL-001 (Issue #54, REQ-CHANGE-CONTROL-012).
   // 6 change-control lifecycle audit actions for 21 CFR Part 11 traceability.
   //   change.assessment_created         — new assessment record inserted

@@ -17,7 +17,6 @@ import { DocClass } from '@/lib/ingest/doc-class';
 import { classifyDocument } from '@/lib/ingest/doc-classifier';
 import { embedChunks } from '@/lib/ingest/embed';
 import { extractText } from '@/lib/ingest/extract';
-import { redactPiiForIngest } from '@/lib/ingest/pii/redact';
 import {
   type SourceSectionInsertRow,
   insertSourceSections,
@@ -226,8 +225,8 @@ interface IngestStats {
 /**
  * Ingest documents from a cloned repository.
  *
- * Pipeline per file: extract → classify → redact → chunk → embed → upsert.
- * Reuses extractText/classifyDocument/redactPiiForIngest/chunk/embedChunks
+ * Pipeline per file: extract → classify → chunk → embed → upsert.
+ * Reuses extractText/classifyDocument/chunk/embedChunks
  * (lib/ingest) and resolveExistingChunkIds/applyOutdateOperations
  * (lib/radar/delta-sync) verbatim. Mirrors runDeltaSync 7a-7e inline.
  *
@@ -423,16 +422,15 @@ async function ingestOneFile(
   });
   const docClass = cls.confidence >= 0.6 ? cls.suggestedClass : DocClass.internal_sop;
 
-  // c. PII redaction (saveMap OMITTED for knowledge-sources — design §2/Q4).
-  const redacted = await redactPiiForIngest(rawText, docClass);
-
-  // d. Chunk (registry dispatches by docClass; internal_sop → chunkSopIso13485).
-  const chunks = chunk(docClass, redacted.text, {
+  // c. Chunk (SPEC-REGULA-PHI-REMOVAL-001: PII redact step removed — Regula
+  //    ingests internal RA documents and does not handle patient information.
+  //    Registry dispatches by docClass; internal_sop → chunkSopIso13485).
+  const chunks = chunk(docClass, rawText, {
     relPath: file.relPath,
     organizationId: ctx.orgId,
   });
 
-  // e. Embed (batched internally BATCH_SIZE=100, MAX_RETRIES=3, PII-guarded).
+  // d. Embed (batched internally BATCH_SIZE=100, MAX_RETRIES=3, PII-guarded).
   const embeddings = await embedChunks(chunks.map((c) => c.text));
 
   // f. Resolve or create the parent sources row for this file (stable key:

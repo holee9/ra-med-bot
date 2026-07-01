@@ -89,23 +89,20 @@ describe('detectKnowledgeGap — 4 conditions (REQ-KNOWLEDGE-GAP-001, AC-01)', (
   });
 });
 
-describe('redactQuestion — PII redaction + hash (REQ-KNOWLEDGE-GAP-002, AC-02)', () => {
-  it('redacts SSN and email from the question (HIPAA Safe Harbor regex layer)', () => {
-    // NOTE: the existing regex utility (lib/ingest/pii/regex.ts) targets US-centric
-    // PII formats per HIPAA Safe Harbor. Korean phone formats (010-XXXX-XXXX) are
-    // not matched by the US phone regex — this is expected behavior of the reused
-    // utility, not a gap in the redaction wrapper.
+describe('redactQuestion — question capture + hash (REQ-KNOWLEDGE-GAP-002, AC-02)', () => {
+  it('passes the question through verbatim and returns a SHA-256 hash', () => {
+    // SPEC-REGULA-PHI-REMOVAL-001: PII redaction removed — Regula is an internal
+    // RA tool and does not handle patient information. The wrapper now returns
+    // the question verbatim with a hash for de-dup clustering.
     const original = '이메일: user@example.com, 주민번호: 123-45-6789, 전화: +1-800-555-1234';
     const { redacted, hash, redactionCount } = redactQuestion(original);
 
-    // PII must not survive into the redacted text.
-    expect(redacted).not.toContain('user@example.com');
-    expect(redacted).not.toContain('123-45-6789');
-    expect(redacted).not.toContain('800-555-1234');
+    // Text is unchanged (no redaction layer).
+    expect(redacted).toBe(original);
     // Hash is a 64-char SHA-256 hex.
     expect(hash).toMatch(/^[0-9a-f]{64}$/);
-    // At least the email + ssn detected (phone regex may or may not match KR format).
-    expect(redactionCount).toBeGreaterThanOrEqual(2);
+    // redactionCount is always 0 (layer removed).
+    expect(redactionCount).toBe(0);
   });
 
   it('hash is deterministic for the same original (de-dup contract)', () => {
@@ -118,17 +115,10 @@ describe('redactQuestion — PII redaction + hash (REQ-KNOWLEDGE-GAP-002, AC-02)
     expect(hashQuestion('질문 A')).not.toBe(hashQuestion('질문 B'));
   });
 
-  it('returns the original text unchanged when no PII is present', () => {
+  it('returns the original text unchanged', () => {
     const original = '510(k) 제출 절차를 설명해주세요.';
     const { redacted, redactionCount } = redactQuestion(original);
     expect(redacted).toBe(original);
     expect(redactionCount).toBe(0);
-  });
-
-  it('original PII is NOT recoverable from the redacted output', () => {
-    const original = '담당자: 이홀리, 이메일: holee@example.com';
-    const { redacted } = redactQuestion(original);
-    // The email must not appear verbatim — redaction is one-way.
-    expect(redacted).not.toContain('holee@example.com');
   });
 });

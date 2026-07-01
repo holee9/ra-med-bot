@@ -5,8 +5,7 @@
 // linked_submission_id were persisted raw from the request body with no
 // existence or org-ownership check. A caller could link another org's SaMD /
 // DHF / Submission or a dangling UUID. This mirrors the verifyLinkTargetExists
-// pattern from lib/clinical-investigation/linkage.ts (H-4 fix) and
-// lib/capa/linkage.ts verifyTargetExists.
+// pattern from lib/clinical-investigation/linkage.ts (H-4 fix).
 //
 // Each referent table is org-scoped:
 //   - samd_assessments.org_id      (uuid, 0054)

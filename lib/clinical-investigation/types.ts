@@ -2,7 +2,6 @@
 // @MX:SPEC SPEC-REGULA-CLINICAL-INVESTIGATION-001 (Issue #69, REQ-CLININV-001~012)
 // @MX:REASON Every Route Handler under app/api/clinical-investigation/ validates
 //           request bodies against these Zod schemas before touching the DB.
-//           Mirrors the lib/pms + lib/capa input-validation discipline.
 
 import { z } from 'zod';
 
@@ -13,10 +12,14 @@ import { z } from 'zod';
 export const ciPathwaySchema = z.enum(['fda_ide', 'eu_mdr']);
 export type CiPathway = z.infer<typeof ciPathwaySchema>;
 
-export const ciEventTypeSchema = z.enum(['milestone', 'deviation', 'adverse_event']);
+// SPEC-REGULA-PHI-REMOVAL-001: 'adverse_event' removed — Regula does not handle
+// patient outcomes. CI events track milestone / deviation only.
+export const ciEventTypeSchema = z.enum(['milestone', 'deviation']);
 export type CiEventType = z.infer<typeof ciEventTypeSchema>;
 
-export const ciLinkTargetSchema = z.enum(['cer', 'pms', 'dhf']);
+// SPEC-REGULA-PHI-REMOVAL-001 (Issue #319): 'pms' target removed — pms_inputs
+// table dropped; CI results no longer link to PMS deliverables (patient data).
+export const ciLinkTargetSchema = z.enum(['cer', 'dhf']);
 export type CiLinkTarget = z.infer<typeof ciLinkTargetSchema>;
 
 // Regulatory citation carried by every pathway/recommendation output (REQ-010).
@@ -85,14 +88,12 @@ export const irbPackageInputSchema = z.object({
 });
 export type IrbPackageInput = z.infer<typeof irbPackageInputSchema>;
 
-// REQ-CLININV-008: POST /[id]/events — milestone / deviation / AE.
+// REQ-CLININV-008: POST /[id]/events — milestone / deviation tracking.
+// SPEC-REGULA-PHI-REMOVAL-001: vigilanceRef + adverse_event removed.
 export const ciEventInputSchema = z.object({
   type: ciEventTypeSchema,
   title: z.string().min(1).max(400),
   description: z.string().max(4000).optional(),
-  // AC-08: when type='adverse_event', an optional vigilance_ref links the CI
-  // event to the Vigilance domain (reportability assessment / MDR report).
-  vigilanceRef: z.string().max(200).optional(),
   occurredAt: z.string().datetime().optional(),
 });
 export type CiEventInput = z.infer<typeof ciEventInputSchema>;

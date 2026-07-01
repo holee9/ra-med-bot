@@ -269,16 +269,8 @@ export const auditActionEnum = pgEnum('audit_action', [
   // supersession audit, fired inside the supersession tx independent of
   // evidence_node existence (Part 11 traceability gap closure).
   'traceability.section_superseded',
-  // SPEC-REGULA-PMS-001 (Issue #53): EU MDR Article 83-86 PMS/PMCF audit trail.
-  'pms.report_created',
-  'pms.compliance_checked',
-  'pms.report_exported',
-  'pms.report_export_denied',
-  'pms.report_closed',
-  'pms.input_uploaded',
-  'pmcf.plan_created',
-  'pmcf.evaluation_drafted',
-  'pms.cer_linked',
+  // SPEC-REGULA-PHI-REMOVAL-001 (Issue #319): pms.*/pmcf.* audit actions
+  // removed — PMS/PMCF domain deleted (patient/clinical-subject data).
   // SPEC-REGULA-CHANGE-CONTROL-001 (Issue #54, REQ-CHANGE-CONTROL-012):
   // 6 change-control lifecycle audit actions (21 CFR Part 11). change.export_blocked
   // (H-4) records provisional-export denial, distinct from REQ-006 citation rejection.
@@ -571,6 +563,7 @@ export const gapClassificationEnum = pgEnum('gap_classification', [
 // SPEC-REGULA-CLASSIFY-001: 'classification' added via 0051_classification_audit_actions.sql;
 // 'classify' added via 0067_classify.sql (tasks.md canonical value, mirrors 'risk' naming).
 // SPEC-REGULA-PMS-001: 'pms_report', 'pmcf_plan', 'pmcf_evaluation' added via 0069_pms.sql.
+// SPEC-REGULA-PHI-REMOVAL-001 (Issue #319): the 3 PMS/PMCF values removed via 0103_drop_pmcf_pms.sql.
 // SPEC-REGULA-CHANGE-CONTROL-001: 'change_control_assessment' added via 0071_change_control.sql.
 // SPEC-REGULA-LABELING-001: 'labeling' added via 0072_labeling.sql.
 // SPEC-REGULA-CAPA-001: 'complaint' added via 0073_capa.sql.
@@ -585,9 +578,8 @@ export const workflowTypeEnum = pgEnum('workflow_type', [
   'risk',
   'classification',
   'classify',
-  'pms_report',
-  'pmcf_plan',
-  'pmcf_evaluation',
+  // SPEC-REGULA-PHI-REMOVAL-001 (Issue #319): pms_report/pmcf_plan/pmcf_evaluation
+  // removed — PMS/PMCF domain deleted (patient/clinical-subject data).
   'change_control_assessment',
   'labeling',
   'complaint',
@@ -1604,64 +1596,11 @@ export const pccpComponents = pgTable(
   }),
 );
 // ---------------------------------------------------------------------------
-// SPEC-REGULA-VIGILANCE-001 — Post-Market Surveillance tables (3).
-// Migration: 0041_vigilance_tables.sql
+// SPEC-REGULA-VIGILANCE-001 — Post-Market Surveillance tables.
+// REMOVED by SPEC-REGULA-PHI-REMOVAL-001: adverse_events, reportability_assessments,
+// vigilance_reports dropped (Regula does not handle patient outcomes).
+// Migration: 0102_drop_phivigilance_capa_tables.sql
 // ---------------------------------------------------------------------------
-
-// REQ-VIG-001: adverse_events — captures raw adverse event input data.
-export const adverseEvents = pgTable('adverse_events', {
-  id: uuid('id').defaultRandom().primaryKey(),
-  workflowRunId: uuid('workflow_run_id').references(() => workflowRuns.id, {
-    onDelete: 'cascade',
-  }),
-  eventDate: date('event_date').notNull(),
-  deviceName: text('device_name').notNull(),
-  deviceModel: text('device_model'),
-  lotNumber: text('lot_number'),
-  eventDescription: text('event_description').notNull(),
-  patientOutcome: text('patient_outcome').notNull(),
-  awarenessDate: date('awareness_date').notNull(),
-  reporterName: text('reporter_name').notNull(),
-  reporterRole: text('reporter_role').notNull(),
-  createdAt: timestamp('created_at', { withTimezone: true, mode: 'date' }).notNull().defaultNow(),
-  createdBy: text('created_by').notNull(),
-});
-
-// REQ-VIG-002: reportability_assessments — deterministic rule engine output.
-export const reportabilityAssessments = pgTable('reportability_assessments', {
-  id: uuid('id').defaultRandom().primaryKey(),
-  adverseEventId: uuid('adverse_event_id')
-    .notNull()
-    .references(() => adverseEvents.id, { onDelete: 'cascade' }),
-  fdaMdrRequired: boolean('fda_mdr_required').notNull(),
-  fdaMdrDeadlineDays: integer('fda_mdr_deadline_days'),
-  euMdvRequired: boolean('eu_mdv_required').notNull(),
-  euMdvDeadlineDays: integer('eu_mdv_deadline_days'),
-  fscaRequired: boolean('fsca_required').notNull(),
-  assessmentRationale: text('assessment_rationale').notNull(),
-  assessedByAi: boolean('assessed_by_ai').notNull().default(true),
-  reviewedBy: text('reviewed_by'),
-  createdAt: timestamp('created_at', { withTimezone: true, mode: 'date' }).notNull().defaultNow(),
-});
-
-// REQ-VIG-003: vigilance_reports — AI-generated report draft content.
-export const vigilanceReports = pgTable('vigilance_reports', {
-  id: uuid('id').defaultRandom().primaryKey(),
-  adverseEventId: uuid('adverse_event_id')
-    .notNull()
-    .references(() => adverseEvents.id, { onDelete: 'cascade' }),
-  // report_type: 'fda_mdr' | 'eu_mdv' | 'fsca'
-  reportType: text('report_type').notNull(),
-  // report_format: 'mdr_3500a' | 'eu_mdv_initial' | 'eu_mdv_final' | 'fsca_notice'
-  reportFormat: text('report_format').notNull(),
-  draftContent: jsonb('draft_content').notNull().default({}),
-  version: integer('version').notNull().default(1),
-  // status: 'draft' | 'reviewed' | 'submitted'
-  status: text('status').notNull().default('draft'),
-  submissionDeadline: date('submission_deadline'),
-  createdAt: timestamp('created_at', { withTimezone: true, mode: 'date' }).notNull().defaultNow(),
-  updatedAt: timestamp('updated_at', { withTimezone: true, mode: 'date' }).notNull().defaultNow(),
-});
 
 // SPEC-REGULA-DIGEST-001 — per-org digest preferences.
 // Migration: 0052_weekly_digests.sql
@@ -2296,54 +2235,10 @@ export const staleFlags = pgTable(
   }),
 );
 
-// @MX:NOTE [AUTO] PMS inputs/documents — SPEC-REGULA-PMS-001 (Issue #53).
-// @MX:SPEC SPEC-REGULA-PMS-001 (REQ-PMS-001, REQ-PMS-005, REQ-PMS-006)
-// complaint/vigilance data inputs and generated PMSR/PMCF documents. Both
-// isolated per org via RLS on app.current_org_id (0068 pattern). org_id has
-// no inline FK here — the migration owns the REFERENCES constraint; Drizzle
-// mirrors columns only for query typing.
-export const pmsInputs = pgTable(
-  'pms_inputs',
-  {
-    id: uuid('id').defaultRandom().primaryKey(),
-    orgId: uuid('org_id').notNull(),
-    projectId: uuid('project_id').notNull(),
-    source: text('source').notNull(),
-    severity: text('severity'),
-    susarFlag: boolean('susar_flag').notNull().default(false),
-    trendCategory: text('trend_category'),
-    payload: jsonb('payload').notNull().default({}),
-    uploadedBy: uuid('uploaded_by'),
-    createdAt: timestamp('created_at', { withTimezone: true, mode: 'date' }).notNull().defaultNow(),
-  },
-  (t) => ({
-    projectIdx: index('idx_pms_inputs_project').on(t.projectId),
-    orgIdx: index('idx_pms_inputs_org').on(t.orgId),
-  }),
-);
-
-export const pmsDocuments = pgTable(
-  'pms_documents',
-  {
-    id: uuid('id').defaultRandom().primaryKey(),
-    orgId: uuid('org_id').notNull(),
-    projectId: uuid('project_id').notNull(),
-    workflowRunId: uuid('workflow_run_id'),
-    workflowType: workflowTypeEnum('workflow_type').notNull(),
-    cerRef: uuid('cer_ref'),
-    body: jsonb('body').notNull().default({}),
-    complianceStatus: text('compliance_status').notNull().default('pending'),
-    reviewStatus: text('review_status').notNull().default('draft'),
-    createdBy: uuid('created_by').notNull(),
-    createdAt: timestamp('created_at', { withTimezone: true, mode: 'date' }).notNull().defaultNow(),
-    updatedAt: timestamp('updated_at', { withTimezone: true, mode: 'date' }).notNull().defaultNow(),
-  },
-  (t) => ({
-    projectIdx: index('idx_pms_documents_project').on(t.projectId),
-    orgIdx: index('idx_pms_documents_org').on(t.orgId),
-    workflowIdx: index('idx_pms_documents_workflow').on(t.workflowRunId),
-  }),
-);
+// SPEC-REGULA-PHI-REMOVAL-001 (Issue #319): pmsInputs + pmsDocuments tables
+// removed. PMS/PMCF domain carried patient/clinical-subject data (complaint,
+// vigilance, SUSAR, adverse-event rate, PMCF registry/subjects) which Regula
+// does not handle. See migrations/0103_drop_pmcf_pms.sql.
 
 // ---------------------------------------------------------------------------
 // SPEC-REGULA-CHANGE-CONTROL-001 — Design Change RA Impact Assessor (Issue #54)
@@ -2649,192 +2544,13 @@ export const labelingTranslations = pgTable(
 );
 
 // ---------------------------------------------------------------------------
-// SPEC-REGULA-CAPA-001 — Complaint → CAPA closed-loop management
-// Migration: 0073_capa.sql
-// REQ-CAPA-001 (workflow_type 'complaint') handled above in workflowTypeEnum.
-// REQ-CAPA-010 (audit_action) handled above in auditActionEnum.
+// SPEC-REGULA-CAPA-001 — Complaint → CAPA closed-loop management.
+// REMOVED by SPEC-REGULA-PHI-REMOVAL-001: complaintReportabilityStatusEnum, complaints,
+// capaRecords, capaRootCauses, capaLinks, capaEffectivenessChecks dropped (Regula does
+// not handle patient outcomes). workflow_type 'complaint' + audit_action capa.* enum
+// values retained (Postgres enum value removal is invasive; unused values are harmless).
+// Migration: 0102_drop_phivigilance_capa_tables.sql
 // ---------------------------------------------------------------------------
-
-// REQ-002: complaint reportability lifecycle.
-export const complaintReportabilityStatusEnum = pgEnum('complaint_reportability_status', [
-  'pending',
-  'reportable',
-  'not_reportable',
-]);
-
-// REQ-004: corrective vs preventive action split.
-export const capaTypeEnum = pgEnum('capa_type', ['corrective', 'preventive']);
-
-// REQ-005: CAPA status lifecycle.
-export const capaStatusEnum = pgEnum('capa_status', [
-  'open',
-  'in_progress',
-  'pending_effectiveness',
-  'closed',
-  'cancelled',
-]);
-
-// REQ-005: effectiveness check result.
-export const capaEffectivenessStatusEnum = pgEnum('capa_effectiveness_status', [
-  'pending',
-  'passed',
-  'failed',
-]);
-
-// @MX:ANCHOR [AUTO] complaints — top-level structured complaint intake record.
-// @MX:REASON Referenced by capa_records, reportability wrapper, trend detector, close-gate. fan_in >= 3.
-// @MX:SPEC SPEC-REGULA-CAPA-001 (REQ-001, REQ-002, REQ-007, REQ-011)
-export const complaints = pgTable(
-  'complaints',
-  {
-    id: uuid('id').defaultRandom().primaryKey(),
-    orgId: uuid('org_id')
-      .notNull()
-      .references(() => organizations.id, { onDelete: 'cascade' }),
-    projectId: uuid('project_id')
-      .notNull()
-      .references(() => projects.id, { onDelete: 'cascade' }),
-    workflowRunId: uuid('workflow_run_id').references(() => workflowRuns.id, {
-      onDelete: 'set null',
-    }),
-    intakeData: jsonb('intake_data').notNull().default({}),
-    reportabilityStatus: text('reportability_status').notNull().default('pending'),
-    vigilanceRef: uuid('vigilance_ref'),
-    trendSignature: text('trend_signature'),
-    createdBy: uuid('created_by')
-      .notNull()
-      .references(() => users.id),
-    createdAt: timestamp('created_at', { withTimezone: true, mode: 'date' }).notNull().defaultNow(),
-    updatedAt: timestamp('updated_at', { withTimezone: true, mode: 'date' }).notNull().defaultNow(),
-  },
-  (t) => ({
-    projectIdx: index('idx_complaints_project').on(t.projectId),
-    orgIdx: index('idx_complaints_org').on(t.orgId),
-    reportabilityIdx: index('idx_complaints_reportability').on(t.reportabilityStatus),
-    trendIdx: index('idx_complaints_trend').on(t.orgId, t.trendSignature),
-  }),
-);
-
-// @MX:ANCHOR [AUTO] capaRecords — corrective AND preventive action records (split).
-// @MX:REASON Referenced by root causes, links, effectiveness checks, close route. fan_in >= 3.
-// @MX:SPEC SPEC-REGULA-CAPA-001 (REQ-004, REQ-005, REQ-010)
-export const capaRecords = pgTable(
-  'capa_records',
-  {
-    id: uuid('id').defaultRandom().primaryKey(),
-    orgId: uuid('org_id')
-      .notNull()
-      .references(() => organizations.id, { onDelete: 'cascade' }),
-    projectId: uuid('project_id')
-      .notNull()
-      .references(() => projects.id, {
-        onDelete: 'cascade',
-      }),
-    complaintId: uuid('complaint_id')
-      .notNull()
-      .references(() => complaints.id, {
-        onDelete: 'cascade',
-      }),
-    type: text('type').notNull(),
-    description: text('description').notNull(),
-    ownerId: uuid('owner_id')
-      .notNull()
-      .references(() => users.id),
-    dueDate: date('due_date').notNull(),
-    status: text('status').notNull().default('open'),
-    effectivenessStatus: text('effectiveness_status').notNull().default('pending'),
-    closedBy: uuid('closed_by').references(() => users.id),
-    closedAt: timestamp('closed_at', { withTimezone: true, mode: 'date' }),
-    closeSignatureHash: text('close_signature_hash'),
-    createdBy: uuid('created_by')
-      .notNull()
-      .references(() => users.id),
-    createdAt: timestamp('created_at', { withTimezone: true, mode: 'date' }).notNull().defaultNow(),
-    updatedAt: timestamp('updated_at', { withTimezone: true, mode: 'date' }).notNull().defaultNow(),
-  },
-  (t) => ({
-    complaintIdx: index('idx_capa_records_complaint').on(t.complaintId),
-    orgIdx: index('idx_capa_records_org').on(t.orgId),
-    projectIdx: index('idx_capa_records_project').on(t.projectId),
-    statusIdx: index('idx_capa_records_status').on(t.status),
-    ownerIdx: index('idx_capa_records_owner').on(t.ownerId),
-  }),
-);
-
-// REQ-003: root cause analysis (5 Whys / Fishbone).
-export const capaRootCauses = pgTable(
-  'capa_root_causes',
-  {
-    id: uuid('id').defaultRandom().primaryKey(),
-    orgId: uuid('org_id')
-      .notNull()
-      .references(() => organizations.id, { onDelete: 'cascade' }),
-    capaId: uuid('capa_id')
-      .notNull()
-      .references(() => capaRecords.id, { onDelete: 'cascade' }),
-    method: text('method').notNull(),
-    analysisData: jsonb('analysis_data').notNull().default({}),
-    summary: text('summary').notNull(),
-    createdBy: uuid('created_by')
-      .notNull()
-      .references(() => users.id),
-    createdAt: timestamp('created_at', { withTimezone: true, mode: 'date' }).notNull().defaultNow(),
-    updatedAt: timestamp('updated_at', { withTimezone: true, mode: 'date' }).notNull().defaultNow(),
-  },
-  (t) => ({
-    capaIdx: index('idx_capa_root_causes_capa').on(t.capaId),
-    orgIdx: index('idx_capa_root_causes_org').on(t.orgId),
-  }),
-);
-
-// REQ-008: cross-workflow traceability links (risk / change_control / DHF / PMS).
-export const capaLinks = pgTable(
-  'capa_links',
-  {
-    id: uuid('id').defaultRandom().primaryKey(),
-    orgId: uuid('org_id')
-      .notNull()
-      .references(() => organizations.id, { onDelete: 'cascade' }),
-    capaId: uuid('capa_id')
-      .notNull()
-      .references(() => capaRecords.id, { onDelete: 'cascade' }),
-    targetType: text('target_type').notNull(),
-    targetId: text('target_id').notNull(),
-    createdBy: uuid('created_by')
-      .notNull()
-      .references(() => users.id),
-    createdAt: timestamp('created_at', { withTimezone: true, mode: 'date' }).notNull().defaultNow(),
-  },
-  (t) => ({
-    capaIdx: index('idx_capa_links_capa').on(t.capaId),
-    targetIdx: index('idx_capa_links_target').on(t.targetType, t.targetId),
-    orgIdx: index('idx_capa_links_org').on(t.orgId),
-  }),
-);
-
-// REQ-006: scheduled effectiveness verification.
-export const capaEffectivenessChecks = pgTable(
-  'capa_effectiveness_checks',
-  {
-    id: uuid('id').defaultRandom().primaryKey(),
-    orgId: uuid('org_id')
-      .notNull()
-      .references(() => organizations.id, { onDelete: 'cascade' }),
-    capaId: uuid('capa_id')
-      .notNull()
-      .references(() => capaRecords.id, { onDelete: 'cascade' }),
-    dueDate: date('due_date').notNull(),
-    checkedAt: timestamp('checked_at', { withTimezone: true, mode: 'date' }),
-    result: text('result'),
-    notes: text('notes'),
-    createdAt: timestamp('created_at', { withTimezone: true, mode: 'date' }).notNull().defaultNow(),
-  },
-  (t) => ({
-    capaIdx: index('idx_capa_effectiveness_capa').on(t.capaId),
-    orgIdx: index('idx_capa_effectiveness_org').on(t.orgId),
-    dueIdx: index('idx_capa_effectiveness_due').on(t.dueDate),
-  }),
-);
 
 // @MX:NOTE [AUTO] Clinical Investigation enums — SPEC-REGULA-CLINICAL-INVESTIGATION-001 (Issue #69).
 // @MX:SPEC SPEC-REGULA-CLINICAL-INVESTIGATION-001 (REQ-CLININV-001~012)
@@ -2847,8 +2563,9 @@ export const ciDocTypeEnum = pgEnum('ci_doc_type', [
   'brochure',
   'monitoring_plan',
 ]);
-export const ciEventTypeEnum = pgEnum('ci_event_type', ['milestone', 'deviation', 'adverse_event']);
-export const ciLinkTargetTypeEnum = pgEnum('ci_link_target_type', ['cer', 'pms', 'dhf']);
+export const ciEventTypeEnum = pgEnum('ci_event_type', ['milestone', 'deviation']);
+// SPEC-REGULA-PHI-REMOVAL-001 (Issue #319): 'pms' removed — pms_inputs dropped.
+export const ciLinkTargetTypeEnum = pgEnum('ci_link_target_type', ['cer', 'dhf']);
 
 // SPEC-REGULA-CLINICAL-INVESTIGATION-001 (Issue #69, REQ-CLININV-001~012).
 // @MX:NOTE [AUTO] clinical_investigations — root table of the CI planner domain.
@@ -2932,10 +2649,10 @@ export const ciDocuments = pgTable(
   }),
 );
 
-// SPEC-REGULA-CLINICAL-INVESTIGATION-001 (Issue #69, REQ-CLININV-008, AC-08).
-// ci_events — milestone / deviation / adverse_event. adverse_event rows carry an
-// optional vigilance_ref linking to the Vigilance domain (AC-08). Mirrors the
-// capa.close_blocked_vigilance_missing linkage direction.
+// SPEC-REGULA-CLINICAL-INVESTIGATION-001 (Issue #69, REQ-CLININV-008).
+// ci_events — milestone / deviation. SPEC-REGULA-PHI-REMOVAL-001 removed the
+// adverse_event type + vigilance_ref coupling (Regula does not handle patient
+// outcomes).
 export const ciEvents = pgTable(
   'ci_events',
   {
@@ -2948,7 +2665,6 @@ export const ciEvents = pgTable(
       .references(() => clinicalInvestigations.id, { onDelete: 'cascade' }),
     type: ciEventTypeEnum('type').notNull(),
     data: jsonb('data').notNull().default({}),
-    vigilanceRef: text('vigilance_ref'),
     occurredAt: timestamp('occurred_at', { withTimezone: true, mode: 'date' })
       .notNull()
       .defaultNow(),

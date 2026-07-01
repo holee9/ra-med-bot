@@ -36,7 +36,7 @@ export const GET = withPermission('clinical_investigation.view', async (_req, ct
     .limit(1);
 
   const events = await db
-    .select({ id: ciEvents.id, type: ciEvents.type, vigilanceRef: ciEvents.vigilanceRef })
+    .select({ id: ciEvents.id, type: ciEvents.type })
     .from(ciEvents)
     .where(and(eq(ciEvents.investigationId, investigationId), eq(ciEvents.orgId, organizationId)));
 
@@ -70,7 +70,6 @@ export const GET = withPermission('clinical_investigation.view', async (_req, ct
     links,
     counts: {
       events: events.length,
-      adverseEvents: events.filter((e) => e.type === 'adverse_event').length,
       documents: documents.length,
       links: links.length,
     },

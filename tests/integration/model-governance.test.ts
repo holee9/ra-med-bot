@@ -3,7 +3,7 @@
 // @MX:REASON Covers the 7 acceptance criteria + IDOR + single-active + immutability.
 //           Source-level + pure-function tests where a live DB is not required
 //           (eval-gate, audit-metadata, registry content_hash). The DB-backed
-//           lifecycle tests follow the capa/clinical-investigation pattern and
+//           lifecycle tests follow the clinical-investigation pattern and
 //           assume the test DB has migration 0077 applied.
 
 // Mock the Drizzle client so the pure-function tests below can run without
@@ -11,7 +11,7 @@
 // construction), which would crash the whole file under `pnpm test` (CI's Unit
 // step does not set DATABASE_URL). The pure modules (eval-gate, audit-metadata,
 // registry.computeContentHash, runtime-guard shape) do not touch the DB at
-// runtime; they only need the import to not throw. Mirrors tests/integration/capa.test.ts.
+// runtime; they only need the import to not throw. Mirrors the clinical-investigation integration test.
 vi.mock('@/lib/db/client', () => ({
   db: {
     select: () => ({
@@ -158,8 +158,8 @@ describe.skipIf(!DB_AVAILABLE)(
   'SPEC-REGULA-MODEL-GOVERNANCE-001 — DB lifecycle (AC-02/03/05/07, IDOR, single-active)',
   () => {
     // These tests exercise the full tx + audit + RLS path. They follow the
-    // capa/clinical-investigation integration test conventions. Implementation
-    // mirrors the shape of tests/integration/capa.test.ts but is intentionally
+    // clinical-investigation integration test conventions. Implementation
+    // mirrors the clinical-investigation integration test but is intentionally
     // lighter — the heavy lifting is in the pure-function suite above.
     //
     // AC-02 (eval-not-passed blocks production): approveChangeRequest throws
@@ -170,7 +170,7 @@ describe.skipIf(!DB_AVAILABLE)(
     it('AC-02 placeholder — DB lifecycle tests require migration 0077 applied', async () => {
       // Full DB lifecycle coverage is implemented in the lib modules; the
       // source-level invariants (eval gate, content hash, runtime guard shape)
-      // are verified above. DB-backed round-trips follow the capa.test.ts
+      // are verified above. DB-backed round-trips follow the clinical-investigation
       // pattern and are activated when DATABASE_URL is present.
       expect(true).toBe(true);
     });

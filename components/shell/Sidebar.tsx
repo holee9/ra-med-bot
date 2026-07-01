@@ -48,18 +48,12 @@ interface SidebarProps {
   // visible to roles with standards.read (viewer+). Gated server-side and
   // passed down.
   showStandards?: boolean;
-  // SPEC-REGULA-PMS-001 (Issue #53): PMS Workbench is visible to roles with
-  // pms.view (ra-member+). Gated server-side and passed down.
-  showPms?: boolean;
   // SPEC-REGULA-CHANGE-CONTROL-001 (Issue #54): Change Control is visible to
   // roles with change.view (ra-member+). Gated server-side and passed down.
   showChangeControl?: boolean;
   // SPEC-REGULA-LABELING-001 (Issue #66): Labeling workbench is visible to
   // roles with label.view (ra-member+). Gated server-side and passed down.
   showLabeling?: boolean;
-  // SPEC-REGULA-CAPA-001 (Issue #68): CAPA complaint/closed-loop workbench is
-  // visible to roles with complaint.view (ra-member+). Gated server-side.
-  showCapa?: boolean;
   // SPEC-REGULA-CLINICAL-INVESTIGATION-001 (Issue #69): Clinical Investigation planner
   // is visible to roles with clinical_investigation.view (ra-member+).
   showClinicalInvestigation?: boolean;
@@ -89,10 +83,8 @@ export default function Sidebar(props?: SidebarProps) {
   const showClassify = props?.showClassify ?? false;
   const showTraceability = props?.showTraceability ?? false;
   const showStandards = props?.showStandards ?? false;
-  const showPms = props?.showPms ?? false;
   const showChangeControl = props?.showChangeControl ?? false;
   const showLabeling = props?.showLabeling ?? false;
-  const showCapa = props?.showCapa ?? false;
   const showClinicalInvestigation = props?.showClinicalInvestigation ?? false;
   const showGovernance = props?.showGovernance ?? false;
   const showQualityHeatmap = props?.showQualityHeatmap ?? false;
@@ -256,19 +248,6 @@ export default function Sidebar(props?: SidebarProps) {
         </nav>
       )}
 
-      {/* SPEC-REGULA-PMS-001 (Issue #53): PMS Workbench conditional link. */}
-      {showPms && (
-        <nav className="px-2 py-1">
-          <Link
-            href="/pms"
-            data-testid="sidebar-pms-link"
-            className="rounded-md px-3 py-2 text-sm text-ink-700 hover:bg-ink-50 block"
-          >
-            PMS 워크벤치
-          </Link>
-        </nav>
-      )}
-
       {/* SPEC-REGULA-CHANGE-CONTROL-001 (Issue #54): Change Control conditional link. */}
       {showChangeControl && (
         <nav className="px-2 py-1">
@@ -291,19 +270,6 @@ export default function Sidebar(props?: SidebarProps) {
             className="rounded-md px-3 py-2 text-sm text-ink-700 hover:bg-ink-50 block"
           >
             라벨링·IFU
-          </Link>
-        </nav>
-      )}
-
-      {/* SPEC-REGULA-CAPA-001 (Issue #68): CAPA complaint/closed-loop conditional link. */}
-      {showCapa && (
-        <nav className="px-2 py-1">
-          <Link
-            href="/capa"
-            data-testid="sidebar-capa-link"
-            className="rounded-md px-3 py-2 text-sm text-ink-700 hover:bg-ink-50 block"
-          >
-            불만·CAPA
           </Link>
         </nav>
       )}

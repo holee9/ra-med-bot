@@ -244,18 +244,19 @@ describe('AC-01: 4-condition gap detection', () => {
   });
 });
 
-describe('AC-02: PII redaction + hash', () => {
-  it('redactQuestion strips PII and records a SHA-256 hash', async () => {
+describe('AC-02: question capture + hash', () => {
+  it('redactQuestion returns the question verbatim with a SHA-256 hash', async () => {
+    // SPEC-REGULA-PHI-REMOVAL-001: PII redaction removed — Regula handles no
+    // patient information. The wrapper returns text verbatim + hash for de-dup.
     const { redactQuestion, hashQuestion } = await import('@/lib/knowledge-gap/redaction');
 
     const original = 'My SSN is 123-45-6789 and email is john@example.com';
     const { redacted, hash, redactionCount } = redactQuestion(original);
 
-    expect(redacted).not.toContain('123-45-6789');
-    expect(redacted).not.toContain('john@example.com');
+    expect(redacted).toBe(original);
     expect(hash).toBe(hashQuestion(original));
     expect(hash).toMatch(/^[0-9a-f]{64}$/);
-    expect(redactionCount).toBeGreaterThan(0);
+    expect(redactionCount).toBe(0);
   });
 });
 

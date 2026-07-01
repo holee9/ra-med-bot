@@ -96,19 +96,22 @@ const FeedbackRequestSchema = z.object({
 });
 
 /**
- * H-3: server-side PII redaction. Looks up the REAL answer prose for the
- * message and runs it through the #35 redactor (lib/knowledge-gap/redaction.ts
- * → lib/ingest/pii/regex). The client-supplied redactedQuestion is NEVER passed
- * to the external GitHub system. Returns the redacted prose + hash.
+ * H-3: server-side question preparation. Looks up the REAL answer prose for the
+ * message and hashes it via lib/knowledge-gap/redaction.ts. The client-supplied
+ * redactedQuestion is NEVER passed to the external GitHub system — the server
+ * re-derives the text. Returns the prose + hash.
+ *
+ * SPEC-REGULA-PHI-REMOVAL-001: PII redaction removed (Regula handles no patient
+ * information). The text is passed through verbatim.
  *
  * If the message lookup fails (e.g. replay/synthetic test), returns empty
- * strings so the bridge downstream no-ops rather than leaking PII.
+ * strings so the bridge downstream no-ops.
  *
- * @MX:ANCHOR [AUTO] buildServerRedactedQuestion — PII boundary for gap bridge.
+ * @MX:ANCHOR [AUTO] buildServerRedactedQuestion — boundary for gap bridge.
  * @MX:REASON External-system integration point (GitHub issue body). fan_in >= 1
  *           but the invariant is load-bearing: the return value is what crosses
  *           the org boundary into an external tracker, so it MUST be the output
- *           of the server-side redactor, never the client request body.
+ *           of the server-side helper, never the client request body.
  */
 async function buildServerRedactedQuestion(
   messageId: string,

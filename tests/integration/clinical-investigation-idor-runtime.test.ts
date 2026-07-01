@@ -7,7 +7,7 @@
 // route handlers + REAL lib functions against an in-memory DB mock so the five
 // confirmed security defects (C-1, H-1, H-2, H-3, H-4) are covered at runtime.
 //
-// Strategy (MIRRORS tests/integration/capa-idor-runtime.test.ts):
+// Strategy (mirrors the IDOR runtime pattern):
 //   1. Mock @/lib/auth/with-permission — bypass auth, inject a session per org.
 //   2. Mock @/lib/db/client — in-memory store; the IDOR lookups
 //      (assertInvestigationAccess, canCloseInvestigation, verifyLinkTargetExists)
@@ -58,7 +58,6 @@ const expertReviewsStore: Row[] = [];
 const conversationsStore: Row[] = [];
 const projectsStore: Row[] = [];
 const workflowRunsStore: Row[] = [];
-const pmsInputsStore: Row[] = [];
 const dhfStore: Row[] = [];
 
 // ---------------------------------------------------------------------------
@@ -146,7 +145,7 @@ const dbMock: any = {
 // Select chain — a Promise subclass instance carrying the Drizzle query-builder
 // methods (.from/.where/.innerJoin/.limit). Awaiting the chain (with or without
 // a terminal .limit()) resolves to the rows from the in-memory store keyed by
-// the table passed to `.from(...)`. Mirrors the capa-idor-runtime makeChain.
+// the table passed to `.from(...)`. Mirrors the IDOR-runtime makeChain.
 // biome-ignore lint/suspicious/noExplicitAny: Drizzle query builder chain is deeply nested; test only needs callables
 function makeSelectChain(): any {
   let fromTable = 'unknown';
@@ -189,8 +188,6 @@ function resolveRows(fromTable: string): Row[] {
       return ciLinksStore.filter(inOrg);
     case 'workflow_runs':
       return workflowRunsStore.filter(inOrg);
-    case 'pms_inputs':
-      return pmsInputsStore.filter(inOrg);
     case 'design_history_files':
       return dhfStore.filter(inOrg);
     default:
@@ -314,7 +311,6 @@ function resetStores() {
   conversationsStore.length = 0;
   projectsStore.length = 0;
   workflowRunsStore.length = 0;
-  pmsInputsStore.length = 0;
   dhfStore.length = 0;
   auditShouldFail = false;
   transactionShouldFail = false;
@@ -481,11 +477,13 @@ describe('H-2: linkage onConflictDoNothing fallback uses tx handle (no throw)', 
 
   it('creates a new ci_links row on first insert and returns its id', async () => {
     const investigationId = '11111111-0000-0000-0000-000000000006';
+    // SPEC-REGULA-PHI-REMOVAL-001 (Issue #319): 'pms' target removed;
+    // using 'dhf' (same org-scoped table-backed target shape).
     const result = await linkInvestigationResults(
       {
         investigationId,
         orgId: 'org-A',
-        targetType: 'pms',
+        targetType: 'dhf',
         targetId: '77777777-0000-0000-0000-000000000006',
       },
       dbMock,
@@ -553,10 +551,12 @@ describe('H-4: links route validates the referent exists in caller org (REQ-009)
     expect(ok).toBe(true);
   });
 
-  it('verifyLinkTargetExists returns false for a cross-org PMS input', async () => {
-    const pmsB = '12121212-0000-0000-0000-000000000010';
-    pmsInputsStore.push({ id: pmsB, orgId: 'org-B' });
-    const ok = await verifyLinkTargetExists('org-A', 'pms', pmsB);
+  it('verifyLinkTargetExists returns false for a cross-org DHF input', async () => {
+    // SPEC-REGULA-PHI-REMOVAL-001 (Issue #319): was a cross-org PMS input test;
+    // 'pms' target removed. Using DHF (same org-scoped table-backed shape).
+    const dhfB = '12121212-0000-0000-0000-000000000010';
+    dhfStore.push({ id: dhfB, orgId: 'org-B' });
+    const ok = await verifyLinkTargetExists('org-A', 'dhf', dhfB);
     expect(ok).toBe(false);
   });
 });

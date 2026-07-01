@@ -1,45 +1,40 @@
-// @MX:NOTE [AUTO] PII redaction wrapper for knowledge-gap question capture.
+// @MX:NOTE [AUTO] Question capture helper for knowledge-gap question tracking.
 // @MX:SPEC SPEC-REGULA-KNOWLEDGE-GAP-001 (REQ-KNOWLEDGE-GAP-002, Issue #35)
-// @MX:REASON Reuses the existing HIPAA Safe Harbor regex layer (lib/ingest/pii/regex.ts)
-//           per SPEC §1.4 Out-of-Scope: "redaction 알고리즘 자체의 신규 개발 금지".
-//           The wrapper adds only: (1) SHA-256 hash of the ORIGINAL question for
-//           de-dup / clustering, (2) the redacted text stored in unanswered_queue.
-//           No PII ever enters the queue or the GitHub Issue body.
+// @MX:REASON SPEC-REGULA-PHI-REMOVAL-001 removed the PII redaction layer —
+//           Regula is an internal RA tool and does not handle patient
+//           information. This helper now retains only the SHA-256 hash for
+//           de-dup / clustering; the question text is passed through verbatim.
 
 import { createHash } from 'node:crypto';
-import { detectPii, redactText } from '@/lib/ingest/pii/regex';
 
 /**
- * SHA-256 hex hash of the original (un-redacted) question.
- * Used for de-duplication / clustering of similar unanswered questions
- * without retaining the PII-bearing original (REQ-KNOWLEDGE-GAP-002).
+ * SHA-256 hex hash of the question.
+ * Used for de-duplication / clustering of similar unanswered questions.
  */
 export function hashQuestion(originalQuestion: string): string {
   return createHash('sha256').update(originalQuestion).digest('hex');
 }
 
 export interface RedactedQuestion {
-  /** PII-free text safe to persist in unanswered_queue + GitHub Issue body. */
+  /** Question text persisted in unanswered_queue (PII redaction removed). */
   redacted: string;
-  /** SHA-256 of the ORIGINAL question — for de-dup, not for display. */
+  /** SHA-256 of the question — for de-dup, not for display. */
   hash: string;
-  /** Number of PII spans redacted (audit context, not PII itself). */
+  /** Kept for backward-compat with audit meta — always 0 now. */
   redactionCount: number;
 }
 
 /**
- * Redact PII from a user question before persistence in unanswered_queue.
+ * Prepare a user question for persistence in unanswered_queue.
  *
- * Wraps the existing regex-based redaction utility (REQ-KNOWLEDGE-GAP-002).
- * Returns the redacted text plus a hash of the original for clustering.
- * The original question is NEVER persisted or returned beyond hashing it.
+ * SPEC-REGULA-PHI-REMOVAL-001: the PII redaction step was removed (Regula does
+ * not handle patient information). Returns the question verbatim plus a hash
+ * for clustering.
  */
 export function redactQuestion(originalQuestion: string): RedactedQuestion {
-  const matches = detectPii(originalQuestion);
-  const redacted = redactText(originalQuestion, matches);
   return {
-    redacted,
+    redacted: originalQuestion,
     hash: hashQuestion(originalQuestion),
-    redactionCount: matches.length,
+    redactionCount: 0,
   };
 }

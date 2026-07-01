@@ -9,14 +9,14 @@
 //      input (avoids hitting the OpenAI API).
 //   3. Mock @/lib/radar/delta-sync/orchestrator (resolveExistingChunkIds) and
 //      @/lib/radar/delta-sync/ingest (applyOutdateOperations) — record calls.
-//   4. Do NOT mock chunk/classifyDocument/redactPiiForIngest/extractText —
+//   4. Do NOT mock chunk/classifyDocument/extractText —
 //      exercise the real registry with .md/.txt/.pdf fixtures.
 //
 // Asserts (design §5 AC-1..AC-7):
 //   - AC-1: 3 markdown files → ≥1 source_section each with embedding.
 //   - AC-2: pdf/docx dispatch extractText; sectionPath prefixed by relPath.
 //   - AC-3: txt reads as UTF-8, does NOT call extractText.
-//   - AC-4: redact → chunk → embed call order enforced.
+//   - AC-4: chunk → embed call order enforced (SPEC-REGULA-PHI-REMOVAL-001: redact removed).
 //   - AC-5: re-sync supersedes prior chunks (applyOutdateOperations called).
 //   - AC-6: one corrupt file does not abort the repo.
 //   - AC-7: MAX_FILES cap (500) enforced.
@@ -479,7 +479,7 @@ describe('ingestDocuments — per-file pipeline', () => {
     expect(sectionsStore.length).toBeGreaterThanOrEqual(1);
   });
 
-  it('AC-4: redact → chunk → embed order enforced (embed receives redacted text)', async () => {
+  it('AC-4: chunk → embed order enforced (embed receives chunked text)', async () => {
     const repo = await makeRepo({
       'sop.md': '# SOP\nRevision History\n1.0 init\n\n1. Body line one\n2. Body line two\n',
     });

@@ -2,8 +2,9 @@ import { describe, expect, it } from 'vitest';
 import { WORKFLOW_REGISTRY } from '../../../lib/workflows/registry';
 
 describe('WORKFLOW_REGISTRY', () => {
-  it('has 11 entries', () => {
-    expect(WORKFLOW_REGISTRY).toHaveLength(11);
+  // SPEC-REGULA-PHI-REMOVAL-001 (Issue #319): 3 PMS/PMCF entries removed (was 11 → 8).
+  it('has 8 entries', () => {
+    expect(WORKFLOW_REGISTRY).toHaveLength(8);
   });
 
   it('each entry has required fields', () => {

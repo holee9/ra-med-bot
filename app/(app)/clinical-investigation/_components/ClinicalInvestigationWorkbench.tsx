@@ -115,12 +115,11 @@ export function ClinicalInvestigationWorkbench({ projects, recent, canManage }: 
         setMessage('IRB package drafted');
       } else if (action === 'event') {
         await postJson(`/api/clinical-investigation/${selectedInvestigationId}/events`, {
-          type: 'adverse_event',
-          title: 'AE follow-up required',
-          description: 'Linked to vigilance triage when available.',
-          vigilanceRef: 'VIG-DRAFT',
+          type: 'deviation',
+          title: 'Protocol deviation logged',
+          description: 'Tracked for IRB follow-up.',
         });
-        setMessage('Adverse event linked');
+        setMessage('Deviation logged');
       } else {
         await postJson(`/api/clinical-investigation/${selectedInvestigationId}/links`, {
           targetType: 'dhf',

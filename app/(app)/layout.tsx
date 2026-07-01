@@ -32,14 +32,10 @@ export default async function AppLayout({ children }: { children: React.ReactNod
   let showTraceability = false;
   // SPEC-REGULA-STANDARDS-001 (Issue #62): Harmonized Standards Tracker nav gated to viewer+ (standards.read).
   let showStandards = false;
-  // SPEC-REGULA-PMS-001 (Issue #53): PMS Workbench nav gated to ra-member+ (pms.view).
-  let showPms = false;
   // SPEC-REGULA-CHANGE-CONTROL-001 (Issue #54): Change Control nav gated to ra-member+ (change.view).
   let showChangeControl = false;
   // SPEC-REGULA-LABELING-001 (Issue #66): Labeling nav gated to ra-member+ (label.view).
   let showLabeling = false;
-  // SPEC-REGULA-CAPA-001 (Issue #68): CAPA nav gated to ra-member+ (complaint.view).
-  let showCapa = false;
   // SPEC-REGULA-CLINICAL-INVESTIGATION-001 (Issue #69): Clinical Investigation nav gated to ra-member+.
   let showClinicalInvestigation = false;
   // SPEC-REGULA-SOURCE-GOVERNANCE-001 (Issue #48): Governance dashboard nav gated to ra-member+ (sourcegov.view).
@@ -74,16 +70,11 @@ export default async function AppLayout({ children }: { children: React.ReactNod
       // Scope rationalization (2026-06-28): FREEZE/RETIRE domains are AND-gated
       // with FEATURE_FLAGS so the nav link hides when the flag is OFF, regardless
       // of role. Re-enable via NEXT_PUBLIC_FEATURE_<NAME>=true (code preserved).
-      showPms =
-        hasRole(userRole as Parameters<typeof hasRole>[0], 'ra-member') &&
-        FEATURE_FLAGS.PMS_WORKBENCH;
       showChangeControl =
         hasRole(userRole as Parameters<typeof hasRole>[0], 'ra-member') &&
         FEATURE_FLAGS.CHANGE_CONTROL;
       showLabeling =
         hasRole(userRole as Parameters<typeof hasRole>[0], 'ra-member') && FEATURE_FLAGS.LABELING;
-      showCapa =
-        hasRole(userRole as Parameters<typeof hasRole>[0], 'ra-member') && FEATURE_FLAGS.CAPA;
       showClinicalInvestigation =
         hasRole(userRole as Parameters<typeof hasRole>[0], 'ra-member') &&
         FEATURE_FLAGS.CLINICAL_INVESTIGATION;
@@ -127,10 +118,8 @@ export default async function AppLayout({ children }: { children: React.ReactNod
         showClassify={showClassify}
         showTraceability={showTraceability}
         showStandards={showStandards}
-        showPms={showPms}
         showChangeControl={showChangeControl}
         showLabeling={showLabeling}
-        showCapa={showCapa}
         showClinicalInvestigation={showClinicalInvestigation}
         showGovernance={showGovernance}
         showQualityHeatmap={showQualityHeatmap}

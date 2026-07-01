@@ -8,7 +8,9 @@
 // @MX:SPEC SPEC-REGULA-CLINICAL-INVESTIGATION-001 (Issue #69, REQ-CLININV-009, AC-04)
 
 import { type db, withTenantScope } from '@/lib/db/client';
-import { ciLinks, designHistoryFiles, pmsInputs, workflowRuns } from '@/lib/db/schema';
+// SPEC-REGULA-PHI-REMOVAL-001 (Issue #319): pmsInputs import removed —
+// pms_inputs table dropped; 'pms' CI link target branch deleted below.
+import { ciLinks, designHistoryFiles, workflowRuns } from '@/lib/db/schema';
 import { and, eq } from 'drizzle-orm';
 import type { CiLinkTarget } from './types';
 
@@ -114,7 +116,7 @@ async function runLink(
 
 /**
  * H-4 fix — verify a ci_links target row exists AND belongs to `orgId` before
- * the link is persisted. Mirrors lib/capa/linkage.ts verifyTargetExists.
+ * the link is persisted (org-scoped target verification).
  *
  * Without this check, a caller could persist a ci_links row pointing at any
  * UUID — nonexistent, or another org's CER/PMS/DHF deliverable — because the
@@ -147,14 +149,6 @@ export async function verifyLinkTargetExists(
               eq(workflowRuns.workflowType, 'cer'),
             ),
           )
-          .limit(1);
-        return rows.length > 0;
-      }
-      case 'pms': {
-        const rows = await dbs
-          .select({ id: pmsInputs.id })
-          .from(pmsInputs)
-          .where(and(eq(pmsInputs.id, targetId), eq(pmsInputs.orgId, orgId)))
           .limit(1);
         return rows.length > 0;
       }

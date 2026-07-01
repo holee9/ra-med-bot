@@ -1,7 +1,7 @@
 // @MX:NOTE [AUTO] Hybrid source-level + domain-level integration tests for Source Governance.
 // @MX:SPEC SPEC-REGULA-SOURCE-GOVERNANCE-001 (Issue #48, REQ-SOURCE-GOV-001~016, AC-01~08)
 //
-// Two complementary strategies (mirrors corpus-license.test.ts / capa.test.ts):
+// Two complementary strategies (mirrors corpus-license.test.ts):
 //   1. Source-level: read the route/lib/migration source and assert the control
 //      is present (gate wiring at every live call site — the anti-dead-code
 //      guarantee). Every gate function MUST have a confirmed call site.

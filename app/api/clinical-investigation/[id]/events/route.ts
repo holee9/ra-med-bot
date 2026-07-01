@@ -1,10 +1,8 @@
-// @MX:NOTE [AUTO] POST /api/clinical-investigation/[id]/events — REQ-008, AC-08.
-// @MX:SPEC SPEC-REGULA-CLINICAL-INVESTIGATION-001 (Issue #69, REQ-CLININV-008, AC-08)
-// @MX:REASON Milestone / deviation / adverse_event tracking. When type='adverse_event'
-//           and the caller supplies a vigilanceRef, the row carries the link so the
-//           Vigilance domain can cross-reference (AC-08). The vigilance record itself
-//           is owned by lib/vigilance/ — this route only stores the reference, it
-//           does NOT duplicate vigilance logic.
+// @MX:NOTE [AUTO] POST /api/clinical-investigation/[id]/events — REQ-008.
+// @MX:SPEC SPEC-REGULA-CLINICAL-INVESTIGATION-001 (Issue #69, REQ-CLININV-008)
+// @MX:REASON Milestone / deviation tracking. SPEC-REGULA-PHI-REMOVAL-001 removed
+//           the adverse_event type + vigilanceRef coupling — Regula does not
+//           handle patient outcomes.
 
 import { writeAudit } from '@/lib/audit';
 import { withPermission } from '@/lib/auth/with-permission';
@@ -34,17 +32,6 @@ export const POST = withPermission('clinical_investigation.manage', async (req, 
   }
   const input = parsed.data;
 
-  // AC-08: AE without a vigilanceRef is allowed (the caller may not yet have
-  // assessed reportability), but we flag it in the audit meta so the RA team
-  // knows to follow up. The lib/vigilance/ domain owns the actual reportability
-  // decision; this route persists the reference when provided.
-  const vigilanceLinked = input.type === 'adverse_event' && Boolean(input.vigilanceRef);
-
-  // @MX:TODO [AUTO] M-3 PII policy for ci_events.data is DEFERRED. Adverse-event
-  //   descriptions may carry patient-identifiable details. The current row stores
-  //   title/description verbatim in the JSONB. A follow-up must decide: (a) redact
-  //   PII at ingress, (b) encrypt the column, or (c) gate downstream reads. The
-  //   decision is deferred pending RA-lead input on the data-handling SOP.
   try {
     const inserted = await db.transaction(async (tx) => {
       const [row] = await tx
@@ -57,7 +44,6 @@ export const POST = withPermission('clinical_investigation.manage', async (req, 
             title: input.title,
             ...(input.description ? { description: input.description } : {}),
           },
-          vigilanceRef: input.vigilanceRef ?? null,
           occurredAt: input.occurredAt ? new Date(input.occurredAt) : undefined,
         })
         .returning({ id: ciEvents.id });
@@ -74,8 +60,6 @@ export const POST = withPermission('clinical_investigation.manage', async (req, 
             investigationId,
             eventId: row.id,
             type: input.type,
-            vigilanceLinked,
-            ...(input.vigilanceRef ? { vigilanceRef: input.vigilanceRef } : {}),
           },
         },
         tx,
@@ -88,7 +72,6 @@ export const POST = withPermission('clinical_investigation.manage', async (req, 
       {
         id: inserted.id,
         type: input.type,
-        vigilanceLinked,
       },
       { status: 201 },
     );

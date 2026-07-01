@@ -1,7 +1,9 @@
 // @MX:NOTE [AUTO] Inngest function for docingest/document.created — full ingest pipeline.
 // @MX:SPEC SPEC-REGULA-DOCINGEST-001 (REQ-DOC-021, REQ-DOC-022, REQ-DOC-025),
 //   SPEC-REGULA-CORPUS-LICENSE-001 (REQ-CORPUSLIC-002)
-// Steps: license-gate → extract → redact → chunk → embed → insert chunks → update status
+// Steps: license-gate → extract → chunk → embed → insert chunks → update status
+// SPEC-REGULA-PHI-REMOVAL-001: PII redact step removed (Regula ingests internal
+// RA documents — no patient information handled).
 // Each step is wrapped in Inngest step.run for independent retry + observability.
 
 import { DocClass } from '../../ingest/doc-class';
@@ -44,7 +46,6 @@ export const uploadProcessedFn = inngest.createFunction(
     const { chunk } = await import('../../ingest/chunkers/index');
     const { embedChunks } = await import('../../ingest/embed');
     const { extractText } = await import('../../ingest/extract/index');
-    const { redactPiiForIngest } = await import('../../ingest/pii/redact');
     const { notifyAdminQuarantine } = await import('../../notifications/admin-quarantine');
 
     // Step 0: REQ-CORPUSLIC-002 license gate — defense-in-depth. The upload
@@ -81,20 +82,9 @@ export const uploadProcessedFn = inngest.createFunction(
       }
     });
 
-    // Step 2: PII redaction
-    const redactedText = await step.run('redact-pii', async () => {
-      try {
-        const redaction = await redactPiiForIngest(rawText, docClass);
-        return redaction.text;
-      } catch (err) {
-        await notifyAdminQuarantine(documentId, `Redaction failed: ${err}`);
-        throw new Error(`Redaction failed for ${documentId}: ${err}`);
-      }
-    });
-
-    // Step 3: Chunk
+    // Step 2: Chunk (SPEC-REGULA-PHI-REMOVAL-001: redact step removed)
     const chunks = await step.run('chunk', async () =>
-      chunk(docClass, redactedText, { documentId, orgId }),
+      chunk(docClass, rawText, { documentId, orgId }),
     );
 
     // Step 4: Embed

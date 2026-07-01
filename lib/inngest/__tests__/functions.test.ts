@@ -23,16 +23,15 @@ describe('inngest client (SPEC-REGULA-DIGEST-001)', () => {
 });
 
 describe('function registry', () => {
-  it('registers the weekly digest, knowledge-gap digest, docingest upload, and CAPA effectiveness functions', () => {
+  it('registers the weekly digest, knowledge-gap digest, docingest upload functions', () => {
     const ids = functions.map((f) => (f as unknown as { id: () => string }).id());
     expect(ids).toContain('digest-weekly-cron');
     expect(ids).toContain('knowledge-gap-daily-digest');
     expect(ids).toContain('docingest-upload-processed');
-    expect(ids).toContain('capa-effectiveness-due-reminder');
     expect(ids).toContain('standards-revision-daily');
     expect(ids).toContain('messages-embedding-backfill');
     expect(ids).toContain('knowledge-sources-orphan-cleanup');
-    expect(functions).toHaveLength(7); // +standards-revision-daily Issue 62 +messages-embedding-backfill Issue 275 +orphan-cleanup Issue 313
+    expect(functions).toHaveLength(6); // +standards-revision-daily Issue 62 +messages-embedding-backfill Issue 275 +orphan-cleanup Issue 313
   });
 
   it('weekly digest function is the same instance exported from its module', () => {

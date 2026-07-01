@@ -1,10 +1,10 @@
 // @MX:NOTE [AUTO] Route-level + domain-level integration tests for Clinical Investigation.
-// @MX:SPEC SPEC-REGULA-CLINICAL-INVESTIGATION-001 (REQ-CLININV-001~012, AC-01~08)
+// @MX:SPEC SPEC-REGULA-CLINICAL-INVESTIGATION-001 (REQ-CLININV-001~012, AC-01~07)
 //
-// Two complementary strategies (mirrors capa.test.ts):
+// Two complementary strategies:
 //   1. Source-level: read route/lib/migration source and assert controls are present
 //      (IDOR guard, withPermission RBAC, audit writeAudit, close gate, citation
-//      enforcement, vigilance cross-link).
+//      enforcement).
 //   2. Domain-level: exercise pure domain functions (gap-assessment, IDE decision
 //      tree, EU checklist, protocol builder, IRB package draft, close gate logic).
 //
@@ -15,7 +15,7 @@
 //   AC-04 — result → CER/DHF link (source: linkage.ts + links route)
 //   AC-06 — protocol builder (domain: buildProtocolDraft)
 //   AC-07 — expert signoff close block (domain: close-gate + source: close route)
-//   AC-08 — adverse event ↔ vigilance link (source: events route)
+// SPEC-REGULA-PHI-REMOVAL-001: AC-08 (adverse_event ↔ vigilance) removed.
 
 import fs from 'node:fs';
 import path from 'node:path';
@@ -279,25 +279,6 @@ describe('AC-07: expert signoff close gate (REQ-012)', () => {
     // A cross-org resolved review UUID is denied with expert_signoff_not_org_bound.
     expect(src).toContain('projects.organizationId');
     expect(src).toContain('expert_signoff_not_org_bound');
-  });
-});
-
-// ---------------------------------------------------------------------------
-// AC-08: adverse event ↔ Vigilance link (REQ-008)
-// ---------------------------------------------------------------------------
-describe('AC-08: adverse event ↔ vigilance link (REQ-008)', () => {
-  it('events route accepts adverse_event + vigilanceRef (source-level)', () => {
-    const src = readText('app/api/clinical-investigation/[id]/events/route.ts');
-    expect(src).toMatch(/withPermission\(\s*'clinical_investigation\.manage'/);
-    expect(src).toContain('ciEventInputSchema');
-    expect(src).toContain('vigilanceRef');
-    expect(src).toContain('vigilanceLinked');
-    expect(src).toContain("'ci.event_recorded'");
-  });
-
-  it('ci_events table has vigilance_ref column for cross-link', () => {
-    const sql = readText('migrations/0076_clinical_investigation.sql');
-    expect(sql).toMatch(/vigilance_ref text/);
   });
 });
 

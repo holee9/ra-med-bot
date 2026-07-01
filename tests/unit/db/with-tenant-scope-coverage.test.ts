@@ -5,7 +5,7 @@
 //           app.current_org_id GUC is set for RLS policies. The gate scans
 //           route files statically: any file containing db.select|insert|
 //           update|delete|transaction MUST also contain a withTenantScope
-//           call. Wired domains: rlhf, knowledge-gap, pms, change-control,
+//           call. Wired domains: rlhf, knowledge-gap, change-control,
 //           cyberdevice, model-governance, traceability (all org-scoped
 //           domains under app/api/ are now wired).
 
@@ -20,13 +20,13 @@ const ROOT = process.cwd();
  * its routes are wired in a follow-up PR. Each entry is a subdirectory under
  * app/api/.
  *
- * Phase 2 scope (complete): rlhf, knowledge-gap, pms, change-control,
- * cyberdevice, model-governance, traceability — all 7 org-scoped domains.
+ * Phase 2 scope (complete): rlhf, knowledge-gap, change-control,
+ * cyberdevice, model-governance, traceability — all 6 org-scoped domains.
+ * (pms removed by SPEC-REGULA-PHI-REMOVAL-001, Issue #319.)
  */
 const WIRED_DOMAINS = [
   'rlhf',
   'knowledge-gap',
-  'pms',
   'change-control',
   'cyberdevice',
   'model-governance',

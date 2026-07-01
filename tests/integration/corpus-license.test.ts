@@ -1,7 +1,7 @@
 // @MX:NOTE [AUTO] Route-level + domain-level integration tests for Corpus License.
 // @MX:SPEC SPEC-REGULA-CORPUS-LICENSE-001 (REQ-CORPUSLIC-001~014, AC-01~07)
 //
-// Hybrid strategy (mirrors cyberdevice.test.ts / capa.test.ts):
+// Hybrid strategy (mirrors cyberdevice.test.ts):
 //   1. Source-level: read route/lib source and assert the control is present
 //      (withPermission RBAC, writeAudit tx, IDOR guard, gate wiring).
 //      This is the anti-dead-code guarantee: every gate function MUST have a
@@ -383,10 +383,10 @@ describe('C-3: per-corpus retrievers thread orgId to hybridSearch', () => {
     expect(src).toContain('filterExpiredSources');
   });
 
-  it('source-level: pms-report route threads orgId into hybridSearch', () => {
-    const src = readText('app/api/workflows/pms-report/run/route.ts');
-    expect(src).toMatch(/hybridSearch\([^)]*orgId/);
-  });
+  // SPEC-REGULA-PHI-REMOVAL-001 (Issue #319): the pms-report route orgId-
+  // threading sub-test was removed along with the deleted route. The remaining
+  // source-level + domain-level orgId-threading coverage (hybrid-search,
+  // internal-docs, expiry-checker) is unaffected.
 
   it('domain: expired source excluded when orgId threaded', async () => {
     const pastDate = '2020-01-01';

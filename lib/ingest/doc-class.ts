@@ -1,5 +1,5 @@
 // @MX:ANCHOR [AUTO] DocClass — canonical 8-class document taxonomy for Phase 8 ingest.
-// @MX:REASON fan_in >= 3: doc-acl, pii/policy-by-class, schema-docingest all depend on this.
+// @MX:REASON fan_in >= 3: doc-acl, schema-docingest, chunkers all depend on this.
 // @MX:SPEC SPEC-REGULA-DOCINGEST-001 (REQ-DOC-001)
 
 /**

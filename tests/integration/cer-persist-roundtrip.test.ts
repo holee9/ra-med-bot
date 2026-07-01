@@ -1,19 +1,21 @@
-// @MX:NOTE [AUTO] CER persist → PMS auto-linkage end-to-end roundtrip test.
-// @MX:SPEC SPEC-REGULA-PMS-001 (AC-04, REQ-PMS-004) + SPEC-REGULA-CER-001
+// @MX:NOTE [AUTO] CER persist end-to-end roundtrip test.
+// @MX:SPEC SPEC-REGULA-CER-001
 // @MX:REASON [AUTO] Load-bearing test: exercises the REAL postCer route handler
-//           and the REAL resolveCerLinkage against a shared in-memory store.
-//           Proves the full auto-injection path: route persists workflow_runs
-//           (workflowType='cer') → resolveCerLinkage resolves cerLinked=true.
-//           NOT a false-pass: the in-memory store actually receives the insert
-//           and serves it back to the resolver.
+//           against a shared in-memory store. Proves the route persists
+//           workflow_runs (workflowType='cer') with correct org/project scoping
+//           and PII-safe inputJson. NOT a false-pass: the in-memory store
+//           actually receives the insert and assertions inspect it directly.
 //
-// Strategy (mirrors pms-idor-runtime.test.ts):
+// SPEC-REGULA-PHI-REMOVAL-001 (Issue #319): the PMS auto-linkage assertions
+// (resolveCerLinkage) were removed; the CER persistence assertions remain.
+//
+// Strategy (mirrors the prior pms-idor-runtime pattern):
 //   1. Mock @/lib/db/client — in-memory store recording inserts + serving selects.
 //   2. Mock @/lib/audit — record writeAudit calls.
 //   3. Mock @/lib/auth/with-permission — bypass RBAC, inject session per org.
 //   4. Mock @/lib/cer/pubmed-client — deterministic literature results.
 //   5. Mock @/lib/pms/project-ownership — assertPmsProjectAccess via in-memory projects.
-//   6. Call REAL POST handler, then REAL resolveCerLinkage.
+//   6. Call REAL POST handler, then inspect the in-memory store.
 
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
@@ -271,7 +273,10 @@ vi.mock('@/lib/cer/pubmed-client', () => ({
 // ---------------------------------------------------------------------------
 
 const { POST: postCer } = await import('@/app/api/ra/workflows/cer/route');
-const { resolveCerLinkage } = await import('@/lib/pms/cer-linkage');
+// SPEC-REGULA-PHI-REMOVAL-001 (Issue #319): resolveCerLinkage import removed —
+// the PMS auto-linkage resolver was deleted with the PMS domain. The CER
+// persistence assertions below remain valid; the resolveCerLinkage check is
+// dropped.
 
 // ---------------------------------------------------------------------------
 // Helpers
@@ -311,11 +316,11 @@ afterEach(() => {
 });
 
 // ---------------------------------------------------------------------------
-// The load-bearing roundtrip: route → persist → resolveCerLinkage
+// The load-bearing roundtrip: route → persist → (PMS linkage removed, Issue #319)
 // ---------------------------------------------------------------------------
 
-describe('CER persist → PMS auto-linkage roundtrip (AC-04 / REQ-PMS-004)', () => {
-  it('persists a workflow_runs row and resolveCerLinkage resolves cerLinked=true end-to-end', async () => {
+describe('CER persist roundtrip (SPEC-REGULA-CER-001)', () => {
+  it('persists a workflow_runs row end-to-end', async () => {
     // 1. Call the REAL route with a projectId.
     const req = new Request('http://localhost/api/ra/workflows/cer', {
       method: 'POST',
@@ -350,13 +355,6 @@ describe('CER persist → PMS auto-linkage roundtrip (AC-04 / REQ-PMS-004)', () 
 
     // 5. The cer_persisted audit rode the same transaction (H2 atomicity).
     expect(auditRecords.some((a) => a.action === 'cer_persisted' && a.tx)).toBe(true);
-
-    // 6. REAL resolveCerLinkage against the SAME store → cerLinked true.
-    const linkage = await resolveCerLinkage(PROJECT_ID, ORG_A, null);
-    expect(linkage).not.toBeNull();
-    expect(linkage?.cerId).toBe(row?.id);
-    expect(linkage?.deviceName).toBe('CardioStent-X');
-    expect(linkage?.intendedUse).toBe('coronary artery stenting');
   });
 
   it('returns 404 when projectId belongs to another org (IDOR denial)', async () => {

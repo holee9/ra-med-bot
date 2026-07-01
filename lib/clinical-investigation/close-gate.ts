@@ -2,9 +2,8 @@
 // @MX:REASON Called by POST /api/clinical-investigation/[id]/close route + integration
 //           tests. fan_in >= 3 expected. SAFETY GATE — blocks close unless the
 //           caller supplies a resolved expert review as signoff (21 CFR Part 11
-//           approval authority). Mirrors the lib/capa/close-gate.ts pattern:
-//           IDOR defense returns a generic missing/cross-org reason for the
-//           investigation record so UUID probing is not possible.
+//           approval authority). IDOR defense returns a generic missing/cross-org
+//           reason for the investigation record so UUID probing is not possible.
 // @MX:SPEC SPEC-REGULA-CLINICAL-INVESTIGATION-001 (Issue #69, REQ-CLININV-012, AC-07)
 
 import { db } from '@/lib/db/client';

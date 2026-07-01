@@ -4,8 +4,6 @@
 //           via these helpers. The meta payload is deliberately PII-free (no
 //           device serials, no patient identifiers, no free-text narrative from
 //           the RA team) — only structured signal (pathway, confidence, counts).
-//           This mirrors lib/vigilance/audit.ts discipline and satisfies 21 CFR
-//           Part 11 audit-logging requirements.
 
 import { type AuditDbHandle, writeAudit } from '@/lib/audit';
 
@@ -74,7 +72,7 @@ export function auditCiIrbPackageDrafted(
 }
 
 export function auditCiEventRecorded(
-  params: CiAuditParams & { meta: { type: string; vigilanceLinked: boolean } },
+  params: CiAuditParams & { meta: { type: string } },
 ): Promise<void> {
   return emit({ ...params, action: 'ci.event_recorded' });
 }

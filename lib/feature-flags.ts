@@ -20,10 +20,8 @@ export const FEATURE_FLAGS = {
   // the nav link WITHOUT code changes — this is the "detach" mechanism:
   // code preserved, UI hidden, env-toggled. Role gating in app/(app)/layout.tsx
   // is AND-composed with these flags (role gate AND feature gate).
-  PMS_WORKBENCH: process.env.NEXT_PUBLIC_FEATURE_PMS_WORKBENCH === 'true',
   CHANGE_CONTROL: process.env.NEXT_PUBLIC_FEATURE_CHANGE_CONTROL === 'true',
   LABELING: process.env.NEXT_PUBLIC_FEATURE_LABELING === 'true',
-  CAPA: process.env.NEXT_PUBLIC_FEATURE_CAPA === 'true',
   CLINICAL_INVESTIGATION: process.env.NEXT_PUBLIC_FEATURE_CLINICAL_INVESTIGATION === 'true',
   SOURCE_GOVERNANCE: process.env.NEXT_PUBLIC_FEATURE_SOURCE_GOVERNANCE === 'true',
   QUALITY_HEATMAP: process.env.NEXT_PUBLIC_FEATURE_QUALITY_HEATMAP === 'true',
