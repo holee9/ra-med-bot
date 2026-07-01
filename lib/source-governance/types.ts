@@ -19,8 +19,13 @@ export const authorityGradeSchema = z.enum([
 ]);
 export type AuthorityGrade = z.infer<typeof authorityGradeSchema>;
 
-/** Approval lifecycle. Mirror of source_approval_status SQL enum. */
-export const approvalStatusSchema = z.enum(['pending_review', 'approved', 'rejected']);
+/**
+ * Approval lifecycle. Mirror of source_approval_status SQL enum.
+ * 'sunset' is set by the daily orphan-cleanup cron (Issue 313, migration 0101)
+ * when all source_sections are superseded — permanently excluded from RAG
+ * retrieval via the governance gate (approvalStatus !== 'approved').
+ */
+export const approvalStatusSchema = z.enum(['pending_review', 'approved', 'rejected', 'sunset']);
 export type ApprovalStatus = z.infer<typeof approvalStatusSchema>;
 
 /** REQ-SOURCE-GOV-001/002/003 — governance fields on a source row. */
