@@ -13,6 +13,17 @@
 
 ## 구현 현황 대시보드 (2026-06-29 KST 기준)
 
+### 2026-07-01 — Phase D 코드 완결 + sync 점검
+
+**Phase D(#307) 코드 완결**: 3개 PR로 knowledge-sources 도메인 마무리.
+
+- **Issue 313 orphan sources 정리 cron (PR 315)**: 일일 03:00 UTC Inngest cron. all-sections-superseded source → `approvalStatus='sunset'`. migration 0101(enum sunset + source.orphan_sunsetted). retriever gate로 RAG 영구 제외.
+- **Issue 314 insertSourceSections shared helper (PR 316)**: sync.ts ↔ delta-sync orchestrator source_sections upsert 통합 (pure refactor, 회귀 0).
+- **sync 점검/fix**: expert-security 독립 리뷰 PASS-WITH-CONDITIONS → M-1(Zod approvalStatusSchema `sunset` 누락, SQL enum drift) fix + 문서 동기화. main HEAD `8defbe3`, 회귀 4815 passed.
+- **잔존**: Issue 312 운영 연동(비-코드, 실제 OPENAI_API_KEY + 규제 repo)만. Phase D 코드 완결.
+
+---
+
 ### 전사 인허가 도우미 정체성 최종 확정 (2026-06-29)
 
 **사용자 연속 점검으로 사이트 정체성이 최종 확정되었습니다**:
@@ -31,14 +42,22 @@
 
 상세 점검 기록: [`docs/implementation-status.md`](docs/implementation-status.md)
 
-### 최신 main 상태 (2026-06-28)
+### 최신 main 상태 (2026-06-28 → 2026-07-01)
 
-현재 `main`은 PR #304(delta-sync orchestrator)까지 반영된 상태입니다. **v1.0.0 구현 종료 / Charter MVP 완성** — 이번 세션 8개 PR(#295~#304)가 머지되어 RLHF calibration/alternate-answers, PMCF 워크벤치, PMS E2E, supersession write path, eSubmit labeling bridge, **0077 syntax fix(프로덕션 #71 500 해소)**, delta-sync orchestrator(AC-05 live)가 완성되었습니다. 2026-06-28 기준 회귀 4,772 passed | 21 skipped, migration 최신 0098. **실사용 가능 상태**가 유지되며, Charter MVP 범위 핵심 자동화(RAG Q&A·CER·Predicate·PCCP·Standards·Expert Review·Part 11)는 모두 구현 완료되었습니다. 남은 external-dependency(외부 API/배포 필요)와 optional-extension(Charter non-core) 이슈로 v1.0.0 이후 로드맵에 포함되지 않습니다.
+현재 `main`은 **PR 315/316(#313/#314 Phase D 완결) + sync 점검 fix**까지 반영된 상태입니다(HEAD `8defbe3`). Phase D(#307) 코드 완결 — orphan sources 일일 sunset cron(Issue 313), insertSourceSections shared helper(Issue 314), expert-security M-1 fix(Zod `sunset` 누락, SQL enum drift). 2026-07-01 기준 회귀 **4,815 passed | 21 skipped**, migration 최신 **0101**. **실사용 가능 상태**가 유지되며, Charter MVP 범위 핵심 자동화(RAG Q&A·CER·Predicate·PCCP·Standards·Expert Review·Part 11)는 모두 구현 완료되었습니다. 잔존 Issue 312(운영 연동, 비-코드)만 남음.
 
 | 항목 | 상태 | 근거 |
 |---|---|---|
-| main 리뷰 기준 | PASS | `4680712 feat(delta-sync): runDeltaSync orchestrator + manual API` |
-| PR #304 | MERGED | Delta-sync orchestrator(runDeltaSync + POST /api/source-governance/[id]/sync 수동 트리거, Issue #238 AC-05 라이브, M-1/M-2 fix) |
+| main 리뷰 기준 | PASS | `8defbe3 fix(sync): Zod sunset 누락 + SQL enum drift` |
+| PR 316 | MERGED | insertSourceSections shared helper (Issue 314, pure refactor, 회귀 0) |
+| PR 315 | MERGED | Orphan sources 일일 sunset cron (Issue 313, Inngest, migration 0101) |
+| PR 314 | MERGED | Issue 314 insertSourceSections shared helper (PR 316) |
+| PR 313 | MERGED | Issue 313 orphan sources 정리 cron (PR 315) |
+| sync 점검 | PASS | expert-security PASS-WITH-CONDITIONS → M-1 fix 완료 |
+| 실사용 상태 | PASS | 프로덕션 #71 model-gov 라우트 500 해소(0077 syntax fix), 전 페이지/API 라우트 정상, **실사용 가능 상태 유지** |
+| 로컬 단위 테스트 | PASS | `pnpm test`: 4,815 passed / 21 skipped (2026-07-01 회귀 검증) |
+| Migration 0101 | PASS | `approval_status` enum sunset 값 + `source.orphan_sunsetted_at` 컬럼 |
+| Migration 0098 | PASS | audit_action traceability.section_superseded (delta-sync M-2 Part 11) |
 | PR #303 | MERGED | **0077 ON DELETE 따옴표 구문 에러 fix** → 프로덕션 #71 model-gov 라우트 500 해소 |
 | PR #302 | MERGED | eSubmit labeling bridge stub→real (migration 0097 `label.esubmit_forwarded`, AC-07 검증 완료) |
 | PR #301 | MERGED | Supersession write path(sections delete + superseded audit) + retriever [지양-2] filter |
@@ -56,8 +75,8 @@
 | E2E Tests | PASS | CI smoke/browser jobs success; staging URL 미설정 job은 의도적 skip |
 | Security Scan | PASS | Dependency Vulnerability Scan, Secret Detection 통과 |
 | Deploy | PASS | GitHub Actions deploy workflow success |
-| 총 migrations | 98 | 0001~0098 (Knowledge/RAG 3개 + fix-up 2개 + 이번 세션 4개) |
-| 게이트 결과 | PASS | typecheck 0 · biome 0 · test 4772 passed · 21 skipped · build 0 |
+| 총 migrations | 101 | 0001~0101 (Knowledge/RAG 3개 + fix-up 2개 + Phase D 1개 + 이번 세션 4개) |
+| 게이트 결과 | PASS | typecheck 0 · biome 0 · test 4815 passed · 21 skipped · build 0 |
 | Charter MVP | PASS | RAG Q&A·CER·Predicate·PCCP·Standards·Expert Review·Part 11 핵심 자동화 완성 |
 |  |
 

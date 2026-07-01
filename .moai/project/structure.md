@@ -178,6 +178,9 @@ regula/
 | `components/primitives/` | Radix UI 래핑(Button, Chip, Dialog, Dropdown, Callout) | 도메인 로직 |
 | `lib/ai/` | RAG 오케스트레이션, 리트리버, 프롬프트, confidence, expert-review | DB 쿼리, auth |
 | `lib/db/` | Drizzle 스키마, 쿼리, 클라이언트 | AI/LLM 로직 |
+| `lib/knowledge-sources/` | parse-git-url, sync(ingestDocuments — git repo → scan → extract → chunk → embed → source_sections upsert), access(RBAC). Phase D(#307) | DB 쿼리, auth |
+| `lib/ingest/source-sections-upsert.ts` | shared org-scoped batch insert into source_sections(Issue 314, fan_in=2: knowledge-sources sync + delta-sync orchestrator) | DB 쿼리, auth |
+| `lib/inngest/knowledge-sources/` | weekly-sync(D-2a, 매주 동기화), orphan-cleanup(Issue 313, 일일 sunset cron) | DB 쿼리, auth |
 | `lib/traceability/` | Evidence graph, matrix, stale propagation, packet export (8 modules) | AI/LLM 로직 |
 | `lib/pms/` | PMS inputs, CER linkage, export gating (3 modules) | DB 쿼리, auth |
 | `lib/workflows/pms-report/` | PMS 보고서 executor+sections+validate+checklist (4 modules) | AI/LLM 로직 |
