@@ -385,6 +385,13 @@ export const auditActionEnum = pgEnum('audit_action', [
   'source.low_authority_flagged',
   'source.governance_updated',
   'source.delta_sync_updated',
+  // Issue 313 — orphan sources cleanup cron. Added via 0101_source_orphan_sunset.sql.
+  // Fired by the daily orphan-cleanup cron (lib/inngest/knowledge-sources/orphan-cleanup.ts)
+  // when a source's approval_status is set to 'sunset' because all its
+  // source_sections are superseded. DISTINCT from 'source.superseded' (replaced
+  // by a newer source version) and 'source.rejected' (human RA-owner rejection)
+  // so regulators can distinguish the three lifecycle events (21 CFR Part 11).
+  'source.orphan_sunsetted',
   // SPEC-REGULA-RLHF-001 — added via 0082_rlhf.sql (Issue #56, REQ-RLHF-013).
   // feedback_submitted: every feedback write (21 CFR Part 11 audit-material).
   //   The revision-vs-new distinction is carried in meta_json.revised (L-2),
@@ -459,6 +466,13 @@ export const sourceApprovalStatusEnum = pgEnum('source_approval_status', [
   'pending_review',
   'approved',
   'rejected',
+  // Issue 313 — orphan sources cleanup cron. Added via 0101_source_orphan_sunset.sql.
+  // 'sunset' is set by the daily cleanup cron when ALL source_sections are superseded.
+  // Semantically distinct from 'rejected' (human RA-owner rejection of a pending_review
+  // source): 'sunset' is a system-driven lifecycle event. The retrieval gate
+  // (retrieval-gate.ts: approvalStatus !== 'approved') permanently excludes sunset
+  // sources from RAG search without requiring a retriever logic change.
+  'sunset',
 ]);
 
 // @MX:NOTE [AUTO] RLHF enums — SPEC-REGULA-RLHF-001 (Issue #56).

@@ -179,6 +179,24 @@ describe('AC-02: superseded filtering (REQ-SOURCE-GOV-005/006)', () => {
     expect(eligible.has('src-pending')).toBe(false);
   });
 
+  it('domain: sunset sources always excluded (Issue 313 orphan cleanup)', async () => {
+    // Orphan cleanup cron sets approvalStatus='sunset' when all sections are
+    // superseded. The retrieval gate must permanently exclude such sources.
+    mockRows.select = [
+      {
+        id: 'src-sunset',
+        authorityGrade: 'regulator_official',
+        approvalStatus: 'sunset',
+        supersededBy: null,
+        sunsetDate: '2026-07-01',
+        effectiveDate: null,
+      },
+    ];
+    const { filterGovernanceEligible } = await import('@/lib/source-governance/retrieval-gate');
+    const eligible = await filterGovernanceEligible(['src-sunset'], { orgId: 'org-1' });
+    expect(eligible.has('src-sunset')).toBe(false);
+  });
+
   it('source-level: composeRetrievalGates wired at all 3 retriever call sites', () => {
     const hybrid = readText('lib/ai/retrievers/hybrid-search.ts');
     const sops = readText('lib/ai/retrievers/internal-sops.ts');

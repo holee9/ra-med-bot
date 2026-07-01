@@ -67,7 +67,10 @@ export async function filterGovernanceEligible(
     const eligible = new Set<string>();
 
     for (const row of rows as GovernanceRow[]) {
-      // REQ-009: pending_review / rejected always excluded from search.
+      // REQ-009: pending_review / rejected / sunset always excluded from search.
+      // The `!== 'approved'` check covers all non-approved statuses uniformly.
+      // Issue 313: 'sunset' is set by the daily orphan-cleanup cron when all
+      // source_sections are superseded — it is permanently excluded here.
       if (row.approvalStatus !== 'approved') continue;
       // REQ-005: superseded excluded unless historical=true (REQ-006).
       if (!historical && row.supersededBy !== null) continue;

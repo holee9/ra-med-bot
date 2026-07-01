@@ -525,20 +525,20 @@ describe('Count regression (L-007 baseline)', () => {
     expect(vals).toContain("'clinical_investigation'");
   });
 
-  it('audit_action enum has 214 values (183 + 8 source.* SOURCE-GOVERNANCE Issue #48 + 1 label.esubmit_forwarded #249)', () => {
+  it('audit_action enum has 218 values (183 + 8 source.* SOURCE-GOVERNANCE Issue #48 + 1 label.esubmit_forwarded #249 + 1 source.orphan_sunsetted Issue 313)', () => {
     const src = readText('lib/db/schema.ts');
     const match = src.match(
       /export const auditActionEnum = pgEnum\('audit_action', \[([\s\S]*?)\]\);/,
     );
     const vals = match?.[1]?.match(/'[a-z_.]+'/g) ?? [];
-    expect(vals.length).toBe(214); // +1 rlhf.calibration_proposed (#264 2/3) +1 rlhf.implicit_feedback_recorded (#264 3/3) +1 label.esubmit_forwarded (#249) +1 traceability.section_superseded (#300 M-2)
+    expect(vals.length).toBe(218); // +1 rlhf.calibration_proposed (#264 2/3) +1 rlhf.implicit_feedback_recorded (#264 3/3) +1 label.esubmit_forwarded (#249) +1 traceability.section_superseded (#300 M-2) +1 source.orphan_sunsetted (Issue 313)
   });
 
-  it('AuditAction type has 214 values (sync with schema enum)', () => {
+  it('AuditAction type has 215 values (sync with schema enum)', () => {
     const src = readText('lib/audit.ts');
     const match = src.match(/export type AuditAction =\s*([\s\S]*?);/);
     const vals = match?.[1]?.match(/'[a-z_.]+'/g) ?? [];
-    expect(vals.length).toBe(214); // +1 rlhf.calibration_proposed (#264 2/3) +1 rlhf.implicit_feedback_recorded (#264 3/3) +1 label.esubmit_forwarded (#249) +1 traceability.section_superseded (#300 M-2)
+    expect(vals.length).toBe(215); // +1 rlhf.calibration_proposed (#264 2/3) +1 rlhf.implicit_feedback_recorded (#264 3/3) +1 label.esubmit_forwarded (#249) +1 traceability.section_superseded (#300 M-2) +1 source.orphan_sunsetted (Issue 313)
   });
 
   it('PERMISSIONS matrix has 70 entries (68 + 2 sourcegov.* SOURCE-GOVERNANCE Issue #48)', () => {

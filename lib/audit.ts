@@ -399,6 +399,13 @@ export type AuditAction =
   | 'source.low_authority_flagged'
   | 'source.governance_updated'
   | 'source.delta_sync_updated'
+  // Issue 313 — orphan sources cleanup cron. Added via 0101_source_orphan_sunset.sql.
+  // source.orphan_sunsetted — daily cron set approval_status to sunset on a source
+  //   because all its source_sections are superseded (orphan detection). DISTINCT
+  //   from source.superseded (replaced by a newer source version) and
+  //   source.rejected (human RA-owner rejection) so regulators can distinguish
+  //   the three lifecycle events in the audit trail (21 CFR Part 11).
+  | 'source.orphan_sunsetted'
   // SPEC-REGULA-RLHF-001 — added via 0082_rlhf.sql (Issue #56, REQ-RLHF-013).
   // feedback_submitted: every feedback write (21 CFR Part 11 audit-material).
   //   The revision-vs-new distinction is carried in meta_json.revised (L-2),
