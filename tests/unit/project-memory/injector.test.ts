@@ -203,7 +203,6 @@ describe('AC-02 Layer 1 — injectProjectMemory real behavior', () => {
     expect(selectCall.where).toHaveBeenCalled();
     // The condition passed to where() is a non-null object (a real Drizzle
     // condition, not undefined/no-op).
-    // biome-ignore lint/suspicious/noExplicitAny: mock call introspection
     const whereArg = selectCall.where.mock.calls[0]?.[0];
     expect(whereArg).toBeTruthy();
     expect(typeof whereArg).toBe('object');
