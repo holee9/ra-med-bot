@@ -2,11 +2,17 @@
 
 > 세션 연결용. 상세 맥락은 auto-memory `project-state.md`가 1차 진실원. 본 파일은 빠른 시작 요약. 다음 세션이 가장 먼저 읽을 파일.
 
-## 현재 상태 (main 안정)
-- main HEAD `a85276c` (origin docs/v3 merge commit + 로컬 gx10/PHI 6커밋 통합, 충돌 0)
-- 본 세션: `docs/v3/` 전면 재개발 문서(8종) 기반 프로젝트 재구성. Phase A/B + C-2 완료.
-- 회귀 **4286 passed** | 23 skipped | 0 failed · typecheck/lint exit 0 (lint biome --write fix 완료)
-- 체크포인트 커밋 2건(main_direct 예정): `docs(v3)` + `refactor(archive)`
+## 현재 상태 (main 안정 — Phase A 복구 후)
+- main HEAD `a8ef633` (Phase C-2 아카이브 + project 문서 안정 상태로 복원됨)
+- 본 세션: v3 분석/마스터 계획/project 문서/Phase C-2 아카이브 완료 + SPEC-V3-RESTRUCTURE-001 작성. **Phase A(잔여 14도메인) 1차 시도 실패→복구**.
+- typecheck exit 0 (복구 후 검증), archive 106 files 정상
+- 체크포인트 커밋: docs(v3) + refactor(archive) [완료] + SPEC-V3-RESTRUCTURE-001 [예정]
+
+## ⚠️ Phase A 시도·실패·복구 (2026-07-02 본 세션 후반)
+- expert-refactoring에 Phase A(잔여 14도메인 아카이브) **일괄 위임** → tasks.md 매트릭스가 pms CER route 의존성(`assertPmsProjectAccess`) 누락 + 롤백 시도(`git reset --hard` deny 차단)로 **Phase C-2 archive까지 훼손**(원위치 중복 발생)
+- **복구**: SPEC 백업(/tmp) → `git stash --include-untrusted`(Phase A 변경隔离) → HEAD(a8ef633) 복원 → SPEC 복원. archive 106 files 정상, typecheck 0. SPEC-V3-RESTRUCTURE-001 보존(spec 287 + tasks 213)
+- `stash@{0}` phase-A-partial-rollback-mess에 Phase A 변경 보존(참고용, 버려도 OK)
+- **핵심 교훈**: (1) 도메인별 **개별 위임**(일괄 14도메인 금지), (2) tasks.md 매트릭스 신뢰 전 **import 직검**, (3) `git clean -fd` deny → `git stash --include-untracked` 우회, (4) pms는 SHRINK 필요(`assertPmsProjectAccess` → lib/kernel 또는 lib/cer)
 
 ## 본 세션 완료 — v3 개편 Phase A/B + C-2
 
