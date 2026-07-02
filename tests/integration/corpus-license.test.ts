@@ -418,14 +418,14 @@ describe('C-4: export rights gate + usage notice', () => {
   });
 
   it('source-level: change-control export route wires verifyExportRights + 403', () => {
-    const src = readText('app/api/change-control/[assessmentId]/export/route.ts');
+    const src = readText('archive/qms-pms/app/api/change-control/[assessmentId]/export/route.ts');
     expect(src).toContain('verifyExportRights');
     expect(src).toContain('export_license_blocked');
     expect(src).toContain('auditExportBlockedBatch');
   });
 
   it('source-level: change-control export route wires generateUsageNotice', () => {
-    const src = readText('app/api/change-control/[assessmentId]/export/route.ts');
+    const src = readText('archive/qms-pms/app/api/change-control/[assessmentId]/export/route.ts');
     expect(src).toContain('generateUsageNotice');
   });
 
@@ -436,7 +436,7 @@ describe('C-4: export rights gate + usage notice', () => {
   });
 
   it('source-level: PDF renderer accepts usageNotices option', () => {
-    const src = readText('lib/change-control/exporters/pdf.tsx');
+    const src = readText('archive/qms-pms/lib/change-control/exporters/pdf.tsx');
     expect(src).toContain('usageNotices');
     expect(src).toContain('Source Usage Restrictions');
   });
@@ -526,7 +526,7 @@ describe('C-4 (H-1): auditExportBlocked wired via export-gate batch helper', () 
   });
 
   it('source-level: change-control export route calls auditExportBlockedBatch', () => {
-    const src = readText('app/api/change-control/[assessmentId]/export/route.ts');
+    const src = readText('archive/qms-pms/app/api/change-control/[assessmentId]/export/route.ts');
     expect(src).toContain('auditExportBlockedBatch');
   });
 });

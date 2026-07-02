@@ -255,7 +255,9 @@ describe('AC-03: stale-citation gate at export (REQ-SOURCE-GOV-007)', () => {
 
   it('source-level: verifyGovernanceFreshness wired at both export routes', () => {
     const traceability = readText('app/api/traceability/[deliverableId]/export/route.ts');
-    const changeControl = readText('app/api/change-control/[assessmentId]/export/route.ts');
+    const changeControl = readText(
+      'archive/qms-pms/app/api/change-control/[assessmentId]/export/route.ts',
+    );
     expect(traceability).toContain('verifyGovernanceFreshness');
     expect(traceability).toContain('auditStaleBlockedBatch');
     expect(changeControl).toContain('verifyGovernanceFreshness');

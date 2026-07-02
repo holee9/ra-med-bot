@@ -26,7 +26,7 @@ export default defineConfig({
       'tests/e2e/fixtures/**/*.test.{ts,tsx}',
       'playwright/**/*.test.{ts,tsx}',
     ],
-    exclude: ['tests/e2e/*.spec.ts', 'node_modules', '.next'],
+    exclude: ['tests/e2e/*.spec.ts', 'node_modules', '.next', '**/archive/**'],
     coverage: {
       provider: 'v8',
       reporter: ['text', 'html', 'lcov'],

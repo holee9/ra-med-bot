@@ -22,7 +22,8 @@
       ".moai/**",
       ".codex/**",
       ".wiki-temp/**",
-      "next-env.d.ts"
+      "next-env.d.ts",
+      "archive/**"
     ]
   },
   "formatter": {
