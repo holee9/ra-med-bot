@@ -2,9 +2,10 @@ import { describe, expect, it } from 'vitest';
 import { WORKFLOW_REGISTRY } from '../../../lib/workflows/registry';
 
 describe('WORKFLOW_REGISTRY', () => {
+  // SPEC-REGULA-V3-RESTRUCTURE-001 (A1 archive): dhf, samd, esubmit removed (was 8 → 5).
   // SPEC-REGULA-PHI-REMOVAL-001 (Issue #319): 3 PMS/PMCF entries removed (was 11 → 8).
-  it('has 8 entries', () => {
-    expect(WORKFLOW_REGISTRY).toHaveLength(8);
+  it('has 5 entries', () => {
+    expect(WORKFLOW_REGISTRY).toHaveLength(5);
   });
 
   it('each entry has required fields', () => {
@@ -52,21 +53,5 @@ describe('WORKFLOW_REGISTRY', () => {
     expect(workflow?.stepCount).toBe(4);
   });
 
-  it('samd has 5 steps', () => {
-    const workflow = WORKFLOW_REGISTRY.find((w) => w.id === 'samd');
-    expect(workflow).toBeDefined();
-    expect(workflow?.stepCount).toBe(5);
-  });
-
-  it('dhf has 4 steps', () => {
-    const workflow = WORKFLOW_REGISTRY.find((w) => w.id === 'dhf');
-    expect(workflow).toBeDefined();
-    expect(workflow?.stepCount).toBe(4);
-  });
-
-  it('esubmit has 4 steps', () => {
-    const workflow = WORKFLOW_REGISTRY.find((w) => w.id === 'esubmit');
-    expect(workflow).toBeDefined();
-    expect(workflow?.stepCount).toBe(4);
-  });
+  // SPEC-REGULA-V3-RESTRUCTURE-001 (A1 archive): dhf, samd, esubmit tests removed.
 });

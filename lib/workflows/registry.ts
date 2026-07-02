@@ -47,30 +47,9 @@ export const WORKFLOW_REGISTRY: WorkflowEntry[] = [
     stepCount: 4,
     href: '/workflows/pccp',
   },
-  // SPEC-REGULA-SAMD-001: SaMD pathway builder entry
-  {
-    id: 'samd',
-    title: 'SaMD Pathway Builder',
-    description: 'AI/ML SaMD regulatory pathway — IMDRF N12, FDA AI/ML Guidance, EU AI Act',
-    stepCount: 5,
-    href: '/workflows/samd',
-  },
-  // SPEC-REGULA-DHF-001: Design History File entry
-  {
-    id: 'dhf',
-    title: 'Design History File',
-    description: '21 CFR 820.30 / ISO 13485 / EU MDR — design inputs, V&V, and design reviews',
-    stepCount: 4,
-    href: '/workflows/dhf',
-  },
-  // SPEC-REGULA-ESUBMIT-001: Electronic submission package builder entry
-  {
-    id: 'esubmit',
-    title: '전자 제출 패키지',
-    description: 'FDA 510(k) · De Novo · PMA · EU MDR CER · PCCP · MFDS · NMPA — 제출 패키지 빌더',
-    stepCount: 4,
-    href: '/workflows/esubmit',
-  },
+  // SPEC-REGULA-SAMD-001 (A1 archive): SaMD pathway builder archived to archive/qms-pms/.
+  // SPEC-REGULA-DHF-001 (A1 archive): Design History File workflow archived to archive/qms-pms/.
+  // SPEC-REGULA-ESUBMIT-001 (A1 archive): Electronic submission package builder archived to archive/qms-pms/.
   // SPEC-REGULA-PHI-REMOVAL-001 (Issue #319): PMS/PMCF workflows removed.
   // Regula does not handle patient/clinical-subject data (adverse events,
   // complaint/vigilance inputs, PMCF survey/registry data). See migration

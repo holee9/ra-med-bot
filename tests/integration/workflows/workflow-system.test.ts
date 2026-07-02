@@ -15,9 +15,7 @@ describe('Workflow System — cross-workflow validation', () => {
       'indication-impact': INDICATION_IMPACT_STEPS.length,
       cer: CER_STEPS.length,
       pccp: PCCP_STEPS.length,
-      samd: 5,
-      dhf: 4,
-      esubmit: 4,
+      // SPEC-REGULA-V3-RESTRUCTURE-001 (A1 archive): dhf, samd, esubmit archived.
       // SPEC-REGULA-PMS-001: 3 PMS workflows (no steps module — section-based).
       'pms-report': 4,
       'pmcf-plan': 4,
@@ -48,9 +46,7 @@ describe('Workflow System — cross-workflow validation', () => {
     expect(registryIds).toContain('indication-impact');
     expect(registryIds).toContain('cer');
     expect(registryIds).toContain('pccp');
-    expect(registryIds).toContain('samd');
-    expect(registryIds).toContain('dhf');
-    expect(registryIds).toContain('esubmit');
+    // SPEC-REGULA-V3-RESTRUCTURE-001 (A1 archive): dhf, samd, esubmit removed from registry.
   });
 
   it('review-queue singleton is consistent', () => {
