@@ -1,164 +1,151 @@
-# 제품 개요 — Regula
+# 제품 정의 — Regula (v3)
 
-> 버전: 2.0.0  
-> 최종 업데이트: 2026-05-02  
-> 개정 사유: 브레인스토밍 확정 (2026-05-02) — 3-레포 통합 팩트 기반 전문 가이드 시스템으로 전면 재정의
-
----
-
-## 제품 정의
-
-**Regula는 단순 RAG 챗봇이 아니다.**
-
-MD-process(회사 정책·SOP)와 ra-project(RA 전문 지식베이스) 두 레포를 knowledge source로 삼아, 사내 직원이 의료기기 인허가 관련 질의를 하면 **팩트에만 근거한 전문 가이드 답변**을 제공하는 통합 시스템이다.
+> 버전: 3.0.0
+> 최종 업데이트: 2026-07-02
+> 개정 사유: v3 아키텍처 마스터 계획 기반 전면 재정의
+> 기준 문서: docs/proposals/v3-architecture-revamp-plan-2026-07-02.md
 
 ---
 
-## 핵심 철학
+## 제품 정체성
 
-| 원칙 | 내용 |
-|------|------|
-| **팩트 기반** | MD-process·ra-project에 존재하는 사실만 출처 명시하여 답변 |
-| **구조적 hallucination 차단** | Agent는 탐색·라우팅만 수행. 찾은 문서 외 내용 생성 절대 없음 |
-| **단일 답변 구조** | 사용자 역할 무관하게 동일한 팩트 + 출처 구조 |
-| **전문 가이드** | 단순 검색이 아닌 맥락을 갖춘 전문적 안내 |
+**Regula는 RA(Regulatory Affairs) 게이트웨이이다.**
 
----
+의료기기 인허가 담당자 3명(RA Lead 1명 + RA Member 2명)과 사내 임직원 26명(Employee) 사이의 커뮤니케이션 · 셀프서비스 · 이력 관리를 통합하는 사내 웹앱.
 
-## 3-레포 구조 내 위치
+### 핵심 역할
 
-```
-MD-process (정책·SOP) ──┐
-                         ├──► ra-med-bot (Regula) ◄── 사내 20명 사용자
-ra-project (규제 지식) ──┘
-```
+1. **Employee(26명)** → 규제 질문 자연어 셀프서비스 (RA를 매번 붙잡지 않음)
+2. **RA(3명)** → 사내 질의 Kanban Inbox 1개에서 트리아지 · 승인 (분산된 채팅/메일 폐지)
+3. **Admin(1명)** → 사용자 · 데이터 소스 · 감사 로그 감시 · 21 CFR Part 11 준수 유지
 
-Regula는 두 지식 레포의 **소비자이자 사용자 인터페이스**다.
+### 아닌 것 (범위 외)
 
----
-
-## 타깃 사용자
-
-| 계층 | 구성 | 주요 니즈 |
-|------|------|----------|
-| **일반 직원** | 개발자·QA·제조·경영지원 | 규제 질의 → 팩트 기반 답변 |
-| **RA 담당자·관리자** | RA 전문가·시스템 관리자 | 미답변 분류, 지식베이스 품질 관리 |
-
-> 외부(해외 딜러·컨설턴트) 접속은 현재 범위 외. 사내 20명 대상.
+- **QMS 대체** (CAPA/Change Control/Audit/PMS 등 워크벤치는 v2에서 폐기, QMS 소유는 QA 팀)
+- **일반 KB** (Notion/Confluence 대체, 영업/마케팅/인사 지식 검색)
+- **가짜 신뢰 생성기** (Expert Review Gate 없이 시스템 출력이 최종본이 되는 흐름)
+- **AI 규제 판단 대신** (모든 법적 주장은 RA Lead 확인·승인 필수)
+- **SaaS 외판** (abyz 내부 6-8명용 설계, 외부 고객 온보딩 불가)
 
 ---
 
-## 핵심 기능
+## 3-tier 타겟 사용자 (v3 Persona 아키텍처)
 
-### 1. 팩트 기반 질의응답
+| Persona | 인원 수 | 주요 니즈 | 화면 수 |
+|---------|---------|----------|--------|
+| **Employee** | 26명 | 규제 셀프서비스, 변경 영향 자가진단 | 5 (Ask, 내 질의, 제품 카드, Guides, Impact) |
+| **RA** | 3명 (Lead 1 + Member 2) | 사내 질의 처리, 인허가 워크플로우, 문서 작성 | 6 (Inbox, Consult, Submissions, Registry, Radar, Knowledge) |
+| **Admin** | 1명 | 시스템 감시, 거버넌스, 사용자 관리 | 12 (5 카테고리: Workspace/User/Data/Governance/Design) |
 
-- Agent가 MD-process·ra-project 탐색
-- 찾은 문서만 근거로 답변 생성
-- 출처(레포 > 폴더 > 문서명 > 조항) 명시 필수
-- 찾지 못한 경우 명확히 미답변 고지
-
-### 2. 미답변 처리 파이프라인
-
-- 미답변 발생 → ra-med-bot GitHub Issue 자동 등록
-- 일일 배치 이메일 (08:00) → RA 담당자·관리자 수신
-- 담당자 분류 (ra-project 또는 MD-process Issue 등록)
-- Cowork 스케줄링 처리 → 지식베이스 보강 → 이후 답변 가능
-
-### 3. 대화 이력·감사 추적
-
-- 내부 운영 기록 목적
-- 미답변 패턴 → 지식베이스 우선순위 반영
-- 외부 전송 없음, 내부 PostgreSQL 보관
-
-### 4. 지식베이스 자기 강화 사이클
-
-사용자 질문이 쌓일수록 지식베이스가 성장하고 bot의 답변 가능 범위가 확장된다.
-
-### 5. 추적성 매트릭스 (Traceability Matrix) — 완료 (2026-06-23, PR #242)
-
-- **Evidence Graph**: source → answer/draft → review → export artifact 관계 그래프화
-- **Matrix UI**: 요구사항/규제 요구사항/위험 항목/제출 섹션(행) × 근거 출처/생성 답변/reviewer decision/export artifact/open gap(열)
-- **Evidence Packet**: 답변·CER 섹션·PCCP 컴포넌트·510(k) 섹션·위험 항목별 근거 패킷, PDF/Markdown export
-- **Stale 전파**: source supersession 시 연결된 산출물에 stale flag 전파 (BFS 멱등성 보장)
-- **감사 추적**: 모든 traceability 변경 audit_logs 기록, 21 CFR Part 11 준수
-
-### 6. EU MDR PMS/PMCF 자동화 — 완료 (2026-06-24, PR #246)
-
-- **PMS 보고서(PMSR)**: MDCG 2022-21 가이던스 기반 섹션 구조 자동 생성
-- **PMCF 계획**: EU MDR Annex XIV Part B 체크리스트 + AI 작성 지원
-- **PMCF 평가 보고서**: PMCF 계획 대비 수집된 임상 데이터 평가 초안 작성
-- **CER 데이터 자동 연계**: 같은 프로젝트 내 CER 문서(#23) 자동 연계(수동 연계만, 자동 연계는 #243)
-- **complaint/vigilance 데이터 입력 통합**: 수동 입력 또는 파일 업로드
-- **SUSAR·트렌드 리포팅**: 섹션 템플릿 제공
-- **Article 83-86 자동 컴플라이언스 체크**: PMS 문서 생성 시 EU MDR 규정 준수 자동 검증
-- **Expert review 게이팅**: expert review 완료 시에만 export/close 가능 (AC-07, 서버사이드 403)
-- **보안 강화**: citation 환각 방지, IDOR cross-org runtime test(15건), audit 트랜잭션 원자성, RLS org-isolation, 0결과 pending
-
-- **Evidence Graph**: source → answer/draft → review → export artifact 관계 그래프화
-- **Matrix UI**: 요구사항/규제 요구사항/위험 항목/제출 섹션(행) × 근거 출처/생성 답변/reviewer decision/export artifact/open gap(열)
-- **Evidence Packet**: 답변·CER 섹션·PCCP 컴포넌트·510(k) 섹션·위험 항목별 근거 패킷, PDF/Markdown export
-- **Stale 전파**: source supersession 시 연결된 산출물에 stale flag 전파 (BFS 멱등성 보장)
-- **감사 추적**: 모든 traceability 변경 audit_logs 기록, 21 CFR Part 11 준수
+> **v3 변경사항**: Employee "담당 제품" 개인화 폐기 (M-013 결정). 전 임직원 자유 조회.
 
 ---
 
-## 답변 구조
+## 핵심 가치
 
-모든 사용자에게 동일한 구조로 답변한다.
-
-```
-[답변]
-내용: {팩트}
-출처: {레포명 > 문서명 > 조항}
-신뢰: {내부 문서 기반 / 외부 공식 소스 기반}
-```
-
----
-
-## 범위 외 (Out of Scope)
-
-| 항목 | 이유 |
-|------|------|
-| 추측·해석·창작 답변 | 팩트 원칙 위반 |
-| 외부 사용자 접속 | 현재 사내 20명 전용 |
-| 인허가 서류 자동 생성 | 향후 단계 |
-| 실시간 규제 모니터링 | 향후 단계 |
+| 가치 | 기존 | v3 Regula |
+|------|------|-----------|
+| **Employee 규질 질문** | RA를 매번 붙잡음 | 자연어로 질문 → RAG 답변 (인용 기반) |
+| **RA 질의 처리** | 분산된 채팅/메일 | Kanban Inbox 1개 (4-column · triage state) |
+| **Auto-Triage** | 수동 분류 | RAG + LLM confidence 기반 자동 응답 (24h 유예) |
+| **Change Impact 진단** | 수십 분 조사 | 4-layer 위저드 (계층 1 결정론 + 계층 2 LLM 분류 + 계층 3 RA 티켓 + 계층 4 유사 사례) |
+| **감사 추적** | 수동 기록 | audit_log append-only + SHA-256 hash chain (월간 자동 검증) |
+| **승인 답변집** | 메일/문서 공유 share | DB 실시간 + git 스냅샷 (Hybrid, 03:20 KST) |
 
 ---
 
-## KPI
+## v3 범위 (QMS 명시적 제외)
 
-| 지표 | 목표 |
-|------|------|
-| 답변 출처 명시율 | 100% |
-| 미답변 이메일 발송 | 매일 08:00 (누락 0) |
-| 미답변 → Issue 등록 | 자동 (누락 0) |
-| 지식베이스 동기화 | GitHub push 후 24시간 내 반영 |
+### 포함 기능
+
+| 기능 | v3 상태 | 비고 |
+|------|---------|------|
+| RAG Q&A (6개 corpus) | ✅ 보존 (개선) | per-corpus retrievers 5종 + delta-sync (Phase D 완결) |
+| Inbox Kanban + Auto-Triage | 🆕 신규 | 4-column (auto/needs-review/escalated/waiting), confidence 임계값 |
+| Change Impact Check | 🆕 신규 | 4-layer wizard, retestMatrix (7×5=35셀) |
+| Consult (Power Chat) | 🆕 신규 | 관할권 다중 비교, 세션 저장, 5개 실 세션 시드 |
+| CER/PCCP/Predicate | ✅ 보존 | Expert Review Gate 불변 |
+| Standards/Radar | ✅ 보존 | 규제 레이더, 임팩트 평가 |
+| Audit hash chain | 🆕 강화 | previous_hash BYTEA + 월간 자동 검증 (BK-105) |
+| 3-tier PersonaBar | 🆕 신규 | Employee/RA/Admin 스위치 |
+| BFF (hybrid-ra-saas) | 🆕 신규 | lib/bff/ 정식 레이어, 6 integration points |
+
+### 제외 기능 (QMS — v2에서 폐기)
+
+| 도메인 | 사유 팀 | Regula v3 관계 |
+|--------|---------|------------------|
+| PMS/PMCF | QA 팀 | ❌ 범위 외 (QMS 워크벤치는 별도 시스템) |
+| CAPA/Change Control | QA 팀 | ❌ 범위 외 |
+| Vigilance/Complaint | QA 팀 | ❌ 범위 외 (환자정보 취급, #319 제거 완료) |
+| DHF/Risk Management | QA 팀 | ❌ 범위 외 |
+
+> **Charter 지양-3 준수**: Regula는 QMS를 대체하지 않음. QMS 도메인 18개를 archive/qms-pms/로 물리 이동.
 
 ---
 
-## 개발 현황
+## Charter 지양 5종 (SPEC 작성 전 체크리스트)
 
-| 단계 | 상태 |
-|------|------|
-| 시스템 철학·아키텍처 확정 | ✅ 완료 (2026-05-02) |
-| 3-레포 구조 확정 | ✅ 완료 (2026-05-02) |
-| 인프라 선정 (워크스테이션 + Linux) | ✅ 완료 (2026-05-02) |
-| Foundation 구현 | ✅ 완료 (2026-05-02) |
-| Chat Core 구현 | ✅ 완료 (Issue #4, 2026-05-02) |
-| Structured Outputs 구현 | ✅ 완료 (Issue #5, 2026-05-02) |
-| Breadth 구현 | ✅ 완료 (2026-05-03) |
-| Wave 3 (Predicate) | ✅ 완료 (2026-06-19, PR #186, Issue #188) |
-| Traceability Matrix | ✅ 완료 (2026-06-23, PR #242, Issue #47) |
-| PMS/PMCF 자동화 | ✅ 완료 (2026-06-24, PR #246, Issue #53) |
-| E2E Validation Framework | ✅ 완료 (2026-06-19, Issue #182) |
-| Enterprise/Launch | 🔄 계획 중 (Wave 4-5) |
+### [지양-1] 일반 KB ❌
+
+RAG corpus는 **FDA/EU MDR/MFDS/NMPA/PMDA + internal SOP** 전용. 영업/마케팅/인사 지식 검색, Notion/Confluence 대체 기능 → 범위 외.
+
+### [지양-2] 가짜 신뢰 ❌
+
+아래 3가지는 아키텍처 결정으로 어떤 기능 추가로도 풀 수 없음:
+- **Expert Review Gate 없이 시스템 출력이 최종본이 되는 흐름** (불방: lib/domains/expert-review/ 불변)
+- **Draft watermark를 우회하는 export 경로** (해당: export는 draft 상태 표시, RA 승인 후 해제)
+- **인용 근거 없는 주장이 export되는 흐름** (해당: 모든 export는 citation 포함)
+
+### [지양-3] QMS 대체 ❌
+
+**SOP 관리, 변경 제어(CAPA), 불만 처리 → 범위 외.**
+DOCINGEST는 SOP를 RAG corpus로 참조할 뿐이지, SOP를 관리하는 것이 아님. Veeva Vault, MasterControl, Arena PLM 대체 포지션 아님.
+
+### [지양-4] AI가 규제 판단을 대신하는 도구 ❌
+
+**모든 법적 주장(predicate 선정, equivalence claim, PCCP 적용 범위)은 RA Lead 확인·승인 필수.**
+Article 61(4) disclaimer 등 법적 경고 텍스트는 SPEC에서 제거 불가.
+
+### [지양-5] SaaS 외판 ❌
+
+**abyz 내부 6~8명용 설계.** 외부 고객 온보딩, 결제, 다중 조직 관리 기능 → 현재 범위 외.
+단, **hybrid-ra-saas 별도 SaaS와 BFF 연동**은 허용 (lib/bff/ 정식 레이어, 6 integration points).
+
+---
+
+## v3 vs 현재 정체성 매핑
+
+| 측면 | 현재 (v2) | v3 타겟 |
+|------|-----------|----------|
+| **정체성** | RA 문서 작성 워크벤치 (좁고 깊음) | RA 게이트웨이 (전사 인허가 도우미, RA 업무 분산) |
+| **사용자** | RA Lead 1~2명 (실질 파워유저) | Employee 26명 (1순위) + RA 3명 (2순위) + Admin 1명 |
+| **QMS 범위** | 포함 (PMS/PMCF/CAPA/Vigilance) | **제외** (QMS 도메인 18개 archive 이동) |
+| **LLM 백엔드** | 외부 API (OpenAI/Anthropic) | **gx10 온프레미스 Ollama 단일** (gpt-oss:120b, #318) |
+| **환자정보** | 포함 (vigilance/complaint/PII redaction) | **제외** (PHI 도메인 138 files 제거, #319) |
+| **Inbox** | 미구현 | 🆕 4-column Kanban + Auto-Triage |
+| **Impact Check** | 기존 lib/impact (6 files) | 🆕 4-layer wizard (retestMatrix 35셀 임베드) |
+| **UI** | v2 잔재 | 🆕 3-tier PersonaBar + components/ 전면 재작성 |
+| **BFF** | lib/api/ (fragmentary) | 🆕 lib/bff/ 정식 레이어 (6 integration points) |
+
+---
+
+## 핵심 성공 지표 (KPI)
+
+| 지표 | 현재 | v3 목표 |
+|------|------|---------|
+| 답변 출처 명시율 | 100% (현재) | 100% (유지) |
+| Auto-triage 정확도 | N/A | confidence >= 85% → auto (24h 유예) |
+| 미답변 → RA 에스컬레이트 | N/A | escalated 자동 티켓 생성 (48h SLA) |
+| 회귀 테스트 | 4,815 passed | 4,806+ passed (아카이브 9 tests 제외) |
+| audit 무결성 | N/A | hash chain 월간 검증 PASS (BK-105) |
+| 제품 자동 추출 | N/A | ra-llm-wiki → products 테이블 (BK-033) |
 
 ---
 
 ## 관련 문서
 
-- [시스템 마스터 아키텍처](../../docs/시스템_아키텍처.md)
-- [기술 명세](tech.md)
-- [운영 SOP](../../docs/운영_SOP.md)
-- [브레인스토밍 확정 사항](../.moai/plans/brainstorming-2026-05-02.md)
+- **v3 마스터 계획**: docs/proposals/v3-architecture-revamp-plan-2026-07-02.md (676줄)
+- **v3 원본 문서**: docs/v3/ (README + 5개 하위 문서)
+- **Charter**: .moai/specs/CHARTER.md (지양 5종)
+- **기술 명세**: tech.md (v3 스택 통합)
+- **구조 명세**: structure.md (v3 3-Tier 아키텍처)
