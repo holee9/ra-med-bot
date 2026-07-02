@@ -11,10 +11,10 @@ import { assembleCer } from '@/lib/cer/cer-assembler';
 import { formatVancouver } from '@/lib/cer/citation-formatter';
 import { type AppraisalResult, appraiseEvidence } from '@/lib/cer/literature-appraisal';
 import type { CerStageId } from '@/lib/cer/meddev-stages';
+import { assertPmsProjectAccess } from '@/lib/cer/project-ownership';
 import { searchPubMed } from '@/lib/cer/pubmed-client';
 import { db } from '@/lib/db/client';
 import { workflowRuns } from '@/lib/db/schema';
-import { assertPmsProjectAccess } from '@/lib/pms/project-ownership';
 import { CerInputSchema } from '@/lib/workflows/types';
 
 // REQ-CER-016: literature search retrieves >=50 abstracts per query.

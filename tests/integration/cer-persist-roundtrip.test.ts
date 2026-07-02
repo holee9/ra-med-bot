@@ -14,7 +14,7 @@
 //   2. Mock @/lib/audit — record writeAudit calls.
 //   3. Mock @/lib/auth/with-permission — bypass RBAC, inject session per org.
 //   4. Mock @/lib/cer/pubmed-client — deterministic literature results.
-//   5. Mock @/lib/pms/project-ownership — assertPmsProjectAccess via in-memory projects.
+//   5. Mock @/lib/cer/project-ownership — assertPmsProjectAccess via in-memory projects.
 //   6. Call REAL POST handler, then inspect the in-memory store.
 
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
@@ -235,7 +235,7 @@ vi.mock('@/lib/auth/with-permission', () => ({
 // Mirrors the real return contract: null = allowed, Response = denied.
 // ---------------------------------------------------------------------------
 
-vi.mock('@/lib/pms/project-ownership', () => ({
+vi.mock('@/lib/cer/project-ownership', () => ({
   assertPmsProjectAccess: vi.fn(
     async (projectId: string, organizationId: string): Promise<Response | null> => {
       // PROJECT_ID belongs to ORG_A (projectsStore). Deny when the project is
