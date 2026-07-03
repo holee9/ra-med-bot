@@ -18,6 +18,9 @@ async function resolveRouteId(ctx: {
   return Array.isArray(raw) ? (raw[0] ?? '') : (raw ?? '');
 }
 
+/* audit-check-ignore: audit (source.governance_updated) is written inside
+   updateGovernanceFields() within the same tx (21 CFR Part 11 atomicity) —
+   route-level writeAudit would duplicate */
 export const PATCH = withPermission('sourcegov.manage', async (req, ctx, session) => {
   const organizationId = session.user.organizationId;
   if (!organizationId) {
