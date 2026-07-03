@@ -9,6 +9,8 @@ import { withPermission } from '@/lib/auth/with-permission';
 import { approveSource } from '@/lib/source-governance/review-workflow';
 import { approveRequestSchema } from '@/lib/source-governance/types';
 
+/* audit-check-ignore: audit (source.approved/rejected) is written inside approveSource()
+   within the same tx (21 CFR Part 11 atomicity) — route-level writeAudit would duplicate */
 export const POST = withPermission('sourcegov.manage', async (req, _ctx, session) => {
   const organizationId = session.user.organizationId;
   if (!organizationId) {
