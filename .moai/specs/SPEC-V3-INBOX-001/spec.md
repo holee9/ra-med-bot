@@ -1,13 +1,14 @@
 ---
 id: SPEC-V3-INBOX-001
-version: 1.1.0
-status: draft
+version: 1.1.1
+status: implemented
 phase: C-1
 priority: High
 created: 2026-07-02
-updated: 2026-07-02
+updated: 2026-07-03
 author: manager-spec
-issue_number: TBD
+issue_number: 320
+pr_number: 322
 depends_on:
   - SPEC-V3-RESTRUCTURE-001
   - SPEC-REGULA-FOUNDATION-001
