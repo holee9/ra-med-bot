@@ -29,6 +29,9 @@ const PatchMemorySchema = z.object({
 });
 
 // PATCH /api/project-memory/[id] — same-key supersession (ra-lead only).
+/* audit-check-ignore: audit (memory action) is written inside updateMemory() /
+   invalidateMemory() within the same tx (21 CFR Part 11 atomicity) — route-level
+   writeAudit would duplicate */
 export const PATCH = withPermission('projectmemory.manage', async (req, ctx, session) => {
   const params = ctx.params && 'then' in ctx.params ? await ctx.params : (ctx.params ?? {});
   const memoryId = params?.id;

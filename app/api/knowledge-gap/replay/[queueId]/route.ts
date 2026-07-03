@@ -32,6 +32,8 @@ async function resolveQueueId(ctx: QueueCtx): Promise<string> {
   return params.queueId ?? '';
 }
 
+/* audit-check-ignore: audit is written inside replayGapTest() (knowledge-gap/replay)
+   within the same tx (21 CFR Part 11 atomicity) — route-level writeAudit would duplicate */
 export const POST = withPermission('knowledgegap.replay', async (_req, ctx, session) => {
   const queueId = await resolveQueueId(ctx as QueueCtx);
   if (!queueId) {

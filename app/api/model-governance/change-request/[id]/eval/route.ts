@@ -21,6 +21,8 @@ const evalInputSchema = z.object({
   evalResultRef: z.string().max(1024).optional(),
 });
 
+/* audit-check-ignore: audit is written inside recordEvalResult() (change-workflow)
+   within the same tx (21 CFR Part 11 atomicity) — route-level writeAudit would duplicate */
 export const POST = withPermission('modelgov.manage', async (req, ctx, session) => {
   const organizationId = session.user.organizationId;
   if (!organizationId) {

@@ -59,6 +59,8 @@ export const GET = withPermission('projectmemory.view', async (req, _ctx, sessio
 });
 
 // POST /api/project-memory — create a memory (ra-lead only).
+/* audit-check-ignore: audit (memory action) is written inside createMemory()
+   within the same tx (21 CFR Part 11 atomicity) — route-level writeAudit would duplicate */
 export const POST = withPermission('projectmemory.manage', async (req, _ctx, session) => {
   let body: unknown;
   try {

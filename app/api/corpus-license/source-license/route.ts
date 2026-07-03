@@ -19,6 +19,8 @@ export const GET = withPermission('corpuslicense.view', async (_req, _ctx, sessi
 });
 
 // POST — create license metadata. REQ-CORPUSLIC-001/010.
+/* audit-check-ignore: this route calls auditLicenseSet()/auditCorpusAccessDenied() (lib
+   audit wrappers) within the same tx (Part 11 atomicity) — route-level writeAudit would duplicate */
 export const POST = withPermission('corpuslicense.manage', async (req, _ctx, session) => {
   const organizationId = session.user.organizationId;
   if (!organizationId) {

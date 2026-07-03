@@ -5,6 +5,8 @@ import { assertSourceLicenseInOrg } from '@/lib/corpus-license/access';
 import { grantEntitlement, revokeEntitlement } from '@/lib/corpus-license/entitlement';
 import { entitlementInputSchema } from '@/lib/corpus-license/types';
 
+/* audit-check-ignore: audit is written inside grantEntitlement()/revokeEntitlement()
+   within the same tx (21 CFR Part 11 atomicity) — route-level writeAudit would duplicate */
 export const POST = withPermission('corpuslicense.manage', async (req, _ctx, session) => {
   const organizationId = session.user.organizationId;
   if (!organizationId) {
