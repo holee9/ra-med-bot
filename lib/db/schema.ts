@@ -409,6 +409,25 @@ export const auditActionEnum = pgEnum('audit_action', [
   'memory_created',
   'memory_updated',
   'memory_invalidated',
+  // SPEC-V3-INBOX-001 — added via 0104_inbox_tickets_and_approved_answers.sql (Issue #320).
+  // RA Inbox lifecycle audit actions (REQ-V3-INBOX-021).
+  //   inbox.created     — new ticket created (employee ask or internal)
+  //   inbox.triaged     — triage_state transition (any valid transition)
+  //   inbox.assigned     — ra_assignee changed (manual assignment)
+  //   inbox.escalated    — escalated to external expert (escalate_to set)
+  //   inbox.answered     — final_answer drafted (not yet approved)
+  //   inbox.approved     — final_answer ESIG-approved (closed + promoted)
+  //   inbox.closed        — ticket closed (without promotion to approved_answers)
+  //   inbox.rejected      — ticket rejected (ra-lead/admin action)
+  'inbox.created',
+  'inbox.triaged',
+  'inbox.assigned',
+  'inbox.escalated',
+  'inbox.answered',
+  'inbox.approved',
+  'inbox.closed',
+  'inbox.rejected',
+  'inbox.approve_failed', // H-2 fix: approval failed (ESIG re-auth failure or domain error)
   // SPEC-REGULA-STANDARDS-001 — added via 0088_standards.sql (Issue #62).
   // Standards lifecycle is 21 CFR Part 11 audit-material (design-input records
   // under ISO 13485 / 21 CFR 820.30). Charter [지양-2] citation provenance.
@@ -3230,3 +3249,81 @@ export const knowledgeSources = pgTable('knowledge_sources', {
   createdAt: timestamp('created_at', { withTimezone: true, mode: 'date' }).notNull().defaultNow(),
   updatedAt: timestamp('updated_at', { withTimezone: true, mode: 'date' }).notNull().defaultNow(),
 });
+
+// ---------------------------------------------------------------------------
+// SPEC-V3-INBOX-001 — RA Inbox (4-column Kanban + Triage State Machine)
+// Migration 0104: inbox_tickets + approved_answers tables
+// ---------------------------------------------------------------------------
+
+// inbox_tickets table (REQ-V3-INBOX-001)
+export const inboxTickets = pgTable(
+  'inbox_tickets',
+  {
+    id: text('id').primaryKey(),
+    orgId: uuid('org_id')
+      .notNull()
+      .references(() => organizations.id, { onDelete: 'cascade' }),
+    fromUser: uuid('from_user')
+      .notNull()
+      .references(() => users.id, { onDelete: 'cascade' }),
+    question: text('question').notNull(),
+    productId: text('product_id'),
+    tags: text('tags').array(),
+    triageState: text('triage_state')
+      .notNull()
+      .$type<'auto' | 'needs-review' | 'escalated' | 'waiting' | 'closed' | 'rejected'>(),
+    autoAnswer: text('auto_answer'),
+    autoConfidence: numeric('auto_confidence', { precision: 5, scale: 2 }),
+    raAssignee: uuid('ra_assignee').references(() => users.id, { onDelete: 'set null' }),
+    escalateTo: text('escalate_to'),
+    finalAnswer: text('final_answer'),
+    approvedBy: uuid('approved_by').references(() => users.id, { onDelete: 'set null' }),
+    approvedAt: timestamp('approved_at', { withTimezone: true, mode: 'date' }),
+    slaDeadline: timestamp('sla_deadline', { withTimezone: true, mode: 'date' }),
+    createdAt: timestamp('created_at', { withTimezone: true, mode: 'date' }).notNull().defaultNow(),
+    closedAt: timestamp('closed_at', { withTimezone: true, mode: 'date' }),
+  },
+  (t) => ({
+    triageStateSlaDeadlineIdx: index('inbox_tickets_triage_state_sla_deadline_idx').on(
+      t.triageState,
+      t.slaDeadline,
+    ),
+    fromUserIdx: index('inbox_tickets_from_user_idx').on(t.fromUser),
+    orgIdIdx: index('inbox_tickets_org_id_idx').on(t.orgId),
+  }),
+);
+
+// approved_answers table (REQ-V3-INBOX-026)
+export const approvedAnswers = pgTable(
+  'approved_answers',
+  {
+    id: text('id').primaryKey(),
+    orgId: uuid('org_id')
+      .notNull()
+      .references(() => organizations.id, { onDelete: 'cascade' }),
+    category: text('category'),
+    question: text('question').notNull(),
+    answer: text('answer').notNull(),
+    citations: jsonb('citations')
+      .$type<{ source: string; quote?: string }[]>()
+      .default(sql`'[]'::jsonb`),
+    hits: integer('hits').default(0),
+    state: text('state')
+      .notNull()
+      .$type<'draft' | 'published' | 'deprecated'>()
+      .default('published'),
+    fromTicket: text('from_ticket')
+      .notNull()
+      .references(() => inboxTickets.id, { onDelete: 'cascade' }),
+    publishedBy: uuid('published_by').references(() => users.id, { onDelete: 'set null' }),
+    publishedAt: timestamp('published_at', { withTimezone: true, mode: 'date' }),
+    updatedAt: timestamp('updated_at', { withTimezone: true, mode: 'date' }).notNull().defaultNow(),
+  },
+  (t) => ({
+    stateIdx: index('approved_answers_state_idx').on(t.state),
+    ftsIdx: index('approved_answers_fts_idx').using(
+      'gin',
+      sql`to_tsvector('simple', ${t.question} || ' ' || ${t.answer})`,
+    ),
+  }),
+);

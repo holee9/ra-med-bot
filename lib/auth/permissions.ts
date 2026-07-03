@@ -163,7 +163,18 @@ export type PermissionAction =
   // read: viewer+ — broad read access because applicable-standards results are
   //   decision-support for the whole RA team (Charter [지양-4] RA Lead reviews).
   | 'standards.manage'
-  | 'standards.read';
+  | 'standards.read'
+  // SPEC-V3-INBOX-001 (Issue #320, REQ-V3-INBOX-020): Inbox RBAC actions.
+  // manage: ra-lead ONLY — triage (state transitions), assignment, escalation,
+  //   and promotion are 21 CFR Part 11 audit-material regulatory decisions.
+  //   Mirrors label.approve / capa.close / knowledgepromo.promote.
+  // view: ra-member+ — Kanban board transparency across the RA team.
+  | 'inbox.manage'
+  | 'inbox.view'
+  // SPEC-V3-INBOX-001 (Issue #320, REQ-V3-INBOX-001): ask.create permission.
+  // RA employees ask regulatory questions via /api/ask. Viewer-level access
+  // for Charter alignment — 전사 인허가 도우미 (mirrors consult.create pattern).
+  | 'ask.create';
 
 export interface PermissionSpec {
   minRole: Role;
@@ -487,5 +498,34 @@ export const PERMISSIONS: Record<PermissionAction, PermissionSpec> = {
     minRole: 'viewer',
     scope: 'org',
     resourceType: 'standardsCatalog',
+  },
+  // @MX:ANCHOR [AUTO] inbox.manage — RA-lead ONLY inbox management gate.
+  // @MX:REASON REQ-V3-INBOX-020: triage, assignment, escalation, and promotion are
+  //            21 CFR Part 11 audit-material regulatory decisions. Mirrors
+  //            label.approve / capa.close / knowledgepromo.promote.
+  // @MX:SPEC SPEC-V3-INBOX-001 (REQ-V3-INBOX-020, Issue #320)
+  'inbox.manage': {
+    minRole: 'ra-lead',
+    scope: 'org',
+    resourceType: 'inboxTicket',
+  },
+  // @MX:NOTE [AUTO] inbox.view — Kanban board transparency.
+  // @MX:SPEC SPEC-V3-INBOX-001 (REQ-V3-INBOX-007, Issue #320)
+  // ra-member+ can view the Kanban board (triage states, SLA status).
+  // Transparency across the RA team for operational visibility.
+  'inbox.view': {
+    minRole: 'ra-member',
+    scope: 'org',
+    resourceType: 'inboxTicket',
+  },
+  // @MX:NOTE [AUTO] ask.create — RA employee regulatory question submission (H-4 fix).
+  // @MX:SPEC SPEC-V3-INBOX-001 (REQ-V3-INBOX-001, Issue #320, Charter [지양-4])
+  // viewer-level access — 전사 인허가 도우미 (mirrors consult.create pattern).
+  // Question submission is a CREATE activity, NOT read-only consult.
+  // Rate limit 30/min/user recommended (follow-up — not implemented in this fix).
+  'ask.create': {
+    minRole: 'viewer',
+    scope: 'org',
+    resourceType: 'inboxTicket',
   },
 };

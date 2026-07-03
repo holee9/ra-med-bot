@@ -11,6 +11,15 @@
 
 > Placeholder for post-1.0.0 development.
 
+### v3 Phase C-1 — RA Inbox 백엔드 (SPEC-V3-INBOX-001, Issue #320, PR #322)
+
+- **RA Inbox 4-column Kanban + Triage state machine + ESIG 승인 워크플로우** 백엔드 도메인.
+  - Migration `0104`(inbox_tickets 17컬럼 + approved_answers 12컬럼, triage_state CHECK 6값, RLS org-isolation, GIN tsvector) + `0105`(audit_action enum `inbox.approve_failed` 추가).
+  - `lib/domains/inbox/` 8파일(state-machine · promote tx 원자성 · access IDOR 404 no-leak · queries · sla · audit · types · index) + API 5라우트(`POST /api/ask` · `GET/PATCH /api/inbox` · `POST /:id/triage` · `POST /:id/approve`).
+  - **보안 감사(expert-security) BLOCK→수정→GO**: C-1(REQ-V3-INBOX-012 ESIG password re-auth, bcrypt 재사용) / H-4(ask.create 권한 viewer 추가, Charter "RA employees ask") / H-2(audit-on-failure, Part 11 §11.10(e)). 나머지 follow-up → #321.
+  - UI(4-column Kanban)는 Phase D / SPEC-V3-UI-001로 이월(SPEC §1.5/§6).
+  - 검증: typecheck 0 · lint 0 · test **4346 passed** | 23 skipped · 실DB `\d` AC-01/12 + `inbox.approve_failed` enum 확인.
+
 ---
 
 ## [1.0.0] — 2026-06-28
