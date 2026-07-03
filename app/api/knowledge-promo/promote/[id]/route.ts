@@ -9,6 +9,8 @@ import { withPermission } from '@/lib/auth/with-permission';
 import { assertPromotedAnswerInOrg } from '@/lib/knowledge-promo/access';
 import { unpromoteAnswer } from '@/lib/knowledge-promo/promote';
 
+/* audit-check-ignore: audit is written inside unpromoteAnswer() (knowledge-promo)
+   within the same tx (21 CFR Part 11 atomicity) — route-level writeAudit would duplicate */
 export const DELETE = withPermission('knowledgepromo.promote', async (_req, ctx, session) => {
   const params =
     typeof ctx?.params === 'object' && ctx.params !== null

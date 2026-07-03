@@ -16,6 +16,8 @@ import {
 } from '@/lib/model-governance/change-workflow';
 import { approveChangeRequestInputSchema } from '@/lib/model-governance/types';
 
+/* audit-check-ignore: audit is written inside approveChangeRequest() (change-workflow)
+   within the same tx (21 CFR Part 11 atomicity) — route-level writeAudit would duplicate */
 export const POST = withPermission('modelgov.approve', async (req, _ctx, session) => {
   const organizationId = session.user.organizationId;
   if (!organizationId) {

@@ -16,6 +16,8 @@ const PromoteRequestSchema = z.object({
   tags: z.array(z.string().min(1).max(50)).max(20).default([]),
 });
 
+/* audit-check-ignore: audit is written inside promoteAnswer() (knowledge-promo)
+   within the same tx (21 CFR Part 11 atomicity) — route-level writeAudit would duplicate */
 export const POST = withPermission('knowledgepromo.promote', async (req, _ctx, session) => {
   let body: unknown;
   try {

@@ -12,6 +12,8 @@ import { withPermission } from '@/lib/auth/with-permission';
 import { assertIngestionLicensed } from '@/lib/corpus-license/license-gate';
 import { ingestionGateInputSchema } from '@/lib/corpus-license/types';
 
+/* audit-check-ignore: ingestion gate delegates to assertIngestionLicensed(); audit
+   (access denied/granted) is written inside the gate within the same tx (Part 11) */
 export const POST = withPermission('corpuslicense.view', async (req, _ctx, session) => {
   const organizationId = session.user.organizationId;
   if (!organizationId) {

@@ -13,6 +13,8 @@ const ExportSchema = z.object({
   format: z.enum(['csv', 'json']).optional(),
 });
 
+/* audit-check-ignore: audit (integration gap) is written inside recordIntegrationGap()
+   within the same tx (21 CFR Part 11 atomicity) — route-level writeAudit would duplicate */
 export const POST = withPermission('audit.package.generate', async (request, _ctx, session) => {
   let body: unknown;
   try {

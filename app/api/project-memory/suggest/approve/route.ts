@@ -15,6 +15,8 @@ const ApproveSchema = z.object({
   memoryId: z.string().uuid(),
 });
 
+/* audit-check-ignore: audit (memory action) is written inside approveSuggestedMemory()
+   within the same tx (21 CFR Part 11 atomicity) — route-level writeAudit would duplicate */
 export const POST = withPermission('projectmemory.manage', async (req, _ctx, session) => {
   let body: unknown;
   try {

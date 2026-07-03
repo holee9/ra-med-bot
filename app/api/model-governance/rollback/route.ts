@@ -5,6 +5,8 @@ import { withPermission } from '@/lib/auth/with-permission';
 import { RollbackError, rollbackCombination } from '@/lib/model-governance/rollback';
 import { rollbackInputSchema } from '@/lib/model-governance/types';
 
+/* audit-check-ignore: audit is written inside rollbackCombination() (rollback)
+   within the same tx (21 CFR Part 11 atomicity) — route-level writeAudit would duplicate */
 export const POST = withPermission('modelgov.manage', async (req, _ctx, session) => {
   const organizationId = session.user.organizationId;
   if (!organizationId) {

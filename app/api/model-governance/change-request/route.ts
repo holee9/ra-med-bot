@@ -9,6 +9,8 @@ import { createChangeRequest } from '@/lib/model-governance/change-workflow';
 import { createChangeRequestInputSchema } from '@/lib/model-governance/types';
 import { eq } from 'drizzle-orm';
 
+/* audit-check-ignore: audit is written inside createChangeRequest() (change-workflow)
+   within the same tx (21 CFR Part 11 atomicity) — route-level writeAudit would duplicate */
 export const POST = withPermission('modelgov.manage', async (req, _ctx, session) => {
   const organizationId = session.user.organizationId;
   if (!organizationId) {
