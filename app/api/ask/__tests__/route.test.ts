@@ -85,10 +85,14 @@ describe('POST /api/ask (REQ-V3-INBOX-001)', () => {
     expect(body.ticketId).toMatch(/^it_/);
   });
 
-  it('denies viewer role with 403 (inbox.view requires ra-member+)', async () => {
-    // viewer role test removed - inbox.view requires ra-member+
-    // This test documents the RBAC gate
-    expect(true).toBe(true); // Placeholder for documentation
+  it('allows viewer role with ask.create permission (H-4 fix)', async () => {
+    userRole = 'viewer';
+    const res = await POST(postReq({ question: 'What is the 510(k) pathway?' }), {});
+    const body = await res.json();
+
+    expect(res.status).toBe(201);
+    expect(body.ticketId).toBeDefined();
+    expect(body.ticketId).toMatch(/^it_/);
   });
 
   it('denies unauthenticated request with 401', async () => {

@@ -454,14 +454,15 @@ export type AuditAction =
   | 'rlhf.implicit_feedback_recorded'
   | 'reranking_applied'
   // SPEC-V3-INBOX-001 — RA Inbox lifecycle audit actions (Issue #320, REQ-V3-INBOX-021).
-  //   inbox.created     — new ticket created (employee ask or internal)
-  //   inbox.triaged     — triage_state transition (any valid transition)
-  //   inbox.assigned     — ra_assignee changed (manual assignment)
-  //   inbox.escalated    — escalated to external expert (escalate_to set)
-  //   inbox.answered     — final_answer drafted (not yet approved)
-  //   inbox.approved     — final_answer ESIG-approved (closed + promoted)
-  //   inbox.closed        — ticket closed (without promotion to approved_answers)
-  //   inbox.rejected      — ticket rejected (ra-lead/admin action)
+  //   inbox.created          — new ticket created (employee ask or internal)
+  //   inbox.triaged          — triage_state transition (any valid transition)
+  //   inbox.assigned          — ra_assignee changed (manual assignment)
+  //   inbox.escalated         — escalated to external expert (escalate_to set)
+  //   inbox.answered          — final_answer drafted (not yet approved)
+  //   inbox.approved          — final_answer ESIG-approved (closed + promoted)
+  //   inbox.closed            — ticket closed (without promotion to approved_answers)
+  //   inbox.rejected          — ticket rejected (ra-lead/admin action)
+  //   inbox.approve_failed    — approval failed (ESIG re-auth failure or domain error, H-2 fix)
   | 'inbox.created'
   | 'inbox.triaged'
   | 'inbox.assigned'
@@ -469,7 +470,8 @@ export type AuditAction =
   | 'inbox.answered'
   | 'inbox.approved'
   | 'inbox.closed'
-  | 'inbox.rejected';
+  | 'inbox.rejected'
+  | 'inbox.approve_failed';
 
 export interface AuditEvent {
   /** User UUID, or null for system-initiated events. */

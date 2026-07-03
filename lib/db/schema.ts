@@ -427,6 +427,7 @@ export const auditActionEnum = pgEnum('audit_action', [
   'inbox.approved',
   'inbox.closed',
   'inbox.rejected',
+  'inbox.approve_failed', // H-2 fix: approval failed (ESIG re-auth failure or domain error)
   // SPEC-REGULA-STANDARDS-001 — added via 0088_standards.sql (Issue #62).
   // Standards lifecycle is 21 CFR Part 11 audit-material (design-input records
   // under ISO 13485 / 21 CFR 820.30). Charter [지양-2] citation provenance.

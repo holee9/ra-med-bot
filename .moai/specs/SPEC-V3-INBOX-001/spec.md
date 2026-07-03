@@ -242,11 +242,17 @@ v3 아키텍처 개편(Phase C)에서 **RA Inbox는 가장 독립적인 신규 �
 - `app/api/inbox/route.ts` — `GET` (RA Kanban 조회 — `inbox.view`)
 - `app/api/inbox/[id]/route.ts` — `GET` (상세), `PATCH` (triage 전이 — GAP-03 run phase 확정)
 - `app/api/inbox/[id]/approve/route.ts` — `POST` (ESIG 승인 + approved_answers 승격)
-- `app/api/inbox/[id]/escalate/route.ts` — `POST` (에스컬레이션)
-- `app/api/inbox/[id]/reject/route.ts` — `POST` (거절)
+- `app/api/inbox/[id]/triage/route.ts` — `POST` (triage 전이 통합 엔드포인트 — **GAP-03 run phase 결정**: `escalate`/`reject`를 별도 라우트가 아닌 `triage_state` 전이 단일 엔드포인트로 통합. escalated/rejected 상태로의 전이는 state-machine.ts 허용 매트릭스로 강제)
 - `app/api/ask/route.ts` — **`POST` (Employee 질문 진입점, GAP-04 결정)** — 자동 ticket 생성. TRIAGE(C-2) 완료 후 `auto_answer`/`auto_confidence` 주입 훅
 - `lib/inngest/functions/expire-waiting-tickets.ts` — 5일 waiting 자동 취소 cron
-- `lib/auth/permissions.ts` — `inbox.manage`, `inbox.view`, `inbox.create`, `ask.create` 권한 추가
+- `lib/auth/permissions.ts` — `inbox.manage` (ra-lead/admin), `inbox.view` (ra-member+) 권한 추가
+
+> **As-Built (run phase 반영, 2026-07-03 sync)**: 계획된 파일 구조(위)와 실제 구현 정합성 메모.
+> - **스키마**: `lib/domains/inbox/schema-inbox.ts` (계획) → `lib/db/schema.ts` 내 `inboxTickets`/`approvedAnswers` pgTable으로 통합 (Step 1).
+> - **도메인 모듈**: `repo.ts`/`transitions.ts`/`approve.ts` (계획) → `queries.ts`/`state-machine.ts`/`promote.ts` (+ `access.ts`/`audit.ts`/`sla.ts`/`index.ts`)로 분리 (Step 2).
+> - **triage 라우트**: GAP-03 결정으로 `escalate`/`reject` 별도 라우트 → `triage/route.ts` 단일 전이 엔드포인트로 통합 (Step 3, 위 반영).
+> - **권한 (AC-07)**: `inbox.create`/`ask.create` 명시적 권한 키는 미정의. `/api/ask`는 세션 사용자를 `from_user`로 강제하여 employee 본인 질문을 기능적으로 보장(AC-07 핵심 충족). 권한 키 명시 정의는 Follow-up #3(viewer→employee 페르소나 검토)에서 확정.
+> - **AC-06 (citation 없는 `auto_answer` 400)**: TRIAGE(C-2) 의존. 현재 `/api/ask`는 `auto_answer=null` 고정이므로 citation 검증 분기 미도달. SPEC-V3-TRIAGE-001로 이월 (Follow-up #1).
 
 ### 4.3 triage_state 전이 매트릭스
 

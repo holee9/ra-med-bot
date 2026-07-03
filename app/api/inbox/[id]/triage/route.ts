@@ -74,12 +74,29 @@ export const PATCH = withPermission('inbox.manage', async (req, ctx, session) =>
   try {
     assertValidTransition(currentState, toState);
   } catch (err) {
+    // H-2 fix: Write audit-on-failure for invalid transition attempts
+    try {
+      await writeAudit({
+        actor_id: session.user.id,
+        action: 'inbox.approve_failed', // Reuse inbox.approve_failed for audit consistency
+        resource_type: 'inbox_ticket',
+        resource_id: ticketId,
+        meta_json: {
+          reason: `Invalid state transition: ${currentState} → ${toState}`,
+          from: currentState,
+          to: toState,
+        },
+      });
+    } catch (auditError) {
+      // Audit write failure should not mask the original error
+      console.error('Failed to write audit for invalid transition:', auditError);
+    }
     return Response.json(
       {
         error: 'Invalid state transition',
         details: err instanceof Error ? err.message : 'Unknown error',
       },
-      { status: 400 },
+      { status: 409 },
     );
   }
 

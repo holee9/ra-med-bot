@@ -1,8 +1,8 @@
 // @MX:NOTE [AUTO] POST /api/ask — create new inbox ticket from employee question.
 // @MX:SPEC SPEC-V3-INBOX-001 (REQ-V3-INBOX-001, Issue #320)
 // @MX:REASON RA employees ask regulatory questions via /api/ask. Entry point for
-//            inbox_tickets. Requires inbox.view (ra-member+) because question
-//            submission is a read-only consult activity, not a management decision.
+//            inbox_tickets. Requires ask.create (viewer+) because question
+//            submission is a CREATE activity, not read-only consult (H-4 fix).
 
 import { writeAudit } from '@/lib/audit';
 import { withPermission } from '@/lib/auth/with-permission';
@@ -16,7 +16,7 @@ const createTicketInputSchema = z.object({
 });
 
 // POST /api/ask — create new inbox ticket
-export const POST = withPermission('inbox.view', async (req, _ctx, session) => {
+export const POST = withPermission('ask.create', async (req, _ctx, session) => {
   const organizationId = session.user.organizationId;
   if (!organizationId) {
     return Response.json({ error: 'Organization context required' }, { status: 403 });

@@ -120,7 +120,7 @@ describe('PATCH /api/inbox/[id]/triage (REQ-V3-INBOX-015/021)', () => {
     expect(auditTransition).toHaveBeenCalled();
   });
 
-  it('returns 400 for invalid state transition', async () => {
+  it('returns 409 for invalid state transition (H-2 fix)', async () => {
     assertValidTransition.mockImplementation(() => {
       throw new Error('Cannot transition from auto to closed');
     });
@@ -128,7 +128,7 @@ describe('PATCH /api/inbox/[id]/triage (REQ-V3-INBOX-015/021)', () => {
     const res = await PATCH(patchReq('it-001', { toState: 'closed' }), getCtx('it-001'));
     const body = await res.json();
 
-    expect(res.status).toBe(400);
+    expect(res.status).toBe(409); // Changed from 400 to 409 (conflict status code)
     expect(body.error).toBe('Invalid state transition');
     expect(body.details).toBe('Cannot transition from auto to closed');
   });
