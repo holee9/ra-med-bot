@@ -31,9 +31,9 @@ const mockUser = {
   passwordHash: '$2a$12$hashedpassword',
 };
 const mockDb = {
-  select: vi.fn((selectors) => ({
-    from: vi.fn((table) => ({
-      where: vi.fn((condition) => ({
+  select: vi.fn(() => ({
+    from: vi.fn(() => ({
+      where: vi.fn(() => ({
         limit: vi.fn(() => Promise.resolve([mockUser])),
       })),
     })),
@@ -280,7 +280,6 @@ describe('POST /api/inbox/[id]/approve (REQ-V3-INBOX-028, REQ-V3-INBOX-012)', ()
       postReq('it-001', { password: 'correct-password', esigSignature: 'valid' }),
       getCtx('it-001'),
     );
-    const body = await res.json();
 
     expect(res.status).toBe(400);
     // Audit failure MUST be written even on domain errors
