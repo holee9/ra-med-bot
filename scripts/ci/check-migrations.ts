@@ -24,7 +24,10 @@ function getMigrationFiles(): string[] {
 
 function parseMigrationNumbers(files: string[]): number[] {
   return files
-    .filter((f) => /^\d{4}_.*\.sql$/.test(f))
+    // Skip `*_rollback.sql` companions — they intentionally share the primary
+    // migration number (e.g. 0102_foo.sql + 0102_foo_rollback.sql) per project
+    // convention. Only primary migrations participate in the sequence.
+    .filter((f) => /^\d{4}_.*\.sql$/.test(f) && !/_rollback\.sql$/u.test(f))
     .map((f) => Number.parseInt(f.slice(0, 4), 10))
     .sort((a, b) => a - b);
 }
