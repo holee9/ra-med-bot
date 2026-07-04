@@ -1,7 +1,7 @@
 ---
 id: SPEC-V3-TRIAGE-001
 version: 1.0.0
-status: draft
+status: completed
 phase: C-2
 priority: High
 created: 2026-07-05
@@ -194,9 +194,28 @@ interface AutoAnswer {
 - `lib/env.ts` [MODIFY] — `TRIAGE_TIMEOUT_MS` (기본 15000) 추가
 - `app/api/ask/__tests__/route.test.ts` [MODIFY] — AC-TRI-01..07 단언 추가
 
-### 4.5 As-Built (run phase 반영 예정)
+### 4.5 As-Built (run phase 완료 — 2026-07-05)
 
-> run phase 완료 후 본 섹션에 계획 vs 구현 정합성 메모 추가 (SPEC-V3-INBOX-001 §4.2 패턴).
+**구현 일관성 (계획 vs 코드)**:
+
+| 항목 | 계획 | 구현 (commit) | 비고 |
+|---|---|---|---|
+| GAP-TRI-01 | 옵션 B (하위 모듈 직접 조합) | `lib/domains/triage/run-triage.ts` — `classifyAndRoute` + `parallelRetrieveAndMerge` + `composePrompt` + `streamText` + `enforceCitations` + `calculateConfidence` 조합 | 옵션 A(consult.ts runRagPipeline 추출)는 별도 PR 이월 유지 |
+| GAP-TRI-02 | auditTransition 메타 확장 | route에서 `writeAudit` 직접 호출로 `{auto_triage, confidence_score, citations_count}` 메타 추가 — `auditTransition` 시그니처(`{from, to}`) 유지 | route 레벨 audit → ci:audit 통과 (L-015) |
+| GAP-TRI-03 | 동기 호출 기본 | 동기 + `Promise.race` 전체 타임아웃 (검색 단계 hang도 `TRIAGE_TIMEOUT_MS` 내 폴백) | run-triage.ts |
+| tx1 → TRIAGE → tx2 분리 | ✓ | route.ts tx1(insert + `inbox.created`) 커밋 → `runTriage()` → 결과 분기 | |
+| migration 불필요 | ✓ | `autoAnswer`/`autoConfidence` 컬럼 + `inbox.triaged` enum 기존 존재 직검 (schema.ts:423 + migration 0104 + 실DB) | L-010/L-013 직검 확정 |
+| autoConfidence numeric(5,2) | - | route에서 `toFixed(2)` 문자열 변환 (drizzle numeric string mode) | |
+
+**검증 (L-007/L-008/L-009/L-010/L-013/L-015 직검)**:
+- typecheck EXIT 0 / biome 0 errors / lint:hex PASS / ci:audit·rbac·tokens·module-boundaries PASS.
+- full `pnpm test` **4438 passed | 0 failed** (+16 TRIAGE 신규, useStreamingAnswer 회귀 0).
+- 실DB `inbox_tickets` 컬럼 + `inbox.triaged` enum 존재 확인 (regula-test-db).
+- AC-TRI-01..07 전부 테스트 단언 (route.test.ts 16 + run-triage.test.ts 6).
+
+**사전 존재 결합 fix (본 PR에 포함)**:
+- `isOverdue(now)` ms 타이밍 경쟁 flaky (PR #322 a3b057f 도입) — 1초 미래 오프셋으로 안정화. TRIAGE와 무관.
+
 
 ### 4.6 의존성 (Dependencies)
 
