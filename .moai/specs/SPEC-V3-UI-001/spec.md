@@ -1,9 +1,9 @@
 ---
 id: SPEC-V3-UI-001
 version: 1.0.0
-status: draft
+status: implemented
 created: 2026-07-03
-updated: 2026-07-03
+updated: 2026-07-04
 author: abyz-lab
 priority: high
 issue_number: 326
