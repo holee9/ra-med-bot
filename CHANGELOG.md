@@ -11,6 +11,19 @@
 
 > Placeholder for post-1.0.0 development.
 
+### v3 Phase C-2 — RA Triage 자동응답 강화 (SPEC-V3-TRIAGE-001, Issue #339)
+
+- **`/api/ask` TRIAGE RAG 훅** — SPEC-V3-INBOX-001 Follow-up #1 이월. 티켓 생성(tx1) 후 TRIAGE RAG 호출 → `auto_answer`/`auto_confidence` 주입 + `triage_state` `auto → needs-review` 자동 전이(tx2).
+  - `lib/domains/triage/` 신규 도메인: `run-triage.ts`(classifyAndRoute + parallelRetrieveAndMerge + composePrompt + streamText + enforceCitations + calculateConfidence — consult.ts 하위 모듈 직접 조합, 옵션 B), `types.ts`(`AutoAnswer`/`TriageResult`/`RagPipelineInput`), `index.ts`.
+  - **AC-06 (Charter [지양-2] citation 강제)**: citation 없는 `auto_answer` → 400 Bad Request + `inbox.triaged` audit `auto_triage_rejected: true, reason: 'no_citations'`. 티켓은 `auto` 상태 유지(수동 후속 처리 허용).
+  - **Charter [지양-4] RA Lead 승인**: TRIAGE 자동 전이는 `auto → needs-review`만. `escalated`/`closed`/`rejected` 자동 전이 금지. `assertValidTransition` 위변조 방어.
+  - **15s 타임아웃 폴백 (REQ-TRI-005)**: `TRIAGE_TIMEOUT_MS` env(기본 15000) + `Promise.race` 전체 파이프라인 타임아웃(검색 단계 hang도 커버). timeout/runtime_error 시 201 유지 + `autoAnswer: null`.
+  - **21 CFR Part 11 §11.10(e)**: `inbox.triaged` audit에 `{auto_triage, confidence_score, citations_count}` 메타(GAP-TRI-02 — route에서 writeAudit 직접 호출로 auditTransition 시그니처 유지).
+  - 응답 body `{ticketId, triageState, autoAnswer, autoConfidence}` (기존 `ticketId` 하위 호환, AC-TRI-05 useStreamingAnswer 회귀 0).
+  - migration 불필요(`autoAnswer`/`autoConfidence` 컬럼 + `inbox.triaged` enum 기존 존재 직검).
+  - 검증: typecheck 0 · biome 0 · ci:lint/audit/rbac/tokens/module-boundaries PASS · test **4438 passed | 0 failed** (+16 TRIAGE) · 실DB `inbox_tickets` 컬럼 + `inbox.triaged` enum 확인.
+  - 사전 존재 flaky fix 동봉: `isOverdue(now)` ms 타이밍 경쟁(PR #322 a3b057f 도입) — 1초 미래 오프셋 안정화.
+
 ### v3 Phase C-1 — RA Inbox 백엔드 (SPEC-V3-INBOX-001, Issue #320, PR #322)
 
 - **RA Inbox 4-column Kanban + Triage state machine + ESIG 승인 워크플로우** 백엔드 도메인.
