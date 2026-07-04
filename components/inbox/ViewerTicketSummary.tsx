@@ -1,5 +1,5 @@
 // @MX:NOTE [AUTO] ViewerTicketSummary — viewer own-ticket 최소 보기.
-// @MX:SPEC SPEC-V3-UI-001 (REQ-V3-UI-034, AC-UI-009, Issue #320)
+// @MX:SPEC SPEC-V3-UI-001 (REQ-V3-UI-034, AC-UI-009, Issue 320)
 // viewer(전사 직원)가 자신이 소유한 질문의 상태/승인 답변을 최소하게 보는 컴포넌트.
 // RA 전용 필드(raAssignee, escalateTo, audit timeline)는 게이트 — 이 컴포넌트에 표시 안 함.
 'use client';

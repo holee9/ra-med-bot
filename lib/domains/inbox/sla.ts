@@ -1,5 +1,5 @@
 // @MX:NOTE [AUTO] SLA deadline calculation for inbox_tickets.
-// @MX:SPEC SPEC-V3-INBOX-001 (REQ-V3-INBOX-013, Issue #320)
+// @MX:SPEC SPEC-V3-INBOX-001 (REQ-V3-INBOX-013, Issue 320)
 
 /**
  * SLA configuration (organization-level setting).

@@ -1,5 +1,5 @@
 // @MX:NOTE [AUTO] SLA deadline badge for Kanban tickets.
-// @MX:SPEC SPEC-V3-UI-001 (REQ-V3-UI-004, AC-UI-011, Issue #320)
+// @MX:SPEC SPEC-V3-UI-001 (REQ-V3-UI-004, AC-UI-011, Issue 320)
 
 interface SlaBadgeProps {
   slaDeadline: string | null | undefined;

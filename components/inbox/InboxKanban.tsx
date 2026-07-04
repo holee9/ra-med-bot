@@ -1,5 +1,5 @@
 // @MX:NOTE [AUTO] InboxKanban — 4-column Kanban board for RA Inbox.
-// @MX:SPEC SPEC-V3-UI-001 (REQ-V3-UI-001/005/045, AC-UI-012, Issue #320)
+// @MX:SPEC SPEC-V3-UI-001 (REQ-V3-UI-001/005/045, AC-UI-012, Issue 320)
 'use client';
 
 import type { TriageState } from '@/lib/domains/inbox/types';

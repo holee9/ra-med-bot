@@ -1,5 +1,5 @@
 // @MX:NOTE [AUTO] state-tokens — triageState별 디자인 토큰 매핑 (일관 색상 적용).
-// @MX:SPEC SPEC-V3-UI-001 (REQ-V3-UI-041, AC-UI-010, Issue #320)
+// @MX:SPEC SPEC-V3-UI-001 (REQ-V3-UI-041, AC-UI-010, Issue 320)
 // 단일 진실원: TicketCard border, KanbanColumn accent, badge 색상이 모두 이 매핑을 참조.
 
 import type { TriageState } from '@/lib/domains/inbox/types';

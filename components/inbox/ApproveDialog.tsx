@@ -1,5 +1,5 @@
 // @MX:NOTE [AUTO] ApproveDialog — ESIG approval form (21 CFR Part 11).
-// @MX:SPEC SPEC-V3-UI-001 (REQ-V3-UI-013/014/015/016, AC-UI-005/006, Issue #320)
+// @MX:SPEC SPEC-V3-UI-001 (REQ-V3-UI-013/014/015/016, AC-UI-005/006, Issue 320)
 'use client';
 
 import { useApproveTicket } from '@/lib/queries/useInbox';

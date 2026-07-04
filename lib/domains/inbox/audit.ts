@@ -1,5 +1,5 @@
 // @MX:NOTE [AUTO] Audit wrapper for triage state transitions.
-// @MX:SPEC SPEC-V3-INBOX-001 (REQ-V3-INBOX-021, Issue #320)
+// @MX:SPEC SPEC-V3-INBOX-001 (REQ-V3-INBOX-021, Issue 320)
 
 import type { AuditDbHandle } from '@/lib/audit';
 import { writeAudit } from '@/lib/audit';

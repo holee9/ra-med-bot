@@ -1,5 +1,5 @@
-import { describe, it, expect } from 'vitest';
 import koMessages from '@/messages/ko.json';
+import { describe, expect, it } from 'vitest';
 
 describe('messages/ko.json - inbox namespace', () => {
   it('should contain inbox namespace with all required keys', () => {

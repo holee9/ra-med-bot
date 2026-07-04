@@ -71,7 +71,7 @@ interface SidebarProps {
   // Scope rationalization (2026-06-29 Issue #306): Authoring/Evidence conditional nav.
   showAuthoring?: boolean;
   showEvidence?: boolean;
-  // SPEC-V3-UI-001 (Issue #320): Inbox nav gated to ra-member+ (inbox.view).
+  // SPEC-V3-UI-001 (Issue 320): Inbox nav gated to ra-member+ (inbox.view).
   showInbox?: boolean;
   // 2026-06-29 사이드바 3계층: NAV_ITEMS를 userRole로 필터 (viewer 4 / ra-member+ 조건부)
   userRole?: Role;
@@ -381,7 +381,7 @@ export default function Sidebar(props?: SidebarProps) {
         </nav>
       )}
 
-      {/* SPEC-V3-UI-001 (Issue #320, REQ-V3-UI-031): Inbox Kanban board nav gated to ra-member+ (inbox.view). */}
+      {/* SPEC-V3-UI-001 (Issue 320, REQ-V3-UI-031): Inbox Kanban board nav gated to ra-member+ (inbox.view). */}
       {showInbox && (
         <nav className="px-2 py-1">
           <Link

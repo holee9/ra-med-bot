@@ -1,6 +1,6 @@
 // @vitest-environment node
 // @MX:NOTE [AUTO] TDD unit tests — POST /api/inbox/[id]/approve.
-// @MX:SPEC SPEC-V3-INBOX-001 (REQ-V3-INBOX-028, REQ-V3-INBOX-012, Issue #320)
+// @MX:SPEC SPEC-V3-INBOX-001 (REQ-V3-INBOX-028, REQ-V3-INBOX-012, Issue 320)
 //
 // Covers: RBAC (inbox.manage, ra-lead ONLY), ESIG re-auth (password required),
 // IDOR defense, promoteToApproved error mapping, audit-on-failure (inbox.approve_failed).

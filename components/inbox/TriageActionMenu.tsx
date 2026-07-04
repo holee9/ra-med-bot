@@ -3,7 +3,7 @@
 // @MX:ANCHOR [AUTO] Triage action menu — enforces VALID_TRANSITIONS business invariant.
 // @MX:REASON Fan-in will reach 3+ (TicketCard + future detail pages + bulk actions).
 //            Directly encodes state machine rules from lib/domains/inbox/types.ts:33-40.
-// @MX:SPEC SPEC-V3-UI-001 (REQ-V3-UI-020, REQ-V3-UI-032, AC-UI-003, Issue #320)
+// @MX:SPEC SPEC-V3-UI-001 (REQ-V3-UI-020, REQ-V3-UI-032, AC-UI-003, Issue 320)
 
 import { VALID_TRANSITIONS } from '@/lib/domains/inbox/types';
 import { useTriageTransition } from '@/lib/queries/useInbox';

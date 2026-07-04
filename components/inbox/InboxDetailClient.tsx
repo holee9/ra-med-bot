@@ -1,5 +1,5 @@
 // @MX:NOTE [AUTO] InboxDetailClient — ticket detail view (client-side data fetch).
-// @MX:SPEC SPEC-V3-UI-001 (REQ-V3-UI-010/011/012, AC-UI-003/004, Issue #320)
+// @MX:SPEC SPEC-V3-UI-001 (REQ-V3-UI-010/011/012, AC-UI-003/004, Issue 320)
 'use client';
 
 import type { Role } from '@/lib/auth/rbac';

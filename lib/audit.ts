@@ -453,7 +453,7 @@ export type AuditAction =
   // signals are auditable separately from explicit thumbs-up/down (21 CFR Part 11).
   | 'rlhf.implicit_feedback_recorded'
   | 'reranking_applied'
-  // SPEC-V3-INBOX-001 — RA Inbox lifecycle audit actions (Issue #320, REQ-V3-INBOX-021).
+  // SPEC-V3-INBOX-001 — RA Inbox lifecycle audit actions (Issue 320, REQ-V3-INBOX-021).
   //   inbox.created          — new ticket created (employee ask or internal)
   //   inbox.triaged          — triage_state transition (any valid transition)
   //   inbox.assigned          — ra_assignee changed (manual assignment)

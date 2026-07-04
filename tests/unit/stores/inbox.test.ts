@@ -1,5 +1,5 @@
-import { describe, it, expect, beforeEach } from 'vitest';
 import { useInboxStore } from '@/stores/inbox';
+import { beforeEach, describe, expect, it } from 'vitest';
 
 describe('stores/inbox', () => {
   beforeEach(() => {

@@ -2,7 +2,7 @@
 // @MX:REASON 21 CFR Part 11 atomicity: ticket closure + approved_answers creation
 //            MUST ride the same transaction boundary. Partial failure = rollback.
 //            Fan_in will reach 3+ (API route + potential batch ops + admin tools).
-// @MX:SPEC SPEC-V3-INBOX-001 (REQ-V3-INBOX-028, Issue #320)
+// @MX:SPEC SPEC-V3-INBOX-001 (REQ-V3-INBOX-028, Issue 320)
 
 import { writeAudit } from '@/lib/audit';
 import type { Database } from '@/lib/db/client';

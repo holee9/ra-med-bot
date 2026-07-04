@@ -1,6 +1,6 @@
 // @MX:ANCHOR [AUTO] useInboxTickets/useInboxTicket — inbox data fetching hooks.
 // @MX:REASON Fan-in ≥3: Kanban board (4 columns), ticket detail page, viewer ticket summary.
-// @MX:SPEC SPEC-V3-UI-001 (REQ-V3-UI-002, REQ-V3-UI-045, Issue #320)
+// @MX:SPEC SPEC-V3-UI-001 (REQ-V3-UI-002, REQ-V3-UI-045, Issue 320)
 
 import type { TriageState } from '@/lib/domains/inbox/types';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';

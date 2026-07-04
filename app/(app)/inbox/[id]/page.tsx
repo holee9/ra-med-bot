@@ -1,5 +1,5 @@
 // @MX:NOTE [AUTO] Inbox detail page — server component, RBAC + param resolution.
-// @MX:SPEC SPEC-V3-UI-001 (REQ-V3-UI-010/030/032, AC-UI-003, Issue #320)
+// @MX:SPEC SPEC-V3-UI-001 (REQ-V3-UI-010/030/032, AC-UI-003, Issue 320)
 // RBAC: ra-member+ only. Viewer redirects to /chat (data fetching is client-side).
 
 import { InboxDetailClient } from '@/components/inbox/InboxDetailClient';

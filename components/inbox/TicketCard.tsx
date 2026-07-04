@@ -1,5 +1,5 @@
 // @MX:NOTE [AUTO] Kanban ticket card component.
-// @MX:SPEC SPEC-V3-UI-001 (REQ-V3-UI-001, REQ-V3-UI-004, Issue #320)
+// @MX:SPEC SPEC-V3-UI-001 (REQ-V3-UI-001, REQ-V3-UI-004, Issue 320)
 
 import type { Role } from '@/lib/auth/rbac';
 import type { TriageState } from '@/lib/domains/inbox/types';

@@ -1,5 +1,5 @@
 // @MX:NOTE [AUTO] ActivityTimeline — ticket metadata timeline (minimal).
-// @MX:SPEC SPEC-V3-UI-001 (REQ-V3-UI-012, Issue #320)
+// @MX:SPEC SPEC-V3-UI-001 (REQ-V3-UI-012, Issue 320)
 // @MX:TODO Full audit timeline requires backend audit_logs fetch API
 //         (resource_type='inbox_ticket'). Minimal version shows ticket metadata.
 'use client';
