@@ -200,5 +200,35 @@
       "submitting": "서명 중…",
       "blocked": "종료가 차단되었습니다: reportable 불만의 Vigilance 연결 누락 (REQ-011)"
     }
+  },
+  "inbox": {
+    "title": "인박스",
+    "columns": {
+      "auto": "자동",
+      "needsReview": "검토 필요",
+      "escalated": "상향",
+      "waiting": "대기 중",
+      "closed": "종료",
+      "rejected": "반려"
+    },
+    "actions": {
+      "approve": "승인",
+      "reject": "반려",
+      "assign": "할당",
+      "escalate": "상향",
+      "refresh": "새로고침"
+    },
+    "sla": {
+      "overdue": "기한 초과",
+      "remaining": "남은 시간"
+    },
+    "empty": "표시할 티켓이 없습니다",
+    "loading": "로딩 중...",
+    "errors": {
+      "transitionFailed": "상태 전이 실패했습니다. 새로고침 후 다시 시도하세요.",
+      "approveFailed": "승인에 실패했습니다.",
+      "passwordInvalid": "비밀번호가 올바르지 않습니다.",
+      "missingFinalAnswer": "먼저 최종 답변을 설정하세요."
+    }
   }
 }

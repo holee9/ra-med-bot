@@ -200,5 +200,35 @@
       "submitting": "Signing…",
       "blocked": "Close blocked: reportable complaint lacks Vigilance linkage (REQ-011)"
     }
+  },
+  "inbox": {
+    "title": "Inbox",
+    "columns": {
+      "auto": "Auto",
+      "needsReview": "Needs Review",
+      "escalated": "Escalated",
+      "waiting": "Waiting",
+      "closed": "Closed",
+      "rejected": "Rejected"
+    },
+    "actions": {
+      "approve": "Approve",
+      "reject": "Reject",
+      "assign": "Assign",
+      "escalate": "Escalate",
+      "refresh": "Refresh"
+    },
+    "sla": {
+      "overdue": "Overdue",
+      "remaining": "Remaining"
+    },
+    "empty": "No tickets to display",
+    "loading": "Loading...",
+    "errors": {
+      "transitionFailed": "State transition failed. Refresh and try again.",
+      "approveFailed": "Approval failed.",
+      "passwordInvalid": "Invalid password.",
+      "missingFinalAnswer": "Please set the final answer first."
+    }
   }
 }
