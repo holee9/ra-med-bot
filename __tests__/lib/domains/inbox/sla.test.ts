@@ -156,7 +156,10 @@ describe('sla', () => {
     });
 
     it('should return false when deadline equals now', () => {
-      const now = new Date();
+      // Use a 1-second-future deadline so the millisecond race between the
+      // outer new Date() and isOverdue's internal new Date() cannot flip the
+      // strict `<` comparison (pre-existing flake from PR #322).
+      const now = new Date(Date.now() + 1000);
 
       expect(isOverdue(now)).toBe(false);
     });
