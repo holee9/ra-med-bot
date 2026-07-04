@@ -7,7 +7,7 @@
  * NOTE: Temporarily disabled - T-004 will enable this.
  */
 
-import { describe, it, expect } from 'vitest'
+import { describe, expect, it } from 'vitest';
 
 // RED: This import should fail - runTriage not exported yet
 // import { runTriage } from '../index'
@@ -16,5 +16,5 @@ describe.skip('TRIAGE Index (T-002)', () => {
   it('should export runTriage function', () => {
     // RED: Function doesn't exist yet - T-004 will implement
     // expect(typeof runTriage).toBe('function')
-  })
-})
+  });
+});

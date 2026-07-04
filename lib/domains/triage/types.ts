@@ -13,15 +13,15 @@
  */
 export interface AutoAnswer {
   /** HTML prose with <sup class="cite"> markers */
-  answer: string
+  answer: string;
 
   /** Citation list - each citation references a source ID */
   citations: Array<{
     /** Source ID (sources.id UUID or identifier) */
-    source: string
+    source: string;
     /** Optional quoted text from source */
-    quote?: string
-  }>
+    quote?: string;
+  }>;
 }
 
 /**
@@ -32,13 +32,13 @@ export interface AutoAnswer {
  */
 export interface TriageResult {
   /** Auto answer JSONB (null if error or timeout) */
-  autoAnswer: AutoAnswer | null
+  autoAnswer: AutoAnswer | null;
 
   /** Confidence score 0.0-1.0 (null if error or timeout) */
-  autoConfidence: number | null
+  autoConfidence: number | null;
 
   /** Error type if TRIAGE failed */
-  error?: 'no_citations' | 'timeout' | 'runtime_error'
+  error?: 'no_citations' | 'timeout' | 'runtime_error';
 }
 
 /**
@@ -48,11 +48,11 @@ export interface TriageResult {
  */
 export interface RagPipelineInput {
   /** User question (1-5000 chars, Zod-validated upstream) */
-  question: string
+  question: string;
 
   /** Organization ID for RAG context isolation */
-  orgId: string
+  orgId: string;
 
   /** Optional AbortSignal for timeout cancellation */
-  signal?: AbortSignal | undefined
+  signal?: AbortSignal | undefined;
 }
