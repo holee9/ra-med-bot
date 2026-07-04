@@ -46,6 +46,16 @@ describe('promoteToApproved', () => {
       }),
       transaction: vi.fn((callback) => {
         const mockTx = {
+          // H-1 (#321): in-tx SELECT ... FOR UPDATE re-verifies org_id.
+          select: vi.fn().mockReturnValue({
+            from: vi.fn().mockReturnValue({
+              where: vi.fn().mockReturnValue({
+                for: vi.fn().mockReturnValue({
+                  limit: vi.fn().mockResolvedValue([{ orgId: 'org-1' }]),
+                }),
+              }),
+            }),
+          }),
           insert: vi.fn().mockReturnValue({
             values: vi.fn().mockResolvedValue(undefined),
           }),
@@ -92,6 +102,16 @@ describe('promoteToApproved', () => {
       }),
       transaction: vi.fn((callback) => {
         const mockTx = {
+          // H-1 (#321): in-tx SELECT ... FOR UPDATE re-verifies org_id.
+          select: vi.fn().mockReturnValue({
+            from: vi.fn().mockReturnValue({
+              where: vi.fn().mockReturnValue({
+                for: vi.fn().mockReturnValue({
+                  limit: vi.fn().mockResolvedValue([{ orgId: 'org-1' }]),
+                }),
+              }),
+            }),
+          }),
           insert: vi.fn().mockReturnValue({
             values: vi.fn().mockRejectedValue(new Error('DB error')),
           }),
