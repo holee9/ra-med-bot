@@ -20,6 +20,16 @@
   - UI(4-column Kanban)는 Phase D / SPEC-V3-UI-001로 이월(SPEC §1.5/§6).
   - 검증: typecheck 0 · lint 0 · test **4346 passed** | 23 skipped · 실DB `\d` AC-01/12 + `inbox.approve_failed` enum 확인.
 
+### v3 Phase D — RA Inbox Kanban UI (SPEC-V3-UI-001, Issue 326, PR #327/#330/#331/#332)
+
+- **RA Inbox 4-column Kanban + Triage + ESIG Approve + Detail UI** (Phase D).
+  - **M1-M4**: messages inbox namespace · Zustand store · useInbox hooks(4) · Sidebar showInbox 게이팅(ra-member+) · SlaBadge/TicketCard/KanbanColumn/InboxKanban(`KanbanColumnContainer`로 React Hook 규칙 준수) · TriageActionMenu(VALID_TRANSITIONS 게이팅, ra-lead 전용, reason prompt) · ApproveDialog(ESIG `{password, esigSignature}`, 401/400 인라인) · ActivityTimeline · `/inbox`+`/inbox/[id]`(서버 RBAC + viewer → /chat redirect).
+  - **M5**: state-tokens(triageState별 디자인 토큰 단일 진실원) · ViewerTicketSummary · chat characterization.
+  - **T-024 옵션 B(PR #331/#332)**: viewer chat 질문 → `/api/ask` ticket 생성 → RA inbox triage **파이프라인 복원**(기존 chat이 ticket 안 만들던 갭 해소). ChatShell ticketId 링크 + `/inbox/[id]` ViewerTicketSummary. **백엔드 변경 불필요**(기존 `/api/ask` 재사용).
+  - **E2E stub(PR #330)**: inbox a11y axe + viewer redirect(viewer storageState fixture 선행 시 활성화, 이슈 #329).
+  - 검증: tsc 0 · lint 0(lint:hex `#NNN` 주석 회피) · 본 변경 vitest 47/49/55 green · ci:* 전 EXIT 0 · build EXIT 0.
+  - 진행 방식: M1-M3 manager-tdd 위임 + orchestrator L-013 직검/수정 루프(에이전트 self-report 빈틈: Hook 규칙 위반 · prop 누락 · 테스트-구현 불일치 · biome 자의적 "허용"), M4-M6 orchestrator 직접 구현(사용자 결정).
+
 ---
 
 ## [1.0.0] — 2026-06-28
