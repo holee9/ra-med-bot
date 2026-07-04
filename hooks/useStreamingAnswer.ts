@@ -42,6 +42,7 @@ export interface StreamingState {
   };
   error: string | null;
   duration_ms: number | null;
+  ticketId: string | null;
 }
 
 const INITIAL_STATE: StreamingState = {
@@ -51,6 +52,7 @@ const INITIAL_STATE: StreamingState = {
   structured: {},
   error: null,
   duration_ms: null,
+  ticketId: null,
 };
 
 /**
@@ -157,6 +159,7 @@ export interface UseStreamingAnswerReturn {
   meta: MetaEvent | undefined;
   error: StreamingState['error'];
   duration_ms: StreamingState['duration_ms'];
+  ticketId: StreamingState['ticketId'];
   ragRoute: RagRouteEvent | undefined;
   start: (input: ConsultRequest) => void;
   abort: () => void;
@@ -197,6 +200,29 @@ export function useStreamingAnswer(): UseStreamingAnswerReturn {
       });
 
       void (async () => {
+        // T-024 (Option B): create inbox ticket first so the viewer question
+        // enters the RA Kanban triage pipeline. Best-effort — failure does not
+        // block the answer stream.
+        try {
+          const askRes = await fetch('/api/ask', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+              question: input.question,
+              projectId: input.projectId ?? projectId ?? undefined,
+            }),
+            signal: ac.signal,
+          });
+          if (askRes.ok) {
+            const askData = (await askRes.json()) as { ticketId?: string };
+            if (askData.ticketId) {
+              setState((s) => ({ ...s, ticketId: askData.ticketId ?? null }));
+            }
+          }
+        } catch {
+          // Best-effort: ticket creation failure does not block the answer stream.
+        }
+
         try {
           // REQ-CHAT-052 — check response.ok.
           const response = await fetch('/api/ra/consult', {
@@ -260,6 +286,7 @@ export function useStreamingAnswer(): UseStreamingAnswerReturn {
     meta: state.structured.meta,
     error: state.error,
     duration_ms: state.duration_ms,
+    ticketId: state.ticketId,
     ragRoute: state.structured.ragRoute,
     start,
     abort,

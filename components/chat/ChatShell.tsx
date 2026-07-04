@@ -44,6 +44,7 @@ export function ChatShell() {
     structured,
     error,
     duration_ms: durationMs,
+    ticketId,
     ragRoute,
     start,
     abort,
@@ -183,6 +184,23 @@ export function ChatShell() {
             ragRoute={ragRoute}
             onRegenerate={handleRegenerate}
           />
+        </div>
+      )}
+
+      {/* T-024 (Option B): viewer question → inbox ticket surfacing (REQ-V3-UI-033) */}
+      {showAnswer && ticketId && (
+        <div
+          className="mb-4 rounded-lg border border-brand-200 bg-brand-50 px-4 py-2 text-sm"
+          data-testid="chat-ticket-status"
+        >
+          <span className="text-ink-600">내 질문이 RA 인박스에 등록되었습니다.</span>{' '}
+          <a
+            href={`/inbox/${ticketId}`}
+            data-testid="chat-ticket-link"
+            className="font-medium text-brand-700 underline"
+          >
+            triage 상태 보기 →
+          </a>
         </div>
       )}
 
