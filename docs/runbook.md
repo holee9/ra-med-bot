@@ -204,6 +204,22 @@ Regula uses append-only audit logs and forward-only migrations. If a migration m
 3. Apply via `pnpm db:migrate`
 4. Verify via `pnpm ci:migrations`
 
+### 2.3 pgEnum ADD VALUE — drizzle-kit push limitation (Issue 321)
+
+`drizzle-kit push` does **not** apply `ALTER TYPE ... ADD VALUE` (pgEnum ADD VALUE) statements automatically — it cannot introspect enum-value additions. Migrations adding enum values (e.g. `0105_inbox_approve_failed_audit.sql`) must be applied manually.
+
+**Procedure** (when a migration contains `ALTER TYPE ... ADD VALUE`):
+1. Detect: `grep -l 'ADD VALUE' migrations/*.sql` (CI `check-migrations` validates file shape but does not apply).
+2. Apply manually against the target DB:
+   ```bash
+   docker exec regula-test-db psql -U postgres -d regula_test -f migrations/<NNNN>_*.sql
+   # production: psql "$DATABASE_URL" -f migrations/<NNNN>_*.sql
+   ```
+3. Verify the enum value: `SELECT unnest(enum_range(NULL::audit_action));`
+4. `pnpm ci:migrations` to confirm schema/migration parity.
+
+**Future automation** (separate issue): extend `scripts/ci/check-migrations.ts` to detect `ADD VALUE` statements and emit a "manual apply required" hint, or wire a CI step that applies enum-bearing migrations via `psql` (not `drizzle-kit push`).
+
 ---
 
 ## 3. Incident Response

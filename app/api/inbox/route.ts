@@ -6,14 +6,15 @@
 import { withPermission } from '@/lib/auth/with-permission';
 import { db } from '@/lib/db/client';
 import { listByTriageState } from '@/lib/domains/inbox';
-import type { TriageState } from '@/lib/domains/inbox/types';
+import { TRIAGE_STATES, type TriageState } from '@/lib/domains/inbox/types';
 import { z } from 'zod';
 
-// Zod schema for query parameters
+// Zod schema for query parameters. TRIAGE_STATES = single source (#321 L-1).
+// offset capped at 10000 (#321 L-4) to bound pagination cost.
 const listTicketsInputSchema = z.object({
-  state: z.enum(['auto', 'needs-review', 'escalated', 'waiting', 'closed', 'rejected']).optional(),
+  state: z.enum(TRIAGE_STATES).optional(),
   limit: z.coerce.number().int().min(1).max(100).optional().default(50),
-  offset: z.coerce.number().int().min(0).optional().default(0),
+  offset: z.coerce.number().int().min(0).max(10000).optional().default(0),
 });
 
 // GET /api/inbox — list inbox tickets (Kanban view)

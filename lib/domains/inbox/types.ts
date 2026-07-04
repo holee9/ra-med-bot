@@ -13,8 +13,19 @@
  *
  * Charter [지양-2] citation enforcement: auto_answer without citations
  * MUST force state to 'needs-review' (state-machine invariant).
+ *
+ * TRIAGE_STATES is the single source of truth consumed by zod schemas
+ * (route input validation) and DB query helpers (#321 L-1).
  */
-export type TriageState = 'auto' | 'needs-review' | 'escalated' | 'waiting' | 'closed' | 'rejected';
+export const TRIAGE_STATES = [
+  'auto',
+  'needs-review',
+  'escalated',
+  'waiting',
+  'closed',
+  'rejected',
+] as const;
+export type TriageState = (typeof TRIAGE_STATES)[number];
 
 /**
  * Approved answer lifecycle states.

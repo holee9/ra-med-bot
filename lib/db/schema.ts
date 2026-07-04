@@ -3307,6 +3307,7 @@ export const approvedAnswers = pgTable(
     citations: jsonb('citations')
       .$type<{ source: string; quote?: string }[]>()
       .default(sql`'[]'::jsonb`),
+    esigSignature: text('esig_signature'), // §11.70 signature-record binding (Issue 321, C-1)
     hits: integer('hits').default(0),
     state: text('state')
       .notNull()
