@@ -30,7 +30,7 @@ describe('TRIAGE Environment (T-003)', () => {
 
   describe('TRIAGE_TIMEOUT_MS', () => {
     it('should default to 15000ms when not set', () => {
-      // Remove env var if it exists
+      // biome-ignore lint/performance/noDelete: process.env key removal is required so zod coercion falls back to the default
       delete process.env.TRIAGE_TIMEOUT_MS;
 
       const env = getEnv();

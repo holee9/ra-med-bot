@@ -33,10 +33,12 @@ describe('TRIAGE Types (T-001)', () => {
 
       expect(Array.isArray(autoAnswer.citations)).toBe(true);
       expect(autoAnswer.citations).toHaveLength(2);
-      expect(autoAnswer.citations[0]!.source).toBe('src-uuid-1');
-      expect(autoAnswer.citations[0]!.quote).toBe('quote 1');
-      expect(autoAnswer.citations[1]!.source).toBe('src-uuid-2');
-      expect(autoAnswer.citations[1]!.quote).toBeUndefined();
+      const first = autoAnswer.citations[0];
+      const second = autoAnswer.citations[1];
+      expect(first?.source).toBe('src-uuid-1');
+      expect(first?.quote).toBe('quote 1');
+      expect(second?.source).toBe('src-uuid-2');
+      expect(second?.quote).toBeUndefined();
     });
   });
 

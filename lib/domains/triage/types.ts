@@ -55,4 +55,7 @@ export interface RagPipelineInput {
 
   /** Optional AbortSignal for timeout cancellation */
   signal?: AbortSignal | undefined;
+
+  /** Session user id threaded to RLHF re-rank audit (parallelRetrieveAndMerge). */
+  actorId?: string | null;
 }
