@@ -7,6 +7,7 @@ import { useInboxStore } from '@/stores/inbox';
 import Link from 'next/link';
 import { SlaBadge } from './SlaBadge';
 import { TriageActionMenu } from './TriageActionMenu';
+import { STATE_TOKENS } from './state-tokens';
 
 interface TicketCardProps {
   ticket: {
@@ -18,19 +19,6 @@ interface TicketCardProps {
   };
   userRole?: Role;
 }
-
-/**
- * Triage state to border color mapping.
- * REQ-V3-UI-001: Visual differentiation of Kanban columns.
- */
-const STATE_BORDER_COLOR: Record<TriageState, string> = {
-  auto: 'border-brand-300',
-  'needs-review': 'border-amber-500',
-  escalated: 'border-orange-500',
-  waiting: 'border-blue-500',
-  closed: 'border-gray-400',
-  rejected: 'border-gray-400',
-};
 
 /**
  * Kanban ticket card component.
@@ -51,7 +39,7 @@ export function TicketCard({ ticket, userRole = 'viewer' }: TicketCardProps) {
     setSelectedTicketId(ticket.id);
   };
 
-  const borderColor = STATE_BORDER_COLOR[ticket.triageState] || 'border-gray-300';
+  const borderColor = STATE_TOKENS[ticket.triageState].border;
 
   return (
     <div
