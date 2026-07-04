@@ -64,8 +64,18 @@ const mockUpdate = {
   where: vi.fn().mockResolvedValue(undefined),
 };
 
+const mockLockFrom = vi.fn(() => ({
+  where: vi.fn(() => ({
+    for: vi.fn(() => ({
+      limit: vi.fn().mockResolvedValue([{ orgId: 'org-001' }]),
+    })),
+  })),
+}));
+
 const mockTx = {
   update: vi.fn(() => mockUpdate),
+  // L-2 (Issue 321): in-tx SELECT FOR UPDATE re-verifies org_id.
+  select: vi.fn(() => ({ from: mockLockFrom })),
 };
 
 const mockFrom = vi.fn(() => ({

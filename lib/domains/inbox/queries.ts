@@ -4,7 +4,7 @@
 import type { Database } from '@/lib/db/client';
 import { inboxTickets } from '@/lib/db/schema';
 import { and, asc, desc, eq, sql } from 'drizzle-orm';
-import type { TriageState } from './types';
+import { TRIAGE_STATES, type TriageState } from './types';
 
 /**
  * Filters for listing tickets by triage state.
@@ -80,15 +80,8 @@ export async function countByState(
     result[row.state as TriageState] = row.count;
   }
 
-  // Ensure all states are present (default to 0)
-  const states: TriageState[] = [
-    'auto',
-    'needs-review',
-    'escalated',
-    'waiting',
-    'closed',
-    'rejected',
-  ];
+  // Ensure all states are present (default to 0). TRIAGE_STATES = single source (#321 L-1).
+  const states: TriageState[] = [...TRIAGE_STATES];
   for (const state of states) {
     if (result[state] === undefined) {
       result[state] = 0;

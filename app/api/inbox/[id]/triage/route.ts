@@ -9,13 +9,13 @@ import { withPermission } from '@/lib/auth/with-permission';
 import { db } from '@/lib/db/client';
 import { inboxTickets } from '@/lib/db/schema';
 import { assertTicketInOrg, assertValidTransition, auditTransition } from '@/lib/domains/inbox';
-import type { TriageState } from '@/lib/domains/inbox/types';
-import { eq } from 'drizzle-orm';
+import { TRIAGE_STATES, type TriageState } from '@/lib/domains/inbox/types';
+import { and, eq } from 'drizzle-orm';
 import { z } from 'zod';
 
-// Zod schema for triage transition input
+// Zod schema for triage transition input. TRIAGE_STATES = single source (#321 L-1).
 const triageTransitionInputSchema = z.object({
-  toState: z.enum(['auto', 'needs-review', 'escalated', 'waiting', 'closed', 'rejected']),
+  toState: z.enum(TRIAGE_STATES),
   reason: z.string().max(500).optional(),
 });
 
@@ -101,14 +101,27 @@ export const PATCH = withPermission('inbox.manage', async (req, ctx, session) =>
   }
 
   // Execute transition
-  await db.transaction(async (tx) => {
-    // Update ticket state
+  const transitioned = await db.transaction(async (tx) => {
+    // L-2 (#321): in-tx SELECT FOR UPDATE re-verifies org_id (TOCTOU defense,
+    // mirrors promote.ts H-1). The outer assertTicketInOrg + this in-tx check
+    // close the time-of-check / time-of-use window.
+    const locked = await tx
+      .select({ orgId: inboxTickets.orgId })
+      .from(inboxTickets)
+      .where(and(eq(inboxTickets.id, ticketId), eq(inboxTickets.orgId, organizationId)))
+      .for('update')
+      .limit(1);
+    if (!locked[0]) {
+      return false;
+    }
+
+    // Update ticket state (org_id re-checked in WHERE)
     await tx
       .update(inboxTickets)
       .set({
         triageState: toState,
       })
-      .where(eq(inboxTickets.id, ticketId));
+      .where(and(eq(inboxTickets.id, ticketId), eq(inboxTickets.orgId, organizationId)));
 
     // Write audit row (inbox.triaged or inbox.escalated/inbox.closed etc.)
     await auditTransition(
@@ -121,7 +134,12 @@ export const PATCH = withPermission('inbox.manage', async (req, ctx, session) =>
         actorId: session.user.id,
       },
     );
+    return true;
   });
+
+  if (!transitioned) {
+    return Response.json({ error: 'Ticket not found' }, { status: 404 });
+  }
 
   return Response.json({
     ticketId,

@@ -4,6 +4,7 @@
 //            Fan_in will reach 3+ (API route + potential batch ops + admin tools).
 // @MX:SPEC SPEC-V3-INBOX-001 (REQ-V3-INBOX-028, Issue 320)
 
+import { createHash } from 'node:crypto';
 import { writeAudit } from '@/lib/audit';
 import type { Database } from '@/lib/db/client';
 import { approvedAnswers, inboxTickets } from '@/lib/db/schema';
@@ -101,6 +102,18 @@ export async function promoteToApproved(db: Database, input: PromotionInput): Pr
   // Step 3: Extract citations from auto_answer
   const citations = extractCitations(current.autoAnswer);
 
+  // C-1 (#321): §11.70 signature-record binding — SHA-256 over the canonical
+  // approved record. Binds the approved_answer to the ESIG act (approver +
+  // content). Verification recomputes the digest; any post-signature mutation
+  // of the canonical fields invalidates it.
+  const signatureRecord = JSON.stringify({
+    ticketId: current.id,
+    approverId: input.approverId,
+    finalAnswer,
+    citations,
+  });
+  const esigSignature = createHash('sha256').update(signatureRecord).digest('hex');
+
   // Step 4: Execute atomic transaction
   await db.transaction(async (tx) => {
     // H-1 TOCTOU (#321): re-verify org_id inside the transaction with a row
@@ -138,6 +151,7 @@ export async function promoteToApproved(db: Database, input: PromotionInput): Pr
       answer: finalAnswer, // Type-guarded non-null
       // biome-ignore lint/suspicious/noExplicitAny: Drizzle JSONB type requires any cast for citation array
       citations: citations as any, // JSONB cast
+      esigSignature, // §11.70 signature-record binding (Issue 321, C-1)
       state: 'published',
       fromTicket: current.id,
       publishedBy: input.approverId, // UUID or null (schema allows null)
