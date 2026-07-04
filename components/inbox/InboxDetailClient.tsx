@@ -7,6 +7,7 @@ import { useInboxTicket } from '@/lib/queries/useInbox';
 import { ActivityTimeline } from './ActivityTimeline';
 import { ApproveDialog } from './ApproveDialog';
 import { TicketCard } from './TicketCard';
+import { ViewerTicketSummary } from './ViewerTicketSummary';
 
 interface InboxDetailClientProps {
   ticketId: string;
@@ -24,6 +25,15 @@ export function InboxDetailClient({ ticketId, userRole }: InboxDetailClientProps
     return (
       <div data-testid="inbox-detail-notfound" className="p-4">
         Ticket not found.
+      </div>
+    );
+  }
+
+  // Viewer: minimal own-ticket summary (REQ-V3-UI-034). Backend IDOR gates others.
+  if (userRole === 'viewer') {
+    return (
+      <div className="p-4">
+        <ViewerTicketSummary ticket={ticket} />
       </div>
     );
   }

@@ -29,19 +29,20 @@ describe('Inbox Detail Page (T-020/T-021)', () => {
     vi.clearAllMocks();
   });
 
-  it('redirects to /chat for viewer role (REQ-V3-UI-030)', async () => {
+  it('renders InboxDetailClient for viewer role (own-ticket, REQ-V3-UI-034)', async () => {
     const { auth } = await import('@/lib/auth');
     const { redirect: mockRedirect } = await import('next/navigation');
-    const { hasRole } = await import('@/lib/auth/rbac');
 
     vi.mocked(auth).mockResolvedValue({ user: { role: 'viewer' } } as unknown as never);
-    vi.mocked(hasRole).mockReturnValue(false);
 
     const Page = (await import('../page')).default;
-    // page.tsx wraps redirect in try/catch (test/build env fallback), so the
-    // Page promise resolves; the redirect spy call is the assertion that matters.
-    await Page({ params: Promise.resolve({ id: 't-1' }) });
-    expect(mockRedirect).toHaveBeenCalledWith('/chat');
+    // viewer no longer redirected from /inbox/[id] — sees own ticket summary.
+    // Backend IDOR gates tickets the viewer doesn't own.
+    const ui = await Page({ params: Promise.resolve({ id: 't-1' }) });
+    const { container } = render(ui as React.ReactElement);
+
+    expect(container.querySelector('[data-testid="inbox-detail-client"]')).toBeInTheDocument();
+    expect(mockRedirect).not.toHaveBeenCalled();
   });
 
   it('renders InboxDetailClient for ra-member role', async () => {
