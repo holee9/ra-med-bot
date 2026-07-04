@@ -1,6 +1,6 @@
 // @vitest-environment node
 // @MX:NOTE [AUTO] TDD unit tests — PATCH /api/inbox/[id]/triage.
-// @MX:SPEC SPEC-V3-INBOX-001 (REQ-V3-INBOX-015/021, Issue #320)
+// @MX:SPEC SPEC-V3-INBOX-001 (REQ-V3-INBOX-015/021, Issue 320)
 //
 // Covers: RBAC (inbox.manage, ra-lead ONLY), state transition validation,
 // IDOR defense, audit (inbox.triaged).

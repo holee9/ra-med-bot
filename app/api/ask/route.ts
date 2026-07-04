@@ -1,5 +1,5 @@
 // @MX:NOTE [AUTO] POST /api/ask — create new inbox ticket from employee question.
-// @MX:SPEC SPEC-V3-INBOX-001 (REQ-V3-INBOX-001, Issue #320)
+// @MX:SPEC SPEC-V3-INBOX-001 (REQ-V3-INBOX-001, Issue 320)
 // @MX:REASON RA employees ask regulatory questions via /api/ask. Entry point for
 //            inbox_tickets. Requires ask.create (viewer+) because question
 //            submission is a CREATE activity, not read-only consult (H-4 fix).

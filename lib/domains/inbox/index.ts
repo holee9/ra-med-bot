@@ -1,5 +1,5 @@
 // @MX:NOTE [AUTO] RA Inbox domain — public API exports.
-// @MX:SPEC SPEC-V3-INBOX-001 (Issue #320)
+// @MX:SPEC SPEC-V3-INBOX-001 (Issue 320)
 
 // Types
 export type {

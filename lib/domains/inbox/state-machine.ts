@@ -1,7 +1,7 @@
 // @MX:ANCHOR [AUTO] Triage state machine — enforces valid transitions.
 // @MX:REASON Fan_in will reach 3+ (promote + triage handlers + API routes).
 //            State transitions are business-critical invariants.
-// @MX:SPEC SPEC-V3-INBOX-001 (REQ-V3-INBOX-004, Issue #320)
+// @MX:SPEC SPEC-V3-INBOX-001 (REQ-V3-INBOX-004, Issue 320)
 
 import type { TriageState } from './types';
 import { VALID_TRANSITIONS } from './types';

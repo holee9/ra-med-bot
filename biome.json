@@ -142,6 +142,16 @@
           }
         }
       }
+    },
+    {
+      "include": ["scripts/**/*.{ts,mjs,js}"],
+      "linter": {
+        "rules": {
+          "suspicious": {
+            "noConsole": "off"
+          }
+        }
+      }
     }
   ]
 }

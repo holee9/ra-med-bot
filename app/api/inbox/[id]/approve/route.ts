@@ -1,5 +1,5 @@
 // @MX:ANCHOR [AUTO] POST /api/inbox/[id]/approve — ESIG promote to approved_answers.
-// @MX:SPEC SPEC-V3-INBOX-001 (REQ-V3-INBOX-028, REQ-V3-INBOX-012, Issue #320)
+// @MX:SPEC SPEC-V3-INBOX-001 (REQ-V3-INBOX-028, REQ-V3-INBOX-012, Issue 320)
 // @MX:REASON REQ-V3-INBOX-028: ESIG signature mandatory (Charter [지양-4]).
 //            REQ-V3-INBOX-012: password re-auth required before ESIG approval.
 //            Atomic transaction: ticket closure + approved_answers creation + audit.

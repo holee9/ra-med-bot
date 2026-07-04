@@ -2,7 +2,7 @@
 // @MX:REASON inbox_tickets.org_id is the direct tenant key. Cross-org access
 //            MUST return 404 (information leak prevention) or 403 + denial audit.
 //            Fan_in will reach 3+ (API routes + promote + queries).
-// @MX:SPEC SPEC-V3-INBOX-001 (REQ-V3-INBOX-008, Issue #320)
+// @MX:SPEC SPEC-V3-INBOX-001 (REQ-V3-INBOX-008, Issue 320)
 
 import type { Database } from '@/lib/db/client';
 import { inboxTickets } from '@/lib/db/schema';

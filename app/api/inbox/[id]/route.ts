@@ -1,5 +1,5 @@
 // @MX:NOTE [AUTO] GET /api/inbox/[id] — get single inbox ticket by ID.
-// @MX:SPEC SPEC-V3-INBOX-001 (REQ-V3-INBOX-008, Issue #320)
+// @MX:SPEC SPEC-V3-INBOX-001 (REQ-V3-INBOX-008, Issue 320)
 // @MX:REASON REQ-V3-INBOX-008: IDOR defense via assertTicketInOrg (404 on cross-org).
 //            Requires inbox.view (ra-member+) for team transparency.
 

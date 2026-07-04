@@ -1,6 +1,6 @@
 // @vitest-environment node
 // @MX:NOTE [AUTO] TDD unit tests — POST /api/ask.
-// @MX:SPEC SPEC-V3-INBOX-001 (REQ-V3-INBOX-001, Issue #320)
+// @MX:SPEC SPEC-V3-INBOX-001 (REQ-V3-INBOX-001, Issue 320)
 //
 // Covers: RBAC (inbox.view), validation (question min/max), audit (inbox.created),
 // ticket creation with triage_state='auto' and autoAnswer=null.

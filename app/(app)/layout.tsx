@@ -51,6 +51,8 @@ export default async function AppLayout({ children }: { children: React.ReactNod
   // Scope rationalization (2026-06-29 Issue #306): Authoring/Evidence nav gated to ra-member.
   let showAuthoring = false;
   let showEvidence = false;
+  // SPEC-V3-UI-001 (Issue 320, REQ-V3-UI-031): Inbox nav gated to ra-member+ (inbox.view).
+  let showInbox = false;
   // 2026-06-29: userRole을 try 밖에서 선언 (Sidebar userRole prop 전달용)
   let userRole: Role | undefined;
   try {
@@ -90,6 +92,8 @@ export default async function AppLayout({ children }: { children: React.ReactNod
       // Scope rationalization (2026-06-29 Issue #306): Authoring/Evidence for ra-member+.
       showAuthoring = hasRole(userRole as Parameters<typeof hasRole>[0], 'ra-member');
       showEvidence = hasRole(userRole as Parameters<typeof hasRole>[0], 'ra-member');
+      // SPEC-V3-UI-001 (Issue 320, REQ-V3-UI-031): Inbox nav gated to ra-member+ (inbox.view).
+      showInbox = hasRole(userRole as Parameters<typeof hasRole>[0], 'ra-member');
     }
     const department = (session?.user as { department?: string } | undefined)?.department;
     if (department) {
@@ -126,6 +130,7 @@ export default async function AppLayout({ children }: { children: React.ReactNod
         showTeamKnowledge={showTeamKnowledge}
         showAuthoring={showAuthoring}
         showEvidence={showEvidence}
+        showInbox={showInbox}
         userRole={(userRole ?? 'viewer') as Role}
         initialLocale={initialLocale}
       />

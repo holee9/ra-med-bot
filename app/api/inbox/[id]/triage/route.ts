@@ -1,5 +1,5 @@
 // @MX:NOTE [AUTO] PATCH /api/inbox/[id]/triage — transition triage state.
-// @MX:SPEC SPEC-V3-INBOX-001 (REQ-V3-INBOX-015/021, Issue #320)
+// @MX:SPEC SPEC-V3-INBOX-001 (REQ-V3-INBOX-015/021, Issue 320)
 // @MX:REASON REQ-V3-INBOX-015: state transition validation (assertValidTransition).
 //            REQ-V3-INBOX-021: audit trail for every transition.
 //            Requires inbox.manage (ra-lead ONLY) — regulatory decision.

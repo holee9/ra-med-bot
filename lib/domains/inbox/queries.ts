@@ -1,5 +1,5 @@
 // @MX:NOTE [AUTO] Kanban board queries for inbox_tickets.
-// @MX:SPEC SPEC-V3-INBOX-001 (REQ-V3-INBOX-007, Issue #320)
+// @MX:SPEC SPEC-V3-INBOX-001 (REQ-V3-INBOX-007, Issue 320)
 
 import type { Database } from '@/lib/db/client';
 import { inboxTickets } from '@/lib/db/schema';

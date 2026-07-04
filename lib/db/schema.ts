@@ -409,7 +409,7 @@ export const auditActionEnum = pgEnum('audit_action', [
   'memory_created',
   'memory_updated',
   'memory_invalidated',
-  // SPEC-V3-INBOX-001 — added via 0104_inbox_tickets_and_approved_answers.sql (Issue #320).
+  // SPEC-V3-INBOX-001 — added via 0104_inbox_tickets_and_approved_answers.sql (Issue 320).
   // RA Inbox lifecycle audit actions (REQ-V3-INBOX-021).
   //   inbox.created     — new ticket created (employee ask or internal)
   //   inbox.triaged     — triage_state transition (any valid transition)

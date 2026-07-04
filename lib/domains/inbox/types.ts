@@ -1,5 +1,5 @@
 // @MX:NOTE [AUTO] Shared types for RA Inbox domain.
-// @MX:SPEC SPEC-V3-INBOX-001 (Issue #320)
+// @MX:SPEC SPEC-V3-INBOX-001 (Issue 320)
 
 /**
  * Triage state machine states.
