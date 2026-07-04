@@ -7,7 +7,7 @@
 import { writeAudit } from '@/lib/audit';
 import type { Database } from '@/lib/db/client';
 import { approvedAnswers, inboxTickets } from '@/lib/db/schema';
-import { eq } from 'drizzle-orm';
+import { and, eq } from 'drizzle-orm';
 import { assertValidTransition } from './state-machine';
 import type { PromotionInput } from './types';
 
@@ -103,7 +103,22 @@ export async function promoteToApproved(db: Database, input: PromotionInput): Pr
 
   // Step 4: Execute atomic transaction
   await db.transaction(async (tx) => {
-    // 4a. Update ticket to closed state
+    // H-1 TOCTOU (#321): re-verify org_id inside the transaction with a row
+    // lock (SELECT ... FOR UPDATE) so the ticket cannot change ownership
+    // between the outer read (line ~66) and this UPDATE. The outer
+    // assertTicketInOrg check in the route plus this in-tx re-check close the
+    // time-of-check / time-of-use window.
+    const locked = await tx
+      .select({ orgId: inboxTickets.orgId })
+      .from(inboxTickets)
+      .where(and(eq(inboxTickets.id, input.ticketId), eq(inboxTickets.orgId, current.orgId)))
+      .for('update')
+      .limit(1);
+    if (!locked[0]) {
+      throw new Error('Ticket not found in organization (TOCTOU check failed)');
+    }
+
+    // 4a. Update ticket to closed state (org_id re-checked in WHERE)
     await tx
       .update(inboxTickets)
       .set({
@@ -112,7 +127,7 @@ export async function promoteToApproved(db: Database, input: PromotionInput): Pr
         approvedAt: new Date(),
         closedAt: new Date(),
       })
-      .where(eq(inboxTickets.id, input.ticketId));
+      .where(and(eq(inboxTickets.id, input.ticketId), eq(inboxTickets.orgId, current.orgId)));
 
     // 4b. Create approved_answers row
     const approvedAnswerId = `aa_${current.id}`; // Derive ID from ticket ID
