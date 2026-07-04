@@ -216,7 +216,7 @@ dist-ssr/
 # ===========================================
 # Playwright E2E auth state (contains session secrets — never commit)
 # ===========================================
-tests/e2e/fixtures/.auth.json
+tests/e2e/fixtures/.auth*.json
 
 # ===========================================
 # Playwright E2E test artifacts
