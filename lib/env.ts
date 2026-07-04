@@ -77,6 +77,11 @@ const envSchema = z.object({
   // Optional: label shown in the UI for the LLM model.
   NEXT_PUBLIC_LLM_MODEL_LABEL: z.string().optional(),
 
+  // TRIAGE RAG timeout (milliseconds) - required with default 15000ms.
+  // Prevents /api/ask hanging indefinitely on RAG failures.
+  // @MX:SPEC SPEC-V3-TRIAGE-001
+  TRIAGE_TIMEOUT_MS: z.coerce.number().default(15000),
+
   // Optional: hybrid-ra-saas integration (Issue #170).
   // These stay optional so deployments without hybrid-ra-saas still boot cleanly.
   HYBRID_RA_API_BASE_URL: z.string().url().optional(),
@@ -156,6 +161,7 @@ export function parseEnv(source: NodeJS.ProcessEnv = process.env): Env {
     EMBEDDING_MODEL: source.EMBEDDING_MODEL,
     EMBEDDING_API_KEY: source.EMBEDDING_API_KEY,
     NEXT_PUBLIC_LLM_MODEL_LABEL: source.NEXT_PUBLIC_LLM_MODEL_LABEL,
+    TRIAGE_TIMEOUT_MS: source.TRIAGE_TIMEOUT_MS,
     HYBRID_RA_API_BASE_URL: source.HYBRID_RA_API_BASE_URL,
     HYBRID_RA_API_TOKEN: source.HYBRID_RA_API_TOKEN,
     HYBRID_RA_TENANT_ID: source.HYBRID_RA_TENANT_ID,
