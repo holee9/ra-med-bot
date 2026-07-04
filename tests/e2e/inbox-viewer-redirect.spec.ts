@@ -1,26 +1,37 @@
 // @MX:NOTE [AUTO] E2E spec: viewer role redirect from /inbox → /chat (REQ-V3-UI-030)
 // @MX:SPEC SPEC-V3-UI-001 (REQ-V3-UI-030, Issue 329)
 //
-// 현재 globalSetup이 ra-member 세션만 직렬화하므로, viewer 세션 E2E는
-// viewer 전용 storageState fixture가 선행되어야 활성화.
-// REQ-V3-UI-030 redirect 자체는 단위 테스트(app/(app)/inbox/page.test.tsx)에서
-// 이미 검증됨 — 본 E2E는 viewer 실세션 통합 검증용.
+// globalSetup serializes a viewer session to .auth-viewer.json (E2E_VIEWER_USER_EMAIL).
+// We open /inbox inside a viewer-authenticated context and assert the server-side
+// gate (app/(app)/inbox/page.tsx) redirects to /chat. Unit test page.test.tsx
+// already covers the redirect branch in isolation; this is the live integration check.
 
+import * as fs from 'node:fs';
 import { expect, test } from '@playwright/test';
 import { requiresLiveServer } from './fixtures/env-guard';
 
-test.describe('Inbox viewer redirect (REQ-V3-UI-030)', () => {
-  test.skip(true, 'viewer storageState fixture 선행 필요 — globalSetup이 ra-member 전용');
+const viewerAuthPath =
+  process.env.PLAYWRIGHT_VIEWER_AUTH_STATE ?? 'tests/e2e/fixtures/.auth-viewer.json';
 
+test.describe('Inbox viewer redirect (REQ-V3-UI-030)', () => {
   test('viewer visiting /inbox is redirected to /chat', async ({ browser }) => {
     const s = requiresLiveServer();
     test.skip(s.skip, s.reason);
 
-    // TODO: viewer storageState fixture(.auth-viewer.json) 적용 후 활성화.
-    const ctx = await browser.newContext({ storageState: undefined });
+    // Skip cleanly when the viewer fixture has not been generated (e.g. creds unset).
+    test.skip(
+      !fs.existsSync(viewerAuthPath),
+      `${viewerAuthPath} 없음 — globalSetup viewer 로그인(E2E_VIEWER_USER_EMAIL) 확인 필요`,
+    );
+
+    const ctx = await browser.newContext({ storageState: viewerAuthPath });
     const page = await ctx.newPage();
-    await page.goto('/inbox');
-    await expect(page).toHaveURL('/chat');
-    await ctx.close();
+    try {
+      await page.goto('/inbox');
+      // REQ-V3-UI-030: viewer/employee is server-redirected to /chat.
+      await expect(page).toHaveURL(/\/chat(?:\b|$)/);
+    } finally {
+      await ctx.close();
+    }
   });
 });

@@ -132,6 +132,14 @@ export default async function globalSetup(): Promise<void> {
     process.env.PLAYWRIGHT_ADMIN_AUTH_STATE ?? 'tests/e2e/fixtures/.admin-auth.json';
   const adminEmail = process.env.E2E_ADMIN_USER_EMAIL ?? 'admin@example.test';
   const adminPassword = process.env.E2E_ADMIN_USER_PASSWORD ?? password;
+  // @MX:NOTE [AUTO] Viewer storageState for REQ-V3-UI-030 redirect E2E (Issue #329).
+  // globalSetup previously serialized only ra-member + admin sessions; viewer redirect
+  // E2E needs a viewer-role session so /inbox → /chat can be asserted against a real
+  // authenticated viewer (not a logged-out context).
+  const viewerAuthStatePath =
+    process.env.PLAYWRIGHT_VIEWER_AUTH_STATE ?? 'tests/e2e/fixtures/.auth-viewer.json';
+  const viewerEmail = process.env.E2E_VIEWER_USER_EMAIL ?? 'viewer@example.test';
+  const viewerPassword = process.env.E2E_VIEWER_USER_PASSWORD ?? password;
   const baseUrl = process.env.PLAYWRIGHT_BASE_URL ?? 'http://localhost:3000';
 
   const executablePath = process.env.PLAYWRIGHT_CHROMIUM_EXECUTABLE_PATH;
@@ -154,6 +162,14 @@ export default async function globalSetup(): Promise<void> {
       email: adminEmail,
       password: adminPassword,
       authStatePath: adminAuthStatePath,
+      baseUrl,
+    });
+
+    await signInAndStoreState({
+      browser,
+      email: viewerEmail,
+      password: viewerPassword,
+      authStatePath: viewerAuthStatePath,
       baseUrl,
     });
   } finally {
