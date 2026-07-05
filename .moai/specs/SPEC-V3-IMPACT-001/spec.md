@@ -1,13 +1,13 @@
 ---
 id: SPEC-V3-IMPACT-001
 version: 0.1.0
-status: planned
+status: completed
 phase: C-3
 priority: High
 created: 2026-07-05
 updated: 2026-07-05
 author: manager-spec
-issue_number: TBD
+issue_number: 349
 depends_on:
   - SPEC-REGULA-IMPACT-001
   - SPEC-V3-INBOX-001
