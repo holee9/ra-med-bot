@@ -53,6 +53,7 @@ describe('RETEST_MATRIX Data', () => {
     it('should have valid cell structure for bom-us', () => {
       const cell = RETEST_MATRIX.cells['bom-us'];
       expect(cell).toBeDefined();
+      if (!cell) throw new Error('cell is undefined'); // Type guard for TS
       expect(cell.level).toMatch(/^(required|conditional|not-required)$/);
       expect(cell.ref).toBeTruthy();
       expect(cell.note).toBeTruthy();
@@ -61,6 +62,7 @@ describe('RETEST_MATRIX Data', () => {
     it('should have valid cell structure for sw-eu', () => {
       const cell = RETEST_MATRIX.cells['sw-eu'];
       expect(cell).toBeDefined();
+      if (!cell) throw new Error('cell is undefined'); // Type guard for TS
       expect(cell.level).toMatch(/^(required|conditional|not-required)$/);
       expect(cell.ref).toBeTruthy();
       expect(cell.note).toBeTruthy();

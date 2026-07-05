@@ -23,7 +23,7 @@ export {
 export { scanPortfolio } from './portfolio-scanner';
 
 // Section mapping
-export { mapAffectedSections } from './section-mapper';
+export { mapSections as mapAffectedSections } from './section-mapper';
 
 // Action queue
 export { enqueueActionItems } from './action-queue';
