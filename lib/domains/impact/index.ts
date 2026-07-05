@@ -1,0 +1,36 @@
+// @MX:NOTE [AUTO] Re-export layer for backward compatibility with lib/impact/.
+// @MX:SPEC SPEC-V3-IMPACT-001 (M1 Foundation)
+
+// Types
+export type {
+  ImpactLevel,
+  ActionItemStatus,
+  AffectedSection,
+  ImpactAssessment,
+  ImpactActionItem,
+  ScanResult,
+} from './types';
+
+// Analysis
+export {
+  analyzeImpact,
+  listAssessmentsForOrg,
+  type AnalysisRequest,
+  type AnalysisResult,
+} from './analyzer';
+
+// Scanning
+export { scanPortfolio } from './portfolio-scanner';
+
+// Section mapping
+export { mapAffectedSections } from './section-mapper';
+
+// Action queue
+export { enqueueActionItems } from './action-queue';
+
+// Audit wiring
+export {
+  auditAssessmentCreated,
+  auditCriticalDetected,
+  auditActionItemCreated,
+} from './audit-wiring';
