@@ -35,6 +35,14 @@ export {
   auditActionItemCreated,
 } from './audit-wiring';
 
+// SPEC-V3-IMPACT-001 M9: Audit logger exports
+export {
+  logImpactCheck,
+  logTicketCreate,
+  logCriticalDetected,
+} from './audit-logger';
+export type { ImpactCheckContext, TicketCreateContext, CriticalDetectedContext } from './audit-logger';
+
 // SPEC-V3-IMPACT-001 exports
 export { RETEST_MATRIX, type RetestMatrixCell, type RetestMatrixData } from './retest-matrix-data';
 export { lookupRetestMatrix, calculateSignal } from './layer1-matrix-lookup';

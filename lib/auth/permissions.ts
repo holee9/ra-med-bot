@@ -181,7 +181,11 @@ export type PermissionAction =
   | 'consult.session.create'
   | 'consult.session.view'
   | 'consult.session.delete'
-  | 'consult.turn.create';
+  | 'consult.turn.create'
+  // SPEC-V3-IMPACT-001 M10: Impact wizard RBAC actions.
+  | 'impact.view'
+  | 'impact.self_check'
+  | 'impact.ra_escalate';
 
 export interface PermissionSpec {
   minRole: Role;
@@ -568,5 +572,25 @@ export const PERMISSIONS: Record<PermissionAction, PermissionSpec> = {
     minRole: 'ra-member',
     scope: 'org',
     resourceType: 'consultTurn',
+  },
+  // SPEC-V3-IMPACT-001 M10: Impact wizard RBAC.
+  // impact.view: ra-member+ — view impact assessments (transparency across team).
+  // impact.self_check: employee+ — self-service impact check wizard.
+  // impact.ra_escalate: ra-member+ — escalate to RA team for manual review.
+  // @MX:SPEC SPEC-V3-IMPACT-001 (AC-IMP-11, AC-IMP-12, AC-IMP-13)
+  'impact.view': {
+    minRole: 'ra-member',
+    scope: 'org',
+    resourceType: 'impactAssessment',
+  },
+  'impact.self_check': {
+    minRole: 'employee',
+    scope: 'org',
+    resourceType: 'impactAssessment',
+  },
+  'impact.ra_escalate': {
+    minRole: 'ra-member',
+    scope: 'org',
+    resourceType: 'impactAssessment',
   },
 };

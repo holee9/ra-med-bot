@@ -1271,6 +1271,9 @@ export const auditLogs = pgTable(
     }),
     metaJson: jsonb('meta_json').notNull().default({}),
     createdAt: timestamp('created_at', { withTimezone: true, mode: 'date' }).notNull().defaultNow(),
+    // SPEC-V3-IMPACT-001 M8: Hash chain for 21 CFR Part 11 verification
+    // Using text to store hex-encoded hash (SHA-256 = 64 hex chars)
+    previousHash: text('previous_hash'),
   },
   (t) => ({
     // Performance optimization: actor audit trail queries (REQ-FND-048)
@@ -1558,6 +1561,14 @@ export const regulatoryImpactAssessments = pgTable(
     confidence: numeric('confidence', { precision: 3, scale: 2 }),
     createdBy: uuid('created_by').references(() => users.id, { onDelete: 'set null' }),
     createdAt: timestamp('created_at', { withTimezone: true, mode: 'date' }).notNull().defaultNow(),
+    // SPEC-V3-IMPACT-001 M8: Wizard input columns (nullable)
+    wizardType: text('wizard_type'),
+    changeCategory: text('change_category'),
+    changeDetail: text('change_detail'),
+    markets: jsonb('markets'),
+    retestMatrixResults: jsonb('retest_matrix_results'),
+    llmCategory: jsonb('llm_category'),
+    ragSimilarCases: jsonb('rag_similar_cases'),
   },
   (t) => ({
     riaUpdateProjectKey: unique('ria_update_project_key').on(t.regulatoryUpdateId, t.projectId),

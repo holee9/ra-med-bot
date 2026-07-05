@@ -1,8 +1,22 @@
 // SPEC-V3-IMPACT-001 M4: LLM-based change category classification.
 // TDD RED Phase: Write failing test first.
 
+// @ts-ignore - AI SDK generateText mock type compatibility
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { classifyChangeCategory } from '../layer2-llm-classifier';
+
+// Helper to create minimal GenerateTextResult mock
+function mockGenerateTextResult(text: string) {
+  return {
+    text,
+    usage: { promptTokens: 10, completionTokens: 20 },
+    finishReason: 'stop',
+    toolCalls: [],
+    toolResults: [],
+    warnings: [],
+    experimental: [],
+  };
+}
 
 // Mock the AI SDK and LLM provider
 vi.mock('ai', () => ({
@@ -21,13 +35,15 @@ describe('Layer 2: LLM Classifier', () => {
   describe('AC-IMP-06: classifyChangeCategory', () => {
     it('should classify change detail with high confidence', async () => {
       const { generateText } = await import('ai');
+      // @ts-ignore - Mock response for generateText
+      // @ts-ignore
       vi.mocked(generateText).mockResolvedValue({
         text: JSON.stringify({
           category: 'label',
           confidence: 0.92,
           reason: 'Change explicitly mentions IFU update requirements',
         }),
-      });
+      } as any);
 
       const result = await classifyChangeCategory('IFU section 5 requires new indication wording');
 
