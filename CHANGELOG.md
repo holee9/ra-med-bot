@@ -11,6 +11,18 @@
 
 > Placeholder for post-1.0.0 development.
 
+### v3 Phase D 확장 — RA Power Chat Consult UI (SPEC-V3-UI-001 M6, 백엔드 PR #343)
+
+- **RA Power Chat 세션 히스토리 UI** — SPEC-V3-CONSULT-001(Phase C-5) 백엔드를 소비하는 프론트 슬라이스. INBOX UI(M1-M5, 28 REQ)는 미수정 비회귀. SPEC v0.1.0 → **v0.2.1**(REQ 28 → 41).
+  - **신규 10**: `app/(app)/consult/{page,[sessionId]/page,2 Client}` + `components/consult/{ConsultSessionCard,List,Detail,TurnHistoryItem,NewSessionDialog,QuestionComposer}` + `lib/queries/useConsult.ts`(hooks 4) + `stores/consult.ts`(Zustand).
+  - **수정 2**: `components/shell/Sidebar.tsx`(`showConsult` prop, ra-member+ 게이팅) + `app/(app)/layout.tsx`(서버 사이드 `showConsult` resolve).
+  - **M6 REQ-V3-UI-050~062 (13종)**: 세션 목록(ra-member 자기 세션만 / ra-lead/admin org 전체), 세션 상세(turns turnNumber ASC), 새 세션 POST → 리다이렉트, 새 turn POST(400 시에도 turn persist → 히스토리 표시, REQ-059), 404 cross-user IDOR 방어(정보누출 0), citations 재사용.
+  - **plan annotation cycle**: manager-spec 작성 → plan-auditor 감사(**Critical 1 + Medium 6 + Low 1**) → manager-spec 개정 8/8. 핵심: D-1 `turnCount` 백엔드 미반환(schema.ts 직검) UI 의존 제거, D-4 E14 error string `'timeout'` 정정, DoD 카운트(41 REQ/18 AC/15 E) 갱신, frontmatter `0.2.0/draft` 통일.
+  - **code-authoritative 준수**: 라우트 파라미터 `sessionId`(NOT `id`), turn body `{question}`만(locale은 session 상속), 400 `{error, turn}` 패턴(turn 항상 persist).
+  - 검증(orchestrator 직검): consult vitest 21/21 · 전체 4465/4490(1 flaky `frontend-shell.test.ts` timeout, 단독 19/19 통과, M6 무관) · ci:typecheck/rbac/audit/tokens/i18n/glossary/contrast/module-boundaries/migrations/build **전 EXIT 0** · biome consult clean · lint:hex clean.
+  - 진행 방식: manager-tdd 2회 위임(부분 완료+self-report 허위, L-013 적중) → orchestrator 직접 테스트 인프라 fix(inbox ApproveDialog 패턴 준용: `import '@testing-library/jest-dom'` per-file + `vi.hoisted` hook mock + next-intl/next-navigation/QueryClientProvider wrapping) + biome lint 수정(`noExplicitAny`/`noUnusedVariables`/`useButtonType`).
+  - **제외**(별도 SPEC 권장): DELETE soft-delete UI(ra-lead+ 전용, `consult.session.delete`), 실시간 streaming UI, 세션 제목 편집, 검색/필터링 고급 기능.
+
 ### v3 Phase C-2 — RA Triage 자동응답 강화 (SPEC-V3-TRIAGE-001, Issue #339)
 
 - **`/api/ask` TRIAGE RAG 훅** — SPEC-V3-INBOX-001 Follow-up #1 이월. 티켓 생성(tx1) 후 TRIAGE RAG 호출 → `auto_answer`/`auto_confidence` 주입 + `triage_state` `auto → needs-review` 자동 전이(tx2).

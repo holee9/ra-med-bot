@@ -1,19 +1,19 @@
 ---
 id: SPEC-V3-UI-001
-version: 1.0.0
+version: 0.2.0
 status: draft
 created: 2026-07-03
-updated: 2026-07-03
-author: abyz-lab
+updated: 2026-07-05
+author: manager-spec
 priority: high
-issue_number: 0
+issue_number: 326
 ---
 
 # SPEC-V3-UI-001 — Compact Spec (Run Phase Load)
 
 > 본 문서는 run phase 로딩 최적화 버전이다. REQ, AC 요약, 수정 파일, Exclusions만 포함한다(원본: spec.md / acceptance.md / plan.md). 토큰 약 30% 절감.
 
-## Requirements (EARS — 28 REQs, 5 modules)
+## Requirements (EARS — 41 REQs, 6 modules)
 
 ### Module 1 — Kanban Board Rendering & Data Fetching
 
@@ -57,6 +57,22 @@ issue_number: 0
 - **REQ-V3-UI-043** (Unwanted): **If** 403 → inline "접근 권한이 없습니다"; **SHALL NOT** crash or show raw JSON.
 - **REQ-V3-UI-044** (Optional): **Where** column has 0 tickets → empty-state illustration + i18n `inbox.empty`.
 - **REQ-V3-UI-045** (Ubiquitous): Use `tanstack-query` with `staleTime: 60_000` + `revalidateOnFocus: true` for all inbox reads; provide manual "새로고침" button.
+
+### Module 6 — Consult (Power Chat) Session History UI
+
+- **REQ-V3-UI-050** (Ubiquitous): The system **shall** render consult session list on `/consult` for `consult.session.view`(ra-member+). ra-member sees own sessions; ra-lead/admin sees all org.
+- **REQ-V3-UI-051** (Event-Driven): **When** consult list mounts/regains focus, fetch via `GET /api/consult/sessions?limit=50&offset=0`. Pagination via "Load More" button.
+- **REQ-V3-UI-052** (Event-Driven): **When** "New Session" clicked → show dialog + `POST /api/consult/sessions` `{title:1-200, projectId?, locale?}`.
+- **REQ-V3-UI-053** (Event-Driven): **When** session create succeeds(201) → navigate to `/consult/[sessionId]`.
+- **REQ-V3-UI-054** (Event-Driven): **When** session card clicked → navigate to `/consult/[sessionId]` + fetch `GET /api/consult/sessions/[sessionId]`. Render turns turnNumber ASC.
+- **REQ-V3-UI-055** (State-Driven): **While** on session detail, show question input(1-5000 chars) + submit button.
+- **REQ-V3-UI-056** (Event-Driven): **When** question submitted → `POST /api/consult/sessions/[sessionId]/turns` `{question}` + disable submit.
+- **REQ-V3-UI-057** (State-Driven): **While** turn creating → show "답변 생성 중..." + do NOT append to history.
+- **REQ-V3-UI-058** (Event-Driven): **When** turn succeeds(201) → append turn to history + render answer/citations/confidence.
+- **REQ-V3-UI-059** (Unwanted): **If** turn fails(400) → show error BUT still render turn in history (RA feedback).
+- **REQ-V3-UI-060** (Unwanted): **If** session 404 (not-found/cross-user) → show "세션을 찾을 수 없습니다" + redirect to `/consult`.
+- **REQ-V3-UI-061** (Optional): **Where** turn has citations → reuse `Citation`/`SourcesGrid` components.
+- **REQ-V3-UI-062** (Ubiquitous): Add "Consult" to Sidebar with `showConsult` prop(ra-member+). Follow `showInbox` pattern.
 
 ---
 
@@ -132,7 +148,7 @@ issue_number: 0
 5. New backend APIs (exception: Q3 audit wrapper if needed, scope-expansion flag).
 6. New permissions (reuse inbox.view / inbox.manage / ask.create).
 7. TRIAGE auto-answer injection UI (SPEC-V3-TRIAGE-001 C-2).
-8. Consult / Power Chat (SPEC-V3-CONSULT-001 C-5).
+8. Consult 고급 기능 (DELETE soft-delete UI, 실시간 streaming, 세션 제목 편집, 검색/필터링).
 9. Admin audit-log viewer (separate `app/(app)/audit/`).
 10. Kanban list-view toggle (MVP Kanban-only).
 11. final_answer editing UI (deferred to TRIAGE C-2 / Phase D.2; Q2 decision).

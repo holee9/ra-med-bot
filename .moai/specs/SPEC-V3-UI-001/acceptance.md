@@ -1,9 +1,9 @@
 ---
 id: SPEC-V3-UI-001
-version: 1.0.0
+version: 0.2.0
 status: draft
 created: 2026-07-03
-updated: 2026-07-03
+updated: 2026-07-05
 author: abyz-lab
 priority: high
 issue_number: 0
@@ -256,6 +256,105 @@ labels:
 
 ---
 
+### AC-CONS-UI-001: Consult 세션 목록 렌더링 (REQ-V3-UI-050, REQ-V3-UI-051, REQ-V3-UI-062)
+
+**Given** `ra-member` 역할의 사용자가 로그인되어 있다.
+**When** 사용자가 `/consult` 라우트로 이동한다.
+**Then** consult 세션 목록 페이지가 렌더링된다.
+**And** 사용자가 생성한 세션들만 표시된다(ra-member는 자신의 세션만).
+**And** "새 세션" 버튼이 표시된다.
+**And** Sidebar에 "Consult" 엔트리가 표시된다(`showConsult=true`).
+
+**Given** `ra-lead` 역할의 사용자가 로그인되어 있다.
+**When** 사용자가 `/consult` 라우트로 이동한다.
+**Then** consult 세션 목록 페이지가 렌더링된다.
+**And** org 전체의 모든 세션이 표시된다.
+
+**Given** consult 세션 목록 페이지에 있다.
+**When** 페이지가 마운트된다.
+**Then** `GET /api/consult/sessions?limit=50&offset=0`이 호출된다.
+**And** 세션 카드 그리드가 표시된다(각 카드: title, createdAt, updatedAt).
+
+**Given** consult 세션 목록이 50개 이상 있는 경우.
+**When** 사용자가 페이지 하단의 "Load More" 버튼을 클릭한다.
+**Then** `GET /api/consult/sessions?limit=50&offset=50`이 호출된다.
+**And** 추가 세션들이 목록에 append된다.
+
+---
+
+### AC-CONS-UI-002: Consult 세션 생성 (REQ-V3-UI-052, REQ-V3-UI-053)
+
+**Given** consult 세션 목록 페이지에 있다.
+**When** 사용자가 "새 세션" 버튼을 클릭한다.
+**Then** 세션 생성 다이얼로그가 표시된다.
+**And** 다이얼로그에 title 입력 필드(1-200자), projectId 선택(선택적), locale 선택(선택적, 기본값 'ko')가 있다.
+
+**Given** 세션 생성 다이얼로그가 열려 있다.
+**When** 사용자가 title(예: "Regula Submission Guide")을 입력하고 "생성"을 클릭한다.
+**Then** `POST /api/consult/sessions`가 `{title, projectId?, locale?}` 본문으로 호출된다.
+**And** 201 응답 시 `/consult/[sessionId]` 상세 페이지로 네비게이션한다.
+
+**Given** 세션 생성 다이얼로그가 열려 있다.
+**When** 사용자가 201자 이상의 title을 입력하고 "생성"을 클릭한다.
+**Then** 400 Invalid input 응답 처리 + 인라인 유효성 에러 표시.
+
+---
+
+### AC-CONS-UI-003: Consult 세션 상세 및 turns 히스토리 (REQ-V3-UI-054, REQ-V3-UI-060)
+
+**Given** consult 세션 목록에 있다.
+**When** 사용자가 세션 카드를 클릭한다.
+**Then** `/consult/[sessionId]` 라우트로 네비게이션한다.
+**And** `GET /api/consult/sessions/[sessionId]`가 호출된다.
+**And** 세션 메타데이터(title, createdAt, locale)와 turns 배열이 표시된다.
+**And** turns는 turnNumber 오름차순으로 렌더링된다.
+
+**Given** consult 세션 상세 페이지에 있다.
+**When** 페이지가 마운트된다.
+**Then** turns 히스토리가 turnNumber 오름차순으로 렌더링된다.
+**And** 각 turn은 question, answer, citations(재사용 컴포넌트), confidence, timestamp를 포함한다.
+
+**Given** `ra-member` 역할의 사용자가 다른 ra-member의 세션 URL로 직접 이동한다.
+**When** `GET /api/consult/sessions/[sessionId]`가 호출된다.
+**Then** 404 Session not found 응답이 반환된다.
+**And** "세션을 찾을 수 없습니다" 메시지가 표시되고 `/consult` 목록으로 리다이렉트된다(IDOR 방지).
+
+---
+
+### AC-CONS-UI-004: Consult turn 생성 및 히스토리 추가 (REQ-V3-UI-056, REQ-V3-UI-057, REQ-V3-UI-058)
+
+**Given** consult 세션 상세 페이지에 있다.
+**When** 사용자가 질문 입력 필드에 질문(1-5000자)을 입력하고 "전송"을 클릭한다.
+**Then** `POST /api/consult/sessions/[sessionId]/turns`가 `{question}` 본문으로 호출된다.
+**And** submit 버튼이 비활성화된다.
+**And** 로딩 인디케이터("답변 생성 중...")가 표시된다.
+**And** 히스토리에는 새 turn이 추가되지 않는다(아직 응답 없음).
+
+**Given** turn 생성이 진행 중이다.
+**When** 201 응답이 반환된다.
+**Then** 새 turn이 히스토리에 추가된다.
+**And** turn의 answer, citations(재사용 `Citation`/`SourcesGrid`), confidence가 렌더링된다.
+**And** 로딩 인디케이터가 제거된다.
+**And** 질문 입력 필드가 다시 활성화된다.
+
+**Given** turn 생성이 진행 중이다.
+**When** 400 응답이 `{error, turn}` 본문으로 반환된다(RAG 실패: citation 부족, 타임아웃, 런타임 에러).
+**Then** error 메시지가 사용자에게 표시된다(예: "답변 생성 실패: citation 80% 미달").
+**And** turn도 히스토리에 표시된다(RA member가 실패 피드백 확인 가능).
+**And** 로딩 인디케이터가 제거된다.
+
+---
+
+### AC-CONS-UI-005: Citations 컴포넌트 재사용 (REQ-V3-UI-061)
+
+**Given** consult 세션 상세 페이지에 있다.
+**When** turn에 citations가 있는 경우.
+**Then** 기존 `components/chat/Citation.tsx`, `SourcesGrid.tsx`, `ConfidenceBadge.tsx` 컴포넌트가 재사용된다.
+**And** citations JSONB 배열이 파싱되어 렌더링된다.
+**And** ConfidenceBadge가 confidence score(0.00~1.00)를 렌더링한다.
+
+---
+
 ## 2. Edge Cases
 
 | # | Edge Case | Expected Behavior | Related REQ |
@@ -271,6 +370,10 @@ labels:
 | E9 | **viewer 강제 이동**: viewer가 `/inbox`로 직접 이동 | 서버 사이드 리다이렉트 → `/chat` | REQ-V3-UI-030 |
 | E10 | **대량 티켓(50+)**: 단일 칼럼에 50개 초과 티켓 | 페이지네이션(limit=50); 51번째부터는 표시 안 됨(Phase D는 페이지네이션 UI 미제공, 한계 명시) | REQ-V3-UI-002 |
 | E11 | **활동 피드 데이터 소스 없음**: audit-log 읽기 엔드포인트가 없는 경우 | run phase ANALYZE에서 확인; 필요시 `GET /api/inbox/[id]/audit` 최소 래퍼 추가(Q3, potential scope expansion) | REQ-V3-UI-011 |
+| E12 | **Consult 빈 세션 목록**: consult에 0개 세션 | 빈 상태 일러스트레이션 + i18n `consult.empty` 메시지 표시 | REQ-V3-UI-051 |
+| E13 | **Consult 질문 5000자 초과**: turn 생성 시 질문이 너무 김 | 입력 차단(maxLength) 또는 400 유효성 에러 | REQ-V3-UI-055 |
+| E14 | **Consult turn RAG 타임아웃**: turn 생성이 15초 초과 | 400 `{error: "timeout"}` 반환 + error 표시 + turn 히스토리 표시(REQ-V3-UI-059) | REQ-V3-UI-059 |
+| E15 | **Consult cross-user 접근**: ra-member가 다른 ra-member의 세션 접근 | 404 → "세션을 찾을 수 없습니다" + `/consult` 리다이렉트(IDOR 방지, REQ-V3-UI-060) | REQ-V3-UI-060 |
 
 ---
 
@@ -325,9 +428,9 @@ labels:
 
 ### 4.1 기능 완성도
 
-- [ ] 모든 28개 REQ-V3-UI-XXX(001..005, 010..016, 020..024, 030..034, 040..045)가 구현되었다.
-- [ ] 모든 13개 AC-UI-001..013 시나리오가 통과한다.
-- [ ] 모든 11개 엣지 케이스(E1..E11)가 처리된다.
+- [ ] 모든 **41개** REQ-V3-UI-XXX(001..005, 010..016, 020..024, 030..034, 040..045, 050..062)가 구현되었다.
+- [ ] 모든 **18개** AC 시나리오(AC-UI-001..013, AC-CONS-UI-001..005)가 통과한다.
+- [ ] 모든 **15개** 엣지 케이스(E1..E15)가 처리된다.
 
 ### 4.2 코드 품질
 

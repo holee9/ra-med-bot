@@ -1,9 +1,9 @@
 ---
 id: SPEC-V3-UI-001
-version: 1.0.0
-status: implemented
+version: 0.2.0
+status: draft
 created: 2026-07-03
-updated: 2026-07-04
+updated: 2026-07-05
 author: abyz-lab
 priority: high
 issue_number: 326
@@ -28,6 +28,8 @@ labels:
 |---------|------|--------|---------|
 | 0.1.0 | 2026-07-03 | manager-spec | Initial plan + research.md. Brownfield UI consuming SPEC-V3-INBOX-001 (PR #322). 2 contract discrepancies flagged. |
 | 1.0.0 | 2026-07-03 | abyz-lab | Plan Review Gate approved. spec.md / acceptance.md / spec-compact.md generated. Code-authoritative decisions applied (VALID_TRANSITIONS from types.ts:33-40; approve body {password, esigSignature} from approve/route.ts:19-22). Q1-Q5 resolved (see §8 Contract Discrepancies). issue_number=0 placeholder (Phase 2.5 updates post-Issue creation). |
+| 0.2.0 | 2026-07-05 | manager-spec | M6 Consult UI 추가. PR #343 백엔드(SPEC-V3-CONSULT-001) 소비. REQ-V3-UI-050~062 (13종), AC-CONS-UI-01~05 (5종). 백엔드 코드 직검 완료(`:sessionId` 파라미터, role 필드 제거, citations 재사용). Exclusions: DELETE UI, 실시간 streaming, 세션 제목 편집, 검색/필터링 고급 기능. 총 REQ: 28 → 41. |
+| 0.2.1 | 2026-07-05 | manager-spec | plan-auditor 감사(Critical 1 + Medium 6 + Low 1) 개정. D-1 turnCount 의존 제거(백엔드 미반환), D-4 E14 error string 'timeout' 정정, D-2/D-3 stale 'Not in this SPEC' 모순 해소, D-5 trace 표 REQ-057/061 보충, D-6 DoD 카운트 갱신(41 REQ/18 AC/15 E), D-7 frontmatter 0.2.0/draft 통일, D-8 REQ-050 shall 복원. |
 
 ---
 
@@ -52,6 +54,9 @@ labels:
 | 뷰어 "내 질문" 보기 | 뷰어는 기존 `/chat`에서 질문(ask.create → inbox 티켓 자동 생성). `/chat` 인라인 패널에서 자신의 질문 상태를 확인. RA Kanban은 뷰어에게 노출되지 않는다. | plan §2.1 (Q4 decision) |
 | 새로고침 전략 | tanstack-query `revalidateOnFocus` + 수동 새로고침 버튼 + `staleTime: 60s`. 자동 폴링 없음. | plan §2.1 |
 | 활동 피드 | 상세 페이지에 audit 기반 타임라인 표시(append-only `audit_logs`, 21 CFR Part 11). | plan §2.1 (Q3 decision) |
+| Consult 세션 목록(M6) | `/consult` 라우트. ra-member는 자신의 세션만, ra-lead/admin는 org 전체. "새 세션" 버튼으로 생성 다이얼로그 표시. | plan §2.1 (M6 추가) |
+| Consult 세션 상세 + turns(M6) | `/consult/[sessionId]` 라우트. 세션 메타데이터 + turns 히스토리(turnNumber ASC). 질문 입력 폼(1-5000자). citations 재사용. | plan §2.1 (M6 추가) |
+| Consult turn 생성(M6) | `POST /api/consult/sessions/[sessionId]/turns`로 non-streaming 질문-답변 생성. 201=turn 추가, 400=error 표시하나 turn도 히스토리에 표시(RA 피드백). | plan §2.1 (M6 추가) |
 
 ### 2.2 Exclusions (What NOT to Build) — Phase D
 
@@ -64,8 +69,13 @@ labels:
 5. **새 백엔드 API** — 기존 API만 소비(`/api/inbox`, `/api/inbox/[id]`, `/api/inbox/[id]/triage`, `/api/inbox/[id]/approve`, `/api/ask`). 예외: 활동 피드용 `GET /api/inbox/[id]/audit` 래퍼는 run phase ANALYZE에서 확인 후 필요시 최소 추가(Q3 potential scope expansion).
 6. **새 권한** — 기존 `inbox.view`(ra-member+), `inbox.manage`(ra-lead), `ask.create`(viewer/employee) 재사용. `lib/auth/permissions.ts` 변경 없음.
 7. **TRIAGE 자동 응답 주입 UI** — SPEC-V3-TRIAGE-001(C-2) 의존. UI는 `autoAnswer`가 존재하면 표시만 하고 생성하지 않는다.
-8. **Consult (Power Chat)** — `SPEC-V3-CONSULT-001`(C-5). 본 SPEC 범위 외.
-9. **어드민 감사 로그 뷰어** — 별도 어드민 서피스(기존 `app/(app)/audit/`). 본 SPEC은 상세 페이지의 per-ticket 활동 피드만 표시.
+8. **Consult (Power Chat) — Power Chat 세션 기본 UI** — `SPEC-V3-CONSULT-001`(C-5). 본 SPEC M6에 편입. 세션 목록, 상세, 새 turn 생성 UI 포함. DELETE soft-delete UI, 실시간 streaming, 세션 제목 편집, 검색/필터링 고급 기능은 제외됨.
+9. **Consult DELETE soft-delete UI** — ra-lead+ 전용, M6 제외. 별도 SPEC 권장.
+10. **Consult 실시간 streaming UI** — 기존 `/api/ra/consult` SSE 흐름과 무관. consult turn은 non-streaming POST.
+11. **Consult WebSocket, 폴링, 일괄 작업** — M6 제외.
+12. **Consult 세션 제목 편집 UI** — M6 제외. 생성 시 title만 설정.
+13. **Consult 세션 검색/필터링 고급 기능** — M6 제외. 기본 목록 + role 필터만.
+14. **어드민 감사 로그 뷰어** — 별도 어드민 서피스(기존 `app/(app)/audit/`). 본 SPEC은 상세 페이지의 per-ticket 활동 피드만 표시.
 10. **칸반 리스트-뷰 토글** — MVP는 Kanban-only. 리스트 뷰는 연기.
 11. **final_answer 편집 UI** — Phase D는 `finalAnswer`가 이미 truthy일 때만 승인을 활성화(Q2 decision). final_answer 편집은 TRIAGE C-2 또는 Phase D.2로 연기.
 12. **담당자 필터(assignee filter)** — MVP는 필터 없음, `showArchived` 토글만(Q5 decision). Phase D.2로 연기.
@@ -74,7 +84,7 @@ labels:
 
 ## 3. Requirements (EARS Format)
 
-> 5개 모듈, 총 28개 REQ(M1=5 + M2=7 + M3=5 + M4=5 + M5=6). 각 UI REQ는 소비하는 백엔드 REQ-V3-INBOX-XXX로 추적 가능(§4 Traceability). EARS 키워드(WHEN/WHILE/WHERE/IF/SHALL/SHALL NOT)는 영어로 유지; 서술은 한국어.
+> 6개 모듈, 총 41개 REQ(M1=5 + M2=7 + M3=5 + M4=5 + M5=6 + M6=13). 각 UI REQ는 소비하는 백엔드 REQ로 추적 가능(INBOX: REQ-V3-INBOX-XXX, CONSULT: REQ-CONS-XXX) (§4 Traceability). EARS 키워드(WHEN/WHILE/WHERE/IF/SHALL/SHALL NOT)는 영어로 유지; 서술은 한국어.
 
 ### Module 1 — Kanban Board Rendering & Data Fetching
 
@@ -198,6 +208,61 @@ The system **shall** WCAG 2.1 AA를 충족한다: 모든 액션 버튼이 키보
 The system **shall** 모든 inbox 읽기에 `tanstack-query`를 사용하며 `staleTime: 60_000`과 `revalidateOnFocus: true`를 적용하고, **AND** Kanban 헤더에 수동 "새로고침" 버튼을 제공한다.
 - **Source**: research.md §5.1.
 
+### Module 6 — Consult (Power Chat) Session History UI
+
+#### REQ-V3-UI-050 (Ubiquitous)
+The system **shall** `consult.session.view` 권한(ra-member+)을 가진 사용자를 위해 `/consult` 라우트에서 RA Power Chat 세션 목록을 렌더링한다. ra-member는 자신의 세션만, ra-lead/admin는 org 전체 세션을 본다.
+- **Backend trace**: REQ-CONS-002 (app/api/consult/sessions/route.ts:86-118, role-based filtering).
+- **백엔드 제약사항**: `GET /api/consult/sessions`는 `turnCount`를 반환하지 않음(스키마에 컬럼 없음, `lib/db/schema.ts:3346-3371`). UI는 `title`, `createdAt`, `updatedAt`만 표시. `turnCount`가 필요하면 별도 백엔드 SPEC에서 computed 필드 확장 필요(M6 범위 外).
+
+#### REQ-V3-UI-051 (Event-Driven)
+**When** consult 세션 목록 페이지가 마운트되거나 포커스를 되찾으면, the system **shall** `GET /api/consult/sessions?limit=50&offset=0`을 호출하여 세션 목록을 가져온다. 페이지네이션은 "Load More" 버튼으로 구현한다.
+- **Backend trace**: REQ-CONS-002 (app/api/consult/sessions/route.ts:80-118).
+
+#### REQ-V3-UI-052 (Event-Driven)
+**When** 사용자가 "새 세션" 버튼을 클릭하면, the system **shall** 세션 생성 다이얼로그를 표시하고, `POST /api/consult/sessions`를 `{title:1-200, projectId?, locale?}` 본문으로 호출한다.
+- **Backend trace**: REQ-CONS-001 (app/api/consult/sessions/route.ts:23-77).
+
+#### REQ-V3-UI-053 (Event-Driven)
+**When** 세션 생성이 성공(201)하면, the system **shall** 새로 생성된 세션의 상세 페이지 `/consult/[sessionId]`로 네비게이션한다.
+- **Backend trace**: REQ-CONS-001 (app/api/consult/sessions/route.ts:76).
+
+#### REQ-V3-UI-054 (Event-Driven)
+**When** 사용자가 세션 카드를 클릭하면, the system **shall** `/consult/[sessionId]` 라우트로 네비게이션하고 `GET /api/consult/sessions/[sessionId]`를 호출하여 세션 상세와 turns 목록을 가져온다. turns는 turnNumber 오름차순으로 렌더링한다.
+- **Backend trace**: REQ-CONS-003 (app/api/consult/sessions/[sessionId]/route.ts:14-52).
+
+#### REQ-V3-UI-055 (State-Driven)
+**While** 세션 상세 페이지에서 사용자가 질문을 입력 중이면, the system **shall** 질문 입력 필드(1-5000자)와 "전송" 버튼을 표시한다.
+- **Backend trace**: REQ-CONS-004 (app/api/consult/sessions/[sessionId]/turns/route.ts:19-21).
+
+#### REQ-V3-UI-056 (Event-Driven)
+**When** 사용자가 질문을 제출하면, the system **shall** `POST /api/consult/sessions/[sessionId]/turns`를 `{question: "..."}` 본문으로 호출하고, 제출 버튼을 비활성화한다.
+- **Backend trace**: REQ-CONS-004 (app/api/consult/sessions/[sessionId]/turns/route.ts:23-133).
+
+#### REQ-V3-UI-057 (State-Driven)
+**While** turn 생성이 진행 중이면, the system **shall** 로딩 인디케이터("답변 생성 중...")를 표시하고, 새 turn을 히스토리에 추가하지 않는다.
+- **Backend trace**: REQ-CONS-004 (RAG pipeline outside tx).
+
+#### REQ-V3-UI-058 (Event-Driven)
+**When** turn 생성이 성공(201)하면, the system **shall** 새 turn을 세션 히스토리에 추가(append)하고, 답변(answer), 인용(citations), 신뢰도(confidence)를 렌더링한다.
+- **Backend trace**: REQ-CONS-004, REQ-CONS-008 (app/api/consult/sessions/[sessionId]/turns/route.ts:132).
+
+#### REQ-V3-UI-059 (Unwanted)
+**If** turn 생성이 400을 반환하고 error 필드가 있으면, the system **shall** error를 사용자에게 표시하되 turn도 히스토리에 표시한다(RA member가 실패 피드백 확인 가능).
+- **Backend trace**: REQ-CONS-005, REQ-CONS-010 (app/api/consult/sessions/[sessionId]/turns/route.ts:127-128).
+
+#### REQ-V3-UI-060 (Unwanted)
+**If** 세션 조회가 404를 반환하면(존재하지 않거나 cross-user 접근), the system **shall** "세션을 찾을 수 없습니다" 메시지를 표시하고 `/consult` 목록으로 리다이렉트한다.
+- **Backend trace**: REQ-CONS-003, RBAC (app/api/consult/sessions/[sessionId]/route.ts:40-42).
+
+#### REQ-V3-UI-061 (Optional)
+**Where** turn에 citations가 있으면, the system **shall** 인용 렌더링 컴포넌트(`Citation`, `SourcesGrid`)를 재사용하여 표시한다. 기존 `/api/ra/consult` streaming용 컴포넌트를 재활용한다.
+- **Backend trace**: REQ-CONS-004 (citations JSONB array, 재사용).
+
+#### REQ-V3-UI-062 (Ubiquitous)
+The system **shall** Sidebar에 "Consult" 엔트리를 추가하고, `showConsult` prop(ra-member+)로 게이팅한다. 기존 `showInbox` 패턴을 준수한다.
+- **Backend trace**: consult.session.view minRole (lib/auth/permissions.ts).
+
 ---
 
 ## 4. Backend Traceability (UI REQ ↔ Backend REQ ↔ AC)
@@ -217,8 +282,22 @@ The system **shall** 모든 inbox 읽기에 `tanstack-query`를 사용하며 `st
 | REQ-V3-UI-033 | REQ-V3-INBOX-030 | AC-13 (ask→ticket creation) | app/api/ask/route.ts |
 | REQ-V3-UI-034 | REQ-V3-INBOX-010 | AC-03 (own-ticket query) | lib/domains/inbox/access.ts |
 | REQ-V3-UI-043 | REQ-V3-INBOX-009 | AC-03 (403 handling) | lib/auth/with-permission.ts |
+| **Consult UI (M6)** | | | |
+| REQ-V3-UI-050 | REQ-CONS-002 | AC-CONS-02 (session list, role filter) | app/api/consult/sessions/route.ts:86-118 |
+| REQ-V3-UI-051 | REQ-CONS-002 | AC-CONS-02 (pagination) | app/api/consult/sessions/route.ts:80-118 |
+| REQ-V3-UI-052 | REQ-CONS-001 | AC-CONS-01 (session create) | app/api/consult/sessions/route.ts:23-77 |
+| REQ-V3-UI-053 | REQ-CONS-001 | AC-CONS-01 (201 navigate) | app/api/consult/sessions/route.ts:76 |
+| REQ-V3-UI-054 | REQ-CONS-003 | AC-CONS-02b (detail + turns) | app/api/consult/sessions/[sessionId]/route.ts:14-52 |
+| REQ-V3-UI-055 | REQ-CONS-004 | (question input 1-5000) | app/api/consult/sessions/[sessionId]/turns/route.ts:19-21 |
+| REQ-V3-UI-056 | REQ-CONS-004 | AC-CONS-03 (turn create) | app/api/consult/sessions/[sessionId]/turns/route.ts:23-133 |
+| REQ-V3-UI-057 | REQ-CONS-004 | (loading state, outside tx) | app/api/consult/sessions/[sessionId]/turns/route.ts:60 |
+| REQ-V3-UI-058 | REQ-CONS-004, REQ-CONS-008 | AC-CONS-03 (success + citations) | app/api/consult/sessions/[sessionId]/turns/route.ts:132 |
+| REQ-V3-UI-059 | REQ-CONS-005, REQ-CONS-010 | AC-CONS-05 (error + turn persisted) | app/api/consult/sessions/[sessionId]/turns/route.ts:127-128 |
+| REQ-V3-UI-060 | REQ-CONS-003, RBAC | AC-CONS-07 (404 cross-user) | app/api/consult/sessions/[sessionId]/route.ts:40-42 |
+| REQ-V3-UI-061 | REQ-CONS-004 | (citations JSONB reuse) | lib/db/schema.ts:3386 |
+| REQ-V3-UI-062 | consult.session.view | (RBAC ra-member+) | lib/auth/permissions.ts |
 
-**Backend AC NOT implemented by UI** (backend-only, out of UI scope): AC-01, AC-06, AC-08, AC-10, AC-11, AC-12 (all migration / DB-level / audit-log assertions).
+**Backend AC NOT implemented by UI** (backend-only, out of UI scope): AC-01, AC-06, AC-08, AC-10, AC-11, AC-12 (all migration / DB-level / audit-log assertions). Consult UI: AC-CONS-04 (citation coverage), AC-CONS-06 (DELETE soft-delete), AC-CONS-07 (5-year retention), AC-CONS-08 (audit log — backend only).
 
 ---
 
@@ -242,6 +321,16 @@ The system **shall** 모든 inbox 읽기에 `tanstack-query`를 사용하며 `st
 | `components/inbox/ViewerTicketSummary.tsx` | 뷰어용 최소 자기 티켓 보기(REQ-V3-UI-034). |
 | `lib/queries/useInbox.ts` | tanstack-query 훅: `useInboxTickets(state)`, `useInboxTicket(id)`, `useTriageTransition()`, `useApproveTicket()`. |
 | `stores/inbox.ts` | Zustand 스토어(selectedTicketId, showArchived). `stores/project.ts` 패턴 준수. `viewMode`(Kanban-vs-list)는 Exclusion #10(리스트-뷰 제외)으로 인해 명시적으로 미포함. |
+| `app/(app)/consult/page.tsx` | Consult 세션 목록 페이지(M6, 세션 카드 그리드 + "새 세션" 버튼). |
+| `app/(app)/consult/[sessionId]/page.tsx` | Consult 세션 상세 페이지(M6, turns 히스토리 + 질문 입력). |
+| `components/consult/ConsultSessionCard.tsx` | 세션 카드(title, createdAt, updatedAt, 클릭 시 상세 이동). |
+| `components/consult/ConsultSessionList.tsx` | 세션 목록 그리드(무한 스크롤 아님, "Load More" 버튼). |
+| `components/consult/ConsultSessionDetail.tsx` | 세션 상세 레이아웃(turns 히스토리 + 질문 입력 폼). |
+| `components/consult/TurnHistoryItem.tsx` | 단일 turn 렌더러(question + answer + citations + confidence + timestamp). |
+| `components/consult/NewSessionDialog.tsx` | 새 세션 생성 다이얼로그(title 1-200, projectId 선택, locale 선택). |
+| `components/consult/QuestionComposer.tsx` | 질문 입력 컴포넌트(1-5000자, submit 중 비활성화). |
+| `lib/queries/useConsult.ts` | tanstack-query 훅: `useConsultSessions()`, `useConsultSession()`, `useCreateConsultSession()`, `useCreateTurn()`. |
+| `stores/consult.ts` | Zustand 스토어(selectedSessionId). `stores/inbox.ts` 패턴 준수. |
 
 > **컴포넌트 디렉토리 결정**: 새 `components/inbox/` 디렉토리 생성(`components/dashboard/` 하위 아님). 근거: (1) `components/dashboard/`는 다른 기능 서피스; (2) inbox는 8개 전용 컴포넌트(자체 디렉토리에 충분); (3) 기존 per-domain 관례 준수(`components/chat/`, `components/expert-review/`, `components/knowledge-gap/`).
 
@@ -249,11 +338,11 @@ The system **shall** 모든 inbox 읽기에 `tanstack-query`를 사용하며 `st
 
 | Path | Change | Convention Evidence |
 |------|--------|---------------------|
-| `components/shell/Sidebar.tsx` | `showInbox?: boolean` prop 추가 + true일 때 "Inbox" NavItem 렌더링. | Sidebar.tsx L33-75 (`showPredicate`, `showKnowledgeGap`, ... pattern). 새 엔트리는 "히스토리" 다음 삽입(research.md §5.6). |
-| `app/(app)/layout.tsx` | 서버 사이드에서 `showInbox = hasRole(userRole, 'ra-member')` 해결 + `<Sidebar showInbox={showInbox}>` 전달. | layout.tsx L21-60 (server-side `showX` pattern). |
+| `components/shell/Sidebar.tsx` | `showInbox?: boolean` prop 추가 + true일 때 "Inbox" NavItem 렌더링. `showConsult?: boolean` prop 추가 + true일 때 "Consult" NavItem 렌더링(M6). | Sidebar.tsx L33-75 (`showPredicate`, `showKnowledgeGap`, ... pattern). consult 엔트리는 inbox 다음 삽입. |
+| `app/(app)/layout.tsx` | 서버 사이드에서 `showInbox = hasRole(userRole, 'ra-member')` 해결 + `<Sidebar showInbox={showInbox}>` 전달. `showConsult = hasRole(userRole, 'ra-member')` 해결 + `<Sidebar showConsult={showConsult}>` 전달(M6). | layout.tsx L21-60 (server-side `showX` pattern). |
 | `app/(app)/chat/page.tsx` | ask.create 성공 후 결과 `ticket_id` + `triage_state`를 뷰어에게 노출(작은 "내 질문 상태" 패널/toast, 소유한 경우 `/inbox/[id]` 링크). | (기존 chat 서피스; 최소 증강) |
-| `messages/ko.json` | 최상위 `inbox` 네임스페이스 추가. | (2026-07-03 누락 확인됨) |
-| `messages/en.json` | 최상위 `inbox` 네임스페이스 추가. | (2026-07-03 누락 확인됨) |
+| `messages/ko.json` | 최상위 `inbox` 네임스페이스 추가. `consult` 네임스페이스 추가(M6, keys: title, newSession, loadMore, empty, errors.sessionNotFound, errors.createFailed, errors.turnFailed, questionPlaceholder, submitButton, loadingAnswer, errorDisplay). | (2026-07-03 누락 확인됨) |
+| `messages/en.json` | 최상위 `inbox` 네임스페이스 추가. `consult` 네임스페이스 추가(M6, same keys as ko.json). | (2026-07-03 누락 확인됨) |
 
 ### 5.3 `[EXISTING]` Files (Consume, DO NOT Modify)
 
@@ -264,10 +353,14 @@ The system **shall** 모든 inbox 읽기에 `tanstack-query`를 사용하며 `st
 | `app/api/inbox/[id]/triage/route.ts` | PATCH transition (소비). |
 | `app/api/inbox/[id]/approve/route.ts` | POST approve (소비). |
 | `app/api/ask/route.ts` | POST viewer question (소비). |
+| `app/api/consult/sessions/route.ts` | GET list, POST create (소비, M6). |
+| `app/api/consult/sessions/[sessionId]/route.ts` | GET detail + turns (소비, M6). |
+| `app/api/consult/sessions/[sessionId]/turns/route.ts` | POST turn create (소비, M6). |
 | `lib/domains/inbox/**` (types.ts, state-machine.ts, queries.ts, access.ts, promote.ts, audit.ts, sla.ts) | 타입 + 클라이언트 사이드 전이 검증 재사용(예: `VALID_TRANSITIONS`를 액션 메뉴 게이팅용 import). |
-| `lib/auth/permissions.ts` | 권한 키(읽기 전용 import; 새 키 없음). |
+| `lib/auth/permissions.ts` | 권한 키(읽기 전용 import; consult.session.* 키 추가됨, M6). |
 | `lib/auth/with-permission.ts` | 서버 사이드 가드 래퍼(읽기 전용). |
 | `lib/auth/rbac.ts` | `hasRole()` 헬퍼(읽기 전용). |
+| `components/chat/*` (ChatShell, Composer, AnswerBlock, Citation, SourcesGrid, ConfidenceBadge, Timeline) | 기존 `/api/ra/consult` 1-shot streaming 전용 — consult UI와 별개 흐름(M6). Citation, SourcesGrid, ConfidenceBadge는 재사용 가능. |
 
 ---
 
@@ -287,7 +380,7 @@ The system **shall** 모든 inbox 읽기에 `tanstack-query`를 사용하며 `st
 
 ## 7. Contract Authoritative Source (Code over Text)
 
-> 백엔드 코드는 **authoritative**하다(PR #322 병합). research.md와 SPEC-V3-INBOX-001 본문 중 코드와 충돌하는 서술은 모두 코드가 우선한다.
+> 백엔드 코드는 **authoritative**하다(PR #322 병합, PR #343 consult 백엔드). research.md와 SPEC 본문 중 코드와 충돌하는 서술은 모두 코드가 우선한다.
 
 ### 7.1 DISCREPANCY-1: VALID_TRANSITIONS matrix (Q1 decision: cite code as authoritative)
 
@@ -318,6 +411,33 @@ The system **shall** 모든 inbox 읽기에 `tanstack-query`를 사용하며 `st
   ```
 - **UI에 미치는 영향**: `ApproveDialog`(REQ-V3-UI-013)는 오직 `{password, esigSignature}`만 전송. `final_answer`는 별도 UI 메커니즘을 통해 티켓에 이미 설정되어 있어야 한다. `final_answer`가 누락된 경우 승인 호출은 400 "Cannot promote" 반환(REQ-V3-UI-015 처리).
 - **Resolution (user-approved)**: Phase D는 final_answer 편집 UI를 추가하지 않는다. 승인은 `ticket.finalAnswer`가 truthy일 때만 활성화(REQ-V3-UI-012). final_answer 편집은 TRIAGE C-2 또는 Phase D.2로 연기.
+
+### 7.3 CONSULT-CONTRACT-1: Session route parameter naming (code-authoritative, verified 2026-07-05)
+
+- **User instruction original**: 라우트 파라미터는 `:id`로 명시됨.
+- **실제 코드** (`app/api/consult/sessions/[sessionId]/route.ts`, verified 2026-07-05): 파라미터는 `sessionId` (NOT `id`). URL: `/api/consult/sessions/:sessionId`.
+- **UI에 미치는 영향**: consult UI 컴포넌트는 `sessionId` 파라미터 이름을 사용해야 한다.
+- **Resolution**: 코드 우선. 모든 consult UI는 `sessionId` 명명 사용.
+
+### 7.4 CONSULT-CONTRACT-2: Turn request body (code-authoritative, verified 2026-07-05)
+
+- **User instruction original**: body에 `{question, locale?}` 포함.
+- **실제 코드** (`app/api/consult/sessions/[sessionId]/turns/route.ts:19-21`, verified 2026-07-05): body = `{question}` (1-5000 chars). `locale`는 세션에서 상속되며 body에 없다.
+- **UI에 미치는 영향**: `QuestionComposer`는 오직 `question` 필드만 전송한다. `locale`은 세션 생성 시에만 설정.
+- **Resolution**: 코드 우선. turn 생성은 `question`만 전송.
+
+### 7.5 CONSULT-CONTRACT-3: Citations component reuse (code-authoritative, verified 2026-07-05)
+
+- **User instruction**: 기존 `components/chat/*` (ChatShell, Composer, AnswerBlock, Citation, SourcesGrid, ConfidenceBadge, Timeline)는 `/api/ra/consult` 1-shot streaming 전용.
+- **실제 코드** (`lib/db/schema.ts`, verified 2026-07-05): consultTurns 테이블의 `citations` 컬럼은 JSONB 배열로, 기존 Citation/SourcesGrid 컴포넌트와 호환된다.
+- **UI에 미치는 영향**: consult UI에서 `Citation`, `SourcesGrid`, `ConfidenceBadge` 컴포넌트를 재사용할 수 있다.
+- **Resolution**: 코드 구조 확인. 인용 렌더링 컴포넌트 재사용(REQ-V3-UI-061).
+
+### 7.6 CONSULT-CONTRACT-4: Turn error handling (code-authoritative, verified 2026-07-05)
+
+- **실제 코드** (`app/api/consult/sessions/[sessionId]/turns/route.ts:127-128`, verified 2026-07-05): RAG 실패 시 400 `{error, turn}` 반환. turn은 항상 persist됨(RA member가 피드백 확인 가능).
+- **UI에 미치는 영향**: 400 응답 시 error를 표시하되 turn도 히스토리에 추가해야 한다(REQ-V3-UI-059).
+- **Resolution**: 코드 우선. error 표시 + turn 히스토리 추가.
 
 ---
 
