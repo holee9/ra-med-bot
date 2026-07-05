@@ -1,6 +1,6 @@
 ---
 id: SPEC-V3-IMPACT-UI-001
-version: 0.1.0
+version: 0.2.0
 status: planned
 phase: C-4
 priority: High
@@ -10,7 +10,7 @@ author: manager-spec
 issue_number: TBD
 depends_on:
   - SPEC-V3-IMPACT-001
-  - SPEC-V3-UI-001
+# SPEC-V3-UI-001은 hard contract dependency가 아님 — consult UI 패턴 참조용 (TanStack Query provider, design tokens, i18n 네임스페이스 관례). run-phase가 consult 컴포넌트 구조/테스트 mock 패턴을 상속받으나 API 계약 의존성은 없음.
 blocks: []
 parent_spec: SPEC-V3-IMPACT-001
 lifecycle_level: spec-anchored
@@ -28,6 +28,7 @@ labels:
 | Version | Date | Author | Changes |
 |---------|------|--------|---------|
 | 0.1.0 | 2026-07-06 | manager-spec | 초기 작성. SPEC-V3-IMPACT-001 백엔드(POST /api/impact-check)를 소비하는 4-step 위저드 + 결과 페이지 UI. research.md 직검 기반 (L-013). REQ 11종. |
+| 0.2.0 | 2026-07-06 | manager-spec | plan-auditor FAIL findings 수정. C1/C2/H2: `employee` 역할 제거 (verified Role union), RBAC 게이트 `ra-member+`로 정정. C3: `**NOTE:**` prose 4종 EARS sub-REQ로 전환. H1: REQ-IMP-UI-006a orgId provenance 추가. H3: `level='conditional'` 렌더링 REQ 추가. H4: consult보다 엄격한 게이트 명시. H5: confidence 임계값 3종 정리. M2/M3/m2/m4 기타 정정. |
 
 ---
 
@@ -35,24 +36,30 @@ labels:
 
 ### 1.1 배경 (Background)
 
-SPEC-V3-IMPACT-001 (Phase C-3, PR #349 merged)이 제공한 `POST /api/impact-check` 4계층 평가 백엔드를 소비하는 Employee-facing 위저드 UI를 구현한다. 백엔드는 retestMatrix 결정론 → LLM 분류 → (confidence 분기) RAG / 티켓 → 신호등 결과를 동기 JSON으로 반환한다 (`app/api/impact-check/route.ts` 직검).
+SPEC-V3-IMPACT-001 (Phase C-3, PR #349 merged)이 제공한 `POST /api/impact-check` 4계층 평가 백엔드를 소비하는 `ra-member+` facing 위저드 UI를 구현한다. 백엔드는 retestMatrix 결정론 → LLM 분류 → (confidence 분기) RAG / 티켓 → 신호등 결과를 동기 JSON으로 반환한다 (`app/api/impact-check/route.ts` 직검).
 
 현재 코드베이스에는 `components/impact/` 디렉토리와 `app/(app)/impact/` 라우트가 존재하지 않는다 (research.md §4 greenfield 검증). 본 SPEC은 4단계 입력 위저드 + 결과 페이지를 새로 구축하며, 기존 consult UI 패턴 (`components/consult/`, `app/(app)/consult/`)을 따른다.
 
 ### 1.2 핵심 가치
 
-- **자가진단 워크플로우:** Employee가 4단계(제품 → 카테고리 → 상세 → 시장) 입력으로 변경 영향 평가를 실행.
+- **자가진단 워크플로우:** `ra-member+` 사용자가 4단계(제품 → 카테고리 → 상세 → 시장) 입력으로 변경 영향 평가를 실행.
 - **즉각적 시각 피드백:** 신호등(green/yellow/red) + 시장별 매트릭스 셀 + LLM 분류를 한 화면에 렌더링.
 - **RAG citation 강제:** 유사 사례 렌더링 시 출처 인용을 필수화 (Charter [지양-2]).
 - **백엔드 계약 엄수:** UI는 신호등/매트릭스를 재계산하지 않고 백엔드 응답을 그대로 표시 (drift 방지).
 
 ### 1.3 페르소나 (Personas)
 
+> **역할 래더 (verified, `lib/auth/rbac.ts:14`):** `Role = 'admin' | 'qa-lead' | 'ra-lead' | 'ra-member' | 'viewer' | 'auditor'`. `employee` 역할은 존재하지 않는다. `auditor`는 외부 감사자 전용 읽기 전용 역할 (`ROLE_HIERARCHY.auditor = 0.5`)로 impact 접근이 거부된다.
+
 | 페르소나 | 역할 | Impact 위저드 관점 |
 |---|---|---|
-| Employee / Viewer | `employee`, `viewer` | 위저드 실행 권한 (`impact.self_check`). 변경 영향 자가진단. low-confidence 시 "RA 문의" CTA 노출. |
-| RA Member / Lead | `ra-member`, `ra-lead` | 동일한 위저드 + 결과에서 `recommendation` 값으로 수동 검토 큐 유도. `impact.ra_escalate`는 본 SPEC 범위 외 (future). |
+| RA Member | `ra-member` | 위저드 실행 권한 (`impact.view` + `impact.self_check`). 변경 영향 자가진단. low-confidence 시 "RA 문의" CTA 노출. |
+| RA Lead | `ra-lead` | 동일 위저드 + 결과에서 `recommendation` 값으로 수동 검토 큐 유도. |
+| QA Lead | `qa-lead` | 동일 위저드 (QA가 member-level 업무 수행 가능 — `ROLE_HIERARCHY['qa-lead'] = 2.5`). |
 | Admin | `admin` | 모든 권한. 위저드 자체는 동일. |
+| Viewer / Auditor (차단) | `viewer`, `auditor` | `impact.view` 권한 미달 (`minRole: 'ra-member'`). `/impact` 접근 시 `/?error=access_denied` 리다이렉트. |
+
+> `impact.self_check`는 `minRole: 'viewer'`이지만, 페이지 진입 게이트(`impact.view`)가 더 엄격하므로 viewer/auditor는 위저드 페이지 자체에 진입할 수 없다 (H4 참조).
 
 ### 1.4 비목표 (Charter [지양-2 / 지양-5] 정렬)
 
@@ -89,11 +96,13 @@ SPEC-V3-IMPACT-001 (Phase C-3, PR #349 merged)이 제공한 `POST /api/impact-ch
 
 ### REQ-IMP-UI-001: 위저드 라우트 및 RBAC 게이트
 
-**WHEN** 인증되지 않은 사용자가 `/impact` 경로로 접근하면, **THE SYSTEM SHALL** 로그인 페이지로 리다이렉트한다.
+**WHEN** 인증되지 않은 사용자(anonymous)가 `/impact` 경로로 접근하면, **THE SYSTEM SHALL** 로그인 페이지로 리다이렉트한다.
 
-**WHILE** `impact.view` 권한이 없는 역할(employee 미만 / 비활성 사용자)이 `/impact`에 접근할 때, **THE SYSTEM SHALL** `/?error=access_denied`로 리다이렉트한다 (`app/(app)/consult/page.tsx` 패턴 준용).
+**WHILE** `impact.view` 권한이 없는 역할 — 즉 `ra-member` 미만인 `viewer`, `auditor`, 또는 비활성 사용자 — 이 `/impact`에 접근할 때, **THE SYSTEM SHALL** `/?error=access_denied`로 리다이렉트한다. 페이지 게이트는 `lib/auth/rbac.ts`의 `hasRole(userRole, 'ra-member')` 헬퍼를 사용해 판정한다 (`impact.view`의 `minRole: 'ra-member'`, `permissions.ts:582-596` 직검).
 
-**WHERE** 권한이 있는 사용자가 접근하면, **THE SYSTEM SHALL** 서버 컴포넌트에서 `auth()`를 호출해 역할을 읽고 클라이언트 위저드를 렌더링한다.
+**WHERE** 권한이 있는 사용자(`ra-member` 이상)가 접근하면, **THE SYSTEM SHALL** 서버 컴포넌트에서 `auth()`를 호출해 역할을 읽고 클라이언트 위저드를 렌더링한다.
+
+> **H4 — consult 게이트보다 엄격 (run-phase 주의):** consult 페이지 (`app/(app)/consult/page.tsx`)는 `viewer`만 거부한다. Impact 페이지는 더 엄격하게 `ra-member` 미만 전체(viewer + auditor + 비활성)를 거부한다. run-phase에서 consult 게이트를 copy-paste 하지 말 것 — `hasRole(userRole, 'ra-member')` 사용 필수.
 
 ### REQ-IMP-UI-002: Step 1 — 제품 식별자 입력
 
@@ -104,8 +113,6 @@ SPEC-V3-IMPACT-001 (Phase C-3, PR #349 merged)이 제공한 `POST /api/impact-ch
 **WHILE** 입력이 비어 있을 때, **THE SYSTEM SHALL** "다음" 버튼을 비활성화한다.
 
 **IF** 사용자가 1자 이상 입력하면, **THE SYSTEM SHALL** "다음" 버튼을 활성화하고 Step 2로 진행 가능하게 한다.
-
-**NOTE:** v1은 자유 텍스트 입력을 사용한다. 제품 목록 피커(drdown)는 제품 목록 API가 별도 SPEC으로 추가된 이후 후속 SPEC에서 도입한다 (research.md §6-A1).
 
 ### REQ-IMP-UI-003: Step 2 — 변경 카테고리 선택
 
@@ -151,9 +158,15 @@ SPEC-V3-IMPACT-001 (Phase C-3, PR #349 merged)이 제공한 `POST /api/impact-ch
 
 **WHERE** 1개 이상 선택되면, **THE SYSTEM SHALL** "평가 시작" 버튼을 활성화한다.
 
-**WHEN** "평가 시작"이 클릭되면, **THE SYSTEM SHALL** `orgId`, `productId`, `changeType`, `markets`, `changeDetail`을 `POST /api/impact-check`로 전송한다.
+**WHEN** "평가 시작"이 클릭되면, **THE SYSTEM SHALL** `orgId`, `productId`, `changeType`, `markets`, `changeDetail`을 `POST /api/impact-check`로 전송한다. v1에서 `assigneeId`는 생략한다 (research.md §6-A2).
 
-**NOTE:** v1은 `assigneeId`를 전송하지 않는다 (research.md §6-A2). low-confidence 결과에서 티켓이 생성되지 않음을 사용자에게 안내한다.
+**IF** 백엔드 응답의 `recommendation='low-confidence-manual-review'`이면, **THE SYSTEM SHALL** 사용자에게 "자동 티켓이 생성되지 않았습니다 — RA 큐에 문의하세요" 안내를 표시한다 (v1은 `assigneeId` 미전송이므로 low-confidence 시 티켓이 생성되지 않음).
+
+### REQ-IMP-UI-006a: orgId 출처 (Provenance)
+
+**WHEN** 위저드 페이지가 서버에서 로드될 때, **THE SYSTEM SHALL** `session.user.orgId`를 읽어 클라이언트 위저드로 전달하고, "평가 시작" 클릭 시 요청 본문의 `orgId` 필드로 전송한다 (백엔드 Zod가 `orgId: z.string()` non-optional을 요구 — `route.ts:21`).
+
+> **세션 shape 가정:** `auth()` 반환의 `session.user.orgId`가 존재한다고 가정한다. consult 페이지가 동일 가정으로 동작 중 (`app/(app)/consult/page.tsx`). run-phase에서 세션 타입 확장 필요 시 `lib/auth` 수정은 별도 SPEC으로 분리.
 
 ### REQ-IMP-UI-006: API 호출 및 로딩 상태
 
@@ -177,7 +190,11 @@ SPEC-V3-IMPACT-001 (Phase C-3, PR #349 merged)이 제공한 `POST /api/impact-ch
 
 **THE SYSTEM SHALL** `matrix` 배열의 각 셀을 시장(`market` 필드)별로 그룹화하여 표 형태로 렌더링하고 각 셀에 `level` / `ref` / `note`를 표시한다.
 
-**WHILE** `level='required'`인 셀을 렌더링할 때, **THE SYSTEM SHALL** 해당 셀을 신호등 색상과 동일한 강조 스타일로 표시한다.
+**WHILE** `level='required'`인 셀을 렌더링할 때, **THE SYSTEM SHALL** 해당 셀을 red 강조 스타일로 표시한다.
+
+**WHILE** `level='conditional'`인 셀을 렌더링할 때, **THE SYSTEM SHALL** 해당 셀을 yellow 강조 스타일로 표시한다.
+
+**WHILE** `level='not-required'`인 셀을 렌더링할 때, **THE SYSTEM SHALL** 해당 셀을 neutral(강조 없음) 스타일로 표시한다.
 
 ### REQ-IMP-UI-008: 결과 페이지 — LLM 분류 표시
 
@@ -187,6 +204,12 @@ SPEC-V3-IMPACT-001 (Phase C-3, PR #349 merged)이 제공한 `POST /api/impact-ch
 
 **IF** `confidence < 0.8`이면, **THE SYSTEM SHALL** "신뢰도 낮음 — RA 검토 권장" 경고 배지를 표시한다.
 
+> **Confidence 임계값 3종 정리 (H5 — drift 방지):** 본 SPEC에는 서로 다른 3개 confidence 임계값이 등장하며, 각각 목적과 소비 경로가 다르다.
+>
+> 1. **백엔드 신호등 임계값 (0.7 / 0.9)** — `calculateSignal`이 `confidence*100`으로 신호등 색상 산정에 사용 (`route.ts:71`). UI는 이 값을 직접 비교하지 **않는다**. UI는 백엔드가 산정한 `signal` 필드를 그대로 소비 (REQ-IMP-UI-007).
+> 2. **백엔드 RAG 분기 임계값 (0.8)** — `confidence >= 0.8`일 때만 Layer 4 RAG가 실행되어 `similarCases`가 응답에 포함되고 `recommendation='high-confidence-auto-approve'`가 설정됨 (`route.ts:92`). UI는 이 임계값 자체를 검사하지 않고 `recommendation` 필드와 `similarCases`의 존재 여부로 분기 (REQ-IMP-UI-009/010).
+> 3. **UI 표시 배지 임계값 (0.8)** — REQ-IMP-UI-008의 "신뢰도 낮음" 배지 표시용. cosmetic-only 결정이며 signal 색상과 독립적임 (예: confidence=0.82 → signal은 green/yellow일 수 있지만 배지는 미표시).
+
 ### REQ-IMP-UI-009: 결과 페이지 — 유사 사례 (RAG)
 
 **IF** 응답에 `similarCases` 배열이 **존재하고**(high-confidence 분기), 배열이 비어 있지 않으면, **THE SYSTEM SHALL** 각 사례를 카드로 렌더링하고 `title`, `content`, `similarity`를 표시한다.
@@ -195,9 +218,7 @@ SPEC-V3-IMPACT-001 (Phase C-3, PR #349 merged)이 제공한 `POST /api/impact-ch
 
 **IF** `similarCases`가 빈 배열이면, **THE SYSTEM SHALL** "유사 사례가 없습니다" 메시지를 표시한다.
 
-**IF** 응답에 `similarCases` 필드가 **존재하지 않으면**(low-confidence 분기 — 백엔드가 RAG을 건너뜀), **THE SYSTEM SHALL** 유사 사례 섹션을 렌더링하지 않고 "신뢰도 낮아 유사 사례 조회를 생략했습니다" 안내를 표시한다.
-
-**NOTE:** 백엔드는 low-confidence 시 `similarCases`를 `undefined`로 반환한다 (route.ts 직검). 빈 배열 `[]`과 `undefined`를 구분해서 렌더링해야 한다.
+**IF** 응답에 `similarCases` 필드가 **존재하지 않으면**(low-confidence 분기 — 백엔드가 RAG을 건너뜀), **THE SYSTEM SHALL** 유사 사례 섹션을 렌더링하지 않고 "신뢰도 낮아 유사 사례 조회를 생략했습니다" 안내를 표시한다. 백엔드는 low-confidence 시 `similarCases`를 `undefined`로 반환한다 (route.ts 직검) — UI는 빈 배열 `[]`과 `undefined`를 반드시 구분해서 렌더링해야 한다.
 
 ### REQ-IMP-UI-010: 결과 페이지 — 티켓 CTA
 
@@ -211,7 +232,7 @@ SPEC-V3-IMPACT-001 (Phase C-3, PR #349 merged)이 제공한 `POST /api/impact-ch
 
 **THE SYSTEM SHALL** 모든 사용자 가시 문자열을 `next-intl`의 `impact.*` 네임스페이스 키로 관리한다 (`messages/ko.json` + `messages/en.json`).
 
-**WHEN** 사용자가 키보드로 위저드를 탐색할 때, **THE SYSTEM SHALL** Step 간 합리적인 포커스 관리(Tab/Shift+Tab 순서, Step 진입 시 첫 입력으로 포커스 이동)를 제공한다.
+**WHEN** 사용자가 키보드로 위저드를 탐색할 때, **THE SYSTEM SHALL** Tab/Shift+Tab 논리적 순서를 유지하고, Step 진입 시 `focus()`를 해당 Step의 첫 번째 입력 요소에 호출한다.
 
 **THE SYSTEM SHALL** 모든 폼 입력에 `aria-label` / `<label>` 연결을 제공하고 WCAG 2.1 AA 색상 대비를 만족한다 (`ci:contrast` 게이트).
 
@@ -318,7 +339,7 @@ type ImpactCheckResponse = {
 ---
 
 **생성일:** 2026-07-06
-**버전:** 0.1.0
+**버전:** 0.2.0
 **상태:** planned
-**총 REQ:** 11 functional + 4 NFR
+**총 REQ:** 12 functional (REQ-IMP-UI-006a 추가) + 4 NFR
 **다음 단계:** plan.md 구현 계획 수립 → acceptance.md 검증 시나리오 → plan-auditor 감사
