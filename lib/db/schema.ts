@@ -32,9 +32,11 @@ import {
   pgEnum,
   pgTable,
   primaryKey,
+  real,
   text,
   timestamp,
   unique,
+  uniqueIndex,
   uuid,
 } from 'drizzle-orm/pg-core';
 
@@ -428,6 +430,11 @@ export const auditActionEnum = pgEnum('audit_action', [
   'inbox.closed',
   'inbox.rejected',
   'inbox.approve_failed', // H-2 fix: approval failed (ESIG re-auth failure or domain error)
+  // SPEC-V3-CONSULT-001 — added via 0107_create_consult_tables.sql (Issue 341):
+  // 21 CFR Part 11 §11.10(e) audit material. Power Chat session/turn lifecycle.
+  'consult.session.create',
+  'consult.turn.create',
+  'consult.session.delete',
   // SPEC-REGULA-STANDARDS-001 — added via 0088_standards.sql (Issue #62).
   // Standards lifecycle is 21 CFR Part 11 audit-material (design-input records
   // under ISO 13485 / 21 CFR 820.30). Charter [지양-2] citation provenance.
@@ -3326,5 +3333,67 @@ export const approvedAnswers = pgTable(
       'gin',
       sql`to_tsvector('simple', ${t.question} || ' ' || ${t.answer})`,
     ),
+  }),
+);
+
+// SPEC-V3-CONSULT-001 (REQ-CONS-001, Issue 341): consult_sessions — RA Power Chat.
+// v2 호환성 (R-01): ISOLATED from conversations/messages. Legacy /api/ra/consult
+// 1-shot SSE route is untouched. v3 stores multi-turn RA deep-research sessions.
+// 5년 보관 (MDR Art. 10(8)) — soft-delete via deletedAt (REQ-CONS-006).
+export const consultSessions = pgTable(
+  'consult_sessions',
+  {
+    id: uuid('id').defaultRandom().primaryKey(),
+    orgId: uuid('org_id')
+      .notNull()
+      .references(() => organizations.id, { onDelete: 'cascade' }),
+    userId: uuid('user_id')
+      .notNull()
+      .references(() => users.id, { onDelete: 'cascade' }),
+    projectId: uuid('project_id').references(() => projects.id, { onDelete: 'set null' }),
+    title: text('title').notNull(),
+    locale: text('locale').notNull().default('ko'),
+    createdAt: timestamp('created_at', { withTimezone: true, mode: 'date' }).notNull().defaultNow(),
+    updatedAt: timestamp('updated_at', { withTimezone: true, mode: 'date' }).notNull().defaultNow(),
+    deletedAt: timestamp('deleted_at', { withTimezone: true, mode: 'date' }),
+  },
+  (t) => ({
+    // @MX:NOTE [AUTO] REQ-CONS-002 — org-scoped session list (ra-lead/admin see all).
+    orgIdx: index('consult_sessions_org_id_idx').on(t.orgId),
+    // @MX:NOTE [AUTO] REQ-CONS-002 — ra-member sees only own sessions.
+    userIdx: index('consult_sessions_user_id_idx').on(t.userId),
+    // @MX:NOTE [AUTO] REQ-CONS-002 — newest-first ordering.
+    createdIdx: index('consult_sessions_created_at_idx').on(t.createdAt),
+  }),
+);
+
+// SPEC-V3-CONSULT-001 (REQ-CONS-004, Issue 341): consult_turns — Exchange model (H-1).
+// 한 turn = 한 Q+A pair. role 필드 없음. UNIQUE(session_id, turn_number)로
+// 동시 POST 시 turnNumber 충돌 방지 (R-05 완화 — DB 제약 + tx retry).
+export const consultTurns = pgTable(
+  'consult_turns',
+  {
+    id: uuid('id').defaultRandom().primaryKey(),
+    sessionId: uuid('session_id')
+      .notNull()
+      .references(() => consultSessions.id, { onDelete: 'cascade' }),
+    turnNumber: integer('turn_number').notNull(),
+    question: text('question').notNull(),
+    answer: text('answer'),
+    citations: jsonb('citations')
+      .$type<{ source: string; quote?: string }[]>()
+      .notNull()
+      .default([]),
+    sources: jsonb('sources')
+      .$type<{ sourceId: string; sourceLabel?: string; quote?: string }[]>()
+      .notNull()
+      .default([]),
+    confidence: real('confidence'),
+    error: text('error'),
+    createdAt: timestamp('created_at', { withTimezone: true, mode: 'date' }).notNull().defaultNow(),
+  },
+  (t) => ({
+    // @MX:NOTE [AUTO] REQ-CONS-003 — session detail turns array, turnNumber asc (AC-CONS-02b).
+    sessionTurnIdx: uniqueIndex('consult_turns_session_turn_idx').on(t.sessionId, t.turnNumber),
   }),
 );

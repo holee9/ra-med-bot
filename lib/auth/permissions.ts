@@ -174,7 +174,14 @@ export type PermissionAction =
   // SPEC-V3-INBOX-001 (Issue 320, REQ-V3-INBOX-001): ask.create permission.
   // RA employees ask regulatory questions via /api/ask. Viewer-level access
   // for Charter alignment — 전사 인허가 도우미 (mirrors consult.create pattern).
-  | 'ask.create';
+  | 'ask.create'
+  // SPEC-V3-CONSULT-001 (Issue 341, REQ-CONS-001..007): RA Power Chat RBAC.
+  // ra-member+: create sessions, create turns, view own sessions (Charter [지양-4]).
+  // ra-lead/admin: view all org sessions, delete sessions (21 CFR Part 11 audit).
+  | 'consult.session.create'
+  | 'consult.session.view'
+  | 'consult.session.delete'
+  | 'consult.turn.create';
 
 export interface PermissionSpec {
   minRole: Role;
@@ -527,5 +534,39 @@ export const PERMISSIONS: Record<PermissionAction, PermissionSpec> = {
     minRole: 'viewer',
     scope: 'org',
     resourceType: 'inboxTicket',
+  },
+  // @MX:NOTE [AUTO] consult.session.create — RA Power Chat session creation.
+  // @MX:SPEC SPEC-V3-CONSULT-001 (REQ-CONS-001, Issue 341, Charter [지양-4])
+  // ra-member+ — RA deep-research sessions are RA-team scoped (mirrors ask.create
+  // ra-tier gating, NOT viewer-level). Power Chat is a RA specialist tool.
+  'consult.session.create': {
+    minRole: 'ra-member',
+    scope: 'org',
+    resourceType: 'consultSession',
+  },
+  // @MX:NOTE [AUTO] consult.session.view — session list + detail (with turns).
+  // @MX:SPEC SPEC-V3-CONSULT-001 (REQ-CONS-002, REQ-CONS-003, Issue 341)
+  // ra-member+: own sessions only (app-level userId filter). ra-lead/admin: all org.
+  'consult.session.view': {
+    minRole: 'ra-member',
+    scope: 'org',
+    resourceType: 'consultSession',
+  },
+  // @MX:ANCHOR [AUTO] consult.session.delete — ra-lead/admin ONLY soft-delete gate.
+  // @MX:REASON REQ-CONS-006: session deletion is a 21 CFR Part 11 audit-material
+  //            regulatory records decision. Mirrors inbox.manage / capa.close.
+  // @MX:SPEC SPEC-V3-CONSULT-001 (REQ-CONS-006, Issue 341)
+  'consult.session.delete': {
+    minRole: 'ra-lead',
+    scope: 'org',
+    resourceType: 'consultSession',
+  },
+  // @MX:NOTE [AUTO] consult.turn.create — add a Q+A turn to a session.
+  // @MX:SPEC SPEC-V3-CONSULT-001 (REQ-CONS-004, Issue 341)
+  // ra-member+ — turn creation triggers RAG pipeline (rate-limited, M-1 follow-up).
+  'consult.turn.create': {
+    minRole: 'ra-member',
+    scope: 'org',
+    resourceType: 'consultTurn',
   },
 };
