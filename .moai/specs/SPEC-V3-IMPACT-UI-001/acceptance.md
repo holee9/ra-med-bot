@@ -14,15 +14,17 @@
 
 ### AC-IMP-UI-01: 위저드 라우트 RBAC 게이트 (REQ-IMP-UI-001)
 
-**Given** `impact.view` 권한이 없는 역할(viewer 미만 또는 비활성)의 사용자가
-**When** `/impact` 경로로 접근하면
-**Then** 서버 컴포넌트가 `auth()`를 호출해 역할을 읽고 `/?error=access_denied`로 리다이렉트한다.
+> **역할 래더 (verified):** `admin` > `qa-lead` (2.5) > `ra-lead` > `ra-member` > `viewer` > `auditor` (0.5). `employee` 역할은 존재하지 않는다 (`lib/auth/rbac.ts:14`).
 
-**Given** `employee` 이상 권한(`employee`, `viewer`, `ra-member`, `ra-lead`, `admin`) 사용자가
+**Given** `impact.view` 권한 미달 역할 — `auditor`, `viewer`, 또는 익명/비활성 사용자 — 이
+**When** `/impact` 경로로 접근하면
+**Then** 서버 컴포넌트가 `auth()`를 호출해 역할을 읽고 `hasRole(userRole, 'ra-member')`가 false이면 `/?error=access_denied`로 리다이렉트한다.
+
+**Given** `ra-member` 이상 권한(`ra-member`, `qa-lead`, `ra-lead`, `admin`) 사용자가
 **When** `/impact` 경로로 접근하면
 **Then** 클라이언트 위저드 컴포넌트가 렌더링되고 Step 1이 보인다.
 
-**Evidence:** Playwright E2E + RTL 단위 테스트에서 `auth()` mock으로 역할별 분기 검증.
+**Evidence:** Playwright E2E + RTL 단위 테스트에서 `auth()` mock으로 `{auditor, viewer, ra-member, qa-lead, ra-lead, admin}` 6종 역할 + 익명 분기 검증. 특히 consult 게이트(`viewer`만 거부)와 달리 impact 게이트는 `viewer`와 `auditor` 모두 거부함을 단언.
 
 ### AC-IMP-UI-02: Step 1 제품 식별자 입력 (REQ-IMP-UI-002)
 
@@ -117,6 +119,14 @@
 **Given** 백엔드 응답의 `signal='red'`이고 `matrix`에 `market='us', level='required'` 셀이 포함되어 있으면
 **When** 매트릭스 표가 렌더링되면
 **Then** `us` 행의 셀이 red 강조 스타일로 표시되고 `ref` / `note`가 보인다.
+
+**Given** 백엔드 응답의 `matrix`에 `market='eu', level='conditional'` 셀이 포함되어 있으면
+**When** 매트릭스 표가 렌더링되면
+**Then** `eu` 행의 셀이 yellow 강조 스타일로 표시되고 `ref` / `note`가 보인다.
+
+**Given** 백엔드 응답의 `matrix`에 `market='kr', level='not-required'` 셀이 포함되어 있으면
+**When** 매트릭스 표가 렌더링되면
+**Then** `kr` 행의 셀이 neutral(강조 없음) 스타일로 표시된다.
 
 **Given** SignalLight가 렌더링될 때
 **When** 컴포넌트가 신호 값을 계산하면
@@ -220,11 +230,19 @@
 **When** mutation이 403을 throw하면
 **Then** "권한이 없습니다" 에러가 표시되고 자동 리다이렉트는 발생하지 않는다 (사용자가 새로고침/재로그인 선택).
 
-### Edge Case 5: 백엔드 타임아웃 (long-running)
+### Edge Case 4b: confidence=0.80 경계 (RAG 분기 + 표시 배지)
+
+**Given** 백엔드 응답의 `classification.confidence=0.80`이면 (백엔드는 `>= 0.8` 임계값 사용 — `route.ts:92`)
+**When** 결과 페이지가 렌더링되면
+**Then** (a) `similarCases`가 fetch되어 렌더링되고 (high-confidence 분기), (b) `recommendation='high-confidence-auto-approve'`이며, (c) "신뢰도 낮음" 배지는 미표시된다 (REQ-IMP-UI-008의 `< 0.8` 조건 미충족). 백엔드 임계값이 `>`가 아닌 `>=`임을 확인하는 회귀 방지 케이스.
+
+### Edge Case 5: 백엔드 타임아웃 (non-functional observation)
+
+> v1에는 명시적 타임아웃 UI가 없다. 이 케이스는 automated-test 의무가 아닌 관측 항목이다.
 
 **Given** 백엔드 응답이 20초 이상 소요되면 (parent SPEC NFR 상한)
 **When** 사용자가 대기 중일 때
-**Then** 로딩 UI가 계속 표시되고 "뒤로"/"재전송" 버튼이 비활성화를 유지한다. (명시적 타임아웃 UI는 v1 범위 외 — 백엔드가 응답하거나 네트워크 에러날 때까지 대기.)
+**Then** (관측) 로딩 UI가 계속 표시되고 "뒤로"/"재전송" 버튼이 비활성화를 유지한다. 별도 타임아웃 컴포넌트는 렌더링되지 않는다 — 백엔드가 응답하거나 네트워크 에러가 발생할 때까지 대기한다.
 
 ### Edge Case 6: 중복 제출 방지
 
@@ -327,7 +345,7 @@
 ---
 
 **생성일:** 2026-07-06
-**버전:** 0.1.0
+**버전:** 0.2.0
 **상태:** planned
-**총 AC 개수:** 11개
-**총 Edge Cases:** 10개
+**총 AC 개수:** 11개 (서브 케이스 확장 — AC-IMP-UI-07에 conditional/not-required 추가)
+**총 Edge Cases:** 11개 (Edge Case 4b confidence=0.80 경계 추가)
