@@ -15,9 +15,9 @@ vi.mock('@/lib/db/client', () => {
   };
 });
 
-// Mock the embedding utility
-vi.mock('@/lib/knowledge-promo/embedding', () => ({
-  toVectorLiteral: vi.fn((embedding: number[]) => `[${embedding.join(',')}]::vector`),
+// Mock the embedding provider
+vi.mock('@/lib/ai/embedding-provider', () => ({
+  embedBatchTexts: vi.fn().mockResolvedValue([[0.1, 0.2, 0.3, 0.4, 0.5]]),
 }));
 
 describe('Layer 4: RAG Similar Cases', () => {
@@ -31,7 +31,7 @@ describe('Layer 4: RAG Similar Cases', () => {
   });
 
   describe('AC-IMP-08 & AC-IMP-14: findSimilarCases', () => {
-    it('should return similar cases with pgvector cosine search', async () => {
+    it('should embed query text and search similar cases', async () => {
       mockExecute.mockResolvedValue([
         {
           id: 'case-1',
@@ -49,22 +49,22 @@ describe('Layer 4: RAG Similar Cases', () => {
 
       const result = await findSimilarCases({
         productId: 'product-123',
-        changeType: 'labeling',
-        embedding: [0.1, 0.2, 0.3],
+        changeType: 'label',
+        changeDetail: 'Label wording change for IFU section 5',
       });
 
       expect(result.cases).toHaveLength(2);
-      expect(result.cases[0].similarity).toBeGreaterThan(0.9);
+      expect(result.cases[0]?.similarity).toBeGreaterThan(0.9);
       expect(result.citations).toContain('<sup class="cite">1</sup>');
     });
 
-    it('should filter by source_repo and change_type', async () => {
+    it('should filter by source_repo, product_id, and change_type', async () => {
       mockExecute.mockResolvedValue([]);
 
       await findSimilarCases({
         productId: 'product-456',
-        changeType: 'software',
-        embedding: [0.4, 0.5, 0.6],
+        changeType: 'sw',
+        changeDetail: 'Software algorithm update',
       });
 
       expect(mockExecute).toHaveBeenCalled();
@@ -81,8 +81,8 @@ describe('Layer 4: RAG Similar Cases', () => {
 
       const result = await findSimilarCases({
         productId: 'product-789',
-        changeType: 'clinical',
-        embedding: [0.7, 0.8, 0.9],
+        changeType: 'process',
+        changeDetail: 'Process validation update',
       });
 
       expect(mockExecute).toHaveBeenCalled();
@@ -96,8 +96,8 @@ describe('Layer 4: RAG Similar Cases', () => {
 
       const result = await findSimilarCases({
         productId: 'product-999',
-        changeType: 'qms',
-        embedding: [0.1, 0.1, 0.1],
+        changeType: 'bom',
+        changeDetail: 'BOM component replacement',
       });
 
       // Should timeout before 11s completes
@@ -110,8 +110,8 @@ describe('Layer 4: RAG Similar Cases', () => {
 
       const result = await findSimilarCases({
         productId: 'product-error',
-        changeType: 'cybersecurity',
-        embedding: [0.2, 0.2, 0.2],
+        changeType: 'warn',
+        changeDetail: 'Warning letter update',
       });
 
       expect(result.cases).toEqual([]);
@@ -136,11 +136,25 @@ describe('Layer 4: RAG Similar Cases', () => {
 
       const result = await findSimilarCases({
         productId: 'product-cite',
-        changeType: 'labeling',
-        embedding: [0.3, 0.3, 0.3],
+        changeType: 'sterile',
+        changeDetail: 'Sterilization condition change',
       });
 
       expect(result.citations).toBe('<sup class="cite">1</sup><sup class="cite">2</sup>');
+    });
+
+    it('should return empty result on embedding failure', async () => {
+      const { embedBatchTexts } = await import('@/lib/ai/embedding-provider');
+      vi.mocked(embedBatchTexts).mockResolvedValue([]);
+
+      const result = await findSimilarCases({
+        productId: 'product-embed-fail',
+        changeType: 'sw-minor',
+        changeDetail: 'Test',
+      });
+
+      expect(result.cases).toEqual([]);
+      expect(result.error).toContain('Failed to embed');
     });
   });
 });

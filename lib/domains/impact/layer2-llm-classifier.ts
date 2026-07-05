@@ -4,6 +4,7 @@
 // @MX:SPEC SPEC-V3-IMPACT-001 (AC-IMP-06)
 
 import { getLlmModel } from '@/lib/ai/llm-provider';
+import { generateText } from 'ai';
 
 export interface ClassificationResult {
   category: string;
@@ -11,28 +12,27 @@ export interface ClassificationResult {
   reason: string;
 }
 
+// Categories MUST match retest-matrix-data.ts changeTypes (7 categories)
 const ALLOWED_CATEGORIES = [
-  'labeling',
-  'software',
-  'clinical',
-  'cybersecurity',
-  'qms',
   'bom',
+  'sw',
+  'sw-minor',
+  'label',
+  'warn',
   'process',
+  'sterile',
 ];
 
 const MAX_RETRIES = 3;
 
 /**
  * Classifies a regulatory change detail into a category using LLM.
- * Uses gx10 Ollama via getLlmModel() with gpt-oss:120b model.
+ * Uses Vercel AI SDK generateText with gx10 gpt-oss:120b model.
  * Implements retry logic (×3) on failure.
  */
 export async function classifyChangeCategory(
   changeDetail: string,
 ): Promise<ClassificationResult> {
-  const llm = getLlmModel('gpt-oss:120b');
-
   const prompt = `Classify the following regulatory change detail into one of these categories: ${ALLOWED_CATEGORIES.join(', ')}.
 
 Change detail: "${changeDetail}"
@@ -48,8 +48,12 @@ Respond in JSON format:
 
   for (let attempt = 1; attempt <= MAX_RETRIES; attempt++) {
     try {
-      const response = await llm.complete(prompt);
-      const parsed = JSON.parse(response.text);
+      const { text } = await generateText({
+        model: getLlmModel(),
+        prompt,
+      });
+
+      const parsed = JSON.parse(text.trim());
 
       // Validate category
       if (!ALLOWED_CATEGORIES.includes(parsed.category)) {

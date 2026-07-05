@@ -5,12 +5,12 @@
 
 import { sql } from 'drizzle-orm';
 import { db } from '@/lib/db/client';
-import { toVectorLiteral } from '@/lib/knowledge-promo/embedding';
+import { embedBatchTexts } from '@/lib/ai/embedding-provider';
 
 export interface SimilarCaseInput {
   productId: string;
   changeType: string;
-  embedding: number[];
+  changeDetail: string;
 }
 
 export interface SimilarCase {
@@ -32,43 +32,48 @@ const MAX_RESULTS = 3;
 
 /**
  * Finds similar cases using pgvector cosine similarity search.
- * Filters by source_repo='ra-llm-wiki' and change_type.
+ * Filters by source_repo='ra-llm-wiki', product_id, and change_type.
  * Returns max 3 results with citation format <sup class="cite">N</sup>.
  * Times out after 10s and returns empty results.
  */
 export async function findSimilarCases(
   input: SimilarCaseInput,
 ): Promise<SimilarCasesResult> {
-  const vectorLiteral = toVectorLiteral(input.embedding);
-  if (!vectorLiteral) {
-    return {
-      cases: [],
-      citations: '',
-      timedOut: false,
-      error: 'Failed to convert embedding to vector literal',
-    };
-  }
-
   try {
-    // Implement timeout using Promise.race
+    // Step 1: Embed the query text
+    const embeddings = await embedBatchTexts([input.changeDetail]);
+    if (!embeddings || embeddings.length === 0 || !embeddings[0]) {
+      return {
+        cases: [],
+        citations: '',
+        timedOut: false,
+        error: 'Failed to embed query text',
+      };
+    }
+
+    const vectorLiteral = `[${embeddings[0].join(',')}]`;
+
+    // Step 2: Implement timeout using Promise.race
     const timeoutPromise = new Promise<never>((_, reject) =>
       setTimeout(() => reject(new Error('Query timeout')), TIMEOUT_MS),
     );
 
     const queryPromise = (async () => {
-      const rows = await db.execute<SimilarCase>(
+      const rows = await db.execute<
+        Pick<SimilarCase, 'id' | 'title' | 'content'> & { similarity: number }
+      >(
         sql`
           SELECT
             e.id,
             e.title,
             e.content,
-            1.0 - (e.embedding <=> ${vectorLiteral}::vector) AS similarity
+            0.6 * (1 - (e.embedding <=> ${vectorLiteral}::vector)) AS similarity
           FROM embeddings e
           WHERE e.source_repo = 'ra-llm-wiki'
             AND e.product_id = ${input.productId}
             AND e.change_type = ${input.changeType}
             AND e.embedding IS NOT NULL
-          ORDER BY e.embedding <=> ${vectorLiteral}::vector
+          ORDER BY similarity DESC
           LIMIT ${MAX_RESULTS}
         `,
       );
