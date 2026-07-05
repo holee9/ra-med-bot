@@ -2,7 +2,7 @@
 
 ---
 **SPEC ID:** SPEC-V3-IMPACT-UI-001
-**Version:** 0.1.0
+**Version:** 0.2.0
 **Status:** planned
 **Phase:** C-4
 **Created:** 2026-07-06
@@ -80,13 +80,17 @@ parse → Layer 1 (matrix loop) → Layer 2 (LLM classify)
 
 The UI's SignalLight component must consume the `signal` field directly (backend-computed) — the UI MUST NOT re-compute, to avoid drift.
 
-### 2.6 RBAC (route.ts:32 + parent SPEC REQ-V3-IMP-013)
+### 2.6 RBAC (route.ts:32 + `permissions.ts:582-596` 직검)
 
-| Permission | Granted roles | Enforced where |
-|---|---|---|
-| `impact.view` | employee, viewer, ra-member, ra-lead, admin | Page route (server-side gate, REQ-IMP-UI-002) |
-| `impact.self_check` | viewer, employee, ra-member, ra-lead, admin | API route wrapper |
-| `impact.ra_escalate` | ra-member, ra-lead, admin | Future: ticket CTA escalation (not in v1 UI) |
+> **Role ladder (verified, `lib/auth/rbac.ts:14`):** `Role = 'admin' | 'qa-lead' | 'ra-lead' | 'ra-member' | 'viewer' | 'auditor'`. `employee` 역할은 **존재하지 않는다** — 이전 버전의 본 문서와 parent SPEC prose가 사용한 `employee`는 fabricated. `auditor` (`ROLE_HIERARCHY=0.5`)는 외부 감사자 전용 읽기 전용 역할로 기존 모든 minRole 게이트에서 거부됨.
+
+| Permission | minRole | Granted roles (ladder 기준) | Enforced where |
+|---|---|---|---|
+| `impact.view` | `ra-member` | ra-member, qa-lead, ra-lead, admin | Page route (server-side gate, REQ-IMP-UI-001). **auditor, viewer는 거부됨.** |
+| `impact.self_check` | `viewer` | viewer, ra-member, qa-lead, ra-lead, admin | API route wrapper (withPermission) |
+| `impact.ra_escalate` | `ra-member` | ra-member, qa-lead, ra-lead, admin | Future: ticket CTA escalation (not in v1 UI) |
+
+> **게이트 엄격도 역설 (H4):** 페이지 게이트(`impact.view`, minRole=`ra-member`)가 API 게이트(`impact.self_check`, minRole=`viewer`)보다 엄격하다. 따라서 viewer/auditor는 위저드 페이지 자체에 진입할 수 없어 API 호출 기회가 없다. 이는 의도된 동작 — UI는 더 안전한 서버 사이드 게이트를 신뢰한다.
 
 **Page-level gate convention** (verified in `app/(app)/consult/page.tsx:8-13`): server component calls `auth()`, reads `session.user.role`, redirects on insufficient role. The Impact page MUST follow the same pattern.
 
@@ -177,7 +181,7 @@ The backend accepts `productId: z.string()` but there is **no products list API*
 **SPEC resolution:** Default to (b) free-text `productId` input for v1, with a NOTE that (a)/(c) are follow-up enhancements. This keeps the UI self-contained and avoids inventing a product list that doesn't exist (L-002 anti-pattern guardrail).
 
 ### A2. `assigneeId` and Layer 3 ticket creation — UX DECISION NEEDED
-Backend creates a ticket only if `assigneeId` is present (route.ts:90). For viewer/employee roles, who should the assignee be?
+Backend creates a ticket only if `assigneeId` is present (route.ts:90). For ra-member/qa-lead/ra-lead/admin roles (위저드 진입 가능 역할), who should the assignee be?
 
 **Options:**
 - (a) The UI omits `assigneeId` → low-confidence runs produce no ticket → user sees "RA review recommended" CTA without a created ticket.
