@@ -72,7 +72,7 @@ describe('lib/audit.ts (REQ-BREADTH-057) — extended AuditAction type', () => {
         'export.confluence',
       ]),
     );
-    expect(values).toHaveLength(218); // -9 pms.*/pmcf.* (Issue #319) +8 inbox +1 inbox.approve_failed (Issue #320) +3 consult (Issue #341 SPEC-V3-CONSULT-001); was 215 before PMS/PMCF domain removal
+    expect(values).toHaveLength(219); // -9 pms.*/pmcf.* (Issue #319) +8 inbox +1 inbox.approve_failed (Issue #320) +4 consult (Issue #341 SPEC-V3-CONSULT-001); was 215 before PMS/PMCF domain removal
   });
 
   it.each([

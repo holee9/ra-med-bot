@@ -435,6 +435,9 @@ export const auditActionEnum = pgEnum('audit_action', [
   'consult.session.create',
   'consult.turn.create',
   'consult.session.delete',
+  // SPEC-V3-CONSULT-001 — added via 0108_consult_turn_failed_audit.sql (REQ-CONS-010):
+  // 21 CFR Part 11 debugging audit for timeout/runtime_error turns (AC-CONS-05).
+  'consult.turn.failed',
   // SPEC-REGULA-STANDARDS-001 — added via 0088_standards.sql (Issue #62).
   // Standards lifecycle is 21 CFR Part 11 audit-material (design-input records
   // under ISO 13485 / 21 CFR 820.30). Charter [지양-2] citation provenance.

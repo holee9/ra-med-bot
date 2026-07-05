@@ -478,7 +478,8 @@ export type AuditAction =
   //   consult.session.delete  — session soft-deleted by ra-lead/admin (REQ-CONS-009)
   | 'consult.session.create'
   | 'consult.turn.create'
-  | 'consult.session.delete';
+  | 'consult.session.delete'
+  | 'consult.turn.failed';
 
 export interface AuditEvent {
   /** User UUID, or null for system-initiated events. */

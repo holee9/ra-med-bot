@@ -6,6 +6,7 @@
 //            turnNumber MAX+1 + INSERT turn + writeAudit (fast, atomic).
 // @MX:SPEC SPEC-V3-CONSULT-001 (REQ-CONS-004, REQ-CONS-005, REQ-CONS-008, AC-CONS-03..07, Issue 341)
 
+import { createHash } from 'node:crypto';
 import { writeAudit } from '@/lib/audit';
 import { withPermission } from '@/lib/auth/with-permission';
 import { db } from '@/lib/db/client';
@@ -91,11 +92,18 @@ export const POST = withPermission('consult.turn.create', async (req, ctx, sessi
       throw new Error('consult_turn INSERT returned no row');
     }
 
-    // REQ-CONS-008: consult.turn.create audit (21 CFR Part 11). questionHash for PII.
+    // REQ-CONS-008 (success) / REQ-CONS-010 (failure): audit action branches on result.error.
+    // turn.failed covers timeout / runtime_error / citation_coverage (AC-CONS-05,
+    // 21 CFR Part 11 §11.10(e) debugging audit). questionHash is non-PII question
+    // fingerprint (REQ-CONS-008) — question text is never stored in audit.
+    const questionHash = createHash('sha256')
+      .update(parsed.data.question)
+      .digest('hex')
+      .slice(0, 16);
     await writeAudit(
       {
         actor_id: session.user.id,
-        action: 'consult.turn.create',
+        action: result.error ? 'consult.turn.failed' : 'consult.turn.create',
         resource_type: 'consult_turn',
         resource_id: row.id,
         meta_json: {
@@ -104,6 +112,7 @@ export const POST = withPermission('consult.turn.create', async (req, ctx, sessi
           turnNumber,
           error: result.error,
           citationCount: result.citations.length,
+          questionHash,
         },
       },
       tx,
@@ -112,18 +121,11 @@ export const POST = withPermission('consult.turn.create', async (req, ctx, sessi
     return row;
   });
 
-  // Response mapping by error case (turn is ALWAYS persisted — RA member sees feedback).
-  // AC-CONS-04: citation violation (no_citations / citation_coverage) → 400.
-  if (result.error === 'no_citations' || result.error === 'citation_coverage') {
-    return Response.json({ error: 'citation_required', code: result.error, turn }, { status: 400 });
-  }
-  // AC-CONS-05: timeout → 504 (turn persisted with error='timeout').
-  if (result.error === 'timeout') {
-    return Response.json({ error: 'timeout', turn }, { status: 504 });
-  }
-  // runtime_error → 500.
+  // Response mapping (turn is ALWAYS persisted — RA member sees feedback).
+  // AC-CONS-04 / AC-CONS-05: any error (citation / timeout / runtime) → 400
+  // per SPEC §AC-CONS-05 + acceptance.md (single status code, error field carries kind).
   if (result.error) {
-    return Response.json({ error: 'runtime_error', turn }, { status: 500 });
+    return Response.json({ error: result.error, turn }, { status: 400 });
   }
 
   // AC-CONS-03: success → 201 + turn (answer + citations).
