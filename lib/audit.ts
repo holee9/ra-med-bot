@@ -479,7 +479,15 @@ export type AuditAction =
   | 'consult.session.create'
   | 'consult.turn.create'
   | 'consult.session.delete'
-  | 'consult.turn.failed';
+  | 'consult.turn.failed'
+  // SPEC-V3-IMPACT-001 M9/M10: Impact wizard audit actions.
+  //   impact.check          — impact check wizard completed (Layer 1-4 analysis)
+  //   impact.ticket.create   — ticket created for manual review (Layer 3)
+  //   impact.view            — impact assessment viewed (M10 RBAC)
+  // (impact.critical_detected already added via 0034_impact_audit_actions.sql — SPEC-REGULA-IMPACT-001)
+  | 'impact.check'
+  | 'impact.ticket.create'
+  | 'impact.view';
 
 export interface AuditEvent {
   /** User UUID, or null for system-initiated events. */

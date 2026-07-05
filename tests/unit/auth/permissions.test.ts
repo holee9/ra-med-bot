@@ -81,14 +81,18 @@ const EXPECTED_ACTIONS: PermissionAction[] = [
   // SPEC-REGULA-PROJECT-MEMORY-001 (Issue #51)
   'projectmemory.manage',
   'projectmemory.view',
+  // SPEC-V3-IMPACT-001 M10: Impact wizard RBAC (Issue #345)
+  'impact.view',
+  'impact.self_check',
+  'impact.ra_escalate',
 ];
 
 const VALID_ROLES = ['admin', 'qa-lead', 'ra-lead', 'ra-member', 'viewer', 'auditor'] as const;
 const VALID_SCOPES = ['org', 'project', 'user', 'none'] as const;
 
 describe('lib/auth/permissions.ts (REQ-ENTERPRISE-020) — PERMISSIONS matrix', () => {
-  it('PERMISSIONS contains exactly 86 entries', () => {
-    expect(Object.keys(PERMISSIONS)).toHaveLength(86); // +2 corpuslicense.* (#72) +2 sourcegov.* (#48) +1 rlhf.feedback (#56) +2 knowledgepromo.* (#50) +2 standards.* (#62) +2 inbox.* (#320) +1 ask.create (#320) +4 consult.* (#341 SPEC-V3-CONSULT-001)
+  it('PERMISSIONS contains exactly 89 entries', () => {
+    expect(Object.keys(PERMISSIONS)).toHaveLength(89); // +3 impact.* (#345 SPEC-V3-IMPACT-001 M10) +86 baseline
   });
 
   it.each(EXPECTED_ACTIONS)('PERMISSIONS contains action: %s', (action) => {
