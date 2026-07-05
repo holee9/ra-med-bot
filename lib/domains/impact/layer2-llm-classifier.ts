@@ -71,8 +71,7 @@ Respond in JSON format:
       };
     } catch (error) {
       lastError = error as Error;
-      // Retry on failure
-      continue;
+      // Fall through to retry (loop continues)
     }
   }
 
