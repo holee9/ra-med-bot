@@ -13,15 +13,7 @@ export interface ClassificationResult {
 }
 
 // Categories MUST match retest-matrix-data.ts changeTypes (7 categories)
-const ALLOWED_CATEGORIES = [
-  'bom',
-  'sw',
-  'sw-minor',
-  'label',
-  'warn',
-  'process',
-  'sterile',
-];
+const ALLOWED_CATEGORIES = ['bom', 'sw', 'sw-minor', 'label', 'warn', 'process', 'sterile'];
 
 const MAX_RETRIES = 3;
 
@@ -30,9 +22,7 @@ const MAX_RETRIES = 3;
  * Uses Vercel AI SDK generateText with gx10 gpt-oss:120b model.
  * Implements retry logic (×3) on failure.
  */
-export async function classifyChangeCategory(
-  changeDetail: string,
-): Promise<ClassificationResult> {
+export async function classifyChangeCategory(changeDetail: string): Promise<ClassificationResult> {
   const prompt = `Classify the following regulatory change detail into one of these categories: ${ALLOWED_CATEGORIES.join(', ')}.
 
 Change detail: "${changeDetail}"

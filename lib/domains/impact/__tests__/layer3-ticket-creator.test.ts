@@ -1,7 +1,8 @@
 // SPEC-V3-IMPACT-001 M5: Layer 3 ticket creation via inbox domain.
 // TDD RED Phase: Write failing test first.
 
-import { describe, it, expect, vi } from 'vitest';
+import type { Database } from '@/lib/db/client';
+import { describe, expect, it, vi } from 'vitest';
 import { createImpactTicket } from '../layer3-ticket-creator';
 
 // Mock the DB client
@@ -81,7 +82,7 @@ describe('Layer 3: Ticket Creator', () => {
       };
 
       await expect(
-        createImpactTicket(mockDb as any, {
+        createImpactTicket(mockDb as unknown as Database, {
           orgId: 'org-123',
           title: 'Test',
           description: 'Test',

@@ -3,9 +3,9 @@
 // @MX:REASON Called by API route when confidence >= 80%. fan_in >= 2.
 // @MX:SPEC SPEC-V3-IMPACT-001 (AC-IMP-08, AC-IMP-14)
 
-import { sql } from 'drizzle-orm';
-import { db } from '@/lib/db/client';
 import { embedBatchTexts } from '@/lib/ai/embedding-provider';
+import { db } from '@/lib/db/client';
+import { sql } from 'drizzle-orm';
 
 export interface SimilarCaseInput {
   productId: string;
@@ -36,9 +36,7 @@ const MAX_RESULTS = 3;
  * Returns max 3 results with citation format <sup class="cite">N</sup>.
  * Times out after 10s and returns empty results.
  */
-export async function findSimilarCases(
-  input: SimilarCaseInput,
-): Promise<SimilarCasesResult> {
+export async function findSimilarCases(input: SimilarCaseInput): Promise<SimilarCasesResult> {
   try {
     // Step 1: Embed the query text
     const embeddings = await embedBatchTexts([input.changeDetail]);
@@ -83,9 +81,7 @@ export async function findSimilarCases(
 
     const rows = await Promise.race([queryPromise, timeoutPromise]);
 
-    const citations = rows
-      .map((_, index) => `<sup class="cite">${index + 1}</sup>`)
-      .join('');
+    const citations = rows.map((_, index) => `<sup class="cite">${index + 1}</sup>`).join('');
 
     return {
       cases: rows,

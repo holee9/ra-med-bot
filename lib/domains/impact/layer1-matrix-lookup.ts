@@ -9,10 +9,7 @@ import type { RetestMatrixCell } from './retest-matrix-data';
  * Lookup retestMatrix cell by changeType and market.
  * @throws Error if cell is missing (runtime validation)
  */
-export function lookupRetestMatrix(
-  changeType: string,
-  market: string,
-): RetestMatrixCell {
+export function lookupRetestMatrix(changeType: string, market: string): RetestMatrixCell {
   const cellKey = `${changeType}-${market}`;
   const cell = RETEST_MATRIX.cells[cellKey];
 
@@ -36,7 +33,7 @@ export function calculateSignal(
   llmConfidence: number,
 ): 'green' | 'yellow' | 'red' {
   // Rule 1: If any market is 'required' → Red
-  const hasRequired = matrixResults.some(r => r.level === 'required');
+  const hasRequired = matrixResults.some((r) => r.level === 'required');
   if (hasRequired) {
     return 'red';
   }
@@ -47,13 +44,13 @@ export function calculateSignal(
   }
 
   // Rule 3: If all markets are 'not-required' → Green
-  const allNotRequired = matrixResults.every(r => r.level === 'not-required');
+  const allNotRequired = matrixResults.every((r) => r.level === 'not-required');
   if (allNotRequired) {
     return 'green';
   }
 
   // Rule 4: If any market is 'conditional' OR confidence < 90 → Yellow
-  const hasConditional = matrixResults.some(r => r.level === 'conditional');
+  const hasConditional = matrixResults.some((r) => r.level === 'conditional');
   if (hasConditional || llmConfidence < 90) {
     return 'yellow';
   }

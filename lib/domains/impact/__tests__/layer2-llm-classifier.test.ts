@@ -1,21 +1,23 @@
 // SPEC-V3-IMPACT-001 M4: LLM-based change category classification.
 // TDD RED Phase: Write failing test first.
 
-// @ts-ignore - AI SDK generateText mock type compatibility
-import { describe, it, expect, vi, beforeEach } from 'vitest';
+import type { generateText } from 'ai';
+import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { classifyChangeCategory } from '../layer2-llm-classifier';
 
-// Helper to create minimal GenerateTextResult mock
-function mockGenerateTextResult(text: string) {
+// Helper to create a minimal object shaped like GenerateTextResult for mocking.
+// Cast through unknown so the mock satisfies vitest's typed mock without forcing
+// every field of the real (large) SDK result type.
+type GenerateTextReturnType = Awaited<ReturnType<typeof generateText>>;
+function mockGenerateTextResult(text: string): GenerateTextReturnType {
   return {
     text,
     usage: { promptTokens: 10, completionTokens: 20 },
     finishReason: 'stop',
     toolCalls: [],
     toolResults: [],
-    warnings: [],
-    experimental: [],
-  };
+    warnings: undefined,
+  } as unknown as GenerateTextReturnType;
 }
 
 // Mock the AI SDK and LLM provider
@@ -35,15 +37,15 @@ describe('Layer 2: LLM Classifier', () => {
   describe('AC-IMP-06: classifyChangeCategory', () => {
     it('should classify change detail with high confidence', async () => {
       const { generateText } = await import('ai');
-      // @ts-ignore - Mock response for generateText
-      // @ts-ignore
-      vi.mocked(generateText).mockResolvedValue({
-        text: JSON.stringify({
-          category: 'label',
-          confidence: 0.92,
-          reason: 'Change explicitly mentions IFU update requirements',
-        }),
-      } as any);
+      vi.mocked(generateText).mockResolvedValue(
+        mockGenerateTextResult(
+          JSON.stringify({
+            category: 'label',
+            confidence: 0.92,
+            reason: 'Change explicitly mentions IFU update requirements',
+          }),
+        ),
+      );
 
       const result = await classifyChangeCategory('IFU section 5 requires new indication wording');
 
@@ -65,13 +67,15 @@ describe('Layer 2: LLM Classifier', () => {
       vi.mocked(generateText)
         .mockRejectedValueOnce(new Error('Timeout'))
         .mockRejectedValueOnce(new Error('Connection lost'))
-        .mockResolvedValueOnce({
-          text: JSON.stringify({
-            category: 'sw',
-            confidence: 0.85,
-            reason: 'Software algorithm modification',
-          }),
-        });
+        .mockResolvedValueOnce(
+          mockGenerateTextResult(
+            JSON.stringify({
+              category: 'sw',
+              confidence: 0.85,
+              reason: 'Software algorithm modification',
+            }),
+          ),
+        );
 
       const result = await classifyChangeCategory('Algorithm update for decision logic');
 
@@ -94,9 +98,7 @@ describe('Layer 2: LLM Classifier', () => {
 
     it('should handle malformed JSON response', async () => {
       const { generateText } = await import('ai');
-      vi.mocked(generateText).mockResolvedValue({
-        text: 'Invalid JSON{{{',
-      });
+      vi.mocked(generateText).mockResolvedValue(mockGenerateTextResult('Invalid JSON{{{'));
 
       const result = await classifyChangeCategory('Change detail');
 
@@ -111,13 +113,15 @@ describe('Layer 2: LLM Classifier', () => {
       const { generateText } = await import('ai');
       const { getLlmModel } = await import('@/lib/ai/llm-provider');
 
-      vi.mocked(generateText).mockResolvedValue({
-        text: JSON.stringify({
-          category: 'bom',
-          confidence: 0.88,
-          reason: 'BOM component replacement',
-        }),
-      });
+      vi.mocked(generateText).mockResolvedValue(
+        mockGenerateTextResult(
+          JSON.stringify({
+            category: 'bom',
+            confidence: 0.88,
+            reason: 'BOM component replacement',
+          }),
+        ),
+      );
 
       await classifyChangeCategory('BOM component change');
 
@@ -127,13 +131,15 @@ describe('Layer 2: LLM Classifier', () => {
 
     it('should validate category against allowed values', async () => {
       const { generateText } = await import('ai');
-      vi.mocked(generateText).mockResolvedValue({
-        text: JSON.stringify({
-          category: 'invalid_category',
-          confidence: 0.9,
-          reason: 'Some reason',
-        }),
-      });
+      vi.mocked(generateText).mockResolvedValue(
+        mockGenerateTextResult(
+          JSON.stringify({
+            category: 'invalid_category',
+            confidence: 0.9,
+            reason: 'Some reason',
+          }),
+        ),
+      );
 
       const result = await classifyChangeCategory('Change detail');
 
@@ -150,13 +156,15 @@ describe('Layer 2: LLM Classifier', () => {
       const validCategories = ['bom', 'sw', 'sw-minor', 'label', 'warn', 'process', 'sterile'];
 
       for (const category of validCategories) {
-        vi.mocked(generateText).mockResolvedValueOnce({
-          text: JSON.stringify({
-            category,
-            confidence: 0.8,
-            reason: `Valid ${category} change`,
-          }),
-        });
+        vi.mocked(generateText).mockResolvedValueOnce(
+          mockGenerateTextResult(
+            JSON.stringify({
+              category,
+              confidence: 0.8,
+              reason: `Valid ${category} change`,
+            }),
+          ),
+        );
 
         const result = await classifyChangeCategory(`Test ${category} change`);
         expect(result.category).toBe(category);

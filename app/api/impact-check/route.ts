@@ -1,20 +1,22 @@
 // SPEC-V3-IMPACT-001 M7: API route for impact check wizard.
 // @MX:ANCHOR [AUTO] Impact wizard API orchestrates 4-layer analysis.
 // @MX:REASON Single entry point for impact assessment. fan_in >= 3 (UI, CLI, webhook).
-// @MX:SPEC SPEC-V3-IMPACT-001 (AC-IMP-01..04, AC-IMP-09)
+// @MX:SPEC SPEC-V3-IMPACT-001 (AC-IMP-01..04, AC-IMP-09, AC-IMP-13)
 
-import { NextRequest, NextResponse } from 'next/server';
-import { z } from 'zod';
+import { writeAudit } from '@/lib/audit';
+import { withPermission } from '@/lib/auth/with-permission';
 import { db } from '@/lib/db/client';
 import {
-  lookupRetestMatrix,
   calculateSignal,
   classifyChangeCategory,
   createImpactTicket,
   findSimilarCases,
+  lookupRetestMatrix,
 } from '@/lib/domains/impact';
+import { NextResponse } from 'next/server';
+import { z } from 'zod';
 
-// Zod validation schema
+// Zod validation schema (AC-IMP-01..04: wizard input validation)
 const ImpactCheckSchema = z.object({
   orgId: z.string(),
   productId: z.string(),
@@ -23,8 +25,6 @@ const ImpactCheckSchema = z.object({
   changeDetail: z.string().min(1).max(2000),
   assigneeId: z.string().optional(),
 });
-
-type ImpactCheckInput = z.infer<typeof ImpactCheckSchema>;
 
 interface ImpactCheckResponse {
   matrix: Array<{ level: string; ref: string; note: string; market: string }>;
@@ -44,22 +44,38 @@ interface ImpactCheckResponse {
   recommendation: string;
 }
 
-export async function POST(req: NextRequest) {
+// M10 RBAC: wrap POST with impact.self_check permission (AC-IMP-13).
+export const POST = withPermission('impact.self_check', async (req, _ctx, session) => {
   try {
     // Parse and validate input
     const body = await req.json();
     const input = ImpactCheckSchema.parse(body);
 
     // Layer 1: Matrix lookup (loop over markets)
-    const matrixResults = input.markets.map(market =>
+    const matrixResults = input.markets.map((market) =>
       lookupRetestMatrix(input.changeType, market),
     );
 
     // Layer 2: LLM classification
     const classification = await classifyChangeCategory(input.changeDetail);
 
-    // Layer 1: Signal calculation (uses classification confidence)
+    // Signal calculation (uses classification confidence)
     const signal = calculateSignal(matrixResults, classification.confidence * 100);
+
+    // AC-IMP-12: 21 CFR Part 11 audit log for impact check execution.
+    await writeAudit({
+      actor_id: session?.user?.id ?? null,
+      action: 'impact.check',
+      resource_type: 'impact_assessment',
+      resource_id: input.productId,
+      meta_json: {
+        org_id: input.orgId,
+        change_type: input.changeType,
+        markets: input.markets.join(','),
+        signal,
+        confidence: classification.confidence,
+      },
+    });
 
     const response: ImpactCheckResponse = {
       matrix: matrixResults.map((cell, index) => ({
@@ -109,4 +125,4 @@ export async function POST(req: NextRequest) {
     }
     return NextResponse.json({ error: 'Internal server error' }, { status: 500 });
   }
-}
+});

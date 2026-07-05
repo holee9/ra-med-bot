@@ -140,24 +140,24 @@ describe('lib/audit.ts impact AuditAction values', () => {
 // ---------------------------------------------------------------------------
 describe('lib/impact module exports', () => {
   it('lib/impact/analyzer.ts exports analyzeImpact and listAssessmentsForOrg', () => {
-    const src = readText('lib/impact/analyzer.ts');
+    const src = readText('lib/domains/impact/analyzer.ts');
     expect(src).toContain('export async function analyzeImpact');
     expect(src).toContain('export async function listAssessmentsForOrg');
   });
 
   it('lib/impact/types.ts exports ImpactLevel and ImpactAssessment', () => {
-    const src = readText('lib/impact/types.ts');
+    const src = readText('lib/domains/impact/types.ts');
     expect(src).toContain('ImpactLevel');
     expect(src).toContain('ImpactAssessment');
   });
 
   it('lib/impact/portfolio-scanner.ts exports scanPortfolio', () => {
-    const src = readText('lib/impact/portfolio-scanner.ts');
+    const src = readText('lib/domains/impact/portfolio-scanner.ts');
     expect(src).toContain('export async function scanPortfolio');
   });
 
   it('lib/impact/audit-wiring.ts exports the three audit helpers', () => {
-    const src = readText('lib/impact/audit-wiring.ts');
+    const src = readText('lib/domains/impact/audit-wiring.ts');
     expect(src).toContain('export async function auditAssessmentCreated');
     expect(src).toContain('export async function auditCriticalDetected');
     expect(src).toContain('export async function auditActionItemCreated');

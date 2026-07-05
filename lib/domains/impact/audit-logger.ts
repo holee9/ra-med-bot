@@ -2,8 +2,8 @@
 // @MX:NOTE [AUTO] Audit logger wraps writeAudit with impact-specific helpers.
 // @MX:SPEC SPEC-V3-IMPACT-001 (AC-IMP-12, AC-IMP-13)
 
-import type { Database } from '@/lib/db/client';
 import { writeAudit } from '@/lib/audit';
+import type { Database } from '@/lib/db/client';
 
 export interface ImpactCheckContext {
   actorId: string;
@@ -32,10 +32,7 @@ export interface CriticalDetectedContext {
  * Logs impact check completion (wizard execution).
  * Called after Layer 1-4 analysis completes.
  */
-export async function logImpactCheck(
-  tx: Database,
-  context: ImpactCheckContext,
-): Promise<void> {
+export async function logImpactCheck(tx: Database, context: ImpactCheckContext): Promise<void> {
   await writeAudit(
     {
       actor_id: context.actorId,
@@ -57,10 +54,7 @@ export async function logImpactCheck(
  * Logs ticket creation for manual review.
  * Called when LLM confidence < 80% (Layer 3).
  */
-export async function logTicketCreate(
-  tx: Database,
-  context: TicketCreateContext,
-): Promise<void> {
+export async function logTicketCreate(tx: Database, context: TicketCreateContext): Promise<void> {
   await writeAudit(
     {
       actor_id: context.actorId,

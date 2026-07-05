@@ -27,10 +27,7 @@ export interface TicketInput {
  * Must be called within a transaction for atomicity with audit (21 CFR Part 11).
  * Returns the ticket ID on success.
  */
-export async function createImpactTicket(
-  db: Database,
-  input: TicketInput,
-): Promise<string> {
+export async function createImpactTicket(db: Database, input: TicketInput): Promise<string> {
   const ticketId = `it_${randomUUID()}`;
 
   await db

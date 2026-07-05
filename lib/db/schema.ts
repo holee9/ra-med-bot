@@ -186,6 +186,10 @@ export const auditActionEnum = pgEnum('audit_action', [
   'impact.assessment_created',
   'impact.critical_detected',
   'impact.action_item_created',
+  // SPEC-V3-IMPACT-001 — added via 0110_audit_impact_actions.sql (wizard actions):
+  'impact.check',
+  'impact.ticket.create',
+  'impact.view',
   // SPEC-REGULA-PCCP-001 — added via 0040_pccp_audit_actions.sql (REQ-PCCP-021~023, 015, 024):
   'pccp_created',
   'pccp_component_completed',

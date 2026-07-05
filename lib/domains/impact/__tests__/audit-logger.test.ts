@@ -1,8 +1,9 @@
 // SPEC-V3-IMPACT-001 M9: Audit logging for impact wizard operations.
 // TDD RED Phase: Write failing test first.
 
-import { describe, it, expect, vi, beforeEach } from 'vitest';
-import { logImpactCheck, logTicketCreate, logCriticalDetected } from '../audit-logger';
+import type { Database } from '@/lib/db/client';
+import { beforeEach, describe, expect, it, vi } from 'vitest';
+import { logCriticalDetected, logImpactCheck, logTicketCreate } from '../audit-logger';
 
 // Mock writeAudit
 vi.mock('@/lib/audit', () => ({
@@ -24,7 +25,7 @@ describe('M9: Audit Logger', () => {
       const { writeAudit } = await import('@/lib/audit');
       const mockDb = {};
 
-      await logImpactCheck(mockDb as any, {
+      await logImpactCheck(mockDb as unknown as Database, {
         actorId: 'user-123',
         orgId: 'org-456',
         productId: 'prod-789',
@@ -53,7 +54,7 @@ describe('M9: Audit Logger', () => {
       const { writeAudit } = await import('@/lib/audit');
       const mockDb = {};
 
-      await logImpactCheck(mockDb as any, {
+      await logImpactCheck(mockDb as unknown as Database, {
         actorId: 'user-123',
         orgId: 'org-456',
         productId: 'prod-789',
@@ -63,7 +64,7 @@ describe('M9: Audit Logger', () => {
       });
 
       expect(writeAudit).toHaveBeenCalled();
-      const callArgs = vi.mocked(writeAudit).mock.calls[0][0];
+      const callArgs = vi.mocked(writeAudit).mock.calls[0]?.[0];
       expect(callArgs?.meta_json?.org_id).toBe('org-456');
       expect(callArgs?.meta_json?.signal).toBe('green');
     });
@@ -74,7 +75,7 @@ describe('M9: Audit Logger', () => {
       const { writeAudit } = await import('@/lib/audit');
       const mockTx = {};
 
-      await logTicketCreate(mockTx as any, {
+      await logTicketCreate(mockTx as unknown as Database, {
         actorId: 'user-123',
         ticketId: 'ticket-abc',
         orgId: 'org-456',
@@ -101,7 +102,7 @@ describe('M9: Audit Logger', () => {
       const { writeAudit } = await import('@/lib/audit');
       const mockTx = {};
 
-      await logCriticalDetected(mockTx as any, {
+      await logCriticalDetected(mockTx as unknown as Database, {
         actorId: 'user-123',
         assessmentId: 'assessment-xyz',
         projectId: 'proj-123',

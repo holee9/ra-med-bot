@@ -1,7 +1,7 @@
 // SPEC-V3-IMPACT-001 M6: Layer 4 RAG similar cases via pgvector.
 // TDD RED Phase: Write failing test first.
 
-import { describe, it, expect, vi, beforeEach } from 'vitest';
+import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { findSimilarCases } from '../layer4-rag-similar-cases';
 
 // Mock the database - use factory function
@@ -21,12 +21,14 @@ vi.mock('@/lib/ai/embedding-provider', () => ({
 }));
 
 describe('Layer 4: RAG Similar Cases', () => {
-  let mockExecute: any;
+  let mockExecute: ReturnType<typeof vi.fn>;
 
   beforeEach(async () => {
     vi.clearAllMocks();
-    const mod = await import('@/lib/db/client');
-    mockExecute = (mod as any).getMockExecute();
+    const mod = (await import('@/lib/db/client')) as unknown as {
+      getMockExecute: () => typeof mockExecute;
+    };
+    mockExecute = mod.getMockExecute();
     mockExecute.mockClear();
   });
 
@@ -68,7 +70,7 @@ describe('Layer 4: RAG Similar Cases', () => {
       });
 
       expect(mockExecute).toHaveBeenCalled();
-      const callArgs = mockExecute.mock.calls[0][0];
+      const callArgs = mockExecute.mock.calls[0]?.[0];
       expect(typeof callArgs).toBe('object');
     });
 

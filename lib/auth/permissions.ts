@@ -575,7 +575,8 @@ export const PERMISSIONS: Record<PermissionAction, PermissionSpec> = {
   },
   // SPEC-V3-IMPACT-001 M10: Impact wizard RBAC.
   // impact.view: ra-member+ — view impact assessments (transparency across team).
-  // impact.self_check: employee+ — self-service impact check wizard.
+  // impact.self_check: viewer+ — self-service impact check wizard (employee role
+  //   does not exist in the Role union; viewer is the lowest general role).
   // impact.ra_escalate: ra-member+ — escalate to RA team for manual review.
   // @MX:SPEC SPEC-V3-IMPACT-001 (AC-IMP-11, AC-IMP-12, AC-IMP-13)
   'impact.view': {
@@ -584,7 +585,7 @@ export const PERMISSIONS: Record<PermissionAction, PermissionSpec> = {
     resourceType: 'impactAssessment',
   },
   'impact.self_check': {
-    minRole: 'employee',
+    minRole: 'viewer',
     scope: 'org',
     resourceType: 'impactAssessment',
   },

@@ -1,8 +1,8 @@
 // SPEC-V3-IMPACT-001 M3: Layer 1 retestMatrix lookup engine.
 // TDD RED Phase: Write failing test first.
 
-import { describe, it, expect } from 'vitest';
-import { lookupRetestMatrix, calculateSignal } from '../layer1-matrix-lookup';
+import { describe, expect, it } from 'vitest';
+import { calculateSignal, lookupRetestMatrix } from '../layer1-matrix-lookup';
 import type { RetestMatrixCell } from '../retest-matrix-data';
 
 describe('Layer 1: retestMatrix Lookup', () => {
@@ -30,13 +30,13 @@ describe('Layer 1: retestMatrix Lookup', () => {
 
     it('should lookup all 5 markets for a change type', () => {
       const markets = ['us', 'eu', 'kr', 'cn', 'jp'];
-      const results = markets.map(m => lookupRetestMatrix('bom', m));
+      const results = markets.map((m) => lookupRetestMatrix('bom', m));
 
       expect(results).toHaveLength(5);
-      results.forEach(result => {
+      for (const result of results) {
         expect(result).toBeDefined();
         expect(['required', 'conditional', 'not-required']).toContain(result.level);
-      });
+      }
     });
   });
 

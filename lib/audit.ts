@@ -483,11 +483,10 @@ export type AuditAction =
   // SPEC-V3-IMPACT-001 M9/M10: Impact wizard audit actions.
   //   impact.check          — impact check wizard completed (Layer 1-4 analysis)
   //   impact.ticket.create   — ticket created for manual review (Layer 3)
-  //   impact.critical_detected — red signal detected (escalation required)
   //   impact.view            — impact assessment viewed (M10 RBAC)
+  // (impact.critical_detected already added via 0034_impact_audit_actions.sql — SPEC-REGULA-IMPACT-001)
   | 'impact.check'
   | 'impact.ticket.create'
-  | 'impact.critical_detected'
   | 'impact.view';
 
 export interface AuditEvent {
