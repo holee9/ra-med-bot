@@ -2,7 +2,7 @@
 
 ---
 **SPEC ID:** SPEC-V3-IMPACT-UI-001
-**Version:** 0.1.0
+**Version:** 0.2.0
 **Status:** planned
 **Phase:** C-4
 **Created:** 2026-07-06
@@ -29,15 +29,19 @@ v3 Phase C-4 **Change Impact Wizard UI** 구현 계획. SPEC-V3-IMPACT-001 백�
 
 **목표:** 위저드 라우트, RBAC 게이트, `useImpactCheck` mutation hook 마련
 
+> **H4 — 게이트 엄격도 주의:** Impact 페이지 게이트(`impact.view`, minRole=`ra-member`)는 consult 페이지 게이트(`viewer`만 거부)보다 **엄격**하다. run-phase에서 consult의 `if (!userRole || userRole === 'viewer') redirect(...)` 패턴을 copy-paste하지 말 것 — 그 패턴은 `auditor`를 허용해버려 impact 보안이 깨진다. 반드시 `lib/auth/rbac.ts`의 `hasRole(userRole, 'ra-member')` 헬퍼를 사용할 것.
+
 **작업 항목:**
-1. `app/(app)/impact/page.tsx` 신규 — 서버 컴포넌트, `auth()` 호출, 역할 게이트, 클라이언트 위저드 wrapper 렌더링 (`app/(app)/consult/page.tsx` 패턴).
-2. `app/(app)/impact/ImpactWizardClient.tsx` 신규 — `'use client'` wrapper.
+1. `app/(app)/impact/page.tsx` 신규 — 서버 컴포넌트, `auth()` 호출, **`hasRole(userRole, 'ra-member')` 기반 역할 게이트** (consult의 `=== 'viewer'` 하드코드 금지), 클라이언트 위저드 wrapper 렌더링.
+   - 거부 집합: `{auditor, viewer, undefined/anonymous}` → `/?error=access_denied` 리다이렉트.
+   - 허용 집합: `{ra-member, qa-lead, ra-lead, admin}` → 위저드 렌더링.
+2. `app/(app)/impact/ImpactWizardClient.tsx` 신규 — `'use client'` wrapper. props로 `orgId`를 받아 mutation 호출 시 전달 (REQ-IMP-UI-006a).
 3. `lib/queries/useImpactCheck.ts` 신규 — TanStack Query `useMutation` 정의:
    - request/response 타입(`ImpactCheckRequest`, `ImpactCheckResponse` — spec.md §5)
-   - `fetch('/api/impact-check', {method:'POST', body: JSON.stringify(input)})`
+   - `fetch('/api/impact-check', {method:'POST', body: JSON.stringify(input)})` — `orgId` 필수 (route.ts:21 Zod non-optional)
    - 400/403/500 에러 분기 throw
 4. 단위 테스트:
-   - `app/(app)/impact/__tests__/page.test.tsx` — RBAC 리다이렉트 분기
+   - `app/(app)/impact/__tests__/page.test.tsx` — RBAC 리다이렉트 분기 (6종 역할 + 익명)
    - `lib/queries/__tests__/useImpactCheck.test.ts` — mutation 성공/실패
 
 **산출물:**
@@ -47,12 +51,13 @@ v3 Phase C-4 **Change Impact Wizard UI** 구현 계획. SPEC-V3-IMPACT-001 백�
 
 **완료 기준:**
 - [ ] `/impact` 라우트가 렌더링된다
-- [ ] `impact.view` 미권한 역할이 `/?error=access_denied`로 리다이렉트된다
+- [ ] `hasRole(userRole, 'ra-member')`로 거부 집합 `{auditor, viewer, anonymous}`가 `/?error=access_denied`로 리다이렉트된다
+- [ ] 허용 집합 `{ra-member, qa-lead, ra-lead, admin}`이 위저드를 본다
 - [ ] `useImpactCheck` mutation이 POST를 정상 호출한다
 - [ ] 단위 테스트 통과
 
 **의존성:**
-- `@/lib/auth` (`auth()`)
+- `@/lib/auth` (`auth()`, `hasRole`)
 - TanStack Query
 - 백엔드 `POST /api/impact-check` (frozen)
 
@@ -456,7 +461,7 @@ vi.mock('next/navigation', () => ({ useRouter: () => ({ push: vi.fn() }) }));
 | 의존 대상 | 용도 | Milestone |
 |---|---|---|
 | `POST /api/impact-check` | 4계층 평가 백엔드 | M1 (frozen) |
-| `@/lib/auth` (`auth()`) | 페이지 RBAC 게이트 | M1 |
+| `@/lib/auth` (`auth()`, `hasRole`) | 페이지 RBAC 게이트 (consult보다 엄격 — M1 H4 메모) | M1 |
 | TanStack Query | mutation hook | M1 |
 | `next-intl` | i18n | M2 |
 | Tailwind v4 `@theme` | 디자인 토큰 | M2 |
