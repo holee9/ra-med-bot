@@ -1,7 +1,7 @@
 ---
 id: SPEC-V3-CONSULT-001
 version: 1.1.0
-status: planned
+status: completed
 phase: C-5
 priority: High
 created: 2026-07-05
