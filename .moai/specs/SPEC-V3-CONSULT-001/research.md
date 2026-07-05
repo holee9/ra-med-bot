@@ -325,29 +325,31 @@ export const consultSessions = pgTable('consult_sessions', {
 });
 ```
 
-### 4.2 consult_turns 테이블 (추론)
+### 4.2 consult_turns 테이블 (Exchange 모델 확정)
 
 ```typescript
-// schema.ts 예상 (run phase에서 확정)
+// schema.ts (run phase에서 확정)
+// Exchange 모델: 한 turn = 한 Q+A pair. role 필드 없음.
 export const consultTurns = pgTable('consult_turns', {
   id: uuid('id').primaryKey().defaultRandom(),
   sessionId: uuid('session_id').notNull().references(() => consultSessions.id),
-  turnNumber: integer('turn_number').notNull(), // 1, 2, 3, ...
-  role: messageRoleEnum('role').notNull(), // 'user' | 'assistant'
-  question: text('question'), // user role only
-  answer: text('answer'), // assistant role only (HTML prose)
-  confidence: numeric('confidence').notNull(), // 0.00 ~ 1.00
-  sources: jsonb('sources').$type<SourceItem[]>(), // 메타데이터
+  turnNumber: integer('turn_number').notNull(), // 1, 2, 3, ... 단조 증가
+  question: text('question').notNull(),          // 사용자 입력 (항상 존재)
+  answer: text('answer'),                         // RAG 결과 HTML prose, 실패 시 null
+  citations: jsonb('citations').$type<Citation[]>(), // citation 메타데이터 배열
+  confidence: real('confidence'),                 // 0.00 ~ 1.00, 실패 시 null
+  sources: jsonb('sources').$type<SourceItem[]>(), // RAG source 메타데이터
   createdAt: timestamp('created_at').notNull().defaultNow(),
 });
 ```
 
-**messages vs consult_turns 차이**:
-| 컬럼 | messages (v2) | consult_turns (v3) |
-|------|---------------|---------------------|
+**Exchange 모델 vs 기존 messages 모델 차이**:
+| 컬럼 | messages (v2, role 기반) | consult_turns (v3, Exchange) |
+|------|--------------------------|-------------------------------|
 | conversationId | ✅ | ❌ sessionId |
-| role | ✅ | ✅ |
-| contentProse | ✅ | ❌ answer/answer 분리 |
+| role | ✅ ('user'/'assistant') | ❌ (제거됨, 의미 없음) |
+| contentProse | ✅ (role에 따라 question/answer 분리) | ❌ question + answer 같은 row |
+| citations | ❌ | ✅ JSONB |
 | confidence | ✅ | ✅ |
 | sources | ❌ message_sources 테이블 | ✅ JSONB 직렬 |
 | turnNumber | ❌ | ✅ |

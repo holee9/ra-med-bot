@@ -1,6 +1,6 @@
 ---
 id: SPEC-V3-CONSULT-001
-version: 1.0.0
+version: 1.1.0
 status: planned
 phase: C-5
 priority: High
@@ -29,6 +29,7 @@ labels:
 | Version | Date | Author | Changes |
 |---------|------|--------|---------|
 | 1.0.0 | 2026-07-05 | manager-spec | 초기 작성. TRIAGE 완료 후 Power Chat 세션 저장 기능 구현. 신규 consult_sessions/turns 테이블, RA 전용 권한, 5년 보관 정책. REQ 12종, AC 7종. 코드 직검 기반 (L-013). |
+| 1.1.0 | 2026-07-05 | manager-spec | plan-auditor 감사 결과 Critical 1 + High 3건 개정. (C-1) REQ-CONS-013 신설로 `consult.session.create` audit log 자기모순 해소, AC-CONS-01에 audit 단언 추가. (H-1) REQ-CONS-004 Exchange 모델 확정(role 필드 제거, question+answer 동일 row), AC-CONS-03 role 단언 수정. (H-2) AC-CONS-02b 신설로 REQ-CONS-003 positive AC 보강. (H-3) REQ-CONS-005 + AC-CONS-04 citation coverage 80% 임계값 강화(enforceCitations 재사용 명시). REQ 13종, AC 8종. |
 
 ---
 
@@ -95,14 +96,14 @@ TRIAGE SPEC-V3-TRIAGE-001 (C-2)가 완료되어 consult.ts 하위 모듈 재사�
 |----|----------------|----------|
 | REQ-CONS-001 | **WHEN** RA Member가 POST /api/consult/sessions를 호출하여 `{title, projectId?, locale?}`를 전달하면 **THEN** the system **SHALL** consult_sessions 테이블에 새로운 세션을 생성하고 `{sessionId, title, projectId, locale, createdAt}`를 반환한다. sessionId는 UUID v4, title은 사용자 입력 또는 LLM 생성 기본값, locale는 'ko' 기본값 | High |
 | REQ-CONS-002 | **WHEN** RA Member가 GET /api/consult/sessions를 호출하면 **THEN** the system **SHALL** 해당 RA Member가 생성한 모든 세션 목록을 `{sessionId, title, projectId, createdAt, turnCount}` 형태로 최신순 정렬하여 반환한다. (ra-member는 자신의 세션만 조회, ra-lead/admin는 전체 조회) | High |
-| REQ-CONS-003 | **WHEN** RA Member가 GET /api/consult/sessions/:sessionId를 호출하면 **THEN** the system **SHALL** 해당 세션이 존재하고 RBAC 권한이 있으면 `{sessionId, title, projectId, locale, createdAt, turns: [{turnId, role, question?, answer?, confidence, sources, createdAt}]}` 형태로 반환한다. turns는 turnNumber 오름차순 정렬 | High |
+| REQ-CONS-003 | **WHEN** RA Member가 GET /api/consult/sessions/:sessionId를 호출하면 **THEN** the system **SHALL** 해당 세션이 존재하고 RBAC 권한이 있으면 `{sessionId, title, projectId, locale, createdAt, turns: [{turnId, turnNumber, question, answer, confidence, sources, citations, createdAt}]}` 형태로 반환한다. turns는 turnNumber 오름차순 정렬 | High |
 
 ### 턴 생성 / 추가
 
 | ID | EARS Statement | Priority |
 |----|----------------|----------|
-| REQ-CONS-004 | **WHEN** RA Member가 POST /api/consult/sessions/:sessionId/turns를 호출하여 `{question, locale?}`를 전달하면 **THEN** the system **SHALL** run-consult.ts RAG 파이프라인을 호출하여 답변을 생성하고 consult_turns 테이블에 새로운 턴을 삽입한다. RAG 파이프라인은 consult.ts 하위 모듈 재사용 (classifyIntent, parallelRetrieveAndMerge, composePrompt, streamText, enforceCitations, calculateConfidence). 턴 번호는 해당 세션의 마지막 turnNumber + 1 | High |
-| REQ-CONS-005 | **IF** 생성된 답변이 citation을 포함하지 않거나(또는) RAG 파이프라인이 타임아웃/런타임 에러로 실패하면 **THEN** the system **SHALL** 400 Bad Request를 반환하고 해당 턴을 저장하지 않는다 (Charter [지양-2] citation 강제). 단, 세션 자체는 유지하여 후속 재시도를 허용한다 | High |
+| REQ-CONS-004 | **WHEN** RA Member가 POST /api/consult/sessions/:sessionId/turns를 호출하여 `{question, locale?}`를 전달하면 **THEN** the system **SHALL** run-consult.ts RAG 파이프라인을 호출하여 답변을 생성하고 consult_turns 테이블에 새로운 턴을 삽입한다. RAG 파이프라인은 consult.ts 하위 모듈 재사용 (classifyIntent, parallelRetrieveAndMerge, composePrompt, streamText, enforceCitations, calculateConfidence). 턴 번호는 해당 세션의 마지막 turnNumber + 1. **데이터 모델(Exchange)**: 한 turn은 하나의 exchange(question→answer pair)로 저장된다. `role` 필드는 존재하지 않는다. 컬럼 구성: `question` (text NOT NULL, 사용자 입력), `answer` (text, RAG 결과 HTML prose, RAG 실패 시 null), `citations` (jsonb, citation 메타데이터 배열), `confidence` (real, 0.00~1.00), `turnNumber` (integer NOT NULL, 1부터 단조 증가) | High |
+| REQ-CONS-005 | **IF** 생성된 답변이 citation을 0개 포함하거나 citation coverage가 80% 미만(uncitedViolationCount/totalSentences > 0.2)이면, 또는 RAG 파이프라인이 타임아웃/런타임 에러로 실패하면 **THEN** the system **SHALL** 400 Bad Request를 반환하고 해당 턴을 저장하지 않는다 (Charter [지양-2] citation 강제, 기존 `lib/ai/citation-enforce.ts`의 `enforceCitations` 80% 임계값 회귀 방지). 단, 세션 자체는 유지하여 후속 재시도를 허용한다 | High |
 
 ### 세션 삭제 (명시적 삭제)
 
@@ -123,6 +124,7 @@ TRIAGE SPEC-V3-TRIAGE-001 (C-2)가 완료되어 consult.ts 하위 모듈 재사�
 | REQ-CONS-008 | **WHEN** POST /api/consult/sessions/:sessionId/turns가 성공하면 **THEN** the system **SHALL** `consult.turn.create` audit log를 기록한다. meta_json에는 `{sessionId, turnId, questionHash, confidenceScore, sourceCount}`를 포함한다 (21 CFR Part 11 §11.10(e)) | High |
 | REQ-CONS-009 | **WHEN** DELETE /api/consult/sessions/:sessionId가 성공하면 **THEN** the system **SHALL** `consult.session.delete` audit log를 기록한다. meta_json에는 `{sessionId, deletedBy, deletedAt}`를 포함한다 (21 CFR Part 11 §11.10(e)) | High |
 | REQ-CONS-010 | **IF** RAG 파이프라인이 타임아웃 또는 런타임 에러로 실패하면 **THEN** the system **SHALL** `consult.turn.failed` audit log를 기록하고 error 메타를 포함한다 (디버깅용) | Medium |
+| REQ-CONS-013 | **WHEN** POST /api/consult/sessions가 성공(201 Created)하면 **THEN** the system **SHALL** `consult.session.create` audit log를 기록한다. meta_json에는 `{sessionId, raMemberId, projectId?, locale}`를 포함한다 (21 CFR Part 11 §11.10(e)). 본 REQ는 §1.3 Policy Anchor에서 명시한 audit log 3종(create/turn.create/delete) 중 create 축을 채운다 | High |
 
 ### 기술 제약사항
 
@@ -150,6 +152,7 @@ TRIAGE SPEC-V3-TRIAGE-001 (C-2)가 완료되어 consult.ts 하위 모듈 재사�
 }
 ```
 **And** consult_sessions 테이블에 해당 row가 존재하고 deletedAt은 null이다.
+**And** audit_logs 테이블에 `consult.session.create` row가 존재한다 (orgId/sessionId 매칭, REQ-CONS-013).
 
 ### AC-CONS-02: Power Chat 세션 목록 조회 성공
 
@@ -185,6 +188,45 @@ TRIAGE SPEC-V3-TRIAGE-001 (C-2)가 완료되어 consult.ts 하위 모듈 재사�
 ```
 **And** 세션 목록은 createdAt 내림차순 정렬된다 (최신 세션 first).
 
+### AC-CONS-02b: Power Chat 세션 상세 조회 성공 (turns 배열 포함, REQ-CONS-003 직접 검증)
+
+**Given** RA Member가 세션을 생성하고 2개의 턴을 추가하고(question→answer exchange 2회)
+**When** GET /api/consult/sessions/:sessionId를 호출하면
+**Then** 시스템은 200 OK와 함께 다음을 반환한다:
+```json
+{
+  "sessionId": "uuid-session",
+  "title": "EU MDR 분석",
+  "projectId": "uuid-proj",
+  "locale": "ko",
+  "createdAt": "2026-07-05T00:00:00Z",
+  "turns": [
+    {
+      "turnId": "uuid-turn-1",
+      "turnNumber": 1,
+      "question": "EU MDR Article 10 요구사항은?",
+      "answer": "<p>EU MDR Article 10은 ...</p>",
+      "confidence": 0.85,
+      "sources": [{ "id": "src-eu-mdr", "citeIndex": 1 }],
+      "citations": [{ "citeIndex": 1, "sourceId": "src-eu-mdr" }],
+      "createdAt": "2026-07-05T01:00:00Z"
+    },
+    {
+      "turnId": "uuid-turn-2",
+      "turnNumber": 2,
+      "question": "Article 11은?",
+      "answer": "<p>...</p>",
+      "confidence": 0.78,
+      "sources": [{ "id": "src-eu-mdr", "citeIndex": 1 }],
+      "citations": [{ "citeIndex": 1, "sourceId": "src-eu-mdr" }],
+      "createdAt": "2026-07-05T02:00:00Z"
+    }
+  ]
+}
+```
+**And** turns 배열은 turnNumber 오름차순(1, 2)으로 정렬된다.
+**And** 각 turn은 question과 answer를 함께 포함한다 (Exchange 모델, role 필드 없음).
+
 ### AC-CONS-03: Power Chat 턴 생성 성공 (citation 포함)
 
 **Given** RA Member가 세션을 생성하고
@@ -212,23 +254,24 @@ TRIAGE SPEC-V3-TRIAGE-001 (C-2)가 완료되어 consult.ts 하위 모듈 재사�
   "createdAt": "2026-07-05T02:00:00Z"
 }
 ```
-**And** consult_turns 테이블에 해당 row가 존재하고 role은 'assistant'이다.
+**And** consult_turns 테이블에 해당 row가 존재한다 (Exchange 모델: question + answer가 같은 row에 저장, role 컬럼 없음).
 **And** audit_logs 테이블에 `consult.turn.create` row가 존재한다.
 
-### AC-CONS-04: Power Chat 턴 생성 실패 (citation 없음)
+### AC-CONS-04: Power Chat 턴 생성 실패 (citation 0개 또는 coverage 80% 미만)
 
 **Given** RA Member가 세션을 생성하고
 **When** POST /api/consult/sessions/:sessionId/turns를 호출하고
-**And** RAG 파이프라인이 citation을 포함하지 않은 답변을 생성하면
+**And** RAG 파이프라인이 (a) citation을 0개 포함한 답변을 생성하거나 (b) citation coverage가 80% 미만(uncitedViolationCount/totalSentences > 0.2)인 답변을 생성하면
 **Then** 시스템은 400 Bad Request와 함께 다음을 반환한다:
 ```json
 {
-  "error": "Citations required",
-  "message": "Answer must include at least one cited source"
+  "error": "citation_required",
+  "message": "Answer must include citations with coverage >= 80%"
 }
 ```
 **And** consult_turns 테이블에 새 row가 추가되지 않는다.
 **And** 세션은 turnCount=0 상태로 유지된다 (후속 재시도 가능).
+**And** citation 검증은 `lib/ai/citation-enforce.ts`의 `enforceCitations`를 재사용하여 80% 임계값을 적용한다 (TRIAGE run-triage.ts:91-94 패턴).
 
 ### AC-CONS-05: Power Chat 턴 생성 실패 (타임아웃)
 

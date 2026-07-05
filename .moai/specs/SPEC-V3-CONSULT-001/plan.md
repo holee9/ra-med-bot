@@ -28,7 +28,7 @@ TRIAGE SPEC-V3-TRIAGE-001에서 검증된 패턴을 그대로 재사용하여 �
 
 ### Migration Strategy
 
-**Phase M1: 테이블 생성**
+**Phase M1: 테이블 생성 (Exchange 모델)**
 ```sql
 -- Migration 01_create_consult_tables.sql
 CREATE TABLE consult_sessions (
@@ -42,20 +42,21 @@ CREATE TABLE consult_sessions (
   deleted_at TIMESTAMPTZ
 );
 
+-- Exchange 모델: 한 turn = 한 Q+A pair (role 컬럼 없음)
 CREATE TABLE consult_turns (
   id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
   session_id UUID NOT NULL REFERENCES consult_sessions(id),
-  turn_number INTEGER NOT NULL,
-  role TEXT NOT NULL, -- 'user' | 'assistant'
-  question TEXT,
-  answer TEXT,
-  confidence NUMERIC(5,2) NOT NULL,
-  sources JSONB NOT NULL,
+  turn_number INTEGER NOT NULL,              -- 1, 2, 3, ... 단조 증가
+  question TEXT NOT NULL,                    -- 사용자 입력 (항상 존재)
+  answer TEXT,                                -- RAG 결과 HTML prose, 실패 시 NULL
+  citations JSONB,                            -- citation 메타데이터 배열
+  confidence REAL,                            -- 0.00 ~ 1.00, 실패 시 NULL
+  sources JSONB,                              -- RAG source 메타데이터
   created_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
 );
 
 CREATE INDEX idx_consult_sessions_deleted ON consult_sessions(deleted_at) WHERE deleted_at IS NULL;
-CREATE INDEX idx_consert_turns_session ON consult_turns(session_id, turn_number);
+CREATE INDEX idx_consult_turns_session ON consult_turns(session_id, turn_number);
 ```
 
 **Phase M2: 권한 추가**
@@ -87,8 +88,8 @@ export type PermissionAction =
 **목표**: consult_sessions/turns 테이블 생성 + 기존 호환성 확인
 
 **Tasks**:
-- T-01: Drizzle migration 작성 (01_create_consult_tables.sql)
-- T-02: consult_sessions/turns 스키마 정의 (lib/db/schema.ts)
+- T-01: Drizzle migration 작성 (01_create_consult_tables.sql, Exchange 모델: consult_turns.role 컬럼 없음, question NOT NULL + answer nullable + citations jsonb + confidence real + turnNumber integer NOT NULL)
+- T-02: consult_sessions/turns 스키마 정의 (lib/db/schema.ts, Exchange 모델 반영: role 필드 제거, question/answer/citations 컬럼 구성)
 - T-03: Migration 실행 및 FK 제약조건 검증
 - T-04: 기존 conversations/messages 테이블과의 격리 확인 (v2 호환성)
 
@@ -119,7 +120,7 @@ export type PermissionAction =
 
 **Tasks**:
 - T-10: POST /api/consult/sessions 라우트 생성 (app/api/consult/sessions/route.ts)
-- T-11: consult_sessions CREATE handler (withPermission 'consult.session.create')
+- T-11: consult_sessions CREATE handler (withPermission 'consult.session.create', 성공 시 `consult.session.create` audit log 기록 — 21 CFR Part 11 §11.10(e), REQ-CONS-013. meta_json: `{sessionId, raMemberId, projectId?, locale}`)
 - T-12: GET /api/consult/sessions 라우트 생성 (withPermission 'consult.session.view')
 - T-13: consult_sessions SELECT handler (ra-member: 자신 세션만, ra-lead/admin: 전체)
 - T-14: GET /api/consult/sessions/:sessionId 라우트 생성 (RBAC 검증)
@@ -138,7 +139,7 @@ export type PermissionAction =
 - T-16: POST /api/consult/sessions/:sessionId/turns 라우트 생성
 - T-17: run-consult.ts 호출 및 JSON 직렬화
 - T-18: consult_turns INSERT handler (turnNumber 할당, FK 검증)
-- T-19: Citation 강제 검증 (empty citations → 400)
+- T-19: Citation 강제 검증 (citation 0개 또는 coverage 80% 미만 → 400, `lib/ai/citation-enforce.ts`의 `enforceCitations` 재사용, TRIAGE run-triage.ts:91-94 패턴)
 - T-20: Audit log 기록 (consult.turn.create, consult.turn.failed)
 
 **완료 기준**:
@@ -224,25 +225,25 @@ export type PermissionAction =
 
 | Task ID | Description | Priority | Dependencies | Estimate |
 |---------|-------------|----------|--------------|----------|
-| M1-T01 | Drizzle migration 작성 | High | None | M1 |
-| M1-T02 | consult_sessions/turns 스키마 정의 | High | T01 | M1 |
+| M1-T01 | Drizzle migration 작성 (Exchange 모델: role 컬럼 없음, question/answer/citations 컬럼 구성) | High | None | M1 |
+| M1-T02 | consult_sessions/turns 스키마 정의 (lib/db/schema.ts, Exchange 모델 반영) | High | T01 | M1 |
 | M1-T03 | Migration 실행 및 FK 검증 | High | T02 | M1 |
 | M1-T04 | 기존 conversations/messages 격리 확인 | High | T03 | M1 |
 | M2-T05 | run-consult.ts 래퍼 생성 | High | None | M2 |
 | M2-T06 | consult.ts 하위 모듈 import | High | T05 | M2 |
 | M2-T07 | 15s timeout 구현 | High | T06 | M2 |
-| M2-T08 | Citation 검증 구현 | High | T07 | M2 |
+| M2-T08 | Citation 검증 구현 (enforceCitations 80% coverage 임계값 포함) | High | T07 | M2 |
 | M2-T09 | RAG result → DTO 매핑 | High | T08 | M2 |
 | M3-T10 | POST /api/consult/sessions 라우트 생성 | High | M1 | M3 |
-| M3-T11 | consult_sessions CREATE handler | High | T10 | M3 |
+| M3-T11 | consult_sessions CREATE handler + consult.session.create audit log 기록 (REQ-CONS-013) | High | T10 | M3 |
 | M3-T12 | GET /api/consult/sessions 라우트 생성 | High | T11 | M3 |
 | M3-T13 | consult_sessions SELECT handler | High | T12 | M3 |
 | M3-T14 | GET /api/consult/sessions/:sessionId 라우트 생성 | High | T13 | M3 |
 | M3-T15 | consult_sessions + turns JOIN handler | High | T14 | M3 |
 | M4-T16 | POST /api/consult/sessions/:sessionId/turns 라우트 생성 | High | M2, M3 | M4 |
 | M4-T17 | run-consult.ts 호출 및 JSON 직렬화 | High | T16 | M4 |
-| M4-T18 | consult_turns INSERT handler | High | T17 | M4 |
-| M4-T19 | Citation 강제 검증 | High | T18 | M4 |
+| M4-T18 | consult_turns INSERT handler (Exchange 모델: question+answer 같은 row) | High | T17 | M4 |
+| M4-T19 | Citation 강제 검증 (citation 0개 또는 coverage 80% 미만, enforceCitations 재사용) | High | T18 | M4 |
 | M4-T20 | Audit log 기록 (turn) | High | T19 | M4 |
 | M5-T21 | DELETE /api/consult/sessions/:sessionId 라우트 생성 | Medium | M3, M4 | M5 |
 | M5-T22 | Soft-delete handler | Medium | T21 | M5 |
@@ -264,8 +265,9 @@ export type PermissionAction =
 - `lib/domains/consult/run-consult.test.ts`:
   - Timeout test: 15s 초과 시 error: 'timeout' 반환
   - Citation test: empty citations → error: 'no_citations'
+  - Citation coverage test: uncitedViolationCount/totalSentences > 0.2 → error: 'citation_coverage_below_80' (enforceCitations 80% 임계값)
   - Runtime error test: LLM failure → error: 'runtime_error'
-  - Normal flow test: RAG 성공 → {answer, confidence, sources} 반환
+  - Normal flow test: RAG 성공 → {answer, confidence, sources, citations} 반환
 
 - `lib/db/schema.test.ts`:
   - FK 제약조건 test: consult_turns.session_id → consult_sessions.id
@@ -274,9 +276,9 @@ export type PermissionAction =
 ### Integration Tests (Target: 모든 AC 커버)
 
 - `app/api/consult/sessions/route.test.ts`:
-  - POST /api/consult/sessions: 201 Created (AC-CONS-01)
+  - POST /api/consult/sessions: 201 Created (AC-CONS-01, REQ-CONS-013 audit 단언 포함)
   - GET /api/consult/sessions: 200 OK + 세션 목록 (AC-CONS-02)
-  - GET /api/consult/sessions/:sessionId: 200 OK + turns 배열 (AC-CONS-03)
+  - GET /api/consult/sessions/:sessionId: 200 OK + turns 배열 (AC-CONS-02b 직접 검증, REQ-CONS-003 positive AC)
   - RBAC test: 403 Forbidden (Edge-08, Edge-09)
 
 - `app/api/consult/sessions/[id]/turns/route.test.ts`:

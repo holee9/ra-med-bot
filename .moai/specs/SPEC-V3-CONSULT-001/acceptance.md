@@ -2,7 +2,7 @@
 
 **작성일**: 2026-07-05
 **SPEC**: SPEC-V3-CONSULT-001 (RA Power Chat, v3 Phase C-5)
-**총 AC**: 7종
+**총 AC**: 8종 (AC-CONS-01, 02, 02b, 03, 04, 05, 06, 07)
 **총 Edge Cases**: 11종
 
 ---
@@ -24,6 +24,7 @@
 }
 ```
 **And** consult_sessions 테이블에 해당 row가 존재하고 deletedAt은 null이다.
+**And** audit_logs 테이블에 `consult.session.create` row가 존재한다 (orgId/sessionId 매칭, REQ-CONS-013).
 
 ### AC-CONS-02: Power Chat 세션 목록 조회 성공
 
@@ -59,6 +60,45 @@
 ```
 **And** 세션 목록은 createdAt 내림차순 정렬된다 (최신 first).
 
+### AC-CONS-02b: Power Chat 세션 상세 조회 성공 (turns 배열 포함, REQ-CONS-003 직접 검증)
+
+**Given** RA Member가 세션을 생성하고 2개의 턴을 추가하고(question→answer exchange 2회)
+**When** GET /api/consult/sessions/:sessionId를 호출하면
+**Then** 시스템은 200 OK와 함께 다음을 반환한다:
+```json
+{
+  "sessionId": "uuid-session",
+  "title": "EU MDR 분석",
+  "projectId": "uuid-proj",
+  "locale": "ko",
+  "createdAt": "2026-07-05T00:00:00Z",
+  "turns": [
+    {
+      "turnId": "uuid-turn-1",
+      "turnNumber": 1,
+      "question": "EU MDR Article 10 요구사항은?",
+      "answer": "<p>EU MDR Article 10은 ...</p>",
+      "confidence": 0.85,
+      "sources": [{ "id": "src-eu-mdr", "citeIndex": 1 }],
+      "citations": [{ "citeIndex": 1, "sourceId": "src-eu-mdr" }],
+      "createdAt": "2026-07-05T01:00:00Z"
+    },
+    {
+      "turnId": "uuid-turn-2",
+      "turnNumber": 2,
+      "question": "Article 11은?",
+      "answer": "<p>...</p>",
+      "confidence": 0.78,
+      "sources": [{ "id": "src-eu-mdr", "citeIndex": 1 }],
+      "citations": [{ "citeIndex": 1, "sourceId": "src-eu-mdr" }],
+      "createdAt": "2026-07-05T02:00:00Z"
+    }
+  ]
+}
+```
+**And** turns 배열은 turnNumber 오름차순(1, 2)으로 정렬된다.
+**And** 각 turn은 question과 answer를 함께 포함한다 (Exchange 모델, role 필드 없음).
+
 ### AC-CONS-03: Power Chat 턴 생성 성공 (citation 포함)
 
 **Given** RA Member가 세션을 생성하고
@@ -86,23 +126,24 @@
   "createdAt": "2026-07-05T02:00:00Z"
 }
 ```
-**And** consult_turns 테이블에 해당 row가 존재하고 role은 'assistant'이다.
+**And** consult_turns 테이블에 해당 row가 존재한다 (Exchange 모델: question + answer가 같은 row에 저장, role 컬럼 없음).
 **And** audit_logs 테이블에 `consult.turn.create` row가 존재한다.
 
-### AC-CONS-04: Power Chat 턴 생성 실패 (citation 없음)
+### AC-CONS-04: Power Chat 턴 생성 실패 (citation 0개 또는 coverage 80% 미만)
 
 **Given** RA Member가 세션을 생성하고
 **When** POST /api/consult/sessions/:sessionId/turns를 호출하고
-**And** RAG 파이프라인이 citation을 포함하지 않은 답변을 생성하면
+**And** RAG 파이프라인이 (a) citation을 0개 포함한 답변을 생성하거나 (b) citation coverage가 80% 미만(uncitedViolationCount/totalSentences > 0.2)인 답변을 생성하면
 **Then** 시스템은 400 Bad Request와 함께 다음을 반환한다:
 ```json
 {
-  "error": "Citations required",
-  "message": "Answer must include at least one cited source"
+  "error": "citation_required",
+  "message": "Answer must include citations with coverage >= 80%"
 }
 ```
 **And** consult_turns 테이블에 새 row가 추가되지 않는다.
 **And** 세션은 turnCount=0 상태로 유지된다 (후속 재시도 가능).
+**And** citation 검증은 `lib/ai/citation-enforce.ts`의 `enforceCitations`를 재사용하여 80% 임계값을 적용한다 (TRIAGE run-triage.ts:91-94 패턴).
 
 ### AC-CONS-05: Power Chat 턴 생성 실패 (타임아웃)
 
@@ -242,7 +283,7 @@
 
 ### Functional Correctness
 
-- [ ] 모든 AC (AC-CONS-01 ~ AC-CONS-07)가 Given-When-Then 형식으로 검증됨
+- [ ] 모든 AC (AC-CONS-01 ~ AC-CONS-07, AC-CONS-02b)가 Given-When-Then 형식으로 검증됨
 - [ ] RAG 파이프라인이 consult.ts 하위 모듈을 재사용하여 회귀 리스크 완화됨
 - [ ] Citation 강제가 Charter [지양-2]를 준수하여 enforceCitations로 검증됨
 - [ ] RBAC이 v3 01_architecture.md:95를 준수하여 ra-member/ra-lead/admin 분리됨
@@ -269,7 +310,7 @@
 
 ### Observability
 
-- [ ] 모든 CRUD 작업이 audit_logs에 기록됨 (REQ-CONS-008, REQ-CONS-009, REQ-CONS-010)
+- [ ] 모든 CRUD 작업이 audit_logs에 기록됨 (REQ-CONS-008, REQ-CONS-009, REQ-CONS-010, REQ-CONS-013)
 - [ ] RAG 실패가 consult.turn.failed audit로 기록됨
 - [ ] Audit meta_json에 sessionId, turnId, confidenceScore, sourceCount 포함됨
 
@@ -279,8 +320,8 @@
 
 ### Code Complete
 
-- [ ] 모든 REQ-CONS-001 ~ REQ-CONS-012가 구현됨
-- [ ] 모든 AC-CONS-01 ~ AC-CONS-07가 Given-When-Then로 검증됨
+- [ ] 모든 REQ-CONS-001 ~ REQ-CONS-013가 구현됨 (REQ-CONS-013: consult.session.create audit log)
+- [ ] 모든 AC-CONS-01 ~ AC-CONS-07, AC-CONS-02b가 Given-When-Then로 검증됨
 - [ ] consult_sessions/turns 테이블이 migration으로 생성됨
 - [ ] run-consult.ts 래퍼가 consult.ts 하위 모듈을 재사용함
 - [ ] RBAC 권한 3종이 permissions.ts에 추가됨
