@@ -39,3 +39,4 @@ export {
 export { RETEST_MATRIX, type RetestMatrixCell, type RetestMatrixData } from './retest-matrix-data';
 export { lookupRetestMatrix, calculateSignal } from './layer1-matrix-lookup';
 export { classifyChangeCategory, type ClassificationResult } from './layer2-llm-classifier';
+export { createImpactTicket, type TicketInput } from './layer3-ticket-creator';
