@@ -426,8 +426,8 @@ describe('lib/db/schema.ts Phase 5 additions', () => {
     // order is NOT required to match (enum and type legitimately group migrations
     // differently with interspersed comments). Set-equality is the correct check.
     expect(new Set(values)).toEqual(new Set(typeValues));
-    expect(values).toHaveLength(215); // -9 pms.*/pmcf.* (Issue #319 SPEC-REGULA-PHI-REMOVAL-001) +8 inbox (Issue #320 SPEC-V3-INBOX-001) +1 inbox.approve_failed (Issue #320 SPEC-V3-INBOX-001); was 215
-    expect(typeValues).toHaveLength(215);
+    expect(values).toHaveLength(219); // -9 pms.*/pmcf.* (Issue #319) +8 inbox +1 inbox.approve_failed (Issue #320) +4 consult (Issue #341 SPEC-V3-CONSULT-001); was 215
+    expect(typeValues).toHaveLength(219);
   });
 
   it.each(REQUIRED_RECOVERY_TABLES)(
@@ -483,7 +483,7 @@ describe('lib/audit.ts Phase 5 AuditAction type additions', () => {
         'change.export_blocked',
       ]),
     );
-    expect(values).toHaveLength(215); // -9 pms.*/pmcf.* (Issue #319 SPEC-REGULA-PHI-REMOVAL-001) +8 inbox (Issue #320 SPEC-V3-INBOX-001) +1 inbox.approve_failed (Issue #320 SPEC-V3-INBOX-001); was 215
+    expect(values).toHaveLength(219); // -9 pms.*/pmcf.* (Issue #319) +8 inbox +1 inbox.approve_failed (Issue #320) +4 consult (Issue #341 SPEC-V3-CONSULT-001); was 215
   });
 
   it.each(REQUIRED_RECOVERY_AUDIT_ACTIONS)(

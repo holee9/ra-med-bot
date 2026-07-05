@@ -471,7 +471,15 @@ export type AuditAction =
   | 'inbox.approved'
   | 'inbox.closed'
   | 'inbox.rejected'
-  | 'inbox.approve_failed';
+  | 'inbox.approve_failed'
+  // SPEC-V3-CONSULT-001 (Issue 341): RA Power Chat audit actions.
+  //   consult.session.create  — new consult session created (REQ-CONS-013, C-1)
+  //   consult.turn.create     — new turn added to session (REQ-CONS-008)
+  //   consult.session.delete  — session soft-deleted by ra-lead/admin (REQ-CONS-009)
+  | 'consult.session.create'
+  | 'consult.turn.create'
+  | 'consult.session.delete'
+  | 'consult.turn.failed';
 
 export interface AuditEvent {
   /** User UUID, or null for system-initiated events. */
