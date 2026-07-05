@@ -39,6 +39,7 @@ function main(): void {
   const thresholdPct = `${(result.threshold * 100).toFixed(1)}%`;
 
   if (result.passed) {
+    // biome-ignore lint/suspicious/noConsole: CI QA gate script — PASS message on stdout is intentional for release gate diagnostics (mirrors scripts/health-check.ts pattern).
     console.log(`[model-gov-eval-gate] PASS: score ${pct} >= threshold ${thresholdPct}`);
     process.exit(0);
   }
