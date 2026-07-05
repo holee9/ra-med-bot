@@ -53,6 +53,8 @@ export default async function AppLayout({ children }: { children: React.ReactNod
   let showEvidence = false;
   // SPEC-V3-UI-001 (Issue 320, REQ-V3-UI-031): Inbox nav gated to ra-member+ (inbox.view).
   let showInbox = false;
+  // SPEC-V3-UI-001 M6 (REQ-V3-UI-050): Consult nav gated to ra-member+ (consult.session.view).
+  let showConsult = false;
   // 2026-06-29: userRole을 try 밖에서 선언 (Sidebar userRole prop 전달용)
   let userRole: Role | undefined;
   try {
@@ -94,6 +96,8 @@ export default async function AppLayout({ children }: { children: React.ReactNod
       showEvidence = hasRole(userRole as Parameters<typeof hasRole>[0], 'ra-member');
       // SPEC-V3-UI-001 (Issue 320, REQ-V3-UI-031): Inbox nav gated to ra-member+ (inbox.view).
       showInbox = hasRole(userRole as Parameters<typeof hasRole>[0], 'ra-member');
+      // SPEC-V3-UI-001 M6 (REQ-V3-UI-050): Consult nav gated to ra-member+ (consult.session.view).
+      showConsult = hasRole(userRole as Parameters<typeof hasRole>[0], 'ra-member');
     }
     const department = (session?.user as { department?: string } | undefined)?.department;
     if (department) {
@@ -131,6 +135,7 @@ export default async function AppLayout({ children }: { children: React.ReactNod
         showAuthoring={showAuthoring}
         showEvidence={showEvidence}
         showInbox={showInbox}
+        showConsult={showConsult}
         userRole={(userRole ?? 'viewer') as Role}
         initialLocale={initialLocale}
       />

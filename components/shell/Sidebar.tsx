@@ -73,6 +73,8 @@ interface SidebarProps {
   showEvidence?: boolean;
   // SPEC-V3-UI-001 (Issue 320): Inbox nav gated to ra-member+ (inbox.view).
   showInbox?: boolean;
+  // SPEC-V3-UI-001 M6: Consult nav gated to ra-member+ (consult.session.view).
+  showConsult?: boolean;
   // 2026-06-29 사이드바 3계층: NAV_ITEMS를 userRole로 필터 (viewer 4 / ra-member+ 조건부)
   userRole?: Role;
   initialLocale?: string;
@@ -95,6 +97,8 @@ export default function Sidebar(props?: SidebarProps) {
   const showInbox = props?.showInbox ?? false;
   const showAuthoring = props?.showAuthoring ?? false;
   const showEvidence = props?.showEvidence ?? false;
+  // SPEC-V3-UI-001 M6: Consult nav gated to ra-member+ (consult.session.view).
+  const showConsult = props?.showConsult ?? false;
   // 2026-06-29: default 'viewer' (최소 권한 — 명시적 role 없으면 전사 직원 사이드바).
   const userRole: Role = props?.userRole ?? 'viewer';
   const currentProjectId = useUIStore((s) => s.currentProjectId);
@@ -390,6 +394,19 @@ export default function Sidebar(props?: SidebarProps) {
             className="rounded-md px-3 py-2 text-sm text-ink-700 hover:bg-ink-50 block"
           >
             인박스
+          </Link>
+        </nav>
+      )}
+
+      {/* SPEC-V3-UI-001 M6 (REQ-V3-UI-050): Consult session history nav gated to ra-member+ (consult.session.view). */}
+      {showConsult && (
+        <nav className="px-2 py-1">
+          <Link
+            href="/consult"
+            data-testid="sidebar-consult-link"
+            className="rounded-md px-3 py-2 text-sm text-ink-700 hover:bg-ink-50 block"
+          >
+            상담 히스토리
           </Link>
         </nav>
       )}

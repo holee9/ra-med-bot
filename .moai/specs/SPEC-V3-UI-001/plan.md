@@ -1,11 +1,11 @@
 ---
 id: SPEC-V3-UI-001
-version: 0.1.0
+version: 0.2.0
 status: draft
 phase: D
 priority: High
 created: 2026-07-03
-updated: 2026-07-03
+updated: 2026-07-05
 author: manager-spec
 issue_number: TBD
 depends_on:
@@ -81,7 +81,7 @@ Grep of `.moai/specs/` (66 SPEC dirs, 2026-07-03):
 5. **New backend APIs** — consume existing only (`/api/inbox`, `/api/inbox/[id]`, `/api/inbox/[id]/triage`, `/api/inbox/[id]/approve`, `/api/ask`).
 6. **New permissions** — reuse existing `inbox.view` (ra-member+), `inbox.manage` (ra-lead), `ask.create` (viewer/employee). No changes to `lib/auth/permissions.ts`.
 7. **TRIAGE auto-answer injection UI** — depends on SPEC-V3-TRIAGE-001 (C-2). UI displays `autoAnswer` if present but does not generate it.
-8. **Consult (Power Chat)** — `SPEC-V3-CONSULT-001` (C-5). Not in this SPEC.
+8. **Consult (Power Chat)** — 본 SPEC M6에 편입. 세션 목록/상세/새 turn 생성 UI 포함. DELETE soft-delete UI, 실시간 streaming, 세션 제목 편집, 검색/필터링 고급 기능은 제외.
 9. **Admin audit-log viewer** — separate admin surface (existing `app/(app)/audit/`). This SPEC only shows per-ticket activity feed on detail page.
 10. **Kanban list-view toggle** — MVP is Kanban-only. List view deferred.
 
@@ -187,6 +187,16 @@ Grep of `.moai/specs/` (66 SPEC dirs, 2026-07-03):
 | `components/inbox/ViewerTicketSummary.tsx` | Minimal own-ticket view for viewers (REQ-V3-UI-034). |
 | `lib/queries/useInbox.ts` | tanstack-query hooks: `useInboxTickets(state)`, `useInboxTicket(id)`, `useTriageTransition()`, `useApproveTicket()`. |
 | `stores/inbox.ts` | Zustand store (selectedTicketId, showArchived). Follows `stores/project.ts` pattern. `viewMode` (Kanban-vs-list) omitted per Exclusion #10 (list-view excluded). |
+| `app/(app)/consult/page.tsx` | Consult session list page (M6, session card grid + "New Session" button). |
+| `app/(app)/consult/[sessionId]/page.tsx` | Consult session detail page (M6, turns history + question input). |
+| `components/consult/ConsultSessionCard.tsx` | Session card (title, createdAt, updatedAt, click → detail). |
+| `components/consult/ConsultSessionList.tsx` | Session list grid (NO infinite scroll; "Load More" button). |
+| `components/consult/ConsultSessionDetail.tsx` | Session detail layout (turns history + question form). |
+| `components/consult/TurnHistoryItem.tsx` | Single turn renderer (question + answer + citations + confidence + timestamp). |
+| `components/consult/NewSessionDialog.tsx` | New session dialog (title 1-200, projectId select, locale select). |
+| `components/consult/QuestionComposer.tsx` | Question input component (1-5000 chars, disable during submit). |
+| `lib/queries/useConsult.ts` | tanstack-query hooks: `useConsultSessions()`, `useConsultSession()`, `useCreateConsultSession()`, `useCreateTurn()`. |
+| `stores/consult.ts` | Zustand store (selectedSessionId). Follows `stores/inbox.ts` pattern. |
 
 > **Component directory decision**: Create new `components/inbox/` (NOT under `components/dashboard/`). Rationale: (1) `components/dashboard/` is a different feature surface; (2) inbox has 8 dedicated components (large enough for its own dir); (3) matches the existing per-domain convention (`components/chat/`, `components/expert-review/`, `components/knowledge-gap/`).
 
@@ -194,8 +204,8 @@ Grep of `.moai/specs/` (66 SPEC dirs, 2026-07-03):
 
 | Path | Change | Convention Evidence |
 |------|--------|---------------------|
-| `components/shell/Sidebar.tsx` | Add `showInbox?: boolean` prop + render "Inbox" NavItem when true. | Sidebar.tsx L33-75 (`showPredicate`, `showKnowledgeGap`, ... pattern). New entry inserted after "히스토리" (L27) per research.md §5.6. |
-| `app/(app)/layout.tsx` | Resolve `showInbox = hasRole(userRole, 'ra-member')` server-side + pass to `<Sidebar showInbox={showInbox}>`. | layout.tsx L23-60 (established server-side `showX` pattern). |
+| `components/shell/Sidebar.tsx` | Add `showInbox?: boolean` prop + render "Inbox" NavItem when true. Add `showConsult?: boolean` prop + render "Consult" NavItem when true (M6). | Sidebar.tsx L33-75 (`showPredicate`, `showKnowledgeGap`, ... pattern). consult entry inserted after inbox per pattern. |
+| `app/(app)/layout.tsx` | Resolve `showInbox = hasRole(userRole, 'ra-member')` server-side + pass to `<Sidebar showInbox={showInbox}>`. Resolve `showConsult = hasRole(userRole, 'ra-member')` server-side + pass to `<Sidebar showConsult={showConsult}>` (M6). | layout.tsx L23-60 (established server-side `showX` pattern). |
 | `app/(app)/chat/page.tsx` | After successful ask.create, surface the resulting `ticket_id` + `triage_state` to the viewer (small "내 질문 상태" panel / toast linking to `/inbox/[id]` if they own it). | (existing chat surface; minimal augmentation) |
 | `messages/ko.json` | Add top-level `inbox` namespace. | (verified missing 2026-07-03) |
 | `messages/en.json` | Add top-level `inbox` namespace. | (verified missing 2026-07-03) |
@@ -209,10 +219,14 @@ Grep of `.moai/specs/` (66 SPEC dirs, 2026-07-03):
 | `app/api/inbox/[id]/triage/route.ts` | PATCH transition (consume). |
 | `app/api/inbox/[id]/approve/route.ts` | POST approve (consume). |
 | `app/api/ask/route.ts` | POST viewer question (consume). |
+| `app/api/consult/sessions/route.ts` | GET list, POST create (consume, M6). |
+| `app/api/consult/sessions/[sessionId]/route.ts` | GET detail + turns (consume, M6). |
+| `app/api/consult/sessions/[sessionId]/turns/route.ts` | POST turn create (consume, M6). |
 | `lib/domains/inbox/**` (types.ts, state-machine.ts, queries.ts, access.ts, promote.ts, audit.ts, sla.ts) | Types + client-side transition validation reuse (e.g., import `VALID_TRANSITIONS` for the action menu gating). |
-| `lib/auth/permissions.ts` | Permission keys (read-only import; no new keys). |
+| `lib/auth/permissions.ts` | Permission keys (read-only import; consult.session.* keys added, M6). |
 | `lib/auth/with-permission.ts` | Server-side guard wrapper (read-only). |
 | `lib/auth/rbac.ts` | `hasRole()` helper (read-only). |
+| `components/chat/*` (ChatShell, Composer, AnswerBlock, Citation, SourcesGrid, ConfidenceBadge, Timeline) | Existing `/api/ra/consult` 1-shot streaming only — separate flow from consult UI (M6). Citation/SourcesGrid/ConfidenceBadge reusable. |
 
 ---
 
