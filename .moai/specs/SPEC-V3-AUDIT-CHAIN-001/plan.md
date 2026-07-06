@@ -39,7 +39,9 @@ audit_log SHA-256 hash chain strengthening (v3 Phase E / D-1).
 
 ## 2. Milestones (우선순위 순)
 
-### M0 — Schema Migration 0111 (Priority High — M3/C3/C1 선행)
+> **Run-Phase Status (2026-07-06):** ✅ M0 (commit 9445e96) · ✅ M1 · ✅ M2 · ✅ M3 · ✅ M4 gates green (직검). ⏸️ M5 (Backfill 문서화, Priority Low — 후속). ⚠️ AC-5c/REQ-AC-007 점화식 모순은 spec.md §9.2 참조 (Option A 채택, amendment 대상).
+
+### M0 — Schema Migration 0111 (Priority High — M3/C3/C1 선행) ✅
 
 `chain_seq` 컬럼 + 인덱스 + alert action enum 추가.
 
