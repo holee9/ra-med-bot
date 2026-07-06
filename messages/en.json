@@ -349,5 +349,14 @@
       "network": "Temporary error. Please try again later.",
       "networkDesc": "Check your network connection and try again. If the problem persists, contact your administrator."
     }
+  },
+  "persona": {
+    "label": "Persona switch",
+    "tier": {
+      "employee": "Employee",
+      "ra": "RA",
+      "admin": "Admin"
+    },
+    "tierLocked": "Your current role does not have access to this tier"
   }
 }

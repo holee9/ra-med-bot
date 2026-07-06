@@ -1,7 +1,7 @@
 ---
 id: SPEC-V3-PERSONA-001
-version: 0.1.0
-status: planned
+version: 0.2.0
+status: completed
 phase: D
 priority: High
 created: 2026-07-06
@@ -279,8 +279,39 @@ export function writePersonaCookie(tier: Tier): void;
 
 ---
 
+## §10 Implementation Notes (Run Phase, 2026-07-06)
+
+**M1-M6 구현 완료** (본 PR). 프론트엔드 additive 확장, 백엔드/migration 비파괴.
+
+### 핵심 설계 결정 (구현)
+1. **resolveTier SSR canonical path** (`lib/auth/persona.ts`): 매 요청 `session.user.role`에서 tier 재파생 + 쿠키 변조 거부. `layout.tsx`/`page.tsx`가 단일 진입점 (REQ-V3-PER-004/NFR-002).
+2. **PersonaBarClient router.refresh()**: tier 전환 시 쿠키 write + local state + `router.refresh()` (풀 리로드 없이 server components 재평가, REQ-NFR-001). Context/Store 불필요, hydration 안전.
+3. **Sidebar additive tier filter** (`hidePersonaScopedItems`): employee tier 시 show* 변수 오버라이드. 렌더링 로직 변경 0, primary NAV_ITEMS 보존 (H4 `navLinks.length===4` 비회귀).
+4. **prop명 `userRole`** (not `role`): biome `useValidAriaRole`이 JSX `role` attribute를 ARIA role로 오인 → prop명 변경으로 근본 해결.
+
+### 보안 불변량 (REQ-V3-PER-004)
+- tier는 **view-only** 클라이언트 파생. 서버 `withPermission`/`hasRole`은 항상 `session.user.role` 기준 (PersonaBar 전환과 무관).
+- 쿠키 변조: viewer + `regula-persona=admin` → resolveTier가 employee로 폴백 (persona.test.ts 22개 검증).
+- PersonaBarClient 이중 방어: `isValidTierForRole` 재확인 (PersonaBarClient.test.tsx 4개).
+
+### 게이트 직검 (orchestrator, L-007/L-013/L-015)
+- typecheck EXIT 0 / lint(biome+lint:hex) **0 errors** / ci:i18n ko/en parity / ci:contrast dark-mode / ci:build(next build) 전 라우트 성공.
+- full vitest **4659 passed** (1 flaky `frontend-shell root layout metadata timeout` — 사전 존재, 단독 19/19 통과, 본 작업 무관).
+- 신규 테스트 71: persona 22 + PersonaBar 21 + PersonaBarClient 4 + Sidebar.tier 5 + frontend-shell 비회귀 19.
+
+### REQ 충족도
+- 001 PersonaBar ✓ / 002 Sidebar 필터 ✓ / 003 랜딩 분기 ✓ / 004 RBAC 불변 ✓ / 005 cookie 영속 ✓ / 006 a11y ✓ / 007 i18n ✓ / 008 비회귀 ✓
+- 009 View-as DEFERRED (future SPEC) / 010 SearchPalette DEFERRED (future SPEC)
+- NFR-001 성능(router.refresh) ✓ / NFR-002 보안(쿠키 검증) ✓ / NFR-003 유지보수성(pure fn) ✓ / NFR-004 비회귀 ✓
+
+### Follow-up (별도 SPEC)
+- SPEC-V3-ROUTE-REORG-001: 마스터 plan의 route reorg (본 SPEC additive 접근으로 이월).
+- View-as (REQ-009): future SPEC.
+
+---
+
 **생성일:** 2026-07-06
-**버전:** 0.1.0
-**상태:** planned
+**버전:** 0.2.0
+**상태:** completed
 **총 REQ:** 10 functional (8 mandatory + 2 optional/deferred) + 4 NFR
-**다음 단계:** plan.md 구현 계획 수립 → acceptance.md 검증 시나리오 → plan-auditor 감사
+**run phase 완료:** 2026-07-06 (M1-M6, 프론트엔드 additive, 백엔드 비파괴)

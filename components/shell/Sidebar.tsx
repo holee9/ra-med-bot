@@ -7,6 +7,7 @@
 // which calls auth() server-side.
 // Wave 1: project-switcher dropdown + locale-aware nav-chat testid added.
 
+import type { Tier } from '@/lib/auth/persona';
 import { type Role, hasRole } from '@/lib/auth/rbac';
 import { useProjects } from '@/lib/queries/useProjects';
 import type { ProjectSummary } from '@/lib/queries/useProjects';
@@ -77,28 +78,40 @@ interface SidebarProps {
   showConsult?: boolean;
   // 2026-06-29 사이드바 3계층: NAV_ITEMS를 userRole로 필터 (viewer 4 / ra-member+ 조건부)
   userRole?: Role;
+  // SPEC-V3-PERSONA-001 (REQ-V3-PER-002/H4): tier-aware NAV filtering. When set,
+  // employee tier hides RA/Admin-only items (self-service IA). tier undefined →
+  // existing show*-only behavior preserved (non-regression, H4).
+  tier?: Tier;
   initialLocale?: string;
 }
 
 export default function Sidebar(props?: SidebarProps) {
-  const showExpertReview = props?.showExpertReview ?? false;
-  const showPredicate = props?.showPredicate ?? false;
-  const showKnowledgeGap = props?.showKnowledgeGap ?? false;
-  const showClassify = props?.showClassify ?? false;
-  const showTraceability = props?.showTraceability ?? false;
-  const showStandards = props?.showStandards ?? false;
-  const showChangeControl = props?.showChangeControl ?? false;
-  const showLabeling = props?.showLabeling ?? false;
-  const showClinicalInvestigation = props?.showClinicalInvestigation ?? false;
-  const showGovernance = props?.showGovernance ?? false;
-  const showQualityHeatmap = props?.showQualityHeatmap ?? false;
-  const showTeamKnowledge = props?.showTeamKnowledge ?? false;
+  // SPEC-V3-PERSONA-001 M3 (REQ-V3-PER-002/H4): tier-aware NAV filtering.
+  // employee tier = self-service IA → hide RA/Admin-only items via show* override.
+  // tier undefined → hidePersonaScopedItems=false → existing show*-only behavior
+  // (non-regression, frontend-shell.test.ts navLinks.length===4 preserved since
+  // primary NAV_ITEMS render independently above the show* blocks).
+  const hidePersonaScopedItems = props?.tier === 'employee';
+
+  const showExpertReview = (props?.showExpertReview ?? false) && !hidePersonaScopedItems;
+  const showPredicate = (props?.showPredicate ?? false) && !hidePersonaScopedItems;
+  const showKnowledgeGap = (props?.showKnowledgeGap ?? false) && !hidePersonaScopedItems;
+  const showClassify = (props?.showClassify ?? false) && !hidePersonaScopedItems;
+  const showTraceability = (props?.showTraceability ?? false) && !hidePersonaScopedItems;
+  const showStandards = (props?.showStandards ?? false) && !hidePersonaScopedItems;
+  const showChangeControl = (props?.showChangeControl ?? false) && !hidePersonaScopedItems;
+  const showLabeling = (props?.showLabeling ?? false) && !hidePersonaScopedItems;
+  const showClinicalInvestigation =
+    (props?.showClinicalInvestigation ?? false) && !hidePersonaScopedItems;
+  const showGovernance = (props?.showGovernance ?? false) && !hidePersonaScopedItems;
+  const showQualityHeatmap = (props?.showQualityHeatmap ?? false) && !hidePersonaScopedItems;
+  const showTeamKnowledge = (props?.showTeamKnowledge ?? false) && !hidePersonaScopedItems;
   // Scope rationalization (2026-06-29 Issue #306): Authoring/Evidence conditional props.
-  const showInbox = props?.showInbox ?? false;
-  const showAuthoring = props?.showAuthoring ?? false;
-  const showEvidence = props?.showEvidence ?? false;
+  const showInbox = (props?.showInbox ?? false) && !hidePersonaScopedItems;
+  const showAuthoring = (props?.showAuthoring ?? false) && !hidePersonaScopedItems;
+  const showEvidence = (props?.showEvidence ?? false) && !hidePersonaScopedItems;
   // SPEC-V3-UI-001 M6: Consult nav gated to ra-member+ (consult.session.view).
-  const showConsult = props?.showConsult ?? false;
+  const showConsult = (props?.showConsult ?? false) && !hidePersonaScopedItems;
   // 2026-06-29: default 'viewer' (최소 권한 — 명시적 role 없으면 전사 직원 사이드바).
   const userRole: Role = props?.userRole ?? 'viewer';
   const currentProjectId = useUIStore((s) => s.currentProjectId);
@@ -413,8 +426,9 @@ export default function Sidebar(props?: SidebarProps) {
 
       {/* REQ-BREADTH-044: Project switcher dropdown.
           2026-06-29: viewer(전사 직원) 숨김 — 프로젝트는 RA 전문 맥락(project memory +
-          internal-docs 스코프). 일반 직원은 자연어 제품 언급으로 Q&A (projectId optional). */}
-      {hasRole(userRole, 'ra-member') && (
+          internal-docs 스코프). 일반 직원은 자연어 제품 언급으로 Q&A (projectId optional).
+          SPEC-V3-PERSONA-001 M3: employee tier에서도 숨김 (tier IA 일관성). */}
+      {hasRole(userRole, 'ra-member') && !hidePersonaScopedItems && (
         <section className="mt-2 px-2 py-2">
           <p className="mb-1 px-3 text-[10px] uppercase tracking-widest text-ink-500">프로젝트</p>
           <details ref={dropdownRef} className="relative">

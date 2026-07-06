@@ -6,8 +6,10 @@
 // change their password on first login before accessing any app route.
 // auth is dynamically imported to avoid next-auth module resolution issues in test env.
 
+import PersonaBarClient from '@/components/shell/PersonaBarClient';
 import Sidebar from '@/components/shell/Sidebar';
 import Topbar from '@/components/shell/Topbar';
+import { type Tier, resolveTier } from '@/lib/auth/persona';
 import type { Role } from '@/lib/auth/rbac';
 import { FEATURE_FLAGS } from '@/lib/feature-flags';
 import type { Metadata } from 'next';
@@ -116,6 +118,12 @@ export default async function AppLayout({ children }: { children: React.ReactNod
 
   const cookieStore = await cookies();
   const initialLocale = cookieStore.get('regula-locale')?.value ?? 'ko';
+  // SPEC-V3-PERSONA-001 M4 (REQ-V3-PER-004 / REQ-V3-PER-NFR-002): server-side
+  // canonical tier derivation. resolveTier re-derives from session.user.role on
+  // every request and rejects any cookie value that would escalate privileges.
+  // Tier is view-only — RBAC gates still read the real role.
+  const effectiveRole = (userRole ?? 'viewer') as Role;
+  const initialTier: Tier = resolveTier(effectiveRole, cookieStore);
 
   return (
     <div className="flex min-h-screen bg-surface text-ink-700">
@@ -138,9 +146,14 @@ export default async function AppLayout({ children }: { children: React.ReactNod
         showConsult={showConsult}
         userRole={(userRole ?? 'viewer') as Role}
         initialLocale={initialLocale}
+        tier={initialTier}
       />
       <div className="flex min-w-0 flex-1 flex-col">
         <Topbar />
+        {/* SPEC-V3-PERSONA-001 M4 (REQ-V3-PER-001): PersonaBar placed just under
+            Topbar. Server injects initialTier; PersonaBarClient owns tier state
+            on the client and calls router.refresh() on switch. */}
+        <PersonaBarClient initialTier={initialTier} userRole={effectiveRole} />
         <main id="main-content" className="min-w-0 flex-1">
           {children}
         </main>

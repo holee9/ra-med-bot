@@ -73,6 +73,13 @@ vi.mock('next-intl', () => ({
   NextIntlClientProvider: ({ children }: { children: React.ReactNode }) => children,
 }));
 
+// SPEC-V3-PERSONA-001 M4: page.tsx reads cookies() to derive the persona tier.
+// next/headers cookies requires a request scope; stub it for unit tests
+// (returns no persona cookie → resolveTier falls back to the role's natural tier).
+vi.mock('next/headers', () => ({
+  cookies: async () => ({ get: () => undefined }),
+}));
+
 // Chat page uses useStreamingAnswer and @tanstack/react-query.
 vi.mock('../../hooks/useStreamingAnswer', () => ({
   useStreamingAnswer: () => ({

@@ -1,6 +1,7 @@
 import { Callout } from '@/components/ui/Callout';
 import { ReadinessBadge } from '@/components/ui/ReadinessBadge';
 import { auth } from '@/lib/auth';
+import { type Tier, resolveTier } from '@/lib/auth/persona';
 import { hasRole } from '@/lib/auth/rbac';
 import {
   BarChart3,
@@ -11,6 +12,7 @@ import {
   Settings,
   ShieldCheck,
 } from 'lucide-react';
+import { cookies } from 'next/headers';
 import Link from 'next/link';
 
 // @MX:NOTE [AUTO] HomePage — Issue 158 Group C (Home + Shell).
@@ -144,14 +146,84 @@ const DEFAULT_ENTRIES: RoleEntry[] = [
   },
 ];
 
+// SPEC-V3-PERSONA-001 M4 (REQ-V3-PER-003): tier-based landing entries.
+// employee = self-service IA, ra = RA workbench, admin = oversight.
+const TIER_ENTRIES: Record<Tier, RoleEntry[]> = {
+  employee: [
+    {
+      role: '규제 질문하기',
+      outcome: '근거 문서와 citation이 포함된 RA 답변 생성',
+      href: '/chat',
+      icon: BookOpenCheck,
+    },
+    {
+      role: '영향 평가',
+      outcome: '변경 사항의 규제 영향을 4-layer 위자드로 분석',
+      href: '/impact',
+      icon: ShieldCheck,
+    },
+    {
+      role: '대시보드',
+      outcome: '전체 현황을 읽기 전용으로 확인',
+      href: '/dashboard',
+      icon: BarChart3,
+    },
+  ],
+  ra: [
+    {
+      role: '인박스',
+      outcome: '티켓 트리아지 및 승인 (Kanban)',
+      href: '/inbox',
+      icon: ClipboardCheck,
+    },
+    {
+      role: 'RA 상담',
+      outcome: '전문가 검토 워크플로우 세션',
+      href: '/consult',
+      icon: BookOpenCheck,
+    },
+    {
+      role: '전문가 검토',
+      outcome: '저신뢰·고위험 답변 검토 큐',
+      href: '/expert-review',
+      icon: ClipboardCheck,
+    },
+  ],
+  admin: [
+    {
+      role: '시스템 설정',
+      outcome: '사용자 관리, RBAC, 감사 로그',
+      href: '/settings',
+      icon: Settings,
+    },
+    {
+      role: '지식 베이스',
+      outcome: '코퍼스 소스 및 라이선스 관리',
+      href: '/knowledge',
+      icon: DatabaseZap,
+    },
+    {
+      role: '감사 로그',
+      outcome: '21 CFR Part 11 감사 체인',
+      href: '/audit',
+      icon: ShieldCheck,
+    },
+  ],
+};
+
 const trustSignals = ['근거 citation', '전문가 검토', '조직별 source 경계', '업로드 PII redaction'];
 
 export default async function HomePage() {
   const session = await auth();
   const userRole = ((session?.user as { role?: string } | undefined)?.role as Role) ?? 'viewer';
+  // SPEC-V3-PERSONA-001 M4 (REQ-V3-PER-003): tier-aware landing. resolveTier
+  // re-derives from role + persona cookie on every request and rejects cookie
+  // escalation (REQ-V3-PER-004 / REQ-V3-PER-NFR-002).
+  const cookieStore = await cookies();
+  const tier = resolveTier(userRole, cookieStore);
 
-  // Get role-specific entries
-  const entries = ROLE_ENTRIES[userRole] || DEFAULT_ENTRIES;
+  // Tier-based entries (persona landing); fall back to role-based, then default.
+  const entries = TIER_ENTRIES[tier] ?? ROLE_ENTRIES[userRole] ?? DEFAULT_ENTRIES;
 
   return (
     <section className="mx-auto flex max-w-content flex-col gap-8 px-6 py-10">
@@ -180,12 +252,9 @@ export default async function HomePage() {
       {/* Role-based entry points */}
       <section>
         <h2 className="mb-4 text-sm font-semibold text-ink-900">
-          {userRole === 'ra-lead' && 'RA Lead 작업 시작점'}
-          {userRole === 'admin' && '관리자 작업 시작점'}
-          {userRole === 'viewer' && '조회자 작업 시작점'}
-          {userRole === 'ra-member' && 'RA 실무자 작업 시작점'}
-          {userRole === 'qa-lead' && 'QA Lead 작업 시작점'}
-          {userRole === 'auditor' && '감사자 작업 시작점'}
+          {tier === 'employee' && '전사 직원 작업 시작점'}
+          {tier === 'ra' && 'RA 담당자 작업 시작점'}
+          {tier === 'admin' && '관리자 작업 시작점'}
         </h2>
         <div className="grid gap-3 lg:grid-cols-3" aria-label="역할별 시작점">
           {entries.map((entry) => {
