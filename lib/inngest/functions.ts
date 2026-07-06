@@ -2,6 +2,7 @@
 // this array so every registered function is exposed in one place.
 // @MX:SPEC SPEC-REGULA-DIGEST-001 / SPEC-REGULA-DOCINGEST-001 / SPEC-REGULA-KNOWLEDGE-GAP-001 / SPEC-REGULA-STANDARDS-001 / SPEC-REGULA-KNOWLEDGE-PROMO-001
 
+import { auditChainVerifyDailyFn } from './audit/audit-chain-verify-daily';
 import { knowledgeGapDailyDigestFn } from './digest/knowledge-gap-daily-digest';
 import { weeklyDigestFn } from './digest/weekly-digest';
 import { uploadProcessedFn } from './docingest/upload-processed';
@@ -18,6 +19,7 @@ export const functions = [
   knowledgeGapDailyDigestFn,
   uploadProcessedFn,
   standardsRevisionDailyFn,
+  auditChainVerifyDailyFn, // SPEC-V3-AUDIT-CHAIN-001 M3: daily chain verification
   messagesEmbeddingBackfillJob, // Issue 275 — messages embedding backfill
   knowledgeSourcesOrphanCleanupFn, // Issue 313 — daily orphan sources cleanup
 ];

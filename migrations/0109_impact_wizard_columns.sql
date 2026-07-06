@@ -7,7 +7,7 @@
 --   3. retestMatrixResults (jsonb) - matrix lookup results
 --   4. llmCategory (jsonb) - LLM classification output
 --   5. ragSimilarCases (jsonb) - RAG similar cases results
---   6. previousHash (bytea) to audit_logs - for hash chain verification
+--   6. previous_hash (TEXT) to audit_logs - for hash chain verification (64-char hex SHA-256)
 --
 -- All columns are nullable to preserve backward compatibility with existing records.
 

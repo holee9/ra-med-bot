@@ -31,4 +31,6 @@ export const INNGEST_EVENTS = {
   CAPA_EFFECTIVENESS_REMINDER_TRIGGER: 'capa/effectiveness.reminder.trigger',
   /** Fires daily (or on manual replay) to detect standards revisions (Issue #62). */
   STANDARDS_REVISION_TRIGGER: 'standards/revision.trigger',
+  /** Fires daily (or on manual replay) to verify audit hash chain integrity (SPEC-V3-AUDIT-CHAIN-001 M3). */
+  AUDIT_CHAIN_VERIFY_TRIGGER: 'audit-chain/verify.trigger',
 } as const;

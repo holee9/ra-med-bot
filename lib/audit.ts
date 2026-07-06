@@ -10,6 +10,8 @@
 // Phase 2: wire llm.call, source.access (RAG handler).
 // Phase 5: wire auth.login, auth.logout, expert_review.* (auth callbacks).
 
+import { sql } from 'drizzle-orm';
+import { GENESIS_SENTINEL, computeAuditRowHash, fetchPreviousChainLink } from './audit/hash-chain';
 import { db } from './db/client';
 import { auditLogs } from './db/schema';
 
@@ -510,18 +512,30 @@ export interface AuditEvent {
 }
 
 /**
- * Minimal transaction-handle type compatible with both the db singleton and a
- * tx-scoped clone. Uses the structural `insert` signature so both the db and a
- * Drizzle PgTransaction satisfy this without a hard import of the tx type.
+ * Transaction-handle type compatible with both the db singleton and a
+ * Drizzle PgTransaction. H2 fix (REQ-AC-013): widened to include `select`
+ * (prev-row lookup) and `execute` (advisory lock raw SQL) for hash-chain
+ * population. Drizzle PgTransaction already provides all three capabilities
+ * with compatible signatures, so the existing ~24 `db.transaction` call sites
+ * remain compatible without change (AC-9).
  */
 export type AuditDbHandle = {
   insert: (typeof db)['insert'];
+  select: (typeof db)['select'];
+  execute: (typeof db)['execute'];
 };
 
 /**
- * Insert an immutable audit row. Failures propagate to the caller — the
- * regulated workflow MUST fail closed if the audit write fails. Do NOT
- * swallow this error.
+ * Insert an immutable audit row with SHA-256 hash chain for tamper-evidence.
+ * Failures propagate to the caller — the regulated workflow MUST fail closed
+ * if the audit write fails. Do NOT swallow this error.
+ *
+ * SPEC-V3-AUDIT-CHAIN-001 M1: Hash Chain Population
+ * - C1: App-side UUID generation (crypto.randomUUID())
+ * - C2: Exact recurrence chainHash_N = SHA256(canonical(row_N) ‖ chainHash_{N-1})
+ * - C3: Advisory lock serializes concurrent appends (prevents fork)
+ * - H2: Widened AuditDbHandle with select/execute capabilities
+ * - REQ-AC-002: Atomicity - hash computation + INSERT in same tx
  *
  * H2 fix (21 CFR Part 11 atomicity): accepts an optional `tx` transaction
  * handle so the audit insert rides the same transaction boundary as the
@@ -530,13 +544,68 @@ export type AuditDbHandle = {
  * Omitting `tx` uses the singleton `db` (autocommit) — the historical path.
  */
 export async function writeAudit(params: AuditEvent, tx?: AuditDbHandle): Promise<void> {
-  const client = tx ?? db;
+  // REQ-AC-002: If caller provides tx, use it; otherwise create autocommit wrapper
+  if (tx) {
+    await doWriteAudit(params, tx);
+  } else {
+    await db.transaction(async (client) => {
+      await doWriteAudit(params, client);
+    });
+  }
+}
+
+/**
+ * Internal implementation: writes a single audit row with hash chain.
+ *
+ * REQ-AC-001 Sequence (within transaction):
+ *   a) Acquire pg_advisory_xact_lock (C3 - serializes concurrent appends)
+ *   b) Generate app-side UUID (C1 - id known before hash computation)
+ *   c) Fetch previous chain link (previous_hash, chain_seq)
+ *   d) Compute SHA-256 hash of current row + previous hash
+ *   e) INSERT with explicit id, previous_hash, chain_seq
+ *
+ * @param params - Audit event parameters
+ * @param client - Database client (db or transaction)
+ */
+async function doWriteAudit(params: AuditEvent, client: AuditDbHandle): Promise<void> {
+  // C3 (REQ-AC-001.a): acquire advisory lock BEFORE prev-row SELECT to serialize
+  // concurrent appends. Prevents chain fork under READ COMMITTED isolation.
+  await client.execute(sql`SELECT pg_advisory_xact_lock(hashtext('audit_logs_chain'))`);
+
+  // C1 (REQ-AC-012): app-side UUID + app-side created_at — both known before INSERT
+  // so the row's own chain hash is computable without an append-only UPDATE.
+  const id = globalThis.crypto.randomUUID();
+  const createdAt = new Date();
+
+  // REQ-AC-001.b: fetch prior chain link (full row, for chainHash computation).
+  const prev = await fetchPreviousChainLink(client);
+
+  // Option A (REQ-AC-007): this row's previous_hash stores the PRIOR row's chainHash.
+  let previousHash: string;
+  let chainSeq: number;
+  if (prev === null) {
+    // Genesis — empty table (REQ-AC-003): previous_hash = literal sentinel.
+    previousHash = GENESIS_SENTINEL;
+    chainSeq = 1;
+  } else {
+    // chainHash_{N-1} = SHA256(canonical(prev.fields) ‖ (prev.previous_hash ?? GENESIS)).
+    // prev.previous_hash null = backfill segment boundary → GENESIS input (REQ-AC-008).
+    const prevChainInput = prev.previous_hash ?? GENESIS_SENTINEL;
+    previousHash = await computeAuditRowHash(prevChainInput, prev.fields);
+    chainSeq = prev.chain_seq + 1;
+  }
+
+  // REQ-AC-001.e: INSERT with explicit id, previous_hash, chain_seq, created_at.
   await client.insert(auditLogs).values({
+    id,
     actorId: params.actor_id,
     action: params.action,
     resourceType: params.resource_type,
     resourceId: params.resource_id,
     conversationId: params.conversation_id ?? null,
     metaJson: params.meta_json ?? {},
+    createdAt,
+    previousHash,
+    chainSeq,
   });
 }

@@ -22,10 +22,10 @@
 
 import { sql } from 'drizzle-orm';
 import {
+  bigint,
   boolean,
   customType,
   date,
-  bigint,
   index,
   integer,
   jsonb,

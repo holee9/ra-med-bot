@@ -37,8 +37,14 @@ const dbStub = {
       where: () => ({
         limit: () => (getNodeResult === null ? [] : [getNodeResult]),
       }),
+      // writeAudit prev-row lookup: .from(auditLogs).orderBy(...).limit(1) — genesis path.
+      orderBy: () => ({
+        limit: () => [],
+      }),
     }),
   }),
+  // writeAudit advisory lock: SELECT pg_advisory_xact_lock(...) — no-op in tests.
+  execute: async () => [],
   insert: (table: unknown) => {
     const name = nameOf(table);
     return {
