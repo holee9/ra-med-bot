@@ -94,4 +94,14 @@ describe('Sidebar tier prop (SPEC-V3-PERSONA-001 M3, REQ-V3-PER-002/H4)', () => 
     expect(links).toContain('/consult');
     expect(links).toContain('/expert-review');
   });
+
+  it('employee tier hides the project switcher (RA-only context, REQ-V3-PER-002)', () => {
+    const { container } = render(<Sidebar tier="employee" userRole="ra-member" />);
+    expect(container.querySelector('[data-testid="project-switcher"]')).toBeNull();
+  });
+
+  it('ra tier shows the project switcher (non-regression)', () => {
+    const { container } = render(<Sidebar tier="ra" userRole="ra-member" />);
+    expect(container.querySelector('[data-testid="project-switcher"]')).not.toBeNull();
+  });
 });

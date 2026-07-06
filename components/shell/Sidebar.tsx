@@ -426,8 +426,9 @@ export default function Sidebar(props?: SidebarProps) {
 
       {/* REQ-BREADTH-044: Project switcher dropdown.
           2026-06-29: viewer(전사 직원) 숨김 — 프로젝트는 RA 전문 맥락(project memory +
-          internal-docs 스코프). 일반 직원은 자연어 제품 언급으로 Q&A (projectId optional). */}
-      {hasRole(userRole, 'ra-member') && (
+          internal-docs 스코프). 일반 직원은 자연어 제품 언급으로 Q&A (projectId optional).
+          SPEC-V3-PERSONA-001 M3: employee tier에서도 숨김 (tier IA 일관성). */}
+      {hasRole(userRole, 'ra-member') && !hidePersonaScopedItems && (
         <section className="mt-2 px-2 py-2">
           <p className="mb-1 px-3 text-[10px] uppercase tracking-widest text-ink-500">프로젝트</p>
           <details ref={dropdownRef} className="relative">
