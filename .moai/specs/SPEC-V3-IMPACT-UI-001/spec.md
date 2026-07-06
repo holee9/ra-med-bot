@@ -1,7 +1,7 @@
 ---
 id: SPEC-V3-IMPACT-UI-001
-version: 0.2.0
-status: planned
+version: 1.0.0
+status: completed
 phase: C-4
 priority: High
 created: 2026-07-06

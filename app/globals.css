@@ -11,6 +11,21 @@
 @import "../styles/tokens.css";
 @import "tailwindcss";
 
+/* Signal light semantic tokens (REQ-IMP-UI-007, REQ-IMP-UI-011)
+   WCAG 2.1 AA compliant contrast ratios (ci:contrast gate).
+   Green: Pass, Yellow: Caution, Red: Fail.
+   Reuses existing --color-success, --color-warn, and --color-danger.
+   Dark mode contrast is provided by the tokens.css palette itself
+   (--color-success / --color-warn / --color-danger already adjust for [data-theme="dark"]). */
+:root {
+  --color-signal-green: var(--color-success);
+  --color-signal-green-bg: var(--color-success-bg);
+  --color-signal-yellow: var(--color-warn);
+  --color-signal-yellow-bg: var(--color-warn-bg);
+  --color-signal-red: var(--color-danger);
+  --color-signal-red-bg: var(--color-danger-bg);
+}
+
 /* Font variables are also injected by app/layout.tsx via next/font/google
    (Source Serif 4, Noto Serif KR, IBM Plex Sans, IBM Plex Mono).
    Pretendard is loaded from @fontsource/pretendard in app/layout.tsx. */

@@ -230,5 +230,124 @@
       "passwordInvalid": "Invalid password.",
       "missingFinalAnswer": "Please set the final answer first."
     }
+  },
+  "impact": {
+    "title": "Change Impact Assessment",
+    "wizard": {
+      "step1": {
+        "title": "Product Identifier",
+        "description": "Enter the identifier of the product to assess."
+      },
+      "step2": {
+        "title": "Change Category",
+        "description": "Select the type of change."
+      },
+      "step3": {
+        "title": "Change Details",
+        "description": "Describe the change in detail."
+      },
+      "step4": {
+        "title": "Target Markets",
+        "description": "Select affected markets (minimum 1)."
+      }
+    },
+    "categories": {
+      "bom": {
+        "label": "BOM Change",
+        "description": "Replacement or modification of Bill of Materials"
+      },
+      "sw": {
+        "label": "SW Algorithm Change",
+        "description": "Software algorithm retraining or major logic changes"
+      },
+      "sw-minor": {
+        "label": "SW Minor Change",
+        "description": "Bug fixes and minor software modifications"
+      },
+      "label": {
+        "label": "Labeling Change",
+        "description": "Label text, user manual changes"
+      },
+      "warn": {
+        "label": "Critical Warning Update",
+        "description": "Product cautions, warning text changes"
+      },
+      "process": {
+        "label": "Manufacturing Process Change",
+        "description": "Production process, equipment, quality management changes"
+      },
+      "sterile": {
+        "label": "Sterile Condition Change",
+        "description": "Sterilization method, cycle changes"
+      }
+    },
+    "markets": {
+      "us": {
+        "label": "United States (FDA)",
+        "description": "21 CFR Part 820"
+      },
+      "eu": {
+        "label": "European Union (EU MDR)",
+        "description": "MDR regulations"
+      },
+      "kr": {
+        "label": "Korea (MFDS)",
+        "description": "Ministry of Food and Drug Safety"
+      },
+      "cn": {
+        "label": "China (NMPA)",
+        "description": "National Medical Products Administration"
+      },
+      "jp": {
+        "label": "Japan (PMDA)",
+        "description": "Pharmaceuticals and Medical Devices Agency"
+      }
+    },
+    "form": {
+      "productId": {
+        "label": "Product Identifier",
+        "placeholder": "e.g., XRAY-SRC-001"
+      },
+      "changeDetail": {
+        "label": "Change Details",
+        "placeholder": "Describe the change in detail: part model number, reason, scope, etc.",
+        "counter": "{current} / 2000",
+        "charMinError": "Minimum 10 characters required.",
+        "charMaxError": "Maximum 2000 characters allowed."
+      }
+    },
+    "button": {
+      "next": "Next",
+      "back": "Back",
+      "startEvaluation": "Start Evaluation",
+      "retry": "Retry"
+    },
+    "result": {
+      "signalLabel": "Signal",
+      "matrixHeader": "Regulatory Matrix",
+      "market": "Market",
+      "level": "Level",
+      "ref": "Ref",
+      "note": "Note",
+      "llmHeader": "AI Classification",
+      "category": "Category",
+      "confidence": "Confidence",
+      "reason": "Reason",
+      "similarHeader": "Similar Cases",
+      "ticketCta": "RA Ticket #{ticketId} Created",
+      "contactRaCta": "RA Review Recommended — Contact RA Queue",
+      "noSimilarCases": "No similar cases found",
+      "similarCasesSkipped": "Low confidence — similar case search skipped",
+      "lowConfidenceBadge": "Low Confidence — RA Review Recommended",
+      "loadingMessage": "Running 4-layer assessment..."
+    },
+    "error": {
+      "forbidden": "Permission denied. Contact your administrator.",
+      "forbiddenDesc": "You don't have permission to perform this action. Contact your administrator or try logging in again.",
+      "badRequest": "Invalid request. Check your input and try again.",
+      "badRequestDesc": "Verify your input values and try again. If the problem persists, contact your administrator.",
+      "network": "Temporary error. Please try again later.",
+      "networkDesc": "Check your network connection and try again. If the problem persists, contact your administrator."
+    }
   }
 }

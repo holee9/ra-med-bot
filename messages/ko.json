@@ -230,5 +230,124 @@
       "passwordInvalid": "비밀번호가 올바르지 않습니다.",
       "missingFinalAnswer": "먼저 최종 답변을 설정하세요."
     }
+  },
+  "impact": {
+    "title": "변경 영향 평가",
+    "wizard": {
+      "step1": {
+        "title": "제품 식별",
+        "description": "평가 대상 제품의 식별자를 입력하세요."
+      },
+      "step2": {
+        "title": "변경 카테고리",
+        "description": "변경 유형을 선택하세요."
+      },
+      "step3": {
+        "title": "변경 상세",
+        "description": "변경 내용을 구체적으로 기술하세요."
+      },
+      "step4": {
+        "title": "대상 시장",
+        "description": "영향을 받는 시장을 선택하세요 (최소 1개)."
+      }
+    },
+    "categories": {
+      "bom": {
+        "label": "BOM 변경",
+        "description": "부품(Bill of Materials) 교체 또는 변경"
+      },
+      "sw": {
+        "label": "SW 알고리즘 변경",
+        "description": "소프트웨어 알고리즘 재학습 또는 주요 로직 변경"
+      },
+      "sw-minor": {
+        "label": "SW 마이너 변경",
+        "description": "버그 픽스 등 사소한 소프트웨어 수정"
+      },
+      "label": {
+        "label": "라벨링 변경",
+        "description": "라벨 문구, 사용자 매뉴얼 변경"
+      },
+      "warn": {
+        "label": "Critical Warning 개정",
+        "description": "제품 사용상 주의사항, 경고 문구 변경"
+      },
+      "process": {
+        "label": "생산 공정 변경",
+        "description": "제조 공정, 설비, 품질 관리 방식 변경"
+      },
+      "sterile": {
+        "label": "멸균 조건 변경",
+        "description": "멸균 방법, 사이클 변경"
+      }
+    },
+    "markets": {
+      "us": {
+        "label": "미국 (FDA)",
+        "description": "21 CFR Part 820"
+      },
+      "eu": {
+        "label": "유럽 (EU MDR)",
+        "description": "MDR 규정"
+      },
+      "kr": {
+        "label": "한국 (MFDS)",
+        "description": "식품의약품안전처"
+      },
+      "cn": {
+        "label": "중국 (NMPA)",
+        "description": "국가약품감독관리국"
+      },
+      "jp": {
+        "label": "일본 (PMDA)",
+        "description": "의약품 의료기기법"
+      }
+    },
+    "form": {
+      "productId": {
+        "label": "제품 식별자",
+        "placeholder": "예: XRAY-SRC-001"
+      },
+      "changeDetail": {
+        "label": "변경 상세",
+        "placeholder": "변경 내용을 구체적으로 기술하세요: 부품 모델번호, 변경 사유, 영향 범위 등",
+        "counter": "{current} / 2000",
+        "charMinError": "최소 10자 이상 입력하세요.",
+        "charMaxError": "최대 2000자까지 입력 가능합니다."
+      }
+    },
+    "button": {
+      "next": "다음",
+      "back": "뒤로",
+      "startEvaluation": "평가 시작",
+      "retry": "다시 시도"
+    },
+    "result": {
+      "signalLabel": "신호등",
+      "matrixHeader": "규제 매트릭스",
+      "market": "시장",
+      "level": "등급",
+      "ref": "참조",
+      "note": "비고",
+      "llmHeader": "AI 분류",
+      "category": "카테고리",
+      "confidence": "신뢰도",
+      "reason": "사유",
+      "similarHeader": "유사 사례",
+      "ticketCta": "RA 티켓 #{ticketId} 생성됨",
+      "contactRaCta": "RA 검토 권장 — RA 큐에 문의하세요",
+      "noSimilarCases": "유사 사례가 없습니다",
+      "similarCasesSkipped": "신뢰도 낮아 유사 사례 조회를 생략했습니다",
+      "lowConfidenceBadge": "신뢰도 낮음 — RA 검토 권장",
+      "loadingMessage": "4계층 평가 수행 중..."
+    },
+    "error": {
+      "forbidden": "권한이 없습니다. 관리자에게 문의하세요.",
+      "forbiddenDesc": "이 작업을 수행할 권한이 없습니다. 관리자에게 문의하거나 다시 로그인하세요.",
+      "badRequest": "잘못된 요청입니다. 입력을 확인하고 다시 시도하세요.",
+      "badRequestDesc": "입력 값을 확인하고 다시 시도하세요. 문제가 지속되면 관리자에게 문의하세요.",
+      "network": "일시 오류가 발생했습니다. 나중에 다시 시도하세요.",
+      "networkDesc": "네트워크 연결을 확인하고 다시 시도하세요. 문제가 지속되면 관리자에게 문의하세요."
+    }
   }
 }
