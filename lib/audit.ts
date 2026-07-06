@@ -487,7 +487,10 @@ export type AuditAction =
   // (impact.critical_detected already added via 0034_impact_audit_actions.sql — SPEC-REGULA-IMPACT-001)
   | 'impact.check'
   | 'impact.ticket.create'
-  | 'impact.view';
+  | 'impact.view'
+  // SPEC-V3-AUDIT-CHAIN-001 M0: emitted by the verify cron on chain break
+  // (migration 0111, tamper-evidence — 21 CFR Part 11 §11.10(e)).
+  | 'audit_chain.violation_detected';
 
 export interface AuditEvent {
   /** User UUID, or null for system-initiated events. */

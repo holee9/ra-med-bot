@@ -25,6 +25,7 @@ import {
   boolean,
   customType,
   date,
+  bigint,
   index,
   integer,
   jsonb,
@@ -471,6 +472,11 @@ export const auditActionEnum = pgEnum('audit_action', [
   // regulators can separate implicit-regenerate signals from explicit
   // thumbs-up/down submissions in the audit trail (21 CFR Part 11).
   'rlhf.implicit_feedback_recorded',
+  // SPEC-V3-AUDIT-CHAIN-001 M0 — added via 0111_audit_chain_infrastructure.sql:
+  // emitted by the verify cron (M3) when a chain break is detected (tamper-evidence,
+  // 21 CFR Part 11 §11.10(e)). Distinct from rbac.permission_deny so regulators can
+  // isolate integrity violations from authorization denials.
+  'audit_chain.violation_detected',
 ]);
 
 // @MX:NOTE [AUTO] Source governance enums — SPEC-REGULA-SOURCE-GOVERNANCE-001 (Issue #48).
@@ -1278,6 +1284,10 @@ export const auditLogs = pgTable(
     // SPEC-V3-IMPACT-001 M8: Hash chain for 21 CFR Part 11 verification
     // Using text to store hex-encoded hash (SHA-256 = 64 hex chars)
     previousHash: text('previous_hash'),
+    // SPEC-V3-AUDIT-CHAIN-001 M0: monotonic chain sequence (tie-break + prev-row lookup).
+    // writeAudit sets chain_seq = prev.chain_seq + 1. Existing rows keep default 0
+    // (genesis segment, Strategy B backfill — append-only trigger forbids UPDATE).
+    chainSeq: bigint('chain_seq', { mode: 'number' }).notNull().default(0),
   },
   (t) => ({
     // Performance optimization: actor audit trail queries (REQ-FND-048)
