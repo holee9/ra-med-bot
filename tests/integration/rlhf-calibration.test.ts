@@ -114,6 +114,8 @@ const {
       });
     }),
     select: vi.fn(() => makeSelectChain()),
+    // writeAudit advisory lock (SELECT pg_advisory_xact_lock) — no-op in tests.
+    execute: vi.fn(async () => []),
   };
 
   // biome-ignore lint/suspicious/noExplicitAny: Drizzle query builder chain

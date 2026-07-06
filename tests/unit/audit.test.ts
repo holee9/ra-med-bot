@@ -72,7 +72,7 @@ describe('lib/audit.ts (REQ-BREADTH-057) — extended AuditAction type', () => {
         'export.confluence',
       ]),
     );
-    expect(values).toHaveLength(222); // -9 pms.*/pmcf.* (Issue #319) +8 inbox +1 inbox.approve_failed (Issue #320) +4 consult (Issue #341 SPEC-V3-CONSULT-001) +3 impact.check/ticket.create/view (SPEC-V3-IMPACT-001); was 215 before PMS/PMCF domain removal
+    expect(values).toHaveLength(223); // -9 pms.*/pmcf.* (Issue #319) +8 inbox +1 inbox.approve_failed (Issue #320) +4 consult (Issue #341 SPEC-V3-CONSULT-001) +3 impact.check/ticket.create/view (SPEC-V3-IMPACT-001) +1 audit_chain.violation_detected (SPEC-V3-AUDIT-CHAIN-001 M0); was 215 before PMS/PMCF domain removal
   });
 
   it.each([

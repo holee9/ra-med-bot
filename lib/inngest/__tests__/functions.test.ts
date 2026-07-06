@@ -4,6 +4,7 @@
 // endpoint exports the expected HTTP handlers.
 
 import { describe, expect, it } from 'vitest';
+import { auditChainVerifyDailyFn } from '../audit/audit-chain-verify-daily';
 import { INNGEST_EVENTS, inngest } from '../client';
 import { weeklyDigestFn } from '../digest/weekly-digest';
 import { uploadProcessedFn } from '../docingest/upload-processed';
@@ -31,7 +32,7 @@ describe('function registry', () => {
     expect(ids).toContain('standards-revision-daily');
     expect(ids).toContain('messages-embedding-backfill');
     expect(ids).toContain('knowledge-sources-orphan-cleanup');
-    expect(functions).toHaveLength(6); // +standards-revision-daily Issue 62 +messages-embedding-backfill Issue 275 +orphan-cleanup Issue 313
+    expect(functions).toHaveLength(7); // +audit-chain-verify-daily (M3) // +standards-revision-daily Issue 62 +messages-embedding-backfill Issue 275 +orphan-cleanup Issue 313
   });
 
   it('weekly digest function is the same instance exported from its module', () => {
@@ -40,6 +41,7 @@ describe('function registry', () => {
 
   it('docingest upload function is the same instance exported from its module', () => {
     expect(functions).toContain(uploadProcessedFn);
+    expect(functions).toContain(auditChainVerifyDailyFn);
   });
 });
 

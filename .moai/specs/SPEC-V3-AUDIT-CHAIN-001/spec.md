@@ -1,8 +1,8 @@
 ---
 id: SPEC-V3-AUDIT-CHAIN-001
 title: audit_log SHA-256 Hash Chain Strengthening
-version: 0.2.0
-status: planned
+version: 0.3.0
+status: implemented
 phase: E
 priority: High
 created_at: 2026-07-06
@@ -12,6 +12,7 @@ depends_on: []
 parent_spec: none
 issue_number: TBD
 lifecycle: spec-anchored
+run_phase: M0-M3 implemented (commits 9445e96 M0, <M1-M3-sha> M1-M3); M4 gates green; pre-merge review pending
 labels: [audit, hash-chain, 21cfr-part11, tamper-evidence, postgresql, phase-E]
 ---
 
@@ -249,3 +250,33 @@ The system **shall** migration 0111 에 `audit_logs.chain_seq BIGINT NOT NULL DE
 3. 크론 주기: daily 24h 윈도우 권장. weekly 옵션 검토.
 4. Genesis sentinel literal: 본 SPEC 은 `"<genesis>"` 채택. run phase 에서 상수로 고정.
 5. **m3 (run-phase 문서 수정)**: `migrations/0109_impact_wizard_columns.sql` 헤더 주석 라인 6 의 `previousHash (bytea)` → `previous_hash TEXT (64-char hex)` 로 정정 (header bug fix, schema 변경 없음).
+
+---
+
+## 9. Run-Phase Decisions (M0-M3, 2026-07-06)
+
+### 9.1 Open Questions 해결
+
+1. **Canonical 직렬화**: `JSON.stringify` (REQ-AC-005 고정 필드 순서 삽입 + meta_json deep sorted keys) 채택. `lib/signature/hash.ts` 패턴 일관. Field-order sensitivity (AC-5b) 만족.
+2. **Alert action**: `audit_chain.violation_detected` 신규 enum (migration 0111) 채택.
+3. **크론 주기**: daily 09:00 UTC (`AUDIT_CHAIN_VERIFY_CRON = '0 9 * * *'`). 단 **풀체인 verify**로 실행 (24h window는 boundary row의 expected previous_hash를 알 수 없어 tamper-evidence 약화).
+4. **Genesis sentinel**: `GENESIS_SENTINEL = '<genesis>'` 상수 고정.
+5. **m3**: 0109 헤더 수정 완료.
+
+### 9.2 ⚠️ SPEC 점화식 모순 — Option A 채택 (amendment 대상)
+
+REQ-AC-007 (normative EARS SHALL)은 `row_N.previous_hash MUST equal chainHash_{N-1}` (전방향 체인, Option A)로 명시. 반면 AC-5c 문장은 genesis row의 `previous_hash = SHA256(canonical(row)‖'<genesis>')` (= chainHash_1, hex)로 기술. 이 두 명세는 **genesis row의 previous_hash 값에 대해 양립 불가**:
+
+- **Option A (REQ-AC-007 + AC-5 + M1 plan INSERT)**: genesis `previous_hash = "<genesis>"` literal. AC-5 변조 탐지 메커니즘이 row_{N+1}에서 동작. 컬럼명 `previous_hash` 의미 일치. Bitcoin 블록체인 패턴.
+- AC-5c 직독 (Option A'): genesis `previous_hash = chainHash_1` (hex). AC-5 탐지 불가 (row_{N-1} 자체 검사로 전락).
+
+**본 run-phase는 Option A로 구현** (REQ-AC-007 normative 준수 + 암호학적 무결성 + 업계 표준). **AC-5c/AC-1은 sync 단계에서 "non-genesis rows" / "genesis sentinel exception"으로 amendment 필요** (plan-auditor 검토 권장).
+
+### 9.3 게이트 결과 (직검)
+
+- typecheck 0 에러 / lint 0 에러 (lint:hex full) / ci:audit PASS
+- 단위 15/15 (hash-chain 9 + verify-chain 6) + 실DB 통합 4/4 (AC-1/2/3/9/10)
+- migration 0111 실DB 적용 후 런타임 chain 증빙 (seq 1-N hex 연쇄)
+- 풀 스위트 4703 passed (잔여 2 실패는 M0 기준선 동일 — 사전 존재: CER evidence-synthesis LLM stub, frontend-shell metadata flaky)
+- writeAudit 호출 지점 193 = 기존 192 + cron 신규 1; 시그니처 호환 typecheck green으로 증뱅
+
