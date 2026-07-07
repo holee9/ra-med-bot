@@ -1,12 +1,12 @@
 ---
 id: SPEC-REGULA-VALIDATION-001
 title: "Regula 자체 검증 패키지 — IQ/OQ/PQ·변경통제·릴리즈 증거"
-version: 1.1.0
-status: planned
+version: 1.2.0
+status: completed
 phase: system-validation
 priority: High
 created: 2026-06-22
-updated: 2026-07-06
+updated: 2026-07-07
 author: manager-spec (plan-phase completion)
 issue_number: 49
 depends_on:
@@ -29,6 +29,10 @@ labels:
   - iqqpq
   - change-control
 revision_history:
+  - version: 1.2.0
+    date: 2026-07-07
+    author: manager-tdd (run-phase completion)
+    notes: "run-phase 완료. status planned→completed. M0~M5 구현 — migration 0112/0113, validation_evidence/change_control/validation_signoff 3 테이블, 4 collector 스크립트(collect-iq/oq/pq, classify-changes), 5 API route, sign-off + release report. AC-1~8 직검 통과. audit hash chain 통합(writeAudit validation.signoff, migration 0113). AC-7 실DB INSERT 결함 fix(gen_random_uuid default 누락 3곳, collected_at 컬럼명 정합). PDF post-v0.1 이월 유지(REQ-VAL-011 Optional)."
   - version: 1.1.0
     date: 2026-07-06
     author: manager-spec (plan-phase)

@@ -11,6 +11,17 @@
 
 > Placeholder for post-1.0.0 development.
 
+### SPEC-REGULA-VALIDATION-001 — Regula 자체 검증 패키지 (IQ/OQ/PQ·변경통제·릴리즈 증거)
+
+- **Release Validation Package** — 내부용 CSV-lite IQ/OQ/PQ 검증 증거 체계. 21 CFR Part 11 §11.10(i), ISO 13485 §4.1.6 근거. thin glue layer (Charter [지양-5]) — 기존 CI/eval/model-gov 결과 집계, 신규 harness 금지.
+  - **신규 DB**: migration 0112 (validation_evidence, change_control, validation_signoff 3 테이블 + CHECK 제약) + 0113 (audit_logs action_type `validation.signoff` 확장).
+  - **신규 스크립트** (4): `scripts/validation/{collect-iq,collect-oq,collect-pq,classify-changes}.ts` — env/deps/migrations/config/secret IQ evidence, CI run OQ 매핑, e2e+eval PQ bundle, 7축 변경영향 평가.
+  - **신규 API** (5): `/api/validation/{iq,oq,pq,changes}` evidence append + `/api/validation/signoff` (checklist gate + rerun gate + writeAudit hash chain) + `/api/validation/report/export`.
+  - **신규 문서**: `docs/validation/intended-use.md` (Intended/Prohibited Use, Human Review Boundary).
+  - **AC-1~8 직검 통과**: intended-use.md 존재, IQ 5 evidence non-null, OQ ci_run_id 교차검증, PQ e2e+eval 링크, high-impact rerun gate 409, report 9 섹션, sign-off audit_logs hash chain, checklist 미충족 409.
+  - **AC-7 실DB 결함 fix**: migration 0112 id defaults(gen_random_uuid) + collected_at 컬럼명 정합 — 정적 테스트·CI mock DB·self-report 3중 맹점 통과 결함(L-013), 실DB INSERT로 포착.
+  - **이월**: PDF export (REQ-VAL-011 Optional, post-v0.1), TRACEABILITY/RELEASE/SOURCE-GOV/REVIEW-OPS report 섹션 stub 보강 (R6).
+
 ### v3 Phase D 확장 — RA Power Chat Consult UI (SPEC-V3-UI-001 M6, 백엔드 PR #343)
 
 - **RA Power Chat 세션 히스토리 UI** — SPEC-V3-CONSULT-001(Phase C-5) 백엔드를 소비하는 프론트 슬라이스. INBOX UI(M1-M5, 28 REQ)는 미수정 비회귀. SPEC v0.1.0 → **v0.2.1**(REQ 28 → 41).
