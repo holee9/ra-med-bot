@@ -3,6 +3,7 @@
 //
 // Scans app/api/**/route.ts files for state-mutating HTTP handlers
 // (POST, PATCH, PUT, DELETE) and verifies each calls writeAudit().
+// Also scans lib/ files containing audit wrappers for PII leaks.
 // Also scans writeAudit() meta_json arguments for PII key patterns.
 //
 // Override: add `/* audit-check-ignore: <justification> */` on the same
@@ -155,6 +156,27 @@ function collectRouteFiles(dir: string, results: string[] = []): string[] {
 }
 
 /**
+ * Recursively collect all TypeScript files under lib/ that contain audit wrapper calls.
+ * This ensures lib/ domain audit wrappers are also checked for coverage.
+ */
+function collectLibAuditFiles(dir: string, results: string[] = []): string[] {
+  const entries = fs.readdirSync(dir, { withFileTypes: true });
+  for (const entry of entries) {
+    const full = path.join(dir, entry.name);
+    if (entry.isDirectory()) {
+      collectLibAuditFiles(full, results);
+    } else if (entry.isFile() && (entry.name.endsWith('.ts') || entry.name.endsWith('.tsx'))) {
+      // Only include files that actually use audit wrappers
+      const content = fs.readFileSync(full, 'utf-8');
+      if (hasAuditCall(content)) {
+        results.push(full);
+      }
+    }
+  }
+  return results;
+}
+
+/**
  * Run the full audit completeness check across all route files in apiDir.
  *
  * @param apiDir - Root directory to scan (default: app/api)
@@ -162,10 +184,12 @@ function collectRouteFiles(dir: string, results: string[] = []): string[] {
  */
 export async function runAuditCheck(
   apiDir: string,
+  libDir: string,
 ): Promise<{ violations: string[]; piiViolations: string[] }> {
   const violations: string[] = [];
   const piiViolations: string[] = [];
 
+  // Check route files (existing behavior - MUTABLE_METHODS only)
   const routeFiles = collectRouteFiles(apiDir);
 
   for (const filePath of routeFiles) {
@@ -175,6 +199,18 @@ export async function runAuditCheck(
     const coverageViolations = checkFileForAuditCoverage(content, relative);
     violations.push(...coverageViolations);
 
+    const pii = checkFileForPiiLeaks(content, relative);
+    piiViolations.push(...pii);
+  }
+
+  // Check lib/ files with audit wrappers (PII only - no MUTABLE_METHODS check)
+  const libFiles = collectLibAuditFiles(libDir);
+
+  for (const filePath of libFiles) {
+    const content = fs.readFileSync(filePath, 'utf8');
+    const relative = path.relative(process.cwd(), filePath);
+
+    // Only PII check for lib files (they already call audit wrappers)
     const pii = checkFileForPiiLeaks(content, relative);
     piiViolations.push(...pii);
   }
@@ -191,7 +227,8 @@ const isDirectRun =
 
 if (isDirectRun) {
   const apiDir = path.resolve(process.cwd(), 'app', 'api');
-  runAuditCheck(apiDir).then(({ violations, piiViolations }) => {
+  const libDir = path.resolve(process.cwd(), 'lib');
+  runAuditCheck(apiDir, libDir).then(({ violations, piiViolations }) => {
     const allViolations = [...violations, ...piiViolations];
 
     if (violations.length > 0) {
