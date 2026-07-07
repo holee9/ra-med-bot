@@ -127,7 +127,7 @@ function renderChangeTable(rows: ChangeRow[]): string {
 }
 
 function renderChecklistSection(items: Array<{ id: string; title: string; met: boolean }>): string {
-  const header = `| id | title | met |\n|---|---|---|`;
+  const header = '| id | title | met |\n|---|---|---|';
   const body = items
     .map((i) => `| ${escapePipe(i.id)} | ${escapePipe(i.title)} | ${i.met ? 'true' : 'false'} |`)
     .join('\n');

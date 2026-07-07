@@ -18,7 +18,7 @@ BEGIN;
 
 -- 1. validation_evidence — IQ/OQ/PQ evidence records (REQ-VAL-003/004/005/006)
 CREATE TABLE IF NOT EXISTS validation_evidence (
-  id UUID PRIMARY KEY,
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
   release_id TEXT NOT NULL,
   qualification_type TEXT NOT NULL CHECK (qualification_type IN ('iq', 'oq', 'pq')),
   commit_sha TEXT NOT NULL,
@@ -27,7 +27,7 @@ CREATE TABLE IF NOT EXISTS validation_evidence (
   artifact_path TEXT,
   result TEXT NOT NULL CHECK (result IN ('pass', 'fail', 'skip')),
   metadata JSONB NOT NULL DEFAULT '{}'::jsonb,
-  created_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
+  collected_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
 );
 
 COMMENT ON TABLE validation_evidence IS
@@ -41,7 +41,7 @@ COMMENT ON COLUMN validation_evidence.result IS
 
 -- 2. change_control — 7-axis release impact assessment (REQ-VAL-007/008/009)
 CREATE TABLE IF NOT EXISTS change_control (
-  id UUID PRIMARY KEY,
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
   release_id TEXT NOT NULL,
   change_axis TEXT NOT NULL CHECK (change_axis IN
     ('source_policy', 'prompt', 'model', 'schema', 'retrieval', 'export', 'review_workflow')),
@@ -67,7 +67,7 @@ COMMENT ON COLUMN change_control.evidence_ref IS
 
 -- 3. validation_signoff — final release sign-off (REQ-VAL-010/012/013)
 CREATE TABLE IF NOT EXISTS validation_signoff (
-  id UUID PRIMARY KEY,
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
   release_id TEXT NOT NULL UNIQUE,
   checklist_state JSONB NOT NULL,
   approver_id UUID NOT NULL REFERENCES users(id) ON DELETE RESTRICT,

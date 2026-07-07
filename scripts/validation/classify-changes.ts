@@ -70,7 +70,7 @@ function countPathDiffs(previousRef: string | undefined, pathSpec: string): numb
  * research.md §1.3 boundary: change-workflow.ts owns the workflow itself.
  */
 async function classifyModelGovernanceAxis(
-  releaseId: string,
+  _releaseId: string,
   axis: 'prompt' | 'model',
 ): Promise<{ impactLevel: ImpactLevel; rerunRequired: boolean; residualRisk: string }> {
   // Count approved change_request rows that touch this axis.
@@ -144,7 +144,7 @@ function classifySchemaAxis(previousRef: string | undefined): {
  * export, review_workflow). Path patterns mirror research.md §3 R2 fallback.
  */
 function classifyGitDiffAxis(
-  axis: ChangeAxis,
+  _axis: ChangeAxis,
   previousRef: string | undefined,
   pathSpecs: string[],
 ): { impactLevel: ImpactLevel; rerunRequired: boolean; residualRisk: string } {
@@ -174,7 +174,7 @@ function classifyGitDiffAxis(
 
 /** source_policy — lib/source-governance/ or lib/ai/policy-keywords.ts */
 async function classifySourcePolicyAxis(
-  releaseId: string,
+  _releaseId: string,
   previousRef: string | undefined,
 ): Promise<{ impactLevel: ImpactLevel; rerunRequired: boolean; residualRisk: string }> {
   return classifyGitDiffAxis('source_policy', previousRef, [
@@ -185,7 +185,7 @@ async function classifySourcePolicyAxis(
 
 /** retrieval — lib/ai/retrievers/ + lib/ai/rerank */
 async function classifyRetrievalAxis(
-  releaseId: string,
+  _releaseId: string,
   previousRef: string | undefined,
 ): Promise<{ impactLevel: ImpactLevel; rerunRequired: boolean; residualRisk: string }> {
   return classifyGitDiffAxis('retrieval', previousRef, [
@@ -197,7 +197,7 @@ async function classifyRetrievalAxis(
 
 /** export — app/api export routes + lib/export */
 async function classifyExportAxis(
-  releaseId: string,
+  _releaseId: string,
   previousRef: string | undefined,
 ): Promise<{ impactLevel: ImpactLevel; rerunRequired: boolean; residualRisk: string }> {
   return classifyGitDiffAxis('export', previousRef, ['app/api/**/export/', 'lib/export/']);
@@ -205,7 +205,7 @@ async function classifyExportAxis(
 
 /** review_workflow — expert-review gating + queue */
 async function classifyReviewWorkflowAxis(
-  releaseId: string,
+  _releaseId: string,
   previousRef: string | undefined,
 ): Promise<{ impactLevel: ImpactLevel; rerunRequired: boolean; residualRisk: string }> {
   return classifyGitDiffAxis('review_workflow', previousRef, [
