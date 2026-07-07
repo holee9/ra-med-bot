@@ -5,8 +5,6 @@
  *
  * Archive @MX:LEGACY tag checker and applier.
  *
- * biome-ignore lint/suspicious/noConsole: CLI script requires console.log for output
- *
  * Usage:
  *   node scripts/qa/check-mx-legacy.mjs              # Check mode (report missing tags)
  *   node scripts/qa/check-mx-legacy.mjs --fix        # Fix mode (apply @MX:LEGACY tags)
