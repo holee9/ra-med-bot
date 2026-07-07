@@ -3425,3 +3425,87 @@ export const consultTurns = pgTable(
     sessionTurnIdx: uniqueIndex('consult_turns_session_turn_idx').on(t.sessionId, t.turnNumber),
   }),
 );
+
+// ---------------------------------------------------------------------------
+// SPEC-REGULA-VALIDATION-001 (Issue #49) — IQ/OQ/PQ validation evidence,
+// 7-axis change control, and release sign-off. Migration: 0112.
+// 21 CFR Part 11 §11.10(i) / ISO 13485 §4.1.6 / GAMP 5.
+// ---------------------------------------------------------------------------
+
+// @MX:ANCHOR [AUTO] validationEvidence — IQ/OQ/PQ evidence records.
+// @MX:REASON Release sign-off gate (REQ-VAL-003..006). Consumed by M1-M3 collectors and M5 sign-off API.
+// @MX:SPEC SPEC-REGULA-VALIDATION-001 (REQ-VAL-003, REQ-VAL-004, REQ-VAL-005, REQ-VAL-006)
+export const validationEvidence = pgTable(
+  'validation_evidence',
+  {
+    id: uuid('id').defaultRandom().primaryKey(),
+    releaseId: text('release_id').notNull(),
+    // CHECK constraint lives in migration 0112. Drizzle text + Zod enforces in app layer.
+    qualificationType: text('qualification_type').notNull(),
+    commitSha: text('commit_sha').notNull(),
+    // GitHub Actions run databaseId. NULL when evidence collected outside CI.
+    ciRunId: bigint('ci_run_id', { mode: 'number' }),
+    testCommand: text('test_command').notNull(),
+    artifactPath: text('artifact_path'),
+    result: text('result').notNull(),
+    evidenceMetadata: jsonb('metadata').notNull().default({}),
+    collectedAt: timestamp('collected_at', { withTimezone: true, mode: 'date' })
+      .notNull()
+      .defaultNow(),
+  },
+  (t) => ({
+    // @MX:NOTE [AUTO] Release-scoped evidence lookup (M1-M3 bundle assembly).
+    releaseIdx: index('idx_validation_evidence_release').on(t.releaseId),
+    releaseQualIdx: index('idx_validation_evidence_release_qual').on(
+      t.releaseId,
+      t.qualificationType,
+    ),
+  }),
+);
+
+// @MX:ANCHOR [AUTO] changeControl — 7-axis release change impact assessment.
+// @MX:REASON REQ-VAL-008 sign-off block gate reads high-impact rows. Consumed by M4 classify + M5 sign-off.
+// @MX:SPEC SPEC-REGULA-VALIDATION-001 (REQ-VAL-007, REQ-VAL-008, REQ-VAL-009)
+export const changeControl = pgTable(
+  'change_control',
+  {
+    id: uuid('id').defaultRandom().primaryKey(),
+    releaseId: text('release_id').notNull(),
+    // 7 axes: source_policy | prompt | model | schema | retrieval | export | review_workflow
+    changeAxis: text('change_axis').notNull(),
+    impactLevel: text('impact_level').notNull(),
+    rerunRequired: boolean('rerun_required').notNull(),
+    // Mandatory free-text justification. Non-empty even when risk is negligible.
+    residualRisk: text('residual_risk').notNull(),
+    exceptionNote: text('exception_note'),
+    // Loose reference to validation_evidence.id (not FK — keeps append-only flow simple).
+    evidenceRef: uuid('evidence_ref'),
+    assessorId: uuid('assessor_id').references(() => users.id, { onDelete: 'set null' }),
+    assessedAt: timestamp('assessed_at', { withTimezone: true, mode: 'date' })
+      .notNull()
+      .defaultNow(),
+  },
+  (t) => ({
+    releaseIdx: index('idx_change_control_release').on(t.releaseId),
+    releaseAxisIdx: index('idx_change_control_release_axis').on(t.releaseId, t.changeAxis),
+  }),
+);
+
+// @MX:ANCHOR [AUTO] validationSignoff — final release sign-off (one row per release).
+// @MX:REASON REQ-VAL-012/013 sign-off audit chain entry point. UNIQUE(release_id) is the sign-off invariant.
+// @MX:SPEC SPEC-REGULA-VALIDATION-001 (REQ-VAL-010, REQ-VAL-012, REQ-VAL-013, REQ-VAL-014)
+export const validationSignoff = pgTable('validation_signoff', {
+  id: uuid('id').defaultRandom().primaryKey(),
+  // UNIQUE — one sign-off per release. Second attempt must be blocked (REQ-VAL-013).
+  releaseId: text('release_id').notNull().unique(),
+  // JSONB snapshot of sign-off checklist: { items: [{ id, title, met }] }
+  checklistState: jsonb('checklist_state').notNull(),
+  approverId: uuid('approver_id')
+    .notNull()
+    .references(() => users.id, { onDelete: 'restrict' }),
+  signedAt: timestamp('signed_at', { withTimezone: true, mode: 'date' }).notNull().defaultNow(),
+  reportArtifactPath: text('report_artifact_path').notNull(),
+  // UUID of the audit_logs row written by writeAudit(action: validation.signoff).
+  // Loose ref (not FK) — avoids conflict with audit_logs append-only trigger.
+  auditLogRef: uuid('audit_log_ref'),
+});
