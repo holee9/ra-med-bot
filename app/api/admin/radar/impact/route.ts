@@ -4,7 +4,7 @@
 import { z } from 'zod';
 import { withPermission } from '../../../../../lib/auth/with-permission';
 import { db } from '../../../../../lib/db/client';
-import { analyzeImpact } from '../../../../../lib/impact/analyzer';
+import { analyzeImpact } from '../../../../../lib/domains/impact/analyzer';
 
 const TriggerSchema = z.object({
   regulatory_update_id: z.string().uuid(),
