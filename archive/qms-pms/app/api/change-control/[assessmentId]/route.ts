@@ -1,5 +1,7 @@
 // @MX:NOTE [AUTO] GET /api/change-control/[assessmentId] — fetch assessment + verdicts + citations + risk links.
 // @MX:SPEC SPEC-REGULA-CHANGE-CONTROL-001 (REQ-004, REQ-006, REQ-008, REQ-011, AC-03, AC-06)
+
+// @MX:LEGACY archived from app
 //
 // IDOR defense: org_id scope in the WHERE clause (mirrors PMS close route).
 // Cross-org lookups return 404 (NOT 403) to avoid leaking existence.

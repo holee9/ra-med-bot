@@ -1,5 +1,7 @@
 // @MX:NOTE [AUTO] Unit tests for REQ-006 citation enforcement.
 // @MX:SPEC SPEC-REGULA-CHANGE-CONTROL-001 (REQ-006, AC-04)
+
+// @MX:LEGACY archived from lib
 //
 // These exercise the DUAL defense: application-level validateVerdictCitations
 // strips unmatched citations AND rejects verdicts with zero grounded citations.

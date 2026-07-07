@@ -1,5 +1,7 @@
 // @MX:NOTE [AUTO] Route-level + domain-level integration tests for labeling.
 // @MX:SPEC SPEC-REGULA-LABELING-001 (REQ-001~012, AC-01~08)
+
+// @MX:LEGACY archived from tests
 //
 // Two complementary strategies (mirrors change-control.test.ts):
 //   1. Source-level: read the route/lib/migration source and assert the control

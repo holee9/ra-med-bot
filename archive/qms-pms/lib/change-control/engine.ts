@@ -1,5 +1,7 @@
 // @MX:ANCHOR [AUTO] assessChange — per-jurisdiction change-control assessment entry point.
 // @MX:REASON Entry point for /api/change-control/run route, report builder, and
+
+// @MX:LEGACY archived from lib
 //           eval harness. fan_in >= 3 expected.
 // @MX:WARN [AUTO] External RAG + optional LLM calls inside assessChange.
 // @MX:REASON External network calls — latency and failure mode. Always inject a

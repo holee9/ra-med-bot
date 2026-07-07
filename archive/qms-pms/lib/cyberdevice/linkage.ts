@@ -1,5 +1,7 @@
 // @MX:NOTE [AUTO] Evidence-bundle referent validation (C-1 fix — Issue 67).
 // @MX:SPEC SPEC-REGULA-CYBERDEVICE-001 (REQ-009/012/014)
+
+// @MX:LEGACY archived from lib
 //
 // C-1 defect: cyber_evidence_bundle.linked_samd_id / linked_dhf_id /
 // linked_submission_id were persisted raw from the request body with no

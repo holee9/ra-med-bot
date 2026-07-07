@@ -1,5 +1,7 @@
 // POST /api/ra/esubmit/[id]/validate — run structural validation on the submission package.
 // Returns validation issues. Does NOT call external FDA/EUDAMED APIs.
+
+// @MX:LEGACY archived from app
 // @MX:SPEC SPEC-REGULA-ESUBMIT-001
 
 import { writeAudit } from '@/lib/audit';

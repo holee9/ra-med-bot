@@ -1,3 +1,5 @@
+
+// @MX:LEGACY archived from app
 'use client';
 // @MX:SPEC SPEC-REGULA-DHF-001
 // Tabbed detail view: Overview | Design Inputs | V&V | Design Reviews

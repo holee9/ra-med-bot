@@ -1,5 +1,7 @@
 // @MX:NOTE [AUTO] Pure change-control re-eval predicate (REQ-011).
 // @MX:SPEC SPEC-REGULA-CYBERDEVICE-001 (REQ-011)
+
+// @MX:LEGACY archived from lib
 //
 // Split out of risk-linkage.ts so importing this pure predicate does NOT drag
 // in the Drizzle db client (which would env-parse on module load). The db-backed

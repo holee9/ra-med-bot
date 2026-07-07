@@ -1,5 +1,7 @@
 // @MX:NOTE [AUTO] AC-07 / REQ-009 — eSubmit labeling bridge end-to-end roundtrip test.
 // @MX:SPEC SPEC-REGULA-LABELING-001 (REQ-009, AC-07)
+
+// @MX:LEGACY archived from tests
 // @MX:REASON [AUTO] Load-bearing test: exercises the REAL forwardLabelingToESubmit
 //           against an in-memory submission_packages store. Proves the full path:
 //           approved labeling → package_manifest append (top-level section keys +

@@ -1,5 +1,7 @@
 // @MX:NOTE [AUTO] Route-level integration tests for change-control security fixes.
 // @MX:SPEC SPEC-REGULA-CHANGE-CONTROL-001 (C-1, H-1, H-2, H-3, H-4, M-1)
+
+// @MX:LEGACY archived from tests
 //
 // Security-fix regression coverage. Each block exercises one defect class from
 // the expert-security review (Phase 5, sync Phase 0.55). Two complementary

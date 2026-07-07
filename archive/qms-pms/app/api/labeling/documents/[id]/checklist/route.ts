@@ -1,6 +1,8 @@
 // @MX:NOTE [AUTO] GET /api/labeling/documents/[id]/checklist — jurisdiction required-elements checklist.
 // @MX:SPEC SPEC-REGULA-LABELING-001 (REQ-002, REQ-011, AC-01)
 
+// @MX:LEGACY archived from app
+
 import { withPermission } from '@/lib/auth/with-permission';
 import { db } from '@/lib/db/client';
 import { labelingDocuments, labelingSections } from '@/lib/db/schema';

@@ -1,5 +1,7 @@
 // POST /api/ra/samd/[id]/generate — generate model card, checklist, monitoring plan via fast LLM.
 // Streams SSE progress events; stores results in generated_* JSONB columns.
+
+// @MX:LEGACY archived from app
 // @MX:ANCHOR [AUTO] SSE AI generation route for SaMD artifacts
 // @MX:REASON External LLM call + DB write; fan_in >= 3 via wizard, re-generate button, API.
 // @MX:SPEC SPEC-REGULA-SAMD-001

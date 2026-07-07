@@ -1,3 +1,5 @@
+
+// @MX:LEGACY archived from app
 'use client';
 // @MX:SPEC SPEC-REGULA-ESUBMIT-001
 // Submission package list view with create button and inline detail navigation.

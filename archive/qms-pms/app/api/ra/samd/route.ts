@@ -1,5 +1,7 @@
 // GET /api/ra/samd — list SaMD assessments for org.
 // POST /api/ra/samd — create new SaMD assessment with IMDRF N12 classification.
+
+// @MX:LEGACY archived from app
 // @MX:SPEC SPEC-REGULA-SAMD-001
 
 import { writeAudit } from '@/lib/audit';

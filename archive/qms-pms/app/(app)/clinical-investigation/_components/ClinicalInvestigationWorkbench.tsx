@@ -1,3 +1,5 @@
+
+// @MX:LEGACY archived from app
 'use client';
 
 // @MX:NOTE [AUTO] ClinicalInvestigationWorkbench — frontend full-cycle MVP for Issue #69.

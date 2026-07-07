@@ -1,5 +1,7 @@
 // @MX:NOTE [AUTO] REQ-006 — export gate for unsupported claims.
 // @MX:SPEC SPEC-REGULA-LABELING-001 (REQ-006, REQ-010, AC-03)
+
+// @MX:LEGACY archived from lib
 //
 // Mirrors the PMS export-gating pattern (lib/pms/export-gate.ts). A labeling
 // document may only be exported when ALL claims are supported (zero

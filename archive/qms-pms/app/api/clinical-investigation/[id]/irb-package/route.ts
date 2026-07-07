@@ -1,5 +1,7 @@
 // @MX:NOTE [AUTO] POST /api/clinical-investigation/[id]/irb-package — REQ-004/007, AC-03.
 // @MX:SPEC SPEC-REGULA-CLINICAL-INVESTIGATION-001 (Issue #69, REQ-CLININV-004, AC-03)
+
+// @MX:LEGACY archived from app
 // @MX:TODO [AUTO] eSubmit bundle assembly is DEFERRED to Issue 65 (eSubmit dependency).
 //   This route persists a DRAFT only; it does NOT submit to FDA / EUDAMED.
 

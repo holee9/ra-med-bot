@@ -1,5 +1,7 @@
 // @MX:SPEC SPEC-REGULA-SAMD-001
 import { BetaBadge } from '@/components/ui/BetaBadge';
+
+// @MX:LEGACY archived from app
 import { SaMDAssessmentList } from './_components/SaMDAssessmentList';
 
 export const metadata = {

@@ -1,5 +1,7 @@
 // @MX:NOTE [AUTO] euMdrChecklist — REQ-CLININV-003 EU MDR Article 62 / Annex XV checklist.
 // @MX:SPEC SPEC-REGULA-CLINICAL-INVESTIGATION-001 (Issue #69, REQ-CLININV-003, AC-02)
+
+// @MX:LEGACY archived from lib
 // @MX:REASON Deterministic checklist (no LLM) — the regulatory requirements are
 //           fixed text in EU MDR. Every item carries its regulatory basis citation
 //           so the output is audit-defensible. Callers persist the checklist JSONB

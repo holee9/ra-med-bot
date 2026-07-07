@@ -1,5 +1,7 @@
 // @MX:NOTE [AUTO] REQ-001 — structured labeling section builder.
 // @MX:SPEC SPEC-REGULA-LABELING-001 (REQ-001, AC-01)
+
+// @MX:LEGACY archived from lib
 //
 // Pure helpers for building/validating the 5 structured section types. DB
 // persistence is handled by the API routes (app/api/labeling/documents/*).

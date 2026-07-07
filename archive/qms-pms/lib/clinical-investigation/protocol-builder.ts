@@ -1,5 +1,7 @@
 // @MX:NOTE [AUTO] buildProtocolDraft — REQ-CLININV-005 protocol builder.
 // @MX:SPEC SPEC-REGULA-CLINICAL-INVESTIGATION-001 (Issue #69, REQ-CLININV-005, AC-06)
+
+// @MX:LEGACY archived from lib
 // @MX:REASON Deterministic normalizer over caller-provided synopsis/endpoint/
 //           inclusion-exclusion criteria. No LLM call in tier1 — the RA team edits
 //           the prose directly; this module validates shape and returns a typed

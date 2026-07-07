@@ -1,5 +1,7 @@
 // @MX:NOTE [AUTO] POST /api/change-control/[assessmentId]/review — expert review gate (REQ-009).
 // @MX:SPEC SPEC-REGULA-CHANGE-CONTROL-001 (REQ-009, REQ-012, AC-07)
+
+// @MX:LEGACY archived from app
 //
 // REQ-009 server-side enforcement: AI verdicts are provisional until an
 // RA-lead reviews and confirms. This route transitions status from

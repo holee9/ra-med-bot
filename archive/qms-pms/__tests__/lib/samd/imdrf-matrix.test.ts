@@ -1,5 +1,7 @@
 // SPEC-REGULA-SAMD-001 — unit tests for IMDRF N12 classification matrix.
 // Verifies deterministic category assignment, EU AI Act risk level derivation,
+
+// @MX:LEGACY archived from __tests__
 // FDA pathway derivation, and PCCP requirement determination.
 import { describe, expect, it } from 'vitest';
 import {

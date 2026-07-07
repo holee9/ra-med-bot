@@ -1,6 +1,8 @@
 // @MX:NOTE [AUTO] Shared types for the change-control engine — SPEC-REGULA-CHANGE-CONTROL-001.
 // @MX:SPEC SPEC-REGULA-CHANGE-CONTROL-001 (REQ-003, REQ-004, REQ-005, REQ-010)
 
+// @MX:LEGACY archived from lib
+
 /** REQ-003: 6 change classification types. */
 export type ChangeType =
   | 'design'

@@ -1,5 +1,7 @@
 // @MX:NOTE [AUTO] REQ-009 — eSubmit forward hook (ACTIVE).
 // @MX:SPEC SPEC-REGULA-LABELING-001 (REQ-009, AC-07)
+
+// @MX:LEGACY archived from lib
 // @MX:REASON [AUTO] Activated in #249. The approve route calls this AFTER the
 //           approval tx commits; failure here is non-fatal (forward hook, not a gate).
 //

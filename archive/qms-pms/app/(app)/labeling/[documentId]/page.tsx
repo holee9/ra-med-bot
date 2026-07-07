@@ -1,5 +1,7 @@
 // @MX:NOTE [AUTO] Labeling document detail page — workbench shell (REQ-001~012).
 // @MX:SPEC SPEC-REGULA-LABELING-001 (REQ-001, REQ-002, REQ-006, REQ-012, AC-01/03/08)
+
+// @MX:LEGACY archived from app
 //
 // Server Component shell: resolves role + fetches the document (org-scoped)
 // via the internal API. Passes the full detail to LabelingWorkbench (client

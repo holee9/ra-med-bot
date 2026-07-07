@@ -1,3 +1,5 @@
+
+// @MX:LEGACY archived from app
 'use client';
 
 // @MX:NOTE [AUTO] LabelingCreateForm — structured document creation (REQ-001, AC-01).

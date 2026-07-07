@@ -1,5 +1,7 @@
 // @MX:NOTE [AUTO] GET /api/clinical-investigation/[id] — REQ-011 dashboard state.
 // @MX:SPEC SPEC-REGULA-CLINICAL-INVESTIGATION-001 (Issue #69, REQ-CLININV-011, AC-05)
+
+// @MX:LEGACY archived from app
 // @MX:REASON Returns the investigation state + related counts for the dashboard.
 //           Read-only — no audit row (view is already covered by dashboard.view).
 

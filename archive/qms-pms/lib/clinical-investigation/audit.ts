@@ -1,5 +1,7 @@
 // @MX:NOTE [AUTO] CI domain audit helpers — wrap writeAudit with PII-free meta.
 // @MX:SPEC SPEC-REGULA-CLINICAL-INVESTIGATION-001 (Issue #69, REQ-CLININV-010)
+
+// @MX:LEGACY archived from lib
 // @MX:REASON Every clinical-investigation Route Handler records lifecycle events
 //           via these helpers. The meta payload is deliberately PII-free (no
 //           device serials, no patient identifiers, no free-text narrative from

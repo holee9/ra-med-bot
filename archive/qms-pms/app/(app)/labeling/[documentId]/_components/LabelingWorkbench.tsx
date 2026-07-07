@@ -1,3 +1,5 @@
+
+// @MX:LEGACY archived from app
 'use client';
 
 // @MX:NOTE [AUTO] LabelingWorkbench — section tabs + checklist + claims + translations + gates.

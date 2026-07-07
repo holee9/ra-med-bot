@@ -1,6 +1,8 @@
 // @MX:NOTE [AUTO] POST /api/labeling/documents/[id]/translations — register + diff a translation.
 // @MX:SPEC SPEC-REGULA-LABELING-001 (REQ-007, REQ-010, AC-05)
 
+// @MX:LEGACY archived from app
+
 import { writeAudit } from '@/lib/audit';
 import { withPermission } from '@/lib/auth/with-permission';
 import { db } from '@/lib/db/client';

@@ -1,5 +1,7 @@
 // @MX:NOTE [AUTO] POST /api/clinical-investigation/[id]/close — REQ-012 expert signoff gate.
 // @MX:SPEC SPEC-REGULA-CLINICAL-INVESTIGATION-001 (Issue #69, REQ-CLININV-012, AC-07)
+
+// @MX:LEGACY archived from app
 // @MX:REASON Server-side SAFETY GATE. If the caller
 //           supplies no expertSignoffId, Zod rejects (400). If the investigation
 //           does not exist or is cross-org, assertInvestigationAccess returns null

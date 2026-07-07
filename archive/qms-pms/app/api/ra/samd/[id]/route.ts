@@ -1,5 +1,7 @@
 // GET /api/ra/samd/[id] — fetch single SaMD assessment.
 // PATCH /api/ra/samd/[id] — update assessment fields (or approve expert review).
+
+// @MX:LEGACY archived from app
 // @MX:SPEC SPEC-REGULA-SAMD-001
 
 import { writeAudit } from '@/lib/audit';

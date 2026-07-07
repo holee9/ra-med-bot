@@ -1,3 +1,5 @@
+
+// @MX:LEGACY archived from __tests__
 import { computeCompleteness } from '@/lib/dhf/completeness';
 // SPEC-REGULA-DHF-001 — completeness score algorithm unit tests.
 import { describe, expect, it } from 'vitest';

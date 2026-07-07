@@ -1,5 +1,7 @@
 // @MX:NOTE [AUTO] buildIrbPackageDraft — REQ-CLININV-004 IRB/EC submission package draft.
 // @MX:SPEC SPEC-REGULA-CLINICAL-INVESTIGATION-001 (Issue #69, REQ-CLININV-004/007, AC-03)
+
+// @MX:LEGACY archived from lib
 // @MX:REASON Generates the textual draft sections that constitute an IRB/EC
 //           submission package. The output is a DRAFT only — actual eSubmit bundle
 //           assembly (XML packaging, sponsor signature block, FDA Form 3514, EUDAMED

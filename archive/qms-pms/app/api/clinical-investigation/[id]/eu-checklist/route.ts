@@ -1,6 +1,8 @@
 // @MX:NOTE [AUTO] GET /api/clinical-investigation/[id]/eu-checklist — REQ-003.
 // @MX:SPEC SPEC-REGULA-CLINICAL-INVESTIGATION-001 (Issue #69, REQ-CLININV-003, AC-02)
 
+// @MX:LEGACY archived from app
+
 import { withPermission } from '@/lib/auth/with-permission';
 import { assertInvestigationAccess, resolveRouteId } from '@/lib/clinical-investigation/access';
 import { buildEuMdrChecklist } from '@/lib/clinical-investigation/eu-checklist';

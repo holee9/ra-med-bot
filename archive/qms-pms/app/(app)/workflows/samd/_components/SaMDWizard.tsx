@@ -1,3 +1,5 @@
+
+// @MX:LEGACY archived from app
 'use client';
 // @MX:SPEC SPEC-REGULA-SAMD-001
 // 5-step SaMD regulatory pathway wizard.

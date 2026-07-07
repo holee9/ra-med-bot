@@ -1,5 +1,7 @@
 // @MX:NOTE [AUTO] GSPR 17.2/17.4 + IEC 81001-5-1 mapping (REQ-008, AC-06).
 // @MX:SPEC SPEC-REGULA-CYBERDEVICE-001 (REQ-008, AC-06)
+
+// @MX:LEGACY archived from lib
 //
 // AC-06 requires the threat model to map to GSPR 17.2, GSPR 17.4, and
 // IEC 81001-5-1 with completeness. This module is the canonical requirement

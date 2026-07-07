@@ -1,5 +1,7 @@
 // @MX:NOTE [AUTO] generateConsentDraft — REQ-CLININV-006 informed consent draft.
 // @MX:SPEC SPEC-REGULA-CLINICAL-INVESTIGATION-001 (Issue #69, REQ-CLININV-006)
+
+// @MX:LEGACY archived from lib
 // @MX:REASON Produces a human-readable informed-consent DRAFT grounded in the
 //           Helsinki principles and the applicable regulatory framework. No LLM
 //           call in tier1 — the RA team edits the placeholder text directly.

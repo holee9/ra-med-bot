@@ -1,6 +1,8 @@
 // @MX:NOTE [AUTO] POST /api/change-control/run — assess a design change across jurisdictions.
 // @MX:SPEC SPEC-REGULA-CHANGE-CONTROL-001 (REQ-001~006, REQ-010, REQ-012, AC-01, AC-02, AC-03, AC-04, AC-08)
 
+// @MX:LEGACY archived from app
+
 import { internalDocsRetrieve } from '@/lib/ai/retrievers/internal-docs';
 import { createHybridRaFetch } from '@/lib/api/hybrid-ra-client';
 import { writeAudit } from '@/lib/audit';

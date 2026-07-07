@@ -1,5 +1,7 @@
 // @MX:NOTE [AUTO] LabelingStatusBadge — REQ-006/012 visual marker for document status.
 // @MX:SPEC SPEC-REGULA-LABELING-001 (REQ-006, REQ-012, AC-03, AC-08)
+
+// @MX:LEGACY archived from components
 //
 // Mirrors the change-control ProvisionalBadge pattern: amber for draft/in_review,
 // green for approved. WCAG 2.1 AA: amber-800 on amber-100 >= 4.5:1; success on

@@ -1,5 +1,7 @@
 // @MX:NOTE [AUTO] VerdictCard — per-jurisdiction verdict display (REQ-004, REQ-006).
 // @MX:SPEC SPEC-REGULA-CHANGE-CONTROL-001 (REQ-004, REQ-006, REQ-011, AC-03)
+
+// @MX:LEGACY archived from components
 //
 // Shows jurisdiction, verdict badge, rationale, and the citation list backing it.
 // When citationRejected is true (verdict downgraded by REQ-006 enforcement),

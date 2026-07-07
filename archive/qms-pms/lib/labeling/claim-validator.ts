@@ -1,5 +1,7 @@
 // @MX:NOTE [AUTO] REQ-003/004 — claim ↔ citation enforcement.
 // @MX:SPEC SPEC-REGULA-LABELING-001 (REQ-003, REQ-004, AC-02)
+
+// @MX:LEGACY archived from lib
 //
 // Mirrors the change-control validateVerdictCitations pattern (REQ-006 dual
 // defense): application-level validation + DB NOT NULL excerpt. A claim

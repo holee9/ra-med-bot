@@ -1,3 +1,5 @@
+
+// @MX:LEGACY archived from app
 'use client';
 
 // @MX:NOTE [AUTO] ChangeControlForm — structured change input (REQ-002, AC-01).

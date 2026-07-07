@@ -1,6 +1,8 @@
 // @MX:NOTE [AUTO] POST /api/labeling/documents — create a structured labeling document.
 // @MX:SPEC SPEC-REGULA-LABELING-001 (REQ-001, REQ-010, REQ-012, AC-01)
 
+// @MX:LEGACY archived from app
+
 import { writeAudit } from '@/lib/audit';
 import { withPermission } from '@/lib/auth/with-permission';
 import { db } from '@/lib/db/client';

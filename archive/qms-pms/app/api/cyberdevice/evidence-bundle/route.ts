@@ -1,6 +1,8 @@
 // @MX:NOTE [AUTO] POST /api/cyberdevice/evidence-bundle — assemble submission bundle (REQ-009/012/014, AC-05).
 // @MX:SPEC SPEC-REGULA-CYBERDEVICE-001 (REQ-009, REQ-012, REQ-014, AC-05)
 
+// @MX:LEGACY archived from app
+
 import { withPermission } from '@/lib/auth/with-permission';
 import { auditCyberAccessDenied, auditEvidenceBundled } from '@/lib/cyberdevice/audit';
 import { assembleEvidenceBundle } from '@/lib/cyberdevice/evidence-bundle';

@@ -1,5 +1,7 @@
 // GET /api/ra/esubmit/[id]/interactions — list regulatory interactions for a package.
 // POST /api/ra/esubmit/[id]/interactions — add a new RTA/AI request interaction.
+
+// @MX:LEGACY archived from app
 // @MX:SPEC SPEC-REGULA-ESUBMIT-001
 
 import { writeAudit } from '@/lib/audit';

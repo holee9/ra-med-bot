@@ -1,5 +1,7 @@
 // @MX:NOTE [AUTO] ClaimWarningBadges — REQ-004/005 warning markers.
 // @MX:SPEC SPEC-REGULA-LABELING-001 (REQ-004, REQ-005, AC-02, AC-04)
+
+// @MX:LEGACY archived from components
 //
 // Two badge variants:
 //   - ExpertReviewRequiredBadge (REQ-004): citation missing → forces expert review.

@@ -1,5 +1,7 @@
 // @MX:NOTE [AUTO] POST /api/clinical-investigation/[id]/events — REQ-008.
 // @MX:SPEC SPEC-REGULA-CLINICAL-INVESTIGATION-001 (Issue #69, REQ-CLININV-008)
+
+// @MX:LEGACY archived from app
 // @MX:REASON Milestone / deviation tracking. SPEC-REGULA-PHI-REMOVAL-001 removed
 //           the adverse_event type + vigilanceRef coupling — Regula does not
 //           handle patient outcomes.

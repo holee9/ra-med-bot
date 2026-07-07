@@ -1,5 +1,7 @@
 // @MX:NOTE [AUTO] SBOM version diff (REQ-004 / AC-01).
 // @MX:SPEC SPEC-REGULA-CYBERDEVICE-001 (REQ-004, AC-01)
+
+// @MX:LEGACY archived from lib
 //
 // Compares two component lists and returns added / removed / updated. A
 // component identity is keyed by (name, purl, cpe) — version-only changes are

@@ -1,5 +1,7 @@
 // @MX:NOTE [AUTO] REQ-005 — comparative/superiority claim auto-detection.
 // @MX:SPEC SPEC-REGULA-LABELING-001 (REQ-005, AC-04)
+
+// @MX:LEGACY archived from lib
 //
 // MVP heuristic: keyword-based detection. False-positive risk is accepted
 // because (1) the detector only flags the claim for RA review — it does NOT

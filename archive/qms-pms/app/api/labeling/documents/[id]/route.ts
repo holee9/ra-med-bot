@@ -1,5 +1,7 @@
 // @MX:NOTE [AUTO] GET /api/labeling/documents/[id] — fetch a labeling document with sections.
 // @MX:SPEC SPEC-REGULA-LABELING-001 (REQ-001, REQ-012, AC-01)
+
+// @MX:LEGACY archived from app
 //
 // IDOR defense: org_id scope enforced (404 on cross-org access — never 403,
 // to avoid leaking the existence of foreign-org document UUIDs).

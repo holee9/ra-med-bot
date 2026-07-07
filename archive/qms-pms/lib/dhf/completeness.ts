@@ -1,5 +1,7 @@
 // @MX:ANCHOR [AUTO] DHF completeness score algorithm — pure function, no DB/env deps.
 // @MX:REASON fan_in >= 3: completeness route, tests, DHFDetail component all import this.
+
+// @MX:LEGACY archived from lib
 // @MX:SPEC SPEC-REGULA-DHF-001
 
 /** Completeness score breakdown — each key is an achieved criterion with its point value. */

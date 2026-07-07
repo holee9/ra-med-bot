@@ -1,5 +1,7 @@
 // @MX:NOTE [AUTO] Unit tests for assessChange engine (REQ-003~006, REQ-010).
 // @MX:SPEC SPEC-REGULA-CHANGE-CONTROL-001 (REQ-004, REQ-005, REQ-006)
+
+// @MX:LEGACY archived from lib
 //
 // Uses the deterministic stub path (no fetchFn) so tests never hit the network.
 // Three scenarios exercised:

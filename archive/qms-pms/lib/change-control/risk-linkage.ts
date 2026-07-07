@@ -1,5 +1,7 @@
 // @MX:NOTE [AUTO] REQ-008 ISO 14971 (#46) risk re-evaluation linkage.
 // @MX:SPEC SPEC-REGULA-CHANGE-CONTROL-001 (REQ-008, AC-06)
+
+// @MX:LEGACY archived from lib
 //
 // Links a change assessment to the risk_items (SPEC-REGULA-RISK-001, Issue #46)
 // that need re-evaluation because of the change. The linkage is a many-to-many

@@ -1,5 +1,7 @@
 // @MX:ANCHOR [AUTO] decideIdePathway — REQ-CLININV-002 FDA IDE decision tree.
 // @MX:REASON Called by POST /api/clinical-investigation/[id]/ide-decision route +
+
+// @MX:LEGACY archived from lib
 //           integration tests. fan_in >= 3. Deterministic regulatory decision tree
 //           grounded in 21 CFR 812. Every branch carries regulatory basis citations
 //           (REQ-010) so the output is audit-defensible.

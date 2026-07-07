@@ -1,5 +1,7 @@
 // @MX:ANCHOR [AUTO] REQ-006 citation enforcement for change-control verdicts.
 // @MX:REASON Patient-safety critical (LLM hallucination defense): a verdict
+
+// @MX:LEGACY archived from lib
 //           without a grounded regulatory citation MUST be rejected. This is
 //           the application-level defense; the DB-level defense is the
 //           change_verdict_citations.excerpt NOT NULL constraint (0071 migration).

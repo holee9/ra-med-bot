@@ -1,5 +1,7 @@
 // @MX:ANCHOR [AUTO] Entitlement + IDOR guard for cybersecurity resources.
 // @MX:REASON REQ-CYBERDEVICE-013: every cyber evidence access MUST be
+
+// @MX:LEGACY archived from lib
 //           project-scoped + org-member-checked; cross-tenant access returns
 //           404 (not 403) to avoid leaking existence. Denials are audited.
 // @MX:SPEC SPEC-REGULA-CYBERDEVICE-001 (REQ-013, AC-07)

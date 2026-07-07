@@ -1,5 +1,7 @@
 // @MX:NOTE [AUTO] Cybersecurity evidence bundle assembly (REQ-009/012/014, AC-05).
 // @MX:SPEC SPEC-REGULA-CYBERDEVICE-001 (REQ-009, REQ-012, REQ-014, AC-05)
+
+// @MX:LEGACY archived from lib
 //
 // Assembles the cybersecurity evidence packet that links threat model + SBOM +
 // pen-test artifact + update plan into a single submission-ready record, and

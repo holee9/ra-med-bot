@@ -1,6 +1,8 @@
 // @MX:SPEC SPEC-REGULA-ESUBMIT-001
 // Unit tests for electronic submission validators.
 
+// @MX:LEGACY archived from __tests__
+
 import {
   validate510k,
   validateCER,
