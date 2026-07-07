@@ -18,7 +18,14 @@ import { eq } from 'drizzle-orm';
 import { z } from 'zod';
 
 const signoffRequestSchema = z.object({
-  releaseId: z.string().min(1).max(128),
+  releaseId: z
+    .string()
+    .min(1)
+    .max(128)
+    .regex(
+      /^v\d+\.\d+\.\d+(-rc\d+)?$/,
+      'Invalid release_id format. Expected ^v\\d+\\.\\d+\\.\\d+(-rc\\d+)?$',
+    ),
   // Client-supplied checklist snapshot (id/title/met). Server re-evaluates from
   // DB state and ignores client met values — the client snapshot is recorded
   // in validation_signoff.checklist_state for audit, not for gate decisions.

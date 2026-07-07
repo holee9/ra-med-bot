@@ -11,7 +11,14 @@ import { withPermission } from '@/lib/auth/with-permission';
 import { z } from 'zod';
 
 const iqRequestSchema = z.object({
-  releaseId: z.string().min(1).max(128),
+  releaseId: z
+    .string()
+    .min(1)
+    .max(128)
+    .regex(
+      /^v\d+\.\d+\.\d+(-rc\d+)?$/,
+      'Invalid release_id format. Expected ^v\\d+\\.\\d+\\.\\d+(-rc\\d+)?$',
+    ),
 });
 
 // audit-check-ignore rationale: this route inserts validation_evidence rows;

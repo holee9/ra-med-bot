@@ -45,12 +45,33 @@ vi.mock('@/lib/validation/rerun-gate', () => ({
   evaluateRerunGate: evaluateRerunGateMock,
 }));
 
+// M3: consumer snapshots mocked to real-shaped data (AC-4/5 real-data sections).
+const snapshotTraceabilityMock = vi.hoisted(() => vi.fn());
+const snapshotSourceGovernanceMock = vi.hoisted(() => vi.fn());
+vi.mock('@/lib/validation/consumers/index', () => ({
+  snapshotTraceability: snapshotTraceabilityMock,
+  snapshotSourceGovernance: snapshotSourceGovernanceMock,
+  checkGitTagExists: vi.fn(() => ({ exists: true })),
+  validateReleaseIdFormat: vi.fn(() => ({ valid: true })),
+}));
+
 import { buildReleaseReportMarkdown } from '@/scripts/validation/build-report';
 
 describe('Release Validation Report builder (M5, AC-6)', () => {
   beforeEach(() => {
     selectFromWhereMock.mockReset();
     evaluateRerunGateMock.mockReset();
+    snapshotTraceabilityMock.mockReset();
+    snapshotSourceGovernanceMock.mockReset();
+    // M3: REGULA_ORG_ID required by render*Section (empty → snapshot unavailable).
+    process.env.REGULA_ORG_ID = '00000000-0000-0000-0000-000000000001';
+    // Default: realistic snapshots so AC-4/5 render real counts.
+    snapshotTraceabilityMock.mockResolvedValue({ totalRows: 5, withGaps: 2, stale: 1 });
+    snapshotSourceGovernanceMock.mockResolvedValue({
+      counts: { approved: 10, pendingReview: 3, stale: 1, superseded: 2 },
+      reviewDue: [],
+      staleCitationArtifacts: [],
+    });
   });
 
   it('AC-6: emits at least 8 "## " section headings', async () => {
@@ -160,5 +181,54 @@ describe('Release Validation Report builder (M5, AC-6)', () => {
     expect(md).toContain('oq:pass');
     expect(md).toContain('pq:pass');
     expect(md).toContain('unmet');
+  });
+
+  it('AC-4/5/6/7: real-data sections (no Stub), Review Ops not implemented + #36', async () => {
+    selectFromWhereMock.mockResolvedValueOnce([
+      {
+        qualificationType: 'iq',
+        testCommand: 'pnpm ci:typecheck',
+        commitSha: 'abc',
+        ciRunId: 1,
+        artifactPath: null,
+        result: 'pass',
+      },
+      {
+        qualificationType: 'oq',
+        testCommand: 'pnpm ci:test',
+        commitSha: 'abc',
+        ciRunId: 2,
+        artifactPath: null,
+        result: 'pass',
+      },
+      {
+        qualificationType: 'pq',
+        testCommand: 'pnpm test:e2e',
+        commitSha: 'abc',
+        ciRunId: 3,
+        artifactPath: null,
+        result: 'pass',
+      },
+    ]);
+    selectFromWhereMock.mockResolvedValueOnce([]);
+    evaluateRerunGateMock.mockResolvedValueOnce({ passed: true, failed: [] });
+
+    const md = await buildReleaseReportMarkdown('v0.1.0-rc1');
+    // AC-4: Traceability section — real snapshot counts.
+    expect(md).toContain('totalRows');
+    expect(md).toContain('withGaps');
+    expect(md).toContain('stale');
+    // AC-5: Source Governance section — dashboard counts.
+    expect(md).toContain('approved');
+    expect(md).toContain('superseded');
+    // AC-6: Release Scope section — IQ/OQ/PQ evidence labels.
+    expect(md).toContain('IQ evidence');
+    expect(md).toContain('OQ evidence');
+    expect(md).toContain('PQ evidence');
+    // AC-7: Review Ops section — "not implemented" + #36.
+    expect(md).toContain('not implemented');
+    expect(md).toContain('#36');
+    // DoD §8: "**Stub**" must not appear.
+    expect(md).not.toContain('**Stub**');
   });
 });

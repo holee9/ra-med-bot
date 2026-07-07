@@ -26,6 +26,10 @@ import { existsSync, readFileSync, readdirSync } from 'node:fs';
 import * as path from 'node:path';
 import { parseEnv } from '../../lib/env.ts';
 import type { EvidenceResult } from '../../lib/schemas/validation.ts';
+import {
+  checkGitTagExists,
+  validateReleaseIdFormat,
+} from '../../lib/validation/consumers/release.ts';
 import { type EvidenceInput, insertEvidenceBundle } from '../../lib/validation/evidence-writer.ts';
 
 interface IqArgs {
@@ -259,6 +263,20 @@ function collectSecretEvidence(releaseId: string, commitSha: string): EvidenceIn
 
 async function main(): Promise<void> {
   const { releaseId } = parseArgs(process.argv);
+  // M4: release_id format gate (REQ-VAL2-009).
+  const formatCheck = validateReleaseIdFormat(releaseId);
+  if (!formatCheck.valid) {
+    process.stderr.write(`ERROR: ${formatCheck.reason}\n`);
+    process.exit(1);
+  }
+  // M4: git tag warning (REQ-VAL2-010, non-blocking).
+  const tagCheck = checkGitTagExists(releaseId);
+  if (!tagCheck.exists) {
+    process.stderr.write(
+      `Warning: git tag ${releaseId} not found locally (pre-release candidate?)\n`,
+    );
+    if (tagCheck.warning) process.stderr.write(`${tagCheck.warning}\n`);
+  }
   const commitSha = getHeadCommitSha();
 
   const bundle: EvidenceInput[] = [

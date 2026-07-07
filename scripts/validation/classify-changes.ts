@@ -25,10 +25,15 @@
 import { spawnSync } from 'node:child_process';
 import { existsSync } from 'node:fs';
 import * as path from 'node:path';
-import { and, eq, isNotNull } from 'drizzle-orm';
 import { db } from '../../lib/db/client.ts';
-import { changeControl, changeRequest } from '../../lib/db/schema.ts';
+import { changeControl } from '../../lib/db/schema.ts';
 import { CHANGE_AXES, type ChangeAxis, type ImpactLevel } from '../../lib/schemas/validation.ts';
+import {
+  checkGitTagExists,
+  fetchWindowScopedChangeRequests,
+  snapshotSourceGovernance,
+  validateReleaseIdFormat,
+} from '../../lib/validation/consumers/index.ts';
 
 interface ClassifyArgs {
   releaseId: string;
@@ -76,45 +81,124 @@ function countPathDiffs(previousRef: string | undefined, pathSpec: string): numb
 }
 
 /**
- * prompt/model axes — query model-governance changeRequest table.
- * High impact when an approved change exists in this release window.
- * research.md §1.3 boundary: change-workflow.ts owns the workflow itself.
+ * Resolve the release window [previousRef..HEAD] for window-scoped consumer queries.
+ * EC-5: when previousRef is missing or absent in git history, fall back to UNIX
+ * epoch (1970) so every existing change_request is conservatively in-window.
+ * SPEC-REGULA-VALIDATION-002 M1 (REQ-VAL2-001).
+ */
+function resolveWindow(previousRef?: string): {
+  windowStart: Date;
+  windowEnd: Date;
+  note: string;
+} {
+  const windowEnd = new Date();
+  if (!previousRef) {
+    return {
+      windowStart: new Date(0),
+      windowEnd,
+      note: 'previous_ref not provided, fallback to epoch',
+    };
+  }
+  const result = spawnSync('git', ['log', '-1', '--format=%cI', previousRef], {
+    encoding: 'utf-8',
+    stdio: 'pipe',
+  });
+  const iso = result.status === 0 ? result.stdout.trim() : '';
+  if (!iso) {
+    return {
+      windowStart: new Date(0),
+      windowEnd,
+      note: `previous_ref ${previousRef} not found, fallback to epoch`,
+    };
+  }
+  return {
+    windowStart: new Date(iso),
+    windowEnd,
+    note: `window [${previousRef}..HEAD ${iso}]`,
+  };
+}
+
+/**
+ * Resolve the organization ID for window-scoped consumer queries.
+ * Charter [지양-5]: single-org assumption (not a multi-tenant SaaS). The script
+ * runs in a system/validation context where REGULA_ORG_ID is provided by env.
+ * SPEC-REGULA-VALIDATION-002 M1/M2.
+ */
+function resolveOrgId(): string {
+  const orgId = process.env.REGULA_ORG_ID;
+  if (!orgId) {
+    process.stderr.write(
+      'ERROR: REGULA_ORG_ID env var required for window-scoped consumer queries\n',
+    );
+    process.exit(1);
+  }
+  return orgId;
+}
+
+/**
+ * prompt/model axes — window-scoped model-governance change_request query via
+ * consumer (AC-1, AC-2, AC-10). REQ-VAL2-001/002.
+ *
+ * High impact when an approved change exists in the release window
+ * [previousRef..HEAD]. evalRunId/evalResultRef are recorded in residual_risk:
+ * change_control.evidence_ref is uuid-typed (schema.ts:3486 — reserved for
+ * validation_evidence.id loose ref per VALIDATION-001 design), while
+ * model-governance evalRunId is a free-form string — storing it in evidence_ref
+ * would require a column-type migration, which Charter [지양-5] 범위 통제 forbids.
+ * residual_risk carries the traceability instead.
  */
 async function classifyModelGovernanceAxis(
   _releaseId: string,
   axis: 'prompt' | 'model',
+  options?: {
+    orgId?: string;
+    windowStart?: Date;
+    windowEnd?: Date;
+    windowNote?: string;
+  },
 ): Promise<{ impactLevel: ImpactLevel; rerunRequired: boolean; residualRisk: string }> {
-  // Count approved change_request rows that touch this axis.
+  const orgId = options?.orgId ?? '';
+  const windowStart = options?.windowStart ?? new Date(0);
+  const windowEnd = options?.windowEnd ?? new Date();
+  const windowNote = options?.windowNote ?? 'window defaulted to epoch';
+
+  // Consumer 경유 window-scoped query (AC-1, AC-10).
+  const rows = await fetchWindowScopedChangeRequests({ orgId, windowStart, windowEnd });
   // prompt axis → promptId non-null; model axis → modelPinId non-null.
-  const column = axis === 'prompt' ? changeRequest.promptId : changeRequest.modelPinId;
-  const approved = await db
-    .select({ id: changeRequest.id })
-    .from(changeRequest)
-    .where(and(eq(changeRequest.approvalStatus, 'approved'), isNotNull(column)));
+  const relevant = rows.filter((r) => (axis === 'prompt' ? r.promptId : r.modelPinId) !== null);
+  const approved = relevant.filter((r) => r.approvalStatus === 'approved');
+  const pending = relevant.filter((r) => r.approvalStatus === 'pending_review');
 
   if (approved.length > 0) {
+    // evalRunId / evalResultRef → residual_risk (AC-2 traceability, schema 진실원).
+    const evalRunIds = approved.map((r) => r.evalRunId).filter((v): v is string => v !== null);
+    const evalResultRefs = approved
+      .map((r) => r.evalResultRef)
+      .filter((v): v is string => v !== null);
+    const evalNote =
+      evalRunIds.length > 0
+        ? ` — evalRunId=${evalRunIds.join(',')}${
+            evalResultRefs.length > 0 ? `, evalResultRef=${evalResultRefs.join(',')}` : ''
+          }`
+        : '';
     return {
       impactLevel: 'high',
       rerunRequired: true,
-      residualRisk: `${approved.length} approved ${axis} change(s) in change_request — OQ rerun mandatory`,
+      residualRisk: `${approved.length} approved ${axis} change(s) in ${windowNote}${evalNote} — OQ rerun mandatory`,
     };
   }
   // Pending review is medium (may resolve before sign-off).
-  const pending = await db
-    .select({ id: changeRequest.id })
-    .from(changeRequest)
-    .where(and(eq(changeRequest.approvalStatus, 'pending_review'), isNotNull(column)));
   if (pending.length > 0) {
     return {
       impactLevel: 'medium',
       rerunRequired: false,
-      residualRisk: `${pending.length} pending ${axis} change(s) — monitor before sign-off`,
+      residualRisk: `${pending.length} pending ${axis} change(s) in ${windowNote} — monitor before sign-off`,
     };
   }
   return {
     impactLevel: 'low',
     rerunRequired: false,
-    residualRisk: `No ${axis} change_request rows — no change detected`,
+    residualRisk: `No window-scoped ${axis} change_request rows in ${windowNote}`,
   };
 }
 
@@ -183,15 +267,66 @@ function classifyGitDiffAxis(
   };
 }
 
-/** source_policy — lib/source-governance/ or lib/ai/policy-keywords.ts */
+/**
+ * source_policy axis — git-diff heuristic + source-governance dashboard snapshot
+ * via consumer (AC-3, AC-10). REQ-VAL2-004.
+ *
+ * Conservative over-classification (plan.md §4 R3): git-diff >= 3 commits OR
+ * dashboard stale/superseded > 0 → high impact. residual_risk records both the
+ * git-diff count and the dashboard counts (cumulative snapshot at {timestamp}).
+ */
 async function classifySourcePolicyAxis(
   _releaseId: string,
   previousRef: string | undefined,
+  options?: { orgId?: string },
 ): Promise<{ impactLevel: ImpactLevel; rerunRequired: boolean; residualRisk: string }> {
-  return classifyGitDiffAxis('source_policy', previousRef, [
-    'lib/source-governance/',
-    'lib/ai/policy-keywords.ts',
-  ]);
+  const orgId = options?.orgId ?? '';
+  const pathSpecs = ['lib/source-governance/', 'lib/ai/policy-keywords.ts'];
+  const gitDiff = pathSpecs.reduce((sum, spec) => sum + countPathDiffs(previousRef, spec), 0);
+
+  // Consumer 경유 dashboard snapshot (AC-3, AC-10). Non-blocking on failure.
+  let counts: {
+    approved: number;
+    pendingReview: number;
+    stale: number;
+    superseded: number;
+  } | null = null;
+  let snapshotNote = 'snapshot unavailable';
+  try {
+    if (orgId) {
+      const dashboard = await snapshotSourceGovernance({ orgId });
+      counts = dashboard.counts;
+      snapshotNote = `snapshot at ${new Date().toISOString()}`;
+    }
+  } catch (err) {
+    snapshotNote = `snapshot failed: ${err instanceof Error ? err.message : String(err)}`;
+  }
+
+  const countsStr = counts
+    ? `dashboard=approved:${counts.approved},pending:${counts.pendingReview},stale:${counts.stale},superseded:${counts.superseded}`
+    : 'dashboard unavailable';
+  const base = `git_diff=${gitDiff} commit(s) under ${pathSpecs.join(', ')}; ${countsStr}; ${snapshotNote}`;
+
+  // Conservative: git-diff >= 3 OR stale/superseded > 0 → high (plan.md §4 R3).
+  if (gitDiff >= 3 || (counts !== null && (counts.stale > 0 || counts.superseded > 0))) {
+    return {
+      impactLevel: 'high',
+      rerunRequired: true,
+      residualRisk: `${base} — source-policy risk detected, rerun mandatory`,
+    };
+  }
+  if (gitDiff >= 1) {
+    return {
+      impactLevel: 'medium',
+      rerunRequired: false,
+      residualRisk: `${base} — monitor`,
+    };
+  }
+  return {
+    impactLevel: 'low',
+    rerunRequired: false,
+    residualRisk: base,
+  };
 }
 
 /** retrieval — lib/ai/retrievers/ + lib/ai/rerank */
@@ -260,7 +395,24 @@ async function upsertChangeControlRow(params: {
 
 async function main(): Promise<void> {
   const { releaseId, previousRef } = parseArgs(process.argv);
+  // M4: release_id format gate (REQ-VAL2-009).
+  const formatCheck = validateReleaseIdFormat(releaseId);
+  if (!formatCheck.valid) {
+    process.stderr.write(`ERROR: ${formatCheck.reason}\n`);
+    process.exit(1);
+  }
+  // M4: git tag warning (REQ-VAL2-010, non-blocking).
+  const tagCheck = checkGitTagExists(releaseId);
+  if (!tagCheck.exists) {
+    process.stderr.write(
+      `Warning: git tag ${releaseId} not found locally (pre-release candidate?)\n`,
+    );
+    if (tagCheck.warning) process.stderr.write(`${tagCheck.warning}\n`);
+  }
   const commitSha = getHeadCommitSha();
+  // SPEC-REGULA-VALIDATION-002 M1/M2: org + window context for consumer queries.
+  const orgId = resolveOrgId();
+  const window = resolveWindow(previousRef);
 
   const results: Array<{
     axis: ChangeAxis;
@@ -275,13 +427,18 @@ async function main(): Promise<void> {
     switch (axis) {
       case 'prompt':
       case 'model':
-        classification = await classifyModelGovernanceAxis(releaseId, axis);
+        classification = await classifyModelGovernanceAxis(releaseId, axis, {
+          orgId,
+          windowStart: window.windowStart,
+          windowEnd: window.windowEnd,
+          windowNote: window.note,
+        });
         break;
       case 'schema':
         classification = classifySchemaAxis(previousRef);
         break;
       case 'source_policy':
-        classification = await classifySourcePolicyAxis(releaseId, previousRef);
+        classification = await classifySourcePolicyAxis(releaseId, previousRef, { orgId });
         break;
       case 'retrieval':
         classification = await classifyRetrievalAxis(releaseId, previousRef);
