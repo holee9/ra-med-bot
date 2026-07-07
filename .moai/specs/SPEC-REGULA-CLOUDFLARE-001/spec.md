@@ -1,7 +1,7 @@
 ---
 id: SPEC-REGULA-CLOUDFLARE-001
 title: Regula Phase 7 Cloudflare 전면 통합 — Workers Runtime · Vectorize Hybrid · AutoRAG · KV/DO · R2 Audit Cold Storage · WAF/Access · Workers AI 전처리
-status: draft
+status: completed
 created: 2026-04-22
 updated: 2026-04-22
 author: manager-spec

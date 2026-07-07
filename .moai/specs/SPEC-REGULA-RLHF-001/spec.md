@@ -1,7 +1,7 @@
 ---
 id: SPEC-REGULA-RLHF-001
 version: 1.0.0
-status: draft
+status: completed
 phase: wave4
 priority: Medium
 created: 2026-06-22

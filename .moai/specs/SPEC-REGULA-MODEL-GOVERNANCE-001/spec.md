@@ -1,7 +1,7 @@
 ---
 id: SPEC-REGULA-MODEL-GOVERNANCE-001
 version: 1.0.0
-status: draft
+status: completed
 phase: system
 priority: High
 created: 2026-06-22

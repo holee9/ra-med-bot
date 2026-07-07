@@ -1,7 +1,7 @@
 ---
 id: SPEC-REGULA-PROJECT-MEMORY-001
 version: 1.0.0
-status: draft
+status: completed
 phase: wave3
 priority: High
 created: 2026-06-22
