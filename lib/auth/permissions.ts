@@ -185,7 +185,15 @@ export type PermissionAction =
   // SPEC-V3-IMPACT-001 M10: Impact wizard RBAC actions.
   | 'impact.view'
   | 'impact.self_check'
-  | 'impact.ra_escalate';
+  | 'impact.ra_escalate'
+  // SPEC-REGULA-VALIDATION-001 (Issue #49, REQ-VAL-006/013): IQ/OQ/PQ evidence
+  //   read: admin/qa-lead/ra-lead — release validation report transparency across
+  //         QA + RA leads (21 CFR Part 11 §11.10(i) evidence visibility).
+  //   approve: admin ONLY — release sign-off is a regulatory approval decision
+  //            (21 CFR Part 11 §11.50/11.100). Stricter than risk.approve
+  //            because release sign-off closes the validation lifecycle.
+  | 'validation.read'
+  | 'validation.approve';
 
 export interface PermissionSpec {
   minRole: Role;
@@ -594,4 +602,23 @@ export const PERMISSIONS: Record<PermissionAction, PermissionSpec> = {
     scope: 'org',
     resourceType: 'impactAssessment',
   },
+
+  // @MX:ANCHOR [AUTO] validation.read — IQ/OQ/PQ evidence + change-control read access.
+  // @MX:REASON Release validation transparency for QA + RA leads (21 CFR Part 11 §11.10(i)).
+  //   admin: hierarchy; qa-lead: independent QA oversight; ra-lead: release owner.
+  //   viewer/ra-member must NOT see pre-release evidence (inspector-ready only).
+  // @MX:SPEC SPEC-REGULA-VALIDATION-001 (REQ-VAL-006, Issue #49)
+  'validation.read': {
+    minRole: 'ra-lead',
+    additionalRoles: ['qa-lead'],
+    scope: 'org',
+    resourceType: 'validationEvidence',
+  },
+
+  // @MX:ANCHOR [AUTO] validation.approve — release validation sign-off (admin ONLY).
+  // @MX:REASON Release sign-off closes the IQ/OQ/PQ validation lifecycle. This is
+  //   a 21 CFR Part 11 §11.50/§11.100 regulatory approval record. Stricter than
+  //   risk.approve because it attests the whole release is validated for use.
+  // @MX:SPEC SPEC-REGULA-VALIDATION-001 (REQ-VAL-013, Issue #49)
+  'validation.approve': { minRole: 'admin', scope: 'org', resourceType: 'validationSignoff' },
 };
