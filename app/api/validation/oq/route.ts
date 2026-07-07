@@ -9,7 +9,14 @@ import { withPermission } from '@/lib/auth/with-permission';
 import { z } from 'zod';
 
 const oqRequestSchema = z.object({
-  releaseId: z.string().min(1).max(128),
+  releaseId: z
+    .string()
+    .min(1)
+    .max(128)
+    .regex(
+      /^v\d+\.\d+\.\d+(-rc\d+)?$/,
+      'Invalid release_id format. Expected ^v\\d+\\.\\d+\\.\\d+(-rc\\d+)?$',
+    ),
 });
 
 async function runCollectOq(releaseId: string): Promise<{ stdout: string; exitCode: number }> {

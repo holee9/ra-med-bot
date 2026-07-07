@@ -24,6 +24,12 @@ import {
   type ChecklistId,
   buildChecklist,
 } from '../../lib/validation/checklist.ts';
+import {
+  checkGitTagExists,
+  snapshotSourceGovernance,
+  snapshotTraceability,
+  validateReleaseIdFormat,
+} from '../../lib/validation/consumers/index.ts';
 import { evaluateRerunGate } from '../../lib/validation/rerun-gate.ts';
 
 interface BuildReportArgs {
@@ -143,15 +149,79 @@ function evidenceByType(rows: EvidenceRow[]) {
 }
 
 /**
+ * Release Scope Status section (AC-6, REQ-VAL2-007). Renders IQ/OQ/PQ evidence
+ * counts, the release_id, and git tag presence. #31-#34 referenced for static
+ * completeness (now CLOSED — scope is real, not stubbed).
+ */
+function renderReleaseScopeSection(
+  releaseId: string,
+  evidence: EvidenceRow[],
+  tagExists: boolean,
+): string {
+  const iq = evidence.filter((r) => r.qualificationType === 'iq').length;
+  const oq = evidence.filter((r) => r.qualificationType === 'oq').length;
+  const pq = evidence.filter((r) => r.qualificationType === 'pq').length;
+  const tagLine = tagExists
+    ? `git tag \`${releaseId}\` present locally.`
+    : `git tag \`${releaseId}\` not found locally (pre-release candidate?).`;
+  return `| metric | value |\n|---|---|\n| release_id | ${escapePipe(releaseId)} |\n| IQ evidence | ${iq} |\n| OQ evidence | ${oq} |\n| PQ evidence | ${pq} |\n| git tag | ${tagExists ? 'present' : 'absent'} |\n\n> ${tagLine}`;
+}
+
+/**
+ * Traceability Status section (AC-4, REQ-VAL2-005). Renders buildMatrix summary
+ * via consumer. EC-3: non-blocking on snapshot failure (records unavailable msg).
+ */
+async function renderTraceabilitySection(orgId: string): Promise<string> {
+  if (!orgId) return '[traceability snapshot unavailable: REGULA_ORG_ID not set]';
+  try {
+    const summary = await snapshotTraceability({ orgId });
+    return `| metric | value |\n|---|---|\n| totalRows | ${summary.totalRows} |\n| withGaps | ${summary.withGaps} |\n| stale | ${summary.stale} |`;
+  } catch (err) {
+    const msg = err instanceof Error ? err.message : String(err);
+    process.stderr.write(`Warning: traceability snapshot unavailable: ${msg}\n`);
+    return `[traceability snapshot unavailable: ${escapePipe(msg)}]`;
+  }
+}
+
+/**
+ * Source Governance Status section (AC-5, REQ-VAL2-006). Renders dashboard
+ * counts via consumer.
+ */
+async function renderSourceGovernanceSection(orgId: string): Promise<string> {
+  if (!orgId) return '[source-governance snapshot unavailable: REGULA_ORG_ID not set]';
+  try {
+    const dashboard = await snapshotSourceGovernance({ orgId });
+    const c = dashboard.counts;
+    return `| metric | value |\n|---|---|\n| approved | ${c.approved} |\n| pendingReview | ${c.pendingReview} |\n| stale | ${c.stale} |\n| superseded | ${c.superseded} |`;
+  } catch (err) {
+    const msg = err instanceof Error ? err.message : String(err);
+    process.stderr.write(`Warning: source-governance snapshot unavailable: ${msg}\n`);
+    return `[source-governance snapshot unavailable: ${escapePipe(msg)}]`;
+  }
+}
+
+/**
+ * Review Ops Status section (AC-7, REQ-VAL2-008). #36 Review-Ops not yet
+ * implemented — explicit "not implemented" + #36 reference. No fabricated data.
+ */
+function renderReviewOpsSection(): string {
+  return '> not implemented — SPEC-REGULA-REVIEW-OPS-001 (#36) is not yet complete. This section will report review-queue SLA and turnaround metrics once #36 lands. No review-ops numbers are fabricated here.';
+}
+
+/**
  * Assemble the 8-section Release Validation Report Markdown (AC-6).
  * Sections #6-#8 are stubs by design (R6 risk — #31-#34/#47/#48/#36 are not yet
  * complete; this report cites their pending state explicitly).
  */
 export async function buildReleaseReportMarkdown(releaseId: string): Promise<string> {
-  const [evidence, changes, rerunGate] = await Promise.all([
+  const orgId = process.env.REGULA_ORG_ID ?? '';
+  const [evidence, changes, rerunGate, tagCheck, traceSection, sourceSection] = await Promise.all([
     fetchEvidence(releaseId),
     fetchChanges(releaseId),
     evaluateRerunGate(releaseId),
+    Promise.resolve(checkGitTagExists(releaseId)),
+    renderTraceabilitySection(orgId),
+    renderSourceGovernanceSection(orgId),
   ]);
 
   const qual = evidenceByType(evidence);
@@ -207,20 +277,19 @@ ${
 
 ## Release Scope Status (#31-#34)
 
-> **Stub** — SPEC-REGULA-RELEASE-001 (#31-#34) not yet complete. This section
-> will list the release scope (features, subsystems, in this release) once
-> RELEASE-001 lands. Tracked as R6 risk in plan.md §4.
+${renderReleaseScopeSection(releaseId, evidence, tagCheck.exists)}
 
 ## Traceability Status (#47)
 
-> **Stub** — SPEC-REGULA-TRACEABILITY-001 (#47) not yet complete. This section
-> will summarize evidence-graph coverage for the release. Tracked as R6 risk.
+${traceSection}
 
-## Source Governance Status (#48) · Review Ops Status (#36)
+## Source Governance Status (#48)
 
-> **Stub** — SPEC-REGULA-SOURCE-GOVERNANCE-001 (#48) and
-> SPEC-REGULA-REVIEW-OPS-001 (#36) not yet complete. These sections will report
-> source-authority coverage and review SLA status once those SPECs land.
+${sourceSection}
+
+## Review Ops Status (#36)
+
+${renderReviewOpsSection()}
 
 ## Sign-off Checklist
 
@@ -246,6 +315,20 @@ export function writeReportFile(releaseId: string, markdown: string): string {
 
 async function main() {
   const { releaseId } = parseArgs(process.argv);
+  // M4: release_id format gate (REQ-VAL2-009).
+  const formatCheck = validateReleaseIdFormat(releaseId);
+  if (!formatCheck.valid) {
+    process.stderr.write(`ERROR: ${formatCheck.reason}\n`);
+    process.exit(1);
+  }
+  // M4: git tag warning (REQ-VAL2-010, non-blocking).
+  const tagCheck = checkGitTagExists(releaseId);
+  if (!tagCheck.exists) {
+    process.stderr.write(
+      `Warning: git tag ${releaseId} not found locally (pre-release candidate?)\n`,
+    );
+    if (tagCheck.warning) process.stderr.write(`${tagCheck.warning}\n`);
+  }
   const markdown = await buildReleaseReportMarkdown(releaseId);
   const fullPath = writeReportFile(releaseId, markdown);
   process.stdout.write(`${fullPath}\n`);
