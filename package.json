@@ -65,7 +65,11 @@
     "i18n:check": "pnpm ci:i18n",
     "a11y": "playwright test tests/e2e/a11y.spec.ts",
     "rbac:check": "pnpm ci:rbac",
-    "audit:check": "pnpm ci:audit"
+    "audit:check": "pnpm ci:audit",
+    "prepare": "husky"
+  },
+  "lint-staged": {
+    "*.{ts,tsx,mjs,js}": ["biome check --write --no-errors-on-unmatched"]
   },
   "dependencies": {
     "@ai-sdk/openai": "^3.0.58",
@@ -168,7 +172,9 @@
     "@vitest/coverage-v8": "^1.6.1",
     "autoprefixer": "^10.4.20",
     "drizzle-kit": "^0.31.10",
+    "husky": "^9.1.7",
     "jsdom": "^24.1.1",
+    "lint-staged": "^17.0.8",
     "postcss": "^8.4.41",
     "promptfoo": "^0.121.9",
     "tailwindcss": "^4.0.0-alpha.20",
