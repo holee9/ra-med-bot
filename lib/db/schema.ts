@@ -477,6 +477,10 @@ export const auditActionEnum = pgEnum('audit_action', [
   // 21 CFR Part 11 §11.10(e)). Distinct from rbac.permission_deny so regulators can
   // isolate integrity violations from authorization denials.
   'audit_chain.violation_detected',
+  // SPEC-REGULA-VALIDATION-001 M5 — added via 0113_validation_signoff_audit_action.sql:
+  // emitted once per release when the final sign-off is recorded (REQ-VAL-012).
+  // Carries approver id, timestamp, and report artifact path in meta_json.
+  'validation.signoff',
 ]);
 
 // @MX:NOTE [AUTO] Source governance enums — SPEC-REGULA-SOURCE-GOVERNANCE-001 (Issue #48).
