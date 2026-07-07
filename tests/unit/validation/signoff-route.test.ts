@@ -46,6 +46,7 @@ function makeWhereChainable() {
   // Thenable that also has a .limit() method. Each .where() call returns a
   // fresh object so mockReturnValue ordering on selectFromWhereMock works.
   const thenable = {
+    // biome-ignore lint/suspicious/noThenProperty: drizzle query-builder mock — must be awaitable (then) AND chainable (.limit) to match the real db.select().from().where() shape used by the route.
     then: (resolve: (v: unknown) => void, reject: (e: unknown) => void) =>
       Promise.resolve(selectFromWhereMock()).then(resolve, reject),
     limit: (n: number) => Promise.resolve(selectWhereLimitMock(n)),
