@@ -1,0 +1,21 @@
+-- Rollback for 0113_validation_signoff_audit_action.sql
+--
+-- PostgreSQL does not support removing individual enum values. To roll back,
+-- recreate the enum without 'validation.signoff', migrate columns, and swap.
+-- This is destructive and only run in disaster recovery — NOT during normal
+-- operations. The sign-off rows that referenced this action remain in
+-- audit_logs (append-only; cannot be deleted).
+--
+-- SAFE NO-OP for staging rollback: if no audit_logs row uses
+-- action='validation.signoff', the enum value is harmless. Prefer leaving it
+-- in place over running this script.
+--
+-- Disaster-recovery steps (execute manually, outside drizzle-kit):
+--   1. Confirm audit_logs has zero rows with action='validation.signoff'.
+--        SELECT count(*) FROM audit_logs WHERE action = 'validation.signoff';
+--   2. Rename existing enum, create replacement without the value, alter column.
+--   3. Drop old enum.
+--
+-- This file is intentionally a documentation stub. Drizzle-kit requires a
+-- rollback file paired with each up migration; we fulfil the contract here.
+SELECT 1;

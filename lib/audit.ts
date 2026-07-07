@@ -492,7 +492,12 @@ export type AuditAction =
   | 'impact.view'
   // SPEC-V3-AUDIT-CHAIN-001 M0: emitted by the verify cron on chain break
   // (migration 0111, tamper-evidence — 21 CFR Part 11 §11.10(e)).
-  | 'audit_chain.violation_detected';
+  | 'audit_chain.violation_detected'
+  // SPEC-REGULA-VALIDATION-001 M5 — final release sign-off (migration 0113,
+  // REQ-VAL-012). One row per release; carries approver id + report artifact
+  // path in meta_json. The audit_logs hash chain IS the tamper-evidence for
+  // sign-off (no duplicate storage in validation_signoff).
+  | 'validation.signoff';
 
 export interface AuditEvent {
   /** User UUID, or null for system-initiated events. */
@@ -555,6 +560,25 @@ export async function writeAudit(params: AuditEvent, tx?: AuditDbHandle): Promis
 }
 
 /**
+ * SPEC-REGULA-VALIDATION-001 M5 — same as writeAudit, but returns the new row id.
+ *
+ * Use this variant when the caller needs to record `audit_log_ref` on a
+ * downstream row (e.g. validation_signoff.audit_log_ref). Behaviour matches
+ * writeAudit exactly; only the return value differs. Added specifically so the
+ * sign-off route can store a verifiable back-pointer to the tamper-evident
+ * audit_logs row without a fragile "SELECT latest" read-back.
+ */
+export async function writeAuditReturningId(
+  params: AuditEvent,
+  tx?: AuditDbHandle,
+): Promise<string> {
+  if (tx) {
+    return doWriteAuditReturningId(params, tx);
+  }
+  return db.transaction(async (client) => doWriteAuditReturningId(params, client));
+}
+
+/**
  * Internal implementation: writes a single audit row with hash chain.
  *
  * REQ-AC-001 Sequence (within transaction):
@@ -568,6 +592,14 @@ export async function writeAudit(params: AuditEvent, tx?: AuditDbHandle): Promis
  * @param client - Database client (db or transaction)
  */
 async function doWriteAudit(params: AuditEvent, client: AuditDbHandle): Promise<void> {
+  await doWriteAuditReturningId(params, client);
+}
+
+/**
+ * Same as doWriteAudit, but returns the row id. Used by writeAuditReturningId
+ * (SPEC-REGULA-VALIDATION-001 M5 — sign-off audit_log_ref back-pointer).
+ */
+async function doWriteAuditReturningId(params: AuditEvent, client: AuditDbHandle): Promise<string> {
   // C3 (REQ-AC-001.a): acquire advisory lock BEFORE prev-row SELECT to serialize
   // concurrent appends. Prevents chain fork under READ COMMITTED isolation.
   await client.execute(sql`SELECT pg_advisory_xact_lock(hashtext('audit_logs_chain'))`);
@@ -608,4 +640,6 @@ async function doWriteAudit(params: AuditEvent, client: AuditDbHandle): Promise<
     previousHash,
     chainSeq,
   });
+
+  return id;
 }

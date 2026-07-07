@@ -91,8 +91,8 @@ const VALID_ROLES = ['admin', 'qa-lead', 'ra-lead', 'ra-member', 'viewer', 'audi
 const VALID_SCOPES = ['org', 'project', 'user', 'none'] as const;
 
 describe('lib/auth/permissions.ts (REQ-ENTERPRISE-020) — PERMISSIONS matrix', () => {
-  it('PERMISSIONS contains exactly 89 entries', () => {
-    expect(Object.keys(PERMISSIONS)).toHaveLength(89); // +3 impact.* (#345 SPEC-V3-IMPACT-001 M10) +86 baseline
+  it('PERMISSIONS contains exactly 92 entries', () => {
+    expect(Object.keys(PERMISSIONS)).toHaveLength(92); // +3 validation.* (#49 SPEC-REGULA-VALIDATION-001: read/run/approve) +3 impact.* (#345) +86 baseline
   });
 
   it.each(EXPECTED_ACTIONS)('PERMISSIONS contains action: %s', (action) => {

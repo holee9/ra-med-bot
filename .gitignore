@@ -230,3 +230,4 @@ test-results/
 .vercel/
 .netlify/
 .firebase/
+docs/validation/release-report-*.md
