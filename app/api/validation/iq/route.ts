@@ -1,8 +1,10 @@
 // @MX:NOTE [AUTO] POST /api/validation/iq — IQ evidence bundle collector.
 // @MX:SPEC SPEC-REGULA-VALIDATION-001 (M1, REQ-VAL-003, Issue #49)
 // @MX:REASON Thin glue: Zod input validation → spawn collect-iq.ts → return JSON.
-//   RBAC: validation.read (admin/qa-lead/ra-lead). writeAudit is handled by
-//   withPermission on permission_deny; evidence rows themselves are the record.
+//   RBAC: validation.run (admin/qa-lead). Evidence collection mutates regulated
+//   state (validation_evidence rows) — distinct from validation.read which only
+//   governs transparency. writeAudit is handled by withPermission on
+//   permission_deny; evidence rows themselves are the record.
 
 import { spawn } from 'node:child_process';
 import { withPermission } from '@/lib/auth/with-permission';
@@ -35,7 +37,7 @@ async function runCollectIq(releaseId: string): Promise<{ stdout: string; exitCo
 
 /* audit-check-ignore: evidence rows ARE the regulated record (21 CFR Part 11 §11.10(i)).
    RBAC denial audit written by withPermission. No route-level writeAudit needed. */
-export const POST = withPermission('validation.read', async (req, _ctx, _session) => {
+export const POST = withPermission('validation.run', async (req, _ctx, _session) => {
   const body = await req.json().catch(() => null);
   const parsed = iqRequestSchema.safeParse(body);
   if (!parsed.success) {

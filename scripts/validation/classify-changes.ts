@@ -54,14 +54,25 @@ function getHeadCommitSha(): string {
   return result.stdout.trim();
 }
 
+/**
+ * Safe int parser with bounds. PR #359 review: bare parseInt on git output is
+ * unsafe — a corrupted git rev-list/diff output could yield gigantic numbers
+ * that dominate classification thresholds. Cap at 100_000 (any real release
+ * with > 100k commits on one path is certainly a git bug, not a signal).
+ */
+function safeParseIntBound(raw: string): number {
+  const n = Number.parseInt(raw, 10);
+  if (!Number.isFinite(n) || n < 0 || n > 100_000) return 0;
+  return n;
+}
+
 /** Count commits touching a path pattern between previousRef and HEAD. */
 function countPathDiffs(previousRef: string | undefined, pathSpec: string): number {
   if (!previousRef) return 0;
   const args = ['rev-list', '--count', `${previousRef}..HEAD`, '--', pathSpec];
   const result = spawnSync('git', args, { encoding: 'utf-8', stdio: 'pipe' });
   if (result.status !== 0) return 0;
-  const count = Number.parseInt(result.stdout.trim(), 10);
-  return Number.isFinite(count) ? count : 0;
+  return safeParseIntBound(result.stdout.trim());
 }
 
 /**
@@ -335,4 +346,5 @@ export {
   classifyExportAxis,
   classifyReviewWorkflowAxis,
   parseArgs,
+  safeParseIntBound,
 };

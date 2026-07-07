@@ -1,7 +1,8 @@
 // @MX:NOTE [AUTO] POST /api/validation/pq — PQ evidence bundle (E2E + eval).
 // @MX:SPEC SPEC-REGULA-VALIDATION-001 (M3, REQ-VAL-005, AC-4, Issue #49)
 // @MX:REASON Thin glue: Zod input → spawn collect-pq.ts → return JSON.
-//   RBAC: validation.read (admin/qa-lead/ra-lead).
+//   RBAC: validation.run (admin/qa-lead). Evidence collection mutates regulated
+//   state — distinct from validation.read (transparency only).
 
 import { spawn } from 'node:child_process';
 import { withPermission } from '@/lib/auth/with-permission';
@@ -29,7 +30,7 @@ async function runCollectPq(releaseId: string): Promise<{ stdout: string; exitCo
 
 /* audit-check-ignore: PQ evidence rows ARE the regulated record (21 CFR Part 11 §11.10(i)).
    RBAC denial audit written by withPermission. No route-level writeAudit needed. */
-export const POST = withPermission('validation.read', async (req, _ctx, _session) => {
+export const POST = withPermission('validation.run', async (req, _ctx, _session) => {
   const body = await req.json().catch(() => null);
   const parsed = pqRequestSchema.safeParse(body);
   if (!parsed.success) {

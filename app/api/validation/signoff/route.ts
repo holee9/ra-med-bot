@@ -49,18 +49,24 @@ function runBuildReport(releaseId: string): Promise<BuildReportResult> {
 /**
  * REQ-VAL-013 / AC-8 — final sign-off. Steps (in order):
  *   1. Validate input shape (Zod).
- *   2. Fetch evidence + rerun gate state from DB.
- *   3. Auto-generate the report (idempotent — re-writes the file). This makes
+ *   2. Pre-check: reject 409 if validation_signoff row already exists for this
+ *      releaseId. This prevents orphan audit_logs rows when a retry hits the
+ *      UNIQUE(release_id) constraint AFTER writeAudit has already inserted.
+ *      PR #359 review: the UNIQUE violation was the primary orphan source.
+ *      Race-condition hardening (advisory lock or transactional write) is a
+ *      follow-up — this pre-check covers the retry case.
+ *   3. Fetch evidence + rerun gate state from DB.
+ *   4. Auto-generate the report (idempotent — re-writes the file). This makes
  *      the report:exported checklist item trivially met at sign-off time and
  *      ensures the report artifact path is fresh.
- *   4. Build canonical checklist from DB state. Reject with HTTP 409 + failed
+ *   5. Build canonical checklist from DB state. Reject with HTTP 409 + failed
  *      items if any unmet (AC-8). The rerun gate (AC-5) is embedded in the
  *      checklist as the `changes:resolved` item.
- *   5. writeAuditReturningId one row with action='validation.signoff'
+ *   6. writeAuditReturningId one row with action='validation.signoff'
  *      (AC-7, REQ-VAL-012). The audit_logs hash chain IS the tamper-evidence
  *      for sign-off.
- *   6. INSERT validation_signoff row with audit_log_ref.
- *   7. Return 200 with the signoff record.
+ *   7. INSERT validation_signoff row with audit_log_ref.
+ *   8. Return 200 with the signoff record.
  */
 export const POST = withPermission('validation.approve', async (req, _ctx, session) => {
   const body = await req.json().catch(() => null);
@@ -73,6 +79,19 @@ export const POST = withPermission('validation.approve', async (req, _ctx, sessi
   }
 
   const { releaseId, checklistState } = parsed.data;
+
+  // PR #359 review: pre-check before writeAudit to prevent orphan audit rows.
+  // If a signoff already exists, return 409 WITHOUT writing a new audit row.
+  // The UNIQUE(release_id) constraint would otherwise fire AFTER writeAudit,
+  // leaving an audit_logs record with no matching validation_signoff row.
+  const existing = await db
+    .select({ id: validationSignoff.id })
+    .from(validationSignoff)
+    .where(eq(validationSignoff.releaseId, releaseId))
+    .limit(1);
+  if (existing.length > 0) {
+    return Response.json({ error: 'release_already_signed_off', releaseId }, { status: 409 });
+  }
 
   // Step 1: fetch evidence + rerun gate state from DB.
   const evidenceRows = await db

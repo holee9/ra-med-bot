@@ -186,13 +186,18 @@ export type PermissionAction =
   | 'impact.view'
   | 'impact.self_check'
   | 'impact.ra_escalate'
-  // SPEC-REGULA-VALIDATION-001 (Issue #49, REQ-VAL-006/013): IQ/OQ/PQ evidence
+  // SPEC-REGULA-VALIDATION-001 (Issue #49, REQ-VAL-003~013): IQ/OQ/PQ evidence
   //   read: admin/qa-lead/ra-lead — release validation report transparency across
   //         QA + RA leads (21 CFR Part 11 §11.10(i) evidence visibility).
+  //   run: admin/qa-lead — evidence COLLECTION (IQ/OQ/PQ) + change-control
+  //        assessment execution. Distinct from read because collection mutates
+  //        state (inserts validation_evidence / change_control rows) and is a
+  //        release-gate action. plan.md line 64 requires validation:run RBAC.
   //   approve: admin ONLY — release sign-off is a regulatory approval decision
   //            (21 CFR Part 11 §11.50/11.100). Stricter than risk.approve
   //            because release sign-off closes the validation lifecycle.
   | 'validation.read'
+  | 'validation.run'
   | 'validation.approve';
 
 export interface PermissionSpec {
@@ -610,6 +615,23 @@ export const PERMISSIONS: Record<PermissionAction, PermissionSpec> = {
   // @MX:SPEC SPEC-REGULA-VALIDATION-001 (REQ-VAL-006, Issue #49)
   'validation.read': {
     minRole: 'ra-lead',
+    additionalRoles: ['qa-lead'],
+    scope: 'org',
+    resourceType: 'validationEvidence',
+  },
+
+  // @MX:ANCHOR [AUTO] validation.run — IQ/OQ/PQ evidence collection + change-control exec.
+  // @MX:REASON Evidence collection (collect-iq/oq/pq) and change-control assessment
+  //   (classify-changes) mutate regulated state — they insert validation_evidence
+  //   and change_control rows that close the validation lifecycle. plan.md line 64
+  //   explicitly assigns `validation:run` RBAC to these POST handlers. admin is
+  //   the minRole because release-gate evidence collection is a QA-owned activity
+  //   that must not be delegated to ra-member/viewer. qa-lead is added explicitly
+  //   to reflect independent QA oversight (21 CFR Part 11 §11.10(i)).
+  // @MX:SPEC SPEC-REGULA-VALIDATION-001 (REQ-VAL-003, REQ-VAL-004, REQ-VAL-005,
+  //   REQ-VAL-006, REQ-VAL-007, Issue #49)
+  'validation.run': {
+    minRole: 'admin',
     additionalRoles: ['qa-lead'],
     scope: 'org',
     resourceType: 'validationEvidence',

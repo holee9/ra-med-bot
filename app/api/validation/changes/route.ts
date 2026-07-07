@@ -1,7 +1,8 @@
 // @MX:NOTE [AUTO] POST /api/validation/changes — 7-axis change-control impact assessment.
 // @MX:SPEC SPEC-REGULA-VALIDATION-001 (M4, REQ-VAL-007/008/009, AC-5, Issue #49)
 // @MX:REASON Thin glue: Zod input → spawn classify-changes.ts → return JSON.
-//   RBAC: validation.read (admin/qa-lead/ra-lead).
+//   RBAC: validation.run (admin/qa-lead). Change-control assessment mutates
+//   regulated state (change_control rows) — distinct from validation.read.
 
 import { spawn } from 'node:child_process';
 import { withPermission } from '@/lib/auth/with-permission';
@@ -35,7 +36,7 @@ async function runClassifyChanges(
 
 /* audit-check-ignore: change_control rows ARE the regulated record (21 CFR Part 11
    §11.10(i) + ISO 13485 §4.1.6). RBAC denial audit written by withPermission. */
-export const POST = withPermission('validation.read', async (req, _ctx, _session) => {
+export const POST = withPermission('validation.run', async (req, _ctx, _session) => {
   const body = await req.json().catch(() => null);
   const parsed = changesRequestSchema.safeParse(body);
   if (!parsed.success) {

@@ -3,6 +3,8 @@
 // @MX:REASON AC-7 (audit_logs row on success) + AC-8 (HTTP 409 on checklist unmet)
 //   are the two release-gate invariants. These tests prove the route enforces
 //   both via mocked writeAudit + db.
+//   PR #359 review: orphan-prevention pre-check — second sign-off attempt is
+//   caught BEFORE writeAudit so no orphan audit row is created.
 
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
@@ -28,14 +30,32 @@ vi.mock('@/lib/audit', () => ({
   writeAuditReturningId: writeAuditReturningIdMock,
 }));
 
-// db.select / db.insert mocks
+// db.select / db.insert mocks.
+// Two query paths exist in the route:
+//   (a) pre-check:  db.select(...).from(validationSignoff).where(...).limit(1)
+//   (b) evidence:   db.select(...).from(validationEvidence).where(...)   (await)
+// We make `.where()` return a thenable that ALSO exposes `.limit()` so both
+// shapes work. The thenable resolves to selectFromWhereMock's current value;
+// `.limit()` resolves to selectWhereLimitMock's current value.
 const selectFromWhereMock = vi.fn();
 const insertValuesReturningMock = vi.fn();
 const insertValuesMock = vi.fn(() => ({ returning: insertValuesReturningMock }));
 
+const selectWhereLimitMock = vi.fn();
+function makeWhereChainable() {
+  // Thenable that also has a .limit() method. Each .where() call returns a
+  // fresh object so mockReturnValue ordering on selectFromWhereMock works.
+  const thenable = {
+    then: (resolve: (v: unknown) => void, reject: (e: unknown) => void) =>
+      Promise.resolve(selectFromWhereMock()).then(resolve, reject),
+    limit: (n: number) => Promise.resolve(selectWhereLimitMock(n)),
+  };
+  return thenable;
+}
+
 vi.mock('@/lib/db/client', () => ({
   db: {
-    select: vi.fn(() => ({ from: vi.fn(() => ({ where: selectFromWhereMock })) })),
+    select: vi.fn(() => ({ from: () => ({ where: () => makeWhereChainable() }) })),
     insert: vi.fn(() => ({ values: insertValuesMock })),
   },
 }));
@@ -105,8 +125,12 @@ describe('POST /api/validation/signoff (M5, AC-7, AC-8)', () => {
   beforeEach(() => {
     writeAuditReturningIdMock.mockReset();
     selectFromWhereMock.mockReset();
+    selectWhereLimitMock.mockReset();
     insertValuesReturningMock.mockReset();
     evaluateRerunGateMock.mockReset();
+    // Default pre-check: no existing signoff. Individual tests override to []
+    // for the pre-check call only when simulating a retry scenario.
+    selectWhereLimitMock.mockResolvedValue([]);
   });
 
   afterEach(() => {
@@ -119,6 +143,7 @@ describe('POST /api/validation/signoff (M5, AC-7, AC-8)', () => {
   });
 
   it('AC-8: returns 409 when IQ/OQ/PQ evidence is missing', async () => {
+    // pre-check returns no existing signoff (default)
     // evidence select returns empty (no IQ/OQ/PQ pass)
     selectFromWhereMock.mockResolvedValueOnce([]);
     evaluateRerunGateMock.mockResolvedValueOnce({ passed: true, failed: [] });
@@ -133,6 +158,7 @@ describe('POST /api/validation/signoff (M5, AC-7, AC-8)', () => {
   });
 
   it('AC-5/AC-8: returns 409 when rerun gate blocks (changes:resolved unmet)', async () => {
+    // pre-check passes (default)
     // evidence has IQ/OQ/PQ pass
     selectFromWhereMock.mockResolvedValueOnce([
       { qualificationType: 'iq', result: 'pass' },
@@ -153,6 +179,7 @@ describe('POST /api/validation/signoff (M5, AC-7, AC-8)', () => {
   });
 
   it('AC-7: on success writes one audit row and returns 200 with audit_log_ref', async () => {
+    // pre-check passes (default)
     // Evidence all pass + rerun gate passes
     selectFromWhereMock.mockResolvedValueOnce([
       { qualificationType: 'iq', result: 'pass' },
@@ -188,6 +215,7 @@ describe('POST /api/validation/signoff (M5, AC-7, AC-8)', () => {
   });
 
   it('AC-7: audit failure propagates as 500 (fail-closed)', async () => {
+    // pre-check passes (default)
     selectFromWhereMock.mockResolvedValueOnce([
       { qualificationType: 'iq', result: 'pass' },
       { qualificationType: 'oq', result: 'pass' },
@@ -202,7 +230,9 @@ describe('POST /api/validation/signoff (M5, AC-7, AC-8)', () => {
     expect(json.error).toBe('audit_write_failed');
   });
 
-  it('returns 409 when release already signed off (UNIQUE constraint)', async () => {
+  it('returns 409 when release already signed off (UNIQUE constraint, post-pre-check race)', async () => {
+    // pre-check passes (default) — race condition: another writer wins between
+    // pre-check and INSERT. This test proves the UNIQUE fallback still works.
     selectFromWhereMock.mockResolvedValueOnce([
       { qualificationType: 'iq', result: 'pass' },
       { qualificationType: 'oq', result: 'pass' },
@@ -221,5 +251,23 @@ describe('POST /api/validation/signoff (M5, AC-7, AC-8)', () => {
     expect(res.status).toBe(409);
     const json = await res.json();
     expect(json.error).toBe('release_already_signed_off');
+  });
+
+  it('PR #359: pre-check catches existing signoff BEFORE writeAudit (orphan prevention)', async () => {
+    // pre-check returns an existing signoff row → 409 immediately.
+    selectWhereLimitMock.mockResolvedValueOnce([{ id: 'signoff-pre-existing' }]);
+
+    const res = await POST(makeRequest(VALID_BODY), {});
+    expect(res.status).toBe(409);
+    const json = await res.json();
+    expect(json.error).toBe('release_already_signed_off');
+
+    // Orphan prevention invariant: NO audit row written, NO INSERT attempted,
+    // NO evidence fetch consumed. This proves the pre-check short-circuits.
+    expect(writeAuditReturningIdMock).not.toHaveBeenCalled();
+    expect(insertValuesMock).not.toHaveBeenCalled();
+    // selectFromWhereMock is the evidence-fetch path; it must NOT have been
+    // called because we short-circuit before that.
+    expect(selectFromWhereMock).not.toHaveBeenCalled();
   });
 });
