@@ -2,7 +2,7 @@
 artifact: acceptance
 spec_id: SPEC-REGULA-VALIDATION-002
 version: 0.1.0
-status: draft
+status: completed
 created: 2026-07-07
 updated: 2026-07-07
 author: manager-spec (plan-phase)

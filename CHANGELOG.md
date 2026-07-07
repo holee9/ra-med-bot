@@ -11,6 +11,16 @@
 
 > Placeholder for post-1.0.0 development.
 
+### SPEC-REGULA-VALIDATION-002 — Validation 정식 연동 (consumers 기반 Model-Gov/Traceability/Source-Gov/Release 통합)
+
+- **Validation 정식 연동** — VALIDATION-001 fallback/stub을 M0 consumer wrappers(#370) 기반 정식 연동으로 전환. thin glue (Charter [지양-5]), 비파괴(VALIDATION-001 시그니처 불변, migration 0).
+  - **M1** (AC-1,2,10): `classify-changes` model-gov 축 → `fetchWindowScopedChangeRequests` consumer 경유 + previousRef 기반 window 쿼리. `evalRunId`/`evalResultRef` → `residual_risk` (`change_control.evidence_ref` uuid 스키마 진실원).
+  - **M2** (AC-3,10): source_policy 축 + `snapshotSourceGovernance` dashboard counts 병합 (보수적 과분류: git-diff≥3 OR stale/superseded>0 → high).
+  - **M3** (AC-4,5,6,7,10): build-report 3 stub 섹션 → consumer 경유 실데이터 + Review Ops `not implemented` + `#36`. Markdown `**Stub**` 0회.
+  - **M4** (AC-8,9,10): release_id regex + git tag gate — 5 scripts(`exit 1` + stderr warning non-blocking) + 6 API routes(Zod regex → 400).
+  - **게이트 직검**: typecheck 0 / lint(biome+lint:hex) 0 / test 4,786 passed + 1 사전존재 flaky(frontend-shell) / ci:audit·rbac·migrations 0. evaluator-active PASS (Functionality 95 / Security 100 / Craft 90 / Consistency 100, Critical/High 0).
+  - **follow-up #372**: AC-1/2/3/9 integration 테스트(실DB seed → 직검).
+
 ### SPEC-REGULA-VALIDATION-001 — Regula 자체 검증 패키지 (IQ/OQ/PQ·변경통제·릴리즈 증거)
 
 - **Release Validation Package** — 내부용 CSV-lite IQ/OQ/PQ 검증 증거 체계. 21 CFR Part 11 §11.10(i), ISO 13485 §4.1.6 근거. thin glue layer (Charter [지양-5]) — 기존 CI/eval/model-gov 결과 집계, 신규 harness 금지.

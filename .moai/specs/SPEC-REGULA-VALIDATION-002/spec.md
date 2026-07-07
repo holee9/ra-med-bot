@@ -2,7 +2,7 @@
 id: SPEC-REGULA-VALIDATION-002
 title: "Regula Validation 정식 연동 — Model-Gov / Traceability / Source-Gov / Release 통합"
 version: 0.1.0
-status: draft
+status: completed
 phase: system-validation
 priority: High
 created: 2026-07-07
