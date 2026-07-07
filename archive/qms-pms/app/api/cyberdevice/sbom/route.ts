@@ -1,6 +1,8 @@
 // @MX:NOTE [AUTO] POST/GET /api/cyberdevice/sbom — import/list SBOM (REQ-003).
 // @MX:SPEC SPEC-REGULA-CYBERDEVICE-001 (REQ-003, AC-01)
 
+// @MX:LEGACY archived from app
+
 import { withPermission } from '@/lib/auth/with-permission';
 import { auditSbomImported, auditSbomValidated } from '@/lib/cyberdevice/audit';
 import { SbomParseError, parseSbom } from '@/lib/cyberdevice/sbom-parser';

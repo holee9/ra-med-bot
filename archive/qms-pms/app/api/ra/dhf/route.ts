@@ -1,5 +1,7 @@
 // GET /api/ra/dhf — list DHF records for the org.
 // POST /api/ra/dhf — create a new DHF.
+
+// @MX:LEGACY archived from app
 // @MX:SPEC SPEC-REGULA-DHF-001
 
 import { writeAudit } from '@/lib/audit';

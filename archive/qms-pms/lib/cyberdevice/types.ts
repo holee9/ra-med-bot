@@ -1,5 +1,7 @@
 // @MX:NOTE [AUTO] Zod input schemas + result types for cybersecurity domain.
 // @MX:SPEC SPEC-REGULA-CYBERDEVICE-001 (REQ-001~014)
+
+// @MX:LEGACY archived from lib
 //
 // All input boundaries use Zod. Results are plain typed objects (no class
 // hierarchies) so they serialize cleanly to JSON for Route Handlers.

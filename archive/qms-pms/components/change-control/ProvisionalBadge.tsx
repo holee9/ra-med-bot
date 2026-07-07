@@ -1,5 +1,7 @@
 // @MX:NOTE [AUTO] ProvisionalBadge — REQ-011 visual marker for unreviewed verdicts.
 // @MX:SPEC SPEC-REGULA-CHANGE-CONTROL-001 (REQ-011, AC-07)
+
+// @MX:LEGACY archived from components
 //
 // Amber badge with icon + text. WCAG 2.1 AA: text-amber-800 on amber-100
 // background yields >= 4.5:1 contrast. The icon is decorative (aria-hidden);

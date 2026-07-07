@@ -1,5 +1,7 @@
 // @MX:NOTE [AUTO] CitationList — REQ-006 citation display for change-control verdicts.
 // @MX:SPEC SPEC-REGULA-CHANGE-CONTROL-001 (REQ-006, AC-04)
+
+// @MX:LEGACY archived from components
 //
 // Renders the regulatory citations backing a verdict. Each citation shows the
 // source label (e.g. "21 CFR 807.81(a)(3)") and the grounded excerpt text.

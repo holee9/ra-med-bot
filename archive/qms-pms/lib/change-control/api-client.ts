@@ -1,5 +1,7 @@
 // @MX:NOTE [AUTO] Client-side API helpers + response types for change-control — SPEC-REGULA-CHANGE-CONTROL-001.
 // @MX:SPEC SPEC-REGULA-CHANGE-CONTROL-001 (REQ-002, REQ-004, REQ-007, REQ-009, REQ-011)
+
+// @MX:LEGACY archived from lib
 //
 // These types mirror the shapes returned by the Route Handlers in
 // app/api/change-control/*/route.ts. The server is the single source of truth;

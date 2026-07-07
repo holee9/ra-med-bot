@@ -1,3 +1,5 @@
+
+// @MX:LEGACY archived from app
 'use client';
 // @MX:SPEC SPEC-REGULA-ESUBMIT-001
 // Dialog form to create a new submission package.

@@ -1,5 +1,7 @@
 // @MX:NOTE [AUTO] REQ-005 jurisdiction-specific assessment rules.
 // @MX:SPEC SPEC-REGULA-CHANGE-CONTROL-001 (REQ-004, REQ-005, AC-03)
+
+// @MX:LEGACY archived from lib
 //
 // Per-jurisdiction rule-hint retrieval queries (fed to the RAG retriever) and
 // the regulatory anchor citations used by the LLM prompt builder. These mirror

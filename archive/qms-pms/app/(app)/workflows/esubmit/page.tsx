@@ -1,5 +1,7 @@
 // @MX:SPEC SPEC-REGULA-ESUBMIT-001
 import { BetaBadge } from '@/components/ui/BetaBadge';
+
+// @MX:LEGACY archived from app
 import { ESubmitList } from './_components/ESubmitList';
 
 export const metadata = {

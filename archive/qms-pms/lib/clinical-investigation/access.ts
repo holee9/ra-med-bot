@@ -1,5 +1,7 @@
 // @MX:NOTE [AUTO] assertInvestigationAccess — IDOR guard for CI [id] routes.
 // @MX:SPEC SPEC-REGULA-CLINICAL-INVESTIGATION-001 (Issue #69)
+
+// @MX:LEGACY archived from lib
 // @MX:REASON Every route under app/api/clinical-investigation/[id]/ MUST verify the
 //           investigation belongs to the caller's org before any mutation. Mirrors
 //           assertPmsProjectAccess. Returns the investigation row on success so the

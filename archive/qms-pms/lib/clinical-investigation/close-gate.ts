@@ -1,5 +1,7 @@
 // @MX:ANCHOR [AUTO] canCloseInvestigation — REQ-CLININV-012 server-side close gate.
 // @MX:REASON Called by POST /api/clinical-investigation/[id]/close route + integration
+
+// @MX:LEGACY archived from lib
 //           tests. fan_in >= 3 expected. SAFETY GATE — blocks close unless the
 //           caller supplies a resolved expert review as signoff (21 CFR Part 11
 //           approval authority). IDOR defense returns a generic missing/cross-org

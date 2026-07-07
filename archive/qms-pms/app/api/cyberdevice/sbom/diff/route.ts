@@ -1,6 +1,8 @@
 // @MX:NOTE [AUTO] GET /api/cyberdevice/sbom/diff — diff two SBOM versions (REQ-004, AC-01).
 // @MX:SPEC SPEC-REGULA-CYBERDEVICE-001 (REQ-004, AC-01)
 
+// @MX:LEGACY archived from app
+
 import { withPermission } from '@/lib/auth/with-permission';
 import { auditSbomDiffed } from '@/lib/cyberdevice/audit';
 import { diffSbomVersions } from '@/lib/cyberdevice/sbom-diff';

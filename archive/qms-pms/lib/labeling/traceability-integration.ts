@@ -1,5 +1,7 @@
 // @MX:NOTE [AUTO] REQ-003 — claim ↔ evidence traceability integration.
 // @MX:SPEC SPEC-REGULA-LABELING-001 (REQ-003, AC-02)
+
+// @MX:LEGACY archived from lib
 //
 // REUSE (L-002): lib/traceability/graph.ts upsertNode already supports
 // arbitrary refTable/refId pairs. We create a 'claim' node per labeling claim

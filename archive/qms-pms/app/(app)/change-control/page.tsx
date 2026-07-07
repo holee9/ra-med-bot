@@ -1,5 +1,7 @@
 // @MX:NOTE [AUTO] Change Control entry page — structured change input form (REQ-002, AC-01).
 // @MX:SPEC SPEC-REGULA-CHANGE-CONTROL-001 (REQ-002, REQ-003, AC-01)
+
+// @MX:LEGACY archived from app
 //
 // Server Component shell: resolves role server-side via auth() + hasRole and
 // pre-fetches the project list (RLS scoped via org_id). Passes capability

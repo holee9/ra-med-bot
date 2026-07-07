@@ -1,5 +1,7 @@
 // @MX:NOTE [AUTO] REQ-010/011 ISO 14971 residual cyber risk linkage + change-control trigger.
 // @MX:SPEC SPEC-REGULA-CYBERDEVICE-001 (REQ-010, REQ-011, AC-04)
+
+// @MX:LEGACY archived from lib
 //
 // REQ-010: residual cybersecurity risk (a CVE affecting a product component)
 // MUST link to an ISO 14971 risk_item (SPEC-REGULA-RISK-001, Issue #46) so the

@@ -1,6 +1,8 @@
 // @MX:NOTE [AUTO] Clinical Investigation entry page — Issue #69 full-cycle frontend.
 // @MX:SPEC SPEC-REGULA-CLINICAL-INVESTIGATION-001 (REQ-CLININV-001~012, AC-01~08)
 
+// @MX:LEGACY archived from app
+
 import { auth } from '@/lib/auth';
 import { type Role, hasRole } from '@/lib/auth/rbac';
 import { db } from '@/lib/db/client';

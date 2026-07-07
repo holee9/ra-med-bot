@@ -1,5 +1,7 @@
 // @MX:NOTE [AUTO] POST /api/labeling/documents/[id]/export — export with unsupported-claim gate.
 // @MX:SPEC SPEC-REGULA-LABELING-001 (REQ-006, REQ-010, AC-03)
+
+// @MX:LEGACY archived from app
 //
 // RBAC: withPermission('label.export') restricts to ra-lead.
 // REQ-006: canExportLabelingDocument gate — blocks on unsupported/pending claims.

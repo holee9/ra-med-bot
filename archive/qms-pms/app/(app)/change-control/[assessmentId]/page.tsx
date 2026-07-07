@@ -1,5 +1,7 @@
 // @MX:NOTE [AUTO] Assessment detail page — REQ-004/006/008/011/010 verdict + risk + version view.
 // @MX:SPEC SPEC-REGULA-CHANGE-CONTROL-001 (REQ-004, REQ-006, REQ-008, REQ-009, REQ-010, REQ-011, AC-03/06/07/08)
+
+// @MX:LEGACY archived from app
 //
 // Server Component shell: resolves role + fetches the assessment (org-scoped)
 // via the internal API. Passes the full detail to AssessmentView (client island)

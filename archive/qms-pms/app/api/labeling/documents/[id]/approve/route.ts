@@ -1,5 +1,7 @@
 // @MX:NOTE [AUTO] POST /api/labeling/documents/[id]/approve — RA-lead approval gate.
 // @MX:SPEC SPEC-REGULA-LABELING-001 (REQ-006, REQ-009, REQ-010, REQ-012, AC-03, AC-07, AC-08)
+
+// @MX:LEGACY archived from app
 //
 // RBAC: withPermission('label.approve') restricts to ra-lead (REQ-012).
 // Preconditions (REQ-006): zero unsupported claims, checklist 100% coverage,

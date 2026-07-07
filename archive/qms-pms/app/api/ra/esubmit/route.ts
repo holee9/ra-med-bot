@@ -1,5 +1,7 @@
 // GET /api/ra/esubmit — list submission packages for the org.
 // POST /api/ra/esubmit — create a new submission package.
+
+// @MX:LEGACY archived from app
 // @MX:SPEC SPEC-REGULA-ESUBMIT-001
 
 import { writeAudit } from '@/lib/audit';

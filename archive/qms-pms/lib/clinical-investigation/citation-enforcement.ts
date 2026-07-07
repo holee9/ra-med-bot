@@ -1,5 +1,7 @@
 // @MX:ANCHOR [AUTO] enforceCitations — REQ-CLININV-010 citation enforcement gate.
 // @MX:REASON Called by gap-assessment, ide-decision-tree, eu-checklist, irb-package,
+
+// @MX:LEGACY archived from lib
 //           consent-generator, protocol-builder. fan_in >= 3. SAFETY gate: every
 //           regulatory recommendation MUST carry grounded citations. Mirrors the
 //           lib/classify/validate.ts C1 pattern — unverified citations are stripped

@@ -1,6 +1,8 @@
 // @MX:NOTE [AUTO] Barrel export for the labeling domain module.
 // @MX:SPEC SPEC-REGULA-LABELING-001
 
+// @MX:LEGACY archived from lib
+
 export * from './types';
 export * from './section-builder';
 export * from './jurisdiction-checklist';

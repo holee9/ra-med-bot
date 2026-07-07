@@ -1,5 +1,7 @@
 // @MX:NOTE [AUTO] REQ-002/011 — per-jurisdiction required labeling elements.
 // @MX:SPEC SPEC-REGULA-LABELING-001 (REQ-002, REQ-011, AC-01)
+
+// @MX:LEGACY archived from lib
 //
 // The required-elements map is the single source of truth for the checklist
 // evaluator. Each jurisdiction's list is grounded in the labeling regulation

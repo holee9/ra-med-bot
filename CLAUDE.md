@@ -543,24 +543,9 @@ For complete Agent Teams documentation including team API reference, role profil
 
 ### CG Mode (Claude + GLM Cost Optimization)
 
-MoAI-ADK supports CG Mode for 60-70% cost reduction on implementation-heavy tasks via tmux Agent Teams:
+MoAI-ADK supports CG Mode for 60-70% cost reduction on implementation-heavy tasks via tmux Agent Teams.
 
-```
-┌─────────────────────────────────────────────────────────────┐
-│  LEADER (Claude, current tmux pane)                         │
-│  - Orchestrates workflow (no GLM env)                        │
-│  - Delegates tasks via Agent Teams                           │
-│  - Reviews results                                           │
-└──────────────────────┬──────────────────────────────────────┘
-                       │ Agent Teams (tmux panes)
-                       ▼
-┌─────────────────────────────────────────────────────────────┐
-│  TEAMMATES (GLM, new tmux panes)                            │
-│  - Inherit GLM env from tmux session                        │
-│  - Execute implementation tasks                              │
-│  - Full access to codebase                                   │
-└─────────────────────────────────────────────────────────────┘
-```
+Architecture: A LEADER pane (Claude, no GLM env) orchestrates workflow and delegates tasks to TEAMMATE panes (GLM env) that execute implementation tasks with full codebase access.
 
 **Activation**: `moai cg` (requires tmux). Uses tmux session-level env isolation.
 
@@ -628,18 +613,9 @@ User can explicitly request context search at any time during conversation.
 
 ### Debugging MoAI Sessions
 
-When MoAI workflows behave unexpectedly, use Claude Code's built-in debug tools:
+When MoAI workflows behave unexpectedly, use Claude Code's built-in debug tools.
 
-```bash
-# Enable hook debugging
-claude --debug "hooks"
-
-# Enable API + hook debugging
-claude --debug "api,hooks"
-
-# Enable MCP debugging
-claude --debug "mcp"
-```
+Enable hook debugging with `claude --debug "hooks"`. Enable API and hook debugging with `claude --debug "api,hooks"`. Enable MCP debugging with `claude --debug "mcp"`.
 
 Or use the `/debug` command inside a session to inspect current session state, hook execution logs, and tool traces.
 
@@ -654,12 +630,7 @@ Or use the `/debug` command inside a session to inspect current session state, h
 
 ### Reading Large PDFs
 
-When agents need to analyze large PDF files (>10 pages), use the `pages` parameter:
-
-```
-Read /path/to/doc.pdf
-pages: "1-20"
-```
+When agents need to analyze large PDF files (>10 pages), use the `pages` parameter with the Read tool to specify page ranges (e.g., "1-20").
 
 Large PDFs (>10 pages) return a lightweight reference when @-mentioned. Always specify page ranges for PDFs over 50 pages to avoid token waste.
 

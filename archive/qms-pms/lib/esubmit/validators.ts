@@ -1,5 +1,7 @@
 // @MX:ANCHOR: [AUTO] validateSubmissionPackage — fan_in >= 3 (validate route, tests, detail component)
 // @MX:REASON: [AUTO] Central validation entry point called by API route, frontend, and test suite
+
+// @MX:LEGACY archived from lib
 // @MX:SPEC SPEC-REGULA-ESUBMIT-001
 // Pure validation functions for electronic submission packages.
 // No real FDA eSTAR / EUDAMED API integration — structural validation only.

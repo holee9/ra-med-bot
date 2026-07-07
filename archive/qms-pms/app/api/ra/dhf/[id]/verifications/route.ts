@@ -1,5 +1,7 @@
 // GET /api/ra/dhf/[id]/verifications — list V&V records for a DHF.
 // POST /api/ra/dhf/[id]/verifications — add a verification protocol.
+
+// @MX:LEGACY archived from app
 // @MX:SPEC SPEC-REGULA-DHF-001
 
 import { writeAudit } from '@/lib/audit';

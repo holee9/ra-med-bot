@@ -1,5 +1,7 @@
 // @MX:NOTE [AUTO] Secure update / patch / end-of-support plan generator (REQ-007).
 // @MX:SPEC SPEC-REGULA-CYBERDEVICE-001 (REQ-007)
+
+// @MX:LEGACY archived from lib
 //
 // Deterministic plan assembly. The output is a JSONB blob stored on
 // cyber_evidence_bundle.update_plan and cited in the FDA Premarket

@@ -1,6 +1,8 @@
 // @MX:NOTE [AUTO] POST /api/cyberdevice/update-plan — secure update / patch / EOS plan (REQ-007).
 // @MX:SPEC SPEC-REGULA-CYBERDEVICE-001 (REQ-007)
 
+// @MX:LEGACY archived from app
+
 import { withPermission } from '@/lib/auth/with-permission';
 import { auditUpdatePlanCreated } from '@/lib/cyberdevice/audit';
 import { updatePlanInputSchema } from '@/lib/cyberdevice/types';

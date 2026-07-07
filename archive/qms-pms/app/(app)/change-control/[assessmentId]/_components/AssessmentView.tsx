@@ -1,3 +1,5 @@
+
+// @MX:LEGACY archived from app
 'use client';
 
 // @MX:NOTE [AUTO] AssessmentView — verdict display + expert review gate + export (client island).

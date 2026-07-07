@@ -1,5 +1,7 @@
 // GET /api/ra/dhf/[id]/reviews — list design reviews for a DHF.
 // POST /api/ra/dhf/[id]/reviews — add a design review record.
+
+// @MX:LEGACY archived from app
 // @MX:SPEC SPEC-REGULA-DHF-001
 
 import { writeAudit } from '@/lib/audit';

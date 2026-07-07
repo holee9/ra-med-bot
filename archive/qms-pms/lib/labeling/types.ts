@@ -1,6 +1,8 @@
 // @MX:NOTE [AUTO] Shared types for the labeling engine — SPEC-REGULA-LABELING-001.
 // @MX:SPEC SPEC-REGULA-LABELING-001 (REQ-001~012)
 
+// @MX:LEGACY archived from lib
+
 /**
  * REQ-001: 5 structured labeling section types.
  * Mirrors the labelingSectionTypeEnum in lib/db/schema.ts.

@@ -1,5 +1,7 @@
 // GET /api/ra/esubmit/[id] — fetch a single submission package with interactions.
 // PATCH /api/ra/esubmit/[id] — update package fields (manifest, status, etc.).
+
+// @MX:LEGACY archived from app
 // @MX:SPEC SPEC-REGULA-ESUBMIT-001
 
 import { writeAudit } from '@/lib/audit';

@@ -1,6 +1,8 @@
 // GET /api/ra/dhf/[id]/completeness — compute completeness score (0–100).
 // @MX:SPEC SPEC-REGULA-DHF-001
 
+// @MX:LEGACY archived from app
+
 import { withPermission } from '@/lib/auth/with-permission';
 import { db } from '@/lib/db/client';
 import {

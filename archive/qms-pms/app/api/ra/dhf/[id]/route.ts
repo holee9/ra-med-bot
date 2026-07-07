@@ -1,5 +1,7 @@
 // GET /api/ra/dhf/[id] — fetch a single DHF with all related data.
 // PATCH /api/ra/dhf/[id] — update DHF fields (including design_freeze).
+
+// @MX:LEGACY archived from app
 // @MX:SPEC SPEC-REGULA-DHF-001
 
 import { writeAudit } from '@/lib/audit';

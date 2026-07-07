@@ -1,6 +1,8 @@
 // @MX:NOTE [AUTO] POST /api/clinical-investigation/[id]/links — REQ-009, AC-04.
 // @MX:SPEC SPEC-REGULA-CLINICAL-INVESTIGATION-001 (Issue #69, REQ-CLININV-009, AC-04)
 
+// @MX:LEGACY archived from app
+
 import { writeAudit } from '@/lib/audit';
 import { withPermission } from '@/lib/auth/with-permission';
 import { assertInvestigationAccess, resolveRouteId } from '@/lib/clinical-investigation/access';

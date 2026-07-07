@@ -1,3 +1,5 @@
+
+// @MX:LEGACY archived from app
 'use client';
 // @MX:SPEC SPEC-REGULA-DHF-001
 // Card view for a single DHF in the list.

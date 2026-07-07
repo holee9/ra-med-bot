@@ -1,5 +1,7 @@
 // @MX:NOTE [AUTO] Client-side API helpers + response types for labeling — SPEC-REGULA-LABELING-001.
 // @MX:SPEC SPEC-REGULA-LABELING-001 (REQ-001, REQ-002, REQ-003, REQ-006, REQ-007, REQ-012)
+
+// @MX:LEGACY archived from lib
 //
 // These types mirror the shapes returned by the Route Handlers in
 // app/api/labeling/*/route.ts. The server is the single source of truth;

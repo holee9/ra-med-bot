@@ -1,6 +1,8 @@
 // @MX:NOTE [AUTO] Unit tests for change-type classification (REQ-003, AC-02).
 // @MX:SPEC SPEC-REGULA-CHANGE-CONTROL-001 (REQ-003)
 
+// @MX:LEGACY archived from lib
+
 import { describe, expect, it } from 'vitest';
 import { classifyChangeType, isValidChangeType } from '../classify';
 

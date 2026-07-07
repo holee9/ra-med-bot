@@ -1,5 +1,7 @@
 // @MX:NOTE [AUTO] REQ-008 — link labeling changes to #54 Change Control.
 // @MX:SPEC SPEC-REGULA-LABELING-001 (REQ-008, AC-06)
+
+// @MX:LEGACY archived from lib
 //
 // REUSE (L-002): assessChange already accepts changeType='labeling' — the
 // ChangeType union (lib/change-control/types.ts:10) and DEFAULT_VERDICT_HINT

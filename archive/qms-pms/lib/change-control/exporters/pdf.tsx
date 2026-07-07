@@ -1,5 +1,7 @@
 // @MX:NOTE [AUTO] Change assessment PDF export — SPEC-REGULA-CHANGE-CONTROL-001 (REQ-007).
 // @MX:SPEC SPEC-REGULA-CHANGE-CONTROL-001 (REQ-007, REQ-010)
+
+// @MX:LEGACY archived from lib
 //
 // Renders the canonical JSON report shape (the single source of truth returned
 // by POST /api/change-control/[assessmentId]/export when format=pdf-json) into a

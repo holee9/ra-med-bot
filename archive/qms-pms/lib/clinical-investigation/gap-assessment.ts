@@ -1,5 +1,7 @@
 // @MX:ANCHOR [AUTO] assessNecessity — REQ-CLININV-001 gap-based necessity assessment.
 // @MX:REASON Called by POST /api/clinical-investigation/assess route + integration
+
+// @MX:LEGACY archived from lib
 //           tests. fan_in >= 3. Produces the recommendation that drives the rest of
 //           the CI lifecycle (pathway selection, IRB package, protocol).
 // @MX:SPEC SPEC-REGULA-CLINICAL-INVESTIGATION-001 (Issue #69, REQ-CLININV-001, AC-01)

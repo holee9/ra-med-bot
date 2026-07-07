@@ -1,5 +1,7 @@
 // @MX:ANCHOR [AUTO] IMDRF N12 Classification Matrix — rule-based, no AI
 // @MX:REASON Called by POST /api/ra/samd (create) and PATCH /api/ra/samd/[id] (update).
+
+// @MX:LEGACY archived from lib
 // Encapsulates IMDRF N12 Annex II table + FDA/EU pathway derivation.
 // @MX:SPEC SPEC-REGULA-SAMD-001
 

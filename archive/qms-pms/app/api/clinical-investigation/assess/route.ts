@@ -1,5 +1,7 @@
 // @MX:ANCHOR [AUTO] POST /api/clinical-investigation/assess — gap → necessity.
 // @MX:REASON REQ-CLININV-001 entry point. fan_in from dashboard / RAG consult flow.
+
+// @MX:LEGACY archived from app
 //           Three-layer defense:
 //             1) withPermission('clinical_investigation.assess') — ra-lead only.
 //             2) IDOR gate via assertPmsProjectAccess when projectId is supplied.

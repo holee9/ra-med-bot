@@ -1,5 +1,7 @@
 // @MX:NOTE [AUTO] Runtime IDOR + audit-tx + authoritative-citation tests for CI routes.
 // @MX:SPEC SPEC-REGULA-CLINICAL-INVESTIGATION-001 (Issue #69, REQ-009/010/012)
+
+// @MX:LEGACY archived from tests
 //
 // CRITICAL: This is the RUNTIME counterpart to tests/integration/clinical-investigation.test.ts.
 // The source-level tests (fs.readFileSync + toContain pattern matching) verify

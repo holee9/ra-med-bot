@@ -1,5 +1,7 @@
 // @MX:SPEC SPEC-REGULA-DHF-001
 import { BetaBadge } from '@/components/ui/BetaBadge';
+
+// @MX:LEGACY archived from app
 import { DHFList } from './_components/DHFList';
 
 export const metadata = {

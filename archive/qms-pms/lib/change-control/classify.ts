@@ -1,5 +1,7 @@
 // @MX:NOTE [AUTO] REQ-003 change-type classification.
 // @MX:SPEC SPEC-REGULA-CHANGE-CONTROL-001 (REQ-003, AC-02)
+
+// @MX:LEGACY archived from lib
 //
 // The form on the frontend already submits a changeType, but we also provide
 // a re-classification helper so a free-form description can be mapped to one

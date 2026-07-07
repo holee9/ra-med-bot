@@ -1,5 +1,7 @@
 // @MX:NOTE [AUTO] REQ-007 — translation semantic-diff detection (MVP heuristic).
 // @MX:SPEC SPEC-REGULA-LABELING-001 (REQ-007, AC-05)
+
+// @MX:LEGACY archived from lib
 //
 // MVP approach: conservative heuristic. Detects divergence in three safety-
 // critical dimensions:

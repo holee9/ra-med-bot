@@ -1,5 +1,7 @@
 // @MX:NOTE [AUTO] REQ-010 version metadata for change-control assessments.
 // @MX:SPEC SPEC-REGULA-CHANGE-CONTROL-001 (REQ-010, AC-08)
+
+// @MX:LEGACY archived from lib
 //
 // Version metadata is recorded on every change_assessments row so that a past
 // assessment can be rolled back / reproduced if a prompt or template update

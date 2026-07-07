@@ -1,5 +1,7 @@
 // @MX:NOTE [AUTO] Cybersecurity-specific audit helpers wrapping writeAudit().
 // @MX:SPEC SPEC-REGULA-CYBERDEVICE-001 (REQ-013/014)
+
+// @MX:LEGACY archived from lib
 //
 // 21 CFR Part 11: every regulated cybersecurity action is recorded through the
 // central append-only audit pipeline. meta_json is PII-free — only IDs,

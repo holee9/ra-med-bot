@@ -1,5 +1,7 @@
 // @MX:NOTE [AUTO] Clinical Investigation shared types & Zod input schemas.
 // @MX:SPEC SPEC-REGULA-CLINICAL-INVESTIGATION-001 (Issue #69, REQ-CLININV-001~012)
+
+// @MX:LEGACY archived from lib
 // @MX:REASON Every Route Handler under app/api/clinical-investigation/ validates
 //           request bodies against these Zod schemas before touching the DB.
 

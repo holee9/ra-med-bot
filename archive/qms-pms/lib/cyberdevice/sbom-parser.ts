@@ -1,5 +1,7 @@
 // @MX:NOTE [AUTO] SBOM parser — SPDX (JSON) and CycloneDX (JSON) formats.
 // @MX:SPEC SPEC-REGULA-CYBERDEVICE-001 (REQ-003)
+
+// @MX:LEGACY archived from lib
 //
 // Tier1 scope: JSON formats only. Non-JSON SPDX (tag-value, RDF) and complex
 // CycloneDX extensions are deferred (@MX:TODO tier2). The parser normalizes

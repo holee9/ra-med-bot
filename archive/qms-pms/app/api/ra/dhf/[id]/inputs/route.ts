@@ -1,5 +1,7 @@
 // GET /api/ra/dhf/[id]/inputs — list design inputs for a DHF.
 // POST /api/ra/dhf/[id]/inputs — add a new design input.
+
+// @MX:LEGACY archived from app
 // @MX:SPEC SPEC-REGULA-DHF-001
 
 import { writeAudit } from '@/lib/audit';

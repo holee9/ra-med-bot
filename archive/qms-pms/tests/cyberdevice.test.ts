@@ -1,5 +1,7 @@
 // @MX:NOTE [AUTO] Route-level + domain-level integration tests for Cyberdevice.
 // @MX:SPEC SPEC-REGULA-CYBERDEVICE-001 (REQ-001~014, AC-01~07)
+
+// @MX:LEGACY archived from tests
 //
 // Two complementary strategies (mirrors change-control.test.ts):
 //   1. Source-level: read the route/lib/migration source and assert the control

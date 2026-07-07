@@ -1,5 +1,7 @@
 // @MX:NOTE [AUTO] POST /api/change-control/[assessmentId]/export — PDF report export with provisional gating.
 // @MX:SPEC SPEC-REGULA-CHANGE-CONTROL-001 (REQ-007, REQ-011, REQ-012, AC-05, AC-07)
+
+// @MX:LEGACY archived from app
 //
 // REQ-011 server-side gating: provisional assessments CANNOT be exported
 // (mirrors PMS close-route BLOCKING_REVIEW_STATUSES pattern). The UI gates

@@ -1,5 +1,7 @@
 // @MX:NOTE [AUTO] Labeling entry page — document creation form (REQ-001, AC-01).
 // @MX:SPEC SPEC-REGULA-LABELING-001 (REQ-001, REQ-002, REQ-012, AC-01)
+
+// @MX:LEGACY archived from app
 //
 // Server Component shell: resolves role server-side via auth() + hasRole and
 // pre-fetches the project list (RLS scoped via org_id). Passes capability

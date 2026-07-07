@@ -1,5 +1,7 @@
 // @MX:ANCHOR [AUTO] linkInvestigationResults — REQ-CLININV-009 / AC-04 forward-link hook.
 // @MX:REASON Called by POST /api/clinical-investigation/[id]/links route + integration
+
+// @MX:LEGACY archived from lib
 //           tests. fan_in >= 3. Mirrors lib/pms/cer-linkage.ts project-scoped linkage
 //           pattern: writes a ci_links row that traces investigation results to a
 //           downstream CER / PMS / DHF deliverable. The reverse lookup (CI → linked

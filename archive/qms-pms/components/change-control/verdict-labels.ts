@@ -1,5 +1,7 @@
 // @MX:NOTE [AUTO] Display labels + color tokens for change-control verdicts — SPEC-REGULA-CHANGE-CONTROL-001.
 // @MX:SPEC SPEC-REGULA-CHANGE-CONTROL-001 (REQ-004, REQ-011)
+
+// @MX:LEGACY archived from components
 //
 // Single source of truth for verdict → {label, badge class} mapping.
 // Mirrors the 4 verdicts defined in lib/change-control/types.ts ChangeVerdict.

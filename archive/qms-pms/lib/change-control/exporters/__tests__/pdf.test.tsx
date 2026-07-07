@@ -6,6 +6,8 @@
  */
 
 import { describe, expect, it, vi } from 'vitest';
+
+// @MX:LEGACY archived from lib
 import {
   type ChangeAssessmentRecord,
   type RiskLinkRecord,

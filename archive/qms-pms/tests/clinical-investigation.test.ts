@@ -1,5 +1,7 @@
 // @MX:NOTE [AUTO] Route-level + domain-level integration tests for Clinical Investigation.
 // @MX:SPEC SPEC-REGULA-CLINICAL-INVESTIGATION-001 (REQ-CLININV-001~012, AC-01~07)
+
+// @MX:LEGACY archived from tests
 //
 // Two complementary strategies:
 //   1. Source-level: read route/lib/migration source and assert controls are present

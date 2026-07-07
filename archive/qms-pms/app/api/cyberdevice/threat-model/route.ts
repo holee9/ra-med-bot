@@ -1,6 +1,8 @@
 // @MX:NOTE [AUTO] POST /api/cyberdevice/threat-model — generate threat model (REQ-001/002/008).
 // @MX:SPEC SPEC-REGULA-CYBERDEVICE-001 (REQ-001, REQ-002, REQ-008, AC-06)
 
+// @MX:LEGACY archived from app
+
 import { withPermission } from '@/lib/auth/with-permission';
 import { auditThreatModeled } from '@/lib/cyberdevice/audit';
 import { mapThreatsToGspr } from '@/lib/cyberdevice/gspr-mapping';

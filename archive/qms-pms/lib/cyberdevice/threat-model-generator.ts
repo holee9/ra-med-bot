@@ -1,5 +1,7 @@
 // @MX:NOTE [AUTO] Threat model generator — deterministic STRIDE-style rules.
 // @MX:SPEC SPEC-REGULA-CYBERDEVICE-001 (REQ-001)
+
+// @MX:LEGACY archived from lib
 //
 // Tier1: deterministic rules map architecture input (connectivity, data flows,
 // assets, trust boundaries) to STRIDE-category threats. LLM-assisted threat

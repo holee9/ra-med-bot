@@ -1,5 +1,7 @@
 // @MX:NOTE [AUTO] FDA Premarket Cybersecurity section checklist + coverage.
 // @MX:SPEC SPEC-REGULA-CYBERDEVICE-001 (REQ-002, AC-02)
+
+// @MX:LEGACY archived from lib
 //
 // AC-02 requires a coverage report proving 100% of FDA cybersecurity guidance
 // checklist items are addressed. This module is the canonical item list and
