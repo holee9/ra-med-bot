@@ -1,12 +1,9 @@
 // @MX:NOTE [AUTO] Signature query helpers — DB access layer for answer_signatures table.
 // @MX:SPEC SPEC-REGULA-ESIG-001 (REQ-ESIG-001, REQ-ESIG-005)
 
+import type { AuditDbHandle } from '@/lib/audit';
 import { answerSignatures } from '@/lib/db/schema';
-import type * as schema from '@/lib/db/schema';
 import { and, eq, isNull } from 'drizzle-orm';
-import type { PostgresJsDatabase } from 'drizzle-orm/postgres-js';
-
-export type DbClient = PostgresJsDatabase<typeof schema>;
 
 export interface SignatureRow {
   id: string;
@@ -35,7 +32,7 @@ export interface InsertSignatureData {
  */
 export async function getActiveSignature(
   messageId: string,
-  db: DbClient,
+  db: AuditDbHandle,
 ): Promise<SignatureRow | null> {
   const rows = await db
     .select()
@@ -50,11 +47,11 @@ export async function getActiveSignature(
  */
 export async function insertSignature(
   data: InsertSignatureData,
-  db: DbClient,
+  db: AuditDbHandle,
   // 21 CFR Part 11 §11.10(e) — optional caller tx so the signature INSERT can
   // ride the same transaction as the route's writeAudit (Issue #378).
   // Omit to keep the historical autocommit behavior (backward compatible).
-  tx?: DbClient,
+  tx?: AuditDbHandle,
 ): Promise<SignatureRow> {
   const q = tx ?? db;
   const rows = await q
@@ -79,10 +76,10 @@ export async function insertSignature(
 export async function revokeSignature(
   signatureId: string,
   revokedBy: string,
-  db: DbClient,
+  db: AuditDbHandle,
   // 21 CFR Part 11 §11.10(e) — optional caller tx so the revoke UPDATE can
   // ride the same transaction as the route's writeAudit (Issue #378).
-  tx?: DbClient,
+  tx?: AuditDbHandle,
 ): Promise<SignatureRow> {
   const q = tx ?? db;
   const rows = await q

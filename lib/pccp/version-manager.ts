@@ -2,18 +2,11 @@
 // PCCP version lifecycle: draft → submitted → cleared → superseded
 // AC-9: only one active version per device — enforced at DB level (partial UNIQUE INDEX).
 
+import type { AuditDbHandle } from '@/lib/audit';
 import { db } from '@/lib/db/client';
 import { pccpVersions } from '@/lib/db/schema';
-import type * as schema from '@/lib/db/schema';
 import { and, eq } from 'drizzle-orm';
-import type { PostgresJsDatabase } from 'drizzle-orm/postgres-js';
 import type { PccpStatus } from './types';
-
-// Issue #378 PR-E: transitionPccpStatus accepts an optional caller tx so the
-// status UPDATE can ride the same transaction as the approval audits.
-// PgTransaction ≠ Database `$client` — the narrower PostgresJsDatabase shape
-// satisfies both. Caller passes `tx: tx as DbClient` (PR-B-lib pattern).
-export type DbClient = PostgresJsDatabase<typeof schema>;
 
 const VALID_TRANSITIONS: Record<PccpStatus, PccpStatus[]> = {
   draft: ['submitted'],
@@ -36,7 +29,7 @@ export async function transitionPccpStatus(params: {
   actorId: string;
   // 21 CFR Part 11 §11.10(e) — Issue #378 PR-E: optional caller tx so the
   // status UPDATE rides the same transaction as the approval audits.
-  tx?: DbClient;
+  tx?: AuditDbHandle;
 }): Promise<void> {
   const q = params.tx ?? db;
   const [current] = await q

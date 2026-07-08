@@ -11,7 +11,7 @@
 // governance review + the #71 MODEL-GOVERNANCE change-control approve path,
 // never here. The detector output is a proposal, not an applied change.
 
-import { type AuditDbHandle, writeAudit } from '@/lib/audit';
+import { writeAudit } from '@/lib/audit';
 import { withTenantScope } from '@/lib/db/client';
 import { calibrationCandidates } from '@/lib/db/schema';
 import type { CalibrationCandidateInput } from './calibration-detector';
@@ -108,7 +108,7 @@ export async function proposeCalibrationCandidate(
           bucket_midpoint: input.bucketMidpoint,
         },
       },
-      tx as unknown as AuditDbHandle,
+      tx,
     );
 
     return row;

@@ -6,7 +6,7 @@
 //           deferred to a follow-up issue (see @MX:TODO below).
 
 import { createHash } from 'node:crypto';
-import { type AuditDbHandle, writeAudit } from '@/lib/audit';
+import { writeAudit } from '@/lib/audit';
 import { db, withTenantScope } from '@/lib/db/client';
 import { changeRequest } from '@/lib/db/schema';
 
@@ -62,7 +62,7 @@ export async function submitRlhfProposal(params: {
           proposal_text_hash: hashProposalText(params.proposalText),
         },
       },
-      dbs as unknown as AuditDbHandle,
+      dbs,
     );
 
     return { changeRequestId: row.id };

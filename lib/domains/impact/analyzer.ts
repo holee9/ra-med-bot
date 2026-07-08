@@ -11,7 +11,7 @@ import {
   regulatoryUpdates,
 } from '@/lib/db/schema';
 import { eq } from 'drizzle-orm';
-import { type DbClient, enqueueActionItems } from './action-queue';
+import { enqueueActionItems } from './action-queue';
 import {
   auditActionItemCreated,
   auditAssessmentCreated,
@@ -115,8 +115,8 @@ export async function analyzeImpact(req: AnalysisRequest, db: Database): Promise
 
     // 21 CFR Part 11 §11.10(e) — Issue #378 PR-E: action-item INSERTs + their
     // audit rows ride ONE db.transaction. enqueueActionItems now accepts a tx
-    // handle (PgTransaction ≠ Database `$client` resolved via the narrower
-    // DbClient shape — see action-queue.ts). The SELECT-back +
+    // handle (PR-E ② AuditDbHandle duck-type — PgTransaction & db both
+    // assignable without cast). The SELECT-back +
     // auditActionItemCreated use the same tx so a failure between INSERT and
     // audit can never orphan an action item without its audit row. (Action
     // items stay on a separate boundary from the assessment INSERT above — an
@@ -131,7 +131,7 @@ export async function analyzeImpact(req: AnalysisRequest, db: Database): Promise
           summary: result.analysis_summary,
         },
         db,
-        tx as DbClient,
+        tx,
       );
 
       // Count created action items for reporting

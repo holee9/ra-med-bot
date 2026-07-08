@@ -527,6 +527,14 @@ export interface AuditEvent {
 export type AuditDbHandle = {
   insert: (typeof db)['insert'];
   select: (typeof db)['select'];
+  // Issue #378 PR-E-②: widened to include `update` + `delete` so lib domain
+  // functions (transitionPccpStatus, signature queries, action-queue) accept the
+  // SAME duck-typed handle as writeAudit — eliminating the parallel `DbClient`
+  // type and the `tx as DbClient` / `tx as unknown as AuditDbHandle` casts.
+  // Drizzle PgTransaction + the db singleton both satisfy this shape with
+  // compatible signatures (AC-9), so all call sites are cast-free.
+  update: (typeof db)['update'];
+  delete: (typeof db)['delete'];
   execute: (typeof db)['execute'];
 };
 

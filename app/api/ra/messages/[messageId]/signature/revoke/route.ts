@@ -9,7 +9,7 @@ import { writeAudit } from '@/lib/audit';
 import { withPermission } from '@/lib/auth/with-permission';
 import { db } from '@/lib/db/client';
 import { getAuthorizedSignatureMessage } from '@/lib/signature/authorization';
-import { type DbClient, getActiveSignature, revokeSignature } from '@/lib/signature/queries';
+import { getActiveSignature, revokeSignature } from '@/lib/signature/queries';
 
 type RouteCtx = { params: Promise<{ messageId: string }> };
 
@@ -38,7 +38,7 @@ export const POST = withPermission('signature.sign', async (_req, ctx, session) 
 
   // 21 CFR Part 11 §11.10(e) — revoke UPDATE + audit in same db.transaction (Issue #378)
   const revoked = await db.transaction(async (tx) => {
-    const rev = await revokeSignature(existing.id, session.user.id, db, tx as DbClient);
+    const rev = await revokeSignature(existing.id, session.user.id, db, tx);
 
     // Append-only audit entry (REQ-ESIG-007)
     await writeAudit(
