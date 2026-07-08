@@ -155,12 +155,16 @@ describe('app/layout.tsx — REQ-FND-011, 012, 015, 056', () => {
     expect(source).toMatch(/lang=\{locale\}/);
   });
 
-  it('REQ-FND-012, 056: root metadata sets robots index/follow false', async () => {
-    const mod = await import('../../app/layout');
-    const meta = mod.metadata as { robots?: { index?: boolean; follow?: boolean } };
-    expect(meta.robots?.index).toBe(false);
-    expect(meta.robots?.follow).toBe(false);
-  }, 15_000);
+  it('REQ-FND-012, 056: root metadata sets robots index/follow false', () => {
+    // metadata is a STATIC literal (app/layout.tsx: robots: { index: false, follow: false }).
+    // Source-matched instead of `await import(layout)` because importing the root
+    // layout pulls the heavy app-shell module graph (fonts/providers/observability),
+    // which intermittently exceeded the test timeout under full-suite collect load.
+    // Eliminating the import removes the timeout failure mode entirely (Issue #384).
+    const source = readText('app/layout.tsx');
+    expect(source).toMatch(/robots:\s*\{[^}]*index:\s*false/);
+    expect(source).toMatch(/robots:\s*\{[^}]*follow:\s*false/);
+  });
 
   it('REQ-FND-015: imports next/font/google fonts', async () => {
     const source = readText('app/layout.tsx');
