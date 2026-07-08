@@ -11,6 +11,18 @@
 
 > Placeholder for post-1.0.0 development.
 
+### #366 — writeAudit 트랜잭션 원자성 감사 (Part 11 §11.10(e))
+
+- **이슈 #366** — 21 CFR Part 11 §11.10(e): mutation과 audit이 동일 트랜잭션 경계를 공유해야 감사 추적이 orphan 되지 않음. 전사 writeAudit 호출처 190곳 정밀 직검 감사 (madge 신규 도입 0, 사용자 합의).
+- **직검 분류**: in-tx 안전 8곳(ask/consult/cer routes + promote) · withTenantScope 안전 10곳(knowledge-promo/project-memory, #50/#51 fix) · audit-only 123곳 · 위반 후보 59곳.
+- **본 PR 확정 수정** (이슈 명시 impact 도메인):
+  - `lib/domains/impact/analyzer.ts`: assessment INSERT + `auditAssessmentCreated` + `auditCriticalDetected`를 per-iteration `db.transaction`으로 래핑, tx 전달 → mutation/audit 원자성 확보.
+  - `lib/domains/impact/audit-wiring.ts`: 3함수에 `tx?: AuditDbHandle` 매개변수 추가 (writeAudit tx forward). 기존 호출자 호환(선택적).
+- **레지스트리 문서**: `docs/audit/writeaudit-tx-atomicity-audit-2026-07-08.md` — 미검증 위반 후보 58곳(app/api/ra/* 25 · radar/delta-sync · knowledge-gap · 기타) 도메인별 등록, 후속 PR 분할 계획.
+- **구조적 한계**: `enqueueActionItems(db: Database)`가 tx 미지원 → action item audit은 별도 경계 (후속 패스에서 시그니처 확장 후 해결).
+- **RLS 잔여 도메인**: 이슈 명시(cyberdevice/model-gov/traceability)는 #239에서 전부 wiring 완료 (`PENDING_DOMAINS=[]`). 진짜 잔여 #317(sources/source_sections)은 별도 이슈.
+- **게이트 직검**: typecheck 0 / lint(biome+lint:hex) 내 파일 clean (12 pre-existing warnings) / full test 4,786 passed + 1 사전존재 flaky(frontend-shell 단독 19/19 통과, 본 작업 무관) / impact 도메인 38 passed / ci:audit PASS.
+
 ### SPEC-REGULA-VALIDATION-002 — Validation 정식 연동 (consumers 기반 Model-Gov/Traceability/Source-Gov/Release 통합)
 
 - **Validation 정식 연동** — VALIDATION-001 fallback/stub을 M0 consumer wrappers(#370) 기반 정식 연동으로 전환. thin glue (Charter [지양-5]), 비파괴(VALIDATION-001 시그니처 불변, migration 0).
