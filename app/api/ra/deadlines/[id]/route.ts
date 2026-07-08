@@ -79,21 +79,30 @@ export const PATCH = withPermission('deadline.manage', async (req, ctx, session)
   if (parsed.data.reference !== undefined) updates.reference = parsed.data.reference;
   if (parsed.data.notes !== undefined) updates.notes = parsed.data.notes;
 
-  const [updated] = await db
-    .update(regulatoryDeadlines)
-    .set(updates)
-    .where(eq(regulatoryDeadlines.id, id))
-    .returning({ id: regulatoryDeadlines.id, updatedAt: regulatoryDeadlines.updatedAt });
+  const updated = await db.transaction(async (tx) => {
+    const [result] = await tx
+      .update(regulatoryDeadlines)
+      .set(updates)
+      .where(eq(regulatoryDeadlines.id, id))
+      .returning({ id: regulatoryDeadlines.id, updatedAt: regulatoryDeadlines.updatedAt });
+
+    if (!result) return null;
+
+    await writeAudit(
+      {
+        action: 'deadline.updated',
+        actor_id: session.user.id,
+        resource_type: 'deadline',
+        resource_id: id,
+        meta_json: { fields: Object.keys(updates) },
+      },
+      tx,
+    );
+
+    return result;
+  });
 
   if (!updated) return NextResponse.json({ error: 'update_failed' }, { status: 500 });
-
-  await writeAudit({
-    action: 'deadline.updated',
-    actor_id: session.user.id,
-    resource_type: 'deadline',
-    resource_id: id,
-    meta_json: { fields: Object.keys(updates) },
-  });
 
   return NextResponse.json({ deadline: updated });
 });
@@ -107,14 +116,19 @@ export const DELETE = withPermission('deadline.manage', async (_req, ctx, sessio
   if (!allowed)
     return NextResponse.json({ error: 'not_a_member', resource_type: 'project' }, { status: 403 });
 
-  await db.delete(regulatoryDeadlines).where(eq(regulatoryDeadlines.id, id));
+  await db.transaction(async (tx) => {
+    await tx.delete(regulatoryDeadlines).where(eq(regulatoryDeadlines.id, id));
 
-  await writeAudit({
-    action: 'deadline.deleted',
-    actor_id: session.user.id,
-    resource_type: 'deadline',
-    resource_id: id,
-    meta_json: { projectId: row?.projectId },
+    await writeAudit(
+      {
+        action: 'deadline.deleted',
+        actor_id: session.user.id,
+        resource_type: 'deadline',
+        resource_id: id,
+        meta_json: { projectId: row?.projectId },
+      },
+      tx,
+    );
   });
 
   return NextResponse.json({ ok: true });

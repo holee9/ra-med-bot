@@ -13,7 +13,7 @@
 |---|---|---|
 | **in-tx 안전** (db.transaction 또는 withTenantScope 블록 내부 + tx 전달) | 8 | ✅ 직돀 안전 확정 |
 | **out-of-tx, audit-only** (근처 mutation 없음 — 검색/조회 후 audit) | 123 | ✅ 안전 |
-| **out-of-tx, mutation 인근** (위반 후보) | 59 | ⚠️ 직돀 검증 필요 → impact 1곳(#377) + PR-A 6곳(#378) 확정 수정, 잔여 52곳 후속 |
+| **out-of-tx, mutation 인근** (위반 후보) | 59 | ⚠️ 직돀 검증 필요 → impact 1곳(#377) + PR-A 6곳 + PR-B 7곳(#378) 확정 수정, 잔여 45곳 후속 |
 | **총 writeAudit 호출처** | 190 | (테스트 제외) |
 
 ## 2. 직돀으로 안전 확정된 영역 (수정 불필요)
@@ -48,8 +48,10 @@
 직검 토큰 한계로 본 PR에서 전부 직돀하지 못한 후보. grep/AST 근사로 산출되었으나 **직돀 확정 전까지는 위반으로 단정 금지** (false-positive 가능 — `tx as any`, wrapper forward, withTenantScope 등 스크립트가 놓치는 패턴 존재).
 
 ### Priority High — 라우트 핸들러 mutation + audit (도메인별 그룹)
-- **app/api/ra/** (잔여 19곳): classification, consult, conversations, deadlines(3), digest, expert-review(2), knowledge-sources(2), messages/blocks, projects(2), updates/feedback, workflows/submission-drafter, admin/documents/upload(2)
+- **app/api/ra/** (잔여 12곳): consult · digest/generate:42(lib 경유) · expert-review(2) · knowledge-sources(2) · messages/signature(2: lib 경유) · projects(2) · updates/feedback · workflows/submission-drafter · admin/documents/upload(2)
   - **[PR-A #378 완료 — 6곳 직독 위반 확정 + tx 래핑]** notifications(preferences) · profile · personal/bookmarks(POST + DELETE) · predicate/comparison(POST + [id]/approve). 모두 autocommit mutation + 자체 tx audit 패턴 → `db.transaction(async (tx) => { mutation + writeAudit({...}, tx) })` 래핑. analyzer.ts:67 패턴 준용.
+  - **[PR-B #378 완료 — A군 7곳 route 직접 mutation]** classification · conversations(DELETE) · deadlines(3: POST/PATCH/DELETE) · digest/generate:62(이메일 발송 후 update) · messages/blocks(checklist toggle). tx 래핑. evaluator APPROVE 96/100, fix 불필요.
+  - **[PR-B #378 B군 — lib 경유 3곳, 후속 서브 PR]** digest/generate:42(generateWeeklyDigest, withTenantScope 기반) · messages/signature:101(insertSignature) · messages/signature/revoke:43(revokeSignature). lib가 tx 파라미터 미지원 → lib tx 옵션 확장 필요(analyzer.ts audit-wiring 패턴).
 - **app/api/ra/workflows/cer/route.ts:117** — 직돀 안전 확정(제외)이나 스크립트 후보에 잔류 (false-positive)
 - **app/api/{auth/change-password, auth/signup, classify/run(2), rlhf/feedback(2), admin/users, knowledge-gap/classify}** (8곳)
 
@@ -126,3 +128,40 @@ await db.transaction(async (tx) => {
 - **app/api non-ra 8곳**: auth/change-password, auth/signup, classify/run(2), rlhf/feedback(2), admin/users, knowledge-gap/classify
 - **lib Priority Medium ~15곳**: radar/delta-sync(orchestrator 4 + ingest), knowledge-gap(detector/owning-issue 2/replay), knowledge-sources/sync(2), ai/consult, model-governance/rlhf-gate, rlhf/calibration-proposal, standards/alert-pipeline, inngest/knowledge-sources/orphan-cleanup
 - **구조적 한계**: `enqueueActionItems(db)` tx 시그니처 확장(action item audit 원자성) — 별도 패스
+
+---
+
+## 9. PR-B (#378) — app/api/ra A군 7곳 route 직접 mutation tx 래핑
+
+PR-A에 이어 회귀 최소 A군 7곳 직돀 → 위반 확정 → tx 래핑. lib 경유 B군 3곳은 별도 서브 PR.
+
+### 직독 결과 (7곳 전부 위반 확정 — route에서 autocommit mutation 직접 호출)
+| 파일:라인 | mutation(autocommit) | 비고 |
+|---|---|---|
+| classification/route.ts:78 | db.insert(deviceClassifications) | POST, SSE 스트리밍 내부 |
+| conversations/[id]/route.ts:41 | db.delete(conversations) | DELETE |
+| messages/.../blocks/[blockId]/route.ts:85 | db.update(messageBlocks) | PATCH, REQ-ENTERPRISE-035 fail-closed |
+| deadlines/[id]/route.ts:82 | db.update(regulatoryDeadlines) | PATCH |
+| deadlines/[id]/route.ts:110 | db.delete(regulatoryDeadlines) | DELETE |
+| deadlines/route.ts:82 | db.insert(regulatoryDeadlines) | POST |
+| digest/generate/route.ts:58 | db.update(weeklyDigests emailSentAt) | sendDigestEmail은 tx 밖(외부 부작용) |
+
+### 수정 방식
+각 mutation + writeAudit을 단일 `db.transaction(async (tx) => { tx.MUTATION; writeAudit({...}, tx); })`로 래핑. PR-A 패턴(return null + caller 500/404) 준용 — throw 회귀 없음.
+
+### B군 — lib 경유 3곳 (후속 서브 PR)
+- digest/generate/route.ts:42 → generateWeeklyDigest (lib/digest/digest-generator.ts, withTenantScope 기반)
+- messages/.../signature/route.ts:101 → insertSignature (lib/signature/queries.ts, db만 받음)
+- messages/.../signature/revoke/route.ts:43 → revokeSignature (동일)
+- lib가 tx 파라미터 미지원 → analyzer.ts audit-wiring 패턴으로 lib tx 옵션 확장 후 route에서 tx 전달.
+
+### 검증
+- typecheck 0 · lint 0(lint:hex OK) · ci:* 9종 PASS(rbac/audit/module-boundaries/...)
+- full vitest 4786 passed(회귀 0, frontend-shell 플래키 1건 무관)
+- evaluator-active APPROVE 96/100(Functionality 95 / Security 100 / Craft 90 / Consistency 100), fix 불필요
+
+### 잔여 후보 (후속 PR-C/D/E 대상)
+- **app/api/ra 잔여 12곳**: consult(2) · expert-review(2) · knowledge-sources(2) · projects(2) · updates/feedback · workflows/submission-drafter · admin/documents/upload(2)
+- **lib 경유 B군 3곳**: digest:42 · signature:101 · signature/revoke:43
+- **app/api non-ra 8곳 + lib Priority Medium ~15곳**
+- **구조적**: enqueueActionItems tx 시그니처 확장

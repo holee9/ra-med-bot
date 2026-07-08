@@ -55,15 +55,20 @@ export const POST = withPermission('dashboard.view', async (req, _ctx, session) 
       .limit(1);
     if (prefs[0]?.recipientEmails?.length) {
       await sendDigestEmail(orgId, payload, prefs[0].recipientEmails);
-      await db
-        .update(weeklyDigests)
-        .set({ emailSentAt: new Date() })
-        .where(eq(weeklyDigests.orgId, orgId));
-      await writeAudit({
-        actor_id: session.user.id,
-        action: 'digest_emailed',
-        resource_type: 'weekly_digest',
-        resource_id: payload.week_id,
+      await db.transaction(async (tx) => {
+        await tx
+          .update(weeklyDigests)
+          .set({ emailSentAt: new Date() })
+          .where(eq(weeklyDigests.orgId, orgId));
+        await writeAudit(
+          {
+            actor_id: session.user.id,
+            action: 'digest_emailed',
+            resource_type: 'weekly_digest',
+            resource_id: payload.week_id,
+          },
+          tx,
+        );
       });
     }
   }

@@ -75,40 +75,47 @@ async function postClassification(request: Request, session: AuthSession): Promi
         });
 
         // Persist classification result
-        const [saved] = await db
-          .insert(deviceClassifications)
-          .values({
-            orgId,
-            userId: session.user.id,
-            deviceDescription,
-            deviceType,
-            contactType,
-            hasSoftware: parsedIntent.hasSoftware || hasSoftware,
-            hasAiMl: parsedIntent.hasAiMl || hasAiMl,
-            isSterile: parsedIntent.isSterile || isSterile,
-            fdaClass: result.fda.deviceClass,
-            fdaPathway: result.fda.pathway,
-            euClass: result.eu.deviceClass,
-            euPathway: result.eu.pathway,
-            euRule: result.eu.rule ?? null,
-            mfdsClass: result.mfds.deviceClass,
-            nmpaClass: result.nmpa.deviceClass,
-            pmdaClass: result.pmda.deviceClass,
-            classificationRationale: result as unknown as Record<string, unknown>,
-          })
-          .returning();
+        const saved = await db.transaction(async (tx) => {
+          const [inserted] = await tx
+            .insert(deviceClassifications)
+            .values({
+              orgId,
+              userId: session.user.id,
+              deviceDescription,
+              deviceType,
+              contactType,
+              hasSoftware: parsedIntent.hasSoftware || hasSoftware,
+              hasAiMl: parsedIntent.hasAiMl || hasAiMl,
+              isSterile: parsedIntent.isSterile || isSterile,
+              fdaClass: result.fda.deviceClass,
+              fdaPathway: result.fda.pathway,
+              euClass: result.eu.deviceClass,
+              euPathway: result.eu.pathway,
+              euRule: result.eu.rule ?? null,
+              mfdsClass: result.mfds.deviceClass,
+              nmpaClass: result.nmpa.deviceClass,
+              pmdaClass: result.pmda.deviceClass,
+              classificationRationale: result as unknown as Record<string, unknown>,
+            })
+            .returning();
 
-        await writeAudit({
-          actor_id: session.user.id,
-          action: 'device_classified',
-          resource_type: 'device_classification',
-          resource_id: saved?.id ?? 'unknown',
-          meta_json: {
-            classificationId: saved?.id,
-            deviceType,
-            fdaClass: result.fda.deviceClass,
-            euClass: result.eu.deviceClass,
-          },
+          await writeAudit(
+            {
+              actor_id: session.user.id,
+              action: 'device_classified',
+              resource_type: 'device_classification',
+              resource_id: inserted?.id ?? 'unknown',
+              meta_json: {
+                classificationId: inserted?.id,
+                deviceType,
+                fdaClass: result.fda.deviceClass,
+                euClass: result.eu.deviceClass,
+              },
+            },
+            tx,
+          );
+
+          return inserted;
         });
 
         controller.enqueue(
