@@ -78,36 +78,48 @@ export const POST = withPermission('personal.view', async (req, _ctx, session) =
   const { messageId, blockId, title, customTitle, note, tags } = parsed.data;
 
   try {
-    const [created] = await db
-      .insert(personalBookmarks)
-      .values({
-        userId: session.user.id,
-        messageId,
-        blockId: blockId ?? null,
-        title,
-        customTitle: customTitle ?? null,
-        note: note ?? '',
-        tags: tags ?? [],
-      })
-      .returning({ id: personalBookmarks.id, createdAt: personalBookmarks.createdAt });
+    // 21 CFR Part 11 §11.10(e) — mutation + audit in same db.transaction (Issue #378)
+    const result = await db.transaction(async (tx) => {
+      const [created] = await tx
+        .insert(personalBookmarks)
+        .values({
+          userId: session.user.id,
+          messageId,
+          blockId: blockId ?? null,
+          title,
+          customTitle: customTitle ?? null,
+          note: note ?? '',
+          tags: tags ?? [],
+        })
+        .returning({ id: personalBookmarks.id, createdAt: personalBookmarks.createdAt });
 
-    if (!created) {
-      return NextResponse.json({ error: 'insert_failed' }, { status: 500 });
-    }
+      if (!created) {
+        throw new Error('insert_failed');
+      }
 
-    await writeAudit({
-      action: 'personal_bookmark.created',
-      actor_id: session.user.id,
-      resource_type: 'personalBookmark',
-      resource_id: created.id,
-      meta_json: { messageId, blockId: blockId ?? null, tagCount: tags?.length ?? 0 },
+      await writeAudit(
+        {
+          action: 'personal_bookmark.created',
+          actor_id: session.user.id,
+          resource_type: 'personalBookmark',
+          resource_id: created.id,
+          meta_json: { messageId, blockId: blockId ?? null, tagCount: tags?.length ?? 0 },
+        },
+        tx,
+      );
+
+      return created;
     });
 
-    return NextResponse.json({ bookmark: created }, { status: 201 });
+    return NextResponse.json({ bookmark: result }, { status: 201 });
   } catch (err: unknown) {
     // Unique-index violation: duplicate (user, message, block) bookmark → 409.
     if (err && typeof err === 'object' && 'code' in err && err.code === '23505') {
       return NextResponse.json({ error: 'duplicate_bookmark' }, { status: 409 });
+    }
+    // Transaction-layer error (insert_failed) → 500
+    if (err instanceof Error && err.message === 'insert_failed') {
+      return NextResponse.json({ error: 'insert_failed' }, { status: 500 });
     }
     throw err;
   }

@@ -62,22 +62,36 @@ export const PATCH = withPermission('personal.view', async (req, ctx, session) =
 // DELETE /api/ra/personal/bookmarks/[id]
 export const DELETE = withPermission('personal.view', async (_req, ctx, session) => {
   const { id } = await (ctx.params ?? Promise.resolve({ id: '' }));
-  const [deleted] = await db
-    .delete(personalBookmarks)
-    .where(and(eq(personalBookmarks.id, id), eq(personalBookmarks.userId, session.user.id)))
-    .returning({ id: personalBookmarks.id });
+
+  // 21 CFR Part 11 §11.10(e) — mutation + audit in same db.transaction (Issue #378)
+  const deleted = await db.transaction(async (tx) => {
+    const [removed] = await tx
+      .delete(personalBookmarks)
+      .where(and(eq(personalBookmarks.id, id), eq(personalBookmarks.userId, session.user.id)))
+      .returning({ id: personalBookmarks.id });
+
+    // Nothing matched (wrong id or not owned by this user) — skip audit and
+    // let the caller return 404. We must NOT throw here: unlike POST, DELETE has
+    // no try/catch, so a throw would surface as an unhandled 500 instead of 404.
+    if (!removed) return null;
+
+    await writeAudit(
+      {
+        action: 'personal_bookmark.deleted',
+        actor_id: session.user.id,
+        resource_type: 'personalBookmark',
+        resource_id: removed.id,
+        meta_json: {},
+      },
+      tx,
+    );
+
+    return removed;
+  });
 
   if (!deleted) {
     return NextResponse.json({ error: 'not_found' }, { status: 404 });
   }
-
-  await writeAudit({
-    action: 'personal_bookmark.deleted',
-    actor_id: session.user.id,
-    resource_type: 'personalBookmark',
-    resource_id: deleted.id,
-    meta_json: {},
-  });
 
   return NextResponse.json({ ok: true });
 });

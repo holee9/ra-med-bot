@@ -85,13 +85,19 @@ export const PATCH = withPermission('profile.edit', async (req, _ctx, session) =
 
   const changedEvents = Object.keys(parsed.data.preferences).sort();
 
-  await db.update(users).set({ notificationPref: updated }).where(eq(users.id, session.user.id));
-  await writeAudit({
-    actor_id: session.user.id,
-    action: 'profile.update',
-    resource_type: 'notification_preferences',
-    resource_id: session.user.id,
-    meta_json: { changedEvents },
+  // 21 CFR Part 11 §11.10(e) — mutation + audit in same db.transaction (Issue #378)
+  await db.transaction(async (tx) => {
+    await tx.update(users).set({ notificationPref: updated }).where(eq(users.id, session.user.id));
+    await writeAudit(
+      {
+        actor_id: session.user.id,
+        action: 'profile.update',
+        resource_type: 'notification_preferences',
+        resource_id: session.user.id,
+        meta_json: { changedEvents },
+      },
+      tx,
+    );
   });
 
   return Response.json({ preferences: { ...DEFAULT_PREFS, ...updated } });

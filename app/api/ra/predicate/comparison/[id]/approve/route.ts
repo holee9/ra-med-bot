@@ -103,17 +103,23 @@ export const PUT = withPermission('workflow.execute', async (req, ctx, session) 
   cell.approved = cell.approved.slice();
   cell.approved[predicate_index] = true;
 
-  await db
-    .update(workflowRuns)
-    .set({ resultJson: comparison, updatedAt: new Date() })
-    .where(eq(workflowRuns.id, id))
-    .returning();
-  await writeAudit({
-    actor_id: session.user.id,
-    action: 'workflow.approve',
-    resource_type: 'predicate_comparison',
-    resource_id: id,
-    meta_json: { dimension, predicateIndex: predicate_index },
+  // 21 CFR Part 11 §11.10(e) — mutation + audit in same db.transaction (Issue #378)
+  await db.transaction(async (tx) => {
+    await tx
+      .update(workflowRuns)
+      .set({ resultJson: comparison, updatedAt: new Date() })
+      .where(eq(workflowRuns.id, id))
+      .returning();
+    await writeAudit(
+      {
+        actor_id: session.user.id,
+        action: 'workflow.approve',
+        resource_type: 'predicate_comparison',
+        resource_id: id,
+        meta_json: { dimension, predicateIndex: predicate_index },
+      },
+      tx,
+    );
   });
 
   return Response.json({ comparison });

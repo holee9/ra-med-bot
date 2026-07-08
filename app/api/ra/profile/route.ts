@@ -81,19 +81,44 @@ export const PATCH = withPermission('profile.edit', async (req, _ctx, session) =
   if (department !== undefined) dbUpdates.department = department;
 
   if (Object.keys(dbUpdates).length > 0) {
-    // Update DB columns that changed
-    const rows = await db
-      .update(users)
-      .set(dbUpdates)
-      .where(eq(users.id, session.user.id))
-      .returning({
-        id: users.id,
-        email: users.email,
-        name: users.name,
-        role: users.role,
-        notificationPref: users.notificationPref,
-        department: users.department,
-      });
+    // 21 CFR Part 11 §11.10(e) — mutation + audit in same db.transaction (Issue #378)
+    const rows = await db.transaction(async (tx) => {
+      const updated = await tx
+        .update(users)
+        .set(dbUpdates)
+        .where(eq(users.id, session.user.id))
+        .returning({
+          id: users.id,
+          email: users.email,
+          name: users.name,
+          role: users.role,
+          notificationPref: users.notificationPref,
+          department: users.department,
+        });
+
+      // Only audit when the user row matched — preserves the original
+      // "404 (no match) → no audit row" semantics, while keeping a successful
+      // mutation + its audit atomic in one tx (Issue #378).
+      if (updated.length > 0) {
+        await writeAudit(
+          {
+            action: 'profile.update',
+            actor_id: session.user.id,
+            resource_type: 'user',
+            resource_id: session.user.id,
+            meta_json: {
+              ...(notificationPref !== undefined && { notificationPref: true }),
+              ...(theme !== undefined && { theme }),
+              ...(locale !== undefined && { locale }),
+              ...(department !== undefined && { department }),
+            },
+          },
+          tx,
+        );
+      }
+
+      return updated;
+    });
 
     profileRow = rows[0] ?? null;
   } else {
@@ -112,24 +137,28 @@ export const PATCH = withPermission('profile.edit', async (req, _ctx, session) =
       .limit(1);
 
     profileRow = rows[0] ?? null;
+
+    // Audit-only path (no DB mutation). Skip on 404 to match the original
+    // "no matching user → no audit row" behavior (Issue #378).
+    if (profileRow) {
+      await writeAudit({
+        action: 'profile.update',
+        actor_id: session.user.id,
+        resource_type: 'user',
+        resource_id: session.user.id,
+        meta_json: {
+          ...(notificationPref !== undefined && { notificationPref: true }),
+          ...(theme !== undefined && { theme }),
+          ...(locale !== undefined && { locale }),
+          ...(department !== undefined && { department }),
+        },
+      });
+    }
   }
 
   if (!profileRow) {
     return Response.json({ error: 'user_not_found' }, { status: 404 });
   }
-
-  await writeAudit({
-    action: 'profile.update',
-    actor_id: session.user.id,
-    resource_type: 'user',
-    resource_id: session.user.id,
-    meta_json: {
-      ...(notificationPref !== undefined && { notificationPref: true }),
-      ...(theme !== undefined && { theme }),
-      ...(locale !== undefined && { locale }),
-      ...(department !== undefined && { department }),
-    },
-  });
 
   // Echo theme/locale back in the response for client-side compatibility.
   return Response.json({

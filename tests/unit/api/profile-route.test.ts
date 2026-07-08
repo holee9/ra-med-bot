@@ -39,6 +39,13 @@ vi.mock('@/lib/db/client', () => ({
   db: {
     select: vi.fn(() => mockSelectChain),
     update: vi.fn(() => mockUpdateChain),
+    transaction: vi.fn((callback) => {
+      // Mock transaction: execute callback with a mock tx that has update method
+      const mockTx = {
+        update: vi.fn(() => mockUpdateChain),
+      };
+      return callback(mockTx);
+    }),
   },
 }));
 
@@ -216,6 +223,7 @@ describe('PATCH /api/ra/profile', () => {
     });
     await PATCH(req, {});
 
+    // writeAudit is called with params object and tx parameter
     expect(writeAudit).toHaveBeenCalledWith(
       expect.objectContaining({
         action: 'profile.update',
@@ -223,6 +231,7 @@ describe('PATCH /api/ra/profile', () => {
         resource_type: 'user',
         resource_id: 'user-001',
       }),
+      expect.any(Object), // tx parameter
     );
   });
 
