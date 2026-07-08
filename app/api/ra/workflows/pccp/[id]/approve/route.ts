@@ -5,7 +5,7 @@ import { db } from '@/lib/db/client';
 import { pccpComponents, pccpVersions } from '@/lib/db/schema';
 import { auditPccpExpertApproved, auditPccpStatusChanged } from '@/lib/pccp/audit-wiring';
 import { validatePccpCompleteness } from '@/lib/pccp/validator';
-import { transitionPccpStatus } from '@/lib/pccp/version-manager';
+import { type DbClient, transitionPccpStatus } from '@/lib/pccp/version-manager';
 import { eq } from 'drizzle-orm';
 
 async function postApprove(
@@ -56,18 +56,28 @@ async function postApprove(
     );
   }
 
-  await transitionPccpStatus({
-    pccpVersionId: id,
-    toStatus: 'submitted',
-    actorId: session.user.id,
-  });
+  // 21 CFR Part 11 §11.10(e) — Issue #378: status UPDATE + approval audits
+  // ride ONE db.transaction. transitionPccpStatus accepts a tx (DbClient); the
+  // audit-wiring helpers forward tx to writeAudit. A failure between the
+  // UPDATE and the audits can never leave an approved version un-audited.
+  await db.transaction(async (tx) => {
+    await transitionPccpStatus({
+      pccpVersionId: id,
+      toStatus: 'submitted',
+      actorId: session.user.id,
+      tx: tx as DbClient,
+    });
 
-  await auditPccpExpertApproved({ actorId: session.user.id, pccpVersionId: id });
-  await auditPccpStatusChanged({
-    actorId: session.user.id,
-    pccpVersionId: id,
-    fromStatus: 'draft',
-    toStatus: 'submitted',
+    await auditPccpExpertApproved({ actorId: session.user.id, pccpVersionId: id }, tx);
+    await auditPccpStatusChanged(
+      {
+        actorId: session.user.id,
+        pccpVersionId: id,
+        fromStatus: 'draft',
+        toStatus: 'submitted',
+      },
+      tx,
+    );
   });
 
   return Response.json({ id, status: 'submitted' });

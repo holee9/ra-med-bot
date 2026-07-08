@@ -45,29 +45,43 @@ async function postCreatePccp(request: Request, session: AuthSession): Promise<R
     indication: data.indication ?? null,
   });
 
-  const [created] = await db
-    .insert(pccpVersions)
-    .values({
-      deviceId: data.device_id,
-      deviceName: data.device_name,
-      manufacturer: data.manufacturer,
-      indication: data.indication,
-      version: data.version,
-      createdBy: session.user.id,
-      baselineSnapshotJsonb: snapshot,
-    })
-    .returning();
+  // 21 CFR Part 11 §11.10(e) — Issue #378: pccp_versions INSERT + audit ride
+  // ONE db.transaction so a failure between them can never orphan a version
+  // row without its pccp_created audit. auditPccpCreated forwards tx.
+  const created = await db.transaction(async (tx) => {
+    const [row] = await tx
+      .insert(pccpVersions)
+      .values({
+        deviceId: data.device_id,
+        deviceName: data.device_name,
+        manufacturer: data.manufacturer,
+        indication: data.indication,
+        version: data.version,
+        createdBy: session.user.id,
+        baselineSnapshotJsonb: snapshot,
+      })
+      .returning();
+
+    if (!row) {
+      return null;
+    }
+
+    await auditPccpCreated(
+      {
+        actorId: session.user.id,
+        pccpVersionId: row.id,
+        deviceId: data.device_id,
+        deviceName: data.device_name,
+      },
+      tx,
+    );
+
+    return row;
+  });
 
   if (!created) {
     return Response.json({ error: 'Insert failed' }, { status: 500 });
   }
-
-  await auditPccpCreated({
-    actorId: session.user.id,
-    pccpVersionId: created.id,
-    deviceId: data.device_id,
-    deviceName: data.device_name,
-  });
 
   return Response.json(
     {
