@@ -319,3 +319,28 @@ PR-A/B/B-lib/C/D-1 연속. registry §4 Priority Medium lib 앵커 ~15곳 직돀
 - **구조적(PR-E)**: enqueueActionItems tx 시그니처(Drizzle PgTransaction ≠ Database `$client`) + AuditDbHandle duck-typing 전사 전환(`tx as unknown as AuditDbHandle` cast 3곳 + consult orgId 분기 cast 제거) + digest:42 withTenantScope 통합
 - workflows 잔여 3종(audit-response / indication-impact / pccp) 별도 직돀 — cer는 이미 tx 패턴
 - **#384 frontend-shell 플래키**(REQ-FND-012 metadata timeout) — 별도 처리
+
+## 14. PR-E-① (#378) — enqueueActionItems tx 시그니처 확장 (impact action item 원자성)
+
+PR-A/B/B-lib/C/D-1/D-2 연속. #366/§3 구조적 한계로 미뤘던 impact action item 원자성 해소 — enqueueActionItems(action-queue.ts)가 auditActionItemCreated(analyzer.ts:140)와 별도 autocommit 경계 → 동일 `db.transaction`으로 통합.
+
+### 직돀 (이슈 전제 정정 — L-013)
+- §3 "action items는 별도 경계" → 실제 원인은 Drizzle `PgTransaction` ≠ `Database`(`$client`) 타입 한계(analyzer.ts:116-120 주석 명시), 설계 의도 아님.
+- enqueueActionItems(action-queue.ts)는 **INSERT만**(auditActionItemCreated 호출 안 함). audit는 analyzer.ts:140에서 **tx 미전달**로 autocommit → action item INSERT + audit 별도 경계 = 위반.
+- SELECT-back(analyzer.ts:133 `db.select...where assessmentId`)로 생성된 item id 조회 후 per-item audit. 이 SELECT도 tx 통합 대상.
+
+### 구현 (PR-B-lib 패턴 준용, 2 파일 +62/-36)
+- **action-queue.ts**: `export type DbClient = PostgresJsDatabase<typeof schema>` 추가, 시그니처 `(input, db: DbClient, tx?: DbClient)` + `const q = tx ?? db` + `q.insert`. 기존 호출자 호환(tx optional). `Database`는 DbClient 상위타입(`$client` 추가) → global db 그대로 전달 가능.
+- **analyzer.ts:116-146**: action items 블록(enqueueActionItems + SELECT-back + per-item auditActionItemCreated)을 `db.transaction(async (tx) => {...})`로 래핑. `enqueueActionItems(input, db, tx as DbClient)`(단일 cast, PR-B-lib 선례) + `tx.select` + `auditActionItemCreated({...}, tx)`(raw tx, 기존 impact analyzer:84-104 패턴 — cast 불필요).
+- **동작 보존**: action items는 assessment INSERT tx(analyzer:67-108)와 **별도 경계 유지** — action item 실패가 durable assessment+audit를 롤백하지 않음(failure isolation 보존). 오직 action item INSERT + 그 audit 간 원자성 확보(Part 11 §11.10(e) 핵심).
+
+### 검증 (직검, L-007/008/009/013/015)
+- typecheck 0(테스트 포함, `tx as DbClient` cast 정상) · lint 0(biome organizeImports 자동 정리) · full vitest **4784 passed**(3 플래키: frontend-shell #384 + traceability REQ-057/058 + mapping-engine-deadcode — **전부 단독 green**, full-suite 병렬 부하 플래키, impact 변경과 무관 도메인)
+- ci:* 종 PASS — audit / format / rbac / module-boundaries / migrations 전 exit 0
+- 테스트 mock 보정 **0파일**: enqueueActionItems 전용 단위 테스트 부재(impact-migrations는 enum 카운트만). action-items 원자성 행위 테스트는 커버리지 갭(평가자 권고 후보)이나 기존 상태(회귀 아님).
+
+### 잔여 후보 (후속 PR-E ②③ 대상)
+- **PR-E ② AuditDbHandle duck-typing 전사 전환**: `tx as DbClient`(본 PR action-queue) + `tx as unknown as AuditDbHandle` cast 3곳(rlhf-gate:65, calibration-proposal:111, consult:668) + model-governance 3곳(rollback:104, change-workflow:223/266) 제거 → AuditDbHandle를 전사 표준 tx 타입으로 승격.
+- **PR-E ③ digest:42 통합**: generateWeeklyDigest withTenantScope(RLS tx) GUC 기반 구조적 설계 변경.
+- workflows 잔여 3종(audit-response / indication-impact / pccp) 별도 직돀.
+- **#384 frontend-shell 플래키**.
