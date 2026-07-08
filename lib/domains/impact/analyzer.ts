@@ -60,42 +60,64 @@ export async function analyzeImpact(req: AnalysisRequest, db: Database): Promise
   let criticalCount = 0;
 
   for (const result of scanResults) {
-    const [inserted] = await db
-      .insert(regulatoryImpactAssessments)
-      .values({
-        regulatoryUpdateId: req.regulatory_update_id,
-        projectId: result.project_id,
-        impactLevel: result.impact_level,
-        affectedSections: result.affected_sections,
-        analysisSummary: result.analysis_summary,
-        confidence: String(result.confidence),
-        createdBy: req.actor_id,
-      })
-      .onConflictDoNothing()
-      .returning({ id: regulatoryImpactAssessments.id });
+    // 21 CFR Part 11 §11.10(e) — Issue #366: the assessment INSERT and the
+    // audit rows that record it ride the SAME db.transaction so a transient
+    // failure between them rolls back both. The audit trail can never be
+    // orphaned relative to the data it describes.
+    const inserted = await db.transaction(async (tx) => {
+      const [row] = await tx
+        .insert(regulatoryImpactAssessments)
+        .values({
+          regulatoryUpdateId: req.regulatory_update_id,
+          projectId: result.project_id,
+          impactLevel: result.impact_level,
+          affectedSections: result.affected_sections,
+          analysisSummary: result.analysis_summary,
+          confidence: String(result.confidence),
+          createdBy: req.actor_id,
+        })
+        .onConflictDoNothing()
+        .returning({ id: regulatoryImpactAssessments.id });
+
+      if (!row) return null; // already existed — skip
+
+      await auditAssessmentCreated(
+        {
+          actor_id: req.actor_id,
+          assessment_id: row.id,
+          project_id: result.project_id,
+          regulatory_update_id: req.regulatory_update_id,
+          impact_level: result.impact_level,
+        },
+        tx,
+      );
+
+      if (result.impact_level === 'critical') {
+        await auditCriticalDetected(
+          {
+            actor_id: req.actor_id,
+            assessment_id: row.id,
+            project_id: result.project_id,
+            regulatory_update_id: req.regulatory_update_id,
+          },
+          tx,
+        );
+      }
+
+      return row;
+    });
 
     if (!inserted) continue; // already existed — skip
 
     assessmentsCreated++;
+    const isCritical = result.impact_level === 'critical';
+    if (isCritical) criticalCount++;
 
-    await auditAssessmentCreated({
-      actor_id: req.actor_id,
-      assessment_id: inserted.id,
-      project_id: result.project_id,
-      regulatory_update_id: req.regulatory_update_id,
-      impact_level: result.impact_level,
-    });
-
-    if (result.impact_level === 'critical') {
-      criticalCount++;
-      await auditCriticalDetected({
-        actor_id: req.actor_id,
-        assessment_id: inserted.id,
-        project_id: result.project_id,
-        regulatory_update_id: req.regulatory_update_id,
-      });
-    }
-
+    // Action items are persisted by enqueueActionItems, which owns its own
+    // inserts via the global `db` and does not accept a tx handle (Drizzle
+    // PgTransaction is not assignable to the Database type it expects). Their
+    // audit rows therefore ride a separate boundary — a structural limitation
+    // recorded in the #366 audit registry for a follow-up pass.
     await enqueueActionItems(
       {
         assessment_id: inserted.id,
