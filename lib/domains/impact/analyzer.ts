@@ -11,7 +11,7 @@ import {
   regulatoryUpdates,
 } from '@/lib/db/schema';
 import { eq } from 'drizzle-orm';
-import { enqueueActionItems } from './action-queue';
+import { type DbClient, enqueueActionItems } from './action-queue';
 import {
   auditActionItemCreated,
   auditAssessmentCreated,
@@ -113,37 +113,46 @@ export async function analyzeImpact(req: AnalysisRequest, db: Database): Promise
     const isCritical = result.impact_level === 'critical';
     if (isCritical) criticalCount++;
 
-    // Action items are persisted by enqueueActionItems, which owns its own
-    // inserts via the global `db` and does not accept a tx handle (Drizzle
-    // PgTransaction is not assignable to the Database type it expects). Their
-    // audit rows therefore ride a separate boundary — a structural limitation
-    // recorded in the #366 audit registry for a follow-up pass.
-    await enqueueActionItems(
-      {
-        assessment_id: inserted.id,
-        project_id: result.project_id,
-        priority: result.impact_level,
-        sections: result.affected_sections,
-        summary: result.analysis_summary,
-      },
-      db,
-    );
+    // 21 CFR Part 11 §11.10(e) — Issue #378 PR-E: action-item INSERTs + their
+    // audit rows ride ONE db.transaction. enqueueActionItems now accepts a tx
+    // handle (PgTransaction ≠ Database `$client` resolved via the narrower
+    // DbClient shape — see action-queue.ts). The SELECT-back +
+    // auditActionItemCreated use the same tx so a failure between INSERT and
+    // audit can never orphan an action item without its audit row. (Action
+    // items stay on a separate boundary from the assessment INSERT above — an
+    // action-item failure does not roll back the durable assessment + its audit.)
+    await db.transaction(async (tx) => {
+      await enqueueActionItems(
+        {
+          assessment_id: inserted.id,
+          project_id: result.project_id,
+          priority: result.impact_level,
+          sections: result.affected_sections,
+          summary: result.analysis_summary,
+        },
+        db,
+        tx as DbClient,
+      );
 
-    // Count created action items for reporting
-    const items = await db
-      .select({ id: impactActionItems.id })
-      .from(impactActionItems)
-      .where(eq(impactActionItems.assessmentId, inserted.id));
+      // Count created action items for reporting
+      const items = await tx
+        .select({ id: impactActionItems.id })
+        .from(impactActionItems)
+        .where(eq(impactActionItems.assessmentId, inserted.id));
 
-    for (const item of items) {
-      actionItemsCreated++;
-      await auditActionItemCreated({
-        actor_id: req.actor_id,
-        action_item_id: item.id,
-        assessment_id: inserted.id,
-        project_id: result.project_id,
-      });
-    }
+      for (const item of items) {
+        actionItemsCreated++;
+        await auditActionItemCreated(
+          {
+            actor_id: req.actor_id,
+            action_item_id: item.id,
+            assessment_id: inserted.id,
+            project_id: result.project_id,
+          },
+          tx,
+        );
+      }
+    });
   }
 
   return {
