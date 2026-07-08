@@ -83,52 +83,68 @@ export async function syncKnowledgeSource(source: {
     // Step 2: Ingest documents using DOCINGEST pipeline primitives.
     const stats = await ingestDocuments(tmpDir, source.id, source.orgId);
 
-    // Step 3: Update last_synced_at and sync_status
-    await db
-      .update(knowledgeSources)
-      .set({
-        lastSyncedAt: new Date(),
-        syncStatus: 'synced',
-      })
-      .where(eq(knowledgeSources.id, source.id));
+    // Steps 3-4: 21 CFR Part 11 §11.10(e) — Issue #378: the sync completion
+    // UPDATE and its audit row ride the SAME db.transaction. ingestDocuments
+    // (Step 2, long-running clone+chunk+embed) stays OUTSIDE the tx — only the
+    // persist+audit pair is wrapped (matches the analyzer.ts boundary pattern).
+    await db.transaction(async (tx) => {
+      await tx
+        .update(knowledgeSources)
+        .set({
+          lastSyncedAt: new Date(),
+          syncStatus: 'synced',
+        })
+        .where(eq(knowledgeSources.id, source.id));
 
-    // Step 4: Write audit log (성공) — enriched with per-file stats
-    await writeAudit({
-      actor_id: null, // System-initiated (cron 또는 수동)
-      action: 'knowledge_source.synced',
-      resource_type: 'knowledgeSource',
-      resource_id: source.id,
-      meta_json: {
-        gitUrl: source.gitUrl,
-        branch: source.branch,
-        duration: Date.now() - startTime.getTime(),
-        status: 'synced',
-        filesProcessed: stats.filesProcessed,
-        chunksAdded: stats.chunksAdded,
-        chunksOutdated: stats.chunksOutdated,
-        errors: stats.errors,
-      },
+      // Write audit log (성공) — enriched with per-file stats
+      await writeAudit(
+        {
+          actor_id: null, // System-initiated (cron 또는 수동)
+          action: 'knowledge_source.synced',
+          resource_type: 'knowledgeSource',
+          resource_id: source.id,
+          meta_json: {
+            gitUrl: source.gitUrl,
+            branch: source.branch,
+            duration: Date.now() - startTime.getTime(),
+            status: 'synced',
+            filesProcessed: stats.filesProcessed,
+            chunksAdded: stats.chunksAdded,
+            chunksOutdated: stats.chunksOutdated,
+            errors: stats.errors,
+          },
+        },
+        tx,
+      );
     });
   } catch (error) {
-    // Update sync_status to failed
-    await db
-      .update(knowledgeSources)
-      .set({ syncStatus: 'failed' })
-      .where(eq(knowledgeSources.id, source.id));
+    // 21 CFR Part 11 §11.10(e) — Issue #378: failure UPDATE + audit ride the
+    // SAME db.transaction so a crash between them can never leave a 'syncing'
+    // row with no failure audit (orphaned status).
+    await db.transaction(async (tx) => {
+      // Update sync_status to failed
+      await tx
+        .update(knowledgeSources)
+        .set({ syncStatus: 'failed' })
+        .where(eq(knowledgeSources.id, source.id));
 
-    // Write failure audit — 'knowledge_source.synced' action + meta.status='failed'
-    // (sync_failed action은 migration 0099에 미정의 → enum 안전하게 synced 재사용)
-    await writeAudit({
-      actor_id: null,
-      action: 'knowledge_source.synced',
-      resource_type: 'knowledgeSource',
-      resource_id: source.id,
-      meta_json: {
-        status: 'failed',
-        error: error instanceof Error ? error.message : String(error),
-        gitUrl: source.gitUrl,
-        branch: source.branch,
-      },
+      // Write failure audit — 'knowledge_source.synced' action + meta.status='failed'
+      // (sync_failed action은 migration 0099에 미정의 → enum 안전하게 synced 재사용)
+      await writeAudit(
+        {
+          actor_id: null,
+          action: 'knowledge_source.synced',
+          resource_type: 'knowledgeSource',
+          resource_id: source.id,
+          meta_json: {
+            status: 'failed',
+            error: error instanceof Error ? error.message : String(error),
+            gitUrl: source.gitUrl,
+            branch: source.branch,
+          },
+        },
+        tx,
+      );
     });
 
     throw error;

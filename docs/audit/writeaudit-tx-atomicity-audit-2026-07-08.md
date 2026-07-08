@@ -272,3 +272,50 @@ PR-A/B/B-lib/C 연속. app/api non-ra 8곳 직돀 → 위반 5곳 tx 래핑 + �
 - **lib Priority Medium ~15곳(PR-D-2)**: radar/delta-sync(orchestrator 4 + ingest), knowledge-gap(detector / owning-issue 2 / replay), knowledge-sources/sync(2), ai/consult(4곳), model-governance/rlhf-gate, rlhf/calibration-proposal, standards/alert-pipeline, inngest/knowledge-sources/orphan-cleanup — B군 lib tx 옵션 확장 패턴(PR-B-lib 준용)
 - **구조적(PR-E)**: enqueueActionItems tx 시그니처 + AuditDbHandle duck-typing 전사 전환 + digest:42 withTenantScope 통합
 - workflows 잔여 3종(audit-response / indication-impact / pccp) 별도 직돀 — cer는 이미 tx 패턴
+
+## 13. PR-D-2 (#378) — lib Priority Medium 직돀 + tx 래핑(위반 10) / 안전 분류(8)
+
+PR-A/B/B-lib/C/D-1 연속. registry §4 Priority Medium lib 앵커 ~15곳 직돀 → 위반 10곳 tx 래핑 + 이미 안전 8곳 분류(L-013 false-positive 대량 포착 — grep/AST가 withTenantScope+2인자 / audit-only 놓침).
+
+### tx 래핑 (analyzer.ts:67-108 + audit-wiring.ts tx forward 패턴, 6 파일 / writeAudit 10곳)
+| 파일:앵커 | mutation | audit action |
+|---|---|---|
+| lib/knowledge-gap/detector.ts:117 captureKnowledgeGap | INSERT unanswered_queue | knowledge_gap_created |
+| lib/knowledge-gap/owning-issue.ts:209 createOwningIssue(성공) | UPDATE unanswered_queue(owningIssueUrl/Target) | owning_issue_created |
+| lib/knowledge-gap/replay.ts:303 markGapResolved | UPDATE unanswered_queue(status=resolved) | knowledge_gap_resolved |
+| lib/knowledge-sources/sync.ts:96 syncKnowledgeSource(성공) | UPDATE knowledge_sources(synced/lastSyncedAt) | knowledge_source.synced |
+| lib/knowledge-sources/sync.ts:121 syncKnowledgeSource(실패 catch) | UPDATE knowledge_sources(failed) | knowledge_source.synced (meta.status=failed) |
+| lib/radar/delta-sync/orchestrator.ts:143 runDeltaSync(INSERT run) | INSERT corpus_sync_runs(pending) | corpus.sync_started |
+| lib/radar/delta-sync/orchestrator.ts:182 runDeltaSync(unchanged) | UPDATE corpus_sync_runs(unchanged) | corpus.sync_completed |
+| lib/radar/delta-sync/orchestrator.ts:267 runDeltaSync(synced) | UPDATE corpus_sync_runs(synced/counts) | corpus.sync_completed |
+| lib/radar/delta-sync/orchestrator.ts:308 runDeltaSync(failed catch) | UPDATE corpus_sync_runs(failed/error) | corpus.sync_failed |
+| lib/ai/consult.ts:658 auto-expert-review flag | UPDATE messages(expertReviewRequired=true) | consult.expert_review_auto_flag |
+
+각 `db.transaction(async (tx) => { tx.MUTATION; writeAudit({...}, tx); })` 래핑. 동작 보존:
+- **runDeltaSync**: delta-sync 파이프라인. INSERT run+sync_started / unchanged-UPDATE+audit / synced-UPDATE+audit / failed-UPDATE+audit 4개 tx 경계. **embed/detect/chunk/ingestDocuments(장기 실행·fallible)는 tx 외부 유지**(PR-D-1 classify/run 경계 동일 — 장기 tx·fallible 엔진 회피). IDOR-fail audit(orchestrator:103, source_not_found_in_org)는 audit-only(run row 미생성) → 1인자 그대로.
+- **syncKnowledgeSource**: 성공/실패 UPDATE+audit 각 tx. ingestDocuments(clone+chunk+embed)는 tx 외부. 사전 syncing-lock UPDATE(sync.ts:74, audit 무페어)는 그대로.
+- **markGapResolved**: UPDATE+audit 동일 tx. commentGapResolved(외부 GitHub side-effect)는 **commit 이후**로 이동(PR-B sendDigestEmail 경계 동일 — 외부 부작용은 tx 롤백 대상 아님).
+- **consult.ts auto-flag**: orgId 분기 withTenantScope(dbs→UPDATE+audit, `dbs as unknown as AuditDbHandle` cast) / 미조재 분기 db.transaction(tx→UPDATE+audit). markExpertReview 헬퍼 제거 후 인라인 update(PgTransaction ≠ `typeof db` `$client` 한계 — consult.ts:675 typecheck 에러, impact analyzer 동일 패턴).
+
+### 안전 분류 (수정 없음 — L-013 직돀 false-positive 8곳)
+- **lib/radar/delta-sync/ingest.ts:134** — 이미 `withTenantScope(tx)` 내부 + `writeAudit({...}, tx)` 2인자(M-2/#300 fix). traceability.section_superseded.
+- **lib/knowledge-gap/owning-issue.ts:233** — audit-only(`owning_issue_creation_failed`, retry 3회 실패 시 mutation 없음).
+- **lib/model-governance/rlhf-gate.ts:52** — `writeAudit({...}, dbs as unknown as AuditDbHandle)` withTenantScope 내부 전달(modelgov.change_requested).
+- **lib/rlhf/calibration-proposal.ts:95** — `writeAudit({...}, tx as unknown as AuditDbHandle)` withTenantScope 내부 전달(rlhf.calibration_proposed). @MX:WARN "audit MUST share the tx" 이미 이행.
+- **lib/standards/alert-pipeline.ts:72** — `writeAudit({...}, tx)` withTenantScope 내부 전달(standards.alert.emitted).
+- **lib/inngest/knowledge-sources/orphan-cleanup.ts:114** — `writeAudit({...}, tx)` withTenantScope 내부 전달(source.orphan_sunsetted).
+- **lib/ai/consult.ts:274** — audit-only(`llm.call`, LLM 호출 전 usage audit, mutation 없음).
+- **lib/ai/consult.ts:371** — audit-only(`source.access`, RAG citation 접근 audit, mutation 없음).
+
+→ registry §4 "ai/consult(4곳)" 중 실제 위반은 :658 1곳만(:274/:371 audit-only, :604 expert_review.flag는 별도 decision-audit). grep/AST 근사 ~15곳 → 직돀 위반 **10곳**(PR-D-1 8→5 패턴 동일 감소).
+
+### 검증
+- typecheck 0 · lint 0(lint:hex OK, 변경 파일 biome clean — 12 기존 warning 무관) · full vitest **4786 passed**(frontend-shell 플래키 1건 단독 재실행 19/19 green 확인, 무관 — #384)
+- ci:* 종 PASS — ci:audit "Audit completeness check: PASS" / format / rbac / module-boundaries / migrations / tokens / i18n / glossary / contrast / build 전 exit 0
+- 테스트 mock 보정 6파일: db mock에 `transaction: async (cb) => cb(<db>)` 추가(tx를 db와 동일 체인) + writeAudit 단언 2인자(`, expect.anything()`) 5곳(delta-sync-orchestrator 4 + owning-routing 1). audit-only 경로 단언은 1인자 유지(orchestrator IDOR-fail / owning-issue creation_failed).
+
+### 잔여 후보 (후속 PR-E 대상)
+- **lib Priority Medium**: PR-D-2 완료 → **잔여 0곳**
+- **구조적(PR-E)**: enqueueActionItems tx 시그니처(Drizzle PgTransaction ≠ Database `$client`) + AuditDbHandle duck-typing 전사 전환(`tx as unknown as AuditDbHandle` cast 3곳 + consult orgId 분기 cast 제거) + digest:42 withTenantScope 통합
+- workflows 잔여 3종(audit-response / indication-impact / pccp) 별도 직돀 — cer는 이미 tx 패턴
+- **#384 frontend-shell 플래키**(REQ-FND-012 metadata timeout) — 별도 처리

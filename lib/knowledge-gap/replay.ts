@@ -288,10 +288,31 @@ export async function markGapResolved(
 
   // Scope the UPDATE by orgId as well — defense-in-depth against any race that
   // moves the row between SELECT and UPDATE. The id+org conjunction is stable.
-  await db
-    .update(unansweredQueue)
-    .set({ status: 'resolved', resolvedAt: new Date() })
-    .where(rowPredicate);
+  // 21 CFR Part 11 §11.10(e) — Issue #378: the resolve UPDATE and the audit row
+  // ride the SAME db.transaction. commentGapResolved is an external GitHub
+  // side-effect → fired AFTER commit (matches the PR-B sendDigestEmail boundary
+  // — external side-effects never block or roll back the audited mutation).
+  await db.transaction(async (tx) => {
+    await tx
+      .update(unansweredQueue)
+      .set({ status: 'resolved', resolvedAt: new Date() })
+      .where(rowPredicate);
+
+    await writeAudit(
+      {
+        actor_id: null,
+        action: 'knowledge_gap_resolved',
+        resource_type: 'unanswered_queue',
+        resource_id: queueId,
+        meta_json: {
+          source_count: evidence.sources.length,
+          source_ids: evidence.sources.map((s) => s.id),
+          github_issue_number: row.githubIssueNumber ?? null,
+        },
+      },
+      tx,
+    );
+  });
 
   if (row.githubIssueNumber !== null) {
     await commentGapResolved(row.githubIssueNumber, {
@@ -299,16 +320,4 @@ export async function markGapResolved(
       sourceTitles: evidence.sources.map((s) => s.title),
     });
   }
-
-  await writeAudit({
-    actor_id: null,
-    action: 'knowledge_gap_resolved',
-    resource_type: 'unanswered_queue',
-    resource_id: queueId,
-    meta_json: {
-      source_count: evidence.sources.length,
-      source_ids: evidence.sources.map((s) => s.id),
-      github_issue_number: row.githubIssueNumber ?? null,
-    },
-  });
 }

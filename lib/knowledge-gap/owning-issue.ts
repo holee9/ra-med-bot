@@ -199,24 +199,31 @@ export async function createOwningIssue(
       const created = await client.createIssue({ title, body, labels: OWNING_LABELS });
       if (created.number < 0) return null; // sentinel — treat as unconfigured
 
-      // §4. Persist owning URL + target on the queue row.
-      await db
-        .update(unansweredQueue)
-        .set({ owningIssueUrl: created.htmlUrl, owningIssueTarget: target })
-        .where(eq(unansweredQueue.id, ctx.queueId));
+      // §4-5. 21 CFR Part 11 §11.10(e) — Issue #378: persist owning URL + audit
+      // in the SAME db.transaction. The audit row can never be orphaned relative
+      // to the queue UPDATE it records.
+      await db.transaction(async (tx) => {
+        await tx
+          .update(unansweredQueue)
+          .set({ owningIssueUrl: created.htmlUrl, owningIssueTarget: target })
+          .where(eq(unansweredQueue.id, ctx.queueId));
 
-      // §5. Audit — meta contains NO question text, NO tokens. URL + target only.
-      await writeAudit({
-        actor_id: ctx.actorId,
-        action: 'owning_issue_created',
-        resource_type: 'unanswered_queue',
-        resource_id: ctx.queueId,
-        conversation_id: ctx.conversationId,
-        meta_json: {
-          target,
-          owning_issue_url: created.htmlUrl,
-          cluster_id: ctx.clusterId,
-        },
+        // Audit — meta contains NO question text, NO tokens. URL + target only.
+        await writeAudit(
+          {
+            actor_id: ctx.actorId,
+            action: 'owning_issue_created',
+            resource_type: 'unanswered_queue',
+            resource_id: ctx.queueId,
+            conversation_id: ctx.conversationId,
+            meta_json: {
+              target,
+              owning_issue_url: created.htmlUrl,
+              cluster_id: ctx.clusterId,
+            },
+          },
+          tx,
+        );
       });
 
       return { number: created.number, htmlUrl: created.htmlUrl, target };

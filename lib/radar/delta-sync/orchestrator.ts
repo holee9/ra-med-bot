@@ -124,28 +124,38 @@ export async function runDeltaSync(input: RunDeltaSyncInput): Promise<RunDeltaSy
   //    because corpus_sync_runs has no organization_id column — the (sourceUrl,
   //    content_hash) lookup in step 4 is scoped by joining through sources, and
   //    the sourceId itself was just IDOR-verified.
-  const inserted = await (await import('@/lib/db/client')).db
-    .insert(corpusSyncRuns)
-    .values({
-      crawlerName,
-      sourceUrl,
-      contentHash: '', // filled after detection
-      status: 'pending',
-    })
-    .returning({ id: corpusSyncRuns.id });
-  const runRow = inserted[0];
-  if (!runRow) {
-    throw new Error('delta-sync: failed to insert corpus_sync_runs row');
-  }
-  const runId = runRow.id;
+  // 2-3. 21 CFR Part 11 §11.10(e) — Issue #378: the corpus_sync_runs INSERT and
+  // its sync_started audit ride the SAME db.transaction so a transient failure
+  // between them can never leave a run row with no start audit. runId is
+  // returned for the downstream pipeline (detection/embed stay outside the tx).
+  const runId = await (await import('@/lib/db/client')).db.transaction(async (tx) => {
+    const inserted = await tx
+      .insert(corpusSyncRuns)
+      .values({
+        crawlerName,
+        sourceUrl,
+        contentHash: '', // filled after detection
+        status: 'pending',
+      })
+      .returning({ id: corpusSyncRuns.id });
+    const runRow = inserted[0];
+    if (!runRow) {
+      throw new Error('delta-sync: failed to insert corpus_sync_runs row');
+    }
 
-  // 3. Audit start (21 CFR Part 11). meta is PII-free.
-  await writeAudit({
-    actor_id: actorId,
-    action: 'corpus.sync_started',
-    resource_type: 'source',
-    resource_id: sourceId,
-    meta_json: { runId, crawlerName, sourceUrl: truncateUrl(sourceUrl) },
+    // Audit start (21 CFR Part 11). meta is PII-free.
+    await writeAudit(
+      {
+        actor_id: actorId,
+        action: 'corpus.sync_started',
+        resource_type: 'source',
+        resource_id: sourceId,
+        meta_json: { runId: runRow.id, crawlerName, sourceUrl: truncateUrl(sourceUrl) },
+      },
+      tx,
+    );
+
+    return runRow.id;
   });
 
   try {
@@ -170,21 +180,28 @@ export async function runDeltaSync(input: RunDeltaSyncInput): Promise<RunDeltaSy
 
     // 6. Unchanged fast-path.
     if (detection.status === 'unchanged') {
-      await (await import('@/lib/db/client')).db
-        .update(corpusSyncRuns)
-        .set({
-          status: 'unchanged',
-          chunksUnchanged: 0, // per-section unchanged counting is a follow-up; 0 is honest
-          completedAt: new Date(),
-        })
-        .where(eq(corpusSyncRuns.id, runId));
+      // 21 CFR Part 11 §11.10(e) — Issue #378: unchanged completion UPDATE +
+      // audit ride the SAME db.transaction.
+      await (await import('@/lib/db/client')).db.transaction(async (tx) => {
+        await tx
+          .update(corpusSyncRuns)
+          .set({
+            status: 'unchanged',
+            chunksUnchanged: 0, // per-section unchanged counting is a follow-up; 0 is honest
+            completedAt: new Date(),
+          })
+          .where(eq(corpusSyncRuns.id, runId));
 
-      await writeAudit({
-        actor_id: actorId,
-        action: 'corpus.sync_completed',
-        resource_type: 'source',
-        resource_id: sourceId,
-        meta_json: { runId, change: 'unchanged', crawlerName },
+        await writeAudit(
+          {
+            actor_id: actorId,
+            action: 'corpus.sync_completed',
+            resource_type: 'source',
+            resource_id: sourceId,
+            meta_json: { runId, change: 'unchanged', crawlerName },
+          },
+          tx,
+        );
       });
 
       return {
@@ -251,31 +268,38 @@ export async function runDeltaSync(input: RunDeltaSyncInput): Promise<RunDeltaSy
       actorId,
     });
 
-    // 7e. Update the run row with counts + completion.
-    await (await import('@/lib/db/client')).db
-      .update(corpusSyncRuns)
-      .set({
-        status: 'synced',
-        chunksAdded: insertedSections.length,
-        chunksOutdated: outdateResult.applied,
-        chunksUnchanged: 0,
-        completedAt: new Date(),
-      })
-      .where(eq(corpusSyncRuns.id, runId));
+    // 7e-7f. 21 CFR Part 11 §11.10(e) — Issue #378: synced completion UPDATE +
+    // audit ride the SAME db.transaction. The embed/insert/applyOutdate steps
+    // (7b-7d, long-running + fallible) stay OUTSIDE the tx — only the final
+    // persist+audit pair is wrapped (matches the analyzer.ts boundary pattern).
+    await (await import('@/lib/db/client')).db.transaction(async (tx) => {
+      await tx
+        .update(corpusSyncRuns)
+        .set({
+          status: 'synced',
+          chunksAdded: insertedSections.length,
+          chunksOutdated: outdateResult.applied,
+          chunksUnchanged: 0,
+          completedAt: new Date(),
+        })
+        .where(eq(corpusSyncRuns.id, runId));
 
-    // 7f. Audit completion (21 CFR Part 11).
-    await writeAudit({
-      actor_id: actorId,
-      action: 'corpus.sync_completed',
-      resource_type: 'source',
-      resource_id: sourceId,
-      meta_json: {
-        runId,
-        change: detection.status,
-        crawlerName,
-        chunksAdded: insertedSections.length,
-        chunksOutdated: outdateResult.applied,
-      },
+      await writeAudit(
+        {
+          actor_id: actorId,
+          action: 'corpus.sync_completed',
+          resource_type: 'source',
+          resource_id: sourceId,
+          meta_json: {
+            runId,
+            change: detection.status,
+            crawlerName,
+            chunksAdded: insertedSections.length,
+            chunksOutdated: outdateResult.applied,
+          },
+        },
+        tx,
+      );
     });
 
     return {
@@ -295,22 +319,29 @@ export async function runDeltaSync(input: RunDeltaSyncInput): Promise<RunDeltaSy
       error: errorMessage,
     });
 
-    // 8. Never leave the run 'pending'. Mark failed + audit.
-    await (await import('@/lib/db/client')).db
-      .update(corpusSyncRuns)
-      .set({
-        status: 'failed',
-        errorMessage: truncateError(errorMessage),
-        completedAt: new Date(),
-      })
-      .where(eq(corpusSyncRuns.id, runId));
+    // 8. 21 CFR Part 11 §11.10(e) — Issue #378: never leave the run 'pending'.
+    // Mark failed + audit in the SAME db.transaction so a crash between them
+    // can never leave an orphaned row with no failure audit.
+    await (await import('@/lib/db/client')).db.transaction(async (tx) => {
+      await tx
+        .update(corpusSyncRuns)
+        .set({
+          status: 'failed',
+          errorMessage: truncateError(errorMessage),
+          completedAt: new Date(),
+        })
+        .where(eq(corpusSyncRuns.id, runId));
 
-    await writeAudit({
-      actor_id: actorId,
-      action: 'corpus.sync_failed',
-      resource_type: 'source',
-      resource_id: sourceId,
-      meta_json: { runId, crawlerName, error: truncateError(errorMessage) },
+      await writeAudit(
+        {
+          actor_id: actorId,
+          action: 'corpus.sync_failed',
+          resource_type: 'source',
+          resource_id: sourceId,
+          meta_json: { runId, crawlerName, error: truncateError(errorMessage) },
+        },
+        tx,
+      );
     });
 
     return {

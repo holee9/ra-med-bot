@@ -17,8 +17,9 @@ const mocks = vi.hoisted(() => ({
   writeAudit: vi.fn(),
 }));
 
-vi.mock('@/lib/db/client', () => ({
-  db: {
+vi.mock('@/lib/db/client', () => {
+  // biome-ignore lint/suspicious/noExplicitAny: transaction callback references the mock; `any` breaks the self-referential type cycle (cf. knowledge-sources.test.ts).
+  const db: any = {
     insert: vi.fn(() => ({
       values: vi.fn((row: Record<string, unknown>) => {
         mocks.insertedRows.push(row);
@@ -42,8 +43,12 @@ vi.mock('@/lib/db/client', () => ({
         })),
       })),
     })),
-  },
-}));
+    // Issue #378 — captureKnowledgeGap now wraps INSERT+audit in db.transaction.
+    // Thread the same db as `tx` so the insert/update chain mocks cover both.
+    transaction: vi.fn(async (cb: (tx: unknown) => Promise<unknown>) => cb(db)),
+  };
+  return { db };
+});
 
 vi.mock('@/lib/audit', () => ({
   writeAudit: mocks.writeAudit,

@@ -19,7 +19,8 @@ type ChainableSet = { where: ReturnType<typeof vi.fn<[], Promise<undefined>>> };
 
 const queueRows = new Map<string, DbRow>();
 
-const dbMock = {
+// biome-ignore lint/suspicious/noExplicitAny: transaction callback references the mock; `any` breaks the self-referential type cycle (cf. knowledge-sources.test.ts).
+const dbMock: any = {
   select: vi.fn((): { from: () => ChainableWhere } => ({
     from: vi.fn(
       (): ChainableWhere => ({
@@ -34,6 +35,9 @@ const dbMock = {
       }),
     ),
   })),
+  // Issue #378 — markGapResolved now wraps UPDATE+audit in db.transaction.
+  // Thread the same dbMock as `tx` so the update chain mock covers both.
+  transaction: vi.fn(async (cb: (tx: unknown) => Promise<unknown>) => cb(dbMock)),
 };
 
 vi.mock('@/lib/db/client', () => ({ db: dbMock }));

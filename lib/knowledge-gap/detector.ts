@@ -95,36 +95,45 @@ export interface CaptureKnowledgeGapResult {
 export async function captureKnowledgeGap(ctx: CaptureContext): Promise<CaptureKnowledgeGapResult> {
   const { redacted, hash, redactionCount } = redactQuestion(ctx.originalQuestion);
 
-  const [inserted] = await db
-    .insert(unansweredQueue)
-    .values({
-      orgId: ctx.orgId,
-      conversationId: ctx.conversationId,
-      messageId: ctx.messageId,
-      redactedQuestion: redacted,
-      redactionHash: hash,
-      gapReason: ctx.reason,
-      status: 'open',
-    })
-    .returning({ id: unansweredQueue.id });
+  // 21 CFR Part 11 §11.10(e) — Issue #378: the queue INSERT and the audit row
+  // that records it ride the SAME db.transaction so a transient failure between
+  // them rolls back both. The audit trail can never be orphaned relative to the
+  // queue row it describes.
+  const queueId = await db.transaction(async (tx) => {
+    const [inserted] = await tx
+      .insert(unansweredQueue)
+      .values({
+        orgId: ctx.orgId,
+        conversationId: ctx.conversationId,
+        messageId: ctx.messageId,
+        redactedQuestion: redacted,
+        redactionHash: hash,
+        gapReason: ctx.reason,
+        status: 'open',
+      })
+      .returning({ id: unansweredQueue.id });
 
-  if (!inserted) {
-    throw new Error('captureKnowledgeGap: queue insert returned no id');
-  }
+    if (!inserted) {
+      throw new Error('captureKnowledgeGap: queue insert returned no id');
+    }
 
-  const queueId = inserted.id;
+    await writeAudit(
+      {
+        actor_id: ctx.actorId,
+        action: 'knowledge_gap_created',
+        resource_type: 'unanswered_queue',
+        resource_id: inserted.id,
+        conversation_id: ctx.conversationId,
+        meta_json: {
+          reason: ctx.reason,
+          redaction_count: redactionCount,
+          redaction_hash: hash,
+        },
+      },
+      tx,
+    );
 
-  await writeAudit({
-    actor_id: ctx.actorId,
-    action: 'knowledge_gap_created',
-    resource_type: 'unanswered_queue',
-    resource_id: queueId,
-    conversation_id: ctx.conversationId,
-    meta_json: {
-      reason: ctx.reason,
-      redaction_count: redactionCount,
-      redaction_hash: hash,
-    },
+    return inserted.id;
   });
 
   const [{ assignCluster }, { appendGitHubIssue, createGitHubIssue }] = await Promise.all([

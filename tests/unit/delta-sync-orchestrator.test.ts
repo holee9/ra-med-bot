@@ -26,9 +26,14 @@ const {
     set: vi.fn().mockReturnThis(),
     where: vi.fn().mockResolvedValue(undefined),
   };
-  const mockDb = {
+  // biome-ignore lint/suspicious/noExplicitAny: transaction callback references the mock; `any` breaks the self-referential type cycle (cf. knowledge-sources.test.ts).
+  const mockDb: any = {
     insert: vi.fn().mockReturnValue(insertChain),
     update: vi.fn().mockReturnValue(updateChain),
+    // Issue #378 — runDeltaSync now wraps each mutation+audit pair in
+    // db.transaction(async (tx) => ...). Thread the same mockDb as `tx` so the
+    // existing insert/update chain mocks cover both the outer db and inner tx.
+    transaction: vi.fn(async (cb: (tx: unknown) => Promise<unknown>) => cb(mockDb)),
     select: vi.fn().mockReturnValue({
       from: vi.fn().mockReturnValue({
         innerJoin: vi.fn().mockReturnValue({
@@ -143,9 +148,11 @@ describe('runDeltaSync orchestrator — #300 live activation of applyOutdateOper
     expect(result.change).toBe('unchanged');
     expect(writeAuditMock).toHaveBeenCalledWith(
       expect.objectContaining({ action: 'corpus.sync_started' }),
+      expect.anything(),
     );
     expect(writeAuditMock).toHaveBeenCalledWith(
       expect.objectContaining({ action: 'corpus.sync_completed', resource_id: 'src-1' }),
+      expect.anything(),
     );
     // applyOutdateOperations must NOT fire for unchanged.
     expect(applyOutdateOperationsMock).not.toHaveBeenCalled();
@@ -177,6 +184,7 @@ describe('runDeltaSync orchestrator — #300 live activation of applyOutdateOper
     });
     expect(writeAuditMock).toHaveBeenCalledWith(
       expect.objectContaining({ action: 'corpus.sync_completed' }),
+      expect.anything(),
     );
   });
 
@@ -216,6 +224,7 @@ describe('runDeltaSync orchestrator — #300 live activation of applyOutdateOper
     expect(failedSetCall).toBeDefined();
     expect(writeAuditMock).toHaveBeenCalledWith(
       expect.objectContaining({ action: 'corpus.sync_failed' }),
+      expect.anything(),
     );
   });
 });
