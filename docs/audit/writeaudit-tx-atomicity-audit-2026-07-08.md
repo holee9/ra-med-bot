@@ -13,7 +13,7 @@
 |---|---|---|
 | **in-tx 안전** (db.transaction 또는 withTenantScope 블록 내부 + tx 전달) | 8 | ✅ 직돀 안전 확정 |
 | **out-of-tx, audit-only** (근처 mutation 없음 — 검색/조회 후 audit) | 123 | ✅ 안전 |
-| **out-of-tx, mutation 인근** (위반 후보) | 59 | ⚠️ 직돀 검증 필요 → 본 PR 1곳 확정 수정, 잔여 후속 이슈 |
+| **out-of-tx, mutation 인근** (위반 후보) | 59 | ⚠️ 직돀 검증 필요 → impact 1곳(#377) + PR-A 6곳(#378) 확정 수정, 잔여 52곳 후속 |
 | **총 writeAudit 호출처** | 190 | (테스트 제외) |
 
 ## 2. 직돀으로 안전 확정된 영역 (수정 불필요)
@@ -48,7 +48,8 @@
 직검 토큰 한계로 본 PR에서 전부 직돀하지 못한 후보. grep/AST 근사로 산출되었으나 **직돀 확정 전까지는 위반으로 단정 금지** (false-positive 가능 — `tx as any`, wrapper forward, withTenantScope 등 스크립트가 놓치는 패턴 존재).
 
 ### Priority High — 라우트 핸들러 mutation + audit (도메인별 그룹)
-- **app/api/ra/** (25곳): classification, consult, conversations, deadlines(3), digest, expert-review(2), knowledge-sources(2), messages/blocks, notifications, personal/bookmarks(2), predicate/comparison(2), profile, projects(2), updates/feedback, workflows/submission-drafter, admin/documents/upload(2)
+- **app/api/ra/** (잔여 19곳): classification, consult, conversations, deadlines(3), digest, expert-review(2), knowledge-sources(2), messages/blocks, projects(2), updates/feedback, workflows/submission-drafter, admin/documents/upload(2)
+  - **[PR-A #378 완료 — 6곳 직독 위반 확정 + tx 래핑]** notifications(preferences) · profile · personal/bookmarks(POST + DELETE) · predicate/comparison(POST + [id]/approve). 모두 autocommit mutation + 자체 tx audit 패턴 → `db.transaction(async (tx) => { mutation + writeAudit({...}, tx) })` 래핑. analyzer.ts:67 패턴 준용.
 - **app/api/ra/workflows/cer/route.ts:117** — 직돀 안전 확정(제외)이나 스크립트 후보에 잔류 (false-positive)
 - **app/api/{auth/change-password, auth/signup, classify/run(2), rlhf/feedback(2), admin/users, knowledge-gap/classify}** (8곳)
 
@@ -93,4 +94,35 @@ await db.transaction(async (tx) => {
 
 ---
 
-**본 PR 완료 범위**: 이슈 명시 impact 도메인(analyzer.ts + audit-wiring.ts) 직돀 위반 확정 + 수정. 잔여 58곳은 본 레지스트리에 등록 후 도메인별 후속 PR로 분할 진행 권장.
+**본 PR 완료 범위**: 이슈 명시 impact 도메인(analyzer.ts + audit-wiring.ts) 직돀 위반 확정 + 수정. 잔여 후보는 본 레지스트리에 등록 후 도메인별 후속 PR로 분할 진행.
+
+---
+
+## 8. PR-A (#378) — 회귀 최소 도메인 6곳 직돀 확정 + tx 래핑
+
+58곳 잔여 후보 중 회귀가 가장 낮고 독립적인 도메인 그룹을 선정해 직돀 → 위반 확정 → 수정.
+
+### 직독 결과 (6곳 전부 위반 확정 — autocommit mutation + 자체 tx audit)
+
+| 파일:라인 | mutation(autocommit) | 비고 |
+|---|---|---|
+| `app/api/ra/notifications/preferences/route.ts:88` | `db.update(users)` | PATCH |
+| `app/api/ra/profile/route.ts:85` | `db.update(users)` | UPDATE 브랜치만; SELECT(else)는 audit-only 안전 |
+| `app/api/ra/personal/bookmarks/route.ts:81` | `db.insert(personalBookmarks)` | POST |
+| `app/api/ra/personal/bookmarks/[id]/route.ts:65` | `db.delete(personalBookmarks)` | DELETE — not_found는 throw 아닌 returning 기반 404 처리 |
+| `app/api/ra/predicate/comparison/route.ts:105` | `db.insert(workflowRuns)` | POST |
+| `app/api/ra/predicate/comparison/[id]/approve/route.ts:106` | `db.update(workflowRuns)` | PUT |
+
+### 수정 방식
+각 mutation + `writeAudit`을 단일 `db.transaction(async (tx) => { tx.MUTATION; writeAudit({...}, tx); })`로 래핑. analyzer.ts:67-103 패턴 준용.
+
+### 검증
+- typecheck 0 error · lint 0 error(lint:hex OK)
+- full vitest 4786 passed (comparison.test.ts mock에 `transaction` 추가 — db.transaction 인터페이스 반영)
+- ci:rbac · ci:audit · ci:module-boundaries · ci:format 포함 9개 ci:* 전 PASS
+
+### 잔여 후보 (후속 PR-B/C/D 대상)
+- **app/api/ra 잔여 19곳**: classification, consult(2), conversations, deadlines(3), digest, expert-review(2), knowledge-sources(2), messages/blocks, projects(2), updates/feedback, workflows/submission-drafter, admin/documents/upload(2)
+- **app/api non-ra 8곳**: auth/change-password, auth/signup, classify/run(2), rlhf/feedback(2), admin/users, knowledge-gap/classify
+- **lib Priority Medium ~15곳**: radar/delta-sync(orchestrator 4 + ingest), knowledge-gap(detector/owning-issue 2/replay), knowledge-sources/sync(2), ai/consult, model-governance/rlhf-gate, rlhf/calibration-proposal, standards/alert-pipeline, inngest/knowledge-sources/orphan-cleanup
+- **구조적 한계**: `enqueueActionItems(db)` tx 시그니처 확장(action item audit 원자성) — 별도 패스

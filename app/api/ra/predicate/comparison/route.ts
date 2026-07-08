@@ -102,38 +102,49 @@ export const POST = withPermission('workflow.execute', async (req, _ctx, session
   // REQ-PRE-019 / REQ-PRE-024: persist the full comparison plus the selected
   // K-numbers in workflow_runs.resultJson so the session can be resumed.
   const orgId = session.user.organizationId ?? '';
-  const [created] = await db
-    .insert(workflowRuns)
-    .values({
-      userId: session.user.id,
-      organizationId: orgId,
-      workflowType: 'predicate_comparison',
-      // Comparison generation completes synchronously and needs no async review.
-      status: 'approved',
-      inputJson: {
-        subject_device_name,
-        subject_inputs,
-        selected_predicate_knumbers,
-      },
-      resultJson: {
-        ...comparison,
-        selected_predicate_knumbers,
-      },
-      reviewRequired: false,
-    })
-    .returning();
 
-  // REQ-PRE-017: audit every comparison generation.
-  await writeAudit({
-    action: 'predicate_comparison_generated',
-    actor_id: session.user.id,
-    resource_type: 'predicate_comparison',
-    resource_id: created?.id ?? 'unknown',
-    meta_json: {
-      predicate_k_numbers: selected_predicate_knumbers,
-      subject_device_name,
-    },
+  // 21 CFR Part 11 §11.10(e) — mutation + audit in same db.transaction (Issue #378)
+  const result = await db.transaction(async (tx) => {
+    const inserted = await tx
+      .insert(workflowRuns)
+      .values({
+        userId: session.user.id,
+        organizationId: orgId,
+        workflowType: 'predicate_comparison',
+        // Comparison generation completes synchronously and needs no async review.
+        status: 'approved',
+        inputJson: {
+          subject_device_name,
+          subject_inputs,
+          selected_predicate_knumbers,
+        },
+        resultJson: {
+          ...comparison,
+          selected_predicate_knumbers,
+        },
+        reviewRequired: false,
+      })
+      .returning();
+
+    // REQ-PRE-017: audit every comparison generation.
+    await writeAudit(
+      {
+        action: 'predicate_comparison_generated',
+        actor_id: session.user.id,
+        resource_type: 'predicate_comparison',
+        resource_id: inserted[0]?.id ?? 'unknown',
+        meta_json: {
+          predicate_k_numbers: selected_predicate_knumbers,
+          subject_device_name,
+        },
+      },
+      tx,
+    );
+
+    return inserted;
   });
+
+  const [created] = result;
 
   return Response.json({ workflow_run_id: created?.id, comparison });
 });

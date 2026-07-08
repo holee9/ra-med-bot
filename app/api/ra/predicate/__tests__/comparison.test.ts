@@ -89,6 +89,24 @@ vi.mock('@/lib/db/client', () => {
     limit: vi.fn(async () => [{ id: 'wfr-001', userId: 'user-001', resultJson: storedState }]),
   });
 
+  // insert/update chains are shared by `db` and the `tx` handed to
+  // db.transaction (Issue #378 — routes wrap mutation + audit in one tx).
+  // Sharing keeps insertedValues/updateSet capture working for both paths.
+  const insertMock = vi.fn(() => ({
+    values: vi.fn((v: Record<string, unknown>) => {
+      insertedValues(v);
+      return { returning: insertReturning };
+    }),
+  }));
+  const updateMock = vi.fn(() => ({
+    set: vi.fn((v: Record<string, unknown>) => {
+      updateSet(v);
+      return {
+        where: vi.fn(() => ({ returning: updateReturning })),
+      };
+    }),
+  }));
+
   return {
     __setSelectMode: (m: 'department' | 'history' | 'state') => {
       selectMode = m;
@@ -104,20 +122,11 @@ vi.mock('@/lib/db/client', () => {
         if (selectMode === 'state') return stateChain();
         return departmentChain();
       }),
-      insert: vi.fn(() => ({
-        values: vi.fn((v: Record<string, unknown>) => {
-          insertedValues(v);
-          return { returning: insertReturning };
-        }),
-      })),
-      update: vi.fn(() => ({
-        set: vi.fn((v: Record<string, unknown>) => {
-          updateSet(v);
-          return {
-            where: vi.fn(() => ({ returning: updateReturning })),
-          };
-        }),
-      })),
+      insert: insertMock,
+      update: updateMock,
+      transaction: vi.fn(async (cb: (tx: unknown) => Promise<unknown>) =>
+        cb({ insert: insertMock, update: updateMock }),
+      ),
     },
   };
 });
