@@ -20,9 +20,14 @@ vi.mock('@/lib/audit', () => ({
 // Mock drizzle db — return a controllable response for select and update queries.
 const mockSelect = vi.fn();
 const mockUpdate = vi.fn();
-const mockDb = {
+const mockDb: {
+  select: typeof mockSelect;
+  update: typeof mockUpdate;
+  transaction: (callback: (tx: typeof mockDb) => unknown) => unknown;
+} = {
   select: mockSelect,
   update: mockUpdate,
+  transaction: vi.fn((callback) => callback(mockDb)),
 };
 vi.mock('@/lib/db/client', () => ({
   db: mockDb,
@@ -95,14 +100,12 @@ describe('PATCH /api/ra/messages/:messageId/blocks/:blockId — checklist toggle
 
     expect(res.status).toBe(204);
     expect(mockWriteAudit).toHaveBeenCalledOnce();
-    expect(mockWriteAudit).toHaveBeenCalledWith(
-      expect.objectContaining({
-        action: 'checklist.toggle',
-        actor_id: 'user-uuid-001',
-        resource_type: 'message_block',
-        resource_id: 'block-uuid-001',
-      }),
-    );
+    expect(mockWriteAudit.mock.calls[0][0]).toMatchObject({
+      action: 'checklist.toggle',
+      actor_id: 'user-uuid-001',
+      resource_type: 'message_block',
+      resource_id: 'block-uuid-001',
+    });
   });
 
   it('does NOT call writeAudit when block is not found (404)', async () => {

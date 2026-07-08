@@ -79,36 +79,45 @@ export const POST = withPermission('deadline.manage', async (req, _ctx, session)
     return NextResponse.json({ error: 'not_a_member', resource_type: 'project' }, { status: 403 });
   }
 
-  const [created] = await db
-    .insert(regulatoryDeadlines)
-    .values({
-      projectId: parsed.data.projectId,
-      title: parsed.data.title,
-      deadlineType: parsed.data.deadlineType,
-      jurisdiction: parsed.data.jurisdiction,
-      dueDate: new Date(parsed.data.dueDate),
-      status: parsed.data.status,
-      reference: parsed.data.reference ?? null,
-      notes: parsed.data.notes ?? '',
-      createdBy: session.user.id,
-    })
-    .returning({ id: regulatoryDeadlines.id, createdAt: regulatoryDeadlines.createdAt });
+  const created = await db.transaction(async (tx) => {
+    const [inserted] = await tx
+      .insert(regulatoryDeadlines)
+      .values({
+        projectId: parsed.data.projectId,
+        title: parsed.data.title,
+        deadlineType: parsed.data.deadlineType,
+        jurisdiction: parsed.data.jurisdiction,
+        dueDate: new Date(parsed.data.dueDate),
+        status: parsed.data.status,
+        reference: parsed.data.reference ?? null,
+        notes: parsed.data.notes ?? '',
+        createdBy: session.user.id,
+      })
+      .returning({ id: regulatoryDeadlines.id, createdAt: regulatoryDeadlines.createdAt });
+
+    if (!inserted) return null;
+
+    await writeAudit(
+      {
+        action: 'deadline.created',
+        actor_id: session.user.id,
+        resource_type: 'deadline',
+        resource_id: inserted.id,
+        meta_json: {
+          projectId: parsed.data.projectId,
+          deadlineType: parsed.data.deadlineType,
+          jurisdiction: parsed.data.jurisdiction,
+        },
+      },
+      tx,
+    );
+
+    return inserted;
+  });
 
   if (!created) {
     return NextResponse.json({ error: 'insert_failed' }, { status: 500 });
   }
-
-  await writeAudit({
-    action: 'deadline.created',
-    actor_id: session.user.id,
-    resource_type: 'deadline',
-    resource_id: created.id,
-    meta_json: {
-      projectId: parsed.data.projectId,
-      deadlineType: parsed.data.deadlineType,
-      jurisdiction: parsed.data.jurisdiction,
-    },
-  });
 
   return NextResponse.json({ deadline: created }, { status: 201 });
 });

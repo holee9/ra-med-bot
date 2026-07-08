@@ -82,20 +82,25 @@ export const PATCH = withPermission('consult.create', async (req, ctx, session) 
   }
 
   // Update block_json
-  await db
-    .update(messageBlocks)
-    .set({ blockJson: parseResult.data })
-    .where(eq(messageBlocks.id, blockId));
+  await db.transaction(async (tx) => {
+    await tx
+      .update(messageBlocks)
+      .set({ blockJson: parseResult.data })
+      .where(eq(messageBlocks.id, blockId));
 
-  // REQ-ENTERPRISE-028: Audit the checklist toggle event.
-  // REQ-ENTERPRISE-035: writeAudit errors propagate — fail closed if audit write fails.
-  await writeAudit({
-    action: 'checklist.toggle',
-    actor_id: session.user.id,
-    resource_type: 'message_block',
-    resource_id: blockId,
-    conversation_id: blockRow.conversationId,
-    meta_json: { messageId, blockId },
+    // REQ-ENTERPRISE-028: Audit the checklist toggle event.
+    // REQ-ENTERPRISE-035: writeAudit errors propagate — fail closed if audit write fails.
+    await writeAudit(
+      {
+        action: 'checklist.toggle',
+        actor_id: session.user.id,
+        resource_type: 'message_block',
+        resource_id: blockId,
+        conversation_id: blockRow.conversationId,
+        meta_json: { messageId, blockId },
+      },
+      tx,
+    );
   });
 
   return new Response(null, { status: 204 });

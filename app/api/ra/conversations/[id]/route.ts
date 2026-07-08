@@ -38,14 +38,19 @@ export const DELETE = withPermission('conversation.delete', async (_req, ctx, se
 
   if (!row) return new Response('Not Found', { status: 404 });
 
-  await db.delete(conversations).where(eq(conversations.id, id));
-  await writeAudit({
-    action: 'conversation.delete',
-    actor_id: session.user.id,
-    resource_type: 'conversation',
-    resource_id: id,
-    conversation_id: id,
-    meta_json: {},
+  await db.transaction(async (tx) => {
+    await tx.delete(conversations).where(eq(conversations.id, id));
+    await writeAudit(
+      {
+        action: 'conversation.delete',
+        actor_id: session.user.id,
+        resource_type: 'conversation',
+        resource_id: id,
+        conversation_id: id,
+        meta_json: {},
+      },
+      tx,
+    );
   });
 
   return new Response(null, { status: 204 });
