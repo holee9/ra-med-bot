@@ -3,13 +3,9 @@
 //            Locking gate for 21 CFR Part 11 §11.70 integrity enforcement.
 // @MX:SPEC SPEC-REGULA-ESIG-001 (REQ-ESIG-003)
 
+import type { AuditDbHandle } from '@/lib/audit';
 import { answerSignatures } from '@/lib/db/schema';
-import type * as schema from '@/lib/db/schema';
-import { isNull } from 'drizzle-orm';
-import { and, eq } from 'drizzle-orm';
-import type { PostgresJsDatabase } from 'drizzle-orm/postgres-js';
-
-type DbClient = PostgresJsDatabase<typeof schema>;
+import { and, eq, isNull } from 'drizzle-orm';
 
 /**
  * Returns true when the given message has an active (non-revoked) electronic signature.
@@ -20,7 +16,7 @@ type DbClient = PostgresJsDatabase<typeof schema>;
  * @param messageId - UUID of the message (answer) to check
  * @param db - Drizzle DB client (injected for testability)
  */
-export async function isAnswerLocked(messageId: string, db: DbClient): Promise<boolean> {
+export async function isAnswerLocked(messageId: string, db: AuditDbHandle): Promise<boolean> {
   const rows = await db
     .select({ id: answerSignatures.id })
     .from(answerSignatures)

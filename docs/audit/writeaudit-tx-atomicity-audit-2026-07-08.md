@@ -389,7 +389,7 @@ PR-A/B/B-lib/C/D-1/D-2/E-①/workflows 연속. AuditDbHandle를 전사 표준 tx
 ### 구현 (13 파일 +37/-49, net 단순화)
 - **lib/audit.ts AuditDbHandle 확장**: `update` + `delete` 추가 → `{insert; select; update; delete; execute}`. (lib 도메인 함수들이 select/update/delete를 쓰므로 확장 필요. PgTransaction + db singleton 모두 호환.)
 - **`as unknown as AuditDbHandle` 6곳 제거**: rlhf-gate · calibration-proposal · consult(orgId 분기) · model-governance rollback · change-workflow ×2. withTenantScope callback(DrizzleClient) → AuditDbHandle 직접 할당. 미사용 import 정리.
-- **DbClient → AuditDbHandle 통일 (3 lib)**: action-queue · version-manager · signature/queries. `DbClient = PostgresJsDatabase<typeof schema>` 타입 정의 + PostgresJsDatabase/schema-namespace import 제거 → AuditDbHandle import로 대체. lib 함수 db/tx 파라미터 모두 AuditDbHandle.
+- **DbClient → AuditDbHandle 통일 (4 lib)**: action-queue · version-manager · signature/queries · signature/lock(isAnswerLocked). `DbClient = PostgresJsDatabase<typeof schema>` 타입 정의 + PostgresJsDatabase/schema-namespace import 제거 → AuditDbHandle import로 대체. lib 함수 db/tx 파라미터 모두 AuditDbHandle. (lock.ts는 evaluator completeness flag로 추가 — cast 없이 자체 DbClient 정의 사용하던 4번째.)
 - **`as DbClient` 4곳 제거**: analyzer.ts(enqueueActionItems) · pccp/approve(transitionPccpStatus) · signature route · revoke route. PgTransaction → AuditDbHandle 직접 할당. DbClient import 제거.
 
 ### 검증 (직검, L-007/008/009/013/015)

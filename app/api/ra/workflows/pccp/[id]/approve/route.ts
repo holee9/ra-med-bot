@@ -57,7 +57,7 @@ async function postApprove(
   }
 
   // 21 CFR Part 11 §11.10(e) — Issue #378: status UPDATE + approval audits
-  // ride ONE db.transaction. transitionPccpStatus accepts a tx (DbClient); the
+  // ride ONE db.transaction. transitionPccpStatus accepts a tx (AuditDbHandle); the
   // audit-wiring helpers forward tx to writeAudit. A failure between the
   // UPDATE and the audits can never leave an approved version un-audited.
   await db.transaction(async (tx) => {
