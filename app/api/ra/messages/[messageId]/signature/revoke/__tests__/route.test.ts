@@ -9,7 +9,10 @@ vi.mock('@/lib/auth', () => ({
   auth: vi.fn(),
 }));
 vi.mock('@/lib/db/client', () => ({
-  db: {},
+  db: {
+    // Issue #378 — route wraps revokeSignature + writeAudit in db.transaction
+    transaction: async (cb: (tx: unknown) => Promise<unknown>) => cb({}),
+  },
 }));
 vi.mock('@/lib/audit', () => ({
   writeAudit: vi.fn().mockResolvedValue(undefined),
