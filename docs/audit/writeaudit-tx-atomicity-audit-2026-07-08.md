@@ -404,3 +404,26 @@ PR-A/B/B-lib/C/D-1/D-2/E-①/workflows 연속. AuditDbHandle를 전사 표준 tx
 ### 잔여 후보 (후속 PR-E ③ 대상)
 - **PR-E ③ digest:42 통합**: generateWeeklyDigest withTenantScope(RLS tx) GUC 기반 구조적 설계 변경 — 마지막 구조적 청크.
 - (참고) #384 플래키는 PR #388로 CLOSED.
+
+## 17. PR-E-③ (#378) — digest:42 통합 (audit를 lib withTenantScope tx 내부로)
+
+PR-A/B/B-lib/C/D-1/D-2/E-①/workflows/E-② 연속. #378 마지막 구조적 청크. §10의 "digest:42 audit-only 안전" 분류를 직돀로 **정정**(L-013) → 실제 위반.
+
+### 직돀 정정 (§10 분류 오류)
+- §10은 digest:42를 "route writeAudit(digest_generated)은 audit-only 부수 기록, INSERT는 withTenantScope 원자적"으로 안전 분류.
+- **직돀**: route line 42 `digest_generated` audit는 resource_id=payload.week_id(INSERT된 digest) 기록 → INSERT와 **페어**이지만 **별도 tx**(INSERT는 lib withTenantScope 커밋 후, route는 autocommit) → **위반**. §10 "audit-only" 분류 오류.
+- 추가 발견: Inngest cron(weekly-digest.ts)은 generateWeeklyDigest 호출 후 audit **0건**(누락 — INSERT만, audit 없음).
+
+### 구현 (GUC 기반 통합, 3 파일 +36/-10)
+- **lib/digest/digest-generator.ts**: digest_generated audit를 generateWeeklyDigest 내부 withTenantScope(weeklyDigests upsert와 동일 tx)로 이동. INSERT+audit 원자적. `actorId?: string | null` param 추가(route=user, cron=system null).
+- **app/api/ra/digest/generate/route.ts**: route line 42 audit 제거(이제 lib에서). `generateWeeklyDigest(orgId, weekId, session.user.id)`로 actor 전달.
+- 효과: INSERT+audit 동일 RLS tx 원자적 + cron 경로 audit 누락 해소(system actor). digest:62(emailSentAt+digest_emailed)는 PR-B 래핑으로 이미 안전(변경 없음).
+- **테스트**: digest-generator.test.ts에 writeAudit mock 추가(구조/카운트 단위 테스트 — audit의 advisory-lock execute 경로 회피).
+
+### 검증 (직검, L-007/008/009/013/015)
+- typecheck 0 · lint 0 · full vitest **4787 passed 0 failed**(digest-generator 17/17, 회귀 0, 플래키 0)
+- ci:* 종 PASS — audit/format/rbac/module-boundaries/migrations 전 exit 0
+
+### 진척 — #378 사실상 완결
+- 본 PR로 #378 writeAudit tx 원자성 작업 **완결**: app/api/ra(PR-A/B/C) + non-ra(PR-D-1) + lib Priority Medium(PR-D-2) + 구조적(PR-E-① enqueueActionItems / E-② AuditDbHandle 전사 / E-③ digest 통합) + workflows(pccp) + impact(#366) 전 커버.
+- 잔여: 행위 테스트 보강(evaluator 권고, runImpactAnalysis action-items + pccp create/approve — 커버리지 갭, 회귀 아님).

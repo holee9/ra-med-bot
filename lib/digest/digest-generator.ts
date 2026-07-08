@@ -6,6 +6,7 @@ import crypto from 'node:crypto';
 import { generateText } from 'ai';
 import { and, desc, eq, gte, lte } from 'drizzle-orm';
 import { getLlmModel } from '../ai/llm-provider';
+import { writeAudit } from '../audit';
 import { withTenantScope } from '../db/client';
 import { orgUpdateRelevance, regulatoryUpdates, weeklyDigests } from '../db/schema';
 import { logger } from '../observability/logger';
@@ -126,7 +127,14 @@ async function generateImpactSummary(update: {
 // @MX:ANCHOR: [AUTO] generateWeeklyDigest — primary entry point for digest compilation
 // @MX:REASON: Called by API route POST /api/ra/digest/generate and Inngest cron stub
 // @MX:SPEC: SPEC-REGULA-DIGEST-001
-export async function generateWeeklyDigest(orgId: string, weekId?: string): Promise<DigestPayload> {
+export async function generateWeeklyDigest(
+  orgId: string,
+  weekId?: string,
+  // 21 CFR Part 11 §11.10(e) — Issue #378 PR-E-③: the digest_generated audit now
+  // rides the SAME withTenantScope tx as the weeklyDigests upsert (below). The
+  // route passes the session user; the Inngest cron omits it (system actor null).
+  actorId?: string | null,
+): Promise<DigestPayload> {
   const targetWeekId = weekId ?? getWeekId(new Date());
   const { start, end } = getWeekBounds(targetWeekId);
 
@@ -244,6 +252,22 @@ export async function generateWeeklyDigest(orgId: string, weekId?: string): Prom
           generatedAt: new Date(),
         },
       });
+
+    // 21 CFR Part 11 §11.10(e) — Issue #378 PR-E-③: digest_generated audit rides
+    // the SAME withTenantScope tx as the weeklyDigests upsert so a crash between
+    // them can never orphan the digest row without its audit. Moved from the
+    // route (which ran it as a separate autocommit). Auditing inside the lib also
+    // covers the Inngest cron path (previously unaudited — system actor null).
+    await writeAudit(
+      {
+        actor_id: actorId ?? null,
+        action: 'digest_generated',
+        resource_type: 'weekly_digest',
+        resource_id: targetWeekId,
+        meta_json: { orgId, updateCount: digestUpdates.length },
+      },
+      dbs,
+    );
   });
 
   // Reconstruct the payload for the return value (token may have been regenerated
