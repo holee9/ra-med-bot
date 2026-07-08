@@ -6,7 +6,6 @@
 //           so the transition is a single transaction. fan_in >= 3 (route, test, audit).
 // @MX:SPEC SPEC-REGULA-MODEL-GOVERNANCE-001 (Issue 71, REQ-MODELGOV-006, AC-03)
 
-import type { AuditDbHandle } from '@/lib/audit';
 import { withTenantScope } from '@/lib/db/client';
 import { approvedCombination } from '@/lib/db/schema';
 import { and, desc, eq } from 'drizzle-orm';
@@ -101,7 +100,7 @@ export async function rollbackCombination(params: {
       resourceId: targetId,
       fromCombinationId: current.id,
       toCombinationId: targetId,
-      tx: tx as unknown as AuditDbHandle,
+      tx,
     });
 
     return { fromId: current.id, toId: targetId };

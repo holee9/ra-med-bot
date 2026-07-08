@@ -11,7 +11,7 @@ import {
   regulatoryUpdates,
 } from '@/lib/db/schema';
 import { eq } from 'drizzle-orm';
-import { type DbClient, enqueueActionItems } from './action-queue';
+import { enqueueActionItems } from './action-queue';
 import {
   auditActionItemCreated,
   auditAssessmentCreated,
@@ -131,7 +131,7 @@ export async function analyzeImpact(req: AnalysisRequest, db: Database): Promise
           summary: result.analysis_summary,
         },
         db,
-        tx as DbClient,
+        tx,
       );
 
       // Count created action items for reporting

@@ -10,7 +10,7 @@ import { db } from '@/lib/db/client';
 import { messageBlocks } from '@/lib/db/schema';
 import { getAuthorizedSignatureMessage } from '@/lib/signature/authorization';
 import { computeAnswerHash } from '@/lib/signature/hash';
-import { type DbClient, getActiveSignature, insertSignature } from '@/lib/signature/queries';
+import { getActiveSignature, insertSignature } from '@/lib/signature/queries';
 import { asc, eq } from 'drizzle-orm';
 import { z } from 'zod';
 
@@ -97,7 +97,7 @@ export const POST = withPermission('signature.sign', async (req, ctx, session) =
         recordHash,
       },
       db,
-      tx as DbClient,
+      tx,
     );
 
     // Append-only audit entry (fail-closed)

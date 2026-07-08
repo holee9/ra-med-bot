@@ -7,7 +7,7 @@
 //           (approve route, rollback, test fixtures).
 // @MX:SPEC SPEC-REGULA-MODEL-GOVERNANCE-001 (Issue 71, REQ-MODELGOV-004/005/012/013/014)
 
-import { type AuditDbHandle, writeAudit } from '@/lib/audit';
+import { writeAudit } from '@/lib/audit';
 import { withTenantScope } from '@/lib/db/client';
 import { approvedCombination, changeRequest } from '@/lib/db/schema';
 import { and, eq } from 'drizzle-orm';
@@ -220,7 +220,7 @@ export async function approveChangeRequest(params: {
       approverId: params.approverId,
       combinationId: newCombo.id,
       evalResultRef,
-      tx: tx as unknown as AuditDbHandle,
+      tx,
     });
 
     return { combinationId: newCombo.id };
@@ -263,7 +263,7 @@ export async function recordEvalResult(params: {
       score: gate.score,
       threshold: gate.threshold,
       evalRunId: gate.evalRunId,
-      tx: tx as unknown as AuditDbHandle,
+      tx,
     });
 
     return gate;

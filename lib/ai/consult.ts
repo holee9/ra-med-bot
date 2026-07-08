@@ -14,7 +14,7 @@ import { eq } from 'drizzle-orm';
 import type { Session } from 'next-auth';
 import type { ConsultRequest } from '../../types/consult';
 import type { SourceItem, StreamEvent, TraceEvent } from '../../types/streaming';
-import { type AuditDbHandle, writeAudit } from '../audit';
+import { writeAudit } from '../audit';
 import { db, withTenantScope } from '../db/client';
 import { conversations, messageBlocks, messages } from '../db/schema';
 import { captureKnowledgeGap, detectKnowledgeGap } from '../knowledge-gap/detector';
@@ -665,7 +665,7 @@ export async function* consult(
                 confidence_score: confidenceScore,
               },
             },
-            dbs as unknown as AuditDbHandle,
+            dbs,
           );
         });
       } else {

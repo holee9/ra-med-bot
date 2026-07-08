@@ -5,7 +5,7 @@ import { db } from '@/lib/db/client';
 import { pccpComponents, pccpVersions } from '@/lib/db/schema';
 import { auditPccpExpertApproved, auditPccpStatusChanged } from '@/lib/pccp/audit-wiring';
 import { validatePccpCompleteness } from '@/lib/pccp/validator';
-import { type DbClient, transitionPccpStatus } from '@/lib/pccp/version-manager';
+import { transitionPccpStatus } from '@/lib/pccp/version-manager';
 import { eq } from 'drizzle-orm';
 
 async function postApprove(
@@ -65,7 +65,7 @@ async function postApprove(
       pccpVersionId: id,
       toStatus: 'submitted',
       actorId: session.user.id,
-      tx: tx as DbClient,
+      tx: tx,
     });
 
     await auditPccpExpertApproved({ actorId: session.user.id, pccpVersionId: id }, tx);

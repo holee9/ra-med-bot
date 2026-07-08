@@ -377,3 +377,30 @@ PR-A/B/B-lib/C/D-1/D-2/E-① 연속. #378 잔여 workflows 3종(audit-response /
 - **PR-E ② AuditDbHandle duck-typing 전사 전환**: `tx as DbClient`(action-queue + version-manager 본 2 PR) + `tx as unknown as AuditDbHandle` cast 3곳(rlhf-gate, calibration-proposal, consult) + model-governance 3곳(rollback, change-workflow ×2) 제거.
 - **PR-E ③ digest:42 통합**: generateWeeklyDigest withTenantScope GUC 기반 구조적 설계 변경.
 - **#384 frontend-shell 플래키**.
+
+## 16. PR-E-② (#378) — AuditDbHandle duck-typing 전사 전환 (cast 10곳 제거)
+
+PR-A/B/B-lib/C/D-1/D-2/E-①/workflows 연속. AuditDbHandle를 전사 표준 tx 타입으로 승격 → `tx as DbClient` 4곳 + `tx as unknown as AuditDbHandle` 6곳 = **cast 10곳 전부 제거** + 병렬 `DbClient` 타입 3개(action-queue, version-manager, signature/queries) 제거.
+
+### 직돀 핵심 (feasibility 검증)
+- AuditDbHandle 주석이 "PgTransaction provides all three (insert/select/execute) with compatible signatures, ~24 db.transaction sites compatible WITHOUT change" 명시 → cast가 **과보호적(historical)**일 가능성.
+- **실험**: rlhf-gate 1곳 cast 제거 → typecheck EXIT 0 → DrizzleClient(withTenantScope callback)가 AuditDbHandle에 **직접 할당 가능** 확정. 전사 cast 제거 착수.
+
+### 구현 (13 파일 +37/-49, net 단순화)
+- **lib/audit.ts AuditDbHandle 확장**: `update` + `delete` 추가 → `{insert; select; update; delete; execute}`. (lib 도메인 함수들이 select/update/delete를 쓰므로 확장 필요. PgTransaction + db singleton 모두 호환.)
+- **`as unknown as AuditDbHandle` 6곳 제거**: rlhf-gate · calibration-proposal · consult(orgId 분기) · model-governance rollback · change-workflow ×2. withTenantScope callback(DrizzleClient) → AuditDbHandle 직접 할당. 미사용 import 정리.
+- **DbClient → AuditDbHandle 통일 (3 lib)**: action-queue · version-manager · signature/queries. `DbClient = PostgresJsDatabase<typeof schema>` 타입 정의 + PostgresJsDatabase/schema-namespace import 제거 → AuditDbHandle import로 대체. lib 함수 db/tx 파라미터 모두 AuditDbHandle.
+- **`as DbClient` 4곳 제거**: analyzer.ts(enqueueActionItems) · pccp/approve(transitionPccpStatus) · signature route · revoke route. PgTransaction → AuditDbHandle 직접 할당. DbClient import 제거.
+
+### 검증 (직검, L-007/008/009/013/015)
+- typecheck 0(테스트 포함, 2단계 검증: Sub-step A 6 cast → EXIT 0, Sub-step B 통일 → EXIT 0) · lint 0(12 기존 warning 무관, unused import 정리 완료)
+- full vitest **4787 passed 0 failed**(플래키 0 — #384 fix 유지). 타입 전사 통일 회귀 없음.
+- ci:* 종 PASS — audit / format / rbac / module-boundaries / migrations 전 exit 0
+
+### 효과
+- cast 10곳 + 병렬 타입 3개 제거 → 단일 AuditDbHandle duck-type로 tx 전달 통일. 향후 audit-atomicity PR cast 불필요.
+- net -12 LOC(단순화). Part 11 원자성 변경 없음(타입만).
+
+### 잔여 후보 (후속 PR-E ③ 대상)
+- **PR-E ③ digest:42 통합**: generateWeeklyDigest withTenantScope(RLS tx) GUC 기반 구조적 설계 변경 — 마지막 구조적 청크.
+- (참고) #384 플래키는 PR #388로 CLOSED.
