@@ -36,16 +36,24 @@ export async function PATCH(req: Request) {
 
   const password_hash = await bcrypt.hash(parsed.data.password, 12);
 
-  await db
-    .update(users)
-    .set({ password_hash, mustChangePassword: false })
-    .where(eq(users.id, userId));
-  await writeAudit({
-    actor_id: userId,
-    action: 'profile.update',
-    resource_type: 'user',
-    resource_id: userId,
-    meta_json: { passwordChanged: true, mustChangePasswordCleared: true },
+  // 21 CFR Part 11 §11.10(e) — password update + audit ride one db.transaction
+  // so a crash between them cannot leave a changed password with no audit trail.
+  // Issue #378 PR-D-1.
+  await db.transaction(async (tx) => {
+    await tx
+      .update(users)
+      .set({ password_hash, mustChangePassword: false })
+      .where(eq(users.id, userId));
+    await writeAudit(
+      {
+        actor_id: userId,
+        action: 'profile.update',
+        resource_type: 'user',
+        resource_id: userId,
+        meta_json: { passwordChanged: true, mustChangePasswordCleared: true },
+      },
+      tx,
+    );
   });
 
   return NextResponse.json({ ok: true });

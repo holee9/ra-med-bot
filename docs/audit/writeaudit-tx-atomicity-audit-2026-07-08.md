@@ -13,7 +13,7 @@
 |---|---|---|
 | **in-tx 안전** (db.transaction 또는 withTenantScope 블록 내부 + tx 전달) | 8 | ✅ 직돀 안전 확정 |
 | **out-of-tx, audit-only** (근처 mutation 없음 — 검색/조회 후 audit) | 123 | ✅ 안전 |
-| **out-of-tx, mutation 인근** (위반 후보) | 59 | ⚠️ 직돀 검증 필요 → impact 1곳(#377) + PR-A 6곳 + PR-B 7곳 + PR-B-lib 2곳(signature) (#378) 확정 수정, 잔여 43곳 후속(digest:42 직돀 안전 분류 — 후보 제외) |
+| **out-of-tx, mutation 인근** (위반 후보) | 59 | ⚠️ 직돀 검증 필요 → impact 1곳(#377) + PR-A 6곳 + PR-B 7곳 + PR-B-lib 2곳(signature) + PR-C 10곳 + PR-D-1 5곳 (#378) 확정 수정, 잔여 24곳 후속(digest:42 + PR-D-1 rlhf/feedback 2 + knowledge-gap/classify 직돀 안전 분류 — 후보 4곳 제외) |
 | **총 writeAudit 호출처** | 190 | (테스트 제외) |
 
 ## 2. 직돀으로 안전 확정된 영역 (수정 불필요)
@@ -55,7 +55,7 @@
   - **[PR-B-lib #378 완료 — B군 signature 2곳]** messages/signature:101(insertSignature) · revoke:43(revokeSignature). lib에 `tx?: DbClient` 옵션 추가(analyzer.ts audit-wiring 패턴, `tx ?? db`) + route `db.transaction` 래핑 + `tx as DbClient` 전달. evaluator APPROVE(Func 95/Sec 100).
   - **[PR-B-lib #378 직돀 안전 분류 — digest:42]** generateWeeklyDigest는 내부 `withTenantScope`(RLS tx)로 weeklyDigests INSERT 수행 → mutation 자체 원자적 보장. route audit은 audit-only(부수 기록). withTenantScope GUC 기반 통합은 구조적 설계 변경(별도 이슈).
 - **app/api/ra/workflows/cer/route.ts:117** — 직돀 안전 확정(제외)이나 스크립트 후보에 잔류 (false-positive)
-- **app/api/{auth/change-password, auth/signup, classify/run(2), rlhf/feedback(2), admin/users, knowledge-gap/classify}** (8곳)
+- **app/api/{auth/change-password, auth/signup, classify/run(2), rlhf/feedback(2), admin/users, knowledge-gap/classify}** (8곳) — **[PR-D-1 #378 완료 — 위반 5곳 tx 래핑(change-password, signup, classify/run 2, admin/users) + 안전 3곳 분류(rlhf/feedback 2, knowledge-gap/classify — 이미 withTenantScope tx, L-013 false-positive)]**
 
 ### Priority Medium — lib 도메인
 - `lib/radar/delta-sync/orchestrator.ts` (5곳: 143,182,267,308) · `ingest.ts:134` — corpusSyncRuns 상태 업데이트 + audit
@@ -236,3 +236,39 @@ PR-A/B/B-lib 연속. app/api/ra 잔여 복합 라우트 직돀 + tx 래핑.
 - **app/api non-ra 8곳**: auth/change-password, auth/signup, classify/run(2), rlhf/feedback(2), admin/users, knowledge-gap/classify
 - **lib Priority Medium ~15곳**: radar/delta-sync(orchestrator 4 + ingest), knowledge-gap(detector / owning-issue 2 / replay), knowledge-sources/sync(2), ai/consult(4곳), model-governance/rlhf-gate, rlhf/calibration-proposal, standards/alert-pipeline, inngest/knowledge-sources/orphan-cleanup
 - **구조적(PR-E)**: enqueueActionItems tx 시그니처 + AuditDbHandle duck-typing 전사 전환
+
+## 12. PR-D-1 (#378) — app/api non-ra 8곳 직돀 + tx 래핑(위반 5) / 안전 분류(3)
+
+PR-A/B/B-lib/C 연속. app/api non-ra 8곳 직돀 → 위반 5곳 tx 래핑 + 이미 안전 3곳 분류(L-013 false-positive 포착).
+
+### tx 래핑 (analyzer.ts:67-103 패턴, 4 route / writeAudit 5곳)
+| route | mutation | audit action |
+|---|---|---|
+| auth/change-password PATCH | UPDATE users(password_hash, mustChangePassword=false) | profile.update |
+| auth/signup POST | INSERT users(status=pending) | profile.update |
+| classify/run POST 성공 | INSERT deviceClassifications + UPDATE workflowRuns(approved) | device_classified |
+| classify/run POST 실패(catch) | UPDATE workflowRuns(failed) | device_classified (meta.error) |
+| admin/users/[id] PATCH | UPDATE users(status) | profile.update |
+
+각 라우트 `db.transaction(async (tx) => { tx.MUTATION; writeAudit({...}, tx); })` 래핑. 동작 보존:
+- **signup**: INSERT returning 누락 시 tx 내 `return null` → caller 500 유지. 공개 가입 경로(actor_id=null) 의미론 보존.
+- **classify/run**: 초기 `workflow_runs(running)` INSERT는 LLM 호출 전 lifecycle 마커 → tx 외부 유지(장기 tx · fallible 엔진 호출 회피). 결과 persist(deviceClassifications INSERT + workflowRuns UPDATE) + audit만 동일 tx. catch 경로도 failed-UPDATE + failure-audit 동일 tx. 구조 테스트(route.test.ts)가 소스 텍스트 매칭이라 토큰 보존(try/catch · status:'failed' · device_classified · 502 · resource_type 'deviceClassification' ×2) → 테스트 수정 불필요, 7/7 green 확인.
+- **change-password / admin/users**: UPDATE + audit 단일 tx. 404 경로 audit 스킵 의미론(change-password는 사전 SELECT 404, admin/users는 eq(id) WHERE) 보존.
+
+### 안전 분류 (수정 없음 — L-013 직돀 false-positive 포착)
+- **rlhf/feedback/route.ts** (writeAudit:217,252): 이미 `withTenantScope(orgId, async (tx) => {...})` 블록 내부 + `writeAudit({...}, tx)` 2인자 전달. C-3 주석("insert/update + writeAudit in db.transaction")대로 upsert 경로(INSERT/UPDATE 양쪽) 구현 완료.
+- **knowledge-gap/classify/route.ts** (writeAudit:78): 이미 `withTenantScope(orgId, async (tx) => {...})` 내부 + tx 전달. SELECT + UPDATE + writeAudit 동일 tx 주석 확인.
+- (참고) knowledge-gap/replay/[queueId] — route-level writeAudit 없음(lib 경유, 주석 명시 "route-level writeAudit would duplicate").
+
+### 이슈 전제 정정 (L-013)
+- grep/AST 근사 후보 8곳 중 **3곳이 이미 tx 래핑된 false-positive** → 직돀로 포착(rlhf/feedback 2, knowledge-gap/classify 1). 스크립트는 `withTenantScope` 블록 + 2인자 `writeAudit({...}, tx)` 패턴을 놓침 → 직돀 필수(레지스트리 §5 방법론, 인수 기준 반복 확인).
+
+### 검증
+- typecheck 0 · lint 0(lint:hex OK, 변경 4파일 biome clean — 12 기존 warning 무관) · full vitest **4786 passed**(frontend-shell 플래키 1건 단독 재실행 19/19 green 확인, 무관)
+- ci:* 종 PASS — ci:audit "Audit completeness check: PASS" / rbac / module-boundaries / tokens / i18n / glossary / contrast / migrations 전 exit 0
+
+### 잔여 후보 (후속 PR-D-2/E 대상)
+- **app/api non-ra**: PR-D-1 완료 → **잔여 0곳**
+- **lib Priority Medium ~15곳(PR-D-2)**: radar/delta-sync(orchestrator 4 + ingest), knowledge-gap(detector / owning-issue 2 / replay), knowledge-sources/sync(2), ai/consult(4곳), model-governance/rlhf-gate, rlhf/calibration-proposal, standards/alert-pipeline, inngest/knowledge-sources/orphan-cleanup — B군 lib tx 옵션 확장 패턴(PR-B-lib 준용)
+- **구조적(PR-E)**: enqueueActionItems tx 시그니처 + AuditDbHandle duck-typing 전사 전환 + digest:42 withTenantScope 통합
+- workflows 잔여 3종(audit-response / indication-impact / pccp) 별도 직돀 — cer는 이미 tx 패턴

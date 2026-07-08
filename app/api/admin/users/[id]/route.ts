@@ -23,13 +23,21 @@ export const PATCH = withPermission('rbac.manage', async (req, ctx, session) => 
   const parsed = PatchSchema.safeParse(body);
   if (!parsed.success) return Response.json({ error: '잘못된 요청' }, { status: 400 });
 
-  await db.update(users).set({ status: parsed.data.status }).where(eq(users.id, id));
-  await writeAudit({
-    actor_id: session.user.id,
-    action: 'profile.update',
-    resource_type: 'user',
-    resource_id: id,
-    meta_json: { status: parsed.data.status, admin: true },
+  // 21 CFR Part 11 §11.10(e) — status update + audit ride one db.transaction so
+  // a crash between them cannot leave a changed status with no audit trail.
+  // Issue #378 PR-D-1.
+  await db.transaction(async (tx) => {
+    await tx.update(users).set({ status: parsed.data.status }).where(eq(users.id, id));
+    await writeAudit(
+      {
+        actor_id: session.user.id,
+        action: 'profile.update',
+        resource_type: 'user',
+        resource_id: id,
+        meta_json: { status: parsed.data.status, admin: true },
+      },
+      tx,
+    );
   });
 
   return Response.json({ ok: true });

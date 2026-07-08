@@ -35,22 +35,32 @@ export async function POST(req: Request) {
   const password_hash = await bcrypt.hash(password, 12);
   // @MX:ANCHOR Deferred role assignment — users created without role until admin approval
   // @MX:REASON OWASP A01:2021 — prevents privilege escalation via self-signup
-  const [created] = await db
-    .insert(users)
-    .values({ name, email, password_hash, status: 'pending' })
-    .returning({ id: users.id });
+  // 21 CFR Part 11 §11.10(e) — user INSERT + audit ride one db.transaction so a
+  // crash between them cannot leave a signup row with no audit trail. The
+  // public-signup path carries actor_id=null (no session yet). Issue #378 PR-D-1.
+  const created = await db.transaction(async (tx) => {
+    const inserted = await tx
+      .insert(users)
+      .values({ name, email, password_hash, status: 'pending' })
+      .returning({ id: users.id });
+    const row = inserted[0];
+    if (!row) return null;
+    await writeAudit(
+      {
+        actor_id: null,
+        action: 'profile.update',
+        resource_type: 'user',
+        resource_id: row.id,
+        meta_json: { status: 'pending', source: 'signup' },
+      },
+      tx,
+    );
+    return row;
+  });
 
   if (!created) {
     return NextResponse.json({ error: '회원가입 처리에 실패했습니다' }, { status: 500 });
   }
-
-  await writeAudit({
-    actor_id: null,
-    action: 'profile.update',
-    resource_type: 'user',
-    resource_id: created.id,
-    meta_json: { status: 'pending', source: 'signup' },
-  });
 
   return NextResponse.json({ ok: true }, { status: 201 });
 }
