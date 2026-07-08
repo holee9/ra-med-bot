@@ -37,15 +37,10 @@ export const POST = withPermission('dashboard.view', async (req, _ctx, session) 
     );
   }
 
-  const payload = await generateWeeklyDigest(orgId, parsed.data.weekId);
-
-  await writeAudit({
-    actor_id: session.user.id,
-    action: 'digest_generated',
-    resource_type: 'weekly_digest',
-    resource_id: payload.week_id,
-    meta_json: { orgId, updateCount: payload.update_count },
-  });
+  // 21 CFR Part 11 §11.10(e) — Issue #378 PR-E-③: digest_generated audit now
+  // rides generateWeeklyDigest's internal withTenantScope tx (INSERT + audit
+  // atomic). Pass the session user as the audit actor.
+  const payload = await generateWeeklyDigest(orgId, parsed.data.weekId, session.user.id);
 
   if (parsed.data.sendEmail) {
     const prefs = await db

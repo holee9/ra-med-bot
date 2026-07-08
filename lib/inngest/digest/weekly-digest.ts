@@ -27,7 +27,11 @@ export async function processDigestPreference({
   sendDigestEmail,
   weekId,
 }: {
-  generateWeeklyDigest: (orgId: string, weekId?: string) => Promise<DigestPayload>;
+  generateWeeklyDigest: (
+    orgId: string,
+    weekId?: string,
+    actorId?: string | null,
+  ) => Promise<DigestPayload>;
   logger: DigestLogger;
   pref: DigestPreference;
   sendDigestEmail: (
@@ -38,6 +42,10 @@ export async function processDigestPreference({
   weekId?: string;
 }): Promise<1> {
   try {
+    // Issue #378 PR-E-③: generateWeeklyDigest writes digest_generated inside its
+    // withTenantScope tx. The cron omits actorId → the audit records actor_id: null
+    // (system actor). Prior to PR-E-③ the cron path wrote NO digest audit (gap);
+    // automated digest generation is now auditable per 21 CFR Part 11 §11.10(e).
     const payload = await generateWeeklyDigest(pref.orgId, weekId);
     if (pref.recipientEmails.length > 0) {
       const sent = await sendDigestEmail(pref.orgId, payload, pref.recipientEmails);

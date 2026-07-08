@@ -43,6 +43,15 @@ vi.mock('../../../lib/db/client', () => ({
   ),
 }));
 
+// Issue #378 PR-E-③: generateWeeklyDigest now writes digest_generated inside its
+// withTenantScope tx. Mock writeAudit so this structure/counts unit test doesn't
+// hit the real advisory-lock execute path — writeAudit internals (lock, hash chain)
+// are covered by lib/audit + audit-chain tests; the digest route contract is
+// covered by tests/unit/api/digest-route.test.ts.
+vi.mock('../../../lib/audit', () => ({
+  writeAudit: vi.fn().mockResolvedValue(undefined),
+}));
+
 vi.mock('@anthropic-ai/sdk', () => ({
   default: vi.fn().mockImplementation(() => ({
     messages: {
