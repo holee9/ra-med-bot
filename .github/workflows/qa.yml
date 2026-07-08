@@ -1,0 +1,162 @@
+# @MX:NOTE [AUTO] QA Gate Report — informational (non-required) PR workflow.
+# @MX:SPEC SPEC-REGULA-QA-{IMPLEMENTATION-CHECKPOINT,PR-ACCEPTANCE,WAVE-INTEGRATION,DOMAIN-UAT,OPERATIONS}-001
+# @MX:TODO gate-2/3/4/5 real-data wiring (axe/gitleaks aggregation, post-RC E2E/UAT, server health + synthetic queries) — tracked in #375.
+#
+# Gate 1~5 are executed on every PR as an INFORMATIONAL report only.
+# They are NOT required status checks — do NOT add this job to branch protection.
+# Rationale (L-013): gate-2/3/4/5 are pre-RC stubs or caller-supplied-data
+# libraries in the current codebase; making them required would publish
+# meaningless always-PASS gates (static/self-report blind spot). Real-data
+# wiring is deferred to #375. Gate 1 re-runs typecheck/lint/test (overlaps the
+# `CI Gates` job in ci.yml) — accepted because it formats a consolidated
+# checkpoint report and runs in parallel with ci.yml, bounding wallclock impact.
+
+name: QA Gates
+
+on:
+  pull_request:
+    branches: [main]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  qa-report:
+    name: QA Gate Report (informational)
+    runs-on: ubuntu-latest
+    env:
+      CI: 'true'
+      SKIP_ENV_VALIDATION: '1'
+      # Placeholder env satisfies lib/env.ts Zod validation so gate-1 `pnpm test`
+      # (mock-based unit tests) can run; the DB URL is unreachable but unused by unit tests.
+      DATABASE_URL: 'postgresql://postgres:postgres@localhost:5432/regula_ci'
+      AUTH_SECRET: 'ci-qa-gate-placeholder-secret-minimum-32-characters'
+      NEXTAUTH_URL: 'http://localhost:3000'
+      AUTH_MICROSOFT_ID: 'ci-placeholder-microsoft-id'
+      AUTH_MICROSOFT_SECRET: 'ci-placeholder-microsoft-secret'
+      AUTH_GOOGLE_ID: 'ci-placeholder-google-id'
+      AUTH_GOOGLE_SECRET: 'ci-placeholder-google-secret'
+      PR_TITLE: ${{ github.event.pull_request.title }}
+      PR_NUMBER: ${{ github.event.pull_request.number }}
+      PR_SHA: ${{ github.event.pull_request.head.sha }}
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: pnpm/action-setup@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: 'pnpm'
+
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+
+      - name: Gate 1 — Implementation Checkpoint
+        continue-on-error: true
+        run: |
+          {
+            echo '## Gate 1 — Implementation Checkpoint'
+            echo ''
+            echo 'Runs typecheck / lint / test / audit-completeness / rbac-coverage (overlaps `CI Gates`).'
+            echo 'Note: `qa:gate-1` in package.json points at the issue-checklist variant; this gate uses'
+            echo 'the implementation-checkpoint variant at `scripts/qa/gate-1-checkpoint.ts` (`--change-desc`).'
+            echo ''
+            pnpm tsx scripts/qa/gate-1-checkpoint.ts --change-desc "${PR_TITLE:-manual-run}" 2>&1 || true
+          } > /tmp/gate1.md
+
+      - name: Gate 2 — PR Acceptance (template stub)
+        continue-on-error: true
+        run: |
+          {
+            echo '## Gate 2 — PR Acceptance'
+            echo ''
+            echo '> Stub: emits a template signoff. axe/gitleaks aggregation not wired (#375).'
+            echo ''
+            pnpm tsx scripts/qa/gate-2-pr-acceptance.ts \
+              --pr-number "${PR_NUMBER:-0}" \
+              --commit "${PR_SHA:-unknown}" 2>&1 || true
+          } > /tmp/gate2.md
+
+      - name: Gate 3 — Wave Integration (pre-RC stub)
+        continue-on-error: true
+        run: |
+          {
+            echo '## Gate 3 — Wave Integration'
+            echo ''
+            echo '> Pre-RC stub (`scripts/qa/gate-3-wave-integration.ts`): documents 4 canonical RA persona'
+            echo '> journeys (GJ-001..GJ-004). Activates post-RC as automated Playwright suites (#375).'
+            echo ''
+            echo '| Journey | Persona |'
+            echo '|--------|---------|'
+            echo '| GJ-001 | RA Lead (SOP upload → query → citation → audit) |'
+            echo '| GJ-002 | Expert Reviewer (recommendation → approve → PCCP → audit) |'
+            echo '| GJ-003 | New Team Member (RBAC 403 + denial audit) |'
+            echo '| GJ-004 | CER Author (draft → literature search → export PDF) |'
+          } > /tmp/gate3.md
+
+      - name: Gate 4 — Domain UAT (pre-RC stub)
+        continue-on-error: true
+        run: |
+          {
+            echo '## Gate 4 — Domain UAT'
+            echo ''
+            echo '> Pre-RC stub (`scripts/qa/gate-4-domain-uat.ts`): requires ≥3 RA domain experts +'
+            echo '> post-RC build. Mandatory thresholds: citation accuracy ≥95% (50-sample), source'
+            echo '> license reviewed, expert consensus ≥2/3 accept (#375).'
+            echo ''
+            echo 'Scenario script and signoff document generators are exported as library functions'
+            echo '(`getUatScenarioScript`, `generateUatSignoffDocument`, `checkUatCitationAccuracy`).'
+          } > /tmp/gate4.md
+
+      - name: Gate 5 — Ops Readiness (pre-RC stub)
+        continue-on-error: true
+        run: |
+          {
+            echo '## Gate 5 — Ops Readiness'
+            echo ''
+            echo '> Pre-RC stub (`scripts/qa/gate-5-ops-readiness.ts`): CLI prints guidance only.'
+            echo '> Requires running-server health checks + synthetic query results supplied by the'
+            echo '> caller (`generateOpsReadinessReport()`). Ops harness implementation deferred (#375).'
+            echo ''
+            pnpm tsx scripts/qa/gate-5-ops-readiness.ts 2>&1 || true
+          } > /tmp/gate5.md
+
+      - name: Publish QA Gate Report
+        if: always()
+        run: |
+          {
+            echo '# QA Gate Report'
+            echo ''
+            echo '**Informational only — not a required check.** Gate 2~5 are pre-RC stubs;'
+            echo 'real-data wiring is tracked in #375. See job logs for full gate output.'
+            echo ''
+            cat /tmp/gate1.md 2>/dev/null || echo '_gate-1 produced no output_'
+            echo ''
+            echo '---'
+            echo ''
+            cat /tmp/gate2.md 2>/dev/null || echo '_gate-2 produced no output_'
+            echo ''
+            echo '---'
+            echo ''
+            cat /tmp/gate3.md 2>/dev/null || echo '_gate-3 produced no output_'
+            echo ''
+            echo '---'
+            echo ''
+            cat /tmp/gate4.md 2>/dev/null || echo '_gate-4 produced no output_'
+            echo ''
+            echo '---'
+            echo ''
+            cat /tmp/gate5.md 2>/dev/null || echo '_gate-5 produced no output_'
+          } > /tmp/qa-gate-report.md
+          cat /tmp/qa-gate-report.md >> "$GITHUB_STEP_SUMMARY"
+
+      - name: Upload QA Gate Report
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: qa-gate-report
+          path: /tmp/qa-gate-report.md
+          retention-days: 14
