@@ -29,16 +29,21 @@ export const DELETE = withPermission('knowledgesources.manage', async (_req, ctx
     // IDOR guard: ensure source belongs to org
     await assertKnowledgeSourceInOrg(id, orgId);
 
-    // Delete knowledge source
-    await db.delete(knowledgeSources).where(eq(knowledgeSources.id, id));
+    // 21 CFR Part 11 §11.10(e) — Issue #378: DELETE + audit ride the same
+    // db.transaction so a failure between them rolls back both.
+    await db.transaction(async (tx) => {
+      await tx.delete(knowledgeSources).where(eq(knowledgeSources.id, id));
 
-    // Write audit log
-    await writeAudit({
-      actor_id: userId,
-      action: 'knowledge_source.deleted',
-      resource_type: 'knowledgeSource',
-      resource_id: id,
-      meta_json: {},
+      await writeAudit(
+        {
+          actor_id: userId,
+          action: 'knowledge_source.deleted',
+          resource_type: 'knowledgeSource',
+          resource_id: id,
+          meta_json: {},
+        },
+        tx,
+      );
     });
 
     return Response.json({ success: true });

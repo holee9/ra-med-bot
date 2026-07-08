@@ -63,6 +63,11 @@ const mockDb = {
   insert: vi.fn(() => mockInsertChain),
   select: vi.fn(() => makeSelectChain(selectResults.shift() ?? [])),
   update: vi.fn(() => mockUpdateChain),
+  // Issue #378: route wraps INSERT/UPDATE + audit in db.transaction; tx reuses
+  // the same insert/update chains so assertions still hold.
+  transaction: vi.fn(async (cb: (tx: unknown) => Promise<unknown>) =>
+    cb({ insert: vi.fn(() => mockInsertChain), update: vi.fn(() => mockUpdateChain) }),
+  ),
 };
 
 vi.mock('@/lib/db/client', () => ({ db: mockDb }));
@@ -183,6 +188,7 @@ describe('POST /api/ra/expert-review — create', () => {
         resource_type: 'message',
         resource_id: 'msg-001',
       }),
+      expect.anything(),
     );
   });
 });

@@ -34,32 +34,39 @@ async function postSubmissionDrafter(request: Request, session: AuthSession): Pr
   // @MX:SPEC SPEC-REGULA-RELEASE-HARDENING-001 (REQ-HARDEN-028)
   const isMock = true; // Beta scaffold: all steps are mock implementations
 
-  await db
-    .insert(workflowRuns)
-    .values({
-      id: runId,
-      userId: session.user.id,
-      organizationId,
-      projectId: data.project_id,
-      workflowType: 'submission_drafter',
-      status: 'queued',
-      inputJson: data,
-      resultJson: null,
-      stepProgress: null,
-      reviewRequired: true,
-    })
-    .returning();
+  // 21 CFR Part 11 §11.10(e) — Issue #378: INSERT + audit ride the same
+  // db.transaction so a failure between them rolls back both.
+  await db.transaction(async (tx) => {
+    await tx
+      .insert(workflowRuns)
+      .values({
+        id: runId,
+        userId: session.user.id,
+        organizationId,
+        projectId: data.project_id,
+        workflowType: 'submission_drafter',
+        status: 'queued',
+        inputJson: data,
+        resultJson: null,
+        stepProgress: null,
+        reviewRequired: true,
+      })
+      .returning();
 
-  await writeAudit({
-    actor_id: session.user.id,
-    action: 'workflow.start',
-    resource_type: 'workflow',
-    resource_id: runId,
-    meta_json: {
-      workflowType: 'submission_drafter',
-      mock_data: isMock,
-      workflow_run_id: runId,
-    },
+    await writeAudit(
+      {
+        actor_id: session.user.id,
+        action: 'workflow.start',
+        resource_type: 'workflow',
+        resource_id: runId,
+        meta_json: {
+          workflowType: 'submission_drafter',
+          mock_data: isMock,
+          workflow_run_id: runId,
+        },
+      },
+      tx,
+    );
   });
 
   return Response.json(

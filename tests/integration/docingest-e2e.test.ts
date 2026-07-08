@@ -153,11 +153,14 @@ describe('Document Ingestion E2E (REQ-QUAL-015..019)', () => {
     expect(body.sectionCount).toBeGreaterThanOrEqual(1);
 
     expect(embedChunksMock).toHaveBeenCalledOnce();
+    // Issue #378: writeAudit now receives the tx handle as its 2nd arg.
     expect(writeAuditMock).toHaveBeenCalledWith(
       expect.objectContaining({ action: 'document.upload' }),
+      expect.anything(),
     );
     expect(writeAuditMock).toHaveBeenCalledWith(
       expect.objectContaining({ action: 'document.chunk' }),
+      expect.anything(),
     );
   });
 

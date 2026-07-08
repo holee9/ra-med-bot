@@ -196,3 +196,43 @@ generateWeeklyDigest(lib/digest/digest-generator.ts)는 내부 `withTenantScope`
 - **app/api/ra 잔여 12곳**: consult(2) · expert-review(2) · knowledge-sources(2) · projects(2) · updates/feedback · workflows/submission-drafter · admin/documents/upload(2)
 - **app/api non-ra 8곳 + lib Priority Medium ~15곳**
 - **구조적**: enqueueActionItems tx 시그니처 + digest:42 withTenantScope 통합 + AuditDbHandle 전사 전환
+
+---
+
+## 11. PR-C (#378) — app/api/ra 복합 9 route / writeAudit 10곳 tx 래핑
+
+PR-A/B/B-lib 연속. app/api/ra 잔여 복합 라우트 직돀 + tx 래핑.
+
+### tx 래핑 (analyzer.ts:67-103 패턴, 9 route)
+| route | mutation | audit action |
+|---|---|---|
+| expert-review POST | INSERT expertReviews | expert_review.flag |
+| expert-review/[id] PATCH | UPDATE expertReviews | expert_review.assign / resolve |
+| knowledge-sources POST | INSERT knowledgeSources | knowledge_source.created |
+| knowledge-sources/[id] DELETE | DELETE knowledgeSources | knowledge_source.deleted |
+| projects POST | INSERT projects | project.create |
+| projects/[id] PATCH | UPDATE projects | project.update |
+| workflows/submission-drafter POST | INSERT workflowRuns | workflow.start |
+| updates/[id]/feedback POST | UPSERT orgUpdateRelevance | message.feedback |
+| admin/documents/upload POST | sourceSections INSERT + document.upload/chunk audit → 동일 tx 통합 | document.upload, document.chunk |
+
+각 라우트 `db.transaction(async (tx) => { tx.MUTATION; writeAudit({...}, tx); })` 래핑. 동작 보존(return null + caller 500/404, throw 회귀 없음). admin upload는 setPendingReviewOnIngest(별도 best-effort 경계, 에러 swallow)를 atomic persist+audit 이후로 정리.
+
+### 안전 분류 (수정 없음)
+- **consult/route.ts** (writeAudit:206,227): `audit-check-ignore` 주석 + E2E_TEST_MODE 전용. lib/ai/consult.ts(llm.call:274 / source.access:371 / expert_review.flag auto:604 / consult.expert_review_auto_flag:658)의 audit 원자성은 PR-D/E(lib 도메인)로 이월.
+- **admin upload :86** (corpus.ingestion_blocked): audit-only 거부 audit (mutation 없음).
+
+### 이슈 전제 정정 (L-013)
+- "admin/documents/upload(2)" → 실제 경로 `app/api/ra/admin/documents/upload/route.ts` (app/api/admin 아님)
+- workflows 나머지(audit-response / cer / indication-impact / pccp)는 PR-C 범위 밖 — cer는 이미 tx 패턴 직검 확인, 나머지 3종은 별도 직돀 필요(후속)
+
+### 검증
+- typecheck 0 · lint 0(lint:hex OK) · full vitest **4786 passed**(회귀 0, frontend-shell 플래키 1건 무관)
+- ci:* 9종 PASS(audit / rbac / format / migrations / tokens / i18n / glossary / contrast / module-boundaries)
+- 테스트 4종 db.transaction mock + writeAudit 2인자 단언 보정(expert-review 2종 / submission-drafter / docingest)
+
+### 잔여 후보 (후속 PR-D/E 대상)
+- **app/api/ra**: consult route 안전 분류 완료 → **잔여 0곳**(lib/ai/consult.ts audit 원자성은 lib 도메인)
+- **app/api non-ra 8곳**: auth/change-password, auth/signup, classify/run(2), rlhf/feedback(2), admin/users, knowledge-gap/classify
+- **lib Priority Medium ~15곳**: radar/delta-sync(orchestrator 4 + ingest), knowledge-gap(detector / owning-issue 2 / replay), knowledge-sources/sync(2), ai/consult(4곳), model-governance/rlhf-gate, rlhf/calibration-proposal, standards/alert-pipeline, inngest/knowledge-sources/orphan-cleanup
+- **구조적(PR-E)**: enqueueActionItems tx 시그니처 + AuditDbHandle duck-typing 전사 전환

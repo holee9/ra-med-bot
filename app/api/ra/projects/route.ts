@@ -55,26 +55,36 @@ export const POST = withPermission('project.create', async (req, _ctx, session) 
     return Response.json({ error: 'No organization context' }, { status: 400 });
   }
 
-  const [created] = await db
-    .insert(projects)
-    .values({
-      organizationId: orgId,
-      name: parsed.data.name,
-      deviceClass: parsed.data.deviceClass ?? null,
-      targetMarkets: parsed.data.targetMarkets ?? [],
-      color: parsed.data.color ?? null,
-      submissionDate: parsed.data.submissionDate ?? null,
-    })
-    .returning();
-  if (created) {
-    await writeAudit({
-      action: 'project.create',
-      actor_id: session.user.id,
-      resource_type: 'project',
-      resource_id: created.id,
-      meta_json: { organizationId: orgId },
-    });
-  }
+  // 21 CFR Part 11 §11.10(e) — Issue #378: INSERT + audit ride the same
+  // db.transaction so a failure between them rolls back both.
+  const created = await db.transaction(async (tx) => {
+    const [row] = await tx
+      .insert(projects)
+      .values({
+        organizationId: orgId,
+        name: parsed.data.name,
+        deviceClass: parsed.data.deviceClass ?? null,
+        targetMarkets: parsed.data.targetMarkets ?? [],
+        color: parsed.data.color ?? null,
+        submissionDate: parsed.data.submissionDate ?? null,
+      })
+      .returning();
+
+    if (!row) return null;
+
+    await writeAudit(
+      {
+        action: 'project.create',
+        actor_id: session.user.id,
+        resource_type: 'project',
+        resource_id: row.id,
+        meta_json: { organizationId: orgId },
+      },
+      tx,
+    );
+
+    return row;
+  });
 
   return Response.json({ project: created }, { status: 201 });
 });
