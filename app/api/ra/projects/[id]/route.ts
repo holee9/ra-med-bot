@@ -62,25 +62,35 @@ export const PATCH = withPermission('project.manage', async (req, ctx, session) 
 
   if (!existing) return new Response('Not Found', { status: 404 });
 
-  const [updated] = await db
-    .update(projects)
-    .set({
-      ...(parsed.data.name !== undefined && { name: parsed.data.name }),
-      ...(parsed.data.deviceClass !== undefined && { deviceClass: parsed.data.deviceClass }),
-      ...(parsed.data.color !== undefined && { color: parsed.data.color }),
-      ...(parsed.data.status !== undefined && { status: parsed.data.status }),
-      ...(parsed.data.submissionDate !== undefined && {
-        submissionDate: parsed.data.submissionDate,
-      }),
-    })
-    .where(eq(projects.id, id))
-    .returning();
-  await writeAudit({
-    action: 'project.update',
-    actor_id: session.user.id,
-    resource_type: 'project',
-    resource_id: id,
-    meta_json: { fields: Object.keys(parsed.data).sort() },
+  // 21 CFR Part 11 §11.10(e) — Issue #378: UPDATE + audit ride the same
+  // db.transaction so a failure between them rolls back both.
+  const updated = await db.transaction(async (tx) => {
+    const [row] = await tx
+      .update(projects)
+      .set({
+        ...(parsed.data.name !== undefined && { name: parsed.data.name }),
+        ...(parsed.data.deviceClass !== undefined && { deviceClass: parsed.data.deviceClass }),
+        ...(parsed.data.color !== undefined && { color: parsed.data.color }),
+        ...(parsed.data.status !== undefined && { status: parsed.data.status }),
+        ...(parsed.data.submissionDate !== undefined && {
+          submissionDate: parsed.data.submissionDate,
+        }),
+      })
+      .where(eq(projects.id, id))
+      .returning();
+
+    await writeAudit(
+      {
+        action: 'project.update',
+        actor_id: session.user.id,
+        resource_type: 'project',
+        resource_id: id,
+        meta_json: { fields: Object.keys(parsed.data).sort() },
+      },
+      tx,
+    );
+
+    return row;
   });
 
   return Response.json({ project: updated });

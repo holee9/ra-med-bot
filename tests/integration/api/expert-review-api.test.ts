@@ -63,6 +63,11 @@ vi.mock('@/lib/db/client', () => ({
     insert: vi.fn(() => mockInsertChain),
     select: vi.fn(() => mockSelectChain),
     update: vi.fn(() => mockUpdateChain),
+    // Issue #378: route wraps INSERT/UPDATE + audit in db.transaction; the tx
+    // callback reuses the same mock chains so returning assertions still hold.
+    transaction: vi.fn(async (cb: (tx: unknown) => Promise<unknown>) =>
+      cb({ insert: vi.fn(() => mockInsertChain), update: vi.fn(() => mockUpdateChain) }),
+    ),
   },
 }));
 

@@ -117,18 +117,27 @@ export const PATCH = async (req: Request, ctx: IdCtx): Promise<Response> => {
 
   // Guard with the appropriate permission
   const guarded = withPermission(requiredAction, async (_req2, _ctx2, session) => {
-    const [updated] = await db
-      .update(expertReviews)
-      .set(updateValues)
-      .where(eq(expertReviews.id, id))
-      .returning();
+    // 21 CFR Part 11 §11.10(e) — Issue #378: UPDATE + audit ride the same
+    // db.transaction so a failure between them rolls back both.
+    const updated = await db.transaction(async (tx) => {
+      const [row] = await tx
+        .update(expertReviews)
+        .set(updateValues)
+        .where(eq(expertReviews.id, id))
+        .returning();
 
-    await writeAudit({
-      action: auditAction,
-      actor_id: session.user.id,
-      resource_type: 'expert_review',
-      resource_id: id,
-      meta_json: { from: currentStatus, to: targetStatus },
+      await writeAudit(
+        {
+          action: auditAction,
+          actor_id: session.user.id,
+          resource_type: 'expert_review',
+          resource_id: id,
+          meta_json: { from: currentStatus, to: targetStatus },
+        },
+        tx,
+      );
+
+      return row;
     });
 
     return Response.json(updated);

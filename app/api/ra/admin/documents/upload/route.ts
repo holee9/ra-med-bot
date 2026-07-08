@@ -190,6 +190,12 @@ export const POST = withPermission('sources.ingest', async (req, _ctx, session) 
   //    rows — SPEC REQ-003 requires a licensed source to exist before ingest.
   //    The title override (if any) updates the existing source row.
   // ---------------------------------------------------------------------
+  // 21 CFR Part 11 §11.10(e) — Issue #378: source_sections INSERT + the two
+  // upload audit rows ride the SAME db.transaction so a failure between them
+  // rolls back both. setPendingReviewOnIngest stays on a separate best-effort
+  // boundary (governance write may be unavailable; RLS isolates) — run AFTER
+  // the atomic persist+audit so its try/catch swallow cannot mask an audit
+  // failure.
   const result: UploadSuccess = await db.transaction(async (tx) => {
     // Attach sections to the pre-registered source (no new sources row).
     const sectionRows = chunks.map((c, idx) => ({
@@ -201,6 +207,37 @@ export const POST = withPermission('sources.ingest', async (req, _ctx, session) 
     }));
 
     await tx.insert(sourceSections).values(sectionRows);
+
+    await writeAudit(
+      {
+        action: 'document.upload',
+        actor_id: session.user.id,
+        resource_type: 'source',
+        resource_id: existingSourceId,
+        meta_json: {
+          docClass,
+          mimeType,
+          sizeBytes: file.size,
+          sectionCount: sectionRows.length,
+          filenameExt: file.name.includes('.')
+            ? (file.name.split('.').pop()?.slice(0, 32) ?? null)
+            : null,
+          filenameLength: file.name.length,
+        },
+      },
+      tx,
+    );
+
+    await writeAudit(
+      {
+        action: 'document.chunk',
+        actor_id: session.user.id,
+        resource_type: 'source',
+        resource_id: existingSourceId,
+        meta_json: { sectionCount: sectionRows.length, docClass },
+      },
+      tx,
+    );
 
     return { sourceId: existingSourceId, sectionCount: sectionRows.length };
   });
@@ -220,35 +257,6 @@ export const POST = withPermission('sources.ingest', async (req, _ctx, session) 
   } catch {
     // Governance write unavailable — license gate still passed; RLS isolates.
   }
-
-  // ---------------------------------------------------------------------
-  // 6. Audit. Failures here propagate (lib/audit.ts contract — never
-  //    swallow the audit write).
-  // ---------------------------------------------------------------------
-  await writeAudit({
-    action: 'document.upload',
-    actor_id: session.user.id,
-    resource_type: 'source',
-    resource_id: result.sourceId,
-    meta_json: {
-      docClass,
-      mimeType,
-      sizeBytes: file.size,
-      sectionCount: result.sectionCount,
-      filenameExt: file.name.includes('.')
-        ? (file.name.split('.').pop()?.slice(0, 32) ?? null)
-        : null,
-      filenameLength: file.name.length,
-    },
-  });
-
-  await writeAudit({
-    action: 'document.chunk',
-    actor_id: session.user.id,
-    resource_type: 'source',
-    resource_id: result.sourceId,
-    meta_json: { sectionCount: result.sectionCount, docClass },
-  });
 
   return Response.json(result, { status: 201 });
 });

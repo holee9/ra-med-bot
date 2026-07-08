@@ -41,6 +41,11 @@ vi.mock('@/lib/auth/with-permission', () => ({
 vi.mock('@/lib/db/client', () => ({
   db: {
     insert: dbMocks.insert,
+    // Issue #378: route wraps INSERT + audit in db.transaction; tx reuses the
+    // same insert chain so the values assertion still holds.
+    transaction: vi.fn(async (cb: (tx: { insert: typeof dbMocks.insert }) => Promise<unknown>) =>
+      cb({ insert: dbMocks.insert }),
+    ),
     query: {
       workflowRuns: {
         findFirst: dbMocks.findFirst,

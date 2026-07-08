@@ -34,31 +34,42 @@ export const POST = withPermission('expertReview.create', async (req, _ctx, sess
 
   const { conversationId, messageId, reason } = parsed.data;
 
-  const [record] = await db
-    .insert(expertReviews)
-    .values({
-      conversationId,
-      messageId,
-      requestedBy: session.user.id,
-      status: 'pending',
-      notes: reason,
-    })
-    .onConflictDoNothing()
-    .returning();
+  // 21 CFR Part 11 §11.10(e) — Issue #378: INSERT + audit ride the same
+  // db.transaction so a failure between them rolls back both.
+  const record = await db.transaction(async (tx) => {
+    const [row] = await tx
+      .insert(expertReviews)
+      .values({
+        conversationId,
+        messageId,
+        requestedBy: session.user.id,
+        status: 'pending',
+        notes: reason,
+      })
+      .onConflictDoNothing()
+      .returning();
+
+    if (!row) return null; // already existed — skip audit
+
+    await writeAudit(
+      {
+        action: 'expert_review.flag',
+        actor_id: session.user.id,
+        resource_type: 'message',
+        resource_id: messageId,
+        meta_json: { reason, trigger: 'manual' },
+      },
+      tx,
+    );
+
+    return row;
+  });
 
   // If conflict (duplicate), return 201 without re-writing audit
   if (!record) {
     // Idempotent — return empty body with 201
     return Response.json({ message: 'already_exists' }, { status: 201 });
   }
-
-  await writeAudit({
-    action: 'expert_review.flag',
-    actor_id: session.user.id,
-    resource_type: 'message',
-    resource_id: messageId,
-    meta_json: { reason, trigger: 'manual' },
-  });
 
   return Response.json(record, { status: 201 });
 });

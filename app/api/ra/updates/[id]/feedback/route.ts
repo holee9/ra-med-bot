@@ -32,33 +32,40 @@ export const POST = withPermission('dashboard.view', async (req, ctx, session) =
     return Response.json({ error: 'No organization context' }, { status: 403 });
   }
 
-  // Upsert feedback into org_update_relevance
-  const existing = await db
-    .select({ id: orgUpdateRelevance.id })
-    .from(orgUpdateRelevance)
-    .where(and(eq(orgUpdateRelevance.orgId, orgId), eq(orgUpdateRelevance.updateId, id)))
-    .limit(1);
+  // 21 CFR Part 11 §11.10(e) — Issue #378: upsert + audit ride the same
+  // db.transaction so a failure between them rolls back both.
+  await db.transaction(async (tx) => {
+    // Upsert feedback into org_update_relevance
+    const existing = await tx
+      .select({ id: orgUpdateRelevance.id })
+      .from(orgUpdateRelevance)
+      .where(and(eq(orgUpdateRelevance.orgId, orgId), eq(orgUpdateRelevance.updateId, id)))
+      .limit(1);
 
-  if (existing.length > 0) {
-    await db
-      .update(orgUpdateRelevance)
-      .set({ feedback: parsed.data.feedback })
-      .where(and(eq(orgUpdateRelevance.orgId, orgId), eq(orgUpdateRelevance.updateId, id)));
-  } else {
-    await db.insert(orgUpdateRelevance).values({
-      orgId,
-      updateId: id,
-      impactScore: '0',
-      feedback: parsed.data.feedback,
-    });
-  }
+    if (existing.length > 0) {
+      await tx
+        .update(orgUpdateRelevance)
+        .set({ feedback: parsed.data.feedback })
+        .where(and(eq(orgUpdateRelevance.orgId, orgId), eq(orgUpdateRelevance.updateId, id)));
+    } else {
+      await tx.insert(orgUpdateRelevance).values({
+        orgId,
+        updateId: id,
+        impactScore: '0',
+        feedback: parsed.data.feedback,
+      });
+    }
 
-  await writeAudit({
-    actor_id: session.user.id,
-    action: 'message.feedback',
-    resource_type: 'regulatory_update',
-    resource_id: id,
-    meta_json: { feedbackType: parsed.data.feedback },
+    await writeAudit(
+      {
+        actor_id: session.user.id,
+        action: 'message.feedback',
+        resource_type: 'regulatory_update',
+        resource_id: id,
+        meta_json: { feedbackType: parsed.data.feedback },
+      },
+      tx,
+    );
   });
 
   return Response.json({ ok: true });

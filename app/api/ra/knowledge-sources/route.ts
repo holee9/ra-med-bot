@@ -45,40 +45,50 @@ export const POST = withPermission('knowledgesources.manage', async (req, _ctx, 
       return Response.json({ error: 'invalid_git_url' }, { status: 400 });
     }
 
-    // Create knowledge source — syncStatus 'idle' (migration CHECK: idle/syncing/synced/failed)
-    const [source] = await db
-      .insert(knowledgeSources)
-      .values({
-        organizationId: orgId,
-        createdBy: userId,
-        gitUrl: git_url,
-        branch: branch || 'main',
-        sourceHost: parsed.host,
-        sourceOwner: parsed.owner,
-        sourceRepo: parsed.repo,
-        authTokenEncrypted: auth_token || null,
-        syncStatus: 'idle',
-      })
-      .returning();
+    // 21 CFR Part 11 §11.10(e) — Issue #378: INSERT + audit ride the same
+    // db.transaction so a failure between them rolls back both.
+    const source = await db.transaction(async (tx) => {
+      // Create knowledge source — syncStatus 'idle' (migration CHECK: idle/syncing/synced/failed)
+      const [row] = await tx
+        .insert(knowledgeSources)
+        .values({
+          organizationId: orgId,
+          createdBy: userId,
+          gitUrl: git_url,
+          branch: branch || 'main',
+          sourceHost: parsed.host,
+          sourceOwner: parsed.owner,
+          sourceRepo: parsed.repo,
+          authTokenEncrypted: auth_token || null,
+          syncStatus: 'idle',
+        })
+        .returning();
+
+      if (!row) return null;
+
+      await writeAudit(
+        {
+          actor_id: userId,
+          action: 'knowledge_source.created',
+          resource_type: 'knowledgeSource',
+          resource_id: row.id,
+          meta_json: {
+            git_url,
+            branch: branch || 'main',
+            host: parsed.host,
+            owner: parsed.owner,
+            repo: parsed.repo,
+          },
+        },
+        tx,
+      );
+
+      return row;
+    });
 
     if (!source) {
       return Response.json({ error: 'failed_to_create_source' }, { status: 500 });
     }
-
-    // Write audit log
-    await writeAudit({
-      actor_id: userId,
-      action: 'knowledge_source.created',
-      resource_type: 'knowledgeSource',
-      resource_id: source.id,
-      meta_json: {
-        git_url,
-        branch: branch || 'main',
-        host: parsed.host,
-        owner: parsed.owner,
-        repo: parsed.repo,
-      },
-    });
 
     return Response.json({ source }, { status: 201 });
   } catch (error) {
