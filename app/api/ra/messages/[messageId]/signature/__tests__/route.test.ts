@@ -16,7 +16,11 @@ vi.mock('@/lib/auth', () => ({
 const mockSelect = vi.fn();
 vi.mock('@/lib/db/client', () => ({
   get db() {
-    return { select: mockSelect };
+    return {
+      select: mockSelect,
+      // Issue #378 — route wraps insertSignature + writeAudit in db.transaction
+      transaction: async (cb: (tx: unknown) => Promise<unknown>) => cb({}),
+    };
   },
 }));
 vi.mock('@/lib/audit', () => ({

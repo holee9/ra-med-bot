@@ -10,7 +10,7 @@ import { db } from '@/lib/db/client';
 import { messageBlocks } from '@/lib/db/schema';
 import { getAuthorizedSignatureMessage } from '@/lib/signature/authorization';
 import { computeAnswerHash } from '@/lib/signature/hash';
-import { getActiveSignature, insertSignature } from '@/lib/signature/queries';
+import { type DbClient, getActiveSignature, insertSignature } from '@/lib/signature/queries';
 import { asc, eq } from 'drizzle-orm';
 import { z } from 'zod';
 
@@ -85,25 +85,34 @@ export const POST = withPermission('signature.sign', async (req, ctx, session) =
   // Insert signature — signerName from session email/id as display identifier
   const signerName =
     (session.user as { name?: string }).name ?? session.user.email ?? session.user.id;
-  const signature = await insertSignature(
-    {
-      messageId,
-      signerId: session.user.id,
-      signerName,
-      signerTitle: signerTitle ?? null,
-      meaning,
-      recordHash,
-    },
-    db,
-  );
+  // 21 CFR Part 11 §11.10(e) — signature INSERT + audit in same db.transaction (Issue #378)
+  const signature = await db.transaction(async (tx) => {
+    const sig = await insertSignature(
+      {
+        messageId,
+        signerId: session.user.id,
+        signerName,
+        signerTitle: signerTitle ?? null,
+        meaning,
+        recordHash,
+      },
+      db,
+      tx as DbClient,
+    );
 
-  // Append-only audit entry (fail-closed)
-  await writeAudit({
-    action: 'signature.applied',
-    actor_id: session.user.id,
-    resource_type: 'signature',
-    resource_id: signature.id,
-    meta_json: { messageId, hash: recordHash, meaning },
+    // Append-only audit entry (fail-closed)
+    await writeAudit(
+      {
+        action: 'signature.applied',
+        actor_id: session.user.id,
+        resource_type: 'signature',
+        resource_id: sig.id,
+        meta_json: { messageId, hash: recordHash, meaning },
+      },
+      tx,
+    );
+
+    return sig;
   });
 
   return Response.json(signature, { status: 201 });

@@ -6,7 +6,7 @@ import type * as schema from '@/lib/db/schema';
 import { and, eq, isNull } from 'drizzle-orm';
 import type { PostgresJsDatabase } from 'drizzle-orm/postgres-js';
 
-type DbClient = PostgresJsDatabase<typeof schema>;
+export type DbClient = PostgresJsDatabase<typeof schema>;
 
 export interface SignatureRow {
   id: string;
@@ -51,8 +51,13 @@ export async function getActiveSignature(
 export async function insertSignature(
   data: InsertSignatureData,
   db: DbClient,
+  // 21 CFR Part 11 §11.10(e) — optional caller tx so the signature INSERT can
+  // ride the same transaction as the route's writeAudit (Issue #378).
+  // Omit to keep the historical autocommit behavior (backward compatible).
+  tx?: DbClient,
 ): Promise<SignatureRow> {
-  const rows = await db
+  const q = tx ?? db;
+  const rows = await q
     .insert(answerSignatures)
     .values({
       messageId: data.messageId,
@@ -75,8 +80,12 @@ export async function revokeSignature(
   signatureId: string,
   revokedBy: string,
   db: DbClient,
+  // 21 CFR Part 11 §11.10(e) — optional caller tx so the revoke UPDATE can
+  // ride the same transaction as the route's writeAudit (Issue #378).
+  tx?: DbClient,
 ): Promise<SignatureRow> {
-  const rows = await db
+  const q = tx ?? db;
+  const rows = await q
     .update(answerSignatures)
     .set({ revokedAt: new Date(), revokedBy })
     .where(eq(answerSignatures.id, signatureId))

@@ -13,7 +13,7 @@
 |---|---|---|
 | **in-tx 안전** (db.transaction 또는 withTenantScope 블록 내부 + tx 전달) | 8 | ✅ 직돀 안전 확정 |
 | **out-of-tx, audit-only** (근처 mutation 없음 — 검색/조회 후 audit) | 123 | ✅ 안전 |
-| **out-of-tx, mutation 인근** (위반 후보) | 59 | ⚠️ 직돀 검증 필요 → impact 1곳(#377) + PR-A 6곳 + PR-B 7곳(#378) 확정 수정, 잔여 45곳 후속 |
+| **out-of-tx, mutation 인근** (위반 후보) | 59 | ⚠️ 직돀 검증 필요 → impact 1곳(#377) + PR-A 6곳 + PR-B 7곳 + PR-B-lib 2곳(signature) (#378) 확정 수정, 잔여 43곳 후속(digest:42 직돀 안전 분류 — 후보 제외) |
 | **총 writeAudit 호출처** | 190 | (테스트 제외) |
 
 ## 2. 직돀으로 안전 확정된 영역 (수정 불필요)
@@ -52,6 +52,8 @@
   - **[PR-A #378 완료 — 6곳 직독 위반 확정 + tx 래핑]** notifications(preferences) · profile · personal/bookmarks(POST + DELETE) · predicate/comparison(POST + [id]/approve). 모두 autocommit mutation + 자체 tx audit 패턴 → `db.transaction(async (tx) => { mutation + writeAudit({...}, tx) })` 래핑. analyzer.ts:67 패턴 준용.
   - **[PR-B #378 완료 — A군 7곳 route 직접 mutation]** classification · conversations(DELETE) · deadlines(3: POST/PATCH/DELETE) · digest/generate:62(이메일 발송 후 update) · messages/blocks(checklist toggle). tx 래핑. evaluator APPROVE 96/100, fix 불필요.
   - **[PR-B #378 B군 — lib 경유 3곳, 후속 서브 PR]** digest/generate:42(generateWeeklyDigest, withTenantScope 기반) · messages/signature:101(insertSignature) · messages/signature/revoke:43(revokeSignature). lib가 tx 파라미터 미지원 → lib tx 옵션 확장 필요(analyzer.ts audit-wiring 패턴).
+  - **[PR-B-lib #378 완료 — B군 signature 2곳]** messages/signature:101(insertSignature) · revoke:43(revokeSignature). lib에 `tx?: DbClient` 옵션 추가(analyzer.ts audit-wiring 패턴, `tx ?? db`) + route `db.transaction` 래핑 + `tx as DbClient` 전달. evaluator APPROVE(Func 95/Sec 100).
+  - **[PR-B-lib #378 직돀 안전 분류 — digest:42]** generateWeeklyDigest는 내부 `withTenantScope`(RLS tx)로 weeklyDigests INSERT 수행 → mutation 자체 원자적 보장. route audit은 audit-only(부수 기록). withTenantScope GUC 기반 통합은 구조적 설계 변경(별도 이슈).
 - **app/api/ra/workflows/cer/route.ts:117** — 직돀 안전 확정(제외)이나 스크립트 후보에 잔류 (false-positive)
 - **app/api/{auth/change-password, auth/signup, classify/run(2), rlhf/feedback(2), admin/users, knowledge-gap/classify}** (8곳)
 
@@ -165,3 +167,32 @@ PR-A에 이어 회귀 최소 A군 7곳 직돀 → 위반 확정 → tx 래핑. l
 - **lib 경유 B군 3곳**: digest:42 · signature:101 · signature/revoke:43
 - **app/api non-ra 8곳 + lib Priority Medium ~15곳**
 - **구조적**: enqueueActionItems tx 시그니처 확장
+
+---
+
+## 10. PR-B-lib (#378) — B군 signature 2곳 lib tx 옵션 확장
+
+B군 lib 경유 3곳 중 signature 2곳 처리 + digest:42 직돀 안전 분류.
+
+### signature 2곳 — lib tx 옵션 확장 (analyzer.ts audit-wiring 패턴)
+| 파일 | lib 함수 | 수정 |
+|---|---|---|
+| lib/signature/queries.ts | insertSignature / revokeSignature | `tx?: DbClient` 옵션 추가, `const q = tx ?? db; q.insert/update`. DbClient export. 기존 호출자 호환(tx optional). |
+| messages/.../signature/route.ts | POST | db.transaction 래핑, tx as DbClient 전달, writeAudit tx |
+| messages/.../signature/revoke/route.ts | POST | 동일 |
+
+호출처: route 2곳(수정본) 유일 → lib 시그니처 변경 영향 0.
+
+### digest:42 — 직돀 안전 분류 (수정 없음)
+generateWeeklyDigest(lib/digest/digest-generator.ts)는 내부 `withTenantScope`(orgId, RLS tx)로 weeklyDigests INSERT 수행. mutation 자체 원자적(RLS 보장). route writeAudit(digest_generated)은 audit-only 부수 기록. withTenantScope GUC 기반 → route tx 통합은 구조적 설계 변경(별도 이슈).
+
+### 검증
+- typecheck 0 · lint 0(lint:hex OK) · ci:* 9종 PASS
+- full vitest 4786 passed(회귀 0, frontend-shell 플래키 1건 무관)
+- evaluator APPROVE(Func 95/Sec 100/Craft 85/Cons 95). §11.10(e) 원자성 100.
+- [MEDIUM nice-to-have] `tx as DbClient` 타입 단언 → AuditDbHandle duck-typing 전사 전환은 별도 리팩터(PR-E 구조적).
+
+### 잔여 후보
+- **app/api/ra 잔여 12곳**: consult(2) · expert-review(2) · knowledge-sources(2) · projects(2) · updates/feedback · workflows/submission-drafter · admin/documents/upload(2)
+- **app/api non-ra 8곳 + lib Priority Medium ~15곳**
+- **구조적**: enqueueActionItems tx 시그니처 + digest:42 withTenantScope 통합 + AuditDbHandle 전사 전환

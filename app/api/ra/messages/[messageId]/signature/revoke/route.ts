@@ -9,7 +9,7 @@ import { writeAudit } from '@/lib/audit';
 import { withPermission } from '@/lib/auth/with-permission';
 import { db } from '@/lib/db/client';
 import { getAuthorizedSignatureMessage } from '@/lib/signature/authorization';
-import { getActiveSignature, revokeSignature } from '@/lib/signature/queries';
+import { type DbClient, getActiveSignature, revokeSignature } from '@/lib/signature/queries';
 
 type RouteCtx = { params: Promise<{ messageId: string }> };
 
@@ -36,16 +36,23 @@ export const POST = withPermission('signature.sign', async (_req, ctx, session) 
     return Response.json({ error: 'no_active_signature' }, { status: 404 });
   }
 
-  // Soft-delete: set revokedAt + revokedBy
-  const revoked = await revokeSignature(existing.id, session.user.id, db);
+  // 21 CFR Part 11 §11.10(e) — revoke UPDATE + audit in same db.transaction (Issue #378)
+  const revoked = await db.transaction(async (tx) => {
+    const rev = await revokeSignature(existing.id, session.user.id, db, tx as DbClient);
 
-  // Append-only audit entry (REQ-ESIG-007)
-  await writeAudit({
-    action: 'signature.revoked',
-    actor_id: session.user.id,
-    resource_type: 'signature',
-    resource_id: existing.id,
-    meta_json: { messageId, originalSignerId: existing.signerId },
+    // Append-only audit entry (REQ-ESIG-007)
+    await writeAudit(
+      {
+        action: 'signature.revoked',
+        actor_id: session.user.id,
+        resource_type: 'signature',
+        resource_id: existing.id,
+        meta_json: { messageId, originalSignerId: existing.signerId },
+      },
+      tx,
+    );
+
+    return rev;
   });
 
   return Response.json(revoked, { status: 200 });
