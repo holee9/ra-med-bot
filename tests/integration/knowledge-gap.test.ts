@@ -115,7 +115,8 @@ vi.mock('@/lib/db/client', () => {
     return promise;
   };
 
-  const client = {
+  // biome-ignore lint/suspicious/noExplicitAny: transaction callback references the mock; `any` breaks the self-referential type cycle (cf. knowledge-sources.test.ts).
+  const client: any = {
     insert(_table: unknown) {
       return {
         values(rows: Partial<QueueRow> | Partial<QueueRow>[]) {
@@ -169,6 +170,12 @@ vi.mock('@/lib/db/client', () => {
     },
     select(_fields?: unknown) {
       return selectChain();
+    },
+    // Issue #378 — captureKnowledgeGap / markGapResolved now wrap mutation+audit
+    // in db.transaction. Thread the same client as `tx` so the insert/update
+    // chains (which mutate the in-memory queueStore) cover both.
+    async transaction<T>(cb: (tx: typeof client) => Promise<T>): Promise<T> {
+      return cb(client);
     },
   };
   return {

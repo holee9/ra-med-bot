@@ -413,8 +413,9 @@ const owningMocks = vi.hoisted(() => ({
   createComment: vi.fn(),
 }));
 
-vi.mock('@/lib/db/client', () => ({
-  db: {
+vi.mock('@/lib/db/client', () => {
+  // biome-ignore lint/suspicious/noExplicitAny: transaction callback references the mock; `any` breaks the self-referential type cycle (cf. knowledge-sources.test.ts).
+  const db: any = {
     select: vi.fn(() => ({
       from: vi.fn(() => ({
         where: vi.fn(() => ({
@@ -428,8 +429,13 @@ vi.mock('@/lib/db/client', () => ({
         return { where: vi.fn(async () => undefined) };
       }),
     })),
-  },
-}));
+    // Issue #378 — createOwningIssue success path now wraps UPDATE+audit in
+    // db.transaction. Thread the same db as `tx` so the update chain mock covers
+    // both the outer db and inner tx.
+    transaction: vi.fn(async (cb: (tx: unknown) => Promise<unknown>) => cb(db)),
+  };
+  return { db };
+});
 
 describe('owning-issue.createOwningIssue — idempotency + retry + audit', () => {
   const baseCtx = {
@@ -489,6 +495,7 @@ describe('owning-issue.createOwningIssue — idempotency + retry + audit', () =>
     });
     expect(auditMock.writeAudit).toHaveBeenCalledWith(
       expect.objectContaining({ action: 'owning_issue_created' }),
+      expect.anything(),
     );
   });
 

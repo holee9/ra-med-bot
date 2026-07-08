@@ -65,7 +65,8 @@ const makeUpdateChain = (): UpdateChain => {
   return chain;
 };
 
-const dbMock = {
+// biome-ignore lint/suspicious/noExplicitAny: transaction callback references the mock; `any` breaks the self-referential type cycle (cf. knowledge-sources.test.ts).
+const dbMock: any = {
   insert: vi.fn((table: { name?: string }) => ({
     values: vi.fn((values: Row | Row[]) => {
       insertCalls.push({ table: table?.name ?? 'unknown', values });
@@ -81,7 +82,9 @@ const dbMock = {
     return makeSelectChain(rows);
   }),
   update: vi.fn(() => makeUpdateChain()),
-  transaction: vi.fn(async (fn: (tx: unknown) => Promise<unknown>) => fn({})),
+  // Issue #378 — markGapResolved now wraps UPDATE+audit in db.transaction.
+  // Thread the same dbMock (which carries the update/insert chains) as `tx`.
+  transaction: vi.fn(async (fn: (tx: unknown) => Promise<unknown>) => fn(dbMock)),
 };
 
 vi.mock('@/lib/db/client', () => ({ db: dbMock }));

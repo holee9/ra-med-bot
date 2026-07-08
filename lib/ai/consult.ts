@@ -14,7 +14,7 @@ import { eq } from 'drizzle-orm';
 import type { Session } from 'next-auth';
 import type { ConsultRequest } from '../../types/consult';
 import type { SourceItem, StreamEvent, TraceEvent } from '../../types/streaming';
-import { writeAudit } from '../audit';
+import { type AuditDbHandle, writeAudit } from '../audit';
 import { db, withTenantScope } from '../db/client';
 import { conversations, messageBlocks, messages } from '../db/schema';
 import { captureKnowledgeGap, detectKnowledgeGap } from '../knowledge-gap/detector';
@@ -642,30 +642,54 @@ export async function* consult(
         requestedBy: '00000000-0000-0000-0000-000000000001', // SYSTEM_USER_UUID
       });
 
-      // REQ-ENTERPRISE-010: mark message as requiring expert review
-      const markExpertReview = (client: typeof db) =>
-        client
-          .update(messages)
-          .set({ expertReviewRequired: true })
-          .where(eq(messages.id, messageId));
+      // REQ-ENTERPRISE-010: mark message as requiring expert review.
+      // 21 CFR Part 11 §11.10(e) — Issue #378: the mark UPDATE and the auto-flag
+      // audit ride the SAME transaction (withTenantScope is itself a tx; the
+      // no-org fallback opens its own db.transaction) so the flag can never be
+      // set without its audit row — and vice versa.
       if (orgId) {
-        await withTenantScope(orgId, (dbs) => markExpertReview(dbs));
+        await withTenantScope(orgId, async (dbs) => {
+          await dbs
+            .update(messages)
+            .set({ expertReviewRequired: true })
+            .where(eq(messages.id, messageId));
+          await writeAudit(
+            {
+              actor_id: '00000000-0000-0000-0000-000000000001',
+              action: 'consult.expert_review_auto_flag',
+              resource_type: 'message',
+              resource_id: messageId,
+              conversation_id: conversationId,
+              meta_json: {
+                reason,
+                confidence_score: confidenceScore,
+              },
+            },
+            dbs as unknown as AuditDbHandle,
+          );
+        });
       } else {
-        await markExpertReview(db);
+        await db.transaction(async (tx) => {
+          await tx
+            .update(messages)
+            .set({ expertReviewRequired: true })
+            .where(eq(messages.id, messageId));
+          await writeAudit(
+            {
+              actor_id: '00000000-0000-0000-0000-000000000001',
+              action: 'consult.expert_review_auto_flag',
+              resource_type: 'message',
+              resource_id: messageId,
+              conversation_id: conversationId,
+              meta_json: {
+                reason,
+                confidence_score: confidenceScore,
+              },
+            },
+            tx,
+          );
+        });
       }
-
-      // REQ-ENTERPRISE-010: audit the auto-flag event
-      await writeAudit({
-        actor_id: '00000000-0000-0000-0000-000000000001',
-        action: 'consult.expert_review_auto_flag',
-        resource_type: 'message',
-        resource_id: messageId,
-        conversation_id: conversationId,
-        meta_json: {
-          reason,
-          confidence_score: confidenceScore,
-        },
-      });
     }
   }
 
