@@ -344,3 +344,36 @@ PR-A/B/B-lib/C/D-1/D-2 연속. #366/§3 구조적 한계로 미뤘던 impact act
 - **PR-E ③ digest:42 통합**: generateWeeklyDigest withTenantScope(RLS tx) GUC 기반 구조적 설계 변경.
 - workflows 잔여 3종(audit-response / indication-impact / pccp) 별도 직돀.
 - **#384 frontend-shell 플래키**.
+
+## 15. workflows 3종 직돀 (#378) — pccp 위반 2곳 tx 래핑 / audit-only 5곳 분류
+
+PR-A/B/B-lib/C/D-1/D-2/E-① 연속. #378 잔여 workflows 3종(audit-response / indication-impact / pccp) 라우트 직돀. cer는 이미 tx 패턴(§11 확인), submission-drafter는 PR-C 완료 → 제외.
+
+### 직돀 결과 — 위반 2곳 (pccp만, 나머지 audit-only dispatcher)
+- **SAFE 5곳(수정 없음)**:
+  - audit-response/route.ts · indication-impact/route.ts — **audit-only**(writeAudit workflow.start, DB mutation 자체 없음 — runId는 crypto.randomUUID, workflow_runs INSERT 없음). 원자성 우려 성립 안 함.
+  - audit-response/[runId]/status · indication-impact/[runId]/status — writeAudit/mutation 0.
+  - pccp/[id]/export/route.ts — **audit-only**(workflow.download 2건, DB mutation 없음 — 파일 생성은 in-memory).
+  - cer/route.ts — 이미 `db.transaction`(line 90, §11 레지스트리 확인).
+- **위반 2곳**:
+  - pccp/route.ts(create) — INSERT pccpVersions + auditPccpCreated 별도 autocommit.
+  - pccp/[id]/approve/route.ts — transitionPccpStatus(UPDATE via lib, global db) + auditPccpExpertApproved + auditPccpStatusChanged 별도 autocommit.
+
+### 구현 (PR-B-lib + impact audit-wiring 패턴, 4 파일 +131/-71)
+- **lib/pccp/audit-wiring.ts**: auditPccpCreated / auditPccpExpertApproved / auditPccpStatusChanged에 `tx?: AuditDbHandle` 추가 + writeAudit forward(impact audit-wiring 패턴). AuditDbHandle import.
+- **lib/pccp/version-manager.ts**: `DbClient = PostgresJsDatabase<typeof schema>` 추가, transitionPccpStatus에 `tx?: DbClient` 옵션 + `q = tx ?? db`(SELECT 검증 + UPDATE 모두 q 사용). 단일 호출처(approve)만 영향.
+- **pccp/route.ts**: INSERT + auditPccpCreated를 `db.transaction(async (tx) => { tx.insert; auditPccpCreated({...}, tx) })` 래핑. `if (!row) return null` → 500 보존.
+- **pccp/[id]/approve/route.ts**: transitionPccpStatus + 2 audit를 `db.transaction` 래핑. `transitionPccpStatus({..., tx: tx as DbClient})` + `auditPccpExpertApproved({...}, tx)` + `auditPccpStatusChanged({...}, tx)`.
+- 동작 보존: transitionPccpStatus의 SELECT 검증(isValidTransition)은 tx 내에서 동일 동작. 404/409/422 사전 검증 라우트는 tx 외부 유지.
+
+### 검증 (직검, L-007/008/009/013/015)
+- typecheck 0(테스트 포함) · lint 0(biome organizeImports 정상) · full vitest **4785 passed**
+- 2 플래키(frontend-shell #384 + useConversations REQ-BREADTH) — **전부 단독 green**(useConversations 7/7), pccp 무관 도메인. pccp-migrations 7/7(영향 0).
+- ci:* 종 PASS — audit / format / rbac / module-boundaries / migrations 전 exit 0
+- 테스트 mock 보정 0파일: pccp 라우트 전용 단위 테스트 부재(pccp-migrations는 enum 카운트만). 행위 테스트 갭은 기존 상태.
+
+### 잔여 후보 (후속 PR-E ②③ 대상)
+- **workflows 3종**: 본 PR 완료 → **잔여 0곳**(pccp 위반 2곳 해소, 나머지 audit-only).
+- **PR-E ② AuditDbHandle duck-typing 전사 전환**: `tx as DbClient`(action-queue + version-manager 본 2 PR) + `tx as unknown as AuditDbHandle` cast 3곳(rlhf-gate, calibration-proposal, consult) + model-governance 3곳(rollback, change-workflow ×2) 제거.
+- **PR-E ③ digest:42 통합**: generateWeeklyDigest withTenantScope GUC 기반 구조적 설계 변경.
+- **#384 frontend-shell 플래키**.

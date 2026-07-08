@@ -4,8 +4,16 @@
 
 import { db } from '@/lib/db/client';
 import { pccpVersions } from '@/lib/db/schema';
+import type * as schema from '@/lib/db/schema';
 import { and, eq } from 'drizzle-orm';
+import type { PostgresJsDatabase } from 'drizzle-orm/postgres-js';
 import type { PccpStatus } from './types';
+
+// Issue #378 PR-E: transitionPccpStatus accepts an optional caller tx so the
+// status UPDATE can ride the same transaction as the approval audits.
+// PgTransaction ≠ Database `$client` — the narrower PostgresJsDatabase shape
+// satisfies both. Caller passes `tx: tx as DbClient` (PR-B-lib pattern).
+export type DbClient = PostgresJsDatabase<typeof schema>;
 
 const VALID_TRANSITIONS: Record<PccpStatus, PccpStatus[]> = {
   draft: ['submitted'],
@@ -26,8 +34,12 @@ export async function transitionPccpStatus(params: {
   pccpVersionId: string;
   toStatus: PccpStatus;
   actorId: string;
+  // 21 CFR Part 11 §11.10(e) — Issue #378 PR-E: optional caller tx so the
+  // status UPDATE rides the same transaction as the approval audits.
+  tx?: DbClient;
 }): Promise<void> {
-  const [current] = await db
+  const q = params.tx ?? db;
+  const [current] = await q
     .select({ status: pccpVersions.status })
     .from(pccpVersions)
     .where(eq(pccpVersions.id, params.pccpVersionId))
@@ -42,7 +54,7 @@ export async function transitionPccpStatus(params: {
     throw new Error(`Invalid PCCP status transition: ${fromStatus} → ${params.toStatus}`);
   }
 
-  await db
+  await q
     .update(pccpVersions)
     .set({
       status: params.toStatus,
