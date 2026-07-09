@@ -1,7 +1,7 @@
 ---
 id: SPEC-REGULA-REALDB-001
-version: 1.1.0
-status: draft
+version: 1.2.0
+status: completed
 phase: test-quality
 priority: Medium
 created: 2026-07-09
@@ -25,6 +25,7 @@ labels:
 |---------|------|--------|---------|
 | 1.0.0 | 2026-07-09 | MoAI | 초기 작성. 5건 전환 + coverage 게이트. |
 | 1.1.0 | 2026-07-09 | MoAI | plan-auditor review-1 FAIL 대응. D1: suite 산술 정정(12→9, 2파일 이미 workflow 등록). D2: knowledge-gap-replay-real을 full conversion으로 재분류(부분 real-db 아님 — 100% mock, "-real"은 real consult pipeline 의미). D3: model-governance DB section placeholder 공개. D4: docingest-e2e를 scope에서 제외(self-declared (A)-class contract test — schema drift는 migrations-real-db.test.ts가 이미 커버). D5: research.md §3 mock 매트릭스 실측 재생성. D6: fixture API를 REQ에서 §4로 이동. D7: test-count baseline을 M0 측정으로 이월. D8: pre-listed 파일 risk 추가. 전환 5건 → 4건. |
+| 1.2.0 | 2026-07-09 | MoAI (run) | Run phase 완료. R1-R4 전환 + R5 CI suite + C1-C3 coverage 게이트 구현. M0 baseline 측정: 4784 tests / **coverage 62%** (85% 아님 → ratchet floor 60/70 + 85% follow-up). R4는 model-governance.test.ts top-level db mock로 인해 신규 `model-governance-real-db.test.ts`로 real-DB round-trip 추가 (기존 두 파일은 모두 mock). status: draft → completed (AC-01~06 실증 달성). post-state CI suite = 10 (7 + rlhf-reranking-flow/rlhf-calibration/model-governance-real-db). |
 
 ## §1 Purpose
 
