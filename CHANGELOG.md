@@ -11,6 +11,17 @@
 
 > Placeholder for post-1.0.0 development.
 
+### SPEC-REGULA-REALDB-001 — (B)클래스 real-db 전환 4건 + Coverage ratchet 게이트 (#395)
+
+- **배경** — #364(PR #394) foundation(cer-persist 패턴) 기반 잔여. data/schema-dependent mock-db 통합 테스트를 real-db로 전환하여 L-013 안전망 확장. plan-auditor annotation cycle 거침(v1.1.0: D1-D8 정정, docingest-e2e (A)-class 제외).
+- **전환 4건 (cer-persist 패턴)** — `rlhf-reranking-flow`(8/8)·`rlhf-calibration`(7/7, real tx 원자성 + IDOR org-scoped join)·`knowledge-gap-replay-real`(5/5, real consult replay + queue UPDATE)를 mock→real-db로, `model-governance`는 top-level db mock로 인해 신규 `model-governance-real-db.test.ts`(2/2, prompt_registry→change_request FK chain round-trip)로 real-DB 커버리지 추가 (기존 두 model-gov 파일은 모두 mock). model-governance.test.ts 허위 placeholder(expect true) 제거.
+- **CI suite (R5)** — `migrations-real-db.yml`에 3건 추가 → post-state 10 suite (매 PR fresh pgvector real-db 실행).
+- **Coverage 게이트 (C1-C3)** — `vitest.config.ts` thresholds 60/70 ratchet floor (M0 baseline 62%/73.5% 측정 → 85% 아님, ratchet 전략). `package.json ci:coverage` 스크립트 + `ci.yml` CI Gates에 Coverage gate step (threshold 위반 시 머지 블록). 85% 도달 follow-up 이슈화.
+- **AC-01~06 실증**: 4 real-db 전환 PASS + CI 10 suite + full test 4763 passed/0 failed (회귀 0, 21 real-db case skip) + ci:coverage exit 0 (60.84/73.95 ≥ 60/70).
+- **게이트 직검**: typecheck 0 · ci:lint/format/audit/rbac/module-boundaries/migrations 전 0 · full `pnpm test` 0 failed.
+
+
+
 ### SPEC-REGULA-MIGRATION-001 — from-scratch migration apply drift 정정 + CI 영구 regression gate (#396)
 
 - **배경** — `migrations/*.sql`이 fresh pgvector 컨테이너에 from-scratch 적용 시 11개 drift point로 깨짐. real-db integration suite 7개가 main CI gate(`ci:test` postgres service 없음)에서 SKIPPED → drift가 green CI 뒤에 누적 (L-013 구조적 맹점).

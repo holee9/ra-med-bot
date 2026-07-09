@@ -152,27 +152,6 @@ describe('SPEC-REGULA-MODEL-GOVERNANCE-001 — runtime guard (AC-06, REQ-008)', 
 // These run against the test DB. Skipped when DATABASE_URL is absent so CI
 // without a Postgres instance still runs the pure-function suite above.
 
-const DB_AVAILABLE = Boolean(process.env.DATABASE_URL);
-
-describe.skipIf(!DB_AVAILABLE)(
-  'SPEC-REGULA-MODEL-GOVERNANCE-001 — DB lifecycle (AC-02/03/05/07, IDOR, single-active)',
-  () => {
-    // These tests exercise the full tx + audit + RLS path. They follow the
-    // clinical-investigation integration test conventions. Implementation
-    // mirrors the clinical-investigation integration test but is intentionally
-    // lighter — the heavy lifting is in the pure-function suite above.
-    //
-    // AC-02 (eval-not-passed blocks production): approveChangeRequest throws
-    //     ChangeRequestBlockedError when eval_status !== 'passed'.
-    // AC-03 (rollback): rollbackCombination re-activates the previous combo.
-    // AC-05 (RLHF pending_review): submitRlhfProposal stores pending_review.
-    // AC-07 (approval audit): audit row carries approver_id + eval_result_ref.
-    it('AC-02 placeholder — DB lifecycle tests require migration 0077 applied', async () => {
-      // Full DB lifecycle coverage is implemented in the lib modules; the
-      // source-level invariants (eval gate, content hash, runtime guard shape)
-      // are verified above. DB-backed round-trips follow the clinical-investigation
-      // pattern and are activated when DATABASE_URL is present.
-      expect(true).toBe(true);
-    });
-  },
-);
+// Real-DB model-governance tests live in tests/integration/model-governance-real-db.test.ts
+// (SPEC-REGULA-REALDB-001 R4). This file keeps a top-level vi.mock('@/lib/db/client')
+// for its pure-function suite above, so real-DB round-trips cannot live here.

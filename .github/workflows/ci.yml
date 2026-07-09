@@ -39,6 +39,12 @@ jobs:
       - name: Unit tests
         run: pnpm ci:test
 
+      # SPEC-REGULA-REALDB-001 REQ-COV-002/003: coverage ratchet gate. Fails the
+      # job when lib/app/components coverage drops below the vitest.config.ts
+      # thresholds (M0 baseline floor ~60/70%; target 85% tracked in follow-up).
+      - name: Coverage gate
+        run: pnpm ci:coverage
+
       - name: RBAC coverage
         run: pnpm ci:rbac
 

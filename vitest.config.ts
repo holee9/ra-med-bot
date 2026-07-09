@@ -31,6 +31,17 @@ export default defineConfig({
       provider: 'v8',
       reporter: ['text', 'html', 'lcov'],
       include: ['lib/**/*.{ts,tsx}', 'app/**/*.{ts,tsx}', 'components/**/*.{ts,tsx}'],
+      // SPEC-REGULA-REALDB-001 REQ-COV-001: ratchet floor. M0 baseline (2026-07-09)
+      // measured 62% Stmts / 73.5% Branch / 62% Funcs / 62% Lines over
+      // lib/app/components. Thresholds sit ~2pt below baseline as a stable floor:
+      // catches significant regression (>2pt drop) without flaking on minor
+      // run-to-run variance. Target 85% tracked in follow-up (ratchet up).
+      thresholds: {
+        statements: 60,
+        branches: 70,
+        functions: 60,
+        lines: 60,
+      },
     },
   },
   resolve: {
