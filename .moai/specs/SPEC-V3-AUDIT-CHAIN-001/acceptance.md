@@ -102,11 +102,13 @@ audit_log SHA-256 hash chain strengthening (v3 Phase E / D-1).
 
 **Given** `audit_logs` 테이블이 완전히 비어 있는 상태에서,
 **When** 최초의 `writeAudit(...)` 가 호출되면,
-**Then** 신규 행의 `previous_hash` 는 `SHA256(canonical(row.fields) ‖ "<genesis>")` 이며 `chain_seq = 1` 이다.
+**Then** 신규 행의 `previous_hash` 는 `"<genesis>"` literal sentinel 이며 (Option A — REQ-AC-007 normative 준수: genesis row 의 `previous_hash = chainHash_0 = "<genesis>"`), `chain_seq = 1` 이다.
+
+> **Amendment (2026-07-09, #357)**: 이전 AC-5c 표현 `previous_hash = SHA256(canonical(row)‖"<genesis>")` (= chainHash_1, 64-char hex) 는 **폐기**. REQ-AC-007 의 EARS SHALL (`row_N.previous_hash = chainHash_{N-1}`, genesis 시 `chainHash_0 = "<genesis>"` literal) 이 normative 단일 진실원이며, 구현(lib/audit/hash-chain.ts:24-44 `GENESIS_SENTINEL`) 이 이를 따른다. AC-1 의 genesis 케이스도 동일하게 sentinel exception 적용.
 
 **증거**:
-- `SELECT previous_hash, chain_seq FROM audit_logs WHERE id = <first>` → 64-char hex, `chain_seq = 1`.
-- 독립 재계산: `SHA256(canonical(row) ‖ "<genesis>")` 와 일치.
+- `SELECT previous_hash, chain_seq FROM audit_logs WHERE id = <first>` → `"<genesis>"` literal (유일한 non-64-char-hex `previous_hash`), `chain_seq = 1`.
+- 독립 재계산: `row_1.previous_hash == chainHash_0 == "<genesis>"`. `chainHash_1` (= SHA256(canonical(row_1)‖"<genesis>")) 은 `row_2.previous_hash` 에 저장됨.
 - `verifyAuditChain` 은 이 행을 위반으로 보고하지 않음 (segment 시작).
 
 ---

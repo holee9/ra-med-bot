@@ -1,0 +1,36 @@
+# @MX:NOTE [AUTO] NFR-AC-001 daily regression bench (SPEC-V3-AUDIT-CHAIN-001 M4 / m7).
+# @MX:SPEC SPEC-V3-AUDIT-CHAIN-001
+#
+# Runs `writeAudit.bench.ts` on a schedule to guard against asymptotic
+# regression in the audit hash-chain app-side cost (canonicalizeMetaJson +
+# computeAuditRowHash). This is informational/advisory — it surfaces the P99
+# trend, not a hard merge gate, because the full writeAudit P99 (incl. advisory
+# lock + INSERT round-trip) can only be measured against a real DB under load.
+# The local `pnpm bench:audit` command is the developer entry point.
+name: Audit Chain Bench
+
+on:
+  schedule:
+    # Daily 09:17 UTC (off-:00 minute to spread GitHub Actions fleet load).
+    - cron: '17 9 * * *'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  bench:
+    name: writeAudit hash-chain bench
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+      - uses: pnpm/action-setup@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: 'pnpm'
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+      - name: Run writeAudit bench (NFR-AC-001 app-side floor)
+        run: pnpm bench:audit
