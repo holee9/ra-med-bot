@@ -135,5 +135,11 @@ jobs:
             tests/integration/knowledge-gap-replay-real.test.ts \
             tests/integration/rlhf-reranking-flow.test.ts \
             tests/integration/rlhf-calibration.test.ts \
-            tests/integration/model-governance-real-db.test.ts \
-            tests/integration/rls-sources-real-db.test.ts
+            tests/integration/model-governance-real-db.test.ts
+      # RLS sources canary runs in a SEPARATE step: rlhf-reranking-flow.test.ts
+      # truncates source_sections, and CI runs suites in parallel on one DB —
+      # running the canary concurrently would have its seed wiped mid-suite
+      # (local single-file runs are unaffected). Isolating the step guarantees
+      # the canary owns source_sections for its full lifetime.
+      - name: Run RLS sources canary (isolated)
+        run: pnpm vitest run tests/integration/rls-sources-real-db.test.ts
