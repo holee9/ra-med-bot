@@ -1,25 +1,32 @@
 // @MX:NOTE [AUTO] Integration tests for calibration proposal + API route.
 // @MX:SPEC SPEC-REGULA-RLHF-001 (Issue #264 sub-PR 2/3, REQ-RLHF-005/006/015)
+// @MX:SPEC SPEC-REGULA-REALDB-001 (REQ-REALDB-001 — mock → real-db conversion)
 // @MX:REASON Runtime counterpart to the pure detector tests. Exercises:
 //   1. REQ-RLHF-015 / Charter [지양-2]: proposeCalibrationCandidate writes
 //      status=pending ONLY (never applied_via_governance).
 //   2. 21 CFR Part 11 §11.10(e): candidate + audit ride the SAME tx — a
-//      mid-flight tx failure writes NEITHER.
+//      mid-flight tx failure writes NEITHER (real db.transaction rollback).
 //   3. C-2 IDOR: the route returns only caller-org aggregates (cross-org
-//      feedback is invisible).
+//      feedback is invisible) — enforced by the real org-scoped 4-hop join.
 //
-// Strategy (mirrors tests/integration/rlhf-idor-runtime.test.ts):
-//   - Mock @/lib/db/client (db + withTenantScope) with an in-memory store.
-//   - Mock @/lib/auth/with-permission — bypass auth, inject a session per org.
-//   - The REAL calibration-detector (pure) and the REAL route handler run.
+// REAL-DB conversion (SPEC-REGULA-REALDB-001): withTenantScope wraps a REAL
+// db.transaction; the candidate INSERT + the org-scoped feedback SELECT hit the
+// live schema (L-013 — catches FK/column drift a mock hides). writeAudit stays
+// MOCKED (audit_logs is immutable REQ-FND-044 — cannot truncate; the mock also
+// simulates the in-transaction failure for the atomicity case). with-permission
+// stays MOCKED (session injection). Skipped when DATABASE_URL is unset.
 
-import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
-
-// ---------------------------------------------------------------------------
-// vi.hoisted lifts the mock state + factories ABOVE the vi.mock calls so the
-// hoisted mock factories can reference them without a TDZ error. Mirrors the
-// pattern in tests/integration/rlhf-idor-runtime.test.ts.
-// ---------------------------------------------------------------------------
+import {
+  answerFeedback,
+  calibrationCandidates,
+  conversations,
+  messages,
+  organizations,
+  projects,
+  users,
+} from '@/lib/db/schema';
+import { afterEach, beforeAll, beforeEach, describe, expect, it, vi } from 'vitest';
+import { HAS_DATABASE_URL, seedCoreActors, truncateTables } from '../../tests/fixtures/database';
 
 type Row = Record<string, unknown>;
 
@@ -27,199 +34,100 @@ interface SessionShape {
   user: { id: string; organizationId: string };
 }
 
-const {
-  calibrationStore,
-  feedbackStore,
-  messagesStore,
-  conversationsStore,
-  projectsStore,
-  auditRecords,
-  flags,
-  session,
-  dbMock,
-  withTenantScopeMock,
-  withPermissionMock,
-} = vi.hoisted(() => {
-  const calibrationStore: Row[] = [];
-  const feedbackStore: Row[] = [];
-  const messagesStore: Row[] = [];
-  const conversationsStore: Row[] = [];
-  const projectsStore: Row[] = [];
-  const auditRecords: { action: string; resource_id?: string; meta?: Row }[] = [];
-  const flags = { auditShouldFail: false, transactionShouldFail: false };
-  const session: { current: SessionShape | null } = { current: null };
-
-  function tableName(table: unknown): string {
-    if (typeof table !== 'object' || table === null) return 'unknown';
-    // biome-ignore lint/suspicious/noExplicitAny: symbol index access for Drizzle
-    const t = table as any;
-    return t?.[Symbol.for('drizzle:Name')] ?? t?.name ?? 'unknown';
-  }
-
-  // biome-ignore lint/suspicious/noExplicitAny: Drizzle query builder chain
-  const dbMock: any = {
-    insert: vi.fn((table: unknown) => {
-      const tn = tableName(table);
-      let pendingValues: Row | Row[] = {};
-      // commitInsert is called from BOTH the .returning() chain method AND the
-      // inherited-Promise .then path (writeAudit awaits .values() with no
-      // .returning()). The `committed` guard makes it idempotent so a single
-      // insert never double-writes when both paths fire.
-      let committed = false;
-      let committedResult: Row[] = [];
-      function commitInsert(): Row[] {
-        if (committed) return committedResult;
-        committed = true;
-        if (tn === 'audit_logs' && flags.auditShouldFail) {
-          throw new Error('simulated audit failure');
-        }
-        const arr = Array.isArray(pendingValues) ? pendingValues : [pendingValues];
-        const first = (arr[0] as Row) ?? {};
-        // Generate the id ONCE so the stored row and the returned row agree
-        // (Drizzle's defaultRandom produces a single id used for both).
-        const generatedId = first.id ?? crypto.randomUUID();
-        if (tn === 'calibration_candidates') {
-          for (let i = 0; i < arr.length; i++) {
-            const v = arr[i] as Row;
-            const row = { ...v, id: i === 0 ? generatedId : (v.id ?? crypto.randomUUID()) };
-            calibrationStore.push(row);
-          }
-        }
-        if (tn === 'audit_logs') {
-          auditRecords.push({
-            action: String(first.action),
-            resource_id: first.resourceId as string | undefined,
-            meta: first.metaJson as Row | undefined,
-          });
-        }
-        const firstRow = arr[0] as Row;
-        committedResult = [{ ...firstRow, id: generatedId }];
-        return committedResult;
-      }
-      // The insert chain extends Promise so `await client.insert(t).values(v)`
-      // (the writeAudit call shape — no .returning()) resolves via the inherited
-      // .then, AND .returning() is available for the calibration-proposal path.
-      // Extending Promise avoids lint/suspicious/noThenProperty (then is
-      // inherited, not a freshly-defined property). The commit is deferred via
-      // queueMicrotask so it reads pendingValues AFTER .values() has set them.
-      class InsertChain extends Promise<Row[]> {
-        values = (values: Row | Row[]) => {
-          pendingValues = values;
-          return this;
-        };
-        returning = vi.fn(async () => commitInsert());
-      }
-      return new InsertChain((resolve) => {
-        queueMicrotask(() => resolve(commitInsert()));
+// writeAudit mock — records calls + simulates the in-transaction failure that
+// the atomicity case injects. audit_logs is immutable so we never persist here.
+type AuditRecord = { action: string; resourceId?: string; meta?: Row; tx?: unknown };
+const auditRecords: AuditRecord[] = [];
+let auditShouldFail = false;
+vi.mock('@/lib/audit', () => ({
+  writeAudit: vi.fn(
+    async (params: { action: string; resource_id?: string; meta_json?: Row }, tx?: unknown) => {
+      if (auditShouldFail) throw new Error('simulated audit failure');
+      auditRecords.push({
+        action: params.action,
+        resourceId: params.resource_id,
+        meta: params.meta_json,
+        tx,
       });
-    }),
-    select: vi.fn(() => makeSelectChain()),
-    // writeAudit advisory lock (SELECT pg_advisory_xact_lock) — no-op in tests.
-    execute: vi.fn(async () => []),
-  };
-
-  // biome-ignore lint/suspicious/noExplicitAny: Drizzle query builder chain
-  function makeSelectChain(): any {
-    class SelectChain extends Promise<Row[]> {
-      from = vi.fn(() => this);
-      innerJoin = vi.fn(() => this);
-      where = vi.fn(() => this);
-      orderBy = vi.fn(() => this);
-      limit = vi.fn(() => this);
-    }
-    const orgId = session.current?.user.organizationId ?? '';
-    const orgMessageIds = new Set(
-      messagesStore
-        .filter((m) => {
-          const conv = conversationsStore.find((c) => c.id === m.conversationId);
-          const proj = projectsStore.find((p) => p.id === conv?.projectId);
-          return proj?.organizationId === orgId;
-        })
-        .map((m) => m.id),
-    );
-    const rows: Row[] = feedbackStore
-      .filter((f) => orgMessageIds.has(f.messageId as string))
-      .map((f) => {
-        const msg = messagesStore.find((m) => m.id === f.messageId);
-        return { confidenceScore: msg?.confidenceScore ?? null, rating: f.rating };
-      });
-    return SelectChain.resolve(rows);
-  }
-
-  const withTenantScopeMock = vi.fn(
-    async <T>(_orgId: string, fn: (db: typeof dbMock) => Promise<T>): Promise<T> => {
-      if (flags.transactionShouldFail) {
-        throw new Error('simulated transaction failure');
-      }
-      return fn(dbMock);
     },
-  );
-
-  const withPermissionMock = vi.fn(
-    (_action: string, handler: (req: Request, ctx: unknown, session: SessionShape) => unknown) =>
-      async (req: Request, _ctx: unknown) => {
-        const s = session.current;
-        if (!s) throw new Error('no currentSession set');
-        return handler(req, _ctx, s);
-      },
-  );
-
-  return {
-    calibrationStore,
-    feedbackStore,
-    messagesStore,
-    conversationsStore,
-    projectsStore,
-    auditRecords,
-    flags,
-    session,
-    dbMock,
-    withTenantScopeMock,
-    withPermissionMock,
-  };
-});
-
-vi.mock('@/lib/db/client', () => ({
-  db: dbMock,
-  withTenantScope: withTenantScopeMock,
+  ),
 }));
 
+// with-permission mock — bypass SSO, inject a per-org session.
+const session = { current: null as SessionShape | null };
 vi.mock('@/lib/auth/with-permission', () => ({
-  withPermission: withPermissionMock,
+  withPermission:
+    (_action: string, handler: (req: Request, ctx: unknown, s: SessionShape) => unknown) =>
+    async (req: Request, ctx: unknown) => {
+      const s = session.current;
+      if (!s) throw new Error('no currentSession set');
+      return handler(req, ctx, s);
+    },
 }));
 
-import { GET } from '@/app/api/rlhf/calibration/route';
-import {
-  proposeCalibrationCandidate,
-  proposeCalibrationCandidates,
-} from '@/lib/rlhf/calibration-proposal';
-
-// ---------------------------------------------------------------------------
-// Helpers
-// ---------------------------------------------------------------------------
-
-function seedOrgAFeedback() {
-  // 6 high-confidence (0.9) answers, all downvoted -> overconfident bucket.
-  const projId = 'proj-org-a';
-  const convId = 'conv-org-a';
-  projectsStore.push({ id: projId, organizationId: 'org-a' });
-  conversationsStore.push({ id: convId, projectId: projId });
-  for (let i = 0; i < 6; i++) {
-    const msgId = `msg-org-a-${i}`;
-    messagesStore.push({ id: msgId, conversationId: convId, confidenceScore: '0.90' });
-    feedbackStore.push({ messageId: msgId, rating: 'down' });
-  }
+async function getDb() {
+  const { db } = await import('@/lib/db/client');
+  return db;
 }
 
-function seedOrgBFeedback() {
-  // Org-B owns one upvoted low-confidence answer (should be invisible to org-A).
-  const projId = 'proj-org-b';
-  const convId = 'conv-org-b';
-  projectsStore.push({ id: projId, organizationId: 'org-b' });
-  conversationsStore.push({ id: convId, projectId: projId });
-  const msgId = 'msg-org-b-0';
-  messagesStore.push({ id: msgId, conversationId: convId, confidenceScore: '0.10' });
-  feedbackStore.push({ messageId: msgId, rating: 'up' });
+// Two orgs for the IDOR case.
+const ORG_A = '00000000-0000-0000-0000-0000000000a1';
+const USER_A = '11111111-1111-1111-1111-1111111111a1';
+const PROJ_A = '22222222-2222-2222-2222-2222222222a1';
+const ORG_B = '00000000-0000-0000-0000-0000000000b1';
+const USER_B = '11111111-1111-1111-1111-1111111111b1';
+const PROJ_B = '22222222-2222-2222-2222-2222222222b1';
+
+const ACTORS_A = {
+  orgId: ORG_A,
+  orgName: 'Calib Org A',
+  userId: USER_A,
+  userEmail: 'calib-a@test.local',
+  userName: 'Calib A',
+  projectId: PROJ_A,
+  projectName: 'Calib Project A',
+};
+
+async function seedOrgB() {
+  const db = await getDb();
+  await db.insert(organizations).values({ id: ORG_B, name: 'Calib Org B' }).onConflictDoNothing();
+  await db
+    .insert(users)
+    .values({ id: USER_B, email: 'calib-b@test.local', name: 'Calib B' })
+    .onConflictDoNothing();
+  await db
+    .insert(projects)
+    .values({ id: PROJ_B, organizationId: ORG_B, name: 'Calib Project B' })
+    .onConflictDoNothing();
+}
+
+/** Seed N feedback rows for an org: messages at confidenceScore, given rating. */
+async function seedFeedback(
+  org: 'A' | 'B',
+  count: number,
+  confidenceScore: string,
+  rating: 'up' | 'down',
+): Promise<void> {
+  const db = await getDb();
+  const orgId = org === 'A' ? ORG_A : ORG_B;
+  const projId = org === 'A' ? PROJ_A : PROJ_B;
+  const userId = org === 'A' ? USER_A : USER_B;
+  const convId = crypto.randomUUID();
+  await db
+    .insert(conversations)
+    .values({ id: convId, projectId: projId, userId })
+    .onConflictDoNothing();
+  for (let i = 0; i < count; i++) {
+    const msgId = crypto.randomUUID();
+    await db
+      .insert(messages)
+      .values({ id: msgId, conversationId: convId, role: 'assistant' as const, confidenceScore })
+      .onConflictDoNothing();
+    await db
+      .insert(answerFeedback)
+      .values({ id: crypto.randomUUID(), messageId: msgId, userId, rating })
+      .onConflictDoNothing();
+  }
 }
 
 function makeRequest(params: Record<string, string> = {}): Request {
@@ -228,190 +136,157 @@ function makeRequest(params: Record<string, string> = {}): Request {
   return new Request(url.toString());
 }
 
-// ---------------------------------------------------------------------------
-// Tests
-// ---------------------------------------------------------------------------
+async function loadRoute() {
+  return await import('@/app/api/rlhf/calibration/route');
+}
+async function loadProposal() {
+  return await import('@/lib/rlhf/calibration-proposal');
+}
 
-beforeEach(() => {
-  calibrationStore.length = 0;
-  feedbackStore.length = 0;
-  messagesStore.length = 0;
-  conversationsStore.length = 0;
-  projectsStore.length = 0;
+beforeAll(async () => {
+  await seedCoreActors(ACTORS_A);
+  await seedOrgB();
+});
+
+beforeEach(async () => {
   auditRecords.length = 0;
-  flags.auditShouldFail = false;
-  flags.transactionShouldFail = false;
-  session.current = { user: { id: 'user-a', organizationId: 'org-a' } };
+  auditShouldFail = false;
+  session.current = { user: { id: USER_A, organizationId: ORG_A } };
+  // Isolation: clear the domain tables under test (org/user/project persist).
+  await truncateTables(['calibration_candidates', 'answer_feedback', 'messages', 'conversations'], {
+    cascade: true,
+  });
 });
 
 afterEach(() => {
   vi.clearAllMocks();
 });
 
-describe('proposeCalibrationCandidate — REQ-RLHF-015 / Charter [지양-2]/[지양-4]', () => {
-  it('writes status=pending ONLY (never applied_via_governance)', async () => {
-    await proposeCalibrationCandidate({
-      orgId: 'org-a',
-      proposedBy: 'user-a',
-      confidenceBucket: '0.8-1.0',
-      bucketMidpoint: 0.9,
-      observedUpRatio: 0.1,
-      sampleSize: 6,
-      verdict: 'overconfident',
-    });
-
-    expect(calibrationStore).toHaveLength(1);
-    const candidate = (calibrationStore[0] as Row) ?? {};
-    expect(candidate.status).toBe('pending');
-    expect(candidate.verdict).toBe('overconfident');
-    expect(candidate.governanceChangeRequestId).toBeUndefined();
-  });
-
-  it('emits rlhf.calibration_proposed audit in the SAME transaction', async () => {
-    await proposeCalibrationCandidate({
-      orgId: 'org-a',
-      proposedBy: 'user-a',
-      confidenceBucket: '0.8-1.0',
-      bucketMidpoint: 0.9,
-      observedUpRatio: 0.1,
-      sampleSize: 6,
-      verdict: 'overconfident',
-    });
-
-    expect(auditRecords).toHaveLength(1);
-    const audit = (auditRecords[0] as { action: string; resource_id?: string; meta?: Row }) ?? {
-      action: '',
-      resource_id: undefined,
-      meta: undefined,
-    };
-    expect(audit.action).toBe('rlhf.calibration_proposed');
-    expect(audit.resource_id).toBe(calibrationStore[0]?.id);
-    expect(audit.meta?.confidence_bucket).toBe('0.8-1.0');
-    expect(audit.meta?.verdict).toBe('overconfident');
-    // PII guard: no question/answer text in meta.
-    expect(audit.meta?.question).toBeUndefined();
-    expect(audit.meta?.answer).toBeUndefined();
-  });
-
-  it('writes NEITHER candidate NOR audit when the transaction fails mid-flight (21 CFR Part 11 atomicity)', async () => {
-    flags.transactionShouldFail = true;
-    await expect(
-      proposeCalibrationCandidate({
-        orgId: 'org-a',
-        proposedBy: 'user-a',
+describe.skipIf(!HAS_DATABASE_URL)(
+  'proposeCalibrationCandidate — REQ-RLHF-015 / Charter [지양-2]/[지양-4] [real-db]',
+  () => {
+    it('writes status=pending ONLY (never applied_via_governance)', async () => {
+      const { proposeCalibrationCandidate } = await loadProposal();
+      await proposeCalibrationCandidate({
+        orgId: ORG_A,
+        proposedBy: USER_A,
         confidenceBucket: '0.8-1.0',
         bucketMidpoint: 0.9,
         observedUpRatio: 0.1,
         sampleSize: 6,
         verdict: 'overconfident',
-      }),
-    ).rejects.toThrow('simulated transaction failure');
+      });
 
-    expect(calibrationStore).toHaveLength(0);
-    expect(auditRecords).toHaveLength(0);
-  });
-});
+      const db = await getDb();
+      const rows = await db.select().from(calibrationCandidates);
+      expect(rows).toHaveLength(1);
+      const candidate = rows[0];
+      expect(candidate?.status).toBe('pending');
+      expect(candidate?.verdict).toBe('overconfident');
+      expect(candidate?.governanceChangeRequestId).toBeNull();
+    });
 
-describe('proposeCalibrationCandidates — per-candidate isolation', () => {
-  it('continues the batch when one candidate fails (others still persist)', async () => {
-    // Two candidates: the first succeeds; the second is forced to fail by
-    // flipping the audit flag AFTER the first proposal completes. Each
-    // proposal does 2 inserts (candidate + audit), so we count proposals via
-    // the withTenantScope wrapper, not raw inserts.
-    const candidates = [
-      {
+    it('emits rlhf.calibration_proposed audit in the SAME transaction', async () => {
+      const { proposeCalibrationCandidate } = await loadProposal();
+      await proposeCalibrationCandidate({
+        orgId: ORG_A,
+        proposedBy: USER_A,
         confidenceBucket: '0.8-1.0',
         bucketMidpoint: 0.9,
         observedUpRatio: 0.1,
         sampleSize: 6,
-        verdict: 'overconfident' as const,
-      },
-      {
-        confidenceBucket: '0.0-0.2',
-        bucketMidpoint: 0.1,
-        observedUpRatio: 0.9,
-        sampleSize: 6,
-        verdict: 'underconfident' as const,
-      },
-    ];
+        verdict: 'overconfident',
+      });
 
-    // Make the SECOND proposal fail mid-flight: the first proposal runs the
-    // original impl; a wrapper counts calls and throws on the 2nd, so that
-    // tx (candidate + audit) is skipped — proving per-candidate isolation.
-    let proposalCount = 0;
-    const origImpl = withTenantScopeMock.getMockImplementation();
-    withTenantScopeMock.mockImplementation(
-      async <T>(orgId: string, fn: (db: typeof dbMock) => Promise<T>): Promise<T> => {
-        proposalCount += 1;
-        if (proposalCount === 2) {
-          throw new Error('simulated second-candidate tx failure');
-        }
-        // origImpl is erased to unknown at runtime (generic <T>); cast back.
-        return (origImpl ? origImpl(orgId, fn) : fn(dbMock)) as Promise<T>;
-      },
-    );
+      expect(auditRecords).toHaveLength(1);
+      const audit = auditRecords[0] ?? { action: '', meta: {} };
+      expect(audit.action).toBe('rlhf.calibration_proposed');
+      expect(audit.meta?.confidence_bucket).toBe('0.8-1.0');
+      expect(audit.meta?.verdict).toBe('overconfident');
+      expect(audit.meta?.question).toBeUndefined();
+      expect(audit.meta?.answer).toBeUndefined();
+      // The audit shared the real tx (tx arg present, not undefined).
+      expect(audit.tx).toBeDefined();
+    });
 
-    const out = await proposeCalibrationCandidates('org-a', 'user-a', candidates);
-    expect(out).toHaveLength(1); // only the first succeeded
-    expect(calibrationStore).toHaveLength(1);
-    expect(calibrationStore[0]?.confidenceBucket).toBe('0.8-1.0');
+    it('writes NEITHER candidate NOR audit when the transaction fails mid-flight (21 CFR Part 11 atomicity)', async () => {
+      auditShouldFail = true; // writeAudit throws inside the real db.transaction
+      const { proposeCalibrationCandidate } = await loadProposal();
+      await expect(
+        proposeCalibrationCandidate({
+          orgId: ORG_A,
+          proposedBy: USER_A,
+          confidenceBucket: '0.8-1.0',
+          bucketMidpoint: 0.9,
+          observedUpRatio: 0.1,
+          sampleSize: 6,
+          verdict: 'overconfident',
+        }),
+      ).rejects.toThrow('simulated audit failure');
 
-    // Restore the original withTenantScope impl so the override does not leak.
-    if (origImpl) withTenantScopeMock.mockImplementation(origImpl);
-  });
-});
+      const db = await getDb();
+      const rows = await db.select().from(calibrationCandidates);
+      expect(rows).toHaveLength(0); // real tx rolled back the candidate INSERT
+      expect(auditRecords).toHaveLength(0); // mock recorded nothing (threw before push)
+    });
+  },
+);
 
-describe('GET /api/rlhf/calibration — C-2 IDOR + detection view', () => {
-  it('returns only caller-org feedback aggregates (cross-org invisible)', async () => {
-    seedOrgAFeedback(); // org-a: 6 downvoted @0.9
-    seedOrgBFeedback(); // org-b: 1 upvoted @0.1 — MUST be invisible to org-a
+describe.skipIf(!HAS_DATABASE_URL)(
+  'GET /api/rlhf/calibration — C-2 IDOR + detection view [real-db]',
+  () => {
+    it('returns only caller-org feedback aggregates (cross-org invisible)', async () => {
+      await seedFeedback('A', 6, '0.90', 'down'); // org-a: 6 downvoted @0.9
+      await seedFeedback('B', 1, '0.10', 'up'); // org-b: 1 upvoted @0.1 — invisible to org-a
 
-    session.current = { user: { id: 'user-a', organizationId: 'org-a' } };
-    const res = await GET(makeRequest(), {});
-    const body = await res.json();
+      session.current = { user: { id: USER_A, organizationId: ORG_A } };
+      const { GET } = await loadRoute();
+      const res = await GET(makeRequest(), {});
+      const body = await res.json();
 
-    expect(res.status).toBe(200);
-    // Org-A's 6 downvoted @0.9 land in the 0.8-1.0 bucket -> overconfident.
-    const bucket = body.aggregates.find(
-      (b: { confidenceBucket: string }) => b.confidenceBucket === '0.8-1.0',
-    );
-    expect(bucket).toBeDefined();
-    expect(bucket?.sampleSize).toBe(6);
-    expect(bucket?.observedUpRatio).toBe(0);
-    // Org-B's lone upvote @0.1 is NOT visible: no 0.0-0.2 bucket in org-A's view.
-    const orgBBucket = body.aggregates.find(
-      (b: { confidenceBucket: string }) => b.confidenceBucket === '0.0-0.2',
-    );
-    expect(orgBBucket).toBeUndefined();
-    // Candidate list reflects the overconfident bucket.
-    expect(body.candidates).toHaveLength(1);
-    expect(body.candidates[0]?.verdict).toBe('overconfident');
-  });
+      expect(res.status).toBe(200);
+      const bucket = body.aggregates.find(
+        (b: { confidenceBucket: string }) => b.confidenceBucket === '0.8-1.0',
+      );
+      expect(bucket).toBeDefined();
+      expect(bucket?.sampleSize).toBe(6);
+      expect(bucket?.observedUpRatio).toBe(0);
+      // Org-B's lone upvote @0.1 is NOT visible to org-a: no 0.0-0.2 bucket.
+      const orgBBucket = body.aggregates.find(
+        (b: { confidenceBucket: string }) => b.confidenceBucket === '0.0-0.2',
+      );
+      expect(orgBBucket).toBeUndefined();
+      expect(body.candidates).toHaveLength(1);
+      expect(body.candidates[0]?.verdict).toBe('overconfident');
+    });
 
-  it('returns 403 when the session has no org context', async () => {
-    session.current = { user: { id: 'user-x', organizationId: '' } };
-    const res = await GET(makeRequest(), {});
-    expect(res.status).toBe(403);
-    const body = await res.json();
-    expect(body.error).toBe('no_org_context');
-  });
+    it('returns 403 when the session has no org context', async () => {
+      session.current = { user: { id: 'user-x', organizationId: '' } };
+      const { GET } = await loadRoute();
+      const res = await GET(makeRequest(), {});
+      expect(res.status).toBe(403);
+      const body = await res.json();
+      expect(body.error).toBe('no_org_context');
+    });
 
-  it('returns an empty candidate list when no feedback exists', async () => {
-    // No seeding — org-a has zero feedback.
-    const res = await GET(makeRequest(), {});
-    const body = await res.json();
-    expect(res.status).toBe(200);
-    expect(body.aggregates).toEqual([]);
-    expect(body.candidates).toEqual([]);
-  });
+    it('returns an empty candidate list when no feedback exists', async () => {
+      const { GET } = await loadRoute();
+      const res = await GET(makeRequest(), {});
+      const body = await res.json();
+      expect(res.status).toBe(200);
+      expect(body.aggregates).toEqual([]);
+      expect(body.candidates).toEqual([]);
+    });
 
-  it('accepts overridden thresholds via query params', async () => {
-    seedOrgAFeedback();
-    // With minSampleSize=10, the 6-sample bucket no longer qualifies.
-    const res = await GET(makeRequest({ minSampleSize: '10' }), {});
-    const body = await res.json();
-    expect(res.status).toBe(200);
-    expect(body.candidates).toEqual([]);
-    expect(body.thresholds.minSampleSize).toBe(10);
-  });
-});
+    it('accepts overridden thresholds via query params', async () => {
+      await seedFeedback('A', 6, '0.90', 'down');
+      const { GET } = await loadRoute();
+      // With minSampleSize=10, the 6-sample bucket no longer qualifies.
+      const res = await GET(makeRequest({ minSampleSize: '10' }), {});
+      const body = await res.json();
+      expect(res.status).toBe(200);
+      expect(body.candidates).toEqual([]);
+      expect(body.thresholds.minSampleSize).toBe(10);
+    });
+  },
+);
