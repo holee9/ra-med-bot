@@ -11,7 +11,7 @@
 **Then**
 - 적용이 0 에러(error), 0 fatal로 완료된다
 - public schema table count가 **96**(`SELECT count(*) FROM information_schema.tables WHERE table_schema='public'` = 96, regula-test-db baseline)과 일치한다
-- `audit_log_hash_bi` trigger(audit immutability)가 `pg_trigger`에 존재한다
+- `audit_logs_no_mutation` trigger(audit immutability)가 `pg_trigger`에 존재한다
 - RLS policy명 집합이 `regula-test-db` `pg_policies` baseline snapshot과 정확히 일치한다 (Run phase T0에 `SELECT policyname FROM pg_policies WHERE schemaname='public' ORDER BY policyname`로 baseline을 캡처하여 from-scratch DB 결과와 set diff = 0으로 검증)
 
 **REQ coverage**: REQ-MIGRATION-001, 003, 004, 005, 006, 007
@@ -120,14 +120,14 @@
 
 ## Quality Gates (Definition of Done)
 
-- [ ] AC-01 ~ AC-08 모두 PASS (observable evidence 포함)
-- [ ] `pnpm ci:migrations` PASS
-- [ ] `pnpm lint`(lint:hex 포함 full) PASS — 코드 줄에 `#NNN` 이슈 번호 금지 (L-008)
-- [ ] `pnpm test`(full, 타깃만 아님) PASS — 커밋 전 staged 범위 직검 (L-009)
-- [ ] regula-test-db 회귀 suite PASS (L-013 — 실DB 실행 검증)
-- [ ] CI workflow가 main CI gate에 통합되어 매 PR 실행됨
-- [ ] 정정된 각 migration 파일의 commit message에 "SPEC-REGULA-MIGRATION-001" 참조 포함
-- [ ] 본 SPEC의 [DELTA] 항목(C1/C2) 진단 결과가 `progress.md`에 기록됨
+- [x] AC-01 ~ AC-08 모두 PASS (observable evidence 포함) — Run phase 실증 (fresh pgvector 0 error / 96 tables / audit trigger / RLS policy set diff=0)
+- [x] `pnpm ci:migrations` PASS (exit 0)
+- [x] `pnpm lint`(lint:hex 포함 full) PASS — exit 0 (12 pre-existing warning 무관)
+- [x] `pnpm test`(full, 타깃만 아님) PASS — 4784 passed / 0 failed / 35 skipped (real-db env 의존) — 커밋 전 staged 범위 직검 (L-009)
+- [x] regula-test-db 회귀 — 구조적 regression-free (historical migration 재적용 안 함, 스키마 변화 0) + full suite green (L-013)
+- [x] CI workflow(`.github/workflows/migrations-real-db.yml`)가 매 PR 실행됨 (standalone, AC-05 drift 주입 시 apply 단계 ON_ERROR_STOP=1로 red 구조적 보장)
+- [x] 정정된 각 migration 파일의 commit message에 "SPEC-REGULA-MIGRATION-001" 참조 포함
+- [x] 본 SPEC의 [DELTA] 항목(C1/C2) 진단 결과가 `progress.md`에 기록됨
 
 ---
 

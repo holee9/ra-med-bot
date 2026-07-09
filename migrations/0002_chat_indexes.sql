@@ -25,10 +25,10 @@ CREATE INDEX CONCURRENTLY IF NOT EXISTS idx_source_sections_ts_text
 CREATE INDEX CONCURRENTLY IF NOT EXISTS idx_source_sections_source_id
   ON source_sections (source_id);
 
--- Index on sources.corpus for filter pushdown.
-CREATE INDEX CONCURRENTLY IF NOT EXISTS idx_sources_corpus
-  ON sources (corpus)
-  WHERE corpus IS NOT NULL;
+-- NOTE (SPEC-REGULA-MIGRATION-001 D1): a prior `idx_sources_corpus` index on
+-- sources(corpus) lived here, but the `corpus` column was removed from the
+-- sources table (dead code). Creating an index on a non-existent column breaks
+-- from-scratch apply, so the index is omitted entirely.
 
 -- GIN index on messages.meta_json for JSONB path queries (conversation lookups).
 CREATE INDEX CONCURRENTLY IF NOT EXISTS idx_messages_meta_json

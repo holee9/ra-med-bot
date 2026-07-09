@@ -1,0 +1,135 @@
+# @MX:NOTE [AUTO] From-scratch migration-apply CI gate (SPEC-REGULA-MIGRATION-001).
+# @MX:SPEC SPEC-REGULA-MIGRATION-001 (REQ-CI-001/002/003, REQ-MIGRATION-001/002)
+# @MX:ANCHOR [AUTO] Permanent drift regression gate — fails (red) on any migration
+#   that breaks from-scratch apply, so drift can no longer accumulate behind a
+#   green CI (the L-013 structural blind spot this SPEC closes).
+# @MX:REASON The main ci.yml `ci:test` job has NO postgres service, so the 7
+#   real-db integration suites are SKIPPED there and migration drift was
+#   invisible to CI. This standalone workflow bootstraps a fresh pgvector DB via
+#   migration-apply (NOT drizzle-kit push), runs the real-db suites, and is the
+#   authoritative from-scratch correctness gate. Separated from ci.yml for
+#   concern isolation (mock-DB unit job vs from-scratch real-DB job).
+#
+# Add this job to branch protection as a REQUIRED check so drift blocks merge.
+name: Migrations Real-DB
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  migrations-real-db:
+    name: From-scratch apply + real-db suite
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+
+    # Service: fresh pgvector (pgvector/pgvector:pg16). The job steps do not
+    # start until the health check passes, so the DB is ready for DDL.
+    services:
+      postgres:
+        image: pgvector/pgvector:pg16
+        env:
+          POSTGRES_USER: postgres
+          POSTGRES_PASSWORD: postgres
+          POSTGRES_DB: regula_ci
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U postgres -d regula_ci"
+          --health-interval 5s
+          --health-timeout 5s
+          --health-retries 20
+
+    env:
+      # Real DATABASE_URL pointing at the service above. parseEnv (lib/env.ts)
+      # validates this at test import; SKIP_ENV_VALIDATION is build-only and
+      # rejected at runtime, so the full required env set is provided here.
+      DATABASE_URL: postgresql://postgres:postgres@localhost:5432/regula_ci
+      AUTH_SECRET: ci-real-db-placeholder-secret-minimum-32-characters
+      NEXTAUTH_URL: http://localhost:3000
+      AUTH_MICROSOFT_ID: ci-placeholder-microsoft-id
+      AUTH_MICROSOFT_SECRET: ci-placeholder-microsoft-secret
+      AUTH_GOOGLE_ID: ci-placeholder-google-id
+      AUTH_GOOGLE_SECRET: ci-placeholder-google-secret
+      CI: 'true'
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: pnpm/action-setup@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: 'pnpm'
+
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+
+      # REQ-MIGRATION-002 / AC-08: regula_app must exist before 0001's
+      # REVOKE/GRANT. An extra readiness retry guards against the health check
+      # passing a hair before the DB accepts DDL (observed locally).
+      - name: Bootstrap app role
+        run: |
+          for i in $(seq 1 30); do
+            psql "$DATABASE_URL" -c "SELECT 1" >/dev/null 2>&1 && break
+            echo "waiting for postgres... ($i)"; sleep 2
+          done
+          psql "$DATABASE_URL" -c "CREATE ROLE regula_app;"
+          psql "$DATABASE_URL" -tAc "SELECT count(*) FROM pg_roles WHERE rolname='regula_app';"
+
+      # REQ-MIGRATION-001 / AC-01 / REQ-SAFETY-002: from-scratch apply via
+      # cat | psql (autocommit per statement so CREATE INDEX CONCURRENTLY works;
+      # `_rollback` files excluded; numeric order by zero-padded filename).
+      # ON_ERROR_STOP=1 makes ANY apply error fail the job → drift is blocked
+      # (REQ-CI-003 / AC-05, the negative-test guarantee is structural).
+      - name: Apply migrations from scratch
+        run: |
+          cat $(ls migrations/[0-9]*.sql | grep -v _rollback | sort) \
+            | psql "$DATABASE_URL" -v ON_ERROR_STOP=1
+
+      # AC-01 runtime assertion in CI: table count + audit immutability trigger.
+      - name: Verify from-scratch schema
+        run: |
+          TABLES=$(psql "$DATABASE_URL" -tAc "SELECT count(*) FROM information_schema.tables WHERE table_schema='public';")
+          echo "public table count: $TABLES (expected 96)"
+          [ "$TABLES" = "96" ] || { echo "::error::Expected 96 tables, got $TABLES"; exit 1; }
+          TRIG=$(psql "$DATABASE_URL" -tAc "SELECT count(*) FROM pg_trigger WHERE NOT tgisinternal AND tgname='audit_logs_no_mutation';")
+          echo "audit_logs_no_mutation trigger present: $TRIG (expected 1)"
+          [ "$TRIG" = "1" ] || { echo "::error::audit immutability trigger missing"; exit 1; }
+
+      # Minimal seed for data-dependent real-db suites (AC-02):
+      # - organizations row → validation-consumers does an org lookup and throws
+      #   if none exists ("test DB has no organization row").
+      # - audit_logs row → audit-immutability targets `LIMIT 1` for UPDATE/DELETE;
+      #   with zero rows the BEFORE-row trigger never fires, so the test can't
+      #   observe the rejection. One row makes all three immutability cases
+      #   deterministic.
+      # Schema-only suites (migrations-real-db) and self-seeding suites
+      # (cer-persist via seedCoreActors) need none of this.
+      - name: Seed minimal test data
+        run: |
+          psql "$DATABASE_URL" -c "INSERT INTO organizations (id, name) VALUES ('00000000-0000-0000-0000-000000000001', 'CI Seed Org') ON CONFLICT DO NOTHING;"
+          psql "$DATABASE_URL" -c "INSERT INTO audit_logs (action, resource_type, resource_id) VALUES ('llm.call', 'ci-seed', 'seed-1');"
+
+      # REQ-CI-002 / AC-02: real-db integration suite runs against the
+      # from-scratch DB (not SKIPPED). vitest exit code gates the job.
+      # NOTE: audit-retention's pg_partman-dependent cases self-skip when the
+      # extension is absent (its schema-existence case still runs); tracked as
+      # a known limitation, not a drift concern.
+      - name: Run real-db integration suites
+        run: |
+          pnpm vitest run \
+            tests/integration/migrations-real-db.test.ts \
+            tests/integration/audit-immutability.test.ts \
+            tests/integration/audit-retention.test.ts \
+            tests/integration/cer-persist-roundtrip.test.ts \
+            tests/integration/model-governance.test.ts \
+            tests/integration/validation-consumers.test.ts \
+            tests/integration/knowledge-gap-replay-real.test.ts

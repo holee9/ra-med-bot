@@ -85,7 +85,7 @@ CREATE TABLE calibration_candidates (
   reviewed_at                       timestamptz,
   -- Nullable link to #71 MODEL-GOVERNANCE change_request. Set when the RA Lead
   -- creates a change_request to act on this candidate. NULL until then.
-  governance_change_request_id      uuid REFERENCES change_request(id) ON DELETE 'set null',
+  governance_change_request_id      uuid REFERENCES change_request(id) ON DELETE SET NULL,
   -- Free-form RA-Lead notes (review decision rationale). PII-free.
   review_notes                      text,
   created_at                        timestamptz NOT NULL DEFAULT now(),

@@ -1338,19 +1338,20 @@ describe('Migration 0083: RLS WITH CHECK clauses project-wide (Issue #239)', () 
     expect(fileExists('migrations/0083_rls_with_check_clauses.sql')).toBe(true);
   });
 
-  it('issues exactly 20 ALTER POLICY statements with 20 WITH CHECK clauses', () => {
+  it('issues exactly 19 ALTER POLICY statements with 19 WITH CHECK clauses', () => {
+    // 19, not 20: ingest_jobs was dropped by migration 0017 §3, so its
+    // tenant_isolation_ingest_jobs policy is omitted (SPEC-REGULA-MIGRATION-001 D11).
     const sql = readText('migrations/0083_rls_with_check_clauses.sql');
     const alterPolicy = sql.match(/ALTER POLICY/g) ?? [];
-    expect(alterPolicy).toHaveLength(20);
+    expect(alterPolicy).toHaveLength(19);
     const withCheck = sql.match(/WITH CHECK \(/g) ?? [];
-    expect(withCheck).toHaveLength(20);
+    expect(withCheck).toHaveLength(19);
   });
 
   it.each([
     ['organization_documents', '"tenant_isolation_documents"'],
     ['document_chunks', '"tenant_isolation_chunks"'],
     ['document_access_policies', '"tenant_isolation_access_policies"'],
-    ['ingest_jobs', '"tenant_isolation_ingest_jobs"'],
     ['unanswered_queue', '"tenant_isolation_unanswered_queue"'],
     ['device_classifications', '"tenant_isolation_device_classifications"'],
     ['evidence_nodes', '"tenant_isolation_evidence_nodes"'],
@@ -1387,10 +1388,11 @@ describe('Migration 0084: FORCE ROW LEVEL SECURITY (Issue #239, Phase 4)', () =>
     expect(fileExists('migrations/0084_force_rls.sql')).toBe(true);
   });
 
-  it('issues exactly 20 ALTER TABLE ... FORCE ROW LEVEL SECURITY statements', () => {
+  it('issues exactly 19 ALTER TABLE ... FORCE ROW LEVEL SECURITY statements', () => {
+    // 19, not 20: ingest_jobs was dropped by migration 0017 §3 (SPEC-REGULA-MIGRATION-001 D11).
     const sql = readText('migrations/0084_force_rls.sql');
     const forceMatches = sql.match(/ALTER TABLE \w+ FORCE ROW LEVEL SECURITY/g) ?? [];
-    expect(forceMatches).toHaveLength(20);
+    expect(forceMatches).toHaveLength(19);
   });
 
   it('includes @MX:WARN noting FORCE alone does not enforce (app role switch required)', () => {
@@ -1404,7 +1406,6 @@ describe('Migration 0084: FORCE ROW LEVEL SECURITY (Issue #239, Phase 4)', () =>
     'organization_documents',
     'document_chunks',
     'document_access_policies',
-    'ingest_jobs',
     'unanswered_queue',
     'device_classifications',
     'evidence_nodes',
@@ -1490,7 +1491,7 @@ describe('Migration 0086: knowledge promotion promoted_answers (Issue #50)', () 
     expect(sql).toMatch(/CREATE TABLE promoted_answers/);
     expect(sql).toMatch(/org_id\s+uuid NOT NULL REFERENCES organizations/);
     expect(sql).toMatch(/source_message_id\s+uuid NOT NULL REFERENCES messages/);
-    expect(sql).toMatch(/promoted_by\s+text NOT NULL REFERENCES users/);
+    expect(sql).toMatch(/promoted_by\s+uuid NOT NULL REFERENCES users/);
     expect(sql).toMatch(/embedding\s+vector\(1536\)/);
     expect(sql).toMatch(/UNIQUE\(source_message_id\)/);
   });
@@ -1585,9 +1586,12 @@ describe('Migration 0087: project_memory (Issue #51)', () => {
   });
 
   it('adds UNIQUE partial index for one-active-per-key (REQ-012)', () => {
+    // SPEC-REGULA-MIGRATION-001 D9: partial uniqueness is a CREATE UNIQUE INDEX
+    // (Postgres rejects an inline `UNIQUE ... WHERE` table CONSTRAINT).
     const sql = readText('migrations/0087_project_memory.sql');
-    expect(sql).toMatch(/UNIQUE NULLS NOT DISTINCT/);
-    expect(sql).toMatch(/project_id, key\).*WHERE status = 'active'/s);
+    expect(sql).toMatch(
+      /CREATE UNIQUE INDEX project_memory_one_active_per_key\s+ON project_memory\s+\(project_id, key\)\s+NULLS NOT DISTINCT\s+WHERE status = 'active'/,
+    );
   });
 
   it('adds exactly 3 ALTER TYPE audit_action statements (memory_*)', () => {

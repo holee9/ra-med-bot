@@ -1,7 +1,7 @@
 ---
 id: SPEC-REGULA-MIGRATION-001
-version: 1.1.0
-status: draft
+version: 1.2.0
+status: completed
 phase: migration-debt
 priority: High
 created: 2026-07-09
@@ -28,6 +28,7 @@ labels:
 |---------|------|--------|---------|
 | 1.0.0 | 2026-07-09 | MoAI (manager-spec) | 초기 작성. Issue #396 기반. 11개 drift point + bootstrap role + fix-up idempotency + CI real-db gate 통합. |
 | 1.1.0 | 2026-07-09 | MoAI (manager-spec) | plan-auditor review-1 FAIL 대응. MP-2: §3 AC를 Given/When/Then로 재작성 + REQ↔AC traceability column 추가(D5). D3: REQ-SAFETY-002에서 mechanism 제거(§4.3으로 이동). D4: AC-01 table count(96)·RLS policy set pin. D6: drift count 10→11(research.md D1-D11) 정정. D7: CI workflow 경로 standalone으로 확정. D8: bundled REQs에 명시 주석. D9: REQ-MIGRATION-006 acceptance lower-bound 추가. 신규 AC-08(REQ-MIGRATION-002 regula_app role 직접 커버). |
+| 1.2.0 | 2026-07-09 | MoAI (run) | Run phase [DELTA] 정정. (1) AC-01 audit trigger명 `audit_log_hash_bi` → `audit_logs_no_mutation`(해시 체인은 lib/audit.ts app-side 계산이며 DB trigger 아님 — `audit_log_hash_bi`는 어떤 migration에도 미존재). (2) D11(0014) 원인 정정: 0014 트랜잭션 문제가 아니라 0017 §3이 ingest_jobs를 의도적 DROP 했으나 0083/0084가 여전히 참조 → dead reference 제거. (3) D3(0054): org_id 외 created_by도 text→uuid(원본 drift map은 org_id만 명시). (4) fix-up 0089/0090/0092는 이미 IF NOT EXISTS로 idempotent — 수정 불필요. status: draft → completed (AC-01~08 전부 실증 달성). |
 
 > **Frontmatter convention note**: 본 SPEC은 `created_at`이 아닌 `created` 필드를 사용한다. 이는 프로젝트 관례(SPEC-REGULA-RLHF-001 외 전체 기존 SPEC이 `created` 사용, plan workflow Phase 2 명세 일치)이며, plan-auditor review-1 MP-3의 `created_at` 권장은 과도하게 일반화된 rubric의 false-positive로 판단하여 유지한다. 오케스트레이터 게이트에서 처리 예정.
 
@@ -109,7 +110,7 @@ Regula의 `migrations/*.sql` 세트는 fresh PostgreSQL 16 + pgvector 컨테이�
 
 | AC# | Given | When | Then | REQ IDs | Verification |
 |-----|-------|------|------|---------|--------------|
-| AC-01 | fresh Docker `pgvector/pgvector:pg16` 컨테이너가 기동되고 `regula_app` role이 사전 CREATE됨 | `cat migrations/[0-9]*.sql \| psql`(`_rollback` 제외, numeric order, autocommit)로 전체 migration을 적용할 때 | 적용이 0 에러로 완료되고, public schema table count가 **96**(regula-test-db baseline count)과 일치하며, `audit_log_hash_bi` trigger가 `pg_trigger`에 존재하고, RLS policy set이 `regula-test-db` `pg_policies` baseline snapshot과 동일한 policy명 집합을 생성한다 | REQ-MIGRATION-001, 003, 004, 005, 006, 007 | Test (fresh container apply + `\d+` introspection + `SELECT count(*) FROM information_schema.tables WHERE table_schema='public'` = 96 + RLS policy명 set diff vs baseline = 0) |
+| AC-01 | fresh Docker `pgvector/pgvector:pg16` 컨테이너가 기동되고 `regula_app` role이 사전 CREATE됨 | `cat migrations/[0-9]*.sql \| psql`(`_rollback` 제외, numeric order, autocommit)로 전체 migration을 적용할 때 | 적용이 0 에러로 완료되고, public schema table count가 **96**(regula-test-db baseline count)과 일치하며, `audit_logs_no_mutation` immutability trigger가 `pg_trigger`에 존재하고, RLS policy set이 `regula-test-db` `pg_policies` baseline snapshot과 동일한 policy명 집합을 생성한다 | REQ-MIGRATION-001, 003, 004, 005, 006, 007 | Test (fresh container apply + `\d+` introspection + `SELECT count(*) FROM information_schema.tables WHERE table_schema='public'` = 96 + RLS policy명 set diff vs baseline = 0) |
 | AC-02 | CI workflow가 fresh pgvector service 컨테이너를 bootstrap하고 migration-apply로 DB를 구축함 | real-db integration suite(7개: `migrations-real-db`, `audit-immutability`, `audit-retention`, `cer-persist-roundtrip`, `model-governance`, `validation-consumers`, `knowledge-gap-replay-real`)를 from-scratch DB에서 실행할 때 | 7개 suite 모두 PASS한다 (SKIPPED 아님) | REQ-CI-001, 002 | Test (CI workflow 실행 로그 — 7개 suite green, SKIPPED 0건) |
 | AC-03 | 기존 배포 DB(`regula-test-db`)가 존재함 | 정정된 migration 파일이 포함된 branch에서 기존 DB regression suite를 실행할 때 | 기존 스키마/데이터에 변화가 없다 (정정된 historical migration이 재적용되지 않으므로 regression-free) | REQ-SAFETY-001 | Test (기존 DB `information_schema` diff — 정정 전후 0 delta + regression suite PASS) |
 | AC-04 | 정정된 migration 파일들이 포함됨 | `pnpm ci:migrations`(`scripts/ci/check-migrations.ts`)를 실행할 때 | migration 순서 무결성 검사가 PASS한다 | REQ-SAFETY-003 | Test (`pnpm ci:migrations` 종료 코드 0) |

@@ -11,6 +11,18 @@
 
 > Placeholder for post-1.0.0 development.
 
+### SPEC-REGULA-MIGRATION-001 — from-scratch migration apply drift 정정 + CI 영구 regression gate (#396)
+
+- **배경** — `migrations/*.sql`이 fresh pgvector 컨테이너에 from-scratch 적용 시 11개 drift point로 깨짐. real-db integration suite 7개가 main CI gate(`ci:test` postgres service 없음)에서 SKIPPED → drift가 green CI 뒤에 누적 (L-013 구조적 맹점).
+- **drift 정정 (원본 migration 직접 수정 방식)** — fixup-migration으로 from-scratch ORDERING 문제 해결 불가하여 원본 편집 채택. 기존 배포 DB는 historical migration 재적용 안 함 → regression-free.
+  - Group A (trivial): `0002` dead `idx_sources_corpus` 삭제 · `0004` DROP DEFAULT 순서 · `0087` inline `UNIQUE ... WHERE` → `CREATE UNIQUE INDEX ... WHERE` · `0095` `ON DELETE 'set null'` 따옴표 제거.
+  - Group B (FK-type): `0054`/`0055`/`0056`(org_id+created_by) · `0082`(user_id) · `0086`(promoted_by) `text→uuid` 정정. fix-up `0089`/`0090`/`0092`는 이미 `IF NOT EXISTS`로 idempotent — 수정 불필요.
+  - Group C ([DELTA] 진단 정정): `0083` organization_documents policy `organization_id`→`org_id` (0017 §1 rename) + ingest_jobs dead reference 제거 (0017 §3 DROP) · `0084` ingest_jobs FORCE RLS 제거. plan의 D11(0014 트랜잭션) 진단은 실측 정정 — 0014는 정상, 0017 drop 후 0083/0084 참조가 원인.
+- **CI gate (Group D)** — `.github/workflows/migrations-real-db.yml` 신규 standalone workflow. fresh pgvector service → `CREATE ROLE regula_app` bootstrap → `cat migrations \| psql -v ON_ERROR_STOP=1` (autocommit, drift 시 red = REQ-CI-003 영구 regression 차단) → AC-01 런타임 검증(96 tables + audit trigger) → 최소 seed → real-db suite 7개 실행.
+- **AC-01~08 실증** (fresh `pgvector/pgvector:pg16` port 5434): 0 error / 96 tables / audit immutability trigger / RLS policy set diff=0 / table set diff=0 / real-db 44 passed / ci:migrations exit 0 / fix-up no-op / CONCURRENTLY 정상 / regula_app bootstrap.
+- **SPEC 결함 정정 (v1.2.0)** — AC-01이 미존재 trigger `audit_log_hash_bi` 참조 → 실제 `audit_logs_no_mutation`로 정정 (해시 체인은 `lib/audit.ts` app-side).
+- **게이트 직검**: typecheck 0 · ci:lint 0 · ci:format/audit/rbac/tokens/i18n/glossary/contrast/module-boundaries 전 0 · ci:migrations 0 · enterprise-migrations 478/478 · full `pnpm test` 4784 passed / 0 failed / 35 skipped (real-db env 의존) · 회귀 0.
+
 ### #366 — writeAudit 트랜잭션 원자성 감사 (Part 11 §11.10(e))
 
 - **이슈 #366** — 21 CFR Part 11 §11.10(e): mutation과 audit이 동일 트랜잭션 경계를 공유해야 감사 추적이 orphan 되지 않음. 전사 writeAudit 호출처 190곳 정밀 직검 감사 (madge 신규 도입 0, 사용자 합의).
