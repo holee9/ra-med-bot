@@ -146,6 +146,21 @@ describe('RLS sources/source_sections — real-DB canary (SPEC-REGULA-RLS-SOURCE
   it.skipIf(SKIP)(
     'source_sections EXISTS subquery: scoped to parent source org (REQ-RLS-SRC-003)',
     async () => {
+      // Superuser sanity: confirm beforeAll seeded exactly one section per canary
+      // source. CI runs all real-db suites sequentially on one DB — a prior suite
+      // (e.g. rlhf) can leave source_sections rows or alter state. This pre-check
+      // isolates "beforeAll seed leak" from "RLS scoping" before asserting under role.
+      const seeded = await client`
+        SELECT s.org_label AS lbl FROM source_sections ss
+        JOIN sources s ON s.id = ss.source_id
+        WHERE s.org_label IN ('canary-a', 'canary-b')
+        ORDER BY s.org_label
+      `;
+      expect(
+        seeded.map((r: { lbl: string }) => r.lbl),
+        `superuser seed sanity: ${JSON.stringify(seeded)}`,
+      ).toEqual(['canary-a', 'canary-b']);
+
       await asRegulaApp(ORG_A, async () => {
         const rows = await client`
         SELECT s.org_label AS lbl FROM source_sections ss
