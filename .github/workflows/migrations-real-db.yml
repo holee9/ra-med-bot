@@ -132,4 +132,7 @@ jobs:
             tests/integration/cer-persist-roundtrip.test.ts \
             tests/integration/model-governance.test.ts \
             tests/integration/validation-consumers.test.ts \
-            tests/integration/knowledge-gap-replay-real.test.ts
+            tests/integration/knowledge-gap-replay-real.test.ts \
+            tests/integration/rlhf-reranking-flow.test.ts \
+            tests/integration/rlhf-calibration.test.ts \
+            tests/integration/model-governance-real-db.test.ts

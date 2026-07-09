@@ -40,6 +40,7 @@
     "ci:lint": "pnpm lint",
     "ci:format": "biome format .",
     "ci:test": "vitest run",
+    "ci:coverage": "vitest run --coverage",
     "ci:rbac": "node --experimental-strip-types scripts/qa/check-rbac.mjs",
     "ci:audit": "node --experimental-strip-types scripts/qa/audit-completeness.ts",
     "ci:tokens": "node --experimental-strip-types scripts/ci/tokens-symmetry.ts",
