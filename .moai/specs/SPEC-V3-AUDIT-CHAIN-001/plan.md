@@ -144,9 +144,9 @@ Inngest `audit-chain-verify-daily` 등록.
 - **191** 개 호출 지점 grep 카운트 불변 (H1 fix).
 - L-013 (3중 맹점 방지): 정적 테스트 + CI mock + self-report 너머 실DB 실행 확인.
 
-### M5 — Backfill 정책 문서화 (Priority Low)
+### M5 — Backfill 정책 문서화 (Priority Low) — ✅ DONE (2026-07-09, #357)
 
-전략 B 결정을 코드 주석과 ops 문서에 명시.
+전략 B 결정을 ops 문서에 명시. **완료 산출물**: `docs/ops/audit-chain.md` (신규 ops runbook — 검증 절차, 위반 대응, Strategy B backfill 정책, advisory lock 경합, AC-5c amendment). `lib/audit/hash-chain.ts` 주석에 이미 GENESIS_SENTINEL/Strategy B 명시 (line 24-44).
 
 산출물:
 - `lib/audit.ts` 주석: NULL previous_hash = genesis, append-only 위반 없이 forward chain 만 적용.

@@ -20,6 +20,7 @@
     "lint:hex": "node scripts/no-hex-colors.mjs",
     "format": "biome format . --write",
     "test": "vitest run",
+    "bench:audit": "vitest run lib/audit/__tests__/writeAudit.bench.test.ts",
     "test:watch": "vitest",
     "test:e2e": "playwright test",
     "test:e2e:ui": "playwright test --ui",
