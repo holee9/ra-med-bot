@@ -6,16 +6,17 @@
 
 ## 1. Task Decomposition (2 Groups)
 
-### Group R: real-db 전환 5건 (우선순위 High — 난이도 Medium)
+### Group R: real-db 전환 4건 (우선순위 High — 난이도 Medium)
+
+> plan-auditor D4 정정: `docingest-e2e.test.ts` 제외 (self-declared (A)-class contract test, schema drift는 migrations-real-db.test.ts가 커버).
 
 | Task | File | Change | AC |
 |------|------|--------|----|
-| R1 | `tests/integration/rlhf-reranking-flow.test.ts` | vi.mock(@/lib/db) 제거 → seedCoreActors + truncateTables([answer_feedback,...],cascade) + lazy import + skipIf(HAS_DATABASE_URL) | AC-01, AC-03 |
-| R2 | `tests/integration/docingest-e2e.test.ts` | 동일 패턴 (도메인: organization_documents/document_chunks) | AC-01, AC-03 |
-| R3 | `tests/integration/knowledge-gap-replay-real.test.ts` | real-db 경로 확장 (unanswered_queue/knowledge_gaps) | AC-01, AC-03 |
-| R4 | `tests/integration/rlhf-calibration.test.ts` | 동일 (calibration_candidates) | AC-01, AC-03 |
-| R5 | `tests/integration/model-governance.test.ts` | real-db 경로 확장 (prompt_registry/model_pin/change_request/approved_combination) | AC-01, AC-03 |
-| R6 | `.github/workflows/migrations-real-db.yml` | suite 목록에 5건 추가 | AC-02 |
+| R1 | `tests/integration/rlhf-reranking-flow.test.ts` | vi.mock(@/lib/db) 제거 → seedCoreActors + truncateTables([answer_feedback,...],cascade) + lazy import + describe.skipIf(HAS_DATABASE_URL). 유지 mock: version-tracker, logger. | AC-01, AC-03 |
+| R2 | `tests/integration/rlhf-calibration.test.ts` | 동일 (calibration_candidates). 유지 mock: with-permission. | AC-01, AC-03 |
+| R3 | `tests/integration/knowledge-gap-replay-real.test.ts` | full conversion (100% mock). 유지 mock: AI pipeline 17종 + audit + github-issue + logger. | AC-01, AC-03 |
+| R4 | `tests/integration/model-governance.test.ts` | placeholder DB section(expect(true))을 실 lifecycle 테스트로 교체. | AC-01, AC-03 |
+| R5 | `.github/workflows/migrations-real-db.yml` | suite 목록에 R1·R2 2건 추가 (R3·R4는 이미 등록) | AC-02 |
 
 **검증**: 각 파일 `pnpm env:test vitest run <file>` PASS (regula-test-db) + DATABASE_URL 미설정 시 skip + full `pnpm test` 회귀 0.
 
@@ -35,15 +36,15 @@
 ## 2. Phased Ordering
 
 ```
-Phase 1: Group C0 (baseline 측정) — threshold 값 확정 우선 (Group C 설계 전제)
-Phase 2: Group R1~R5 (전환 5건) — 도메인별 독립, 병렬/순차 가능
+Phase 1: Group C0 (baseline 측정) — test-count + coverage % 측정 (AC-03/04 전제)
+Phase 2: Group R1~R4 (전환 4건) — 도메인별 독립, 병렬/순차 가능
    → [CHECKPOINT] 각 전환 후 pnpm env:test PASS + full pnpm test 회귀 0
-Phase 3: Group R6 (CI suite 추가) — R1~R5 완료 후
+Phase 3: Group R5 (CI suite 추가) — R1~R4 완료 후 (2 신규 추가; R3·R4는 이미 등록). post-state 9 suite
 Phase 4: Group C1~C3 (coverage 게이트) — baseline 기반 threshold 설정
    → [CHECKPOINT] ci:coverage PASS + AC-05 negative test
 ```
 
-**의존성**: C1은 C0(baseline) 전제. R6은 R1~R5 전제. Group R과 Group C는 서로 독립(병렬 가능).
+**의존성**: C1은 C0(baseline) 전제. R5은 R1·R2(신규 2건) 전제. Group R과 Group C는 서로 독립(병렬 가능).
 
 ---
 
@@ -64,8 +65,9 @@ Phase 4: Group C1~C3 (coverage 게이트) — baseline 기반 threshold 설정
 | 전환 파일의 INSERT 경로 복잡(다중 FK/의존 테이블) → truncate 세트 설계 오류 | Medium | Medium | cer-persist 선례 직독 + 각 파일의 db.insert 경로 grep으로 truncate 세트 확정; cascade 옵션으로 child FK 회피 |
 | route-level mock과 real-db 전환의 경계 혼동 (과도한 mock 제거) | High | Low | REQ-REALDB-003: data/schema-dependent 경로만 전환, 외부 부작용(LLM/inngest/audit) mock 유지 |
 | coverage baseline이 예상보다 낮아 85% 즉시 적용 불가 | Medium | Medium | C0 baseline 측정 우선; ratchet 전략(baseline floor + follow-up) |
-| CI real-db job suite 12건으로 실행 시간 증가 | Low | Medium | real-db suite는 이미 분리된 job; 시간 임계 초과 시 별도 split 검토 |
-| knowledge-gap-replay-real/model-governance 기존 real-db case와 충돌 | Medium | Low | additive 확장 원칙 — 기존 case 보존 |
+| CI real-db job suite 9건(7+2 신규)으로 실행 시간 증가 | Low | Medium | real-db suite는 이미 분리된 job; 시간 임계 초과 시 별도 split 검토 |
+| knowledge-gap-replay-real·model-governance는 이미 CI real-db job에 등록 (plan-auditor D8) — 전환 시 현재 green cell 동작 변경 | Medium | High | 두 suite가 mock-based → real-db로 전환. knowledge-gap-replay-real은 현재 unit + real-db job 양쪽 mock-based 실행(중복) — 전환으로 real-db job이 canonical path |
+| model-governance placeholder 교체 (plan-auditor D3) | Low | Low | 기존 `expect(true).toBe(true)` placeholder는 실증 없음 — 교체는 additive |
 
 ---
 
@@ -73,9 +75,9 @@ Phase 4: Group C1~C3 (coverage 게이트) — baseline 기반 threshold 설정
 
 | Milestone | Priority | 완료 조건 |
 |-----------|----------|----------|
-| M0: Coverage baseline | High | `pnpm vitest run --coverage`로 lib/app/components % 측정, threshold 값 확정 |
-| M1: 전환 5건 | High | R1~R5 완료 — 각 `pnpm env:test` PASS + full `pnpm test` 회귀 0 |
-| M2: CI suite 통합 | High | R6 — migrations-real-db.yml 12 suite green (7+5) |
+| M0: baseline 측정 | High | `pnpm vitest run --coverage`로 lib/app/components % 측정 + 전환 전 `pnpm test` pass count 측정. threshold 값 확정 (AC-03/04 전제) |
+| M1: 전환 4건 | High | R1~R4 완료 — 각 `pnpm env:test` PASS + full `pnpm test` 회귀 0 |
+| M2: CI suite 통합 | High | R5 — migrations-real-db.yml 9 suite green (7+2 신규; R3·R4는 이미 등록) |
 | M3: Coverage 게이트 | High | C1~C3 — `ci:coverage` exit 0 + AC-05 negative test |
 | M4: 전체 회귀 | High | AC-01~06 모두 PASS |
 

@@ -15,16 +15,17 @@
 
 **입증된 패턴** (`cer-persist-roundtrip.test.ts`, PR #394): `beforeAll` seedCoreActors → `beforeEach` truncateTables([domain], {cascade:true}) → lazy route import → `it.skipIf(!HAS_DATABASE_URL)`. H2 원자성은 실 `db.transaction` rollback으로 증명 (audit mock 실패 주입). route-level mock(audit/with-permission/project-ownership/pubmed)은 유지.
 
-### 1.2 잔여 (B)클래스 5개 — mock 기반 직검 (2026-07-09)
-| File | vi.mock(@/lib/db) | real-db markers | 상태 |
-|------|-------------------|-----------------|------|
-| `tests/integration/rlhf-reranking-flow.test.ts` | 1 | 0 | mock → 전환 |
-| `tests/integration/docingest-e2e.test.ts` | 1 | 0 | mock → 전환 |
-| `tests/integration/knowledge-gap-replay-real.test.ts` | 1 | 0 | 부분 real-db → 확장 (이름에 -real 이나 mock 혼재) |
-| `tests/integration/rlhf-calibration.test.ts` | 1 | 0 | mock → 전환 |
-| `tests/integration/model-governance.test.ts` | 1 | 5 | 부분 real-db → 확장 |
+### 1.2 잔여 (B)클래스 전환 대상 4개 — mock 기반 직검 (2026-07-09, plan-auditor review-1 정정 반영)
+| File | vi.mock(@/lib/db) | CI real-db job 등록 | 상태 |
+|------|-------------------|---------------------|------|
+| `tests/integration/rlhf-reranking-flow.test.ts` | 1 (100% mock) | 미등록 → 신규 추가 | mock → real-db full 전환 |
+| `tests/integration/rlhf-calibration.test.ts` | 1 (100% mock) | 미등록 → 신규 추가 | mock → real-db full 전환 |
+| `tests/integration/knowledge-gap-replay-real.test.ts` | 1 (**100% mock**) | **이미 등록** | mock → real-db full 전환. 이름의 "-real"은 real consult pipeline 의미(DB 아님). plan-auditor D2 정정: 부분 real-db가 아니라 100% mock. |
+| `tests/integration/model-governance.test.ts` | 1 + DB section placeholder | **이미 등록** | mock + DB-backed section은 `describe.skipIf(!DB_AVAILABLE)` 내 `expect(true).toBe(true)` placeholder. plan-auditor D3: placeholder를 실 lifecycle 테스트로 교체. |
 
-직검: 5개 전부 `vi.mock('@/lib/db/client')` 사용. knowledge-gap-replay-real/model-governance는 real-db marker 일부 보유(확장 대상). 순수 mock 3개(rlhf-reranking/docingest-e2e/rlhf-calibration)는 전환 대상.
+**제외 (plan-auditor D4)**: `docingest-e2e.test.ts` — 헤더 직접 선언 (A)-class contract test ("without requiring a live Postgres", db inserts도 mock). RBAC/validation/pipeline ordering contract 검증이 설계 의도; schema drift는 `migrations-real-db.test.ts`가 이미 커버 → real-db 전환은 설계 위배·중복. 본 SPEC scope 외.
+
+직검: 전환 4개 전부 `vi.mock('@/lib/db/client')` 사용 (100% mock). knowledge-gap-replay-real/model-governance는 이미 CI real-db job에 등록되어 현재 mock-based로 실행 중 (전환 후 real-db로 동작 변경).
 
 ### 1.3 coverage 도구 현황
 `vitest.config.ts`:
@@ -46,17 +47,18 @@
 
 ---
 
-## 3. 의존성 매트릭스
+## 3. 의존성 매트릭스 — 실측 (plan-auditor D5 정정: `grep vi.mock` 기반, 2026-07-09)
 
-| 전환 파일 | 도메인 truncate 세트 (예상) | seedCoreActors | route-level mock 유지 |
-|-----------|----------------------------|----------------|----------------------|
-| rlhf-reranking-flow | answer_feedback(+messages/conversations cascade) | O | audit/with-permission |
-| docingest-e2e | organization_documents/document_chunks/ingest 연관 | O | inngest/audit |
-| knowledge-gap-replay-real | unanswered_queue/knowledge_gaps(+cascade) | O | llm/audit |
-| rlhf-calibration | calibration_candidates(+cascade) | O | audit |
-| model-governance | prompt_registry/model_pin/change_request/approved_combination | O | audit |
+| 전환 파일 | 기존 vi.mock 전체 목록 (유지 대상) | 도메인 truncate 세트 (예상, Run 직독 확정) |
+|-----------|-----------------------------------|--------------------------------------------|
+| rlhf-reranking-flow | `@/lib/db/client`(제거), `@/lib/observability/logger`(유지), `@/lib/rlhf/version-tracker`(유지) | answer_feedback (+messages/conversations cascade) |
+| rlhf-calibration | `@/lib/db/client`(제거), `@/lib/auth/with-permission`(유지) | calibration_candidates (+cascade) |
+| knowledge-gap-replay-real | `@/lib/db/client`(제거) + 17종 AI pipeline mock 유지: `@/lib/ai/intent`·`query-rewrite`·`router`·`merge`·`llm-provider`·`citation-enforce`·`confidence`·`expert-review-gating`·`expert-review-queue`·`external-enrichment`·`prompt-templates`·`streaming`·`structured-blocks`, `ai`(index), `@/lib/audit`(유지), `@/lib/knowledge-gap/github-issue`(유지), `@/lib/observability/logger`(유지) | unanswered_queue/knowledge_gaps (+cascade) |
+| model-governance | `@/lib/db/client`(제거). DB-backed placeholder section 교체. | prompt_registry/model_pin/change_request/approved_combination |
 
-정확한 truncate 세트는 Run phase에서 각 파일의 INSERT 경로 직독으로 확정 (cascade 옵션으로 child FK 회피).
+**제거 대상**: 오직 `@/lib/db/client` mock (각 파일 1개씩). **유지 대상**: 위 외부 부작용 mock 전부 (AI pipeline·ingest·license-gate·with-permission·version-tracker·audit·observability). 정확한 truncate 세트는 Run phase에서 각 파일의 db.insert 경로 직독으로 확정 (cascade 옵션으로 child FK 회피).
+
+> plan-auditor D5 정정 근거: v1.0.0 매트릭스는 "audit/with-permission" 등 추정값이었고 4/5 파일이 부정확했음. 위 표는 `grep -oE "vi.mock\([^)]+"` 실측 결과.
 
 ---
 

@@ -4,28 +4,28 @@
 
 ---
 
-## AC-01: 5건 real-db 전환/확장 (cer-persist 패턴)
+## AC-01: 4건 real-db 전환 (cer-persist 패턴)
 
 **Given** `tests/fixtures/database.ts` foundation (getDb/truncateTables/seedCoreActors/HAS_DATABASE_URL) 존재
-**When** 5건(rlhf-reranking-flow·docingest-e2e·knowledge-gap-replay-real·rlhf-calibration·model-governance)을 `vi.mock(@/lib/db/client)` 제거 + `beforeAll seedCoreActors` + `beforeEach truncateTables([domain],{cascade:true})` + lazy route import + `it.skipIf(!HAS_DATABASE_URL)` 패턴으로 전환/확장
+**When** 4건(rlhf-reranking-flow·rlhf-calibration·knowledge-gap-replay-real·model-governance)을 `vi.mock(@/lib/db/client)` 제거 + `beforeAll seedCoreActors` + `beforeEach truncateTables([domain],{cascade:true})` + lazy route import + `describe.skipIf(!HAS_DATABASE_URL)` 패턴으로 전환 (model-governance는 placeholder DB section을 실 lifecycle 테스트로 교체)
 **Then**
-- 5건 모두 `DATABASE_URL` 설정 시 실DB INSERT/SELECT/FK 검증 PASS (regula-test-db 또는 fresh pgvector)
+- 4건 모두 `DATABASE_URL` 설정 시 실DB INSERT/SELECT/FK 검증 PASS (regula-test-db 또는 fresh pgvector)
 - `DATABASE_URL` 미설정 시 우아하게 skip
-- route 로직 격리용 외부 mock(audit/with-permission/inngest)은 유지
+- 각 파일의 외부 부작용 mock(research.md §3 실측 목록)은 유지
 
-**Evidence**: 5건 `pnpm env:test vitest run <file>` PASS + `grep vi.mock.*db/client` 0건 + skip 시 SKIP 카운트 관찰.
+**Evidence**: 4건 `pnpm env:test vitest run <file>` PASS + `grep vi.mock.*db/client` 0건 + skip 시 SKIP 카운트 관찰.
 
 **REQ**: REALDB-001, 002, 003
 
 ---
 
-## AC-02: 전환 5건 CI real-db job 실행
+## AC-02: 전환 4건 CI real-db job 실행 (post-state 9 suite)
 
-**Given** `.github/workflows/migrations-real-db.yml` (SPEC-REGULA-MIGRATION-001)이 fresh pgvector + from-scratch apply 후 real-db suite 실행
-**When** 전환된 5건을 suite 실행 목록에 추가
-**Then** CI real-db job에서 매 PR 5건이 실DB 실행되어 PASS (기존 7 suite + 5 = 12 suite green, SKIPPED 0건)
+**Given** `.github/workflows/migrations-real-db.yml`에 7 suite 등록됨. 이 중 model-governance·knowledge-gap-replay-real 2건은 본 전환 대상과 중복 (현재 mock-based로 실행 중).
+**When** 2 신규 파일(rlhf-reranking-flow·rlhf-calibration)을 suite 실행 목록에 추가
+**Then** CI real-db job에서 매 PR **9 suite**(7 기존 + 2 신규)이 실DB 실행되어 PASS (SKIPPED 0건). model-governance·knowledge-gap-replay-real은 전환 후 동일 suite가 real-db로 실행(중복 등록 아님).
 
-**Evidence**: CI workflow 실행 로그 — 12 suite green. `gh run view` 로직 확인.
+**Evidence**: CI workflow 실행 로그 — 9 suite green. `gh run view` 로그 확인.
 
 **REQ**: REALDB-004
 
@@ -33,11 +33,11 @@
 
 ## AC-03: full mock-based suite 회귀 0
 
-**Given** DATABASE_URL 미설정 환경
-**When** `pnpm test` (full) 실행
-**Then** 전환된 5건이 skip되고 나머지가 green — 회귀 0 (기존 4784 baseline 유지, skip 증가분 = 전환 5건의 real-db case)
+**Given** 전환 전 test pass count를 Run M0에서 측정 (baseline, hardcoded 값 아님)
+**When** DATABASE_URL 미설정 상태로 `pnpm test` (full) 실행
+**Then** 회귀 0 (failed 0). 전환 4건의 real-db case가 skip로 전환되어 passed는 감소하되, **failed 증가 = 0**
 
-**Evidence**: `pnpm test` 0 failed (전환 전후 비교 — passed 감소 = 0, skip 증가 = 전환 case 수).
+**Evidence**: `pnpm test` 전환 전후 비교 — failed 0 유지, passed 감소분 = 전환 4건의 real-db case 수(M0 측정).
 
 **REQ**: REALDB-002
 
