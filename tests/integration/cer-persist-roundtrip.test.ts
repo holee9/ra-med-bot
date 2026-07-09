@@ -1,23 +1,31 @@
-// @MX:NOTE [AUTO] CER persist end-to-end roundtrip test.
+// @MX:NOTE [AUTO] CER persist end-to-end roundtrip — REAL-DB (Issue #364 / L-013).
 // @MX:SPEC SPEC-REGULA-CER-001
 // @MX:REASON [AUTO] Load-bearing test: exercises the REAL postCer route handler
-//           against a shared in-memory store. Proves the route persists
-//           workflow_runs (workflowType='cer') with correct org/project scoping
-//           and PII-safe inputJson. NOT a false-pass: the in-memory store
-//           actually receives the insert and assertions inspect it directly.
+//           against a LIVE PostgreSQL (DATABASE_URL) — not an in-memory store.
+//           This is the L-013 guarantee: the route's db.transaction INSERT into
+//           workflow_runs hits the real schema, so FK type mismatches (the
+//           0086 text-vs-uuid class), missing columns, or RLS drift surface here
+//           instead of 500'ing in production.
 //
-// SPEC-REGULA-PHI-REMOVAL-001 (Issue #319): the PMS auto-linkage assertions
-// (resolveCerLinkage) were removed; the CER persistence assertions remain.
+// Strategy (Issue #364 Class B conversion — data/schema-dependent):
+//   1. NO @/lib/db/client mock — the route's db.transaction uses the real DB.
+//   2. beforeAll: seed FK prerequisites (user / org / project) via fixtures.
+//   3. beforeEach: TRUNCATE workflow_runs for per-test isolation.
+//   4. Mocks kept are route-level and orthogonal to schema:
+//        - @/lib/audit        — records writeAudit + simulates the H2 failure
+//                                (audit_logs is immutable — REQ-FND-044 — so it
+//                                cannot be truncated; the mock keeps the table clean).
+//        - @/lib/auth/with-permission — bypass real SSO, inject the session.
+//        - @/lib/cer/project-ownership — deterministic IDOR access decision.
+//        - @/lib/cer/pubmed-client — no real PubMed network calls.
+//   5. Assertions SELECT the persisted row back from the real DB.
 //
-// Strategy (mirrors the prior pms-idor-runtime pattern):
-//   1. Mock @/lib/db/client — in-memory store recording inserts + serving selects.
-//   2. Mock @/lib/audit — record writeAudit calls.
-//   3. Mock @/lib/auth/with-permission — bypass RBAC, inject session per org.
-//   4. Mock @/lib/cer/pubmed-client — deterministic literature results.
-//   5. Mock @/lib/cer/project-ownership — assertPmsProjectAccess via in-memory projects.
-//   6. Call REAL POST handler, then inspect the in-memory store.
+// Skipped when DATABASE_URL is unset (mirrors migrations-real-db.test.ts).
 
-import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
+import { workflowRuns } from '@/lib/db/schema';
+import { eq } from 'drizzle-orm';
+import { afterEach, beforeAll, beforeEach, describe, expect, it, vi } from 'vitest';
+import { HAS_DATABASE_URL, seedCoreActors, truncateTables } from '../../tests/fixtures/database';
 
 // ---------------------------------------------------------------------------
 // Constants (declared early so module-scope mock initializers can reference them)
@@ -28,171 +36,14 @@ const ORG_A = 'aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa';
 const USER_A = '11111111-1111-1111-1111-111111111111';
 
 // ---------------------------------------------------------------------------
-// In-memory workflow_runs store — the single shared source of truth for both
-// the route INSERT and the resolver SELECT.
+// Audit mock — records writeAudit calls, simulates the in-transaction failure
+// that the H2 atomicity case injects. Real audit_logs is immutable (REQ-FND-044)
+// so we never persist here; the mock is the single source of audit truth.
 // ---------------------------------------------------------------------------
 
-type Row = Record<string, unknown>;
-
-interface WorkflowRunRow {
-  id: string;
-  user_id: string;
-  organization_id: string;
-  project_id: string;
-  workflow_type: string;
-  status: string;
-  input_json: Row;
-  result_json: Row | null;
-  created_at: Date;
-}
-
-const workflowRunsStore: WorkflowRunRow[] = [];
-const projectsStore: Set<string> = new Set(); // projectIds belonging to ORG_A
-const auditRecords: Array<{ action: string; resource_id: string; tx?: unknown; failed?: boolean }> =
-  [];
-
-let activeTransactionWorkflowRunsStore: WorkflowRunRow[] | null = null;
-let transactionShouldFail = false;
+type AuditRecord = { action: string; resource_id: string; tx?: unknown; failed?: boolean };
+const auditRecords: AuditRecord[] = [];
 let auditShouldFailInTransaction = false;
-
-// ---------------------------------------------------------------------------
-// DB mock — the route inserts via db.transaction(tx => tx.insert(...).returning());
-// the resolver selects via db.select(...).from().where().orderBy().limit().
-// Both must hit the SAME workflowRunsStore.
-// ---------------------------------------------------------------------------
-
-interface InsertChain {
-  values: (v: Row) => InsertChain;
-  returning: (fields?: unknown) => Promise<Row[]>;
-}
-
-interface SelectChain {
-  from: (table: unknown) => SelectChain;
-  where: (condition: unknown) => SelectChain;
-  orderBy: (...cols: unknown[]) => SelectChain;
-  limit: (n: number) => Promise<Row[]>;
-}
-
-// Minimal condition representation: we capture the where() args and interpret
-// the (projectId, orgId, workflowType='cer') triple to filter the store.
-// The real Drizzle condition object is opaque to us; we rely on the resolver
-// always filtering by these three columns, so we filter the store by the
-// test-known PROJECT_ID + ORG_A + 'cer' whenever a select reaches .limit().
-interface WhereCapture {
-  projectId?: string;
-  orgId?: string;
-  workflowType?: string;
-}
-
-function makeSelectChain(captured: WhereCapture): SelectChain {
-  const chain: SelectChain = {
-    from: vi.fn(() => chain),
-    where: vi.fn((condition: unknown) => {
-      // The resolver builds an `and(eq(projectId), eq(orgId), eq(workflowType))`.
-      // Drizzle encodes these as {table, column} references — we can't decode
-      // reliably, so we fall back to filtering by the test's known constants.
-      // Since this mock only serves the resolver (which always queries the
-      // PROJECT_ID/ORG_A/'cer' triple), filtering the whole store is safe.
-      void condition;
-      return chain;
-    }),
-    orderBy: vi.fn(() => chain),
-    limit: vi.fn(async () => {
-      const rows = workflowRunsStore
-        .filter(
-          (r) =>
-            r.workflow_type === 'cer' &&
-            r.project_id === captured.projectId &&
-            r.organization_id === captured.orgId,
-        )
-        .sort((a, b) => b.created_at.getTime() - a.created_at.getTime())
-        .slice(0, 1)
-        .map((r) => ({ id: r.id, resultJson: r.result_json }));
-      return rows;
-    }),
-  };
-  return chain;
-}
-
-// Drizzle pgTable objects store their name at Symbol(drizzle:Name), not .name.
-function getDrizzleTableName(table: unknown): string | undefined {
-  if (!table || typeof table !== 'object') return undefined;
-  for (const symbol of Object.getOwnPropertySymbols(table)) {
-    if (String(symbol) === 'Symbol(drizzle:Name)') {
-      return (table as Record<symbol, unknown>)[symbol] as string | undefined;
-    }
-  }
-  return undefined;
-}
-
-function getWorkflowRunsWriteStore(): WorkflowRunRow[] {
-  return activeTransactionWorkflowRunsStore ?? workflowRunsStore;
-}
-
-// Explicit interface breaks the self-referential type cycle (dbMock.transaction
-// references dbMock via closure in its own initializer) without resorting to `any`.
-interface DbMock {
-  insert: (table: unknown) => InsertChain;
-  select: (fields?: unknown) => SelectChain;
-  transaction: (fn: (tx: unknown) => Promise<unknown>) => Promise<unknown>;
-}
-
-const dbMock: DbMock = {
-  insert: vi.fn((table: unknown) => {
-    const chain: InsertChain = {
-      values: vi.fn((v: Row) => {
-        if (getDrizzleTableName(table) === 'workflow_runs') {
-          // Route passes camelCase keys (Drizzle column names). Accept both.
-          const input = v as Record<string, unknown>;
-          const row: WorkflowRunRow = {
-            id: (input.id as string) ?? crypto.randomUUID(),
-            user_id: (input.userId ?? input.user_id) as string,
-            organization_id: (input.organizationId ?? input.organization_id) as string,
-            project_id: (input.projectId ?? input.project_id) as string,
-            workflow_type: ((input.workflowType ?? input.workflow_type) as string) ?? 'cer',
-            status: (input.status as string) ?? 'approved',
-            input_json: ((input.inputJson ?? input.input_json) as Row) ?? {},
-            result_json: ((input.resultJson ?? input.result_json) as Row | null) ?? null,
-            created_at: new Date(),
-          };
-          getWorkflowRunsWriteStore().push(row);
-        }
-        return chain;
-      }),
-      returning: vi.fn(async () => {
-        const writeStore = getWorkflowRunsWriteStore();
-        const last = writeStore[writeStore.length - 1];
-        return [{ id: last?.id ?? crypto.randomUUID() }];
-      }),
-    };
-    return chain;
-  }),
-  select: vi.fn((fields?: unknown) => {
-    void fields;
-    // The resolver passes { id, resultJson } — we return row objects with
-    // those keys from the store. projectId/orgId are the test constants.
-    return makeSelectChain({ projectId: PROJECT_ID, orgId: ORG_A });
-  }),
-  transaction: vi.fn(async (fn: (tx: unknown) => Promise<unknown>) => {
-    if (transactionShouldFail) throw new Error('simulated transaction failure');
-    const previousTransactionStore = activeTransactionWorkflowRunsStore;
-    const stagedWorkflowRuns = [...workflowRunsStore];
-    activeTransactionWorkflowRunsStore = stagedWorkflowRuns;
-    try {
-      const result = await fn(dbMock as unknown);
-      workflowRunsStore.splice(0, workflowRunsStore.length, ...stagedWorkflowRuns);
-      return result;
-    } finally {
-      activeTransactionWorkflowRunsStore = previousTransactionStore;
-    }
-  }),
-};
-
-vi.mock('@/lib/db/client', () => ({ db: dbMock }));
-
-// ---------------------------------------------------------------------------
-// Audit mock — records writeAudit, simulates failure on demand.
-// ---------------------------------------------------------------------------
 
 vi.mock('@/lib/audit', () => ({
   writeAudit: vi.fn(async (params: { action: string; resource_id: string }, tx?: unknown) => {
@@ -231,16 +82,16 @@ vi.mock('@/lib/auth/with-permission', () => ({
 }));
 
 // ---------------------------------------------------------------------------
-// project-ownership mock — assertPmsProjectAccess via in-memory projectsStore.
-// Mirrors the real return contract: null = allowed, Response = denied.
+// project-ownership mock — deterministic IDOR decision. PROJECT_ID belongs to
+// ORG_A; any other org is denied. (Orthogonal to the real schema row, which
+// seedCoreActors also inserts so the workflow_runs FK resolves.)
 // ---------------------------------------------------------------------------
+
+const projectsStore: Set<string> = new Set();
 
 vi.mock('@/lib/cer/project-ownership', () => ({
   assertPmsProjectAccess: vi.fn(
     async (projectId: string, organizationId: string): Promise<Response | null> => {
-      // PROJECT_ID belongs to ORG_A (projectsStore). Deny when the project is
-      // unknown OR the caller's org is not the owning org (mirrors the real
-      // projects.organization_id === organizationId check).
       if (projectsStore.has(projectId) && organizationId === ORG_A) return null;
       return Response.json({ error: 'Project not found' }, { status: 404 });
     },
@@ -269,14 +120,13 @@ vi.mock('@/lib/cer/pubmed-client', () => ({
 }));
 
 // ---------------------------------------------------------------------------
-// Import the REAL route handler + REAL resolver AFTER mocks are registered.
+// Import the REAL route handler AFTER mocks are registered. Loaded lazily in
+// beforeAll (NOT at module top) so that when DATABASE_URL is unset the describe
+// is skipped entirely and the route — which imports the real db/client → env
+// validation — never loads. This keeps the file importable in a no-DB run.
 // ---------------------------------------------------------------------------
 
-const { POST: postCer } = await import('@/app/api/ra/workflows/cer/route');
-// SPEC-REGULA-PHI-REMOVAL-001 (Issue #319): resolveCerLinkage import removed —
-// the PMS auto-linkage resolver was deleted with the PMS domain. The CER
-// persistence assertions below remain valid; the resolveCerLinkage check is
-// dropped.
+let postCer: typeof import('@/app/api/ra/workflows/cer/route').POST;
 
 // ---------------------------------------------------------------------------
 // Helpers
@@ -284,15 +134,6 @@ const { POST: postCer } = await import('@/app/api/ra/workflows/cer/route');
 
 function setSession(orgId: string, userId = USER_A) {
   currentSession = { user: { id: userId, role: 'ra-lead', organizationId: orgId } };
-}
-
-function resetStores() {
-  workflowRunsStore.length = 0;
-  projectsStore.clear();
-  auditRecords.length = 0;
-  activeTransactionWorkflowRunsStore = null;
-  transactionShouldFail = false;
-  auditShouldFailInTransaction = false;
 }
 
 function buildCerBody(overrides: Partial<Record<string, unknown>> = {}): string {
@@ -305,10 +146,38 @@ function buildCerBody(overrides: Partial<Record<string, unknown>> = {}): string 
   });
 }
 
-beforeEach(() => {
-  resetStores();
+beforeAll(async () => {
+  // Only runs when HAS_DATABASE_URL (the describe is skipIf'd otherwise).
+  // 1. Seed the FK prerequisites a real workflow_runs INSERT needs. Idempotent.
+  await seedCoreActors({
+    userId: USER_A,
+    userEmail: 'cer-real-db-test@regula.test',
+    userName: 'CER Real-DB Test User',
+    orgId: ORG_A,
+    orgName: 'CER Real-DB Test Org',
+    projectId: PROJECT_ID,
+    projectName: 'CER Real-DB Test Project',
+  });
+  // 2. Load the real route. The route's `import { db } from '@/lib/db/client'`
+  //    now resolves to the REAL client (no db mock registered).
+  const route = await import('@/app/api/ra/workflows/cer/route');
+  postCer = route.POST;
+});
+
+beforeEach(async () => {
+  auditRecords.length = 0;
+  auditShouldFailInTransaction = false;
+  projectsStore.clear();
   projectsStore.add(PROJECT_ID);
   setSession(ORG_A, USER_A);
+  // Isolation: reset the workflow_runs domain. workflow_runs is the FK parent of
+  // 7 workflow-domain child tables (cer_literature, literature_searches, ...),
+  // so plain TRUNCATE is rejected — CASCADE resets the whole subtree. audit_logs
+  // is excluded (immutable, REQ-FND-044); users/orgs/projects are stable
+  // fixtures seeded once in beforeAll.
+  if (HAS_DATABASE_URL) {
+    await truncateTables(['workflow_runs'], { cascade: true });
+  }
 });
 
 afterEach(() => {
@@ -316,11 +185,11 @@ afterEach(() => {
 });
 
 // ---------------------------------------------------------------------------
-// The load-bearing roundtrip: route → persist → (PMS linkage removed, Issue #319)
+// The load-bearing roundtrip: route → real-db persist → SELECT back.
 // ---------------------------------------------------------------------------
 
-describe('CER persist roundtrip (SPEC-REGULA-CER-001)', () => {
-  it('persists a workflow_runs row end-to-end', async () => {
+describe.skipIf(!HAS_DATABASE_URL)('CER persist roundtrip — REAL DB (SPEC-REGULA-CER-001)', () => {
+  it('persists a workflow_runs row end-to-end against the live schema', async () => {
     // 1. Call the REAL route with a projectId.
     const req = new Request('http://localhost/api/ra/workflows/cer', {
       method: 'POST',
@@ -333,23 +202,29 @@ describe('CER persist roundtrip (SPEC-REGULA-CER-001)', () => {
     expect(payload.runId).toBeTruthy();
     expect(payload.workflowRunId).toBeTruthy();
 
-    // 2. Assert the workflow_runs row was inserted with correct scoping.
-    expect(workflowRunsStore).toHaveLength(1);
-    const row = workflowRunsStore[0];
-    expect(row?.workflow_type).toBe('cer');
-    expect(row?.project_id).toBe(PROJECT_ID);
-    expect(row?.organization_id).toBe(ORG_A);
-    expect(row?.user_id).toBe(USER_A);
+    // 2. SELECT the row back from the REAL DB and assert schema-correct scoping.
+    const { getDb } = await import('../../tests/fixtures/database');
+    const db = await getDb();
+    const rows = await db
+      .select()
+      .from(workflowRuns)
+      .where(eq(workflowRuns.id, payload.workflowRunId as string));
+    expect(rows, 'workflow_runs row must be persisted in the live DB').toHaveLength(1);
+    const row = rows[0];
+    expect(row?.workflowType).toBe('cer');
+    expect(row?.projectId).toBe(PROJECT_ID);
+    expect(row?.organizationId).toBe(ORG_A);
+    expect(row?.userId).toBe(USER_A);
     expect(row?.status).toBe('approved');
 
     // 3. PII-safe inputJson: NO raw PubMed query text — only the length.
-    const inputJson = row?.input_json ?? {};
+    const inputJson = (row?.inputJson ?? {}) as Record<string, unknown>;
     expect(inputJson.pubmedQueryLength).toBe('cardiac stent biocompatibility'.length);
     expect(inputJson.pubmedQuery).toBeUndefined();
     expect(JSON.stringify(inputJson)).not.toContain('cardiac stent biocompatibility');
 
-    // 4. resultJson carries the device/intendedUse the resolver extracts.
-    const resultJson = row?.result_json ?? {};
+    // 4. resultJson carries the device/intendedUse the route assembles.
+    const resultJson = (row?.resultJson ?? {}) as Record<string, unknown>;
     expect(resultJson.deviceName).toBe('CardioStent-X');
     expect(resultJson.intendedUse).toBe('coronary artery stenting');
 
@@ -358,7 +233,7 @@ describe('CER persist roundtrip (SPEC-REGULA-CER-001)', () => {
   });
 
   it('returns 404 when projectId belongs to another org (IDOR denial)', async () => {
-    // PROJECT_ID is in projectsStore for ORG_A. Attacker in ORG_B references it.
+    // PROJECT_ID is owned by ORG_A (projectsStore). Attacker in ORG_B references it.
     setSession('bbbbbbbb-bbbb-bbbb-bbbb-bbbbbbbbbbbb', USER_A);
     const req = new Request('http://localhost/api/ra/workflows/cer', {
       method: 'POST',
@@ -367,8 +242,12 @@ describe('CER persist roundtrip (SPEC-REGULA-CER-001)', () => {
     const res = await postCer(req, {});
 
     expect(res.status).toBe(404);
-    // No workflow_runs row persisted on denial.
-    expect(workflowRunsStore).toHaveLength(0);
+
+    // No workflow_runs row persisted on denial (real DB stays clean).
+    const { getDb } = await import('../../tests/fixtures/database');
+    const db = await getDb();
+    const rows = await db.select().from(workflowRuns);
+    expect(rows).toHaveLength(0);
   });
 
   it('does NOT persist when projectId is absent (backward-compat ephemeral run)', async () => {
@@ -381,22 +260,30 @@ describe('CER persist roundtrip (SPEC-REGULA-CER-001)', () => {
     expect(res.status).toBe(202);
     const payload = (await res.json()) as { workflowRunId?: string };
     expect(payload.workflowRunId).toBeUndefined();
-    expect(workflowRunsStore).toHaveLength(0);
+
+    const { getDb } = await import('../../tests/fixtures/database');
+    const db = await getDb();
+    const rows = await db.select().from(workflowRuns);
+    expect(rows).toHaveLength(0);
   });
 
-  it('rolls back the workflow_runs insert when the audit write fails (H2 atomicity)', async () => {
+  it('rolls back the real workflow_runs insert when the audit write fails (H2 atomicity)', async () => {
     auditShouldFailInTransaction = true;
     const req = new Request('http://localhost/api/ra/workflows/cer', {
       method: 'POST',
       body: buildCerBody({ projectId: PROJECT_ID }),
     });
 
+    // The in-transaction writeAudit throws → the REAL db.transaction rolls back.
     await expect(postCer(req, {})).rejects.toBeDefined();
-    expect(dbMock.transaction).toHaveBeenCalledTimes(1);
     expect(auditRecords.some((a) => a.action === 'cer_created' && !a.tx)).toBe(true);
     expect(auditRecords.some((a) => a.action === 'cer_literature_search' && !a.tx)).toBe(true);
     expect(auditRecords.some((a) => a.action === 'cer_persisted' && a.tx && a.failed)).toBe(true);
-    // The in-transaction insert was staged, then rolled back after writeAudit failed.
-    expect(workflowRunsStore).toHaveLength(0);
+
+    // The real INSERT was staged then rolled back — the live DB stays empty.
+    const { getDb } = await import('../../tests/fixtures/database');
+    const db = await getDb();
+    const rows = await db.select().from(workflowRuns);
+    expect(rows).toHaveLength(0);
   });
 });
