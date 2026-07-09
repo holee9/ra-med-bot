@@ -135,4 +135,5 @@ jobs:
             tests/integration/knowledge-gap-replay-real.test.ts \
             tests/integration/rlhf-reranking-flow.test.ts \
             tests/integration/rlhf-calibration.test.ts \
-            tests/integration/model-governance-real-db.test.ts
+            tests/integration/model-governance-real-db.test.ts \
+            tests/integration/rls-sources-real-db.test.ts
