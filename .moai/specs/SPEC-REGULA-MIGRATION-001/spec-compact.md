@@ -24,7 +24,7 @@
 
 | AC# | Given | When | Then | REQ IDs |
 |-----|-------|------|------|---------|
-| AC-01 | fresh pgvector 컨테이너 + `regula_app` 사전 CREATE | `cat migrations/[0-9]*.sql \| psql` 전체 apply | 0 에러 + public table count=96 + `audit_log_hash_bi` trigger 존재 + RLS policy set = baseline | REQ-MIGRATION-001,003,004,005,006,007 |
+| AC-01 | fresh pgvector 컨테이너 + `regula_app` 사전 CREATE | `cat migrations/[0-9]*.sql \| psql` 전체 apply | 0 에러 + public table count=96 + `audit_logs_no_mutation` trigger 존재 + RLS policy set = baseline | REQ-MIGRATION-001,003,004,005,006,007 |
 | AC-02 | CI fresh pgvector service + migration-apply 구축 | real-db suite 7개 from-scratch DB 실행 | 7개 suite 모두 PASS (SKIPPED 아님) | REQ-CI-001,002 |
 | AC-03 | 기존 `regula-test-db` 존재 | 정정 branch에서 regression suite 실행 | 기존 schema/data 변화 없음 (0 delta) | REQ-SAFETY-001 |
 | AC-04 | 정정된 migration 포함 | `pnpm ci:migrations` 실행 | sequence check PASS (exit 0) | REQ-SAFETY-003 |
