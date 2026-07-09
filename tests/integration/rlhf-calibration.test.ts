@@ -152,10 +152,12 @@ beforeEach(async () => {
   auditRecords.length = 0;
   auditShouldFail = false;
   session.current = { user: { id: USER_A, organizationId: ORG_A } };
-  // Isolation: clear the domain tables under test (org/user/project persist).
-  await truncateTables(['calibration_candidates', 'answer_feedback', 'messages', 'conversations'], {
-    cascade: true,
-  });
+  // Isolation: clear only the leaf domain tables under assertion. Do NOT include
+  // conversations/messages — audit_logs FKs conversations (immutable REQ-FND-044),
+  // so TRUNCATE conversations CASCADE reaches audit_logs and the immutability
+  // trigger blocks it. These tests seed unique-uuid conversations/messages per
+  // case (crypto.randomUUID), so they need no per-test truncation.
+  await truncateTables(['calibration_candidates', 'answer_feedback']);
 });
 
 afterEach(() => {

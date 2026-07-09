@@ -173,10 +173,12 @@ beforeAll(async () => {
 beforeEach(async () => {
   auditCalls.length = 0;
   vi.clearAllMocks();
-  // Isolation: clear queue (+ its FK dependents) so each test owns its row.
-  // conversations/messages seeded per-test via seedQueueRow are also cleared
-  // because queue CASCADE-deletes reference them; truncate the set together.
-  await truncateTables(['unanswered_queue', 'messages', 'conversations'], { cascade: true });
+  // Isolation: clear only the leaf table under assertion. Do NOT include
+  // conversations/messages — audit_logs FKs conversations (immutable REQ-FND-044),
+  // so TRUNCATE conversations CASCADE reaches audit_logs and the immutability
+  // trigger blocks it. Each test seeds unique-uuid conversations/messages via
+  // seedQueueRow (crypto.randomUUID), so they need no per-test truncation.
+  await truncateTables(['unanswered_queue']);
 });
 
 afterEach(() => {
