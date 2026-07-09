@@ -11,6 +11,15 @@
 
 > Placeholder for post-1.0.0 development.
 
+### SPEC-REGULA-RLS-SOURCES-001 — sources/source_sections RLS 활성화, org-isolation defense-in-depth (#317)
+
+- **배경** — #239 (SPEC-REGULA-RLS-ENFORCE-001, project-wide RLS WITH CHECK + GUC)에서 sources/source_sections(RAG corpus)가 누락. GUC `app.current_org_id`가 inert 상태 → query-layer org filter 누락 시 cross-org 노출 위험. expert-security M-2 (#313/#314).
+- **AC4 진실** — sources/source_sections는 0000에서 CREATE TABLE만 생성되고 RLS policy가 전혀 없었음 → 0083/0084(WITH CHECK/FORCE)가 붙일 대상이 없어 **scope gap** (19 tables, ingest_jobs 0017 §3 DROP). migration 헤더에 문서화.
+- **구현 (migration 0114)** — sources + source_sections `ENABLE`+`FORCE ROW LEVEL SECURITY` + strict org-match policy (fail-closed). source_sections는 `organization_id` 컬럼이 없어 **부모 sources EXISTS subquery** (Option A). `NULLIF(current_setting(...), '')::uuid`로 빈/NULL GUC를 안전 처리 (sibling 0099보다 견고). `DROP POLICY IF EXISTS` idempotency guard.
+- **real-DB 카나리 8종** (`tests/integration/rls-sources-real-db.test.ts`) — 단일 postgres-js client(`max:1`)로 SET ROLE/GUC pool 오염 차단. regula_app role로 own-org 가시 / other-org 차단 / GUC unset fail-closed(0행) / cross-org INSERT WITH CHECK 차단 / source_sections EXISTS scoping / superuser bypass 증명.
+- **직검 정정 3건 (L-013)** — (1) 이슈 전제 "회귀 매우 높음" → 실제 superuser 하 런타임 영향 0 (enforce는 regula_app 전환 후); (2) NULLIF policy — 빈 GUC cast 에러를 fail-closed로 견고화; (3) CI real-db suite 병렬 실행 시 rlhf-reranking-flow의 source_sections truncate가 카나리 seed 삭제 → 격리 step으로 해결 (superuser sanity pre-check로 직접 포착).
+- **게이트 직검** — typecheck/ci:migrations/lint/ci:rbac/ci:audit/ci:module-boundaries 0 · 실DB 카나리 8/8 · full `pnpm test` 4763 passed/0 failed · CI real-db suite(from-scratch) PASS. evaluator-active APPROVE 98.75/100.
+
 ### SPEC-REGULA-REALDB-001 — (B)클래스 real-db 전환 4건 + Coverage ratchet 게이트 (#395)
 
 - **배경** — #364(PR #394) foundation(cer-persist 패턴) 기반 잔여. data/schema-dependent mock-db 통합 테스트를 real-db로 전환하여 L-013 안전망 확장. plan-auditor annotation cycle 거침(v1.1.0: D1-D8 정정, docingest-e2e (A)-class 제외).

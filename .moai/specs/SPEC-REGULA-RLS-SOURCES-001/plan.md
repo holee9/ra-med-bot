@@ -27,8 +27,8 @@ DROP POLICY IF EXISTS sources_org_isolated ON sources;
 CREATE POLICY sources_org_isolated ON sources
   FOR ALL
   TO regula_app
-  USING (organization_id = current_setting('app.current_org_id', true)::uuid)
-  WITH CHECK (organization_id = current_setting('app.current_org_id', true)::uuid);
+  USING (organization_id = NULLIF(current_setting('app.current_org_id', true), '')::uuid)
+  WITH CHECK (organization_id = NULLIF(current_setting('app.current_org_id', true), '')::uuid);
 
 -- §2 source_sections (Option A: subquery 정책, research.md §2)
 ALTER TABLE source_sections ENABLE ROW LEVEL SECURITY;
@@ -43,14 +43,14 @@ CREATE POLICY source_sections_org_isolated ON source_sections
     EXISTS (
       SELECT 1 FROM sources s
       WHERE s.id = source_sections.source_id
-        AND s.organization_id = current_setting('app.current_org_id', true)::uuid
+        AND s.organization_id = NULLIF(current_setting('app.current_org_id', true), '')::uuid
     )
   )
   WITH CHECK (
     EXISTS (
       SELECT 1 FROM sources s
       WHERE s.id = source_sections.source_id
-        AND s.organization_id = current_setting('app.current_org_id', true)::uuid)
+        AND s.organization_id = NULLIF(current_setting('app.current_org_id', true), '')::uuid)
     )
   );
 ```
