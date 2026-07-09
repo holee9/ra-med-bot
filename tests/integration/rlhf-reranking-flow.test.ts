@@ -108,7 +108,7 @@ describe.skipIf(!HAS_DATABASE_URL)(
     beforeEach(async () => {
       vi.clearAllMocks();
       // Isolation: clear sections only (source/org/user/project persist).
-      await truncateTables(['source_sections']);
+      await truncateTables(['source_sections'], { cascade: true });
     });
 
     it('retrieval order is STABLE when all feedback scores are neutral (0)', async () => {

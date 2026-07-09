@@ -22,8 +22,8 @@
 ## AC-02: 전환 4건 CI real-db job 실행 (post-state 9 suite)
 
 **Given** `.github/workflows/migrations-real-db.yml`에 7 suite 등록됨. 이 중 model-governance·knowledge-gap-replay-real 2건은 본 전환 대상과 중복 (현재 mock-based로 실행 중).
-**When** 2 신규 파일(rlhf-reranking-flow·rlhf-calibration)을 suite 실행 목록에 추가
-**Then** CI real-db job에서 매 PR **9 suite**(7 기존 + 2 신규)이 실DB 실행되어 PASS (SKIPPED 0건). model-governance·knowledge-gap-replay-real은 전환 후 동일 suite가 real-db로 실행(중복 등록 아님).
+**When** 3 신규 real-db 파일(rlhf-reranking-flow·rlhf-calibration·model-governance-real-db)을 suite 실행 목록에 추가
+**Then** CI real-db job에서 매 PR **10 suite**(7 기존 + 3 신규)이 실DB 실행되어 PASS (SKIPPED 0건). knowledge-gap-replay-real은 전환 후 동일 suite가 real-db로 실행(중복 등록 아님).
 
 **Evidence**: CI workflow 실행 로그 — 9 suite green. `gh run view` 로그 확인.
 

@@ -63,7 +63,7 @@ labels:
 | REQ-REALDB-001 | THE SYSTEM SHALL `rlhf-reranking-flow`·`rlhf-calibration`·`knowledge-gap-replay-real`·`model-governance` mock-db 통합 테스트 4건을 real-db로 전환한다 (model-governance는 placeholder DB section을 실 lifecycle 테스트로 교체) | High |
 | REQ-REALDB-002 | WHEN DATABASE_URL이 설정된 경우 THEN THE SYSTEM SHALL 전환된 4건이 실DB INSERT/SELECT/FK 검증을 수행하고, DATABASE_URL 미설정 시 skip된다 (cer-persist 패턴의 `describe.skipIf(!HAS_DATABASE_URL)`) | High |
 | REQ-REALDB-003 | WHILE 전환 중 THE SYSTEM SHALL data/schema-dependent 경로만 real-db로 전환하고, 각 파일의 기존 외부 부작용 mock(AI pipeline·ingest embed/extract·license-gate·with-permission·version-tracker·observability 등, research.md §3 실측 매트릭스 참조)은 유지한다 | Medium |
-| REQ-REALDB-004 | THE SYSTEM SHALL 2개 신규 파일(rlhf-reranking-flow·rlhf-calibration)을 `migrations-real-db.yml` suite 목록에 추가한다 (knowledge-gap-replay-real·model-governance는 이미 등록됨). post-state = 9 suite (7 기존 + 2 신규) | High |
+| REQ-REALDB-004 | THE SYSTEM SHALL 3개 신규 real-db 파일(rlhf-reranking-flow·rlhf-calibration·model-governance-real-db)을 `migrations-real-db.yml` suite 목록에 추가한다 (knowledge-gap-replay-real은 이미 등록됨). post-state = 10 suite (7 기존 + 3 신규) | High |
 
 ### REQ-COV: Coverage 85% CI 게이트
 
@@ -82,7 +82,7 @@ labels:
 | AC# | Given | When | Then | REQ IDs |
 |-----|-------|------|------|---------|
 | AC-01 | `tests/fixtures/database.ts` foundation 존재 (PR #394) | 4건(rlhf-reranking-flow·rlhf-calibration·knowledge-gap-replay-real·model-governance)을 cer-persist 패턴으로 전환 (model-governance placeholder 교체 포함) | 4건 모두 DATABASE_URL 설정 시 실DB PASS, 미설정 시 skip (vi.mock @/lib/db 제거 확인) | REQ-REALDB-001, 002, 003 |
-| AC-02 | `migrations-real-db.yml`에 7 suite 등록됨 (2건은 본 전환 대상과 중복) | 2 신규(rlhf-reranking-flow·rlhf-calibration) suite 목록 추가 | CI real-db job에서 **9 suite**(7+2)이 매 PR 실DB 실행되어 PASS (SKIPPED 0건). 단, model-governance·knowledge-gap-replay-real은 이미 등록되어 전환 후 동일 suite가 real-db로 실행 | REQ-REALDB-004 |
+| AC-02 | `migrations-real-db.yml`에 7 suite 등록됨 | 3 신규(rlhf-reranking-flow·rlhf-calibration·model-governance-real-db) suite 목록 추가 | CI real-db job에서 **10 suite**(7+3)이 매 PR 실DB 실행되어 PASS (SKIPPED 0건). knowledge-gap-replay-real은 이미 등록되어 전환 후 동일 suite가 real-db로 실행 | REQ-REALDB-004 |
 | AC-03 | 전환 전 test pass count를 M0에서 측정 (baseline) | DATABASE_URL 미설정 상태로 `pnpm test` 실행 | 회귀 0 (failed 0). passed는 전환 case가 skip로 전환되어 감소하되, failed 증가 0 | REQ-REALDB-002 |
 | AC-04 | coverage baseline M0 측정 완료 | `vitest.config.ts` thresholds 설정 + `ci:coverage` 스크립트 추가 | threshold가 max(85%, baseline)로 설정되고 `pnpm ci:coverage`가 baseline에서 PASS | REQ-COV-001, 002 |
 | AC-05 | coverage 게이트가 CI에 통합됨 | 고의로 커버리지 하락(테스트 삭제) 주입 시 | CI가 red로 실패 (negative test) | REQ-COV-003 |
