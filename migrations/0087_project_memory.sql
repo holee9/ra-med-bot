@@ -72,12 +72,18 @@ CREATE TABLE project_memory (
   valid_from            timestamptz NOT NULL DEFAULT now(),
   -- NULL = permanent (REQ-010). Set on invalidate (REQ-009) or manual expiry.
   valid_until           timestamptz,
-  created_at            timestamptz NOT NULL DEFAULT now(),
-  -- REQ-012 atomicity DB-level guard: at most one active row per (project, key).
-  -- Same-key update = old row invalidated + new active row in ONE tx (manager.ts).
-  CONSTRAINT project_memory_one_active_per_key UNIQUE NULLS NOT DISTINCT
-    (project_id, key) WHERE status = 'active'
+  created_at            timestamptz NOT NULL DEFAULT now()
 );
+
+-- REQ-012 atomicity DB-level guard: at most one active row per (project, key).
+-- Same-key update = old row invalidated + new active row in ONE tx (manager.ts).
+-- NOTE (SPEC-REGULA-MIGRATION-001 D9): Postgres does NOT support an inline
+-- `UNIQUE ... WHERE` partial constraint, so the guard is a partial UNIQUE INDEX
+-- (NULLS NOT DISTINCT preserves "one active per key"; the migrations-real-db
+-- from-scratch harness expects an index here).
+CREATE UNIQUE INDEX project_memory_one_active_per_key
+  ON project_memory (project_id, key) NULLS NOT DISTINCT
+  WHERE status = 'active';
 
 -- §4.2: valid-memory lookup optimization (project_id, key, valid_until).
 CREATE INDEX idx_project_memory_lookup ON project_memory(project_id, key, valid_until);

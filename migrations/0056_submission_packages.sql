@@ -4,7 +4,7 @@
 
 CREATE TABLE submission_packages (
   id TEXT PRIMARY KEY DEFAULT gen_random_uuid()::text,
-  org_id TEXT NOT NULL REFERENCES organizations(id) ON DELETE CASCADE,
+  org_id uuid NOT NULL REFERENCES organizations(id) ON DELETE CASCADE,
   submission_type TEXT NOT NULL CHECK (submission_type IN ('510k','de_novo','pma','cer','pccp','mfds_import','nmpa_ecdt')),
   jurisdiction TEXT NOT NULL CHECK (jurisdiction IN ('FDA','EU','MFDS','NMPA','PMDA')),
   device_name TEXT NOT NULL,
@@ -13,7 +13,7 @@ CREATE TABLE submission_packages (
   status TEXT NOT NULL DEFAULT 'draft' CHECK (status IN ('draft','validating','validated','submitted','rta','accepted','rejected')),
   package_manifest JSONB NOT NULL DEFAULT '{}',
   validation_results JSONB NOT NULL DEFAULT '[]',
-  created_by TEXT NOT NULL REFERENCES users(id),
+  created_by uuid NOT NULL REFERENCES users(id),
   submitted_at TIMESTAMPTZ,
   created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
   updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW()

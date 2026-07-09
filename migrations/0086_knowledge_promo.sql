@@ -40,7 +40,7 @@ CREATE TABLE promoted_answers (
   source_message_id uuid NOT NULL REFERENCES messages(id) ON DELETE CASCADE,
   title             text NOT NULL,
   tags              text[] NOT NULL DEFAULT '{}'::text[],
-  promoted_by       text NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+  promoted_by       uuid NOT NULL REFERENCES users(id) ON DELETE CASCADE,
   promoted_at       timestamptz NOT NULL DEFAULT now(),
   status            promoted_answer_status NOT NULL DEFAULT 'active',
   embedding         vector(1536),

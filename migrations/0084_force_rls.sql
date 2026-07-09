@@ -15,10 +15,11 @@
 --   적용 순서: 0084 (본 파일) → 0085 (app role) → ops 가 DATABASE_URL 전환.
 --   superuser role 로 본 migration 을 미리 적용하는 것은 no-op 이며 무해하다.
 --
--- @MX:NOTE 대상 20개 테이블은 migration 0083 (WITH CHECK clauses) 과 동일.
---   0015(4) · 0066(1) · 0067(1) · 0068(3) · 0077(4) · 0078(4) · 0080(2) · 0082(1) = 20.
---   직검 2026-06-26: 아래 ALTER TABLE 목록이 0083 의 ALTER POLICY 대상과
---   정확히 일치하는지 대조 완료.
+-- @MX:NOTE 대상 19개 테이블은 migration 0083 (WITH CHECK clauses) 과 동일.
+--   0015(3) · 0066(1) · 0067(1) · 0068(3) · 0077(4) · 0078(4) · 0080(2) · 0082(1) = 19.
+--   NOTE (SPEC-REGULA-MIGRATION-001 D11): ingest_jobs (0015의 4번째) 는 0017 §3에서
+--   DROP 되어 제외. 직검 2026-06-26 + 2026-07-09: 아래 ALTER TABLE 목록이 0083 의
+--   ALTER POLICY 대상과 정확히 일치하는지 대조 완료.
 --
 -- @MX:SPEC SPEC-REGULA-RLS-ENFORCE-001 Phase 4
 -- @MX:REASON RLS 는 21 CFR Part 11 §11.10(c) 감사 추적성과 tenant isolation의
@@ -31,7 +32,7 @@
 ALTER TABLE organization_documents FORCE ROW LEVEL SECURITY;
 ALTER TABLE document_chunks FORCE ROW LEVEL SECURITY;
 ALTER TABLE document_access_policies FORCE ROW LEVEL SECURITY;
-ALTER TABLE ingest_jobs FORCE ROW LEVEL SECURITY;
+-- ingest_jobs omitted: dropped by migration 0017 §3 (SPEC-REGULA-MIGRATION-001 D11).
 
 -- ============================================================
 -- 0066_knowledge_gap

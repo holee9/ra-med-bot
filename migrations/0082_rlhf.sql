@@ -43,7 +43,7 @@ CREATE TYPE quality_tag AS ENUM (
 CREATE TABLE answer_feedback (
   id           uuid PRIMARY KEY DEFAULT gen_random_uuid(),
   message_id   uuid NOT NULL REFERENCES messages(id) ON DELETE CASCADE,
-  user_id      text NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+  user_id      uuid NOT NULL REFERENCES users(id) ON DELETE CASCADE,
   rating       feedback_rating NOT NULL,
   quality_tags quality_tag[] NOT NULL DEFAULT '{}'::quality_tag[],
   comment      text,

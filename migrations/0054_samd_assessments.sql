@@ -8,7 +8,7 @@ ALTER TYPE audit_action ADD VALUE IF NOT EXISTS 'samd_review_approved';
 
 CREATE TABLE samd_assessments (
   id TEXT PRIMARY KEY DEFAULT gen_random_uuid()::text,
-  org_id TEXT NOT NULL REFERENCES organizations(id) ON DELETE CASCADE,
+  org_id uuid NOT NULL REFERENCES organizations(id) ON DELETE CASCADE,
   project_id TEXT,
   title TEXT NOT NULL,
   device_description TEXT NOT NULL,
@@ -34,7 +34,7 @@ CREATE TABLE samd_assessments (
   -- Expert review gating
   expert_review_approved_by TEXT,
   expert_review_approved_at TIMESTAMPTZ,
-  created_by TEXT NOT NULL REFERENCES users(id),
+  created_by uuid NOT NULL REFERENCES users(id),
   created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
   updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
 );

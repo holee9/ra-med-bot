@@ -10,24 +10,29 @@
 --   본 migration 은 정책 형상(Shape)만 완성 — 런타임 동작 변화 없음.
 --
 -- 대상 (직검 2026-06-25, runtime grep):
---   0015(4) · 0066(1) · 0067(1) · 0068(3) · 0077(4) · 0078(4) · 0080(2) · 0082(1) = 20개
+--   0015(3) · 0066(1) · 0067(1) · 0068(3) · 0077(4) · 0078(4) · 0080(2) · 0082(1) = 19개
+--   NOTE (SPEC-REGULA-MIGRATION-001 D11): 0015 originally had 4 docingest policies,
+--   but ingest_jobs was DROPPED by migration 0017 §3 ("Inngest handles job tracking
+--   natively"). Its tenant_isolation_ingest_jobs policy is therefore omitted here
+--   (the relation no longer exists). Count is 19, not 20.
 
 -- ============================================================
--- 0015_docingest_rls — organization_id 기반 (org_id 아님)
+-- 0015_docingest_rls — docingest org-scoping columns
+--   organization_documents uses `org_id` (renamed from organization_id by 0017 §1);
+--   document_chunks / document_access_policies still use `organization_id`.
 -- ============================================================
+-- NOTE (SPEC-REGULA-MIGRATION-001 D8): organization_documents.organization_id was
+-- renamed to org_id by 0017. The policy expression must reference the current
+-- column name, else the policy update fails with "column organization_id does not exist".
 ALTER POLICY "tenant_isolation_documents" ON organization_documents
-  USING (organization_id = current_setting('app.current_org_id', true)::uuid)
-  WITH CHECK (organization_id = current_setting('app.current_org_id', true)::uuid);
+  USING (org_id = current_setting('app.current_org_id', true)::uuid)
+  WITH CHECK (org_id = current_setting('app.current_org_id', true)::uuid);
 
 ALTER POLICY "tenant_isolation_chunks" ON document_chunks
   USING (organization_id = current_setting('app.current_org_id', true)::uuid)
   WITH CHECK (organization_id = current_setting('app.current_org_id', true)::uuid);
 
 ALTER POLICY "tenant_isolation_access_policies" ON document_access_policies
-  USING (organization_id = current_setting('app.current_org_id', true)::uuid)
-  WITH CHECK (organization_id = current_setting('app.current_org_id', true)::uuid);
-
-ALTER POLICY "tenant_isolation_ingest_jobs" ON ingest_jobs
   USING (organization_id = current_setting('app.current_org_id', true)::uuid)
   WITH CHECK (organization_id = current_setting('app.current_org_id', true)::uuid);
 
