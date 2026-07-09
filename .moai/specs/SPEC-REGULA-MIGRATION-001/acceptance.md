@@ -16,7 +16,7 @@
 
 **REQ coverage**: REQ-MIGRATION-001, 003, 004, 005, 006, 007
 
-**Evidence**: `psql` 종료 코드 0 + `\d+` introspection 출력 + table count = 96 + `SELECT count(*) FROM pg_trigger WHERE tgname='audit_log_hash_bi'` = 1 + RLS policy명 set diff vs baseline = 0
+**Evidence**: `psql` 종료 코드 0 + `\d+` introspection 출력 + table count = 96 + `SELECT count(*) FROM pg_trigger WHERE tgname='audit_logs_no_mutation'` = 1 + RLS policy명 set diff vs baseline = 0
 
 ---
 
