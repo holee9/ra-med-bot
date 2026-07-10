@@ -5,7 +5,8 @@
 // @MX:SPEC SPEC-REGULA-CHAT-001 (REQ-CHAT-013, REQ-CHAT-019)
 //
 // Run: pnpm tsx scripts/seed-fda-corpus.ts
-// Requires: DATABASE_URL, OPENAI_API_KEY in environment.
+// Requires: DATABASE_URL. ⚠️ TEST FIXTURE ONLY — 운영 코퍼스는 docs/architecture/knowledge-base.md 기술
+// git 연동 경로로만 구축. 본 스크립트의 OpenAI embed 직접 호출은 test fixture 허용 범위(runtime ingestion 아님).
 
 import { openai } from '@ai-sdk/openai';
 import { type EmbeddingModel, embed } from 'ai';

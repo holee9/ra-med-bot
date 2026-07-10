@@ -60,7 +60,7 @@
 
 | 기능 | v3 상태 | 비고 |
 |------|---------|------|
-| RAG Q&A (6개 corpus) | ✅ 보존 (개선) | per-corpus retrievers 5종 + delta-sync (Phase D 완결) |
+| RAG Q&A (3개 지식 repo 연동) | ✅ 보존 (개선) | ra-project/MD-process/ra-llm-wiki 연동 + per-domain retrievers + delta-sync (Phase D 완결). 데이터 소싱(3 repo) vs 검색 도메인(FDA/EU MDR/...) 분리 — docs/architecture/knowledge-base.md |
 | Inbox Kanban + Auto-Triage | 🆕 신규 | 4-column (auto/needs-review/escalated/waiting), confidence 임계값 |
 | Change Impact Check | 🆕 신규 | 4-layer wizard, retestMatrix (7×5=35셀) |
 | Consult (Power Chat) | 🆕 신규 | 관할권 다중 비교, 세션 저장, 5개 실 세션 시드 |
@@ -87,7 +87,7 @@
 
 ### [지양-1] 일반 KB ❌
 
-RAG corpus는 **FDA/EU MDR/MFDS/NMPA/PMDA + internal SOP** 전용. 영업/마케팅/인사 지식 검색, Notion/Confluence 대체 기능 → 범위 외.
+RAG corpus는 **3개 지식 repo(ra-project/MD-process/ra-llm-wiki) 연동**으로만 구축(docs/architecture/knowledge-base.md). 해당 repo 내용은 RA 규제 도메인(FDA/EU MDR/MFDS/NMPA/PMDA/SOP — 검색·분류 도메인) 전용. 영업/마케팅/인사 지식, Notion/Confluence 대체 → 범위 외.
 
 ### [지양-2] 가짜 신뢰 ❌
 

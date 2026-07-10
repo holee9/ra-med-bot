@@ -5,7 +5,8 @@
 // @MX:SPEC SPEC-REGULA-QUALITY-001 (REQ-QUAL-001..005)
 //
 // Run: pnpm db:seed:corpus  (alias for `tsx scripts/seed-corpus.ts`)
-// Requires: DATABASE_URL, OPENAI_API_KEY in environment.
+// Requires: DATABASE_URL. 임베딩은 gx10 qwen3-embedding(lib/ingest/embed → embedding-provider) 사용.
+// ⚠️ TEST FIXTURE ONLY — 운영 코퍼스는 docs/architecture/knowledge-base.md 기술 git 연동 경로로만 구축.
 //
 // Idempotency: sources are matched by title; source_sections by (source_id, anchor)
 // UNIQUE constraint. Re-running the script inserts zero new rows on a populated DB.
