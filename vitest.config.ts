@@ -36,15 +36,15 @@ export default defineConfig({
       // lib/app/components. Thresholds sit ~2pt below baseline as a stable floor:
       // catches significant regression (>2pt drop) without flaking on minor
       // run-to-run variance. Target 85% tracked in follow-up (ratchet up).
-      // 2026-07-11 ratchet-up (Phase 4 BLOCK-4, #402): 17 files → 100% lifted
-      // All-files to Stmts 63 / Branch 75.1 / Funcs 64.3 / Lines 63. Floor
-      // bumped from 60/70/60/60 → 62/74/63/62 (margin below actual to absorb
-      // run-to-run variance). 85% target remains follow-up (long tail).
+      // 2026-07-11 ratchet-up (Phase 4 BLOCK-4, #402): 28 files (incl 3 large
+      // routes) → All-files Stmts 63.78 / Branch 75.54 / Funcs 64.83 / Lines 63.78.
+      // Floor bumped 60/70/60/60 → 62/74/63/62 → 63/75/64/63 (margin below actual).
+      // 85% target remains follow-up (long tail — large lib/route coverage).
       thresholds: {
-        statements: 62,
-        branches: 74,
-        functions: 63,
-        lines: 62,
+        statements: 63,
+        branches: 75,
+        functions: 64,
+        lines: 63,
       },
     },
   },
