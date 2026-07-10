@@ -497,7 +497,17 @@ export type AuditAction =
   // REQ-VAL-012). One row per release; carries approver id + report artifact
   // path in meta_json. The audit_logs hash chain IS the tamper-evidence for
   // sign-off (no duplicate storage in validation_signoff).
-  | 'validation.signoff';
+  | 'validation.signoff'
+  // SPEC-REGULA-WORKFLOWS-LLM-002 (REQ-WFLLM-007/008) — workflow LLM lifecycle.
+  //   workflow.llm_call       — executor invoked gx10 for a step
+  //   workflow.draft_version  — draft version bumped on result persist
+  //   workflow.expert_flagged — review gate flagged run for expert review
+  //   workflow.export_blocked — export denied (review not approved)
+  // Mirror auditActionEnum in lib/db/schema.ts (3-place sync, L-013).
+  | 'workflow.llm_call'
+  | 'workflow.draft_version'
+  | 'workflow.expert_flagged'
+  | 'workflow.export_blocked';
 
 export interface AuditEvent {
   /** User UUID, or null for system-initiated events. */
