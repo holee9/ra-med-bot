@@ -1,4 +1,4 @@
-// @MX:NOTE [AUTO] Unit tests for stale-propagation hooks (coverage #402).
+// @MX:NOTE [AUTO] Unit tests for stale-propagation hooks (coverage coverage 402).
 // @MX:SPEC SPEC-REGULA-TRACEABILITY-001 (REQ-TRACEABILITY-009, AC-05)
 //
 // The hooks orchestrate findNodeByRef / upsertNode / propagateStaleFromNode /
