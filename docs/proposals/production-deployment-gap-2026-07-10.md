@@ -24,16 +24,18 @@
 
 ### BLOCK-1: RAG Corpus 비어있음 — 🔴 CRITICAL (Q&A 작동 불가)
 
-**현황**: `sources=1, source_sections=19, document_chunks=0, knowledge_sources=0` (직검 regula-test-db). 실제 규제 문서(FDA/EU MDR/MFDS/NMPA/PMDA + internal SOP) 0건. RAG Q&A가 인용할 데이터 없음 → **제품 핵심 가치 실현 불가**.
+**현황**: `sources=1, source_sections=19, knowledge_sources=0` (직검 regula-test-db). RAG Q&A가 인용할 데이터 없음 → **제품 핵심 가치 실현 불가**.
+
+> **데이터 소싱 정정 (2026-07-10, `docs/architecture/knowledge-base.md` 참조)**: 지식베이스는 **3개 기존 git 저장소**에서만 소싱된다 — `ra-project`(GitHub, 154 md) · `MD-process`(GitHub, 549 md, FDA/EU MDR/MFDS/ISO13485 도메인 내장) · `ra-llm-wiki`(Gitea, 내부 SOP). 이전 "6개 코퍼스(FDA/EU MDR/MFDS/NMPA/PMDA/SOP) seed" 프레이밍은 데이터 소싱에 대한 오기반 — 해당 관할구는 **검색·분류 도메인**(repo 내부 디렉토리 구조 + retriever/classifier 라우팅 키)이지 별도 seed 소스가 아니다.
 
 **작업**:
-1. **knowledge-sources 연동** (#312): 공개 규제 repo(github.com/FDA, EU MDR 등) git URL → ingestion → chunk → embed → pgvector upsert.
-2. `ingestDocuments` 실구현은 완료 (`lib/knowledge-sources/sync.ts:258`, #307 D-2b). **데이터만 부재**.
-3. 코퍼스 seed: FDA 510(k) guidance · EU MDR regulation · MFDS 고시 · PMDA 심사 가이드 · internal SOP(abyz 자체).
+1. **3개 repo 연동** (#312): GitHub ra-project/MD-process → `knowledge_sources` git sync(clone → extract → chunk → gx10 embed → pgvector upsert). Gitea ra-llm-wiki → 기존 `ingest-gitea-wiki.ts` adapter.
+2. `ingestDocuments` 실구현 완료 (`lib/knowledge-sources/sync.ts:258`, #307 D-2b). **데이터 연결만 부재**.
+3. RAG 인용 검증: ingest 후 RA-owner source-governance 승인(`POST /api/source-governance/approve`) → `composeRetrievalGates` 통과 → 인용 반환.
 
-**SPEC**: 신규 `SPEC-REGULA-CORPUS-SEED-001` — 6개 코퍼스 seed + ingestion E2E 검증.
-**이슈**: #312 (Phase D knowledge-sources 공개 repo 연동 E2E).
-**회귀**: 중간 (ingestion 파이프라인은 구현됨, 데이터 주입만).
+**SPEC**: `SPEC-REGULA-CORPUS-SEED-001` — 3-repo 연동 + #312 ingestion E2E 검증 + 문서 정정.
+**이슈**: #312 (knowledge-sources 공개 repo 연동 E2E). 후속: #412(auth-token 암호화), #413(SSRF allowlist).
+**회귀**: 중간 (ingestion 파이프라인은 구현됨, 데이터 연결 + 검증만).
 
 ### BLOCK-2: 워크플로우 Executor Synthetic Outputs — 🔴 CRITICAL (가짜 출력)
 
