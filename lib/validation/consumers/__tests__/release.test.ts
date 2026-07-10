@@ -1,8 +1,11 @@
 // @MX:NOTE [AUTO] Unit tests for release validation consumer (SPEC-REGULA-VALIDATION-002 M0).
 // @MX:SPEC SPEC-REGULA-VALIDATION-002 (M0)
 
+import { spawnSync } from 'node:child_process';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { checkGitTagExists, validateReleaseIdFormat } from '../release';
+
+vi.mock('node:child_process', () => ({ spawnSync: vi.fn() }));
 
 describe('validateReleaseIdFormat', () => {
   it('should accept stable release format v0.1.0', () => {
@@ -49,12 +52,30 @@ describe('validateReleaseIdFormat', () => {
   });
 });
 
-// Note: checkGitTagExists uses real child_process.spawnSync in unit tests.
-// Full integration testing requires mocking spawnSync, which is complex in Vitest.
-// The function is designed to fail gracefully (warning only) in sandboxed environments.
-describe('checkGitTagExists (unit)', () => {
-  it('should have a function signature that accepts releaseId string', () => {
-    expect(typeof checkGitTagExists).toBe('function');
-    // Actual behavior tested in integration/e2e tests with real git repo.
+describe('checkGitTagExists (spawnSync mock, #402)', () => {
+  beforeEach(() => {
+    vi.clearAllMocks();
+  });
+
+  it('returns exists:true when `git tag --list` outputs the releaseId', () => {
+    vi.mocked(spawnSync).mockReturnValue({ status: 0, stdout: 'v0.1.0' } as never);
+    const r = checkGitTagExists('v0.1.0');
+    expect(r.exists).toBe(true);
+    expect(r.warning).toBeUndefined();
+  });
+
+  it('returns exists:false when the tag is absent (empty stdout)', () => {
+    vi.mocked(spawnSync).mockReturnValue({ status: 0, stdout: '' } as never);
+    const r = checkGitTagExists('v9.9.9');
+    expect(r.exists).toBe(false);
+    expect(r.warning).toBeUndefined();
+  });
+
+  it('returns a warning (exists:false) when git exits non-zero (sandbox)', () => {
+    vi.mocked(spawnSync).mockReturnValue({ status: 128, stdout: '' } as never);
+    const r = checkGitTagExists('v0.1.0');
+    expect(r.exists).toBe(false);
+    expect(r.warning).toContain('git tag command failed');
+    expect(r.warning).toContain('128');
   });
 });
