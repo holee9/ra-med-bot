@@ -52,7 +52,7 @@ describe('validateReleaseIdFormat', () => {
   });
 });
 
-describe('checkGitTagExists (spawnSync mock, #402)', () => {
+describe('checkGitTagExists (spawnSync mock, coverage 402)', () => {
   beforeEach(() => {
     vi.clearAllMocks();
   });

@@ -5,7 +5,7 @@ import { beforeEach, describe, expect, it, vi } from 'vitest';
 
 // snapshotTraceability orchestrates listStaleNodeIds + buildMatrix over a
 // dynamically-imported db. We mock all three so the org/project scoping and
-// summary extraction control flow runs without a real DB (coverage #402 —
+// summary extraction control flow runs without a real DB (coverage coverage 402 —
 // previously only the export was smoke-tested).
 vi.mock('@/lib/db/client', () => ({ db: {} }));
 vi.mock('@/lib/traceability/matrix', () => ({ buildMatrix: vi.fn() }));
@@ -21,7 +21,7 @@ describe('snapshotTraceability (export smoke)', () => {
   });
 });
 
-describe('snapshotTraceability (execution, #402)', () => {
+describe('snapshotTraceability (execution, coverage 402)', () => {
   beforeEach(() => {
     vi.clearAllMocks();
   });

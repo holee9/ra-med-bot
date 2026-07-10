@@ -23,7 +23,8 @@
       ".codex/**",
       ".wiki-temp/**",
       "next-env.d.ts",
-      "archive/**"
+      "archive/**",
+      "scripts/qa/check-mx-legacy.mjs"
     ]
   },
   "formatter": {

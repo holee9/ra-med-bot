@@ -6,7 +6,7 @@ import { beforeEach, describe, expect, it, vi } from 'vitest';
 // fetchWindowScopedChangeRequests uses `await import('@/lib/db/client')` then a
 // drizzle select/from/where chain. We mock the db module so the chain returns
 // fixture rows, exercising the mapping + window/org scoping control flow
-// (coverage #402 — previously only the export was smoke-tested).
+// (coverage coverage 402 — previously only the export was smoke-tested).
 vi.mock('@/lib/db/client', () => ({
   db: {
     select: vi.fn(() => ({
@@ -27,7 +27,7 @@ describe('fetchWindowScopedChangeRequests (export smoke)', () => {
   });
 });
 
-describe('fetchWindowScopedChangeRequests (drizzle-chain execution, #402)', () => {
+describe('fetchWindowScopedChangeRequests (drizzle-chain execution, coverage 402)', () => {
   beforeEach(() => {
     vi.clearAllMocks();
   });
