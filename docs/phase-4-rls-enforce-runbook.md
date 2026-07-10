@@ -21,8 +21,9 @@ change — this document is the single source of truth for that action.
 
 1. `pnpm test tests/unit/db/with-tenant-scope-coverage.test.ts` is green.
 2. Grep audit: `serviceDb` appears **only** in `lib/auth.ts` (and its own
-   definition site). Run:
-   `grep -rn "serviceDb" app lib --include="*.ts" | grep -v "lib/db/service-client.ts"`
+   definition site `lib/db/client.ts`, which exports it from
+   `SERVICE_DATABASE_URL`). Run:
+   `grep -rn "serviceDb" app lib --include="*.ts" | grep -v "lib/db/client.ts"`
    Expected: zero hits outside `lib/auth.ts`.
 3. No route handler or lib function issues an org-scoped query without
    `withTenantScope`. The coverage gate enforces this statically.
@@ -90,6 +91,15 @@ Assertion shape: `current_setting('app.current_org_id', true)` must be `NULL`
 outside a `withTenantScope` call, and any org-scoped `SELECT` must return 0 rows
 in that state (fail-closed). This is the guarantee that an forgotten
 `withTenantScope` wiring does not leak cross-org data.
+
+**Implemented** (2026-07-10, BLOCK-3): `tests/integration/rls-enforce-canary-real-db.test.ts`
+exercises this on `knowledge_sources` (a 2nd FORCE table, extending the #317
+sources canary). It found (L-013) that the 0099 policy used bare
+`current_setting(...)::uuid` (no NULLIF) — an empty GUC raised `invalid uuid`
+instead of fail-closing. migration `0116_knowledge_sources_rls_nullif.sql`
+hardens it with `NULLIF(..., '')::uuid` (matching sources 0114). The canary runs
+in CI (migrations-real-db.yml RLS canary step). Other 0099-era FORCE tables may
+have the same gap — a broader NULLIF audit is a follow-up.
 
 ## 7. Rollback
 
