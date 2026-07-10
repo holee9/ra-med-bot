@@ -9,7 +9,7 @@
 |-----------|------|----------|------|------------|
 | M0 | 문서 수정 — 단일 진실 원천 확립 | High | 없음 | `knowledge-base.md`, gap doc 정정, seed headers, product.md |
 | M1 | MD-process E2E (#312 de-risk) | High | M0 | AC-1..4 실DB 직검, MD-process 코퍼스 populated |
-| M2 | ra-project + ra-llm-wiki 확장 | Medium | M1 | ra-project 코퍼스, Gitea adapter 운영 절처 문서화 |
+| M2 | ra-project + ra-llm-wiki 확장 | Medium | M1 | ra-project 코퍼스, Gitea adapter 운영 절차 문서화 |
 | M3 | gx10 embedding cleanup | Medium | M0 | stale OPENAI_API_KEY heuristic 제거 |
 | M4 | 게이트 (품질 + 실DB 직검) | High | M1..M3 | typecheck/lint/test/ci:* + 실DB E2E 증거 |
 
@@ -29,7 +29,7 @@
   - 섹션 2: 데이터 소싱 vs 검색 도메인 분리 (spec.md §5 선언과 동일).
   - 섹션 3: repo별 접근 방식 — GitHub(ra-project, MD-process): `GITHUB_PAT` + `knowledge_sources` git sync 경로. Gitea(ra-llm-wiki): `ingest-gitea-wiki.ts` adapter + `GITEA_TOKEN` 경로 (D1-A 결정).
   - 섹션 4: auth-token 현황 주의(NFR-KB-SEC-002) + diskstation SSRF 현황(NFR-KB-SEC-003).
-  - 섹션 5: 운영 절처(runbook) — 동기화 트리거, 상태 전이, 실패 시 대응.
+  - 섹션 5: 운영 절차(runbook) — 동기화 트리거, 상태 전이, 실패 시 대응.
 - **매핑**: REQ-KB-010, REQ-KB-011 / AC-5
 
 ### Task M0-2: `production-deployment-gap-2026-07-10.md` BLOCK-1 정정 — Priority High
@@ -64,6 +64,16 @@
 
 > 근거: #312 AC 4건을 MD-process(549 md, 다도메인) 단일 repo로 가장 빠르게 실DB 검증.
 
+### Task M1-0: E2E 인증/조직 컨텍스트 준비 — Priority High (필수 선행)
+
+- **근거 (plan-auditor C1)**: `POST /api/ra/knowledge-sources`(`knowledgesources.manage`)와 `POST /api/source-governance/approve`(`sourcegov.manage`) 모두 `ra-lead` 세션(`session.user.organizationId` + `session.user.id`)을 요구(permissions.ts:346,465). 누락 시 첫 API 호출에서 401/403 → AC-1..4 전부 차단.
+- **준비**:
+  1. 실DB에 `organizations` 행 존재/seed 확인 (기존 dev 조직 재사용 권장).
+  2. 해당 조직에 `ra-lead` 역할 사용자 존재/seed 확인.
+  3. E2E API 호출용 세션 획득 방식 확정 (dev 로그인 세션 쿠키, 또는 테스트 bearer/스크립트 인증).
+- **검증**: 세션이 `knowledgesources.manage` + `sourcegov.manage` 권한을 모두 가짐을 직검.
+- **매핑**: REQ-KB-001, REQ-KB-009 / AC-1 Given (신규 전제)
+
 ### Task M1-1: 환경 준비 — Priority High
 
 - **확인**: 실DB(pgvector, 포트 5433) 실행. `GITHUB_PAT`(repo:read) 설정. gx10 Ollama(`192.168.100.1:11434`) embedding 접근.
@@ -89,6 +99,7 @@
 ### Task M1-4: source 승인 + RAG 인용 검증 — Priority High
 
 - **M1-4a source 승인 (필수 선행)**: ingest된 MD-process source 행들이 `approvalStatus='pending_review'`로 생성됨을 직검. 이후 `POST /api/source-governance/approve`(REQ-SOURCE-GOV-015)로 `approved` 전환 — `composeRetrievalGates`가 미승인 source를 검색에서 영구 제외하므로 **승인 없이는 RAG 인용 불가** (source-governance 설계, Charter [지양-2]). 게이트 우회 아님.
+- **M1-4a-scaling (plan-auditor H1)**: 승인 API는 `sourceId` 1건씩만 처리(types.ts:46). MD-process는 파일당 1 `sources` 행(최대 500건) 생성 → 일괄 승인 필요: `SELECT id FROM sources WHERE source_repo='MD-process' AND approval_status='pending_review'` → loop POST(각 `source.approved` audit 기록), 또는 일괄 승인 쿼리 + audit 보강. 승인 대상 source 수를 AC-2 검증 전 직검.
 - **M1-4b RAG 인용 검증**: 도메인 질의(예: "FDA 510(k) submission 요건은?") 로 RAG Q&A 호출.
 - **검증(직검)**: `SELECT approval_status FROM sources WHERE source_repo='MD-process'` = `approved`. 응답에 MD-process 출처 인용(source_host=github.com, source_owner=holee9, source_repo=MD-process, source_path) 포함. `source.approved` audit 행 존재. 런타임 증거(응답 payload 또는 로그) 기록.
 - **매핑**: REQ-KB-006, REQ-KB-009, REQ-KB-031 / AC-2, AC-12
@@ -128,7 +139,7 @@
 - **검증**: ra-project 출처 인용 포함.
 - **매핑**: REQ-KB-007 / AC-8
 
-### Task M2-3: ra-llm-wiki adapter 운영 절처 문서화 — Priority Medium
+### Task M2-3: ra-llm-wiki adapter 운영 절차 문서화 — Priority Medium
 
 - **파일**: `docs/architecture/knowledge-base.md` (M0-1에서 생성한 파일에 섹션 추가).
 - **내용**: D1-A 결정(유지) 근거, adapter 환경(`GITEA_URL`, `GITEA_TOKEN`, `GITEA_WIKI_REPO`), 트리거 명령(`pnpm tsx scripts/ingest-gitea-wiki.ts`), hardening 요약(url-guard + sanitizer + withRetry).

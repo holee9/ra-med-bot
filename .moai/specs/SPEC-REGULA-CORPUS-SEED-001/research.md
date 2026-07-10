@@ -15,8 +15,8 @@
 
 | Repo | URL | 파일 수 | 내용 | 접근 |
 |------|-----|---------|------|------|
-| **ra-project** | `https://github.com/holee9/ra-project.git` | 154 md | RA scheduler docs, regulatory identification radar, 2026 Q2 regulatory landscape | `GITHUB_PAT` (repo:read), 또는 local `RA_PROJECT_PATH` |
-| **MD-process** | `https://github.com/holee9/MD-process.git` | 549 md | 도메인별 구조화: `00_프로젝트관리/`, `01_법규_규제/{01_국내_MFDS,02_국제_ISO13485,03_미국_FDA,04_유럽_MDR}`, `02_품질경영시스템_QMS`, `03_설계_개발관리`, ... `13_규제평가_체크리스트` | `GITHUB_PAT` (repo:read), 또는 local `MD_PROCESS_PATH` |
+| **ra-project** | `https://github.com/holee9/ra-project.git` | 154 md | RA scheduler docs, regulatory identification radar, 2026 Q2 regulatory landscape | `GITHUB_PAT` (repo:read) → POST `auth_token` body (§2.4) |
+| **MD-process** | `https://github.com/holee9/MD-process.git` | 549 md | 도메인별 구조화: `00_프로젝트관리/`, `01_법규_규제/{01_국내_MFDS,02_국제_ISO13485,03_미국_FDA,04_유럽_MDR}`, `02_품질경영시스템_QMS`, `03_설계_개발관리`, ... `13_규제평가_체크리스트` | `GITHUB_PAT` (repo:read) → POST `auth_token` body (§2.4) |
 | **ra-llm-wiki** | Gitea `http://diskstation:7001/DR_RnD/ra-llm-wiki` | (wiki) | 사내 SOP wiki | HTTP 200 (비인증 목록), 콘텐츠는 `GITEA_TOKEN` 필요 |
 
 직검 명령:
@@ -176,7 +176,7 @@ knowledge_sources:
 
 - `GITHUB_PAT` (repo:read) → POST 생성 API `auth_token` 필드 → `authTokenEncrypted` 열에 저장(평문, 열 이름과 불일치) → cloneRepo에서 HTTPS username으로 주입.
 - 본 SPEC은 이 경로를 있는 그대로 사용. **저장 시 암호화는 본 SPEC 범위 외** (REG-395 계열 별도 이슈). NFR-KB-SEC-002로 명시.
-- M1 검증: `GITHUB_PAT` 가 없는 환경에서는 local clone 경로(`RA_PROJECT_PATH` / `MD_PROCESS_PATH`) fallback 문서화 (runbook).
+- M1 검증 (plan-auditor M1 정정): 코드는 `RA_PROJECT_PATH`/`MD_PROCESS_PATH` 환경변수를 읽지 않음(직검 `grep -rn` 결과 0건 — `.env.example`의 주석 처리된 local clone 경로는 구식 접근). GitHub 인증은 운영자가 `GITHUB_PAT`(repo:read)를 확보 후 POST `auth_token` body로 전달 → `authTokenEncrypted` 저장 → cloneRepo HTTPS username 주입(sync.ts:188-193). 공개 repo는 `auth_token` 생략 가능(비인증 clone). runbook은 이 실제 경로를 문서화.
 
 ### D4. MD-process를 M1 de-risk 대상으로 선택
 

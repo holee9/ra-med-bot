@@ -6,7 +6,7 @@
 
 ### AC-1: 공개 repo 연결 후 sync 성공 → 코퍼스 채워짐
 
-**Given**: 실DB(pgvector, 포트 5433)가 실행 중이고, `GITHUB_PAT`(repo:read) 가 환경에 설정되어 있으며, MD-process repo(`https://github.com/holee9/MD-process.git`) 가 연결 가능하다.
+**Given**: 실DB(pgvector, 포트 5433)가 실행 중이고, 유효한 `ra-lead` 세션(`session.user.organizationId` + `id`; `knowledgesources.manage` 권한, Task M1-0)이 설정되어 있으며, 운영자가 `GITHUB_PAT`(repo:read)를 확보하여 POST body `auth_token`으로 전달할 수 있고, MD-process repo(`https://github.com/holee9/MD-process.git`)가 연결 가능하다.
 
 **When**: 운영자가 `POST /api/ra/knowledge-sources` 로 MD-process를 knowledge_source로 등록한 후, `POST /api/ra/knowledge-sources/{id}/sync` 로 동기화를 트리거한다.
 
@@ -135,7 +135,7 @@
 
 ---
 
-### AC-9: ra-llm-wiki adapter 경로 운영 절처 문서화
+### AC-9: ra-llm-wiki adapter 경로 운영 절차 문서화
 
 **Given**: ra-llm-wiki Gitea adapter(`scripts/ingest-gitea-wiki.ts`) 가 존재하고, `GITEA_TOKEN`/`GITEA_URL`/`GITEA_WIKI_REPO` 환경 설정이 가능하다.
 
@@ -144,7 +144,7 @@
 **Then**:
 - `knowledge-base.md` 에 ra-llm-wiki ingest 절차(adapter 사용, 환경 변수, 트리거 명령) 가 문서화된다.
 - D1-A 결정(유지) 근거가 명시된다.
-- 직검: 문서 섹션 존재. (주: M2는 adapter 실행 그 자체보다 운영 절처 문서화가 주된 범위 — adapter는 이미 hardening됨)
+- 직검: 문서 섹션 존재. (주: M2는 adapter 실행 그 자체보다 운영 절차 문서화가 주된 범위 — adapter는 이미 hardening됨)
 
 **매핑**: REQ-KB-008 / Milestone M2
 
