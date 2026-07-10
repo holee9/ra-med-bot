@@ -1,0 +1,244 @@
+# promptfoo eval config — Regula Workflow LLM evaluation harness
+# SPEC-REGULA-WORKFLOWS-LLM-002 — M5, AC-07/08, REQ-WFLLM-006/011
+#
+# 6 scenarios (2 per executor): submission-drafter, audit-response, indication-impact.
+# Each scenario asserts: citation coverage >= 80% (AC-05), structure compliance
+# (AC-11: FDA eCopy 6 sections / 3-part / 3-axis), and non-mock output.
+#
+# GX10-ONLY: This eval targets the on-prem gx10 Ollama instance
+# (gpt-oss:120b at http://192.168.100.1:11434). CI CANNOT reach gx10
+# (192.168.100.x is LAN). AC-07 (80% pass) is satisfied by LOCAL execution
+# against gx10, not CI. Run via: pnpm eval:workflows
+# (the script checks gx10 reachability and skips if unavailable).
+
+description: Regula workflow LLM evaluation — 3 executors × 2 scenarios (gx10)
+
+# ── Provider: gx10 Ollama (native ollama provider) ────────────────────────
+# promptfoo's native ollama provider targets Ollama's /api/chat endpoint.
+# gx10 gpt-oss:120b is the sole chat backend (SPEC-LLM-MIGRATION-BC).
+# baseUrl points to the gx10 Ollama instance on the LAN (192.168.100.1:11434).
+providers:
+  - id: ollama:gpt-oss:120b
+    config:
+      model: gpt-oss:120b
+      # baseUrl is read from OLLAMA_BASE_URL env var (set by run-gx10-eval.mjs).
+      # See promptfoo ollama provider source: getEnvString("OLLAMA_BASE_URL").
+      num_predict: 4096
+      temperature: 0.3
+
+# ── Prompt template: system + user combined ───────────────────────────────
+# Each test defines system_prompt and user_prompt vars. promptfoo's ollama
+# chat provider sends the prompt as a user message; the system_prompt is
+# prefixed as a system directive within the same prompt.
+prompts:
+  - |
+    [SYSTEM]
+    {{system_prompt}}
+
+    [USER]
+    {{user_prompt}}
+
+# ── Tests: 6 scenarios (2 per executor) ───────────────────────────────────
+# Each test sends the executor's system prompt + user prompt to gx10 and
+# asserts on the raw LLM output (before Zod parsing). This validates the
+# LLM's ability to produce the correct structure and citations.
+tests:
+  # ── submission-drafter ×2 (FDA eCopy 6 sections, AC-11) ──────────────
+  - description: "submission-drafter: Class II infusion pump 510(k) — FDA eCopy structure + citations"
+    vars:
+      system_prompt: |
+        You are an FDA 510(k) regulatory expert assembling the final submission draft.
+        Produce a cover letter and device description suitable for FDA eCopy submission.
+        Every factual claim MUST be followed by a citation marker in the form
+        <sup class="cite" data-source="N">N</sup> where N is the 1-based index of
+        the source from the context. Aim for citation coverage >= 80% of prose sentences.
+      user_prompt: |
+        Subject Device: AquaFlow Infusion Pump
+        Target Jurisdiction: US (FDA)
+
+        Assemble the 510(k) submission draft. The final output MUST contain all 6
+        FDA eCopy sections in order:
+        (1) Cover Letter
+        (2) Table of Contents
+        (3) Device Description
+        (4) Intended Use
+        (5) Technical Characteristics
+        (6) Performance Data Summary
+
+        Each section must have a clear heading. Reference applicable FDA regulations
+        (21 CFR 807, 21 CFR 820, 21 CFR 801) with citation markers.
+    assert:
+      - type: contains
+        value: "<sup class=\"cite\""
+      - type: llm-rubric
+        value: "Output contains all 6 FDA eCopy sections with clear headings: (1) Cover Letter, (2) Table of Contents, (3) Device Description, (4) Intended Use, (5) Technical Characteristics, (6) Performance Data Summary. Each section has substantive content."
+      - type: javascript
+        value: "output.length > 500"
+
+  - description: "submission-drafter: Class II diagnostic imaging software — FDA eCopy structure + citations"
+    vars:
+      system_prompt: |
+        You are an FDA 510(k) regulatory expert assembling the final submission draft.
+        Produce a cover letter and device description suitable for FDA eCopy submission.
+        Every factual claim MUST be followed by a citation marker in the form
+        <sup class="cite" data-source="N">N</sup> where N is the 1-based index of
+        the source from the context. Aim for citation coverage >= 80% of prose sentences.
+      user_prompt: |
+        Subject Device: DermaScan AI Diagnostic Imaging Software
+        Target Jurisdiction: US (FDA)
+
+        Assemble the 510(k) submission draft. The final output MUST contain all 6
+        FDA eCopy sections in order:
+        (1) Cover Letter
+        (2) Table of Contents
+        (3) Device Description
+        (4) Intended Use
+        (5) Technical Characteristics
+        (6) Performance Data Summary
+
+        This is a software-as-medical-device (SaMD) product. Reference FDA SaMD
+        guidance and IEC 62304 with citation markers.
+    assert:
+      - type: contains
+        value: "<sup class=\"cite\""
+      - type: llm-rubric
+        value: "Output contains all 6 FDA eCopy sections with clear headings: (1) Cover Letter, (2) Table of Contents, (3) Device Description, (4) Intended Use, (5) Technical Characteristics, (6) Performance Data Summary. Content is appropriate for a SaMD product."
+      - type: javascript
+        value: "output.length > 500"
+
+  # ── audit-response ×2 (3-part structure, AC-11) ──────────────────────
+  - description: "audit-response: FDA 483 CAPA deficiency — 3-part structure + citations"
+    vars:
+      system_prompt: |
+        You are a regulatory quality expert drafting the formal written response to an
+        audit observation (FDA 483 response). Every factual claim MUST be followed by a
+        citation marker in the form <sup class="cite" data-source="N">N</sup>.
+        Structure the response in three parts:
+        (1) Regulatory Basis — cite the applicable regulation (e.g. 21 CFR 820.100 for CAPA);
+        (2) Corrective Action — describe the specific corrective and preventive actions;
+        (3) Timeline — provide implementation dates and verification milestones.
+      user_prompt: |
+        Input Type: FDA Form 483
+        Establishment FEI: 1234567
+        Observation Text: Procedures for corrective and preventive action have not been
+        adequately established. Specifically, your firm failed to implement CAPA
+        procedures as required by 21 CFR 820.100. Multiple nonconformances were
+        identified without corresponding corrective action records.
+
+        Draft the formal audit response document. Produce the three-part structure:
+        regulatory basis, corrective action, and timeline. This is the final written
+        response to the regulatory authority.
+    assert:
+      - type: contains
+        value: "<sup class=\"cite\""
+      - type: llm-rubric
+        value: "Output contains the 3-part structure: (1) Regulatory Basis citing 21 CFR 820.100, (2) Corrective Action describing specific CAPA actions, (3) Timeline with implementation dates. All three parts are clearly labeled and substantive."
+      - type: javascript
+        value: "output.toLowerCase().includes('regulatory basis') || output.toLowerCase().includes('21 cfr 820.100')"
+
+  - description: "audit-response: EU MDR non-compliance notification — 3-part structure + citations"
+    vars:
+      system_prompt: |
+        You are a regulatory quality expert drafting the formal written response to an
+        EU MDR non-compliance notification from a Notified Body. Every factual claim
+        MUST be followed by a citation marker in the form <sup class="cite" data-source="N">N</sup>.
+        Structure the response in three parts:
+        (1) Regulatory Basis — cite the applicable EU MDR article (e.g. Article 83, Annex IX);
+        (2) Corrective Action — describe the specific corrective and preventive actions;
+        (3) Timeline — provide implementation dates and verification milestones.
+      user_prompt: |
+        Input Type: EU MDR NB Non-Compliance Notification
+        Observation Text: The manufacturer's post-market surveillance (PMS) plan does not
+        meet the requirements of EU MDR Article 83 and Annex III. Specifically, the PMS
+        plan lacks defined thresholds for trend analysis and does not include a periodic
+        safety update report (PSUR) schedule as required by Article 86.
+
+        Draft the formal audit response document. Produce the three-part structure:
+        regulatory basis, corrective action, and timeline. This is the final written
+        response to the Notified Body.
+    assert:
+      - type: contains
+        value: "<sup class=\"cite\""
+      - type: llm-rubric
+        value: "Output contains the 3-part structure: (1) Regulatory Basis citing EU MDR Article 83/86, (2) Corrective Action describing PMS plan updates, (3) Timeline with implementation dates. All three parts are clearly labeled and substantive."
+      - type: javascript
+        value: "output.toLowerCase().includes('regulatory basis') || output.toLowerCase().includes('mdr')"
+
+  # ── indication-impact ×2 (3-axis judgments, AC-11) ───────────────────
+  - description: "indication-impact: Indication expansion (cardiac → pediatric) — 3-axis judgments + citations"
+    vars:
+      system_prompt: |
+        You are a regulatory expert drafting the final indication impact report.
+        Synthesize the prior step judgments into a cohesive report covering the 3-axis
+        impact: (1) 510(k) SE re-assessment, (2) EU MDR classification change,
+        (3) clinical data gap. Every factual claim MUST be followed by a citation
+        marker in the form <sup class="cite" data-source="N">N</sup>. Aim for
+        citation coverage >= 80% of prose sentences.
+      user_prompt: |
+        Current Indication: Cardiac rhythm monitoring for adult patients
+        Proposed Indication: Cardiac rhythm monitoring for adult and pediatric patients
+        Target Markets: US (FDA), EU (MDR)
+
+        Draft the indication impact report. The report MUST explicitly address all
+        3 axes:
+        (1) 510(k) SE Re-assessment — does the indication expansion invalidate the
+            current predicate? Cite 21 CFR 807.92.
+        (2) EU MDR Classification Change — does the pediatric expansion trigger a
+            class change under Annex VIII? Cite the classification rule.
+        (3) Clinical Data Gap — is additional clinical data required for the pediatric
+            population? Cite EU MDR Annex XIV / FDA pediatric guidance.
+
+        Each axis must have its own labeled section with a clear judgment.
+    assert:
+      - type: contains
+        value: "<sup class=\"cite\""
+      - type: llm-rubric
+        value: "Output explicitly addresses all 3 axes with labeled sections: (1) 510(k) SE Re-assessment citing 21 CFR 807.92, (2) EU MDR Classification Change citing Annex VIII, (3) Clinical Data Gap citing Annex XIV or FDA pediatric guidance. Each axis has a clear judgment (re-assessment required/not, class change yes/no, data gap yes/no)."
+      - type: javascript
+        value: "output.toLowerCase().includes('510(k)') && output.toLowerCase().includes('mdr') && output.toLowerCase().includes('clinical data')"
+
+  - description: "indication-impact: Indication shift (dermatology → oncology screening) — 3-axis judgments + citations"
+    vars:
+      system_prompt: |
+        You are a regulatory expert drafting the final indication impact report.
+        Synthesize the prior step judgments into a cohesive report covering the 3-axis
+        impact: (1) 510(k) SE re-assessment, (2) EU MDR classification change,
+        (3) clinical data gap. Every factual claim MUST be followed by a citation
+        marker in the form <sup class="cite" data-source="N">N</sup>. Aim for
+        citation coverage >= 80% of prose sentences.
+      user_prompt: |
+        Current Indication: Dermatological lesion detection for skin cancer screening
+        Proposed Indication: Oncology biomarker detection for early-stage cancer screening
+        Target Markets: US (FDA), EU (MDR)
+
+        Draft the indication impact report. The report MUST explicitly address all
+        3 axes:
+        (1) 510(k) SE Re-assessment — does the indication shift from dermatology to
+            oncology screening invalidate the current predicate? Cite 21 CFR 807.92.
+        (2) EU MDR Classification Change — does the oncology screening shift trigger
+            a class change (likely to Class III) under Annex VIII? Cite the rule.
+        (3) Clinical Data Gap — is additional clinical data required for oncology
+            screening? Cite EU MDR Annex XIV / FDA guidance.
+
+        Each axis must have its own labeled section with a clear judgment.
+    assert:
+      - type: contains
+        value: "<sup class=\"cite\""
+      - type: llm-rubric
+        value: "Output explicitly addresses all 3 axes with labeled sections: (1) 510(k) SE Re-assessment citing 21 CFR 807.92, (2) EU MDR Classification Change citing Annex VIII, (3) Clinical Data Gap citing Annex XIV. Each axis has a clear judgment. The oncology screening shift likely triggers Class III."
+      - type: javascript
+        value: "output.toLowerCase().includes('510(k)') && output.toLowerCase().includes('mdr') && output.toLowerCase().includes('clinical data')"
+
+# ── Default test options ───────────────────────────────────────────────────
+defaultTest:
+  options:
+    # Run the citation coverage scorer on every test (AC-05)
+    scorer:
+      - path: ./scorers/citation-coverage.ts
+
+# ── Output + pass threshold (AC-07: 80%+) ──────────────────────────────────
+outputPath: evals/workflows/results/latest.json
+sharing: false
+commandLineOptions:
+  passRateThreshold: 0.8
+threshold: 0.8
