@@ -18,10 +18,19 @@
 
 ## M0 — 공통 인프라
 
-### Task M0-1: `_shared/streaming-chain.ts` — gx10 streaming 공통
-- `getLlmModel()`(gx10 gpt-oss:120b) 기반 `streamText` 래퍼. 기존 SSE 계약(SPEC-WORKFLOWS-001) 준수. section-by-section chunk emit.
-- 참조: `lib/domains/consult/run-consult.ts`, `lib/domains/triage/run-triage.ts` (gx10 streaming 패턴).
-- **매핑**: REQ-WFLLM-002 / AC-04
+### Task M0-0: `_shared/workflow-runner.ts` — executeStep 오케스트레이터 (D2, greenfield 핵심)
+- **[신규]** executeStep를 순회하며 per-step 호출 → streaming-chain으로 chunk emit → 결과 영속(workflow_runs) → audit(workflow.llm_call/draft_version/expert_flagged)하는 오케스트레이터. 현재 executeStep 호출처 0건 → 본 태스크가 파이프라인을 최초 구축.
+- route(`POST /api/ra/workflows/{type}`)가 202 JSON+streamEventsUrl 대신 이 runner를 통해 `text/event-stream` SSE 반환하도록 연결.
+- **매핑**: REQ-WFLLM-001/002/008 / AC-04
+
+### Task M0-1: `_shared/streaming-chain.ts` — gx10 SSE streaming (D1, net-new)
+- `getLlmModel()`(gx10 gpt-oss:120b) 기반 `streamText` 래퍼. **[신규]** 현재 SSE 레이어 미존재 → SPEC-WORKFLOWS-001 명세의 최초 구현 (기존 계약 "준수" 아님). section-by-section chunk emit. structured judgment step은 `generateObject`(Zod) — `lib/cer/evidence-synthesis.ts:136` gx10 generateObject 선례 (D8).
+- 참조: `lib/domains/consult/run-consult.ts`, `lib/domains/triage/run-triage.ts` (streamText + Promise.race 타임아웃 패턴).
+- **매핑**: REQ-WFLLM-002 / AC-04/10
+
+### Task M0-5: `_shared/input-wiring.ts` — executor 입력 계약 (D6)
+- **[신규]** predicate(#22)/CER(#23)/PCCP(#24) 산출 → `StepExecutionContext.input` 매핑. 현재 미연결. M1(submission-drafter)는 predicate search 결과 입력. 의존 산출물 미구현 시 stub input fallback(명시).
+- **매핑**: REQ-WFLLM-001/003/005 / M1-M3
 
 ### Task M0-2: `_shared/citation-enforcer.ts`
 - draft 섹션별 citation coverage ≥ 80% 검증 (consult H-3 패턴 재사용: countSentences + `<sup>` 인용 비율). 미달 시 `citation_coverage_low` audit.

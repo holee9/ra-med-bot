@@ -10,7 +10,7 @@
 **When**: M1 구현 완료.
 **Then**:
 - `executeStep` 가 `getLlmModel()`(gx10 gpt-oss:120b) 경유 실제 LLM 호출로 각 step 출력 생성.
-- `_mock: true` 플래그 제거 (grep 직검 0건).
+- `_mock: true` 플래그 제거 — `buildWorkflowSummary`(executor.ts) + route(`app/api/ra/workflows/.../route.ts` `_mock: isMock`) 양쪽 (D4 직검: _mock은 executeStep이 아닌 summary/route에 위치). grep 직검 0건.
 - `review_required: true` 유지 (Expert Review Gate, REQ-WFLLM-007).
 **매핑**: REQ-WFLLM-001/002/009 / Milestone M1
 
@@ -67,6 +67,26 @@
 **When**: 게이트 실행.
 **Then**: typecheck 0 · lint(lint:hex) 0 · full `pnpm test` 0 failures · ci:* 전 단계 0 failures (로컬 직검) · migration 실DB 적용(L-010). `_mock` 잔존 grep 0건.
 **매핑**: 전 REQ / M5
+
+### AC-10: LLM 실패/timeout 처리 (REQ-WFLLM-010)
+**Given**: executor가 gx10 LLM 호출 중 timeout/실패 발생(Promise.race 전체 타임아웃, run-triage 패턴).
+**When**: 실패 감지.
+**Then**: 명확한 오류 반환 + 부분 draft 저장 + `workflow.llm_call` audit(`meta.status=failed`). 전체 crash 아님.
+**매핑**: REQ-WFLLM-010 / M0-1
+
+### AC-11: FDA eCopy 구조 준수 (REQ-WFLLM-011)
+**Given**: submission-drafter draft 생성.
+**When**: eval assertion.
+**Then**: 6 섹션(커버레터/목차/기기설명/용도/기술특성/성능데이터) 구조 준수. promptfoo eval에 구조 assertion 포함.
+**매핑**: REQ-WFLLM-011 / M1, M5
+
+### AC-12: `/workflows` Beta 배지 제거 (REQ-WFLLM-012)
+**Given**: 3 executor 실구현 완료.
+**When**: M4 완료.
+**Then**: `/workflows` UI의 Beta 배지 제거 (grep `Beta` in workflows UI components = 0건, 또는 의도적 잔존 시 명시).
+**매핑**: REQ-WFLLM-012 / M4
+
+---
 
 ## 5. 엣지 케이스
 - **EC-1 LLM 실패/timeout**: REQ-WFLLM-010 — 명확한 오류 + 부분 draft 저장 + audit.

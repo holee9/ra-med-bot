@@ -115,22 +115,26 @@ lib/workflows/
   audit-response/executor.ts        # 3-part 대응 초안 + hybrid retrieval
   indication-impact/executor.ts     # 적응증 영향 체인 3축 분석
   _shared/
-    streaming-chain.ts              # gx10 gpt-oss:120b streaming chain 공통 구성 (getLlmModel)
+    workflow-runner.ts             # [신규, D2] executeStep 오케스트레이터 — step 순회·스트리밍·영속·audit (현재 호출처 0건 → greenfield)
+    streaming-chain.ts              # [신규, D1] gx10 gpt-oss:120b SSE streaming (현재 SSE 레이어 미존재 → 기존 계약 "준수" 아닌 최초 구현)
     citation-enforcer.ts            # citation coverage 검증
     review-gate.ts                  # expert review export 차단
+    input-wiring.ts                 # [신규, D6] predicate(#22)/CER(#23)/PCCP(#24) → StepExecutionContext.input 계약 (현재 미연결)
 evals/workflows/                    # promptfoo 시나리오 6건+
 ```
+
+> **D1/D2 정정 (plan-auditor 직검)**: SPEC-WORKFLOWS-001은 SSE 계약을 명세만 했지 구현하지 않았다 — route는 202 JSON + `streamEventsUrl`(존재 않는 `/events`) 반환, `text/event-stream`/`streamText` 전무. `executeStep` 호출처 0건. 따라서 본 SPEC은 "기존 계약 준수"가 아니라 **SSE 레이어 + 워크플로우 runner + 입력 연결을 최초로 구축**한다. gap 문서 BLOCK-2 "회귀 중간, 시그니처 불변" 전제는 허위 — **대규모 greenfield, 회귀 높음**.
 
 ### 4.2 DB Schema
 
 기존 `workflows`, `workflow_runs`, `audit_logs` 테이블 재사용. `workflow_runs`에 `draft_version`, `citation_coverage`, `review_status`(pending|approved|rejected) 컬럼이 없다면 추가. `_mock` 관련 메타데이터 컬럼 제거 또는 deprecate.
 
-### 4.3 API Endpoints
+### 4.3 API Endpoints (D3 정정 — 실제 경로 기준)
 
-기존 SSE 계약 유지:
-- `POST /api/workflows/[type]/run` — executor 실행, SSE streaming 응답
-- `GET /api/workflows/runs/[id]` — draft 버전·citation·review 상태 조회
-- `POST /api/workflows/runs/[id]/export` — review_status=approved일 때만 허용
+실제 route(`app/api/ra/workflows/`, 직검):
+- `POST /api/ra/workflows/submission-drafter` — 현재 202 JSON + `streamEventsUrl` 반환. **본 SPEC이 `text/event-stream` SSE로 전환** (streaming-chain via workflow-runner).
+- `GET /api/ra/workflows/submission-drafter/[runId]/status` — draft 버전·citation·review 상태 조회 (draft_version/citation_coverage 컬럼 M0-4 추가 후).
+- `POST /api/ra/workflows/{type}/[runId]/export` — **[신규]** review_status=approved일 때만 허용 (현재 3 타입 export route 부재 → review-gate 구현과 함께 신규 생성). audit-response/indication-impact route 동일 패턴.
 
 ### 4.4 의존성
 
