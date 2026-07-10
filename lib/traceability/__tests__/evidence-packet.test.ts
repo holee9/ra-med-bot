@@ -2,18 +2,20 @@
 // @MX:SPEC SPEC-REGULA-TRACEABILITY-001 (REQ-TRACEABILITY-006, REQ-TRACEABILITY-007)
 
 import { describe, expect, it } from 'vitest';
-import type { EvidencePacket } from '../evidence-packet';
+import { type EvidencePacket, getEvidencePacket } from '../evidence-packet';
 import { packetToExportData } from '../export-packet';
 
 describe('traceability/evidence-packet — getEvidencePacket contract', () => {
-  // The drizzle query-chain shape makes a pure-stub test brittle without
-  // reaching into SQL predicate decoding. The real DB path is covered by
-  // integration-real-pipeline.test.ts (audit enum lock-step + export render).
-  // Here we verify the issue-surfacing contract indirectly via the export
-  // flattener, which consumes the same EvidencePacket shape the assembler
-  // produces.
-  it('returns null when the deliverable node is not found (documented contract)', () => {
-    expect(true).toBe(true);
+  it('returns null when the deliverable node is not found', async () => {
+    // Minimal db stub: the root lookup returns no rows → getEvidencePacket
+    // returns null before any traversal (REQ-TRACEABILITY-007 contract).
+    // Deeper BFS scenarios are covered by integration-real-pipeline.test.ts;
+    // this exercises the early-return + the root SELECT chain shape.
+    const db = {
+      select: () => ({ from: () => ({ where: () => ({ limit: () => [] }) }) }),
+    };
+    const r = await getEvidencePacket(db as never, { orgId: 'o1', deliverableId: 'missing' });
+    expect(r).toBeNull();
   });
 });
 
