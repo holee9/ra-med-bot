@@ -1,12 +1,12 @@
 ---
 id: SPEC-REGULA-WORKFLOWS-LLM-002
-version: 1.0.0
-status: draft
+version: 1.1.0
+status: planned
 phase: wave3
 priority: High
 created: 2026-06-22
-updated: 2026-06-22
-author: manager-spec (batch-2026-06-22)
+updated: 2026-07-10
+author: manager-spec (batch-2026-06-22); orchestrator reframe 2026-07-10
 issue_number: 39
 depends_on:
   - SPEC-REGULA-FOUNDATION-001
@@ -15,6 +15,7 @@ depends_on:
   - SPEC-REGULA-PREDICATE-001
   - SPEC-REGULA-CER-001
   - SPEC-REGULA-PCCP-001
+  - SPEC-LLM-MIGRATION-BC
 lifecycle_level: spec-anchored
 labels:
   - component/backend
@@ -28,6 +29,7 @@ labels:
 | Version | Date | Author | Changes |
 |---------|------|--------|---------|
 | 1.0.0 | 2026-06-22 | manager-spec (batch) | 초기 작성. Issue #39 기반. SPEC-REGULA-WORKFLOWS-001(stub)의 mock executor를 실제 LLM 구현으로 승격. |
+| 1.1.0 | 2026-07-10 | orchestrator | **gx10 재정의 + plan 완료**. "Anthropic Sonnet" 스테일 프레이밍(§1.3/§4.1/§4.4)을 gx10 Ollama gpt-oss:120b(SPEC-LLM-MIGRATION-BC, Phase B/C #318 — Anthropic/OpenAI 전면 배제)로 정정. status draft→planned. acceptance.md/tasks.md 보충. (사용자 "문서 모두 개정" 지시 — Phase 1 '6코퍼스'와 동일 부류 스테일 프레이밍.) |
 
 ---
 
@@ -53,7 +55,7 @@ Regula의 핵심 가치 제안은 "규제 문서 초안을 AI로 자동 생성�
 
 ### 1.3 본 SPEC의 범위 (In Scope)
 
-- 세 executor의 mock 제거 및 실제 Sonnet 기반 streaming LLM 구현
+- 세 executor의 mock 제거 및 실제 gx10 Ollama gpt-oss:120b 기반 streaming LLM 구현 (SPEC-LLM-MIGRATION-BC, `lib/ai/llm-provider.getLlmModel`)
 - FDA 510(k) eCopy 섹션 구조 기반 draft 생성
 - 감사 지적 사항별 3-part 대응 초안 생성 (hybrid retrieval: 사내 SOP + 규제 corpus)
 - 적응증 영향 체인 분석 (3개 판단 축)
@@ -113,7 +115,7 @@ lib/workflows/
   audit-response/executor.ts        # 3-part 대응 초안 + hybrid retrieval
   indication-impact/executor.ts     # 적응증 영향 체인 3축 분석
   _shared/
-    streaming-chain.ts              # Sonnet streaming chain 공통 구성
+    streaming-chain.ts              # gx10 gpt-oss:120b streaming chain 공통 구성 (getLlmModel)
     citation-enforcer.ts            # citation coverage 검증
     review-gate.ts                  # expert review export 차단
 evals/workflows/                    # promptfoo 시나리오 6건+
@@ -137,4 +139,4 @@ evals/workflows/                    # promptfoo 시나리오 6건+
 - #24 PCCP Builder (indication impact context)
 - SPEC-REGULA-WORKFLOWS-001 (executor interface contract)
 - #33 Release Hardening (mock → beta 플래그 제거 후 진행)
-- Anthropic Sonnet (streaming LLM), pgvector hybrid retrieval
+- gx10 Ollama gpt-oss:120b (SPEC-LLM-MIGRATION-BC, streaming LLM — Anthropic/OpenAI 전면 배제), pgvector hybrid retrieval, `lib/ai/llm-provider.getLlmModel`
