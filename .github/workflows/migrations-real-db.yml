@@ -143,3 +143,9 @@ jobs:
       # the canary owns source_sections for its full lifetime.
       - name: Run RLS sources canary (isolated)
         run: pnpm vitest run tests/integration/rls-sources-real-db.test.ts
+
+      # SPEC-REGULA-RLS-ENFORCE-001 (BLOCK-3) — general FORCE-table canary
+      # (knowledge_sources). Extends the #317 sources canary to a 2nd FORCE
+      # table; found + fixed the 0099 policy's missing NULLIF (0116).
+      - name: Run RLS enforce canary (general, knowledge_sources)
+        run: pnpm vitest run tests/integration/rls-enforce-canary-real-db.test.ts
