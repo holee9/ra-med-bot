@@ -86,12 +86,12 @@
   - `corpus_sync_runs` status=`synced` 행 추가.
 - **매핑**: REQ-KB-002, REQ-KB-003, REQ-KB-030 / AC-1, AC-12
 
-### Task M1-4: RAG 인용 검증 — Priority High
+### Task M1-4: source 승인 + RAG 인용 검증 — Priority High
 
-- **실행**: 도메인 질의(예: "FDA 510(k) submission 요건은?") 로 RAG Q&A 호출.
-- **검증**: 응답에 MD-process 출처 인용(source_host=github.com, source_owner=holee9, source_repo=MD-process, source_path) 포함. 런타임 증거(응답 payload 또는 로그) 기록.
-- **주의**: approval_status=`pending_review` 가 검색을 차단하는 경우 현황 기록 + 별도 검토(본 SPEC 범위 외).
-- **매핑**: REQ-KB-006, REQ-KB-031 / AC-2, AC-12
+- **M1-4a source 승인 (필수 선행)**: ingest된 MD-process source 행들이 `approvalStatus='pending_review'`로 생성됨을 직검. 이후 `POST /api/source-governance/approve`(REQ-SOURCE-GOV-015)로 `approved` 전환 — `composeRetrievalGates`가 미승인 source를 검색에서 영구 제외하므로 **승인 없이는 RAG 인용 불가** (source-governance 설계, Charter [지양-2]). 게이트 우회 아님.
+- **M1-4b RAG 인용 검증**: 도메인 질의(예: "FDA 510(k) submission 요건은?") 로 RAG Q&A 호출.
+- **검증(직검)**: `SELECT approval_status FROM sources WHERE source_repo='MD-process'` = `approved`. 응답에 MD-process 출처 인용(source_host=github.com, source_owner=holee9, source_repo=MD-process, source_path) 포함. `source.approved` audit 행 존재. 런타임 증거(응답 payload 또는 로그) 기록.
+- **매핑**: REQ-KB-006, REQ-KB-009, REQ-KB-031 / AC-2, AC-12
 
 ### Task M1-5: 실패 경로 검증 — Priority High
 
@@ -228,7 +228,7 @@ M4 (M1, M2, M3 완료 후: M4-1..M4-6)
 | 549파일 > MAX_FILES=500 | M1 | NFR-KB-PERF-001 문서화, MAX_FILES 변경은 본 SPEC 외 | Open |
 | auth-token 평문 저장 | M1 | NFR-KB-SEC-002 기록, 별도 이슈 위임 | Open |
 | diskstation SSRF 우회 | M2 | D1-A(adapter 유지), guard 약화 금지, 문서화 | Open |
-| approval_status pending_review 검색 차단 가능 | M1 | 현황 기록, 별도 검토 | Open |
+| approval_status pending_review 검색 차단 | M1 | REQ-KB-009 승인 단계(M1-4a)로 해결 — 게이트 우회 아님, source-governance 설계 | Mitigated |
 | L-013 mock 맹점 | M4 | 실DB 직검 강제(AC-12), mock-only 기각 | Mitigated by design |
 
 ---

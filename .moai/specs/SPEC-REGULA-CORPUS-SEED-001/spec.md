@@ -22,6 +22,7 @@ related:
 ## HISTORY
 
 - 2026-07-10 생성 (manager-spec). `production-deployment-gap-2026-07-10.md` BLOCK-1 "6개 코퍼스 seed" 프레이밍을 직검하여 **3개 git repo 연동**으로 재정의. 데이터 소싱 vs 검색 도메인 분리 확립. #312 E2E AC를 M1 de-risk로 매핑. (main `9bcdd23`)
+- 2026-07-10 (orchestrator 직검 정정, v1.0.0→1.0.1): **REQ-KB-009 신설** — AC-2 RAG 인용에 source-governance 승인 단계(`POST /api/source-governance/approve`)가 필수임을 코드 직검 확정(sync.ts:543 `pending_review` + `composeRetrievalGates` 미승인 영구 제외). 기존 AC-2/Task M1-4의 "별도 검토 위임"은 결함 — 승인은 source-governance 설계(게이트 우회 아님).
 
 ---
 
@@ -91,7 +92,9 @@ RAG 코퍼스가 비어 있다 (`sources=1, source_sections=19, knowledge_source
 
 **REQ-KB-005** (Event-Driven): 동일 knowledge_source에 대해 re-sync가 트리거**될 때**, 시스템은 기존 chunk들에 대해 `applyOutdateOperations`(supersession)을 적용**해야 한다 (shall)**. (#312 AC-4)
 
-**REQ-KB-006** (Event-Driven): RAG 검색 쿼리가 MD-process에서 ingest된 도메인(예: FDA 510(k), EU MDR)을 포함**할 때**, 시스템은 해당 repo에서 유래한 source 인용을 검색 결과에 반환**해야 한다 (shall)**. (#312 AC-2, Charter [지양-2])
+**REQ-KB-006** (Event-Driven): RAG 검색 쿼리가 MD-process에서 ingest되고 **승인된(approvalStatus='approved')** 도메인(예: FDA 510(k), EU MDR)을 포함**할 때**, 시스템은 해당 repo에서 유래한 source 인용을 검색 결과에 반환**해야 한다 (shall)**. (#312 AC-2, Charter [지양-2]; 승인 전제 REQ-KB-009)
+
+**REQ-KB-009** (Event-Driven): knowledge_source 동기화로 ingest된 source 행들이 `approvalStatus='pending_review'`(sync.ts:543)로 생성**될 때**, E2E 검증은 RA-owner/source-governance 승인 절차(`POST /api/source-governance/approve`, REQ-SOURCE-GOV-015)로 해당 source들을 `approved`로 전환**해야 한다 (shall)**. `composeRetrievalGates`(lib/source-governance/retrieval-gate.ts)가 `approvalStatus !== 'approved'`를 검색에서 영구 제외하므로, **승인 없이는 AC-2(RAG 인용) 달성이 불가**하다. 이는 source-governance 설계(미검증 콘텐츠 Q&A 차단, Charter [지양-2])이며 본 SPEC은 게이트를 우회하지 않는다 (직검 정정 — 기존 "별도 검토 위임"은 결함이었음).
 
 **REQ-KB-007** (Event-Driven): ra-project repo가 knowledge_source로 등록·동기화**될 때**, 시스템은 MD-process와 동일한 파이프라인으로 ingest**해야 한다 (shall)**.
 
@@ -172,7 +175,7 @@ RAG 코퍼스가 비어 있다 (`sources=1, source_sections=19, knowledge_source
 | AC (#312) | 본 SPEC REQ | Milestone |
 |-----------|-------------|-----------|
 | 공개 repo 연결 후 sync 성공 → 코퍼스 채워짐 | REQ-KB-001..003, 007, 030 | M1 (MD-process), M2 (ra-project) |
-| RAG 검색에서 해당 repo 인용 반환 | REQ-KB-006, 031 | M1 |
+| RAG 검색에서 해당 repo 인용 반환 | REQ-KB-006, 009, 031 | M1 |
 | 실패 시 syncStatus='failed' + audit | REQ-KB-004, NFR-KB-AUD-001 | M1 (실패 경로 검증) |
 | re-sync 시 supersession | REQ-KB-005 | M1 |
 

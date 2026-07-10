@@ -23,15 +23,16 @@
 
 ### AC-2: RAG 검색에서 해당 repo 인용 반환
 
-**Given**: AC-1이 완료되어 MD-process에서 ingest된 도메인 콘텐츠(FDA 510(k), EU MDR, MFDS, ISO13485, SOP 등) 가 `source_sections` 에 gx10 embedding과 함께 존재한다.
+**Given**: AC-1이 완료되어 MD-process에서 ingest된 도메인 콘텐츠(FDA 510(k), EU MDR, MFDS, ISO13485, SOP 등) 가 `source_sections` 에 gx10 embedding과 함께 존재한다. 단, ingest 직후 source 행들은 `approvalStatus='pending_review'`(sync.ts:543) 상태이며, `composeRetrievalGates`(lib/source-governance/retrieval-gate.ts) 가 `approvalStatus !== 'approved'`를 검색에서 영구 제외한다.
 
-**When**: 사용자가 RAG Q&A에 해당 도메인 질의를 보낸다 (예: "FDA 510(k) submission 요건은?").
+**When**: RA-owner가 `POST /api/source-governance/approve`(REQ-SOURCE-GOV-015)로 MD-process 출처 source 들을 `approved`로 전환한 후, 사용자가 RAG Q&A에 해당 도메인 질의를 보낸다 (예: "FDA 510(k) submission 요건은?").
 
 **Then**:
 - 응답에 MD-process에서 유래한 source 인용(source_host/owner/repo/path 메타) 이 포함된다.
-- 인용된 source의 `approvalStatus` 가 `pending_review` 임에도 불구하고, 검색 엔진이 해당 chunk를 반환함을 런타임 증거(로그 또는 응답 payload) 로 확인한다. (주: approval 게이트가 검색을 차단하는 경우, 그 현황을 기록하고 별도 검토로 위임 — 본 AC의 핵심은 "코퍼스가 채워져 있으면 검색이 가능" 입증)
+- 인용된 source의 `approvalStatus='approved'` 임을 직검(`SELECT approval_status FROM sources WHERE source_repo='MD-process'`)하고, `source.approved` audit 행이 기록됨을 확인한다.
+- 검색 엔진이 승인된 source의 chunk를 반환함을 런타임 증거(응답 payload 또는 로그)로 확인한다.
 
-**매핑**: REQ-KB-006, REQ-KB-031 / Milestone M1
+**매핑**: REQ-KB-006, REQ-KB-009, REQ-KB-031 / Milestone M1
 
 ---
 
