@@ -29,10 +29,12 @@ async function postSubmissionDrafter(request: Request, session: AuthSession): Pr
     return Response.json({ error: 'Organization context required' }, { status: 403 });
   }
 
-  // @MX:NOTE Mock disclosure — TASK-003: Beta scaffold returns synthetic outputs.
-  // REQ-HARDEN-028: Every mock workflow response includes _mock: true flag.
-  // @MX:SPEC SPEC-REGULA-RELEASE-HARDENING-001 (REQ-HARDEN-028)
-  const isMock = true; // Beta scaffold: all steps are mock implementations
+  // @MX:NOTE [AUTO] SPEC-REGULA-WORKFLOWS-LLM-002 M1/M4 — executors now call gx10
+  //   gpt-oss:120b (judgeStructured/streamSection). isMock=false (real LLM).
+  //   The 202 + streamEventsUrl contract is preserved; the SSE /events route
+  //   (runWorkflow) is the streaming consumer (AC-04).
+  // @MX:SPEC SPEC-REGULA-WORKFLOWS-LLM-002 (REQ-WFLLM-001/009)
+  const isMock = false; // M1: executors are real gx10 LLM (no longer Beta scaffold)
 
   // 21 CFR Part 11 §11.10(e) — Issue #378: INSERT + audit ride the same
   // db.transaction so a failure between them rolls back both.

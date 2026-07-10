@@ -481,6 +481,16 @@ export const auditActionEnum = pgEnum('audit_action', [
   // emitted once per release when the final sign-off is recorded (REQ-VAL-012).
   // Carries approver id, timestamp, and report artifact path in meta_json.
   'validation.signoff',
+  // SPEC-REGULA-WORKFLOWS-LLM-002 (REQ-WFLLM-008) — workflow LLM lifecycle
+  // audit actions added via manual ALTER TYPE (M0-4 migration):
+  //   workflow.llm_call      — executor invoked gx10 for a step (REQ-WFLLM-008)
+  //   workflow.draft_version — draft version bumped (persisted result update)
+  //   workflow.expert_flagged — expert review gate blocked export (REQ-WFLLM-007)
+  //   workflow.export_blocked — export denied (review not approved) — review-gate
+  'workflow.llm_call',
+  'workflow.draft_version',
+  'workflow.expert_flagged',
+  'workflow.export_blocked',
 ]);
 
 // @MX:NOTE [AUTO] Source governance enums — SPEC-REGULA-SOURCE-GOVERNANCE-001 (Issue #48).
@@ -1406,6 +1416,12 @@ export const workflowRuns = pgTable(
     resultJson: jsonb('result_json'),
     stepProgress: jsonb('step_progress'),
     confidenceAggregate: numeric('confidence_aggregate', { precision: 3, scale: 2 }),
+    // SPEC-REGULA-WORKFLOWS-LLM-002 (REQ-WFLLM-008, §4.2) — draft versioning +
+    // citation coverage tracking. draft_version bumps on each regenerate;
+    // citation_coverage stores the citation-enforcer's 0-1 ratio (nullable
+    // until the first draft completes). numeric(5,4) holds 0.0000–1.0000.
+    draftVersion: integer('draft_version').notNull().default(0),
+    citationCoverage: numeric('citation_coverage', { precision: 5, scale: 4 }),
     reviewRequired: boolean('review_required').notNull().default(true),
     reviewerUserId: uuid('reviewer_user_id').references(() => users.id),
     reviewedAt: timestamp('reviewed_at', { withTimezone: true, mode: 'date' }),

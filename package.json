@@ -57,6 +57,7 @@
     "ingest:gitea-wiki": "tsx scripts/ingest-gitea-wiki.ts",
     "ci:build": "pnpm build",
     "eval:ci": "promptfoo eval --config tests/eval/promptfoo.config.yaml --output tests/eval/results/latest.json",
+    "eval:workflows": "node evals/workflows/run-gx10-eval.mjs",
     "load:staging": "BASE_URL=$STAGING_URL bash scripts/run-load.sh staging",
     "load:mock": "bash scripts/run-load.sh mock",
     "preflight": "bash scripts/preflight.sh",
