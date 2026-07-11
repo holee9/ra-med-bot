@@ -128,16 +128,19 @@ describe('fetchWithRetry (REQ-RADAR-009)', () => {
   it('throws after exhausting retries on persistent 503', async () => {
     vi.mocked(fetch).mockResolvedValue(new Response(null, { status: 503 }));
     const promise = fetchWithRetry(`${ORIGIN}/feed`, {}, 2);
-    await vi.advanceTimersByTimeAsync(60 * 60 * 1000);
-    await expect(promise).rejects.toThrow('HTTP 503');
+    // Promise.all: the expect(...).rejects handler attaches BEFORE timers drain,
+    // so the rejection is never "unhandled" (the vitest fake-timer pitfall).
+    await Promise.all([expect(promise).rejects.toThrow('HTTP 503'), vi.runAllTimersAsync()]);
     expect(vi.mocked(fetch)).toHaveBeenCalledTimes(2);
   });
 
   it('retries on network error then throws if all fail', async () => {
     vi.mocked(fetch).mockRejectedValue(new Error('connection reset'));
     const promise = fetchWithRetry(`${ORIGIN}/feed`, {}, 2);
-    await vi.advanceTimersByTimeAsync(60 * 60 * 1000);
-    await expect(promise).rejects.toThrow('connection reset');
+    await Promise.all([
+      expect(promise).rejects.toThrow('connection reset'),
+      vi.runAllTimersAsync(),
+    ]);
   });
 });
 
