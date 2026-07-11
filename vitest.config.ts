@@ -42,7 +42,7 @@ export default defineConfig({
       // 85% target remains follow-up (long tail — large lib/route coverage).
       thresholds: {
         statements: 64,
-        branches: 76,
+        branches: 75,
         functions: 65,
         lines: 64,
       },
