@@ -743,11 +743,14 @@ const isCliEntry =
   process.argv[1].replace(/\\/g, '/').endsWith('scripts/seed-corpus.ts');
 
 if (isCliEntry) {
-  const hasRealOpenAiKey =
-    !!process.env.OPENAI_API_KEY && !process.env.OPENAI_API_KEY.startsWith('dev-placeholder');
-  const embedFn = hasRealOpenAiKey
-    ? embedChunks
-    : async (texts: string[]): Promise<(number[] | null)[]> => texts.map(() => null);
+  // #517/REQ-KB-021: embedding runs on gx10 on-prem Ollama (#318), not OpenAI.
+  // Default to real gx10 embedding (embedChunks → embedding-provider); set
+  // SEED_SKIP_EMBED=1 to seed rows with null vectors when gx10 is unreachable
+  // (offline/CI structural fixtures). The old OPENAI_API_KEY gate was stale.
+  const skipEmbed = process.env.SEED_SKIP_EMBED === '1';
+  const embedFn = skipEmbed
+    ? async (texts: string[]): Promise<(number[] | null)[]> => texts.map(() => null)
+    : embedChunks;
 
   runSeedCorpus(db, embedFn)
     .then((summary) => {
