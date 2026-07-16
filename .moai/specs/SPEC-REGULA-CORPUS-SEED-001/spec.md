@@ -23,6 +23,7 @@ related:
 
 - 2026-07-10 생성 (manager-spec). `production-deployment-gap-2026-07-10.md` BLOCK-1 "6개 코퍼스 seed" 프레이밍을 직검하여 **3개 git repo 연동**으로 재정의. 데이터 소싱 vs 검색 도메인 분리 확립. #312 E2E AC를 M1 de-risk로 매핑. (main `9bcdd23`)
 - 2026-07-10 (orchestrator 직검 정정, v1.0.0→1.0.1): **REQ-KB-009 신설** — AC-2 RAG 인용에 source-governance 승인 단계(`POST /api/source-governance/approve`)가 필수임을 코드 직검 확정(sync.ts:543 `pending_review` + `composeRetrievalGates` 미승인 영구 제외). 기존 AC-2/Task M1-4의 "별도 검토 위임"은 결함 — 승인은 source-governance 설계(게이트 우회 아님).
+- 2026-07-16 (실행 중 근본원인 정정, v1.0.1→1.1.0): **§1.1 진단 오류 정정 + REQ-KB-022 신설**. "ingestion 파이프라인은 구현됨, 데이터 연결만 부재"는 **부분적으로 틀렸음**. 실제 ra-project ingestion 실행(실DB) 결과, 파이프라인은 작동하나 `lib/ingest/embed.ts`의 PII 가드가 **URL을 PII로 간주**해 규제문서 136개 중 101개(URL 87 + email 14)를 임베딩 전 차단 → 코퍼스 74%가 조용히 드롭됨(`syncStatus=synced`으로 표시되어 L-013류 은폐). 원인: 해당 URL 가드는 외부 API(GitHub Models) 임베딩 시절의 데이터 유출 방어책이었으나, #318이 임베딩을 gx10 온프레미스(LAN)로 옮기며 **obsolete + 치명적**이 됨. 조치: URL 패턴 제거(email/SSN/phone/card 유지), 재현 테스트 추가. 이는 데이터 연결의 **선결 조건**이었음.
 
 ---
 
@@ -117,6 +118,8 @@ RAG 코퍼스가 비어 있다 (`sources=1, source_sections=19, knowledge_source
 **REQ-KB-020** (Ubiquitous): 모든 운영 ingestion 경로는 gx10 Ollama qwen3-embedding (1536-dim MRL) 을 사용**해야 한다 (shall)**. OpenAI runtime dependency는 존재하지 않는다.
 
 **REQ-KB-021** (Unwanted): `scripts/seed-corpus.ts` 에서 운영 ingestion이 OpenAI API key를 필요로 한다는 stale heuristic(헤더의 `Requires: OPENAI_API_KEY` 등)이 발견**되면**, 이를 gx10 embed 경로 안내로 대체**해야 한다 (shall)**.
+
+**REQ-KB-022** (Unwanted): 임베딩 입력에 URL이 포함**되면**, 시스템은 이를 PII로 간주하여 차단해**서는 안 된다 (shall not)** — 임베딩은 gx10 온프레미스(LAN)로 전송되어 외부 유출 위험이 없으며(#318), 규제 source 문서는 URL을 필연적으로 포함한다. 단, 실제 PII(SSN/email/phone/card)는 계속 차단**해야 한다 (shall)**. (`lib/ingest/embed.ts` PII_GUARD_PATTERNS, `tests/unit/ingest/embed.test.ts` 재현 테스트)
 
 ### 3.4 검증 — 실DB E2E (L-013 방어)
 

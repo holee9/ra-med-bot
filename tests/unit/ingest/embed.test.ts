@@ -39,6 +39,23 @@ describe('embedChunks', () => {
     ).rejects.toThrow(/PII|email/i);
   });
 
+  // #517 / SPEC-REGULA-CORPUS-SEED-001: after #318 moved embedding on-prem (gx10
+  // LAN), the URL PII guard is obsolete AND fatal — regulatory docs are URL-heavy,
+  // so it silently dropped ~74% of the corpus. URLs must embed; real PII stays blocked.
+  it('does NOT throw for URL-bearing regulatory content (on-prem embed)', async () => {
+    const result = await embedChunks([
+      'See FDA guidance at https://www.fda.gov/media/510k.pdf and EUDAMED https://ec.europa.eu/tools/eudamed',
+    ]);
+    expect(result).toHaveLength(1);
+    expect(result[0]).toHaveLength(1536);
+  });
+
+  it('still blocks email even when a URL is also present', async () => {
+    await expect(
+      embedChunks(['Ref https://www.fda.gov/x — contact jane.roe@notifiedbody.eu']),
+    ).rejects.toThrow(/PII|email/i);
+  });
+
   it('processes 150 texts correctly (batching)', async () => {
     const texts = Array.from({ length: 150 }, (_, i) => `Document chunk ${i}`);
     const result = await embedChunks(texts);
