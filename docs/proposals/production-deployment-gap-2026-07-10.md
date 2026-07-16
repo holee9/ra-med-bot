@@ -22,20 +22,22 @@
 
 ## 2. 프로덕션 배포 Blocking Items (우선순위순)
 
-### BLOCK-1: RAG Corpus 비어있음 — 🔴 CRITICAL (Q&A 작동 불가)
+### BLOCK-1: RAG Corpus 비어있음 — ✅ 해소 (2026-07-16, PR #523)
 
-**현황**: `sources=1, source_sections=19, knowledge_sources=0` (직검 regula-test-db). RAG Q&A가 인용할 데이터 없음 → **제품 핵심 가치 실현 불가**.
+> **해소 (2026-07-16, PR #523 / #517)**: 실행 중 **근본원인이 진단과 달랐음**을 발견. "데이터 연결만 부재"가 아니라 `lib/ingest/embed.ts`의 PII 가드가 **URL을 PII로 간주**해 규제문서 74%(136개 중 101개: URL 87 + email 14)를 임베딩 전 차단하고 있었음(`syncStatus=synced`으로 은폐). 이 URL 가드는 외부 API 임베딩 시절 방어책이었으나 #318 gx10 온프레미스 전환으로 obsolete+치명적이 됨. URL 패턴 제거 후 3-repo ingest 실증(실DB): `source_sections 19 → 2187`(embedded 2168, gx10 qwen3-embedding), `sources 1 → 623`(approved 622). RAG 인용 실검색 PASS("FDA 510(k)" → 510k Summary DB, "EU MDR" → MDR AnnexII Template). SPEC REQ-KB-022 신설.
+
+**최초 현황 (2026-07-10)**: `sources=1, source_sections=19, knowledge_sources=0` (직검 regula-test-db). RAG Q&A가 인용할 데이터 없음 → **제품 핵심 가치 실현 불가**.
 
 > **데이터 소싱 정정 (2026-07-10, `docs/architecture/knowledge-base.md` 참조)**: 지식베이스는 **3개 기존 git 저장소**에서만 소싱된다 — `ra-project`(GitHub, 154 md) · `MD-process`(GitHub, 549 md, FDA/EU MDR/MFDS/ISO13485 도메인 내장) · `ra-llm-wiki`(Gitea, 내부 SOP). 이전 "6개 코퍼스(FDA/EU MDR/MFDS/NMPA/PMDA/SOP) seed" 프레이밍은 데이터 소싱에 대한 오기반 — 해당 관할구는 **검색·분류 도메인**(repo 내부 디렉토리 구조 + retriever/classifier 라우팅 키)이지 별도 seed 소스가 아니다.
 
 **작업**:
 1. **3개 repo 연동** (#312): GitHub ra-project/MD-process → `knowledge_sources` git sync(clone → extract → chunk → gx10 embed → pgvector upsert). Gitea ra-llm-wiki → 기존 `ingest-gitea-wiki.ts` adapter.
-2. `ingestDocuments` 실구현 완료 (`lib/knowledge-sources/sync.ts:258`, #307 D-2b). **데이터 연결만 부재**.
+2. `ingestDocuments` 실구현 완료 (`lib/knowledge-sources/sync.ts:258`, #307 D-2b). ~~**데이터 연결만 부재**~~ → **정정(2026-07-16)**: 데이터 연결 + PII 가드 URL 차단 제거가 선결이었음(PR #523).
 3. RAG 인용 검증: ingest 후 RA-owner source-governance 승인(`POST /api/source-governance/approve`) → `composeRetrievalGates` 통과 → 인용 반환.
 
 **SPEC**: `SPEC-REGULA-CORPUS-SEED-001` — 3-repo 연동 + #312 ingestion E2E 검증 + 문서 정정.
 **이슈**: #312 (knowledge-sources 공개 repo 연동 E2E). 후속: #412(auth-token 암호화), #413(SSRF allowlist).
-**회귀**: 중간 (ingestion 파이프라인은 구현됨, 데이터 연결 + 검증만).
+**회귀**: 해소됨 (PR #523: PII 가드 URL 제거 + 3-repo 실DB ingest + 승인 + 인용 검증 완료).
 
 ### BLOCK-2: 워크플로우 Executor Synthetic Outputs — 🔴 CRITICAL (가짜 출력)
 

@@ -45,10 +45,15 @@ describe('Embed-time PII Guard', () => {
       await expect(embedChunks(texts)).rejects.toThrow('PII guard triggered');
     });
 
-    it('should reject URLs', async () => {
-      const texts = ['Visit https://example.com/patient-data'];
+    // #517: URL was dropped from the guard. After #318 moved embedding on-prem
+    // (gx10 LAN), a URL is not an exfiltration risk, and regulatory source docs
+    // are URL-heavy — the old URL guard silently rejected ~74% of the corpus.
+    it('should NOT reject URLs (on-prem embedding, regulatory docs are URL-heavy)', async () => {
+      const texts = ['Visit https://www.fda.gov/media/510k.pdf for FDA guidance'];
 
-      await expect(embedChunks(texts)).rejects.toThrow('PII guard triggered');
+      const result = await embedChunks(texts);
+      expect(result).toHaveLength(1);
+      expect(result[0]).toHaveLength(1536);
     });
 
     it('should pass redacted text with placeholders', async () => {
