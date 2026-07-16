@@ -89,9 +89,12 @@ OUT OF SCOPE: Code implementation (manager-ddd/tdd), Git operations (manager-git
 
 ### Step 1: Load Project Context
 
+- [HARD] Read `.moai/specs/CHARTER.md` — product position charter. Its 지양 5종 checklist is a blocking gate, not advisory. Apply the §4 self-check to every REQ before writing it.
 - Read `.moai/project/{product,structure,tech}.md`
 - Read `.moai/config/config.yaml` for mode settings
 - List existing SPECs in `.moai/specs/` for deduplication
+
+[HARD] Charter gate: if any REQ trips a 지양 clause, stop writing the SPEC and return a blocker report to MoAI naming the clause and the offending REQ. Judge by the substance of the function, not the domain name — reimplementing an archived domain's capability under a different SPEC name is still a violation.
 
 ### Step 2: Analyze and Propose SPEC Candidates
 
