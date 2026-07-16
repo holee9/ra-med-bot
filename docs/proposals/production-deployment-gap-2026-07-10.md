@@ -39,16 +39,13 @@
 **이슈**: #312 (knowledge-sources 공개 repo 연동 E2E). 후속: #412(auth-token 암호화), #413(SSRF allowlist).
 **회귀**: 해소됨 (PR #523: PII 가드 URL 제거 + 3-repo 실DB ingest + 승인 + 인용 검증 완료).
 
-### BLOCK-2: 워크플로우 Executor Synthetic Outputs — 🔴 CRITICAL (가짜 출력)
+### BLOCK-2: 워크플로우 Executor Synthetic Outputs — ✅ 해소 (2026-07-10, PR #417)
 
-**현황**: 3개 executor가 synthetic outputs 반환:
-- `lib/workflows/submission-drafter/executor.ts` — 510(k) submission drafting
-- `lib/workflows/audit-response/executor.ts` — 감사 대응
-- `lib/workflows/indication-impact/executor.ts` — 적응증 영향
+> **해소 (PR #417, 2026-07-10 머지)**: 3개 executor(`submission-drafter`·`audit-response`·`indication-impact`) 전부 synthetic→gx10 Ollama gpt-oss:120b 실구현 완료. `_mock: true` 런타임 제거(AC-01/02/03), SSE section streaming(`_shared/streaming-chain.ts` → `streamText`/`generateObject` via `getLlmModel()`), input-wiring 연결(`_shared/input-wiring.ts`, predicate #22/CER #23/PCCP #24 → executor input; upstream stub 시 audit 로깅 fallback), promptfoo eval(`evals/workflows/promptfoo.config.yaml`, AC-08). 검증(2026-07-16 재확인): submission-drafter 14 + indication-impact 18 + audit-response 18 tests green(executor.test.ts), executor 런타임 `_mock`/synthetic 0건. SPEC-REGULA-WORKFLOWS-LLM-002.
+>
+> **⚠️ 범위 경고 (audit-response)**: `audit-response` executor는 **CAPA 생성기**(`corrective_action_plan` step, `correctiveActionPlanSchema`, "21 CFR 820.100 CAPA" 프롬프트)이며, 목적 정합성 감사(2026-07-16)에서 **Charter [지양-3] QMS 위반**으로 판정됨(#520, OPEN). CAPA는 QA팀 소유(범위 밖)이고 아카이브 대상 `SPEC-REGULA-CAPA-001`을 다른 SPEC으로 재구현한 것. #417로 이제 **실제 LLM으로 라이브** 상태이므로 #520 결정(제거/아카이브/예외 승인)의 긴급도가 높음. 나머지 2개(510(k) 제출, 적응증 영향)는 범위 내.
 
-`@MX:TODO: Beta scaffold — step returns synthetic outputs. Replace with real LLM calls.` 사용자에게 **가짜 결과** 제공 중.
-
-**작업**: 각 executor의 `executeStep`을 gx10 Ollama LLM 호출로 전환 (llm-provider `streamText` / `generateText` 사용). structured output (Zod) 검증.
+**최초 현황 (2026-07-10)**: 3개 executor가 synthetic outputs(`_mock: true` 고정 응답) 반환 → 사용자에게 **가짜 결과** 제공. 각 executor의 `executeStep`을 gx10 Ollama LLM 호출로 전환 필요.
 
 **SPEC**: `SPEC-REGULA-WORKFLOWS-LLM-002` (#39, draft 상태).
 **회귀**: 중간 (executor 시그니처 불변, 내부 로직만).
