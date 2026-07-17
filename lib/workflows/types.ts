@@ -2,7 +2,8 @@ import { z } from 'zod';
 
 export const WorkflowTypeSchema = z.enum([
   'submission_drafter',
-  'audit_response',
+  // 'audit_response' archived (CAPA = QMS, Charter [지양-3], #520). DB pgEnum
+  // workflowTypeEnum retains the value; this runtime input schema drops it.
   'indication_impact',
   // REQ-CER-012 (SPEC-REGULA-CER-001)
   'cer',
@@ -36,15 +37,8 @@ export const SubmissionDrafterInputSchema = z.object({
 });
 export type SubmissionDrafterInput = z.infer<typeof SubmissionDrafterInputSchema>;
 
-// REQ-WF-021: Audit Response input
-export const AuditResponseInputSchema = z.object({
-  input_type: z.enum(['fda_483', 'mdsap_deficiency', 'eu_nb_med']),
-  input_format: z.enum(['pdf', 'text']),
-  input_content: z.string().min(100),
-  project_id: z.string().uuid(),
-  establishment_fei: z.string().optional(),
-});
-export type AuditResponseInput = z.infer<typeof AuditResponseInputSchema>;
+// AuditResponseInputSchema removed — audit-response workflow archived
+// (CAPA = QMS, Charter [지양-3], #520).
 
 // REQ-WF-036: Indication Impact input
 export const IndicationImpactInputSchema = z.object({

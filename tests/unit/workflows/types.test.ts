@@ -1,6 +1,5 @@
 import { describe, expect, it } from 'vitest';
 import {
-  AuditResponseInputSchema,
   IndicationImpactInputSchema,
   SubmissionDrafterInputSchema,
   WorkflowStatusSchema,
@@ -11,8 +10,9 @@ import {
 describe('WorkflowTypeSchema', () => {
   it('accepts valid workflow types', () => {
     expect(WorkflowTypeSchema.parse('submission_drafter')).toBe('submission_drafter');
-    expect(WorkflowTypeSchema.parse('audit_response')).toBe('audit_response');
     expect(WorkflowTypeSchema.parse('indication_impact')).toBe('indication_impact');
+    // 'audit_response' archived (CAPA = QMS, Charter [지양-3], #520) — now rejected.
+    expect(() => WorkflowTypeSchema.parse('audit_response')).toThrow();
   });
   it('rejects invalid workflow type', () => {
     expect(() => WorkflowTypeSchema.parse('invalid')).toThrow();
@@ -70,20 +70,8 @@ describe('SubmissionDrafterInputSchema', () => {
   });
 });
 
-describe('AuditResponseInputSchema', () => {
-  const valid = {
-    input_type: 'fda_483' as const,
-    input_format: 'pdf' as const,
-    input_content: 'A'.repeat(100),
-    project_id: '123e4567-e89b-12d3-a456-426614174000',
-  };
-  it('accepts valid input', () => {
-    expect(AuditResponseInputSchema.parse(valid)).toBeDefined();
-  });
-  it('rejects short input_content', () => {
-    expect(() => AuditResponseInputSchema.parse({ ...valid, input_content: 'short' })).toThrow();
-  });
-});
+// AuditResponseInputSchema tests removed — audit-response workflow archived
+// (CAPA = QMS, Charter [지양-3], #520).
 
 describe('IndicationImpactInputSchema', () => {
   const valid = {

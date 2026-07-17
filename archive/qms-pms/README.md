@@ -8,6 +8,13 @@ v3 아키텍처 개편 (BK-201, BK-202)에 따라 기존 QMS(Quality Management 
 - **대상 도메인**: 4개 (clinical-investigation, cyberdevice, labeling, change-control)
 - **아카이브 일시**: 2026-07-02
 
+### audit-response 워크플로우 추가 아카이브 (2026-07-17, #520)
+
+- **대상**: `lib/workflows/audit-response/` (CAPA 생성기 executor + steps), `app/api/ra/workflows/audit-response/` route, 관련 테스트
+- **사유**: audit-response executor는 CAPA(corrective_action_plan, "21 CFR 820.100") 초안 생성기로, Charter [지양-3](CAPA = QMS, 범위 밖) 위반. 목적 정합성 감사(#520)에서 판정. `SPEC-REGULA-WORKFLOWS-LLM-002`(#417)로 실제 LLM 라이브 상태였음.
+- **보존 대상 (아카이브 안 함)**: 문서 분류 클래스 `DocClass.audit_response`(FDA 483 문서 분류), `fda-483-response` 청커, `AuditResponseMetaSchema` — Charter가 보존하는 "검색·분류 도메인"이며 CAPA 생성과 무관. DB `workflowTypeEnum`의 `'audit_response'` 값도 보존(migration 참조, DROP 금지).
+- **복원**: `git mv archive/qms-pms/lib/workflows/audit-response lib/workflows/` + route/test 역이동 + `registry.ts`/`types.ts`/`_shared` 타입 유니온 복구.
+
 ## 복원 방법
 
 이 아카이브를 원래 위치로 복원하려면 다음 단계를 순서대로 실행하십시오:

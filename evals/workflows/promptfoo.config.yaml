@@ -1,7 +1,8 @@
 # promptfoo eval config — Regula Workflow LLM evaluation harness
 # SPEC-REGULA-WORKFLOWS-LLM-002 — M5, AC-07/08, REQ-WFLLM-006/011
 #
-# 6 scenarios (2 per executor): submission-drafter, audit-response, indication-impact.
+# 4 scenarios (2 per executor): submission-drafter, indication-impact.
+# (audit-response archived — CAPA = QMS, Charter [지양-3], #520.)
 # Each scenario asserts: citation coverage >= 80% (AC-05), structure compliance
 # (AC-11: FDA eCopy 6 sections / 3-part / 3-axis), and non-mock output.
 #
@@ -38,7 +39,7 @@ prompts:
     [USER]
     {{user_prompt}}
 
-# ── Tests: 6 scenarios (2 per executor) ───────────────────────────────────
+# ── Tests: 4 scenarios (2 per executor) ───────────────────────────────────
 # Each test sends the executor's system prompt + user prompt to gx10 and
 # asserts on the raw LLM output (before Zod parsing). This validates the
 # LLM's ability to produce the correct structure and citations.
@@ -106,63 +107,7 @@ tests:
       - type: javascript
         value: "output.length > 500"
 
-  # ── audit-response ×2 (3-part structure, AC-11) ──────────────────────
-  - description: "audit-response: FDA 483 CAPA deficiency — 3-part structure + citations"
-    vars:
-      system_prompt: |
-        You are a regulatory quality expert drafting the formal written response to an
-        audit observation (FDA 483 response). Every factual claim MUST be followed by a
-        citation marker in the form <sup class="cite" data-source="N">N</sup>.
-        Structure the response in three parts:
-        (1) Regulatory Basis — cite the applicable regulation (e.g. 21 CFR 820.100 for CAPA);
-        (2) Corrective Action — describe the specific corrective and preventive actions;
-        (3) Timeline — provide implementation dates and verification milestones.
-      user_prompt: |
-        Input Type: FDA Form 483
-        Establishment FEI: 1234567
-        Observation Text: Procedures for corrective and preventive action have not been
-        adequately established. Specifically, your firm failed to implement CAPA
-        procedures as required by 21 CFR 820.100. Multiple nonconformances were
-        identified without corresponding corrective action records.
-
-        Draft the formal audit response document. Produce the three-part structure:
-        regulatory basis, corrective action, and timeline. This is the final written
-        response to the regulatory authority.
-    assert:
-      - type: contains
-        value: "<sup class=\"cite\""
-      - type: llm-rubric
-        value: "Output contains the 3-part structure: (1) Regulatory Basis citing 21 CFR 820.100, (2) Corrective Action describing specific CAPA actions, (3) Timeline with implementation dates. All three parts are clearly labeled and substantive."
-      - type: javascript
-        value: "output.toLowerCase().includes('regulatory basis') || output.toLowerCase().includes('21 cfr 820.100')"
-
-  - description: "audit-response: EU MDR non-compliance notification — 3-part structure + citations"
-    vars:
-      system_prompt: |
-        You are a regulatory quality expert drafting the formal written response to an
-        EU MDR non-compliance notification from a Notified Body. Every factual claim
-        MUST be followed by a citation marker in the form <sup class="cite" data-source="N">N</sup>.
-        Structure the response in three parts:
-        (1) Regulatory Basis — cite the applicable EU MDR article (e.g. Article 83, Annex IX);
-        (2) Corrective Action — describe the specific corrective and preventive actions;
-        (3) Timeline — provide implementation dates and verification milestones.
-      user_prompt: |
-        Input Type: EU MDR NB Non-Compliance Notification
-        Observation Text: The manufacturer's post-market surveillance (PMS) plan does not
-        meet the requirements of EU MDR Article 83 and Annex III. Specifically, the PMS
-        plan lacks defined thresholds for trend analysis and does not include a periodic
-        safety update report (PSUR) schedule as required by Article 86.
-
-        Draft the formal audit response document. Produce the three-part structure:
-        regulatory basis, corrective action, and timeline. This is the final written
-        response to the Notified Body.
-    assert:
-      - type: contains
-        value: "<sup class=\"cite\""
-      - type: llm-rubric
-        value: "Output contains the 3-part structure: (1) Regulatory Basis citing EU MDR Article 83/86, (2) Corrective Action describing PMS plan updates, (3) Timeline with implementation dates. All three parts are clearly labeled and substantive."
-      - type: javascript
-        value: "output.toLowerCase().includes('regulatory basis') || output.toLowerCase().includes('mdr')"
+  # audit-response ×2 removed — CAPA workflow archived (Charter [지양-3], #520).
 
   # ── indication-impact ×2 (3-axis judgments, AC-11) ───────────────────
   - description: "indication-impact: Indication expansion (cardiac → pediatric) — 3-axis judgments + citations"

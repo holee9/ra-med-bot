@@ -1,5 +1,4 @@
 import { describe, expect, it } from 'vitest';
-import { AUDIT_RESPONSE_STEPS } from '../../../lib/workflows/audit-response/steps';
 import { CER_STEPS } from '../../../lib/workflows/cer/steps';
 import { defaultReviewQueue } from '../../../lib/workflows/common/review-queue';
 import { INDICATION_IMPACT_STEPS } from '../../../lib/workflows/indication-impact/steps';
@@ -11,10 +10,10 @@ describe('Workflow System — cross-workflow validation', () => {
   it('WORKFLOW_REGISTRY entries match step counts from steps modules', () => {
     const stepCountMap: Record<string, number> = {
       'submission-drafter': SUBMISSION_DRAFTER_STEPS.length,
-      'audit-response': AUDIT_RESPONSE_STEPS.length,
       'indication-impact': INDICATION_IMPACT_STEPS.length,
       cer: CER_STEPS.length,
       pccp: PCCP_STEPS.length,
+      // audit-response archived (CAPA = QMS, Charter [지양-3], #520).
       // SPEC-REGULA-V3-RESTRUCTURE-001 (A1 archive): dhf, samd, esubmit archived.
       // SPEC-REGULA-PMS-001: 3 PMS workflows (no steps module — section-based).
       'pms-report': 4,
@@ -29,9 +28,8 @@ describe('Workflow System — cross-workflow validation', () => {
     }
   });
 
-  it('SUBMISSION_DRAFTER, AUDIT_RESPONSE, INDICATION_IMPACT have exactly 6 steps', () => {
+  it('SUBMISSION_DRAFTER, INDICATION_IMPACT have exactly 6 steps', () => {
     expect(SUBMISSION_DRAFTER_STEPS).toHaveLength(6);
-    expect(AUDIT_RESPONSE_STEPS).toHaveLength(6);
     expect(INDICATION_IMPACT_STEPS).toHaveLength(6);
   });
 
@@ -42,7 +40,7 @@ describe('Workflow System — cross-workflow validation', () => {
   it('workflow type strings match registry ids', () => {
     const registryIds = WORKFLOW_REGISTRY.map((e) => e.id);
     expect(registryIds).toContain('submission-drafter');
-    expect(registryIds).toContain('audit-response');
+    expect(registryIds).not.toContain('audit-response'); // archived (지양-3, #520)
     expect(registryIds).toContain('indication-impact');
     expect(registryIds).toContain('cer');
     expect(registryIds).toContain('pccp');

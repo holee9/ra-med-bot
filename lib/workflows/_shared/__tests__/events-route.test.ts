@@ -247,7 +247,7 @@ describe('events-route: buildEventsResponse', () => {
   it('uses the workflowType from config in the DB query', async () => {
     await buildEventsResponse(RUN_ID, ACTOR_ID, ORG_ID, {
       ...testConfig,
-      workflowType: 'audit_response',
+      workflowType: 'indication_impact',
     });
 
     // The findFirst call constructs a where clause with eq(workflowType, config.workflowType).
