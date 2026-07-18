@@ -1,12 +1,18 @@
 ---
 id: SPEC-REGULA-REIMBURSEMENT-001
-version: 1.0.0
-status: draft
+version: 1.0.1
+status: deferred-out-of-scope
 phase: wave5
-priority: High
+priority: Low
 created: 2026-06-22
-updated: 2026-06-22
+updated: 2026-07-18
 author: manager-spec (batch-2026-06-22)
+scope_note: |
+  2026-07-18 (#520): 목적 정합성 감사에서 범위 경계로 판정. 보험·상환 경로 분석
+  (CPT/HCPCS/DRG 급여, 건강경제 도메인)은 Regula의 RA 규제 코퍼스(FDA/EU MDR/MFDS/NMPA/PMDA
+  인허가)와 다른 도메인이며, market-access/건강경제는 RA 게이트웨이 정체성 밖. 미구현 draft
+  (라이브 코드 0건)로 제거 리스크 없음. status draft→deferred-out-of-scope, priority High→Low.
+  향후 제품 방향이 market-access로 확장되면 재검토. 로드맵 이슈 #70은 보류 상태로 유지.
 issue_number: 70
 depends_on:
   - SPEC-REGULA-FOUNDATION-001
