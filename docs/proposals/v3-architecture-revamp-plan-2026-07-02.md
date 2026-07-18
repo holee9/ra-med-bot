@@ -1,8 +1,16 @@
 # Regula v3 아키텍처 전면 개편 마스터 계획서
 
 > **작성일**: 2026-07-02
-> **상태**: 제안 (Proposal) — 사용자 승인 대기
+> **상태**: ~~제안 (Proposal) — 사용자 승인 대기~~ → **부분 실행 중** (2026-07-18 정정, #519)
 > **작성자**: manager-strategy (MoAI 오케스트레이터)
+>
+> **상태 정정 (2026-07-18, #519)**: "승인 대기" 문구는 stale. 방향 5종은 위 "사용자 확정 방향"에
+> 이미 사용자 확정 기록이 있고, **Phase C/D는 구현·머지 완료**(INBOX/TRIAGE/CONSULT/IMPACT/
+> AUDIT-CHAIN/PERSONA — SPEC-V3-* 이슈 #320/#321/#339/#341/#357 등으로 추적). **Phase A/B**
+> (kernel 추출·archive: archive/qms-pms/에 8도메인 이동됨, kernel/bff/infra 미착수)와 **Phase E**
+> (BFF)는 미착수. ⚠️ **공식 실행 승인 기록은 없음** — Phase C/D는 별도 승인 절차 없이 구현으로
+> 진행됨(감사 추적 공백). 향후 아키텍처 결정은 채택 도장(예: scope-rationalization "✅ 채택됨")을
+> 남길 것.
 > **대상**: Regula(ra-med-bot) v3 아키텍처 개편
 > **사용자 확정 방향**: 5종 (점진적 마이그레이션 / QMS 아카이브 / UI v3 신규 / hybrid-ra-saas 심화 / 모듈화 전면 개편)
 > **선행 문서**: `docs/proposals/scope-rationalization-2026-06-28.md` (계층 1-2 채택됨), `docs/v3/` 전체
@@ -274,7 +282,7 @@ export { uploadAsset } from './storage';
 | `lib/standards/` | 12 | 7 | SPEC-REGULA-STANDARDS-001 | SHRINK: seed 30-50 + 알림만 |
 | `lib/change-control/` | 13 | 8 | SPEC-REGULA-CHANGE-CONTROL-001 | [지양-3] QMS 위반 |
 | `lib/corpus-license/` | 10 | 3 | SPEC-REGULA-CORPUS-LICENSE-001 | [지양-5] SaaS 경계 |
-| `lib/pccp/` | 14 | 6 | SPEC-REGULA-PCCP-001 | v3 SaaS 연동 검토 |
+| ~~`lib/pccp/`~~ | 14 | 6 | SPEC-REGULA-PCCP-001 | **정정(2026-07-18, #521): 아카이브 대상 아님 — KEEP(보존).** PCCP는 규제 제출물(Predetermined Change Control Plan)로 CAPA 같은 QMS가 아니라 FDA/EU MDR 인허가 산출물. 라이브 유지(lib/pccp·lib/workflows/pccp·route 실재), product.md "CER/PCCP/Predicate 보존"과 일치, §6.4 역할 표도 "KEEP". 본 §3.3 아카이브 표 등재는 오기. Regula vs hybrid-ra-saas 저작 역할 분담은 Phase E(BFF) 결정으로 defer. |
 | `lib/knowledge-gap/` | 13 | 4 | SPEC-REGULA-KNOWLEDGE-GAP-001 | SHRINK: detector만 |
 | `lib/knowledge-promo/` | 5 | 4 | SPEC-REGULA-KNOWLEDGE-PROMO-001 | RETIRE |
 | `lib/project-memory/` | 4 | 4 | SPEC-REGULA-PROJECT-MEMORY-001 | SHRINK: 수동 메모만 |
@@ -658,15 +666,17 @@ lib/bff/
 
 ---
 
-## 12. 승인 대기 항목
+## 12. 실행 현황 (2026-07-18 정정, #519)
 
-본 계획은 사용자 승인 후 실행 단계(manager-ddd/tdd 위임)로 이동. 승인 필요 항목:
+원 "승인 대기 항목"을 실제 진행 상태로 갱신:
 
-1. **계층 2.5 채택** (이전 계층 3 보류 번복)
-2. **아카이브 물리 이동** (334 files git mv, 테이블 DROP 금지 원칙)
-3. **Phase A-E 순차 실행** (병렬 가능 영역: Phase C 5개 도메인 내 병렬)
-4. **SPEC-V3-* 8개 신규 SPEC-ID 등록**
-5. **회귀 게이트 기준**: 각 Phase 종료 시 4,806+ tests green
+1. **계층 2.5 채택** (kernel/domain/archive) — 🟡 부분: `lib/domains/`(consult/impact/inbox/triage) 생성, `lib/kernel`·`lib/bff`·`lib/infra` 미착수
+2. **아카이브 물리 이동** — 🟡 부분: archive/qms-pms/에 8도메인(+ audit-response CAPA #525) 이동. 원 계획 18도메인 대비 진행 중
+3. **Phase A-E** — 🟡 C/D 완료, A/B/E 미착수 (실행 순서가 계획의 A→B→C→D→E와 달리 C/D 선행됨)
+4. **SPEC-V3-* 등록** — ✅ INBOX/TRIAGE/CONSULT/IMPACT/AUDIT-CHAIN/PERSONA 등 존재. REGISTRY/BFF는 SPEC 미작성
+5. **회귀 게이트** — ✅ 유지 (pre-push full regression green)
+
+⚠️ 공식 실행 승인 기록 없음(§상태 정정 참조). Phase A/B/E 재개는 별도 판단 필요.
 
 ---
 
