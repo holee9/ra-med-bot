@@ -7,8 +7,15 @@ updated: 2026-05-03
 author: manager-spec
 phase: 4
 skill: regula
-version: 0.2.0
+version: 0.2.1
 priority: Medium
+scope_note: |
+  2026-07-18 (#520): 목적 정합성 감사에서 AMBIGUOUS(v3 대체 여부 불명확)로 플래그됐으나,
+  실측 결과 8-view(Home/History/Templates/Knowledge/Updates/Dashboard/Onboarding)가 v3 앱에
+  그대로 살아 흡수됨(app/(app)/{history,dashboard,knowledge,onboarding,library} 실재). v3 3-tier
+  페르소나(Employee/RA/Admin)는 이 view들을 제거한 게 아니라 페르소나별로 재편했을 뿐. 따라서
+  **범위 이탈 아님 — ALIGNED**. v2 스택 서술(TanStack Query/OpenAI embed 1536 등)은 stale하나
+  기능 범위는 v3와 정합. status completed 유지.
 revision_history:
   - version: 0.1.0
     date: 2026-04-22

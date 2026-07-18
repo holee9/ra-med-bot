@@ -78,7 +78,9 @@ Article 61(4) disclaimer 등 법적 경고 텍스트는 SPEC에서 제거 불가
 
 멀티테넌시 구조는 있으나 목적은 **내부 팀 역할 분리**다.
 
-**예외 — 허용됨**: `hybrid-ra-saas` 별도 SaaS와의 **BFF 연동**(`lib/bff/`, 6 integration points). 이는 외판이 아니라 내부 시스템 간 연동이다.
+**예외 — 허용됨**:
+- `hybrid-ra-saas` 별도 SaaS와의 **BFF 연동**(`lib/bff/`, 6 integration points). 이는 외판이 아니라 내부 시스템 간 연동이다.
+- **규제 감사관(FDA inspector / MFDS reviewer / NB) read-only 감사 대응 접근**(`auditor` RBAC 역할, `SPEC-REGULA-AUDITOR-VIEW-001`). 이는 고객 온보딩·결제·멀티조직·외판이 아니라 21 CFR Part 11 시스템의 본질인 **감사 대응**이다. 단, (a) read-only 강제(모든 write 차단, `lib/auth/with-permission.ts`), (b) 초대된 감사 범위 한정, (c) SSO 인증 재사용 — 이 3조건을 벗어나는 외부 tier 확장은 지양-5 위반이다. (#520 판정, 2026-07-18)
 
 ---
 

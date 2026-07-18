@@ -2,10 +2,18 @@
 
 ## Metadata
 - Issue: #92
-- Status: Draft
+- Status: Completed
 - Created: 2026-06-20
+- Updated: 2026-07-18
 - Priority: High
 - Category: Wave 5 — External auditor read-only persona
+
+> **Status 정정 (2026-07-18, #520)**: "Draft" 표기와 달리 실제 구현·라이브 상태
+> (`auditor` RBAC 역할 `lib/auth/rbac.ts`, read-only 강제 `lib/auth/with-permission.ts:63`,
+> 워터마크 `components/audit/AuditorWatermark.tsx`, migration 0062). 목적 정합성 감사(#520)에서
+> 지양-5(SaaS 외판) 인접으로 플래그됐으나, 규제 감사관 read-only 감사 대응은 외판이 아니라
+> 21 CFR Part 11 감사 대응이므로 **범위 내로 판정**. CHARTER.md 지양-5에 예외 명시(read-only 강제
+> + 초대 범위 한정 + SSO 재사용 3조건). status Draft→Completed 정정.
 
 ## Purpose
 Provide a dedicated read-only persona for external auditors (FDA inspectors, MFDS reviewers,

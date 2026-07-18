@@ -23,7 +23,13 @@ depends_on:
 lifecycle_level: spec-anchored
 ---
 
-# SPEC-REGULA-TENANT-001 — Multi-Tenancy Hardening + Security Certifications
+# SPEC-REGULA-TENANT-001 — 부서 Attribute RBAC (Tenant-Lite)
+
+> **제목 정정 (2026-07-18, #520)**: 원제 "Multi-Tenancy Hardening + Security Certifications"는
+> 실제 구현(부서 RBAC 5 REQ, RA/Dev/Exec/External)과 불일치하여 오해를 유발했다(목적 정합성 감사
+> AMBIGUOUS 판정). 원래 범위(70 REQ, 3-layer tenant isolation, SOC 2/HIPAA BAA, multi-region)는
+> 아래 HISTORY대로 v2.0에서 폐기됨. 구현된 부서 RBAC는 내부 팀 역할 분리(범위 내)이며 지양-5
+> (멀티조직/SaaS 외판)와 무관. 제목을 실제 범위로 정정 — **범위 이탈 아님**.
 
 ## HISTORY
 
