@@ -128,7 +128,7 @@ describe('workflow-runner: runWorkflow (mock executor)', () => {
     const events: unknown[] = [];
     const result = await runWorkflow({
       runId: 'run-2',
-      workflowType: 'audit_response',
+      workflowType: 'indication_impact',
       actorId: 'user-1',
       steps: ['ok_step', 'failing_step', 'recovery_step'],
       executor,

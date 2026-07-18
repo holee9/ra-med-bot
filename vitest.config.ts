@@ -41,10 +41,14 @@ export default defineConfig({
       // Floor bumped 60/70/60/60 → … → 64/76/65/64 → 66/75/66/66 (branches kept
       // at 75 — thin margin, fragile: a low-branch% file drags it down, see #439).
       // 85% target remains follow-up (long tail — large lib/component coverage).
+      // 2026-07-17 (#520 archive): audit-response CAPA executor (11 well-tested
+      // funcs) archived to archive/qms-pms/ — removing above-average-covered code
+      // mechanically dropped All-files Funcs 66.29 → 65.98. Funcs floor 66 → 65
+      // (prior ratchet tier level; other 3 stay 67.15/76.24/67.15 > floor).
       thresholds: {
         statements: 66,
         branches: 75,
-        functions: 66,
+        functions: 65,
         lines: 66,
       },
     },

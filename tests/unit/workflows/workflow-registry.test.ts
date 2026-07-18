@@ -4,8 +4,9 @@ import { WORKFLOW_REGISTRY } from '../../../lib/workflows/registry';
 describe('WORKFLOW_REGISTRY', () => {
   // SPEC-REGULA-V3-RESTRUCTURE-001 (A1 archive): dhf, samd, esubmit removed (was 8 → 5).
   // SPEC-REGULA-PHI-REMOVAL-001 (Issue #319): 3 PMS/PMCF entries removed (was 11 → 8).
-  it('has 5 entries', () => {
-    expect(WORKFLOW_REGISTRY).toHaveLength(5);
+  // audit-response archived (CAPA = QMS, Charter [지양-3], #520): 5 → 4.
+  it('has 4 entries', () => {
+    expect(WORKFLOW_REGISTRY).toHaveLength(4);
   });
 
   it('each entry has required fields', () => {
@@ -29,10 +30,9 @@ describe('WORKFLOW_REGISTRY', () => {
     expect(workflow?.stepCount).toBe(6);
   });
 
-  it('audit-response has 6 steps', () => {
-    const workflow = WORKFLOW_REGISTRY.find((w) => w.id === 'audit-response');
-    expect(workflow).toBeDefined();
-    expect(workflow?.stepCount).toBe(6);
+  // audit-response archived (CAPA = QMS, Charter [지양-3], #520) — no registry entry.
+  it('audit-response is not in the registry', () => {
+    expect(WORKFLOW_REGISTRY.find((w) => w.id === 'audit-response')).toBeUndefined();
   });
 
   it('indication-impact has 6 steps', () => {

@@ -48,17 +48,12 @@ export {
 } from './review-gate';
 export type { ReviewGateResult } from './review-gate';
 
-export {
-  wireSubmissionDrafterInput,
-  wireAuditResponseInput,
-  wireIndicationImpactInput,
-} from './input-wiring';
+export { wireSubmissionDrafterInput, wireIndicationImpactInput } from './input-wiring';
 export type {
   WiringContext,
   PredicateSearchOutput,
   CerBuilderOutput,
   PccpBuilderOutput,
   SubmissionDrafterStepInput,
-  AuditResponseStepInput,
   IndicationImpactStepInput,
 } from './input-wiring';

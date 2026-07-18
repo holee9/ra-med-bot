@@ -28,12 +28,13 @@ import {
 
 /**
  * Per-type configuration for the SSE /events route. Each workflow type
- * (submission_drafter, audit_response, indication_impact) provides its
- * step list, executor, input-wiring function, and RBAC permission.
+ * (submission_drafter, indication_impact) provides its step list, executor,
+ * input-wiring function, and RBAC permission. (audit_response archived —
+ * CAPA = QMS, Charter [지양-3], #520.)
  */
 export interface WorkflowEventsConfig {
   /** The workflow_type pgEnum value (e.g. 'submission_drafter'). */
-  workflowType: 'submission_drafter' | 'audit_response' | 'indication_impact';
+  workflowType: 'submission_drafter' | 'indication_impact';
   /** Ordered step names (6 per type — matches the executor's switch cases). */
   steps: string[];
   /** The M1/M2/M3 executor (executeStep). */

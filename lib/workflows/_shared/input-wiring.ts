@@ -65,13 +65,8 @@ export interface SubmissionDrafterStepInput {
   predicateResults: PredicateSearchOutput | { isStub: true };
 }
 
-export interface AuditResponseStepInput {
-  input_type: string;
-  input_content: string;
-  establishment_fei?: string;
-  /** CER context from #23 (optional — audit-response may run without). */
-  cerContext?: CerBuilderOutput | { isStub: true };
-}
+// AuditResponseStepInput / wireAuditResponseInput removed — audit-response
+// workflow archived (CAPA = QMS, Charter [지양-3], #520).
 
 export interface IndicationImpactStepInput {
   current_indication: string;
@@ -100,18 +95,6 @@ export function wireSubmissionDrafterInput(ctx: WiringContext): SubmissionDrafte
       ? (wi.predicate_k_numbers as string[])
       : undefined,
     predicateResults,
-  };
-}
-
-export function wireAuditResponseInput(ctx: WiringContext): AuditResponseStepInput {
-  const wi = ctx.workflowInput;
-  const cerContext = ctx.cerResults ?? undefined; // CER context is optional for audit-response
-
-  return {
-    input_type: String(wi.input_type ?? ''),
-    input_content: String(wi.input_content ?? ''),
-    establishment_fei: typeof wi.establishment_fei === 'string' ? wi.establishment_fei : undefined,
-    cerContext,
   };
 }
 

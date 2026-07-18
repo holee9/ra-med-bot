@@ -2,12 +2,8 @@
 // REQ-WFLLM-001/003/005: map dependency outputs → StepExecutionContext.input.
 
 import { describe, expect, it, vi } from 'vitest';
-import {
-  wireAuditResponseInput,
-  wireIndicationImpactInput,
-  wireSubmissionDrafterInput,
-} from '../input-wiring';
-import type { CerBuilderOutput, PccpBuilderOutput, PredicateSearchOutput } from '../input-wiring';
+import { wireIndicationImpactInput, wireSubmissionDrafterInput } from '../input-wiring';
+import type { PccpBuilderOutput, PredicateSearchOutput } from '../input-wiring';
 
 const baseWorkflowInput = {
   product_name: 'Cardiac Stent X',
@@ -71,40 +67,8 @@ describe('input-wiring: wireSubmissionDrafterInput', () => {
   });
 });
 
-describe('input-wiring: wireAuditResponseInput', () => {
-  it('maps audit-response input fields', () => {
-    const result = wireAuditResponseInput({
-      workflowInput: {
-        input_type: 'fda_483',
-        input_format: 'text',
-        input_content: 'Observation 1: Procedure not followed.',
-        project_id: '00000000-0000-0000-0000-000000000000',
-        establishment_fei: 'FEI123',
-      },
-    });
-    expect(result.input_type).toBe('fda_483');
-    expect(result.input_content).toContain('Observation 1');
-    expect(result.establishment_fei).toBe('FEI123');
-  });
-
-  it('passes CER context through when #23 output available', () => {
-    const cerResults: CerBuilderOutput = {
-      cerId: 'cer-1',
-      clinicalEvidenceSummary: 'summary',
-      literatureReferences: [],
-    };
-    const result = wireAuditResponseInput({
-      workflowInput: {
-        input_type: 'fda_483',
-        input_format: 'text',
-        input_content: 'x'.repeat(200),
-        project_id: '00000000-0000-0000-0000-000000000000',
-      },
-      cerResults,
-    });
-    expect(result.cerContext).toEqual(cerResults);
-  });
-});
+// wireAuditResponseInput tests removed — audit-response workflow archived
+// (CAPA = QMS, Charter [지양-3], #520).
 
 describe('input-wiring: wireIndicationImpactInput', () => {
   it('maps indication-impact input fields', () => {

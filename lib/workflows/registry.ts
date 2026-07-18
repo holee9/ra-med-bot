@@ -18,13 +18,8 @@ export const WORKFLOW_REGISTRY: WorkflowEntry[] = [
     stepCount: 6,
     href: '/workflows/submission-drafter',
   },
-  {
-    id: 'audit-response',
-    title: 'Audit Response',
-    description: 'Draft responses to FDA audit findings',
-    stepCount: 6,
-    href: '/workflows/audit-response',
-  },
+  // audit-response archived to archive/qms-pms/ — CAPA generation is QMS
+  // (Charter [지양-3], #520). DB enum value retained; see schema.ts workflowTypeEnum.
   {
     id: 'indication-impact',
     title: 'Indication Impact',
