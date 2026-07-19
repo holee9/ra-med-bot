@@ -1,28 +1,37 @@
 # Regula — System Architecture
 
-> Version: 1.2.0 | Updated: 2026-06-21
+> Version: 1.3.0 | Updated: 2026-07-18
+
+> **인프라 정정 (2026-07-18, #519 후속)**: v1.2.0(2026-06-21)까지 이 문서는 Vercel + Neon +
+> Anthropic Claude Sonnet + OpenAI 임베딩을 "현재 아키텍처"로 서술했으나, 이는 **stale**하다.
+> `#318`(gx10 온프레미스 Ollama 단일화)과 배포 전환으로 실제 아키텍처가 바뀌었다. 권위 문서는
+> `.moai/project/tech.md` v3.0.0. 아래는 실제 인프라로 정정한 내용이다:
+> - LLM: ~~Claude Sonnet 4.x (Anthropic ZDR)~~ → **gx10 온프레미스 Ollama `gpt-oss:120b`** (LAN, 외부 API 배제)
+> - 임베딩: ~~OpenAI `text-embedding-3-small`~~ → **gx10 `qwen3-embedding`** (1536-dim MRL truncation)
+> - DB: ~~Neon PostgreSQL~~ → **자체호스팅 PostgreSQL 16 + pgvector** (Docker 컨테이너)
+> - 배포: ~~Vercel (iad1)~~ → **T3610 로컬 + Cloudflare Tunnel** (`regula.abyz-lab.work`, 완전 내부망)
 
 ---
 
 ## 1. High-Level Overview
 
-Regula is a **regulatory affairs (RA) expert chatbot** for medical device professionals. It combines a **Next.js 15 App Router** frontend with a **RAG (Retrieval-Augmented Generation) pipeline** backed by **Neon PostgreSQL + pgvector**, deployed on **Vercel**.
+Regula is a **regulatory affairs (RA) expert chatbot** for medical device professionals. It combines a **Next.js 15 App Router** frontend with a **RAG (Retrieval-Augmented Generation) pipeline** backed by **self-hosted PostgreSQL 16 + pgvector**, deployed on **T3610 (on-prem) via Cloudflare Tunnel** — 완전 내부망 운영, 외부 클라우드(Vercel/Neon/AWS) 없음.
 
 ```mermaid
 graph TD
     User["User (Browser)"]
-    NextJS["Next.js 15 App Router\n(Vercel iad1)"]
+    NextJS["Next.js 15 App Router\n(T3610 on-prem)"]
     Auth["Auth.js v5\n(SSO / SAML / OIDC)"]
     ConsultAPI["POST /api/ra/consult\n(nodejs runtime, 60s timeout)"]
     RiskAPI["/api/ra/risk/*\nISO 14971 workflow"]
     SignatureAPI["/api/ra/messages/[messageId]/signature\n21 CFR Part 11 e-sign"]
     RAG["RAG Pipeline\nlib/ai/consult.ts"]
-    Intent["Intent Classifier\n(Haiku — 3 classes)"]
+    Intent["Intent Classifier\n(gx10 gpt-oss:120b — 3 classes)"]
     QueryRewrite["Query Rewriter\n(rule-based + LLM)"]
     Retriever["Hybrid Retriever\npgvector (60%) + FTS (40%)"]
-    LLM["Claude Sonnet 4.x\n(Anthropic ZDR)"]
+    LLM["gx10 Ollama gpt-oss:120b\n(on-prem LAN)"]
     CitationEnforce["Citation Enforcer\nhtmlparser2"]
-    DB["Neon PostgreSQL 16\n+ pgvector extension"]
+    DB["PostgreSQL 16 (self-hosted)\n+ pgvector extension"]
     Sentry["Sentry\n(error + performance)"]
     PostHog["PostHog\n(product analytics)"]
     Langfuse["Langfuse\n(LLM trace)"]
@@ -63,8 +72,8 @@ sequenceDiagram
     participant I as Intent Classifier
     participant Q as Query Rewriter
     participant R as Hybrid Retriever
-    participant L as LLM (Claude)
-    participant DB as Neon DB
+    participant L as LLM (gx10 gpt-oss:120b)
+    participant DB as PostgreSQL
 
     U->>API: POST {query, project_id, source_filters}
     API->>API: Auth check (Auth.js session)
@@ -214,7 +223,7 @@ erDiagram
 ### Key Constraints
 
 - `audit_logs`: append-only — UPDATE/DELETE/TRUNCATE are blocked at database level
-- `source_sections.embedding`: 1536-dimensional vector (OpenAI `text-embedding-3-small`)
+- `source_sections.embedding`: 1536-dimensional vector (gx10 `qwen3-embedding`, MRL truncation)
 - `messages.expert_review_required`: set when confidence < 0.6 or query contains high-risk terms
 - `answer_signatures`: one active non-revoked signature per answer; stores §11.50 manifestation fields and §11.70 record hash
 - `risk_items`: stores ISO 14971 hazard / event sequence / hazardous situation / harm terms with citation metadata
@@ -361,21 +370,22 @@ sequenceDiagram
 ```mermaid
 graph TD
     GitHub["GitHub (main branch)"]
-    Vercel["Vercel (iad1)"]
-    Neon["Neon PostgreSQL\n(us-east-1)"]
-    CDN["Vercel Edge Network\n(CDN)"]
+    T3610["T3610 (on-prem host)\nNext.js 15 + Docker"]
+    PG["PostgreSQL 16 (Docker)\n+ pgvector"]
+    GX10["gx10 (LAN)\nOllama gpt-oss:120b + qwen3-embedding"]
+    Tunnel["Cloudflare Tunnel\n(regula.abyz-lab.work)"]
     Browser["User Browser"]
 
-    GitHub -->|push to main| Vercel
-    Vercel -->|serverless functions| Neon
-    Vercel -->|static assets| CDN
-    CDN --> Browser
-    Vercel -->|nodejs runtime\nconsult route| Browser
+    GitHub -->|CI/CD| T3610
+    T3610 -->|localhost 5432| PG
+    T3610 -->|192.168.100.1:11434 LAN| GX10
+    T3610 --> Tunnel
+    Tunnel --> Browser
 ```
 
-- **Consult route**: `nodejs` runtime (not Edge) — required for pgvector native bindings
-- **All other API routes**: default Next.js runtime (30s timeout)
-- **Static assets**: served via Vercel Edge CDN globally
+- **완전 내부망 운영**: 외부 클라우드(Vercel/Neon/AWS) 없음. T3610 on-prem 호스트에서 Docker로 Next.js + PostgreSQL 구동, LLM/임베딩은 gx10(LAN) 호출
+- **외부 노출**: Cloudflare Tunnel로 `regula.abyz-lab.work` 서빙 (인바운드 포트 개방 없음)
+- **Consult route**: `nodejs` runtime — pgvector native bindings 필요
 
 ---
 
@@ -390,7 +400,7 @@ graph TD
 | RBAC | `withPermission` matrix, including risk.generate/view/update/approve |
 | Risk approval | `risk.approve` RA-lead-only final report gate |
 | Electronic signature | `signature.sign` RA-lead/admin + signature-specific QA lead gate |
-| LLM data | Anthropic ZDR (`anthropic-beta: zero-data-retention`) |
+| LLM data | gx10 온프레미스 Ollama (LAN) — 데이터가 내부망을 벗어나지 않음 (외부 API 배제, #318) |
 | Error tracking | Sentry `beforeSend` PII redaction (query, user_id, content, email) |
 | Secrets | gitleaks CI scan on every push |
 | Dependencies | `pnpm audit --audit-level=high` in CI |
@@ -449,9 +459,9 @@ Observability is strictly separated from `audit_logs` — observability tools ne
 - Auth.js v5, Zod validation
 
 **AI/ML (20+)**:
-- abyz-lab Sonnet 4.5, Haiku 4.5
+- gx10 온프레미스 Ollama (gpt-oss:120b)
 - LangChain, Cohere Rerank
-- OpenAI embedding
+- gx10 qwen3-embedding (1536-dim)
 
 **Database (15+)**:
 - PostgreSQL 16, pgvector extension
@@ -464,7 +474,7 @@ Observability is strictly separated from `audit_logs` — observability tools ne
 ### 11.4 Key Architecture Decisions
 
 1. **Backend-first implementation** - API → RAG → UI order
-2. **Multi-LLM strategy** - Sonnet (inference) + Haiku (classification)
+2. **Single on-prem LLM** - gx10 Ollama gpt-oss:120b (inference + classification, 외부 API 배제 #318)
 3. **PostgreSQL + pgvector** - ACID transactions + vector search
 4. **21 CFR Part 11 audit and signatures** - Immutable audit logs plus hash-linked electronic signatures
 5. **SSE streaming** - Real-time UI updates with structured data
