@@ -1,0 +1,75 @@
+{
+  "version": "1.0.0",
+  "created": "2026-07-19",
+  "spec": "SPEC-V3-RESTRUCTURE-001",
+  "issue": 530,
+  "rationale": "CHARTER 지양-3 (QMS/PLM 도메인 아카이브). Phase A verify-only 종료 게이트.",
+  "archive_root": "archive/qms-pms",
+  "domain_count": 8,
+  "domains": [
+    {
+      "name": "change-control",
+      "archive_path": "lib/change-control",
+      "original_path": "lib/change-control",
+      "file_count": 13,
+      "sha256": "eda4ff52576222d981e033c97fa52a0a4af42c787bc5af93685e1e935db1f51a"
+    },
+    {
+      "name": "clinical-investigation",
+      "archive_path": "lib/clinical-investigation",
+      "original_path": "lib/clinical-investigation",
+      "file_count": 12,
+      "sha256": "08ac8c9daa43c01c92f3a723312caa111794ca25c10ca844b2c7e6607eba6518"
+    },
+    {
+      "name": "cyberdevice",
+      "archive_path": "lib/cyberdevice",
+      "original_path": "lib/cyberdevice",
+      "file_count": 14,
+      "sha256": "5d5fd29daf47d85a3014fa096489435c3f6802d3cbf873ce8550db2978b05a45"
+    },
+    {
+      "name": "dhf",
+      "archive_path": "lib/dhf",
+      "original_path": "lib/dhf",
+      "file_count": 1,
+      "sha256": "808ebf9878afe64a62df1b67dea939d39d4aab6a2f92c207602e3f63317e74c3"
+    },
+    {
+      "name": "esubmit",
+      "archive_path": "lib/esubmit",
+      "original_path": "lib/esubmit",
+      "file_count": 1,
+      "sha256": "ec3761b89b185eca98000fcca7ed38764aaf0abef5f50c5f3e97095dc7af52db"
+    },
+    {
+      "name": "labeling",
+      "archive_path": "lib/labeling",
+      "original_path": "lib/labeling",
+      "file_count": 12,
+      "sha256": "58269f602a1f776536830a3eaa005ddee1ed92ce4ca6f24dcbd1e1bf3894f441"
+    },
+    {
+      "name": "samd",
+      "archive_path": "lib/samd",
+      "original_path": "lib/samd",
+      "file_count": 1,
+      "sha256": "59138cfead3e5c4f89d8c114e60109ccba866571d614d8af6042399298e509ed"
+    },
+    {
+      "name": "workflows",
+      "archive_path": "lib/workflows",
+      "original_path": "lib/workflows",
+      "file_count": 3,
+      "sha256": "b7619641cdba22a31521ad52d6d4a7472748218f9e950a4fb9a8f87892ee4b93"
+    }
+  ],
+  "auxiliary_trees": [
+    { "path": "app", "file_count": 66 },
+    { "path": "components", "file_count": 6 },
+    { "path": "specs", "file_count": 6 },
+    { "path": "__tests__", "file_count": 3 },
+    { "path": "tests", "file_count": 9 }
+  ],
+  "total_files": 148
+}

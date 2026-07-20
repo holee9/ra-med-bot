@@ -79,7 +79,7 @@
 | Vigilance/Complaint | QA 팀 | ❌ 범위 외 (환자정보 취급, #319 제거 완료) |
 | DHF/Risk Management | QA 팀 | ❌ 범위 외 |
 
-> **Charter 지양-3 준수**: Regula는 QMS를 대체하지 않음. QMS 도메인 18개를 archive/qms-pms/로 물리 이동.
+> **Charter 지양-3 준수**: Regula는 QMS를 대체하지 않음. QMS 도메인 8개를 archive/qms-pms/로 물리 이동(2026-07-19 직검 실측, #530). 나머지 QMS 후보 도메인은 외부 런타임 의존성으로 KEEP 재판정됨.
 
 ---
 
@@ -119,7 +119,7 @@ Article 61(4) disclaimer 등 법적 경고 텍스트는 SPEC에서 제거 불가
 |------|-----------|----------|
 | **정체성** | RA 문서 작성 워크벤치 (좁고 깊음) | RA 게이트웨이 (전사 인허가 도우미, RA 업무 분산) |
 | **사용자** | RA Lead 1~2명 (실질 파워유저) | Employee 26명 (1순위) + RA 3명 (2순위) + Admin 1명 |
-| **QMS 범위** | 포함 (PMS/PMCF/CAPA/Vigilance) | **제외** (QMS 도메인 18개 archive 이동) |
+| **QMS 범위** | 포함 (PMS/PMCF/CAPA/Vigilance) | **제외** (QMS 도메인 8개 archive 이동, #530) |
 | **LLM 백엔드** | 외부 API (OpenAI/Anthropic) | **gx10 온프레미스 Ollama 단일** (gpt-oss:120b, #318) |
 | **환자정보** | 포함 (vigilance/complaint/PII redaction) | **제외** (PHI 도메인 138 files 제거, #319) |
 | **Inbox** | 미구현 | 🆕 4-column Kanban + Auto-Triage |
@@ -136,7 +136,7 @@ Article 61(4) disclaimer 등 법적 경고 텍스트는 SPEC에서 제거 불가
 | 답변 출처 명시율 | 100% (현재) | 100% (유지) |
 | Auto-triage 정확도 | N/A | confidence >= 85% → auto (24h 유예) |
 | 미답변 → RA 에스컬레이트 | N/A | escalated 자동 티켓 생성 (48h SLA) |
-| 회귀 테스트 | 4,815 passed | 4,806+ passed (아카이브 9 tests 제외) |
+| 회귀 테스트 | 4,815 passed | 5,450 passed (2026-07-19 실측 baseline, 68 skipped, #530) |
 | audit 무결성 | N/A | hash chain 월간 검증 PASS (BK-105) |
 | 제품 자동 추출 | N/A | ra-llm-wiki → products 테이블 (BK-033) |
 
