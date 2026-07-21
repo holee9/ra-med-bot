@@ -83,7 +83,19 @@ m1_to_mN_commit_strategy: single-coherent-commit (B1-B7 interdependent, pre-comm
 
 ## §E.4 Sync-phase Audit-Ready Signal
 
-(left for manager-docs — single sync commit carries implemented → completed)
+```yaml
+sync_status: ready
+sync_commit_sha: pending-backfill-<this-commit-sha-will-be-backfilled-in-follow-up-commit>
+sync_complete_at: 2026-07-21
+```
+
+### 부채 5종 (debt — post-run 검출)
+
+1. **(a) backward-compat shim 5개** — lib/db/{client,schema}.ts, lib/audit/cold-storage.ts, lib/storage/r2.ts, lib/schemas/validation.ts. scripts/·hooks/ 샌드박스 읽기전용 마운트로 인한 dual-path. 비샌드박스 터미널에서 scripts/ codemod 후 제거 필요.
+2. **(b) auditLogs schema.ts 잔류** — conversations 도메인 참조 → cross-file TDZ. T9.6 점진 분할 후속.
+3. **(c) workflows @deprecated 누락** — workflowRuns 공유 테이블로 의도적 제외.
+4. **(d) AC-10 next dev 페이지 로드 / psql `\dt`** — 런타임 게이트. 수동 검증으로 defer.
+5. **(e) pre-existing frontmatter drift 4건** — FrontmatterInvalid: title/module/lifecycle/tags. `lifecycle_level`/`labels` 비표준 필드. v1.0.0 기존 부채(D1). 본 sync 범위 밖. #533 또는 별도 frontmatter-cleanup amend 권고.
 
 ---
 
