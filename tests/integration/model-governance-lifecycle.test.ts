@@ -3,7 +3,7 @@
 // @MX:REASON L-006 recurrence prevention: the prior suite was pure-function only
 //           (DB tests were placeholders gated behind DATABASE_URL). These tests
 //           exercise the REAL lib functions against a mock Drizzle client using
-//           the CAPA #251 hybrid pattern (vi.doMock('@/lib/db/client') per test).
+//           the CAPA #251 hybrid pattern (vi.doMock('@/lib/kernel/db/client') per test).
 //           Covers: eval-blocks-approval, rollback-target (H1 desc), single-active,
 //           IDOR, runtime-block model-mismatch (C2), rollback atomicity, M3 audit
 //           persistence before throw.
@@ -97,7 +97,7 @@ beforeEach(() => {
 });
 
 afterEach(() => {
-  vi.doUnmock('@/lib/db/client');
+  vi.doUnmock('@/lib/kernel/db/client');
   vi.resetModules();
 });
 
@@ -105,14 +105,14 @@ afterEach(() => {
 // We mock @/lib/audit so it records into state.auditLogs without touching DB.
 async function mockModules(state: MockState) {
   const mockDb = createMockDb(state);
-  vi.doMock('@/lib/db/client', () => ({
+  vi.doMock('@/lib/kernel/db/client', () => ({
     db: mockDb,
     withTenantScope: vi.fn(
       async <T>(_orgId: string, fn: (db: typeof mockDb) => Promise<T>): Promise<T> =>
         fn(mockDb) as Promise<T>,
     ),
   }));
-  vi.doMock('@/lib/audit', () => ({
+  vi.doMock('@/lib/kernel/audit', () => ({
     writeAudit: async (params: Record<string, unknown>, _tx?: unknown) => {
       state.auditLogs.push({
         action: String(params.action),
@@ -148,7 +148,7 @@ describe('SPEC-REGULA-MODEL-GOVERNANCE-001 — mock-DB lifecycle (AC-02/03/06/07
     await mockModules(state);
 
     // Make the change_request SELECT return our pending row.
-    const dbModule = await import('@/lib/db/client');
+    const dbModule = await import('@/lib/kernel/db/client');
     const origSelect = (dbModule.db as unknown as { select: () => unknown }).select;
     (dbModule.db as unknown as { select: () => unknown }).select = () => {
       return buildSelectChain(state.changeRequests);
@@ -197,7 +197,7 @@ describe('SPEC-REGULA-MODEL-GOVERNANCE-001 — mock-DB lifecycle (AC-02/03/06/07
     // Wire the select to return rows matching the WHERE/ORDERBY. The lib query
     // uses .where(...).orderBy(...).limit(1) — our chain ignores the actual
     // predicates, so we simulate the DESC result by returning the newest inactive.
-    const dbModule = await import('@/lib/db/client');
+    const dbModule = await import('@/lib/kernel/db/client');
     let callCount = 0;
     (dbModule.db as unknown as { select: () => unknown }).select = () => {
       callCount++;
@@ -233,7 +233,7 @@ describe('SPEC-REGULA-MODEL-GOVERNANCE-001 — mock-DB lifecycle (AC-02/03/06/07
     await mockModules(state);
 
     // Active combo approved for ollama/llama3.2.
-    const dbModule = await import('@/lib/db/client');
+    const dbModule = await import('@/lib/kernel/db/client');
     (dbModule.db as unknown as { select: () => unknown }).select = () => {
       return buildSelectChain([
         {
@@ -282,7 +282,7 @@ describe('SPEC-REGULA-MODEL-GOVERNANCE-001 — mock-DB lifecycle (AC-02/03/06/07
     };
     await mockModules(state);
 
-    const dbModule = await import('@/lib/db/client');
+    const dbModule = await import('@/lib/kernel/db/client');
     (dbModule.db as unknown as { select: () => unknown }).select = () => {
       return buildSelectChain([
         {
@@ -319,7 +319,7 @@ describe('SPEC-REGULA-MODEL-GOVERNANCE-001 — mock-DB lifecycle (AC-02/03/06/07
     };
     await mockModules(state);
 
-    const dbModule = await import('@/lib/db/client');
+    const dbModule = await import('@/lib/kernel/db/client');
     (dbModule.db as unknown as { select: () => unknown }).select = () => {
       // The access guard filters by orgId — cross-org returns no row.
       return buildSelectChain([]);
@@ -343,7 +343,7 @@ describe('SPEC-REGULA-MODEL-GOVERNANCE-001 — mock-DB lifecycle (AC-02/03/06/07
     };
     await mockModules(state);
 
-    const dbModule = await import('@/lib/db/client');
+    const dbModule = await import('@/lib/kernel/db/client');
     let selectCalls = 0;
     (dbModule.db as unknown as { select: () => unknown }).select = () => {
       selectCalls++;
@@ -406,7 +406,7 @@ describe('SPEC-REGULA-MODEL-GOVERNANCE-001 — mock-DB lifecycle (AC-02/03/06/07
     };
     await mockModules(state);
 
-    const dbModule = await import('@/lib/db/client');
+    const dbModule = await import('@/lib/kernel/db/client');
     let selectCalls = 0;
     (dbModule.db as unknown as { select: () => unknown }).select = () => {
       selectCalls++;
@@ -490,7 +490,7 @@ describe('SPEC-REGULA-MODEL-GOVERNANCE-001 — rlhf hash upgrade (M2)', () => {
     };
     await mockModules(state);
 
-    const dbModule = await import('@/lib/db/client');
+    const dbModule = await import('@/lib/kernel/db/client');
     (dbModule.db as unknown as { insert: (t?: { name?: string }) => unknown }).insert = (t?: {
       name?: string;
     }) => {

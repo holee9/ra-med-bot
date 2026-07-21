@@ -1,9 +1,9 @@
 // @MX:NOTE [AUTO] GET /api/ra/templates — list available templates.
 // @MX:SPEC SPEC-REGULA-ENTERPRISE-001 (REQ-ENTERPRISE-019)
 
-import { withPermission } from '../../../../lib/auth/with-permission';
-import { db } from '../../../../lib/db/client';
-import { templates } from '../../../../lib/db/schema';
+import { withPermission } from '../../../../lib/kernel/auth/with-permission';
+import { db } from '../../../../lib/kernel/db/client';
+import { templates } from '../../../../lib/kernel/db/schema';
 
 export const GET = withPermission('dashboard.view', async () => {
   const rows = await db

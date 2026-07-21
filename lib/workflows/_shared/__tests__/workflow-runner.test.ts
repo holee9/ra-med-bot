@@ -9,7 +9,7 @@ import { beforeEach, describe, expect, it, vi } from 'vitest';
 // Mock DB client + schema + audit BEFORE importing the runner.
 const mockReturning = vi.fn(() => [{ draftVersion: 1 }]);
 
-vi.mock('@/lib/db/client', () => ({
+vi.mock('@/lib/kernel/db/client', () => ({
   db: {
     transaction: vi.fn(async (cb: (tx: unknown) => Promise<unknown>) =>
       cb({
@@ -21,7 +21,7 @@ vi.mock('@/lib/db/client', () => ({
   },
 }));
 
-vi.mock('@/lib/db/schema', () => ({
+vi.mock('@/lib/kernel/db/schema', () => ({
   workflowRuns: {
     id: 'id',
     draftVersion: 'draftVersion',
@@ -33,7 +33,7 @@ vi.mock('drizzle-orm', () => ({
   sql: vi.fn(),
 }));
 
-vi.mock('@/lib/audit', () => ({
+vi.mock('@/lib/kernel/audit', () => ({
   writeAudit: vi.fn(async () => undefined),
 }));
 
@@ -69,7 +69,7 @@ vi.mock('../streaming-chain', () => ({
   },
 }));
 
-import { writeAudit } from '@/lib/audit';
+import { writeAudit } from '@/lib/kernel/audit';
 import { encodeWorkflowEvent, runWorkflow } from '../workflow-runner';
 import type { StepExecutor } from '../workflow-runner';
 

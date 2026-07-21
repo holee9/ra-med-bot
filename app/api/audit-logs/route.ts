@@ -4,9 +4,9 @@
 
 export const runtime = 'nodejs';
 
-import { withPermission } from '@/lib/auth/with-permission';
-import { db } from '@/lib/db/client';
-import { auditLogs } from '@/lib/db/schema';
+import { withPermission } from '@/lib/kernel/auth/with-permission';
+import { db } from '@/lib/kernel/db/client';
+import { auditLogs } from '@/lib/kernel/db/schema';
 import { desc } from 'drizzle-orm';
 
 export const GET = withPermission('auditLogs.view', async (req, _ctx, _session) => {

@@ -7,12 +7,12 @@
 //           assume the test DB has migration 0077 applied.
 
 // Mock the Drizzle client so the pure-function tests below can run without
-// DATABASE_URL. lib/db/client calls getEnv() at module load (postgres-js pool
+// DATABASE_URL. lib/kernel/db/client calls getEnv() at module load (postgres-js pool
 // construction), which would crash the whole file under `pnpm test` (CI's Unit
 // step does not set DATABASE_URL). The pure modules (eval-gate, audit-metadata,
 // registry.computeContentHash, runtime-guard shape) do not touch the DB at
 // runtime; they only need the import to not throw. Mirrors the clinical-investigation integration test.
-vi.mock('@/lib/db/client', () => ({
+vi.mock('@/lib/kernel/db/client', () => ({
   db: {
     select: () => ({
       from: () => ({ where: () => Promise.resolve([]), limit: () => Promise.resolve([]) }),
@@ -153,5 +153,5 @@ describe('SPEC-REGULA-MODEL-GOVERNANCE-001 — runtime guard (AC-06, REQ-008)', 
 // without a Postgres instance still runs the pure-function suite above.
 
 // Real-DB model-governance tests live in tests/integration/model-governance-real-db.test.ts
-// (SPEC-REGULA-REALDB-001 R4). This file keeps a top-level vi.mock('@/lib/db/client')
+// (SPEC-REGULA-REALDB-001 R4). This file keeps a top-level vi.mock('@/lib/kernel/db/client')
 // for its pure-function suite above, so real-DB round-trips cannot live here.

@@ -1,7 +1,7 @@
 // @MX:NOTE [AUTO] POST /api/model-governance/rollback — revert to previous approved combination.
 // @MX:SPEC SPEC-REGULA-MODEL-GOVERNANCE-001 (Issue 71, REQ-MODELGOV-006, AC-03)
 
-import { withPermission } from '@/lib/auth/with-permission';
+import { withPermission } from '@/lib/kernel/auth/with-permission';
 import { RollbackError, rollbackCombination } from '@/lib/model-governance/rollback';
 import { rollbackInputSchema } from '@/lib/model-governance/types';
 

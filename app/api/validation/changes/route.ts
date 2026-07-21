@@ -5,7 +5,7 @@
 //   regulated state (change_control rows) — distinct from validation.read.
 
 import { spawn } from 'node:child_process';
-import { withPermission } from '@/lib/auth/with-permission';
+import { withPermission } from '@/lib/kernel/auth/with-permission';
 import { z } from 'zod';
 
 const changesRequestSchema = z.object({

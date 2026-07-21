@@ -4,10 +4,10 @@
 // Privacy invariant (REQ-PERSONAL-002): every query is scoped to session.user.id.
 // A bookmark owned by another user is reported as 404 (not 403) to avoid leaking existence.
 
-import { writeAudit } from '@/lib/audit';
-import { withPermission } from '@/lib/auth/with-permission';
-import { db } from '@/lib/db/client';
-import { personalBookmarks } from '@/lib/db/schema';
+import { writeAudit } from '@/lib/kernel/audit';
+import { withPermission } from '@/lib/kernel/auth/with-permission';
+import { db } from '@/lib/kernel/db/client';
+import { personalBookmarks } from '@/lib/kernel/db/schema';
 import { and, eq } from 'drizzle-orm';
 import { NextResponse } from 'next/server';
 import { z } from 'zod';

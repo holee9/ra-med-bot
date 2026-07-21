@@ -71,7 +71,7 @@ const withTenantScopeMock = vi.fn(
   async <T>(_orgId: string, fn: (tx: typeof dbMock) => Promise<T>) => fn(dbMock) as Promise<T>,
 );
 
-vi.mock('@/lib/db/client', () => ({
+vi.mock('@/lib/kernel/db/client', () => ({
   get db() {
     return dbMock;
   },
@@ -79,7 +79,7 @@ vi.mock('@/lib/db/client', () => ({
     withTenantScopeMock(...(args as [string, (tx: typeof dbMock) => Promise<unknown>])),
 }));
 
-vi.mock('@/lib/audit', () => ({ writeAudit: vi.fn(async () => {}) }));
+vi.mock('@/lib/kernel/audit', () => ({ writeAudit: vi.fn(async () => {}) }));
 
 vi.mock('@/lib/observability/logger', () => ({
   logger: { error: vi.fn(), warn: vi.fn(), info: vi.fn(), debug: vi.fn() },
@@ -206,7 +206,7 @@ describe('AC-03 Layer 2 — persistSuggestionsAsPending writes status=pending (N
   });
 
   it('does NOT write memory_created audit for pending rows (noise guard)', async () => {
-    const { writeAudit } = await import('@/lib/audit');
+    const { writeAudit } = await import('@/lib/kernel/audit');
     const { persistSuggestionsAsPending } = await import('@/lib/project-memory/extractor');
     await persistSuggestionsAsPending({
       suggestions: [{ memoryType: 'risk_class', key: 'r', value: 'C', confidence: 0.8 }],

@@ -60,7 +60,7 @@ const {
   };
 });
 
-vi.mock('@/lib/db/client', () => ({
+vi.mock('@/lib/kernel/db/client', () => ({
   db: mockDb,
   withTenantScope: vi.fn(async (_orgId: string, fn: (tx: unknown) => Promise<unknown>) => {
     const tx = {
@@ -73,7 +73,7 @@ vi.mock('@/lib/db/client', () => ({
   }),
 }));
 
-vi.mock('@/lib/audit', () => ({ writeAudit: writeAuditMock }));
+vi.mock('@/lib/kernel/audit', () => ({ writeAudit: writeAuditMock }));
 
 vi.mock('@/lib/source-governance/access', () => ({ getSourceInOrg: getSourceInOrgMock }));
 

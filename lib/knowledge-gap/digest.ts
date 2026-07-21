@@ -14,9 +14,9 @@
 //     failure (REQ-013). Failures never crash the caller — the Inngest step
 //     logs and the audit row captures the error for SLA review.
 
-import { writeAudit } from '@/lib/audit';
-import { db } from '@/lib/db/client';
-import { unansweredQueue } from '@/lib/db/schema';
+import { writeAudit } from '@/lib/kernel/audit';
+import { db } from '@/lib/kernel/db/client';
+import { unansweredQueue } from '@/lib/kernel/db/schema';
 import type { DispatchResult } from '@/lib/notifications/dispatcher';
 import { logger } from '@/lib/observability/logger';
 import { and, count, desc, eq, gte, inArray } from 'drizzle-orm';

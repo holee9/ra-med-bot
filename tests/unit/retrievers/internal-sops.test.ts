@@ -12,7 +12,7 @@ const root = path.resolve(__dirname, '..', '..', '..');
 // Mock the db client to avoid real DB connections.
 // vi.hoisted ensures dbMock exists before the hoisted vi.mock factory runs.
 const { dbMock } = vi.hoisted(() => ({ dbMock: { execute: vi.fn() } }));
-vi.mock('@/lib/db/client', () => ({
+vi.mock('@/lib/kernel/db/client', () => ({
   db: dbMock,
   withTenantScope: vi.fn(
     async <T>(_orgId: string, fn: (db: typeof dbMock) => Promise<T>): Promise<T> =>
@@ -68,7 +68,7 @@ describe('lib/ai/retrievers/internal-sops.ts (REQ-BREADTH-037, REQ-BREADTH-043)'
   });
 
   it('retrieve() passes orgId to the SQL query (SQL-level isolation)', async () => {
-    const { db } = await import('@/lib/db/client');
+    const { db } = await import('@/lib/kernel/db/client');
     const { embed } = await import('ai');
 
     vi.mocked(embed).mockResolvedValueOnce({
@@ -90,7 +90,7 @@ describe('lib/ai/retrievers/internal-sops.ts (REQ-BREADTH-037, REQ-BREADTH-043)'
   });
 
   it('retrieve() returns RetrievalResult shape for valid results', async () => {
-    const { db } = await import('@/lib/db/client');
+    const { db } = await import('@/lib/kernel/db/client');
     const { embed } = await import('ai');
 
     vi.mocked(embed).mockResolvedValueOnce({

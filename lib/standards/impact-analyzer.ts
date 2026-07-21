@@ -5,11 +5,11 @@
 // Uses product_standards_compliance (local org-scoped table). No external API.
 // The cron caller uses this to populate standards_updates.impact_summary.
 
-import { withTenantScope } from '@/lib/db/client';
+import { withTenantScope } from '@/lib/kernel/db/client';
 import {
   productStandardsCompliance,
   standardsOrgCatalog as standardsCatalog,
-} from '@/lib/db/schema';
+} from '@/lib/kernel/db/schema';
 import { and, eq } from 'drizzle-orm';
 
 export interface AffectedProduct {

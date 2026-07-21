@@ -1,7 +1,7 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 
 // Mock the entire client module to avoid env parsing
-vi.mock('../../../lib/db/client', () => {
+vi.mock('../../../lib/kernel/db/client', () => {
   // Minimal Drizzle-like tx mock
   const mockTx = {
     execute: vi.fn().mockResolvedValue({}),
@@ -27,14 +27,14 @@ vi.mock('../../../lib/db/client', () => {
   return { db: mockDb, serviceDb: mockDb, withTenantScope };
 });
 
-import { withTenantScope } from '../../../lib/db/client';
+import { withTenantScope } from '../../../lib/kernel/db/client';
 
 describe('withTenantScope', () => {
   beforeEach(() => {
     vi.clearAllMocks();
   });
 
-  it('is exported from lib/db/client', () => {
+  it('is exported from lib/kernel/db/client', () => {
     expect(typeof withTenantScope).toBe('function');
   });
 

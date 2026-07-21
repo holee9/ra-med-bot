@@ -8,7 +8,7 @@
 // Atomicity (Part 11): every wrapper accepts an optional `tx` handle so the
 // audit insert rides the same transaction boundary as the mutation.
 
-import { type AuditDbHandle, writeAudit } from '../audit';
+import { type AuditDbHandle, writeAudit } from '../kernel/audit';
 
 type AuditTx = AuditDbHandle | undefined;
 

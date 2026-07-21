@@ -175,7 +175,7 @@ describe('real-pipeline: stale fan-out marks all downstream nodes (AC-05)', () =
  */
 describe('real-pipeline: audit action enum lock-step (AC-06)', () => {
   it('auditActionEnum includes the 4 traceability values at runtime', async () => {
-    const { auditActionEnum } = await import('@/lib/db/schema');
+    const { auditActionEnum } = await import('@/lib/kernel/db/schema');
     const values = auditActionEnum.enumValues;
     expect(values).toContain('traceability.edge_created');
     expect(values).toContain('traceability.edge_deleted');

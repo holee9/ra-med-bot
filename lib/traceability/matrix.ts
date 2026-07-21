@@ -9,7 +9,7 @@ import {
   evidenceNodes,
   riskItems,
   submissionPackages,
-} from '@/lib/db/schema';
+} from '@/lib/kernel/db/schema';
 import { and, eq, inArray } from 'drizzle-orm';
 import type { EvidenceEdge, EvidenceNode, EvidenceNodeType, TraceabilityDb } from './graph';
 

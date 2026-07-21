@@ -9,12 +9,12 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 
 // Mock all external dependencies before importing route
-vi.mock('@/lib/auth', () => ({
+vi.mock('@/lib/kernel/auth', () => ({
   auth: vi.fn(),
 }));
 // db mock with chainable select for the 201 success path
 const mockSelect = vi.fn();
-vi.mock('@/lib/db/client', () => ({
+vi.mock('@/lib/kernel/db/client', () => ({
   get db() {
     return {
       select: mockSelect,
@@ -23,10 +23,10 @@ vi.mock('@/lib/db/client', () => ({
     };
   },
 }));
-vi.mock('@/lib/audit', () => ({
+vi.mock('@/lib/kernel/audit', () => ({
   writeAudit: vi.fn().mockResolvedValue(undefined),
 }));
-vi.mock('@/lib/auth/acl', () => ({
+vi.mock('@/lib/kernel/auth/acl', () => ({
   isOrgMember: vi.fn().mockResolvedValue(true),
   isProjectMember: vi.fn().mockResolvedValue(true),
 }));
@@ -47,7 +47,7 @@ vi.mock('@/lib/signature/hash', () => ({
     .mockResolvedValue('deadbeef1234567890abcdef1234567890abcdef1234567890abcdef12345678'),
 }));
 
-import { auth } from '@/lib/auth';
+import { auth } from '@/lib/kernel/auth';
 import { getAuthorizedSignatureMessage } from '@/lib/signature/authorization';
 import { getActiveSignature, insertSignature } from '@/lib/signature/queries';
 import { GET, POST } from '../route';

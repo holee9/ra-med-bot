@@ -4,8 +4,8 @@
 //   revoked-entitlement sources MUST be excluded from RAG retrieval results.
 //   A dead-code definition without a call site is a SPEC violation.
 // @MX:SPEC SPEC-REGULA-CORPUS-LICENSE-001 (REQ-CORPUSLIC-008, REQ-CORPUSLIC-014)
-import { db } from '@/lib/db/client';
-import { entitlement, sourceLicense } from '@/lib/db/schema';
+import { db } from '@/lib/kernel/db/client';
+import { entitlement, sourceLicense } from '@/lib/kernel/db/schema';
 import { and, eq, inArray } from 'drizzle-orm';
 
 /**

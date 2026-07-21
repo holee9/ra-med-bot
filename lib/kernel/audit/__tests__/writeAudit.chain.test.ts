@@ -7,7 +7,7 @@
  * trigger). These tests CANNOT clean up rows, so each case uses a unique
  * resource_id (crypto.randomUUID) to avoid collisions across runs.
  *
- * NOTE: writeAudit (lib/audit.ts) and db (lib/db/client) are imported LAZILY
+ * NOTE: writeAudit (lib/audit.ts) and db (lib/kernel/db/client) are imported LAZILY
  * inside each test so this file loads without a live env (matches the
  * audit-immutability.test.ts pattern); skipIf prevents the dynamic import when
  * DATABASE_URL is absent.

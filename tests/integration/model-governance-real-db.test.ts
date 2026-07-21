@@ -1,13 +1,13 @@
 // @MX:NOTE [AUTO] Model Governance REAL-DB schema round-trip (SPEC-REGULA-REALDB-001 R4).
 // @MX:SPEC SPEC-REGULA-MODEL-GOVERNANCE-001 (REQ-MODELGOV-001/002)
 // @MX:REASON [AUTO] L-013: model-governance.test.ts (pure functions) and
-//           model-governance-lifecycle.test.ts (mock-DB) both stub @/lib/db/client,
+//           model-governance-lifecycle.test.ts (mock-DB) both stub @/lib/kernel/db/client,
 //           so NEITHER catches prompt_registry / change_request schema, FK, or RLS
 //           drift. This focused real-DB round-trip INSERTs the model-gov FK chain
 //           (prompt_registry → change_request) against a LIVE PostgreSQL and reads
 //           it back, surfacing drift a mock hides. Skipped when DATABASE_URL unset.
 
-import { changeRequest, promptRegistry } from '@/lib/db/schema';
+import { changeRequest, promptRegistry } from '@/lib/kernel/db/schema';
 import { eq } from 'drizzle-orm';
 import { beforeAll, beforeEach, describe, expect, it } from 'vitest';
 import { HAS_DATABASE_URL, seedCoreActors, truncateTables } from '../../tests/fixtures/database';
@@ -26,7 +26,7 @@ const ACTORS = {
 };
 
 async function getDb() {
-  const { db } = await import('@/lib/db/client');
+  const { db } = await import('@/lib/kernel/db/client');
   return db;
 }
 

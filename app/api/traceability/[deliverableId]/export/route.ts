@@ -1,9 +1,9 @@
 // @MX:NOTE [AUTO] GET /api/traceability/[deliverableId]/export — PDF/Markdown export.
 // @MX:SPEC SPEC-REGULA-TRACEABILITY-001 (REQ-TRACEABILITY-008)
 
-import { writeAudit } from '@/lib/audit';
-import { withPermission } from '@/lib/auth/with-permission';
-import { withTenantScope } from '@/lib/db/client';
+import { writeAudit } from '@/lib/kernel/audit';
+import { withPermission } from '@/lib/kernel/auth/with-permission';
+import { withTenantScope } from '@/lib/kernel/db/client';
 import { getEvidencePacket } from '@/lib/traceability/evidence-packet';
 import { exportPacket, sanitizeFilename } from '@/lib/traceability/export-packet';
 import { listStaleNodeIds } from '@/lib/traceability/stale-propagation';

@@ -1,9 +1,9 @@
-// @MX:NOTE [AUTO] POST /api/corpus-license/entitlement — grant/revoke entitlement.
-// @MX:SPEC SPEC-REGULA-CORPUS-LICENSE-001 (REQ-CORPUSLIC-008, REQ-CORPUSLIC-012)
-import { withPermission } from '@/lib/auth/with-permission';
 import { assertSourceLicenseInOrg } from '@/lib/corpus-license/access';
 import { grantEntitlement, revokeEntitlement } from '@/lib/corpus-license/entitlement';
 import { entitlementInputSchema } from '@/lib/corpus-license/types';
+// @MX:NOTE [AUTO] POST /api/corpus-license/entitlement — grant/revoke entitlement.
+// @MX:SPEC SPEC-REGULA-CORPUS-LICENSE-001 (REQ-CORPUSLIC-008, REQ-CORPUSLIC-012)
+import { withPermission } from '@/lib/kernel/auth/with-permission';
 
 /* audit-check-ignore: audit is written inside grantEntitlement()/revokeEntitlement()
    within the same tx (21 CFR Part 11 atomicity) — route-level writeAudit would duplicate */

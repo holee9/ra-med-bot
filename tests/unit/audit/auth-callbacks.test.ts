@@ -3,9 +3,12 @@
 
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 
-// These helper functions will be extracted to lib/auth/audit-callbacks.ts in GREEN phase.
+// These helper functions will be extracted to lib/kernel/auth/audit-callbacks.ts in GREEN phase.
 // Importing will fail RED until that file exists.
-import { buildLoginAuditEvent, buildLogoutAuditEvent } from '../../../lib/auth/audit-callbacks';
+import {
+  buildLoginAuditEvent,
+  buildLogoutAuditEvent,
+} from '../../../lib/kernel/auth/audit-callbacks';
 
 describe('buildLoginAuditEvent (REQ-ENTERPRISE-029)', () => {
   it('builds a valid AuditEvent for auth.login with user id and provider', () => {

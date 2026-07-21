@@ -7,7 +7,7 @@
 //   (null → 404, no cross-org existence leak). Audit source.superseded inside the
 //   same transaction (21 CFR Part 11 atomicity — H2).
 
-import { withPermission } from '@/lib/auth/with-permission';
+import { withPermission } from '@/lib/kernel/auth/with-permission';
 import { markSuperseded } from '@/lib/source-governance/review-workflow';
 import { supersedeRequestSchema } from '@/lib/source-governance/types';
 

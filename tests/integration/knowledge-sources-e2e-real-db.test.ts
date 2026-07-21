@@ -15,12 +15,12 @@ import { join } from 'node:path';
 import { eq, sql } from 'drizzle-orm';
 import { afterAll, beforeAll, beforeEach, describe, expect, it, vi } from 'vitest';
 
-import { corpusSyncRuns, knowledgeSources, sourceSections, sources } from '@/lib/db/schema';
 import { embedChunks } from '@/lib/ingest/embed';
+import { corpusSyncRuns, knowledgeSources, sourceSections, sources } from '@/lib/kernel/db/schema';
 import { HAS_DATABASE_URL, getDb, seedCoreActors } from '../fixtures/database';
 
 // Real-DB data, mock audit (fixtures/database.ts contract: writeAudit must be mocked).
-vi.mock('@/lib/audit', () => ({
+vi.mock('@/lib/kernel/audit', () => ({
   writeAudit: vi.fn().mockResolvedValue(undefined),
 }));
 

@@ -9,7 +9,7 @@
 //     is deferred (proposal-only interface + @MX:TODO marker).
 
 import { createHash } from 'node:crypto';
-import type { qualityTagEnum } from '@/lib/db/schema';
+import type { qualityTagEnum } from '@/lib/kernel/db/schema';
 import {
   type GapIssueContext,
   type GitHubIssuesClient,

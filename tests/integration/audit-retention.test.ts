@@ -19,7 +19,7 @@ const RETENTION_YEARS = 7;
 const ROOT = path.resolve(__dirname, '..', '..');
 
 async function getDb() {
-  const { db } = await import('@/lib/db/client');
+  const { db } = await import('@/lib/kernel/db/client');
   return db;
 }
 
@@ -122,7 +122,7 @@ describe('audit_logs retention policy (REQ-LAUNCH-031)', () => {
       expect(triggers.length).toBeGreaterThanOrEqual(1);
 
       // Verify cold-storage module exists (R2 Object Lock compliance mode).
-      const coldStoragePath = path.join(ROOT, 'lib/audit/cold-storage.ts');
+      const coldStoragePath = path.join(ROOT, 'lib/kernel/audit/cold-storage.ts');
       expect(existsSync(coldStoragePath)).toBe(true);
 
       const coldStorageContent = readFileSync(coldStoragePath, 'utf-8').toLowerCase();
@@ -142,8 +142,8 @@ describe('audit_logs retention policy (REQ-LAUNCH-031)', () => {
         migrationContent.includes('retention');
       expect(hasRetention).toBe(true);
 
-      // Verify lib/audit.ts documents 7-year policy.
-      const auditModulePath = path.join(ROOT, 'lib/audit.ts');
+      // Verify lib/kernel/audit.ts documents 7-year policy.
+      const auditModulePath = path.join(ROOT, 'lib/kernel/audit.ts');
       const auditContent = readFileSync(auditModulePath, 'utf-8');
       const hasPolicyComment =
         auditContent.toLowerCase().includes('7-year') ||

@@ -8,7 +8,7 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
 const writeAuditMock = vi.fn().mockResolvedValue(undefined);
 
-vi.mock('@/lib/audit', () => ({
+vi.mock('@/lib/kernel/audit', () => ({
   writeAudit: writeAuditMock,
   // AuditDbHandle is a type-only export; no runtime value needed.
 }));

@@ -7,9 +7,9 @@
 //           (approve route, rollback, test fixtures).
 // @MX:SPEC SPEC-REGULA-MODEL-GOVERNANCE-001 (Issue 71, REQ-MODELGOV-004/005/012/013/014)
 
-import { writeAudit } from '@/lib/audit';
-import { withTenantScope } from '@/lib/db/client';
-import { approvedCombination, changeRequest } from '@/lib/db/schema';
+import { writeAudit } from '@/lib/kernel/audit';
+import { withTenantScope } from '@/lib/kernel/db/client';
+import { approvedCombination, changeRequest } from '@/lib/kernel/db/schema';
 import { and, eq } from 'drizzle-orm';
 import { auditApproved, auditChangeRequested, auditEvalResult } from './audit';
 import { checkEvalThreshold } from './eval-gate';

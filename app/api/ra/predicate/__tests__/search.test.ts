@@ -15,7 +15,7 @@ import { beforeEach, describe, expect, it, vi } from 'vitest';
 // department the mocked db will return.
 let currentDepartment: 'RA' | 'Dev' | 'Exec' | 'External' | null = 'RA';
 
-vi.mock('@/lib/auth/with-permission', () => ({
+vi.mock('@/lib/kernel/auth/with-permission', () => ({
   withPermission: vi.fn(
     (
       _action: string,
@@ -29,7 +29,7 @@ vi.mock('@/lib/auth/with-permission', () => ({
 }));
 
 // --- Mock db: department lookup returns currentDepartment ---
-vi.mock('@/lib/db/client', () => ({
+vi.mock('@/lib/kernel/db/client', () => ({
   db: {
     select: vi.fn(() => ({
       from: vi.fn().mockReturnThis(),
@@ -48,7 +48,7 @@ interface AuditEventArg {
   meta_json: { query: string; result_count: number; top_k_numbers: string[] };
 }
 const writeAuditMock = vi.fn<[AuditEventArg], Promise<void>>(async () => {});
-vi.mock('@/lib/audit', () => ({
+vi.mock('@/lib/kernel/audit', () => ({
   writeAudit: (arg: AuditEventArg) => writeAuditMock(arg),
 }));
 

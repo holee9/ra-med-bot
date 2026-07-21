@@ -35,7 +35,7 @@ const validatePccpCompleteness = vi.fn(() => ({
   missingComponents: [],
 }));
 
-vi.mock('@/lib/auth/with-permission', () => ({
+vi.mock('@/lib/kernel/auth/with-permission', () => ({
   withPermission: vi.fn(
     (
       _action: string,
@@ -48,7 +48,7 @@ vi.mock('@/lib/auth/with-permission', () => ({
   ),
 }));
 
-vi.mock('@/lib/db/client', () => ({
+vi.mock('@/lib/kernel/db/client', () => ({
   // db.transaction captures the tx it threads to the callback (txMock) so the
   // audit assertions can verify the SAME handle was forwarded.
   db: {

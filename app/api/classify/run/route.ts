@@ -3,12 +3,12 @@
 
 import { internalDocsRetrieve } from '@/lib/ai/retrievers/internal-docs';
 import { createHybridRaFetch } from '@/lib/api/hybrid-ra-client';
-import { writeAudit } from '@/lib/audit';
-import { withPermission } from '@/lib/auth/with-permission';
 import { classifyDevice } from '@/lib/classify/engine';
 import type { WizardAnswers } from '@/lib/classify/types';
-import { db } from '@/lib/db/client';
-import { deviceClassifications, workflowRuns } from '@/lib/db/schema';
+import { writeAudit } from '@/lib/kernel/audit';
+import { withPermission } from '@/lib/kernel/auth/with-permission';
+import { db } from '@/lib/kernel/db/client';
+import { deviceClassifications, workflowRuns } from '@/lib/kernel/db/schema';
 import { sql } from 'drizzle-orm';
 import { z } from 'zod';
 

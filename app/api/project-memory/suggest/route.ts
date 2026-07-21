@@ -4,7 +4,7 @@
 //   (projectmemory.view) — any RA member can see the review queue; only
 //   projectmemory.manage (ra-lead) can approve. IDOR guard (assertProjectInOrg).
 
-import { withPermission } from '@/lib/auth/with-permission';
+import { withPermission } from '@/lib/kernel/auth/with-permission';
 import { assertProjectInOrg } from '@/lib/project-memory/access';
 import { getPendingMemories } from '@/lib/project-memory/manager';
 import { z } from 'zod';

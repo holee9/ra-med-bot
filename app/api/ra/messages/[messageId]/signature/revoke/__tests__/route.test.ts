@@ -5,19 +5,19 @@
 
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 
-vi.mock('@/lib/auth', () => ({
+vi.mock('@/lib/kernel/auth', () => ({
   auth: vi.fn(),
 }));
-vi.mock('@/lib/db/client', () => ({
+vi.mock('@/lib/kernel/db/client', () => ({
   db: {
     // Issue #378 — route wraps revokeSignature + writeAudit in db.transaction
     transaction: async (cb: (tx: unknown) => Promise<unknown>) => cb({}),
   },
 }));
-vi.mock('@/lib/audit', () => ({
+vi.mock('@/lib/kernel/audit', () => ({
   writeAudit: vi.fn().mockResolvedValue(undefined),
 }));
-vi.mock('@/lib/auth/acl', () => ({
+vi.mock('@/lib/kernel/auth/acl', () => ({
   isOrgMember: vi.fn().mockResolvedValue(true),
   isProjectMember: vi.fn().mockResolvedValue(true),
 }));
@@ -29,7 +29,7 @@ vi.mock('@/lib/signature/authorization', () => ({
   getAuthorizedSignatureMessage: vi.fn(),
 }));
 
-import { auth } from '@/lib/auth';
+import { auth } from '@/lib/kernel/auth';
 import { getAuthorizedSignatureMessage } from '@/lib/signature/authorization';
 import { getActiveSignature, revokeSignature } from '@/lib/signature/queries';
 import { POST } from '../route';

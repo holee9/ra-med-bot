@@ -4,8 +4,8 @@
 // @MX:REASON Binary file generation — large memory allocation for complex reports.
 // @MX:SPEC SPEC-REGULA-RISK-001 (T2.9, T3.1~T3.4, REQ-RISK-034~036)
 
-import { writeAudit } from '@/lib/audit';
-import { withPermission } from '@/lib/auth/with-permission';
+import { writeAudit } from '@/lib/kernel/audit';
+import { withPermission } from '@/lib/kernel/auth/with-permission';
 import { buildRiskReport } from '@/lib/risk/report-builder';
 
 export const POST = withPermission('risk.generate', async (_req, ctx, session) => {

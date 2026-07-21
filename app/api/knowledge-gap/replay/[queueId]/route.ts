@@ -17,7 +17,7 @@
 
 export const runtime = 'nodejs';
 
-import { withPermission } from '@/lib/auth/with-permission';
+import { withPermission } from '@/lib/kernel/auth/with-permission';
 import {
   type ReplayGapTestResult,
   markGapResolved,

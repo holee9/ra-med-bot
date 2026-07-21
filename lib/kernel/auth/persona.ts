@@ -15,7 +15,7 @@
 // client-side PersonaBar can read/write it; SSR reads via next/headers `cookies()`
 // to avoid hydration mismatch (research.md §6-A4 — regula-locale pattern).
 
-import type { Role } from '@/lib/auth/rbac';
+import type { Role } from '@/lib/kernel/auth/rbac';
 
 /**
  * Persona tier — view-only IA switch. Does NOT affect permissions.

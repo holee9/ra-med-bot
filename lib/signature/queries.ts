@@ -1,8 +1,8 @@
 // @MX:NOTE [AUTO] Signature query helpers — DB access layer for answer_signatures table.
 // @MX:SPEC SPEC-REGULA-ESIG-001 (REQ-ESIG-001, REQ-ESIG-005)
 
-import type { AuditDbHandle } from '@/lib/audit';
-import { answerSignatures } from '@/lib/db/schema';
+import type { AuditDbHandle } from '@/lib/kernel/audit';
+import { answerSignatures } from '@/lib/kernel/db/schema';
 import { and, eq, isNull } from 'drizzle-orm';
 
 export interface SignatureRow {

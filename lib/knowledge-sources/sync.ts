@@ -9,9 +9,6 @@ import { readFile, readdir, stat } from 'node:fs/promises';
 import { mkdir, rm } from 'node:fs/promises';
 import { basename, extname, join, relative } from 'node:path';
 import { promisify } from 'node:util';
-import { writeAudit } from '@/lib/audit';
-import { db } from '@/lib/db/client';
-import { corpusSyncRuns, knowledgeSources, sources } from '@/lib/db/schema';
 import { chunk } from '@/lib/ingest/chunkers';
 import { DocClass } from '@/lib/ingest/doc-class';
 import { classifyDocument } from '@/lib/ingest/doc-classifier';
@@ -21,6 +18,9 @@ import {
   type SourceSectionInsertRow,
   insertSourceSections,
 } from '@/lib/ingest/source-sections-upsert';
+import { writeAudit } from '@/lib/kernel/audit';
+import { db } from '@/lib/kernel/db/client';
+import { corpusSyncRuns, knowledgeSources, sources } from '@/lib/kernel/db/schema';
 import { logger } from '@/lib/observability/logger';
 import { applyOutdateOperations } from '@/lib/radar/delta-sync/ingest';
 import { resolveExistingChunkIds } from '@/lib/radar/delta-sync/orchestrator';

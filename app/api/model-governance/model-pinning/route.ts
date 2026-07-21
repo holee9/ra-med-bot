@@ -1,7 +1,7 @@
 // @MX:NOTE [AUTO] POST/GET /api/model-governance/model-pinning — model pin registration.
 // @MX:SPEC SPEC-REGULA-MODEL-GOVERNANCE-001 (Issue 71, REQ-MODELGOV-002/003)
 
-import { withPermission } from '@/lib/auth/with-permission';
+import { withPermission } from '@/lib/kernel/auth/with-permission';
 import { listModelPins, registerModelPin } from '@/lib/model-governance/model-pinning';
 import { registerModelPinInputSchema } from '@/lib/model-governance/types';
 

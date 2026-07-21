@@ -4,8 +4,8 @@
 // REQ-005: PubMed/Embase journals distinguish abstract-only vs full-text rights.
 // REQ-013: abstract-only sources block full-text search/summarize, allow abstract.
 
-import { db } from '@/lib/db/client';
-import { entitlement, sourceLicense } from '@/lib/db/schema';
+import { db } from '@/lib/kernel/db/client';
+import { entitlement, sourceLicense } from '@/lib/kernel/db/schema';
 import { and, eq } from 'drizzle-orm';
 import type { LicenseType, PermittedUse } from './runtime-types';
 

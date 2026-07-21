@@ -57,7 +57,7 @@ describe('seed-local-docs provenance (Issue #154, REQ-INTEGRATION-001)', () => {
   });
 
   it('schema.ts defines matching provenance columns on sources + source_sections', () => {
-    const schema = readText('lib/db/schema.ts');
+    const schema = readText('lib/kernel/db/schema.ts');
     for (const col of [
       'sourceHost',
       'sourceOwner',

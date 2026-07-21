@@ -1,6 +1,6 @@
-import { withPermission } from '@/lib/auth/with-permission';
-import { db } from '@/lib/db/client';
-import { workflowRuns } from '@/lib/db/schema';
+import { withPermission } from '@/lib/kernel/auth/with-permission';
+import { db } from '@/lib/kernel/db/client';
+import { workflowRuns } from '@/lib/kernel/db/schema';
 import { and, eq } from 'drizzle-orm';
 
 const UUID_REGEX = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;

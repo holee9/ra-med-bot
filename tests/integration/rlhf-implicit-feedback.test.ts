@@ -245,7 +245,7 @@ function resolveRows(fromTable: string): Row[] {
   }
 }
 
-vi.mock('@/lib/db/client', () => ({
+vi.mock('@/lib/kernel/db/client', () => ({
   db: dbMock,
   withTenantScope: vi.fn(
     async <T>(_orgId: string, fn: (db: typeof dbMock) => Promise<T>): Promise<T> =>
@@ -253,7 +253,7 @@ vi.mock('@/lib/db/client', () => ({
   ),
 }));
 
-vi.mock('@/lib/audit', () => ({
+vi.mock('@/lib/kernel/audit', () => ({
   writeAudit: vi.fn(async (params: Row, tx?: { insert: unknown }) => {
     const client = (tx ?? { insert: dbMock.insert }) as { insert: unknown };
     await (client.insert as (t: unknown) => InsertChain)(Symbol.for('audit_logs') as unknown)
@@ -271,7 +271,7 @@ vi.mock('@/lib/audit', () => ({
   }),
 }));
 
-vi.mock('@/lib/auth/with-permission', () => ({
+vi.mock('@/lib/kernel/auth/with-permission', () => ({
   withPermission: vi.fn(
     (
       _action: string,

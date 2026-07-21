@@ -20,7 +20,7 @@ vi.mock('drizzle-orm', async (importOriginal) => {
   };
 });
 
-import { orgDigestPreferences } from '../../db/schema';
+import { orgDigestPreferences } from '../../kernel/db/schema';
 import { buildDigestPreferencesPredicate, processDigestPreference } from '../digest/weekly-digest';
 
 describe('buildDigestPreferencesPredicate', () => {

@@ -25,7 +25,7 @@ function makeMockDb(rows: unknown[]) {
 beforeEach(() => {
   selectResult = [];
   vi.resetModules();
-  vi.doMock('@/lib/db/client', () => ({ db: makeMockDb(selectResult) }));
+  vi.doMock('@/lib/kernel/db/client', () => ({ db: makeMockDb(selectResult) }));
 });
 
 // ---------------------------------------------------------------------------
@@ -79,7 +79,7 @@ describe('fetchWindowScopedChangeRequests (REQ-MODELGOV-005)', () => {
   it('calls db.select with the expected column projection', async () => {
     selectResult = [];
 
-    const { db } = await import('@/lib/db/client');
+    const { db } = await import('@/lib/kernel/db/client');
     const { fetchWindowScopedChangeRequests } = await import(
       '@/lib/validation/consumers/model-governance'
     );

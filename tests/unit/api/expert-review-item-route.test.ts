@@ -19,7 +19,7 @@ let sessionUser: { id: string; role: string; organizationId: string | null } = {
 // withPermission is used BOTH at the top level (GET export) AND inside PATCH
 // (inner guard per transition). The mock must handle both: pass the session
 // through so the inner handler can access session.user.id for audit.
-vi.mock('@/lib/auth/with-permission', () => ({
+vi.mock('@/lib/kernel/auth/with-permission', () => ({
   withPermission: vi.fn(
     (
       _action: string,
@@ -55,10 +55,10 @@ const mockDb = {
   ),
 };
 
-vi.mock('@/lib/db/client', () => ({ db: mockDb }));
+vi.mock('@/lib/kernel/db/client', () => ({ db: mockDb }));
 
 // --- Mock audit ---
-vi.mock('@/lib/audit', () => ({
+vi.mock('@/lib/kernel/audit', () => ({
   writeAudit: vi.fn().mockResolvedValue(undefined),
 }));
 
@@ -138,7 +138,7 @@ describe('PATCH /api/ra/expert-review/[id] — state machine + optional fields',
     selectResults.push([pendingRecord]);
     mockUpdateChain.returning.mockResolvedValueOnce([updatedRecord]);
 
-    const { writeAudit } = await import('@/lib/audit');
+    const { writeAudit } = await import('@/lib/kernel/audit');
     vi.mocked(writeAudit).mockClear();
 
     const { PATCH } = await import('@/app/api/ra/expert-review/[id]/route');
@@ -165,7 +165,7 @@ describe('PATCH /api/ra/expert-review/[id] — state machine + optional fields',
     selectResults.push([inProgressRecord]);
     mockUpdateChain.returning.mockResolvedValueOnce([resolvedRecord]);
 
-    const { writeAudit } = await import('@/lib/audit');
+    const { writeAudit } = await import('@/lib/kernel/audit');
     vi.mocked(writeAudit).mockClear();
 
     const { PATCH } = await import('@/app/api/ra/expert-review/[id]/route');

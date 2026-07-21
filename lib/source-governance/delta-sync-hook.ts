@@ -11,8 +11,8 @@
 // updateGovernanceFromSync() for every source touched by the ingestion run,
 // AFTER the gap-replay loop, so the governance state reflects the new content.
 
-import { withTenantScope } from '@/lib/db/client';
-import { sources } from '@/lib/db/schema';
+import { withTenantScope } from '@/lib/kernel/db/client';
+import { sources } from '@/lib/kernel/db/schema';
 import { logger } from '@/lib/observability/logger';
 import { eq, inArray } from 'drizzle-orm';
 import { auditSourceDeltaSyncUpdated } from './audit';

@@ -9,9 +9,9 @@
 // and hidden entirely for non-ra-lead (never show a button that 403s on click).
 
 import MatrixFilters from '@/components/traceability/MatrixFilters';
-import { auth } from '@/lib/auth';
-import { type Role, hasRole } from '@/lib/auth/rbac';
-import { db } from '@/lib/db/client';
+import { auth } from '@/lib/kernel/auth';
+import { type Role, hasRole } from '@/lib/kernel/auth/rbac';
+import { db } from '@/lib/kernel/db/client';
 import type { MatrixGapKind, MatrixResult } from '@/lib/traceability/client';
 import { buildMatrix } from '@/lib/traceability/matrix';
 import { listStaleNodeIds } from '@/lib/traceability/stale-propagation';

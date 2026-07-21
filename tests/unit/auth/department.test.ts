@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
-import { DEPARTMENT_ACL, hasDepartmentAccess } from '../../../lib/auth/department';
-import type { Department, DepartmentFeature } from '../../../lib/auth/department';
+import { DEPARTMENT_ACL, hasDepartmentAccess } from '../../../lib/kernel/auth/department';
+import type { Department, DepartmentFeature } from '../../../lib/kernel/auth/department';
 
 describe('hasDepartmentAccess', () => {
   it('RA has access to dashboard.team', () => {

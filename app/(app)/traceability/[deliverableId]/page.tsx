@@ -8,9 +8,9 @@
 
 import { EdgeManage } from '@/components/traceability/EdgeManage';
 import { PacketExport } from '@/components/traceability/PacketExport';
-import { auth } from '@/lib/auth';
-import { type Role, hasRole } from '@/lib/auth/rbac';
-import { db } from '@/lib/db/client';
+import { auth } from '@/lib/kernel/auth';
+import { type Role, hasRole } from '@/lib/kernel/auth/rbac';
+import { db } from '@/lib/kernel/db/client';
 import type {
   EvidencePacket,
   EvidencePacketNode,

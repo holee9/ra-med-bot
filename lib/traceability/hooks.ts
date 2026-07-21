@@ -7,8 +7,8 @@
 //           (NOT a DB trigger — TDD-friendly and auditable).
 // @MX:SPEC SPEC-REGULA-TRACEABILITY-001 (REQ-TRACEABILITY-009)
 
-import { writeAudit } from '@/lib/audit';
-import { db } from '@/lib/db/client';
+import { writeAudit } from '@/lib/kernel/audit';
+import { db } from '@/lib/kernel/db/client';
 import { findNodeByRef, upsertNode } from './graph';
 import { propagateStaleFromNode } from './stale-propagation';
 import type { StaleReason } from './stale-reason';

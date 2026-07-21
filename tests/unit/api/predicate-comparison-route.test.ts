@@ -4,7 +4,7 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 
 // --- Mock withPermission: pass-through with fixed session ---
-vi.mock('@/lib/auth/with-permission', () => ({
+vi.mock('@/lib/kernel/auth/with-permission', () => ({
   withPermission: vi.fn(
     (
       _action: string,
@@ -50,10 +50,10 @@ const mockDb = {
   ),
 };
 
-vi.mock('@/lib/db/client', () => ({ db: mockDb }));
+vi.mock('@/lib/kernel/db/client', () => ({ db: mockDb }));
 
 // --- Mock audit ---
-vi.mock('@/lib/audit', () => ({
+vi.mock('@/lib/kernel/audit', () => ({
   writeAudit: vi.fn().mockResolvedValue(undefined),
 }));
 
@@ -71,7 +71,7 @@ vi.mock('@/lib/predicate/comparison-builder', () => ({
 // --- Mock predicate RBAC (mutable so tests can flip permission) ---
 const canManageComparisonsMock = vi.fn().mockReturnValue(true);
 const canViewComparisonsMock = vi.fn().mockReturnValue(true);
-vi.mock('@/lib/auth/predicate-permissions', () => ({
+vi.mock('@/lib/kernel/auth/predicate-permissions', () => ({
   canManageComparisons: (...a: unknown[]) => canManageComparisonsMock(...a),
   canViewComparisons: (...a: unknown[]) => canViewComparisonsMock(...a),
 }));
@@ -134,7 +134,7 @@ describe('POST /api/ra/predicate/comparison — create', () => {
   });
 
   it('calls writeAudit with predicate_comparison_generated action', async () => {
-    const { writeAudit } = await import('@/lib/audit');
+    const { writeAudit } = await import('@/lib/kernel/audit');
     vi.mocked(writeAudit).mockClear();
 
     const { POST } = await import('@/app/api/ra/predicate/comparison/route');

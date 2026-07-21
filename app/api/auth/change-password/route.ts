@@ -1,7 +1,7 @@
-import { writeAudit } from '@/lib/audit';
-import { auth } from '@/lib/auth';
-import { db } from '@/lib/db/client';
-import { users } from '@/lib/db/schema';
+import { writeAudit } from '@/lib/kernel/audit';
+import { auth } from '@/lib/kernel/auth';
+import { db } from '@/lib/kernel/db/client';
+import { users } from '@/lib/kernel/db/schema';
 import bcrypt from 'bcryptjs';
 import { eq } from 'drizzle-orm';
 import { NextResponse } from 'next/server';

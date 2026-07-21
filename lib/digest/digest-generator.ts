@@ -6,9 +6,9 @@ import crypto from 'node:crypto';
 import { generateText } from 'ai';
 import { and, desc, eq, gte, lte } from 'drizzle-orm';
 import { getLlmModel } from '../ai/llm-provider';
-import { writeAudit } from '../audit';
-import { withTenantScope } from '../db/client';
-import { orgUpdateRelevance, regulatoryUpdates, weeklyDigests } from '../db/schema';
+import { writeAudit } from '../kernel/audit';
+import { withTenantScope } from '../kernel/db/client';
+import { orgUpdateRelevance, regulatoryUpdates, weeklyDigests } from '../kernel/db/schema';
 import { logger } from '../observability/logger';
 
 export interface DigestUpdate {

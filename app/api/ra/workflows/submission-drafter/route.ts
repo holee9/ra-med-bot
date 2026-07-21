@@ -1,8 +1,8 @@
-import { writeAudit } from '@/lib/audit';
-import { withPermission } from '@/lib/auth/with-permission';
-import type { AuthSession } from '@/lib/auth/with-permission';
-import { db } from '@/lib/db/client';
-import { workflowRuns } from '@/lib/db/schema';
+import { writeAudit } from '@/lib/kernel/audit';
+import { withPermission } from '@/lib/kernel/auth/with-permission';
+import type { AuthSession } from '@/lib/kernel/auth/with-permission';
+import { db } from '@/lib/kernel/db/client';
+import { workflowRuns } from '@/lib/kernel/db/schema';
 import { SubmissionDrafterInputSchema } from '@/lib/workflows/types';
 
 async function postSubmissionDrafter(request: Request, session: AuthSession): Promise<Response> {

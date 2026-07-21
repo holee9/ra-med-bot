@@ -2,8 +2,8 @@
 // @MX:NOTE [AUTO] Audit logger wraps writeAudit with impact-specific helpers.
 // @MX:SPEC SPEC-V3-IMPACT-001 (AC-IMP-12, AC-IMP-13)
 
-import { writeAudit } from '@/lib/audit';
-import type { Database } from '@/lib/db/client';
+import { writeAudit } from '@/lib/kernel/audit';
+import type { Database } from '@/lib/kernel/db/client';
 
 export interface ImpactCheckContext {
   actorId: string;

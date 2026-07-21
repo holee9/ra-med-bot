@@ -5,7 +5,7 @@
 // access → 404 (no existence leak). Audit: source.approved / source.rejected,
 // written inside the same transaction as the state update (21 CFR Part 11 atomicity).
 
-import { withPermission } from '@/lib/auth/with-permission';
+import { withPermission } from '@/lib/kernel/auth/with-permission';
 import { approveSource } from '@/lib/source-governance/review-workflow';
 import { approveRequestSchema } from '@/lib/source-governance/types';
 

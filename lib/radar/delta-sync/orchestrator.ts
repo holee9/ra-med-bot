@@ -23,12 +23,12 @@
 //   existence. This closes the gap where onSourceSectionSuperseded early-returns
 //   when no deliverable cited the section (the supersession itself was unaudited).
 
-import { writeAudit } from '@/lib/audit';
-import { corpusSyncRuns, sourceSections, sources } from '@/lib/db/schema';
 import {
   type SourceSectionInsertRow,
   insertSourceSections,
 } from '@/lib/ingest/source-sections-upsert';
+import { writeAudit } from '@/lib/kernel/audit';
+import { corpusSyncRuns, sourceSections, sources } from '@/lib/kernel/db/schema';
 import { logger } from '@/lib/observability/logger';
 import { and, desc, eq, isNull } from 'drizzle-orm';
 import { embedChunks } from '../../ingest/embed';
@@ -128,7 +128,7 @@ export async function runDeltaSync(input: RunDeltaSyncInput): Promise<RunDeltaSy
   // its sync_started audit ride the SAME db.transaction so a transient failure
   // between them can never leave a run row with no start audit. runId is
   // returned for the downstream pipeline (detection/embed stay outside the tx).
-  const runId = await (await import('@/lib/db/client')).db.transaction(async (tx) => {
+  const runId = await (await import('@/lib/kernel/db/client')).db.transaction(async (tx) => {
     const inserted = await tx
       .insert(corpusSyncRuns)
       .values({
@@ -173,7 +173,7 @@ export async function runDeltaSync(input: RunDeltaSyncInput): Promise<RunDeltaSy
     });
 
     // Persist the computed hash on the run row so future runs can diff against it.
-    await (await import('@/lib/db/client')).db
+    await (await import('@/lib/kernel/db/client')).db
       .update(corpusSyncRuns)
       .set({ contentHash: detection.contentHash })
       .where(eq(corpusSyncRuns.id, runId));
@@ -182,7 +182,7 @@ export async function runDeltaSync(input: RunDeltaSyncInput): Promise<RunDeltaSy
     if (detection.status === 'unchanged') {
       // 21 CFR Part 11 §11.10(e) — Issue #378: unchanged completion UPDATE +
       // audit ride the SAME db.transaction.
-      await (await import('@/lib/db/client')).db.transaction(async (tx) => {
+      await (await import('@/lib/kernel/db/client')).db.transaction(async (tx) => {
         await tx
           .update(corpusSyncRuns)
           .set({
@@ -272,7 +272,7 @@ export async function runDeltaSync(input: RunDeltaSyncInput): Promise<RunDeltaSy
     // audit ride the SAME db.transaction. The embed/insert/applyOutdate steps
     // (7b-7d, long-running + fallible) stay OUTSIDE the tx — only the final
     // persist+audit pair is wrapped (matches the analyzer.ts boundary pattern).
-    await (await import('@/lib/db/client')).db.transaction(async (tx) => {
+    await (await import('@/lib/kernel/db/client')).db.transaction(async (tx) => {
       await tx
         .update(corpusSyncRuns)
         .set({
@@ -322,7 +322,7 @@ export async function runDeltaSync(input: RunDeltaSyncInput): Promise<RunDeltaSy
     // 8. 21 CFR Part 11 §11.10(e) — Issue #378: never leave the run 'pending'.
     // Mark failed + audit in the SAME db.transaction so a crash between them
     // can never leave an orphaned row with no failure audit.
-    await (await import('@/lib/db/client')).db.transaction(async (tx) => {
+    await (await import('@/lib/kernel/db/client')).db.transaction(async (tx) => {
       await tx
         .update(corpusSyncRuns)
         .set({
@@ -366,7 +366,7 @@ export async function runDeltaSync(input: RunDeltaSyncInput): Promise<RunDeltaSy
  * excludes it before the section ids are read.
  */
 export async function resolveExistingChunkIds(sourceId: string, orgId: string): Promise<string[]> {
-  const rows = await (await import('@/lib/db/client')).db
+  const rows = await (await import('@/lib/kernel/db/client')).db
     .select({ id: sourceSections.id })
     .from(sourceSections)
     .innerJoin(sources, eq(sourceSections.sourceId, sources.id))
@@ -390,7 +390,7 @@ async function resolveExistingHash(
   sourceUrl: string,
   sourceId: string,
 ): Promise<string | null> {
-  const dbModule = await import('@/lib/db/client');
+  const dbModule = await import('@/lib/kernel/db/client');
 
   // Latest successful run hash for this sourceUrl. Org scoping comes from the
   // prior getSourceInOrg check on sourceId — sourceUrl is the lookup key but

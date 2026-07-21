@@ -2,8 +2,8 @@
 // @MX:REASON fan_in >= 3: T-003 will add 10+ Route Handler callers
 // @MX:SPEC SPEC-REGULA-ENTERPRISE-001 (REQ-ENTERPRISE-019)
 
-import { writeAudit } from '@/lib/audit';
-import { auth } from '@/lib/auth';
+import { writeAudit } from '@/lib/kernel/audit';
+import { auth } from '@/lib/kernel/auth';
 import { isOrgMember, isProjectMember } from './acl';
 import { PERMISSIONS, type PermissionAction, roleSatisfiesPermission } from './permissions';
 import type { Role } from './rbac';

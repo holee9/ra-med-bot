@@ -6,7 +6,7 @@
 //   21 CFR Part 11 atomicity via updateMemory / invalidateMemory.
 //   IDOR guard (assertMemoryInOrg) before any write.
 
-import { withPermission } from '@/lib/auth/with-permission';
+import { withPermission } from '@/lib/kernel/auth/with-permission';
 import { assertMemoryInOrg } from '@/lib/project-memory/access';
 import { invalidateMemory, updateMemory } from '@/lib/project-memory/manager';
 import { z } from 'zod';

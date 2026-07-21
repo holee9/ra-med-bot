@@ -11,10 +11,10 @@ const selectResults: any[][] = [];
 const auditMock = vi.fn().mockResolvedValue(undefined);
 
 async function loadModule() {
-  vi.doMock('@/lib/db/client', () => ({
+  vi.doMock('@/lib/kernel/db/client', () => ({
     withTenantScope: async (_orgId: string, cb: (tx: unknown) => Promise<unknown>) => cb(mockTx),
   }));
-  vi.doMock('@/lib/db/schema', () => ({
+  vi.doMock('@/lib/kernel/db/schema', () => ({
     approvedCombination: {
       id: 'id',
       orgId: 'orgId',
@@ -47,8 +47,8 @@ beforeEach(() => {
 });
 
 afterEach(() => {
-  vi.doUnmock('@/lib/db/client');
-  vi.doUnmock('@/lib/db/schema');
+  vi.doUnmock('@/lib/kernel/db/client');
+  vi.doUnmock('@/lib/kernel/db/schema');
   vi.doUnmock('@/lib/model-governance/audit');
 });
 

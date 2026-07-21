@@ -38,10 +38,10 @@ const writeAuditMock = vi.fn(async () => {});
 beforeEach(() => {
   mockRows = {};
   vi.resetModules();
-  vi.doMock('@/lib/audit', () => ({
+  vi.doMock('@/lib/kernel/audit', () => ({
     writeAudit: writeAuditMock,
   }));
-  vi.doMock('@/lib/db/client', () => ({
+  vi.doMock('@/lib/kernel/db/client', () => ({
     db: makeMockDb(mockRows),
   }));
 });

@@ -4,10 +4,10 @@
 //            REQ-CONS-006: DELETE soft-deletes (deletedAt) + `consult.session.delete` audit
 //            (21 CFR Part 11). RBAC: ra-member sees own, ra-lead/admin see all org (AC-CONS-07).
 
-import { writeAudit } from '@/lib/audit';
-import { withPermission } from '@/lib/auth/with-permission';
-import { db } from '@/lib/db/client';
-import { consultSessions, consultTurns } from '@/lib/db/schema';
+import { writeAudit } from '@/lib/kernel/audit';
+import { withPermission } from '@/lib/kernel/auth/with-permission';
+import { db } from '@/lib/kernel/db/client';
+import { consultSessions, consultTurns } from '@/lib/kernel/db/schema';
 import { and, asc, eq, isNull } from 'drizzle-orm';
 
 // GET /api/consult/sessions/:sessionId — session detail + turns (AC-CONS-02b, AC-CONS-07).

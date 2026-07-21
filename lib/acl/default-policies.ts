@@ -1,7 +1,7 @@
 // @MX:SPEC SPEC-REGULA-DOCINGEST-001 (REQ-DOC-8B-2)
 
-import type { Role } from '@/lib/auth/rbac';
 import { DocClass } from '@/lib/ingest/doc-class';
+import type { Role } from '@/lib/kernel/auth/rbac';
 
 export interface DefaultPolicy {
   docClass: DocClass;

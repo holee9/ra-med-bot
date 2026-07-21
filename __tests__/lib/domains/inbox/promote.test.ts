@@ -10,7 +10,7 @@
 import { describe, expect, it, vi } from 'vitest';
 
 // Mock lib/audit to avoid env var loading
-vi.mock('@/lib/audit', () => ({
+vi.mock('@/lib/kernel/audit', () => ({
   writeAudit: vi.fn().mockResolvedValue(undefined),
 }));
 

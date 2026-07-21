@@ -2,8 +2,8 @@
 // @MX:REASON risk.approve requires minRole 'ra-lead'. Only this route enforces risk report sign-off.
 // @MX:SPEC SPEC-REGULA-RISK-001 (T2.10, REQ-RISK-037~038)
 
-import { writeAudit } from '@/lib/audit';
-import { withPermission } from '@/lib/auth/with-permission';
+import { writeAudit } from '@/lib/kernel/audit';
+import { withPermission } from '@/lib/kernel/auth/with-permission';
 
 // CRITICAL: Only withPermission('risk.approve') is acceptable here.
 // minRole 'ra-lead' is required by ISO 14971 §10 for final risk report sign-off.

@@ -1,8 +1,8 @@
 // @MX:NOTE [AUTO] Consumer wrapper for model-governance change_request queries (REQ-MODELGOV-004/005).
 // @MX:SPEC SPEC-REGULA-VALIDATION-002 (M0)
 
-import type { Database } from '@/lib/db/client';
-import { changeRequest } from '@/lib/db/schema';
+import type { Database } from '@/lib/kernel/db/client';
+import { changeRequest } from '@/lib/kernel/db/schema';
 import { and, eq, gte, lt } from 'drizzle-orm';
 
 /**
@@ -36,7 +36,7 @@ export async function fetchWindowScopedChangeRequests(params: {
   windowStart: Date;
   windowEnd: Date;
 }): Promise<ChangeRequestRow[]> {
-  const { db } = await import('@/lib/db/client');
+  const { db } = await import('@/lib/kernel/db/client');
   const rows = await db
     .select({
       id: changeRequest.id,

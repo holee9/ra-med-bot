@@ -3,11 +3,11 @@
 // State machine: pending → in_progress → resolved (no backwards transitions).
 // @MX:SPEC SPEC-REGULA-ENTERPRISE-001 (REQ-ENTERPRISE-006..008)
 
-import { writeAudit } from '@/lib/audit';
-import type { AuditAction } from '@/lib/audit';
-import { withPermission } from '@/lib/auth/with-permission';
-import { db } from '@/lib/db/client';
-import { expertReviews } from '@/lib/db/schema';
+import { writeAudit } from '@/lib/kernel/audit';
+import type { AuditAction } from '@/lib/kernel/audit';
+import { withPermission } from '@/lib/kernel/auth/with-permission';
+import { db } from '@/lib/kernel/db/client';
+import { expertReviews } from '@/lib/kernel/db/schema';
 import { eq } from 'drizzle-orm';
 import { z } from 'zod';
 

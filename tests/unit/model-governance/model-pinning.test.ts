@@ -40,7 +40,7 @@ beforeEach(() => {
   insertResult = [];
   listResult = [];
   vi.resetModules();
-  vi.doMock('@/lib/db/client', () => ({ db: makeMockDb() }));
+  vi.doMock('@/lib/kernel/db/client', () => ({ db: makeMockDb() }));
 });
 
 // ---------------------------------------------------------------------------
@@ -99,7 +99,7 @@ describe('registerModelPin (REQ-MODELGOV-002/003 — insert + version history)',
         createdAt: new Date(),
       },
     ];
-    const { db } = await import('@/lib/db/client');
+    const { db } = await import('@/lib/kernel/db/client');
     const { registerModelPin } = await import('@/lib/model-governance/model-pinning');
     await registerModelPin({
       orgId: 'org-1',
@@ -122,7 +122,7 @@ describe('registerModelPin (REQ-MODELGOV-002/003 — insert + version history)',
         createdAt: new Date(),
       },
     ];
-    const { db } = await import('@/lib/db/client');
+    const { db } = await import('@/lib/kernel/db/client');
     const { registerModelPin } = await import('@/lib/model-governance/model-pinning');
     await registerModelPin({
       orgId: 'org-1',

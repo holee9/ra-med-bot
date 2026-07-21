@@ -3,8 +3,8 @@
 
 import { describe, expect, it, vi } from 'vitest';
 
-vi.mock('@/lib/db/client', () => ({ db: {} }));
-vi.mock('@/lib/db/schema', () => ({ promptRegistry: {} }));
+vi.mock('@/lib/kernel/db/client', () => ({ db: {} }));
+vi.mock('@/lib/kernel/db/schema', () => ({ promptRegistry: {} }));
 
 import { computeContentHash } from '../registry';
 

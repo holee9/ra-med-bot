@@ -2,8 +2,8 @@
 // @MX:SPEC issue #171
 
 import { HybridRaClientError, createHybridRaFetch } from '@/lib/api/hybrid-ra-client';
-import { writeAudit } from '@/lib/audit';
-import { withPermission } from '@/lib/auth/with-permission';
+import { writeAudit } from '@/lib/kernel/audit';
+import { withPermission } from '@/lib/kernel/auth/with-permission';
 
 export const POST = withPermission('authoring.approve', async (req, ctx, session) => {
   try {

@@ -11,9 +11,9 @@
 // governance review + the #71 MODEL-GOVERNANCE change-control approve path,
 // never here. The detector output is a proposal, not an applied change.
 
-import { writeAudit } from '@/lib/audit';
-import { withTenantScope } from '@/lib/db/client';
-import { calibrationCandidates } from '@/lib/db/schema';
+import { writeAudit } from '@/lib/kernel/audit';
+import { withTenantScope } from '@/lib/kernel/db/client';
+import { calibrationCandidates } from '@/lib/kernel/db/schema';
 import type { CalibrationCandidateInput } from './calibration-detector';
 
 /**

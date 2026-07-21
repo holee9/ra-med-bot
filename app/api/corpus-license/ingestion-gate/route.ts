@@ -1,3 +1,5 @@
+import { assertIngestionLicensed } from '@/lib/corpus-license/license-gate';
+import { ingestionGateInputSchema } from '@/lib/corpus-license/types';
 // @MX:NOTE [AUTO] POST /api/corpus-license/ingestion-gate — manual pre-ingest license check.
 // @MX:SPEC SPEC-REGULA-CORPUS-LICENSE-001 (REQ-CORPUSLIC-002, REQ-CORPUSLIC-003, REQ-CORPUSLIC-004)
 //
@@ -8,9 +10,7 @@
 // the Inngest worker (lib/inngest/docingest/upload-processed.ts) both import
 // the gate rather than HTTP-calling this route. This endpoint exists for
 // ad-hoc/admin verification and is not on the hot ingest path.
-import { withPermission } from '@/lib/auth/with-permission';
-import { assertIngestionLicensed } from '@/lib/corpus-license/license-gate';
-import { ingestionGateInputSchema } from '@/lib/corpus-license/types';
+import { withPermission } from '@/lib/kernel/auth/with-permission';
 
 /* audit-check-ignore: ingestion gate delegates to assertIngestionLicensed(); audit
    (access denied/granted) is written inside the gate within the same tx (Part 11) */

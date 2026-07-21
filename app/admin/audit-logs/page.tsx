@@ -1,10 +1,10 @@
 // @MX:NOTE [AUTO] Audit log admin page — displays audit trail for admin users.
 // @MX:SPEC SPEC-REGULA-ENTERPRISE-001 (REQ-ENTERPRISE-020)
 
-import { auth } from '@/lib/auth';
-import { hasRole } from '@/lib/auth/rbac';
-import { db } from '@/lib/db/client';
-import { auditLogs } from '@/lib/db/schema';
+import { auth } from '@/lib/kernel/auth';
+import { hasRole } from '@/lib/kernel/auth/rbac';
+import { db } from '@/lib/kernel/db/client';
+import { auditLogs } from '@/lib/kernel/db/schema';
 import { desc } from 'drizzle-orm';
 import { redirect } from 'next/navigation';
 

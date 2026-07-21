@@ -1,12 +1,12 @@
 // SPEC-V3-IMPACT-001 M5: Layer 3 ticket creation via inbox domain.
 // TDD RED Phase: Write failing test first.
 
-import type { Database } from '@/lib/db/client';
+import type { Database } from '@/lib/kernel/db/client';
 import { describe, expect, it, vi } from 'vitest';
 import { createImpactTicket } from '../layer3-ticket-creator';
 
 // Mock the DB client
-vi.mock('@/lib/db/client', () => ({
+vi.mock('@/lib/kernel/db/client', () => ({
   db: {
     insert: vi.fn().mockReturnValue({
       values: vi.fn().mockReturnValue({
@@ -23,7 +23,7 @@ vi.mock('node:crypto', () => ({
 describe('Layer 3: Ticket Creator', () => {
   describe('AC-IMP-07: createImpactTicket', () => {
     it('should create ticket via direct DB insert', async () => {
-      const { db } = await import('@/lib/db/client');
+      const { db } = await import('@/lib/kernel/db/client');
 
       const ticketId = await createImpactTicket(db, {
         orgId: 'org-123',
@@ -39,7 +39,7 @@ describe('Layer 3: Ticket Creator', () => {
     });
 
     it('should include signal and classification when provided', async () => {
-      const { db } = await import('@/lib/db/client');
+      const { db } = await import('@/lib/kernel/db/client');
 
       await createImpactTicket(db, {
         orgId: 'org-123',
@@ -59,7 +59,7 @@ describe('Layer 3: Ticket Creator', () => {
     });
 
     it('should handle missing productId gracefully', async () => {
-      const { db } = await import('@/lib/db/client');
+      const { db } = await import('@/lib/kernel/db/client');
 
       const ticketId = await createImpactTicket(db, {
         orgId: 'org-123',
@@ -93,7 +93,7 @@ describe('Layer 3: Ticket Creator', () => {
     });
 
     it('should generate ticket ID with it_ prefix', async () => {
-      const { db } = await import('@/lib/db/client');
+      const { db } = await import('@/lib/kernel/db/client');
       const { randomUUID } = await import('node:crypto');
 
       const ticketId = await createImpactTicket(db, {

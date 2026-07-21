@@ -3,7 +3,7 @@
 
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 
-vi.mock('@/lib/auth/with-permission', () => ({
+vi.mock('@/lib/kernel/auth/with-permission', () => ({
   withPermission: vi.fn(
     (
       _action: string,
@@ -17,7 +17,7 @@ vi.mock('@/lib/auth/with-permission', () => ({
 }));
 
 const writeAuditMock = vi.fn().mockResolvedValue(undefined);
-vi.mock('@/lib/audit', () => ({
+vi.mock('@/lib/kernel/audit', () => ({
   writeAudit: writeAuditMock,
 }));
 
@@ -47,7 +47,7 @@ const sectionsChain = {
 
 const selectMock = vi.fn((selection?: unknown) => (selection ? sectionsChain : sourceChain));
 
-vi.mock('@/lib/db/client', () => ({
+vi.mock('@/lib/kernel/db/client', () => ({
   db: {
     select: selectMock,
   },

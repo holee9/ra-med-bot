@@ -15,7 +15,7 @@ let sessionUser: { id: string; role: string; organizationId: string | null } = {
   organizationId: 'org-001',
 };
 
-vi.mock('@/lib/auth/with-permission', () => ({
+vi.mock('@/lib/kernel/auth/with-permission', () => ({
   withPermission: vi.fn(
     (
       _action: string,
@@ -42,16 +42,16 @@ const mockDb = {
   select: vi.fn(() => makeSelectChain(selectResults.shift() ?? [])),
 };
 
-vi.mock('@/lib/db/client', () => ({ db: mockDb }));
+vi.mock('@/lib/kernel/db/client', () => ({ db: mockDb }));
 
 // --- Mock audit ---
-vi.mock('@/lib/audit', () => ({
+vi.mock('@/lib/kernel/audit', () => ({
   writeAudit: vi.fn().mockResolvedValue(undefined),
 }));
 
 // --- Mock predicate-permissions (mutable: tests flip for 403 department branch) ---
 const canExportComparisonsMock = vi.fn();
-vi.mock('@/lib/auth/predicate-permissions', () => ({
+vi.mock('@/lib/kernel/auth/predicate-permissions', () => ({
   canExportComparisons: (...a: unknown[]) => canExportComparisonsMock(...a),
 }));
 
@@ -161,7 +161,7 @@ describe('POST /api/ra/predicate/export — handler surface', () => {
   it('writes predicate_comparison_exported audit row', async () => {
     selectResults.push([{ department: 'RA' }]);
     selectResults.push([WORKFLOW_RUN_ROW]);
-    const { writeAudit } = await import('@/lib/audit');
+    const { writeAudit } = await import('@/lib/kernel/audit');
     vi.mocked(writeAudit).mockClear();
 
     const { POST } = await import('@/app/api/ra/predicate/export/route');

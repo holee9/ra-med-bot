@@ -4,7 +4,7 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 
 // --- Mock withPermission: pass-through with fixed session ---
-vi.mock('@/lib/auth/with-permission', () => ({
+vi.mock('@/lib/kernel/auth/with-permission', () => ({
   withPermission: vi.fn(
     (
       _action: string,
@@ -18,7 +18,7 @@ vi.mock('@/lib/auth/with-permission', () => ({
 }));
 
 // --- Mock writeAudit ---
-vi.mock('@/lib/audit', () => ({
+vi.mock('@/lib/kernel/audit', () => ({
   writeAudit: vi.fn().mockResolvedValue(undefined),
 }));
 
@@ -35,7 +35,7 @@ const mockUpdateChain = {
   returning: vi.fn(),
 };
 
-vi.mock('@/lib/db/client', () => ({
+vi.mock('@/lib/kernel/db/client', () => ({
   db: {
     select: vi.fn(() => mockSelectChain),
     update: vi.fn(() => mockUpdateChain),
@@ -204,7 +204,7 @@ describe('PATCH /api/ra/profile', () => {
   });
 
   it('writes audit log on successful PATCH', async () => {
-    const { writeAudit } = await import('@/lib/audit');
+    const { writeAudit } = await import('@/lib/kernel/audit');
 
     const updatedUser = {
       id: 'user-001',

@@ -2,7 +2,7 @@
 // @MX:SPEC Issue #307 D-2b (Knowledge Ingestion) AC-1..AC-7
 //
 // Strategy (mirrors tests/integration/knowledge-sources.test.ts):
-//   1. Mock @/lib/db/client — in-memory store for knowledge_sources + sources +
+//   1. Mock @/lib/kernel/db/client — in-memory store for knowledge_sources + sources +
 //      source_sections + corpus_sync_runs, recording inserts/selects/updates so
 //      pipeline behavior is verifiable without a real database.
 //   2. Mock @/lib/ingest/embed — embedChunks returns a fixed 1536-dim vector per
@@ -302,7 +302,7 @@ async function getDrizzleMock() {
 }
 
 vi.mock('drizzle-orm', () => getDrizzleMock());
-vi.mock('@/lib/db/client', () => ({
+vi.mock('@/lib/kernel/db/client', () => ({
   db: dbMock,
   withTenantScope: vi.fn(
     async <T>(orgId: string, fn: (tx: typeof dbMock) => Promise<T>): Promise<T> => {
@@ -352,7 +352,7 @@ vi.mock('@/lib/radar/delta-sync/ingest', () => ({
 }));
 
 // Mock audit (not asserted here, but the real writeAudit would need a DB).
-vi.mock('@/lib/audit', () => ({ writeAudit: vi.fn(async () => undefined) }));
+vi.mock('@/lib/kernel/audit', () => ({ writeAudit: vi.fn(async () => undefined) }));
 
 // Import AFTER mocks are registered.
 const { ingestDocuments } = await import('@/lib/knowledge-sources/sync');

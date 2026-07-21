@@ -6,10 +6,10 @@ import fs from 'node:fs';
 import path from 'node:path';
 import { describe, expect, it } from 'vitest';
 
-const schemaPath = path.resolve(__dirname, '../../db/schema.ts');
+const schemaPath = path.resolve(__dirname, '../../kernel/db/schema.ts');
 const schemaSource = fs.readFileSync(schemaPath, 'utf8');
 
-const permissionsPath = path.resolve(__dirname, '../../auth/permissions.ts');
+const permissionsPath = path.resolve(__dirname, '../../kernel/auth/permissions.ts');
 const permissionsSource = fs.readFileSync(permissionsPath, 'utf8');
 
 // ---------------------------------------------------------------------------

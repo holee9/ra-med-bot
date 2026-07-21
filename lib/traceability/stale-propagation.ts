@@ -4,7 +4,7 @@
 //           callers never mark a node stale twice for the same reason.
 // @MX:SPEC SPEC-REGULA-TRACEABILITY-001 (REQ-TRACEABILITY-009)
 
-import { staleFlags } from '@/lib/db/schema';
+import { staleFlags } from '@/lib/kernel/db/schema';
 import { and, eq } from 'drizzle-orm';
 import type { EvidenceNode, TraceabilityDb } from './graph';
 import { listEdgesForNode } from './graph';

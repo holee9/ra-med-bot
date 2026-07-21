@@ -82,7 +82,7 @@ describe('AC-01: ingestion blocked without license metadata (REQ-003)', () => {
   });
 
   it('domain: assertIngestionLicensed blocks when no license row exists', async () => {
-    vi.doMock('@/lib/db/client', () => ({ db: makeMockDb({ select: [] }) }));
+    vi.doMock('@/lib/kernel/db/client', () => ({ db: makeMockDb({ select: [] }) }));
     vi.doMock('@/lib/corpus-license/audit', () => ({
       auditIngestionBlocked: vi.fn(),
       auditFullTextBlocked: vi.fn(),
@@ -96,7 +96,7 @@ describe('AC-01: ingestion blocked without license metadata (REQ-003)', () => {
     });
     expect(result.allowed).toBe(false);
     expect(result.reason).toBe('no_license_metadata');
-    vi.doUnmock('@/lib/db/client');
+    vi.doUnmock('@/lib/kernel/db/client');
     vi.doUnmock('@/lib/corpus-license/audit');
   });
 });
@@ -151,7 +151,7 @@ describe('AC-03: expired source excluded from search (REQ-008)', () => {
   it('domain: filterExpiredSources drops past-expiry sources', async () => {
     const pastDate = '2020-01-01';
     const futureDate = '2099-12-31';
-    vi.doMock('@/lib/db/client', () => ({
+    vi.doMock('@/lib/kernel/db/client', () => ({
       db: makeMockDb({
         select: [
           { sourceId: 'expired-src', id: 'lic-a', expiryDate: pastDate },
@@ -163,7 +163,7 @@ describe('AC-03: expired source excluded from search (REQ-008)', () => {
     const eligible = await mod.filterExpiredSources(['expired-src', 'active-src'], 'org-1');
     expect(eligible.has('expired-src')).toBe(false);
     expect(eligible.has('active-src')).toBe(true);
-    vi.doUnmock('@/lib/db/client');
+    vi.doUnmock('@/lib/kernel/db/client');
   });
 });
 
@@ -183,7 +183,7 @@ describe('AC-04: export/answer includes usage notice (REQ-007/011)', () => {
   });
 
   it('domain: generateUsageNotice returns per-source restriction text', async () => {
-    vi.doMock('@/lib/db/client', () => ({
+    vi.doMock('@/lib/kernel/db/client', () => ({
       db: makeMockDb({
         select: [
           { sourceId: 'iso-src', licenseType: 'standard_paid', abstractOnly: false },
@@ -198,7 +198,7 @@ describe('AC-04: export/answer includes usage notice (REQ-007/011)', () => {
     const pubmed = notices.find((n) => n.sourceId === 'pubmed-src');
     expect(iso?.notice).toMatch(/paid standard/i);
     expect(pubmed?.notice).toMatch(/abstract-only policy applies/i);
-    vi.doUnmock('@/lib/db/client');
+    vi.doUnmock('@/lib/kernel/db/client');
   });
 });
 
@@ -391,7 +391,7 @@ describe('C-3: per-corpus retrievers thread orgId to hybridSearch', () => {
   it('domain: expired source excluded when orgId threaded', async () => {
     const pastDate = '2020-01-01';
     const futureDate = '2099-12-31';
-    vi.doMock('@/lib/db/client', () => ({
+    vi.doMock('@/lib/kernel/db/client', () => ({
       db: makeMockDb({
         select: [
           { sourceId: 'expired-src', id: 'lic-a', expiryDate: pastDate },
@@ -403,7 +403,7 @@ describe('C-3: per-corpus retrievers thread orgId to hybridSearch', () => {
     const eligible = await mod.filterExpiredSources(['expired-src', 'active-src'], 'org-1');
     expect(eligible.has('expired-src')).toBe(false);
     expect(eligible.has('active-src')).toBe(true);
-    vi.doUnmock('@/lib/db/client');
+    vi.doUnmock('@/lib/kernel/db/client');
   });
 });
 
@@ -449,7 +449,7 @@ describe('C-4: export rights gate + usage notice', () => {
 
   it('domain: verifyExportRights blocks source with export=false', async () => {
     vi.resetModules();
-    vi.doMock('@/lib/db/client', () => ({ db: makeMockDb({ select: [] }) }));
+    vi.doMock('@/lib/kernel/db/client', () => ({ db: makeMockDb({ select: [] }) }));
     vi.doMock('@/lib/corpus-license/permitted-use', () => ({
       fetchPermittedUse: vi.fn().mockResolvedValue({
         sourceId: 'iso-src',
@@ -468,13 +468,13 @@ describe('C-4: export rights gate + usage notice', () => {
     expect(result.blockedSources).toHaveLength(1);
     expect(result.blockedSources[0]?.reason).toBe('export_not_permitted');
     vi.doUnmock('@/lib/corpus-license/permitted-use');
-    vi.doUnmock('@/lib/db/client');
+    vi.doUnmock('@/lib/kernel/db/client');
     vi.doUnmock('@/lib/corpus-license/audit');
   });
 
   it('domain: verifyExportRights allows sources with export=true', async () => {
     vi.resetModules();
-    vi.doMock('@/lib/db/client', () => ({ db: makeMockDb({ select: [] }) }));
+    vi.doMock('@/lib/kernel/db/client', () => ({ db: makeMockDb({ select: [] }) }));
     vi.doMock('@/lib/corpus-license/permitted-use', () => ({
       fetchPermittedUse: vi.fn().mockResolvedValue({
         sourceId: 'open-src',
@@ -492,7 +492,7 @@ describe('C-4: export rights gate + usage notice', () => {
     expect(result.allowed).toBe(true);
     expect(result.blockedSources).toHaveLength(0);
     vi.doUnmock('@/lib/corpus-license/permitted-use');
-    vi.doUnmock('@/lib/db/client');
+    vi.doUnmock('@/lib/kernel/db/client');
     vi.doUnmock('@/lib/corpus-license/audit');
   });
 });

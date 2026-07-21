@@ -5,8 +5,8 @@
 // list (delegates to review-notifier), and stale-citation artifacts list.
 // The /api/source-governance/dashboard route and the Governance UI page call this.
 
-import { db } from '@/lib/db/client';
-import { messageSources, sources } from '@/lib/db/schema';
+import { db } from '@/lib/kernel/db/client';
+import { messageSources, sources } from '@/lib/kernel/db/schema';
 import { and, count, eq, isNotNull, lte, sql } from 'drizzle-orm';
 import { type ReviewDueSource, getReviewDueSources } from './review-notifier';
 

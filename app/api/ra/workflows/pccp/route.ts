@@ -1,8 +1,8 @@
 // @MX:SPEC SPEC-REGULA-PCCP-001 (REQ-PCCP-001, REQ-PCCP-021)
-import { withPermission } from '@/lib/auth/with-permission';
-import type { AuthSession } from '@/lib/auth/with-permission';
-import { db } from '@/lib/db/client';
-import { pccpVersions } from '@/lib/db/schema';
+import { withPermission } from '@/lib/kernel/auth/with-permission';
+import type { AuthSession } from '@/lib/kernel/auth/with-permission';
+import { db } from '@/lib/kernel/db/client';
+import { pccpVersions } from '@/lib/kernel/db/schema';
 import { auditPccpCreated } from '@/lib/pccp/audit-wiring';
 import { buildBaselineSnapshot } from '@/lib/pccp/baseline-snapshot';
 import { getActivePccpVersion } from '@/lib/pccp/version-manager';

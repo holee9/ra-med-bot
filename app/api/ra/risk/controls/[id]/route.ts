@@ -1,8 +1,8 @@
 // @MX:NOTE [AUTO] PATCH /api/ra/risk/controls/[id] — adopt control + residual risk.
 // @MX:SPEC SPEC-REGULA-RISK-001 (T2.7, REQ-RISK-021~027)
 
-import { writeAudit } from '@/lib/audit';
-import { withPermission } from '@/lib/auth/with-permission';
+import { writeAudit } from '@/lib/kernel/audit';
+import { withPermission } from '@/lib/kernel/auth/with-permission';
 import { validateControlHierarchy } from '@/lib/risk/control-recommendation';
 import type { ControlTier } from '@/lib/risk/control-recommendation';
 import { type ResidualRiskResult, evaluateResidualRisk } from '@/lib/risk/residual-risk';

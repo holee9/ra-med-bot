@@ -11,10 +11,10 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { classifyOwningTarget } from '../../lib/knowledge-gap/router';
 
-// Single shared audit mock — vitest applies only ONE vi.mock('@/lib/audit') per
+// Single shared audit mock — vitest applies only ONE vi.mock('@/lib/kernel/audit') per
 // file, so both owning-issue and integration-gap describes must share it.
 const auditMock = vi.hoisted(() => ({ writeAudit: vi.fn().mockResolvedValue(undefined) }));
-vi.mock('@/lib/audit', () => ({ writeAudit: auditMock.writeAudit }));
+vi.mock('@/lib/kernel/audit', () => ({ writeAudit: auditMock.writeAudit }));
 
 // ---------------------------------------------------------------------------
 // Router: deterministic 4-way + queue classification
@@ -413,7 +413,7 @@ const owningMocks = vi.hoisted(() => ({
   createComment: vi.fn(),
 }));
 
-vi.mock('@/lib/db/client', () => {
+vi.mock('@/lib/kernel/db/client', () => {
   // biome-ignore lint/suspicious/noExplicitAny: transaction callback references the mock; `any` breaks the self-referential type cycle (cf. knowledge-sources.test.ts).
   const db: any = {
     select: vi.fn(() => ({

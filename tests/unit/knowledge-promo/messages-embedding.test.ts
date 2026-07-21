@@ -7,8 +7,8 @@
 // - consult persist embedding wiring (failure null graceful, answer persist succeeds)
 // - backfill job (cursor progression, idempotent, batch)
 
-import { db } from '@/lib/db/client';
-import { messages } from '@/lib/db/schema';
+import { db } from '@/lib/kernel/db/client';
+import { messages } from '@/lib/kernel/db/schema';
 import { embedForMessage, toVectorLiteral } from '@/lib/knowledge-promo/embedding';
 import { searchMessagesSemantic } from '@/lib/knowledge-promo/semantic-search';
 import { eq } from 'drizzle-orm';
@@ -27,7 +27,7 @@ vi.mock('ai', () => ({
   })),
 }));
 
-vi.mock('@/lib/db/client', () => ({
+vi.mock('@/lib/kernel/db/client', () => ({
   db: {
     transaction: vi.fn(async (cb) => {
       // Mock tx with all required insert methods

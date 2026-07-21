@@ -7,8 +7,8 @@
 // rendered server-side, so direct URL access by an unauthorized role is handled
 // by the /api/source-governance/* RBAC gate (403), not by hiding the page.
 
-import { auth } from '@/lib/auth';
-import { hasRole } from '@/lib/auth/rbac';
+import { auth } from '@/lib/kernel/auth';
+import { hasRole } from '@/lib/kernel/auth/rbac';
 import { getGovernanceDashboard } from '@/lib/source-governance/dashboard';
 import type { Metadata } from 'next';
 

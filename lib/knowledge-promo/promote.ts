@@ -7,9 +7,9 @@
 //           crash between them cannot leave a promoted row without an audit
 //           trail (C-3 defect class). RLS GUC set via withTenantScope (#239).
 
-import { writeAudit } from '@/lib/audit';
-import { db, withTenantScope } from '@/lib/db/client';
-import { messages, promotedAnswers } from '@/lib/db/schema';
+import { writeAudit } from '@/lib/kernel/audit';
+import { db, withTenantScope } from '@/lib/kernel/db/client';
+import { messages, promotedAnswers } from '@/lib/kernel/db/schema';
 import { logger } from '@/lib/observability/logger';
 import { and, eq } from 'drizzle-orm';
 import { findExistingPromotion, messageBelongsToOrg } from './access';

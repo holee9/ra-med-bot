@@ -10,7 +10,7 @@
 
 import { type EmbeddingModel, embed } from 'ai';
 import { sql } from 'drizzle-orm';
-import { type db, withTenantScope } from '../../db/client';
+import { type db, withTenantScope } from '../../kernel/db/client';
 import { getEmbeddingModel } from '../embedding-provider';
 import type { IRetriever, RetrievalResult, RetrieverOptions } from './types';
 

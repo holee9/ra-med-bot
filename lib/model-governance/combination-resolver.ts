@@ -4,8 +4,8 @@
 //           partial UNIQUE INDEX). fan_in >= 3 (runtime-guard, audit-metadata, routes).
 // @MX:SPEC SPEC-REGULA-MODEL-GOVERNANCE-001 (Issue 71, REQ-MODELGOV-013)
 
-import { db } from '@/lib/db/client';
-import { approvedCombination, modelPin, promptRegistry } from '@/lib/db/schema';
+import { db } from '@/lib/kernel/db/client';
+import { approvedCombination, modelPin, promptRegistry } from '@/lib/kernel/db/schema';
 import { and, desc, eq } from 'drizzle-orm';
 import type { ActiveCombination } from './types';
 

@@ -1,7 +1,7 @@
 // SPEC-REGULA-IMPACT-001 — persist impact action items from scan results.
 
-import type { AuditDbHandle } from '@/lib/audit';
-import { impactActionItems } from '@/lib/db/schema';
+import type { AuditDbHandle } from '@/lib/kernel/audit';
+import { impactActionItems } from '@/lib/kernel/db/schema';
 import type { AffectedSection, ImpactLevel } from './types';
 
 interface ActionItemInput {

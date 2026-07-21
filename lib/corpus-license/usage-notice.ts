@@ -4,8 +4,8 @@
 //   or export MUST include the per-source usage-restriction notice. A dead-code
 //   definition without a call site is a SPEC violation.
 // @MX:SPEC SPEC-REGULA-CORPUS-LICENSE-001 (REQ-CORPUSLIC-007, REQ-CORPUSLIC-011)
-import { db } from '@/lib/db/client';
-import { sourceLicense } from '@/lib/db/schema';
+import { db } from '@/lib/kernel/db/client';
+import { sourceLicense } from '@/lib/kernel/db/schema';
 import { and, eq, inArray } from 'drizzle-orm';
 import type { SourceUsageNotice } from './types';
 

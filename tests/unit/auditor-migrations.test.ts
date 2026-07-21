@@ -30,7 +30,7 @@ describe('SPEC-REGULA-AUDITOR-VIEW-001 — DB enum migrations', () => {
   });
 
   it('schema userRoleEnum includes auditor so TypeScript and DB stay aligned', () => {
-    const src = readText('lib/db/schema.ts');
+    const src = readText('lib/kernel/db/schema-kernel.ts');
     const enumMatch = src.match(
       /export const userRoleEnum\s*=\s*pgEnum\('user_role',\s*\[([\s\S]*?)\]\)/,
     );

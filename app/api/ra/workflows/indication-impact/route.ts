@@ -1,6 +1,6 @@
-import { writeAudit } from '@/lib/audit';
-import { withPermission } from '@/lib/auth/with-permission';
-import type { AuthSession } from '@/lib/auth/with-permission';
+import { writeAudit } from '@/lib/kernel/audit';
+import { withPermission } from '@/lib/kernel/auth/with-permission';
+import type { AuthSession } from '@/lib/kernel/auth/with-permission';
 import { IndicationImpactInputSchema } from '@/lib/workflows/types';
 
 async function postIndicationImpact(request: Request, session: AuthSession): Promise<Response> {

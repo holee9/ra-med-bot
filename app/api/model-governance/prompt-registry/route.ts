@@ -3,8 +3,8 @@
 // @MX:REASON POST registers an immutable prompt/template version (dedup by content_hash).
 //           GET lists versions. RBAC modelgov.manage (POST) / modelgov.view (GET).
 
-import { writeAudit } from '@/lib/audit';
-import { withPermission } from '@/lib/auth/with-permission';
+import { writeAudit } from '@/lib/kernel/audit';
+import { withPermission } from '@/lib/kernel/auth/with-permission';
 import { auditPromptRegistered } from '@/lib/model-governance/audit';
 import { listPrompts, registerPrompt } from '@/lib/model-governance/registry';
 import { registerPromptInputSchema } from '@/lib/model-governance/types';

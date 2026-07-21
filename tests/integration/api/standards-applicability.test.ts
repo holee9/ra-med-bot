@@ -6,23 +6,23 @@ import { beforeEach, describe, expect, it, vi } from 'vitest';
 
 // Mock auth so withPermission sees a valid viewer session.
 const authMock = vi.fn();
-vi.mock('@/lib/auth', () => ({
+vi.mock('@/lib/kernel/auth', () => ({
   auth: () => authMock(),
   handlers: {},
   signIn: vi.fn(),
   signOut: vi.fn(),
 }));
 
-vi.mock('@/lib/auth/acl', () => ({
+vi.mock('@/lib/kernel/auth/acl', () => ({
   isOrgMember: vi.fn().mockResolvedValue(true),
   isProjectMember: vi.fn().mockResolvedValue(true),
 }));
 
 const writeAuditMock = vi.fn().mockResolvedValue(undefined);
-vi.mock('@/lib/audit', () => ({ writeAudit: (...a: unknown[]) => writeAuditMock(...a) }));
+vi.mock('@/lib/kernel/audit', () => ({ writeAudit: (...a: unknown[]) => writeAuditMock(...a) }));
 
 // Mock DB client — withTenantScope passes a fake tx to the callback.
-vi.mock('@/lib/db/client', () => ({
+vi.mock('@/lib/kernel/db/client', () => ({
   withTenantScope: vi.fn(async (_orgId: string, cb: (tx: unknown) => Promise<unknown>) => cb({})),
   db: {},
 }));

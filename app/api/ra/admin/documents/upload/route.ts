@@ -16,14 +16,14 @@
 // long-running background variant for R2-uploaded files; this synchronous
 // route handles the in-app admin form which receives the file directly.
 
-import { writeAudit } from '@/lib/audit';
-import { withPermission } from '@/lib/auth/with-permission';
-import { db } from '@/lib/db/client';
-import { sourceSections } from '@/lib/db/schema';
 import { chunk } from '@/lib/ingest/chunkers';
 import { DocClass } from '@/lib/ingest/doc-class';
 import { embedChunks } from '@/lib/ingest/embed';
 import { SUPPORTED_MIME_TYPES, extractText } from '@/lib/ingest/extract';
+import { writeAudit } from '@/lib/kernel/audit';
+import { withPermission } from '@/lib/kernel/auth/with-permission';
+import { db } from '@/lib/kernel/db/client';
+import { sourceSections } from '@/lib/kernel/db/schema';
 import { z } from 'zod';
 
 // REQ-QUAL-019 — configurable size cap (default 10MB to match handoff §16).

@@ -74,24 +74,24 @@ describe('0037_cer_audit_actions.sql', () => {
 });
 
 // ---------------------------------------------------------------------------
-// lib/db/schema.ts — workflowTypeEnum includes 'cer'
+// lib/kernel/db/schema.ts — workflowTypeEnum includes 'cer'
 // ---------------------------------------------------------------------------
-describe('lib/db/schema.ts workflowTypeEnum', () => {
+describe('lib/kernel/db/schema.ts workflowTypeEnum', () => {
   it("workflowTypeEnum includes 'cer' value (REQ-CER-012)", () => {
-    const src = readText('lib/db/schema.ts');
+    const src = readText('lib/kernel/db/schema.ts');
     expect(src).toMatch(/'cer'/);
   });
 
   it('cerLiterature table is defined in schema', () => {
-    const src = readText('lib/db/schema.ts');
+    const src = readText('lib/kernel/db/schema.ts');
     expect(src).toMatch(/cerLiterature/);
   });
 });
 
 // ---------------------------------------------------------------------------
-// lib/audit.ts — CER audit actions in AuditAction type
+// lib/kernel/audit.ts — CER audit actions in AuditAction type
 // ---------------------------------------------------------------------------
-describe('lib/audit.ts CER audit actions (REQ-CER-036~040)', () => {
+describe('lib/kernel/audit.ts CER audit actions (REQ-CER-036~040)', () => {
   it.each([
     'cer_created',
     'cer_stage_completed',
@@ -99,7 +99,7 @@ describe('lib/audit.ts CER audit actions (REQ-CER-036~040)', () => {
     'cer_exported',
     'cer_literature_search',
   ])("AuditAction type includes '%s'", (action) => {
-    const src = readText('lib/audit.ts');
+    const src = readText('lib/kernel/audit.ts');
     expect(src).toMatch(new RegExp(`'${action}'`));
   });
 });

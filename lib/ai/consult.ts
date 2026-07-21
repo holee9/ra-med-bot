@@ -14,9 +14,9 @@ import { eq } from 'drizzle-orm';
 import type { Session } from 'next-auth';
 import type { ConsultRequest } from '../../types/consult';
 import type { SourceItem, StreamEvent, TraceEvent } from '../../types/streaming';
-import { writeAudit } from '../audit';
-import { db, withTenantScope } from '../db/client';
-import { conversations, messageBlocks, messages } from '../db/schema';
+import { writeAudit } from '../kernel/audit';
+import { db, withTenantScope } from '../kernel/db/client';
+import { conversations, messageBlocks, messages } from '../kernel/db/schema';
 import { captureKnowledgeGap, detectKnowledgeGap } from '../knowledge-gap/detector';
 import { enforceCitations } from './citation-enforce';
 import { calculateConfidence, getConfidenceLevel } from './confidence';
@@ -196,7 +196,7 @@ export async function* consult(
   // @MX:SPEC SPEC-REGULA-PROJECT-MEMORY-001 (REQ-003, REQ-010, AC-02)
   // @MX:REASON New conversations MUST receive the project's accumulated RA
   //   decisions so answers stay consistent with prior design-control choices
-  //   (ISO 13485). Lazy import (L-004) keeps lib/db/client out of the test-light
+  //   (ISO 13485). Lazy import (L-004) keeps lib/kernel/db/client out of the test-light
   //   parse path. injectProjectMemory is best-effort: on failure it returns the
   //   original prompt, so the consult stream is never blocked by memory lookup.
   //   AC-02 dead-code prevention (L-008): this IS the call site — verified by

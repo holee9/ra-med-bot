@@ -4,7 +4,7 @@
 import { describe, expect, it, vi } from 'vitest';
 
 // Mock DB client and auth to avoid env validation during module load
-vi.mock('@/lib/db/client', () => ({
+vi.mock('@/lib/kernel/db/client', () => ({
   db: {
     select: vi.fn(() => ({
       from: vi.fn(() => ({ where: vi.fn(() => ({ limit: vi.fn().mockResolvedValue([]) })) })),
@@ -21,11 +21,11 @@ vi.mock('@/lib/db/client', () => ({
   ),
 }));
 
-vi.mock('@/lib/auth', () => ({
+vi.mock('@/lib/kernel/auth', () => ({
   auth: vi.fn().mockResolvedValue({ user: { id: 'user-001', role: 'ra-member' } }),
 }));
 
-vi.mock('@/lib/auth/with-permission', () => ({
+vi.mock('@/lib/kernel/auth/with-permission', () => ({
   withPermission: vi.fn((_action: string, handler: unknown) => handler),
 }));
 
@@ -41,7 +41,7 @@ describe('REQ traceability', () => {
   });
 
   it('REQ-ENTERPRISE-019: withPermission exported', async () => {
-    const { withPermission } = await import('@/lib/auth/with-permission');
+    const { withPermission } = await import('@/lib/kernel/auth/with-permission');
     expect(typeof withPermission).toBe('function');
   });
 
@@ -62,12 +62,12 @@ describe('REQ traceability', () => {
 
   // Additional traceability checks
   it('REQ-ENTERPRISE-017: hasRole exported from rbac', async () => {
-    const { hasRole } = await import('@/lib/auth/rbac');
+    const { hasRole } = await import('@/lib/kernel/auth/rbac');
     expect(typeof hasRole).toBe('function');
   });
 
   it('REQ-ENTERPRISE-020: PERMISSIONS exported from permissions', async () => {
-    const { PERMISSIONS } = await import('@/lib/auth/permissions');
+    const { PERMISSIONS } = await import('@/lib/kernel/auth/permissions');
     expect(typeof PERMISSIONS).toBe('object');
   });
 
@@ -78,7 +78,7 @@ describe('REQ traceability', () => {
   });
 
   it('REQ-ENTERPRISE-016: writeAudit exported from audit', async () => {
-    const { writeAudit } = await import('@/lib/audit');
+    const { writeAudit } = await import('@/lib/kernel/audit');
     expect(typeof writeAudit).toBe('function');
   });
 

@@ -1,7 +1,7 @@
-// RED Phase: Tests for lib/audit.ts extension (document audit actions)
+// RED Phase: Tests for lib/kernel/audit.ts extension (document audit actions)
 // SPEC-REGULA-DOCINGEST-001 REQ-DOC-8A-7
 
-import type { AuditAction } from '@/lib/audit';
+import type { AuditAction } from '@/lib/kernel/audit';
 import { describe, expect, it } from 'vitest';
 
 describe('AuditAction type includes document actions', () => {

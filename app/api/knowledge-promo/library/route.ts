@@ -5,7 +5,7 @@
 //           scope enforced via withPermission('knowledgepromo.view') +
 //           withTenantScope RLS GUC (#239).
 
-import { withPermission } from '@/lib/auth/with-permission';
+import { withPermission } from '@/lib/kernel/auth/with-permission';
 import { listLibrary } from '@/lib/knowledge-promo/library';
 
 export const GET = withPermission('knowledgepromo.view', async (req, _ctx, session) => {

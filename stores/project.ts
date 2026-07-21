@@ -6,7 +6,7 @@
 // This store is NOT persisted — project data is re-hydrated from the API on
 // page load. Only the ID list is persisted in useUIStore.
 
-import type { projects } from '@/lib/db/schema';
+import type { projects } from '@/lib/kernel/db/schema';
 import type { InferSelectModel } from 'drizzle-orm';
 import { create } from 'zustand';
 

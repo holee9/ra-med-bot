@@ -4,8 +4,8 @@
 //           prevents cross-org edge injection (the #35 IDOR defect class).
 // @MX:SPEC SPEC-REGULA-TRACEABILITY-001 (REQ-TRACEABILITY-001~003, REQ-TRACEABILITY-010, REQ-TRACEABILITY-012)
 
-import { evidenceEdges, evidenceNodes, staleFlags } from '@/lib/db/schema';
-import type { evidenceEdgeRelationEnum, evidenceNodeTypeEnum } from '@/lib/db/schema';
+import { evidenceEdges, evidenceNodes, staleFlags } from '@/lib/kernel/db/schema';
+import type { evidenceEdgeRelationEnum, evidenceNodeTypeEnum } from '@/lib/kernel/db/schema';
 import { and, eq } from 'drizzle-orm';
 
 export type EvidenceNodeType = (typeof evidenceNodeTypeEnum.enumValues)[number];
@@ -13,11 +13,11 @@ export type EvidenceEdgeRelation = (typeof evidenceEdgeRelationEnum.enumValues)[
 
 /**
  * Injectable DB handle. Tests pass a transaction-scoped or mocked client; the
- * production path imports the singleton from lib/db/client. Mirrors the
+ * production path imports the singleton from lib/kernel/db/client. Mirrors the
  * classify/knowledge-gap pure-module convention so unit tests never trigger
  * env validation.
  */
-export type TraceabilityDb = import('@/lib/db/client').Database;
+export type TraceabilityDb = import('@/lib/kernel/db/client').Database;
 
 export interface EvidenceNode {
   id: string;

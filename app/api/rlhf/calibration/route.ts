@@ -12,9 +12,9 @@
 // persist candidates (no write on GET). Candidate persistence happens via a
 // POST follow-up that an RA Lead triggers after reviewing the aggregates.
 
-import { withPermission } from '@/lib/auth/with-permission';
-import { withTenantScope } from '@/lib/db/client';
-import { answerFeedback, conversations, messages, projects } from '@/lib/db/schema';
+import { withPermission } from '@/lib/kernel/auth/with-permission';
+import { withTenantScope } from '@/lib/kernel/db/client';
+import { answerFeedback, conversations, messages, projects } from '@/lib/kernel/db/schema';
 import {
   type ConfidenceFeedbackSample,
   aggregateConfidenceFeedback,

@@ -16,14 +16,14 @@
 // real messages table (count unchanged). writeAudit stays MOCKED (audit_logs
 // immutable). Skipped when DATABASE_URL is unset.
 
-import { conversations, messages, unansweredQueue } from '@/lib/db/schema';
+import { conversations, messages, unansweredQueue } from '@/lib/kernel/db/schema';
 import { count, eq } from 'drizzle-orm';
 import { afterEach, beforeAll, beforeEach, describe, expect, it, vi } from 'vitest';
 import { HAS_DATABASE_URL, seedCoreActors, truncateTables } from '../../tests/fixtures/database';
 
 // audit mock — capture writeAudit calls (audit_logs is immutable, never persist).
 const auditCalls: Array<{ action: string; resource_id?: string }> = [];
-vi.mock('@/lib/audit', () => ({
+vi.mock('@/lib/kernel/audit', () => ({
   writeAudit: vi.fn(async (params: { action: string; resource_id?: string }) => {
     auditCalls.push({ action: params.action, resource_id: params.resource_id });
   }),
@@ -127,7 +127,7 @@ const ACTORS_A = {
 };
 
 async function getDb() {
-  const { db } = await import('@/lib/db/client');
+  const { db } = await import('@/lib/kernel/db/client');
   return db;
 }
 

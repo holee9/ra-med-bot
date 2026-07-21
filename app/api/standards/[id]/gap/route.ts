@@ -4,7 +4,7 @@
 //   state. Detailed revision-diff summarization is deferred to #62-F; today the
 //   endpoint returns the product list + pendingReview subset (count + metadata).
 
-import { withPermission } from '@/lib/auth/with-permission';
+import { withPermission } from '@/lib/kernel/auth/with-permission';
 import { identifyAffectedProducts } from '@/lib/standards/impact-analyzer';
 
 // GET /api/standards/[id]/gap — products affected + compliance state.

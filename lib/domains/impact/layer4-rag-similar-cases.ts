@@ -4,7 +4,7 @@
 // @MX:SPEC SPEC-V3-IMPACT-001 (AC-IMP-08, AC-IMP-14)
 
 import { embedBatchTexts } from '@/lib/ai/embedding-provider';
-import { db } from '@/lib/db/client';
+import { db } from '@/lib/kernel/db/client';
 import { sql } from 'drizzle-orm';
 
 export interface SimilarCaseInput {

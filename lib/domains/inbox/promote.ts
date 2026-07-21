@@ -5,9 +5,9 @@
 // @MX:SPEC SPEC-V3-INBOX-001 (REQ-V3-INBOX-028, Issue 320)
 
 import { createHash } from 'node:crypto';
-import { writeAudit } from '@/lib/audit';
-import type { Database } from '@/lib/db/client';
-import { approvedAnswers, inboxTickets } from '@/lib/db/schema';
+import { writeAudit } from '@/lib/kernel/audit';
+import type { Database } from '@/lib/kernel/db/client';
+import { approvedAnswers, inboxTickets } from '@/lib/kernel/db/schema';
 import { and, eq } from 'drizzle-orm';
 import { assertValidTransition } from './state-machine';
 import type { PromotionInput } from './types';

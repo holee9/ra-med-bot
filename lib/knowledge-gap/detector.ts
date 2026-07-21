@@ -11,9 +11,9 @@
 //   3. no_results       — search returned 0 chunks
 //   4. policy_blocked   — LLM generation failed / policy restriction
 
-import { writeAudit } from '@/lib/audit';
-import { db } from '@/lib/db/client';
-import { unansweredQueue } from '@/lib/db/schema';
+import { writeAudit } from '@/lib/kernel/audit';
+import { db } from '@/lib/kernel/db/client';
+import { unansweredQueue } from '@/lib/kernel/db/schema';
 import { and, eq, isNotNull } from 'drizzle-orm';
 import { redactQuestion } from './redaction';
 
@@ -90,7 +90,7 @@ export interface CaptureKnowledgeGapResult {
  * and create/append the GitHub issue when configured (REQ-KNOWLEDGE-GAP-002/004/005/006/016).
  *
  * Failures propagate — the caller MUST fail closed if the audit write fails
- * (21 CFR Part 11, see lib/audit.ts writeAudit contract).
+ * (21 CFR Part 11, see lib/kernel/audit.ts writeAudit contract).
  */
 export async function captureKnowledgeGap(ctx: CaptureContext): Promise<CaptureKnowledgeGapResult> {
   const { redacted, hash, redactionCount } = redactQuestion(ctx.originalQuestion);

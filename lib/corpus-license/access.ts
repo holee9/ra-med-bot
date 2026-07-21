@@ -4,8 +4,8 @@
 // Cross-org access to a source_license returns 404 (not 403) to avoid leaking
 // the existence of rows outside the caller's org. Denials are audited.
 
-import { db } from '@/lib/db/client';
-import { sourceLicense } from '@/lib/db/schema';
+import { db } from '@/lib/kernel/db/client';
+import { sourceLicense } from '@/lib/kernel/db/schema';
 import { and, eq } from 'drizzle-orm';
 import { auditCorpusAccessDenied } from './audit';
 
@@ -48,7 +48,7 @@ export async function assertSourceInOrg(params: {
   orgId: string;
   userId: string;
 }): Promise<boolean> {
-  const { sources } = await import('../db/schema');
+  const { sources } = await import('../kernel/db/schema');
   const [row] = await db
     .select({ id: sources.id, orgId: sources.organizationId })
     .from(sources)

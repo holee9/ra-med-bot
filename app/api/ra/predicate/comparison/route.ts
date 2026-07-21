@@ -10,11 +10,11 @@
 export const runtime = 'nodejs';
 
 import { getLlmFastModel } from '@/lib/ai/llm-provider';
-import { writeAudit } from '@/lib/audit';
-import { canManageComparisons, canViewComparisons } from '@/lib/auth/predicate-permissions';
-import { withPermission } from '@/lib/auth/with-permission';
-import { db } from '@/lib/db/client';
-import { users, workflowRuns } from '@/lib/db/schema';
+import { writeAudit } from '@/lib/kernel/audit';
+import { canManageComparisons, canViewComparisons } from '@/lib/kernel/auth/predicate-permissions';
+import { withPermission } from '@/lib/kernel/auth/with-permission';
+import { db } from '@/lib/kernel/db/client';
+import { users, workflowRuns } from '@/lib/kernel/db/schema';
 import { createComparisonBuilder } from '@/lib/predicate/comparison-builder';
 import type { ComparisonDimension, PredicateCandidate } from '@/lib/predicate/types';
 import { and, asc, desc, eq } from 'drizzle-orm';

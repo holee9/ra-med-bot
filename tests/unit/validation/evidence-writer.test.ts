@@ -14,14 +14,14 @@ const fromMock = vi.fn().mockReturnValue({ where: whereMock });
 const returningMock = vi.fn().mockResolvedValue([{ id: 'new-id-123' }]);
 const valuesMock = vi.fn().mockReturnValue({ returning: returningMock });
 
-vi.mock('@/lib/db/client', () => ({
+vi.mock('@/lib/kernel/db/client', () => ({
   db: {
     select: vi.fn(() => ({ from: fromMock })),
     insert: vi.fn(() => ({ values: valuesMock })),
   },
 }));
 
-vi.mock('@/lib/db/schema', () => ({
+vi.mock('@/lib/kernel/db/schema', () => ({
   validationEvidence: {
     id: 'id',
     releaseId: 'release_id',

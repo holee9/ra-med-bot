@@ -94,10 +94,10 @@ describe('migration 0034_impact_audit_actions.sql', () => {
 });
 
 // ---------------------------------------------------------------------------
-// lib/db/schema.ts — Drizzle table exports
+// lib/kernel/db/schema.ts — Drizzle table exports
 // ---------------------------------------------------------------------------
-describe('lib/db/schema.ts impact table exports', () => {
-  const src = readText('lib/db/schema.ts');
+describe('lib/kernel/db/schema.ts impact table exports', () => {
+  const src = readText('lib/kernel/db/schema.ts');
 
   it('exports regulatoryImpactAssessments', () => {
     expect(src).toContain('export const regulatoryImpactAssessments');
@@ -118,10 +118,10 @@ describe('lib/db/schema.ts impact table exports', () => {
 });
 
 // ---------------------------------------------------------------------------
-// lib/audit.ts — AuditAction type sync
+// lib/kernel/audit.ts — AuditAction type sync
 // ---------------------------------------------------------------------------
-describe('lib/audit.ts impact AuditAction values', () => {
-  const src = readText('lib/audit.ts');
+describe('lib/kernel/audit.ts impact AuditAction values', () => {
+  const src = readText('lib/kernel/audit.ts');
 
   const IMPACT_ACTIONS = [
     'impact.assessment_created',

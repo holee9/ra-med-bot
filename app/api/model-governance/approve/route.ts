@@ -8,7 +8,7 @@
 //                link in audit (REQ-012) — all in one db.transaction (H2 atomicity).
 // @MX:SPEC SPEC-REGULA-MODEL-GOVERNANCE-001 (Issue 71, REQ-MODELGOV-005/012/013/014, AC-02/07)
 
-import { withPermission } from '@/lib/auth/with-permission';
+import { withPermission } from '@/lib/kernel/auth/with-permission';
 import { assertChangeRequestAccess } from '@/lib/model-governance/access';
 import {
   ChangeRequestBlockedError,

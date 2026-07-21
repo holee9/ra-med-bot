@@ -3,11 +3,11 @@
 
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 
-// fetchWindowScopedChangeRequests uses `await import('@/lib/db/client')` then a
+// fetchWindowScopedChangeRequests uses `await import('@/lib/kernel/db/client')` then a
 // drizzle select/from/where chain. We mock the db module so the chain returns
 // fixture rows, exercising the mapping + window/org scoping control flow
 // (coverage coverage 402 — previously only the export was smoke-tested).
-vi.mock('@/lib/db/client', () => ({
+vi.mock('@/lib/kernel/db/client', () => ({
   db: {
     select: vi.fn(() => ({
       from: () => ({ where: () => [] }),
@@ -33,7 +33,7 @@ describe('fetchWindowScopedChangeRequests (drizzle-chain execution, coverage 402
   });
 
   it('returns the rows the underlying change_request query yields (org+window scoped)', async () => {
-    const { db } = await import('@/lib/db/client');
+    const { db } = await import('@/lib/kernel/db/client');
     const row = {
       id: 'cr1',
       promptId: null,
@@ -58,7 +58,7 @@ describe('fetchWindowScopedChangeRequests (drizzle-chain execution, coverage 402
   });
 
   it('returns [] when no change_requests match the window', async () => {
-    const { db } = await import('@/lib/db/client');
+    const { db } = await import('@/lib/kernel/db/client');
     vi.mocked(db.select).mockReturnValueOnce({
       from: () => ({ where: () => [] }),
     } as never);

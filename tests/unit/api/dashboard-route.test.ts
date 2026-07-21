@@ -6,7 +6,7 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 
 // --- Mock withPermission: pass-through with fixed session ---
-vi.mock('@/lib/auth/with-permission', () => ({
+vi.mock('@/lib/kernel/auth/with-permission', () => ({
   withPermission: vi.fn(
     (
       _action: string,
@@ -46,7 +46,7 @@ const makeChain = () => {
   return chain;
 };
 
-vi.mock('@/lib/db/client', () => ({
+vi.mock('@/lib/kernel/db/client', () => ({
   db: {
     select: vi.fn(() => makeChain()),
   },
@@ -124,7 +124,7 @@ describe('GET /api/ra/dashboard', () => {
     resultQueue.push([{ count: 0 }]);
     resultQueue.push([{ count: 0 }]);
 
-    const { db } = await import('@/lib/db/client');
+    const { db } = await import('@/lib/kernel/db/client');
     const req = new Request('http://localhost/api/ra/dashboard');
     await GET(req, {});
 

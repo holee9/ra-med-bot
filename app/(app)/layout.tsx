@@ -9,9 +9,9 @@
 import PersonaBarClient from '@/components/shell/PersonaBarClient';
 import Sidebar from '@/components/shell/Sidebar';
 import Topbar from '@/components/shell/Topbar';
-import { type Tier, resolveTier } from '@/lib/auth/persona';
-import type { Role } from '@/lib/auth/rbac';
 import { FEATURE_FLAGS } from '@/lib/feature-flags';
+import { type Tier, resolveTier } from '@/lib/kernel/auth/persona';
+import type { Role } from '@/lib/kernel/auth/rbac';
 import type { Metadata } from 'next';
 import { cookies } from 'next/headers';
 import { redirect } from 'next/navigation';
@@ -60,8 +60,8 @@ export default async function AppLayout({ children }: { children: React.ReactNod
   // 2026-06-29: userRole을 try 밖에서 선언 (Sidebar userRole prop 전달용)
   let userRole: Role | undefined;
   try {
-    const { auth } = await import('@/lib/auth');
-    const { hasRole } = await import('@/lib/auth/rbac');
+    const { auth } = await import('@/lib/kernel/auth');
+    const { hasRole } = await import('@/lib/kernel/auth/rbac');
     const session = await auth();
     userRole = (session?.user as { role?: string } | undefined)?.role as Role | undefined;
     if (userRole) {
@@ -103,7 +103,7 @@ export default async function AppLayout({ children }: { children: React.ReactNod
     }
     const department = (session?.user as { department?: string } | undefined)?.department;
     if (department) {
-      const { canViewComparisons } = await import('@/lib/auth/predicate-permissions');
+      const { canViewComparisons } = await import('@/lib/kernel/auth/predicate-permissions');
       // canViewComparisons covers RA/Dev/Exec — the departments allowed to see
       // the Predicate feature in the sidebar.
       showPredicate = canViewComparisons(department);

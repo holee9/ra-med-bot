@@ -7,8 +7,8 @@
 // H-2, H-3) are covered at runtime, not just by structural grep.
 //
 // Strategy (mirrors tests/integration/clinical-investigation-idor-runtime.test.ts):
-//   1. Mock @/lib/auth/with-permission — bypass auth, inject a session per org.
-//   2. Mock @/lib/db/client — in-memory store; the IDOR lookup
+//   1. Mock @/lib/kernel/auth/with-permission — bypass auth, inject a session per org.
+//   2. Mock @/lib/kernel/db/client — in-memory store; the IDOR lookup
 //      (assertMessageInOrg via resolveMessageOrg) runs against REAL lib code
 //      querying the mocked db.
 //   3. Mock @/lib/audit — record writeAudit calls, simulate failure on demand.
@@ -227,7 +227,7 @@ function resolveRows(fromTable: string): Row[] {
   }
 }
 
-vi.mock('@/lib/db/client', () => ({
+vi.mock('@/lib/kernel/db/client', () => ({
   db: dbMock,
   // Mirror the real withTenantScope: delegate to dbMock.transaction so the
   // C-3 assertion on dbMock.transaction call count still holds, and the fn
@@ -244,7 +244,7 @@ vi.mock('@/lib/db/client', () => ({
 // C-3 tx-failure assertions see the audit attempt.
 // ---------------------------------------------------------------------------
 
-vi.mock('@/lib/audit', () => ({
+vi.mock('@/lib/kernel/audit', () => ({
   writeAudit: vi.fn(async (params: Row, tx?: { insert: unknown }) => {
     const client = (tx ?? { insert: dbMock.insert }) as { insert: unknown };
     // Forward to the db mock so tx-scoped failures propagate.
@@ -268,7 +268,7 @@ vi.mock('@/lib/audit', () => ({
 // inner handler with (req, ctx, session).
 // ---------------------------------------------------------------------------
 
-vi.mock('@/lib/auth/with-permission', () => ({
+vi.mock('@/lib/kernel/auth/with-permission', () => ({
   withPermission: vi.fn(
     (
       _action: string,

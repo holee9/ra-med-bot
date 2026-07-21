@@ -3,9 +3,9 @@
 // Server component with RBAC check: ra-member+ only. Viewer redirects to /chat.
 
 import { InboxKanban } from '@/components/inbox/InboxKanban';
-import { auth } from '@/lib/auth';
-import { hasRole } from '@/lib/auth/rbac';
-import type { Role } from '@/lib/auth/rbac';
+import { auth } from '@/lib/kernel/auth';
+import { hasRole } from '@/lib/kernel/auth/rbac';
+import type { Role } from '@/lib/kernel/auth/rbac';
 import { redirect } from 'next/navigation';
 
 export default async function InboxPage() {

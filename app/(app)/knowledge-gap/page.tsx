@@ -10,8 +10,8 @@
 
 import { QueueActions } from '@/components/knowledge-gap/QueueActions';
 import QueueFilters from '@/components/knowledge-gap/QueueFilters';
-import { auth } from '@/lib/auth';
-import { type Role, hasRole } from '@/lib/auth/rbac';
+import { auth } from '@/lib/kernel/auth';
+import { type Role, hasRole } from '@/lib/kernel/auth/rbac';
 import { listQueueItems } from '@/lib/knowledge-gap/queue-query';
 import type { Metadata } from 'next';
 

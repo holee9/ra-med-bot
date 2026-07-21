@@ -1,4 +1,4 @@
-import { auth } from '@/lib/auth';
+import { auth } from '@/lib/kernel/auth';
 // @MX:NOTE [AUTO] Admin document detail page — metadata, chunks, redaction preview, audit log.
 // @MX:SPEC SPEC-REGULA-DOCINGEST-001 (REQ-DOC-074)
 import { notFound, redirect } from 'next/navigation';

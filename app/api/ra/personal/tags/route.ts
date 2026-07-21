@@ -4,9 +4,9 @@
 // Returns the set of distinct tags the session user has applied to any bookmark.
 // Used by the library view to render filter chips.
 
-import { withPermission } from '@/lib/auth/with-permission';
-import { db } from '@/lib/db/client';
-import { personalBookmarks } from '@/lib/db/schema';
+import { withPermission } from '@/lib/kernel/auth/with-permission';
+import { db } from '@/lib/kernel/db/client';
+import { personalBookmarks } from '@/lib/kernel/db/schema';
 import { eq, sql } from 'drizzle-orm';
 import { NextResponse } from 'next/server';
 

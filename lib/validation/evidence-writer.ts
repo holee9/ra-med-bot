@@ -4,13 +4,13 @@
 //   glue layers (Charter [지양-5] no new harness). M5 sign-off reads these rows.
 // @MX:SPEC SPEC-REGULA-VALIDATION-001 (REQ-VAL-006, Issue #49)
 
-import { db } from '@/lib/db/client';
-import { validationEvidence } from '@/lib/db/schema';
+import { db } from '@/lib/kernel/db/client';
+import { validationEvidence } from '@/lib/kernel/db/schema';
 import {
   type EvidenceResult,
   type QualificationType,
   validationEvidenceInsertSchema,
-} from '@/lib/schemas/validation';
+} from '@/lib/kernel/schemas/validation';
 import { and, eq } from 'drizzle-orm';
 
 /**

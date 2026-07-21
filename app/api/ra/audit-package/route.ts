@@ -5,11 +5,11 @@
 
 export const runtime = 'nodejs';
 
-import { writeAudit } from '@/lib/audit';
 import { buildAuditPackage } from '@/lib/audit-package/builder';
-import { withPermission } from '@/lib/auth/with-permission';
-import { db } from '@/lib/db/client';
-import { answerSignatures, auditLogs, expertReviews } from '@/lib/db/schema';
+import { writeAudit } from '@/lib/kernel/audit';
+import { withPermission } from '@/lib/kernel/auth/with-permission';
+import { db } from '@/lib/kernel/db/client';
+import { answerSignatures, auditLogs, expertReviews } from '@/lib/kernel/db/schema';
 import { and, gte, lte } from 'drizzle-orm';
 import { z } from 'zod';
 

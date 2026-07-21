@@ -12,7 +12,7 @@ const root = path.resolve(__dirname, '..', '..');
 const readText = (rel: string): string => fs.readFileSync(path.join(root, rel), 'utf8');
 
 describe('SPEC-REGULA-VALIDATION-001 M0 — schema.ts exports', async () => {
-  const schema = (await import('@/lib/db/schema')) as Record<string, unknown>;
+  const schema = (await import('@/lib/kernel/db/schema')) as Record<string, unknown>;
 
   it('REQ-VAL-003/004/005: exports validationEvidence table', () => {
     expect(schema.validationEvidence).toBeDefined();
@@ -92,7 +92,7 @@ describe('SPEC-REGULA-VALIDATION-001 M0 — migration 0112 shape', () => {
 });
 
 describe('SPEC-REGULA-VALIDATION-001 M0 — Zod enum rejection', async () => {
-  const schemas = await import('@/lib/schemas/validation');
+  const schemas = await import('@/lib/kernel/schemas/validation');
 
   it('qualificationTypeSchema accepts iq/oq/pq and rejects anything else', () => {
     for (const v of ['iq', 'oq', 'pq'] as const) {
@@ -201,7 +201,9 @@ describe('SPEC-REGULA-VALIDATION-001 M0 — Zod enum rejection', async () => {
 });
 
 describe('SPEC-REGULA-VALIDATION-001 M0 — Drizzle type inference sanity', async () => {
-  const { validationEvidence, changeControl, validationSignoff } = await import('@/lib/db/schema');
+  const { validationEvidence, changeControl, validationSignoff } = await import(
+    '@/lib/kernel/db/schema'
+  );
 
   it('validationEvidence is a Drizzle table with expected column keys', () => {
     expect(validationEvidence).toBeDefined();

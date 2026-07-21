@@ -10,7 +10,7 @@
 //             3) Zod input validation.
 // @MX:SPEC SPEC-REGULA-MODEL-GOVERNANCE-001 (Issue 71, REQ-MODELGOV-010/011)
 
-import { withPermission } from '@/lib/auth/with-permission';
+import { withPermission } from '@/lib/kernel/auth/with-permission';
 import { assertChangeRequestAccess } from '@/lib/model-governance/access';
 import { recordEvalResult } from '@/lib/model-governance/change-workflow';
 import { z } from 'zod';

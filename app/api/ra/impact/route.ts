@@ -2,14 +2,14 @@
 // @MX:SPEC SPEC-REGULA-IMPACT-001
 
 import { eq } from 'drizzle-orm';
-import { withPermission } from '../../../../lib/auth/with-permission';
-import { db } from '../../../../lib/db/client';
+import { withPermission } from '../../../../lib/kernel/auth/with-permission';
+import { db } from '../../../../lib/kernel/db/client';
 import {
   impactActionItems,
   projects,
   regulatoryImpactAssessments,
   regulatoryUpdates,
-} from '../../../../lib/db/schema';
+} from '../../../../lib/kernel/db/schema';
 
 export const GET = withPermission('dashboard.view', async (_req, _ctx, session) => {
   const orgId = session.user.organizationId;

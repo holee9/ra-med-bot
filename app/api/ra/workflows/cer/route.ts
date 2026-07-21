@@ -1,11 +1,3 @@
-// @MX:ANCHOR [AUTO] POST /api/ra/workflows/cer — CER run + PMS local persistence.
-// @MX:REASON fan_in >= 3 (CerStartForm, PMS auto-linkage query, integration tests).
-//           Cross-SPEC contract: SPEC-REGULA-CER-001 (REQ-CER-036~040) +
-//           SPEC-REGULA-PMS-001 (AC-04 / REQ-PMS-004).
-// @MX:SPEC SPEC-REGULA-PMS-001 (AC-04, REQ-PMS-004) + SPEC-REGULA-CER-001
-import { writeAudit } from '@/lib/audit';
-import { withPermission } from '@/lib/auth/with-permission';
-import type { AuthSession } from '@/lib/auth/with-permission';
 import { auditCerCreated, auditCerLiteratureSearch } from '@/lib/cer/audit';
 import { assembleCer } from '@/lib/cer/cer-assembler';
 import { formatVancouver } from '@/lib/cer/citation-formatter';
@@ -13,8 +5,16 @@ import { type AppraisalResult, appraiseEvidence } from '@/lib/cer/literature-app
 import type { CerStageId } from '@/lib/cer/meddev-stages';
 import { assertPmsProjectAccess } from '@/lib/cer/project-ownership';
 import { searchPubMed } from '@/lib/cer/pubmed-client';
-import { db } from '@/lib/db/client';
-import { workflowRuns } from '@/lib/db/schema';
+// @MX:ANCHOR [AUTO] POST /api/ra/workflows/cer — CER run + PMS local persistence.
+// @MX:REASON fan_in >= 3 (CerStartForm, PMS auto-linkage query, integration tests).
+//           Cross-SPEC contract: SPEC-REGULA-CER-001 (REQ-CER-036~040) +
+//           SPEC-REGULA-PMS-001 (AC-04 / REQ-PMS-004).
+// @MX:SPEC SPEC-REGULA-PMS-001 (AC-04, REQ-PMS-004) + SPEC-REGULA-CER-001
+import { writeAudit } from '@/lib/kernel/audit';
+import { withPermission } from '@/lib/kernel/auth/with-permission';
+import type { AuthSession } from '@/lib/kernel/auth/with-permission';
+import { db } from '@/lib/kernel/db/client';
+import { workflowRuns } from '@/lib/kernel/db/schema';
 import { CerInputSchema } from '@/lib/workflows/types';
 
 // REQ-CER-016: literature search retrieves >=50 abstracts per query.

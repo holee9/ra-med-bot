@@ -17,8 +17,8 @@
 //   ]);
 //   const eligible = licenseEligible.intersection(govEligible);
 
-import { db } from '@/lib/db/client';
-import { sources } from '@/lib/db/schema';
+import { db } from '@/lib/kernel/db/client';
+import { sources } from '@/lib/kernel/db/schema';
 import { logger } from '@/lib/observability/logger';
 import { and, eq, inArray, isNull, or } from 'drizzle-orm';
 import { AUTHORITY_RANK, authorityRank, isPrimaryGrade } from './authority-model';

@@ -16,10 +16,10 @@
 
 export const runtime = 'nodejs';
 
-import { writeAudit } from '@/lib/audit';
-import { withPermission } from '@/lib/auth/with-permission';
-import { withTenantScope } from '@/lib/db/client';
-import { unansweredQueue } from '@/lib/db/schema';
+import { writeAudit } from '@/lib/kernel/audit';
+import { withPermission } from '@/lib/kernel/auth/with-permission';
+import { withTenantScope } from '@/lib/kernel/db/client';
+import { unansweredQueue } from '@/lib/kernel/db/schema';
 import { and, eq } from 'drizzle-orm';
 import { z } from 'zod';
 

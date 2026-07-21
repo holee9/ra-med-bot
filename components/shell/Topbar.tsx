@@ -13,8 +13,8 @@ export default async function Topbar() {
   let userInitial = 'U';
   let showExpertReview = false;
   try {
-    const { auth } = await import('@/lib/auth');
-    const { hasRole } = await import('@/lib/auth/rbac');
+    const { auth } = await import('@/lib/kernel/auth');
+    const { hasRole } = await import('@/lib/kernel/auth/rbac');
     const session = await auth();
     const name = (session?.user as { name?: string } | undefined)?.name ?? '';
     userInitial = name.charAt(0).toUpperCase() || 'U';

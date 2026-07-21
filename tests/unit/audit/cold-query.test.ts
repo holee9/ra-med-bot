@@ -1,23 +1,23 @@
-// Tests for lib/audit/cold-query.ts
+// Tests for lib/kernel/audit/cold-query.ts
 // RED: admin RBAC required, meta-audit logging, result shape
 
 import { describe, expect, it, vi } from 'vitest';
 
 describe('queryColdAudit', () => {
   it('should be exported from cold-query', async () => {
-    const mod = await import('../../../lib/audit/cold-query');
+    const mod = await import('../../../lib/kernel/audit/cold-query');
     expect(typeof mod.queryColdAudit).toBe('function');
   });
 
   it('should accept dateRange, action, actorId filters', async () => {
-    const { queryColdAudit } = await import('../../../lib/audit/cold-query');
+    const { queryColdAudit } = await import('../../../lib/kernel/audit/cold-query');
     // Should not throw when called with valid filter shape
     const r2Mock = {
       get: vi.fn().mockResolvedValue(null),
       list: vi.fn().mockResolvedValue({ objects: [], truncated: false }),
     } as unknown as R2Bucket;
 
-    const { R2Client } = await import('../../../lib/storage/r2');
+    const { R2Client } = await import('../../../lib/kernel/storage/r2');
     const r2Client = new R2Client(r2Mock);
 
     const writeAuditMock = vi.fn().mockResolvedValue(undefined);
@@ -36,8 +36,8 @@ describe('queryColdAudit', () => {
   });
 
   it('should call writeAudit with audit.cold_query action (REQ-CF-051)', async () => {
-    const { queryColdAudit } = await import('../../../lib/audit/cold-query');
-    const { R2Client } = await import('../../../lib/storage/r2');
+    const { queryColdAudit } = await import('../../../lib/kernel/audit/cold-query');
+    const { R2Client } = await import('../../../lib/kernel/storage/r2');
 
     const r2Mock = {
       get: vi.fn().mockResolvedValue(null),

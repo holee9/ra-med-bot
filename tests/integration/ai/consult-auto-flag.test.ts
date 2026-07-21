@@ -12,13 +12,13 @@ const mockInsertChain = {
 const mockDb = {
   insert: vi.fn().mockReturnValue(mockInsertChain),
 };
-vi.mock('@/lib/db/client', () => ({
+vi.mock('@/lib/kernel/db/client', () => ({
   db: mockDb,
 }));
 
 // Mock schema to return a dummy table reference.
-vi.mock('@/lib/db/schema', async (importOriginal) => {
-  const actual = await importOriginal<typeof import('@/lib/db/schema')>();
+vi.mock('@/lib/kernel/db/schema', async (importOriginal) => {
+  const actual = await importOriginal<typeof import('@/lib/kernel/db/schema')>();
   return {
     ...actual,
     expertReviews: { name: 'expert_reviews' },

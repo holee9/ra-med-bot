@@ -1,4 +1,4 @@
-// Tests for lib/ratelimit/cloudflare-kv.ts
+// Tests for lib/kernel/ratelimit/cloudflare-kv.ts
 // RED: sliding-window rate limiter backed by Workers KV
 
 import { beforeEach, describe, expect, it, vi } from 'vitest';
@@ -27,12 +27,12 @@ describe('createKVRateLimiter', () => {
   });
 
   it('should export createKVRateLimiter factory', async () => {
-    const mod = await import('../../../lib/ratelimit/cloudflare-kv');
+    const mod = await import('../../../lib/kernel/ratelimit/cloudflare-kv');
     expect(typeof mod.createKVRateLimiter).toBe('function');
   });
 
   it('should allow requests within limit', async () => {
-    const { createKVRateLimiter } = await import('../../../lib/ratelimit/cloudflare-kv');
+    const { createKVRateLimiter } = await import('../../../lib/kernel/ratelimit/cloudflare-kv');
     const limiter = createKVRateLimiter(kv, { limit: 5, windowSeconds: 60 });
 
     const result = await limiter.limit('consult', 'user-1');
@@ -41,7 +41,7 @@ describe('createKVRateLimiter', () => {
   });
 
   it('should block when limit is exceeded', async () => {
-    const { createKVRateLimiter } = await import('../../../lib/ratelimit/cloudflare-kv');
+    const { createKVRateLimiter } = await import('../../../lib/kernel/ratelimit/cloudflare-kv');
     const limiter = createKVRateLimiter(kv, { limit: 2, windowSeconds: 60 });
 
     await limiter.limit('consult', 'user-2');
@@ -53,7 +53,7 @@ describe('createKVRateLimiter', () => {
   });
 
   it('should use key pattern ratelimit:<endpoint>:<userId>:<window>', async () => {
-    const { createKVRateLimiter } = await import('../../../lib/ratelimit/cloudflare-kv');
+    const { createKVRateLimiter } = await import('../../../lib/kernel/ratelimit/cloudflare-kv');
     const limiter = createKVRateLimiter(kv, { limit: 10, windowSeconds: 60 });
 
     await limiter.limit('consult', 'user-3');
@@ -63,7 +63,7 @@ describe('createKVRateLimiter', () => {
   });
 
   it('should reset count after window expires', async () => {
-    const { createKVRateLimiter } = await import('../../../lib/ratelimit/cloudflare-kv');
+    const { createKVRateLimiter } = await import('../../../lib/kernel/ratelimit/cloudflare-kv');
     const limiter = createKVRateLimiter(kv, { limit: 1, windowSeconds: 60 });
 
     await limiter.limit('consult', 'user-4');

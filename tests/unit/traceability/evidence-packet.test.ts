@@ -8,7 +8,7 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 
 // Mock db schema so the drizzle imports resolve without loading real columns.
-vi.mock('@/lib/db/schema', () => ({
+vi.mock('@/lib/kernel/db/schema', () => ({
   evidenceNodes: { id: 'id', orgId: 'org_id' },
   evidenceEdges: {
     id: 'id',
@@ -128,7 +128,7 @@ function makeMockDb(state: MockDbState) {
       },
     }),
   }));
-  return { select: selectMock } as unknown as import('@/lib/db/client').Database;
+  return { select: selectMock } as unknown as import('@/lib/kernel/db/client').Database;
 }
 
 function makeNode(overrides: Partial<MockNode> = {}): MockNode {

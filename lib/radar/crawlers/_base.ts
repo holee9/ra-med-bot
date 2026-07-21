@@ -3,7 +3,7 @@
 // Handles: crawler_runs tracking, audit logging, robots.txt cache, retry logic.
 // @MX:SPEC SPEC-REGULA-RADAR-001 (REQ-RADAR-004, REQ-RADAR-007, REQ-RADAR-009)
 
-import { writeAudit } from '../../audit';
+import { writeAudit } from '../../kernel/audit';
 import type { CrawlerContext, CrawlerResult, RawUpdate } from './_types';
 
 /** robots.txt cache TTL: 24 hours */

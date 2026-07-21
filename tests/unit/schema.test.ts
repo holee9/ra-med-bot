@@ -9,11 +9,11 @@ import { describe, expect, it } from 'vitest';
 const root = path.resolve(__dirname, '..', '..');
 const readText = (rel: string): string => fs.readFileSync(path.join(root, rel), 'utf8');
 
-describe('lib/db/schema.ts (REQ-FND-031..044b)', async () => {
+describe('lib/kernel/db/schema.ts (REQ-FND-031..044b)', async () => {
   // Drizzle exports table builders; importing them here both exercises the
   // module (catches syntax errors) and gives the test access to the names.
   // The schema file does not require any env vars at import time.
-  const schema = (await import('@/lib/db/schema')) as Record<string, unknown>;
+  const schema = (await import('@/lib/kernel/db/schema')) as Record<string, unknown>;
 
   const expectedTables = [
     'users',
@@ -63,14 +63,14 @@ describe('lib/db/schema.ts (REQ-FND-031..044b)', async () => {
   });
 });
 
-describe('lib/audit.ts (REQ-FND-048, 049, 049a)', () => {
+describe('lib/kernel/audit.ts (REQ-FND-048, 049, 049a)', () => {
   it('exports writeAudit (textual check; runtime import requires DB env)', () => {
-    const src = readText('lib/audit.ts');
+    const src = readText('lib/kernel/audit.ts');
     expect(src).toMatch(/export async function writeAudit\(/);
   });
 
   it('AuditAction type contains all 3 Phase 1 values (REQ-FND-048)', () => {
-    const src = readText('lib/audit.ts');
+    const src = readText('lib/kernel/audit.ts');
     // Verify Phase 1 values are present — the union is extended by
     // 0003_breadth_audit_actions.sql (SPEC-REGULA-BREADTH-001 REQ-BREADTH-057).
     // The exact literal count is tested in tests/unit/audit.test.ts.
@@ -173,8 +173,8 @@ describe('middleware.ts (REQ-FND-053)', () => {
   });
 });
 
-describe('lib/auth.ts (REQ-FND-051, 052, 054, 055)', () => {
-  const src = readText('lib/auth.ts');
+describe('lib/kernel/auth.ts (REQ-FND-051, 052, 054, 055)', () => {
+  const src = readText('lib/kernel/auth.ts');
 
   it('uses JWT session strategy (Auth.js v5 Credentials forces JWT — REQ-FND-052)', () => {
     expect(src).toMatch(/strategy:\s*['"]jwt['"]/);
@@ -207,9 +207,9 @@ describe('lib/auth.ts (REQ-FND-051, 052, 054, 055)', () => {
 });
 
 describe('app/api/auth/[...nextauth]/route.ts (REQ-FND-055)', () => {
-  it('re-exports GET and POST from lib/auth handlers', () => {
+  it('re-exports GET and POST from lib/kernel/auth handlers', () => {
     const src = readText('app/api/auth/[...nextauth]/route.ts');
-    expect(src).toMatch(/from ['"]@\/lib\/auth['"]/);
+    expect(src).toMatch(/from ['"]@\/lib\/kernel\/auth['"]/);
     expect(src).toMatch(/export const \{ GET, POST \} = handlers;/);
   });
 });

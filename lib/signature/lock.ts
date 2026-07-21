@@ -3,8 +3,8 @@
 //            Locking gate for 21 CFR Part 11 §11.70 integrity enforcement.
 // @MX:SPEC SPEC-REGULA-ESIG-001 (REQ-ESIG-003)
 
-import type { AuditDbHandle } from '@/lib/audit';
-import { answerSignatures } from '@/lib/db/schema';
+import type { AuditDbHandle } from '@/lib/kernel/audit';
+import { answerSignatures } from '@/lib/kernel/db/schema';
 import { and, eq, isNull } from 'drizzle-orm';
 
 /**

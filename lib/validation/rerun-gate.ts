@@ -8,9 +8,9 @@
 //   before the high-impact change cannot satisfy the gate.
 // @MX:SPEC SPEC-REGULA-VALIDATION-001 (REQ-VAL-008, AC-5)
 
-import { db } from '@/lib/db/client';
-import { changeControl, validationEvidence } from '@/lib/db/schema';
-import type { ChangeAxis } from '@/lib/schemas/validation';
+import { db } from '@/lib/kernel/db/client';
+import { changeControl, validationEvidence } from '@/lib/kernel/db/schema';
+import type { ChangeAxis } from '@/lib/kernel/schemas/validation';
 import { and, eq, gte, inArray } from 'drizzle-orm';
 
 export interface RerunGateResult {

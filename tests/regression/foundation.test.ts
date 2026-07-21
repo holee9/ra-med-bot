@@ -1,8 +1,8 @@
 // @MX:NOTE [AUTO] FOUNDATION regression tests — validates T-001~T-013 invariants.
 // @MX:SPEC SPEC-REGULA-ENTERPRISE-001 (REQ-ENTERPRISE-060)
 
-import { PERMISSIONS } from '@/lib/auth/permissions';
-import { hasRole } from '@/lib/auth/rbac';
+import { PERMISSIONS } from '@/lib/kernel/auth/permissions';
+import { hasRole } from '@/lib/kernel/auth/rbac';
 import { describe, expect, it } from 'vitest';
 
 describe('FOUNDATION regression', () => {
@@ -52,12 +52,12 @@ describe('FOUNDATION regression', () => {
   // Audit actions count preserved (>= 25, may grow with profile.update)
   // ---------------------------------------------------------------------------
   it('audit action union has >= 25 values', async () => {
-    const { auditActionEnum } = await import('@/lib/db/schema');
+    const { auditActionEnum } = await import('@/lib/kernel/db/schema');
     expect(auditActionEnum.enumValues.length).toBeGreaterThanOrEqual(25);
   });
 
   it('audit action enum includes enterprise actions', async () => {
-    const { auditActionEnum } = await import('@/lib/db/schema');
+    const { auditActionEnum } = await import('@/lib/kernel/db/schema');
     const values = auditActionEnum.enumValues;
     expect(values).toContain('rbac.permission_deny');
     expect(values).toContain('auth.login');
@@ -69,7 +69,7 @@ describe('FOUNDATION regression', () => {
   // Expert review status enum
   // ---------------------------------------------------------------------------
   it('expert review status has pending/in_progress/resolved', async () => {
-    const { expertReviewStatusEnum } = await import('@/lib/db/schema');
+    const { expertReviewStatusEnum } = await import('@/lib/kernel/db/schema');
     expect(expertReviewStatusEnum.enumValues).toContain('pending');
     expect(expertReviewStatusEnum.enumValues).toContain('in_progress');
     expect(expertReviewStatusEnum.enumValues).toContain('resolved');
@@ -79,7 +79,7 @@ describe('FOUNDATION regression', () => {
   // User role enum
   // ---------------------------------------------------------------------------
   it('user role enum has all 4 roles', async () => {
-    const { userRoleEnum } = await import('@/lib/db/schema');
+    const { userRoleEnum } = await import('@/lib/kernel/db/schema');
     expect(userRoleEnum.enumValues).toContain('admin');
     expect(userRoleEnum.enumValues).toContain('ra-lead');
     expect(userRoleEnum.enumValues).toContain('ra-member');

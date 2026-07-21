@@ -4,10 +4,10 @@
 // @MX:SPEC SPEC-REGULA-ESIG-001 (REQ-ESIG-001, REQ-ESIG-002, REQ-ESIG-004)
 export const runtime = 'nodejs';
 
-import { writeAudit } from '@/lib/audit';
-import { withPermission } from '@/lib/auth/with-permission';
-import { db } from '@/lib/db/client';
-import { messageBlocks } from '@/lib/db/schema';
+import { writeAudit } from '@/lib/kernel/audit';
+import { withPermission } from '@/lib/kernel/auth/with-permission';
+import { db } from '@/lib/kernel/db/client';
+import { messageBlocks } from '@/lib/kernel/db/schema';
 import { getAuthorizedSignatureMessage } from '@/lib/signature/authorization';
 import { computeAnswerHash } from '@/lib/signature/hash';
 import { getActiveSignature, insertSignature } from '@/lib/signature/queries';

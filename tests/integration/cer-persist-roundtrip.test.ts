@@ -8,21 +8,21 @@
 //           instead of 500'ing in production.
 //
 // Strategy (Issue #364 Class B conversion — data/schema-dependent):
-//   1. NO @/lib/db/client mock — the route's db.transaction uses the real DB.
+//   1. NO @/lib/kernel/db/client mock — the route's db.transaction uses the real DB.
 //   2. beforeAll: seed FK prerequisites (user / org / project) via fixtures.
 //   3. beforeEach: TRUNCATE workflow_runs for per-test isolation.
 //   4. Mocks kept are route-level and orthogonal to schema:
 //        - @/lib/audit        — records writeAudit + simulates the H2 failure
 //                                (audit_logs is immutable — REQ-FND-044 — so it
 //                                cannot be truncated; the mock keeps the table clean).
-//        - @/lib/auth/with-permission — bypass real SSO, inject the session.
+//        - @/lib/kernel/auth/with-permission — bypass real SSO, inject the session.
 //        - @/lib/cer/project-ownership — deterministic IDOR access decision.
 //        - @/lib/cer/pubmed-client — no real PubMed network calls.
 //   5. Assertions SELECT the persisted row back from the real DB.
 //
 // Skipped when DATABASE_URL is unset (mirrors migrations-real-db.test.ts).
 
-import { workflowRuns } from '@/lib/db/schema';
+import { workflowRuns } from '@/lib/kernel/db/schema';
 import { eq } from 'drizzle-orm';
 import { afterEach, beforeAll, beforeEach, describe, expect, it, vi } from 'vitest';
 import { HAS_DATABASE_URL, seedCoreActors, truncateTables } from '../../tests/fixtures/database';
@@ -45,7 +45,7 @@ type AuditRecord = { action: string; resource_id: string; tx?: unknown; failed?:
 const auditRecords: AuditRecord[] = [];
 let auditShouldFailInTransaction = false;
 
-vi.mock('@/lib/audit', () => ({
+vi.mock('@/lib/kernel/audit', () => ({
   writeAudit: vi.fn(async (params: { action: string; resource_id: string }, tx?: unknown) => {
     const shouldFail = auditShouldFailInTransaction && Boolean(tx);
     auditRecords.push({
@@ -70,7 +70,7 @@ let currentSession: MockSession = {
   user: { id: 'user-orgA', role: 'ra-lead', organizationId: ORG_A },
 };
 
-vi.mock('@/lib/auth/with-permission', () => ({
+vi.mock('@/lib/kernel/auth/with-permission', () => ({
   withPermission: vi.fn(
     (
       _action: string,
@@ -158,7 +158,7 @@ beforeAll(async () => {
     projectId: PROJECT_ID,
     projectName: 'CER Real-DB Test Project',
   });
-  // 2. Load the real route. The route's `import { db } from '@/lib/db/client'`
+  // 2. Load the real route. The route's `import { db } from '@/lib/kernel/db/client'`
   //    now resolves to the REAL client (no db mock registered).
   const route = await import('@/app/api/ra/workflows/cer/route');
   postCer = route.POST;

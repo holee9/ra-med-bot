@@ -24,7 +24,7 @@ import {
   organizations,
   projects,
   users,
-} from '@/lib/db/schema';
+} from '@/lib/kernel/db/schema';
 import { afterEach, beforeAll, beforeEach, describe, expect, it, vi } from 'vitest';
 import { HAS_DATABASE_URL, seedCoreActors, truncateTables } from '../../tests/fixtures/database';
 
@@ -39,7 +39,7 @@ interface SessionShape {
 type AuditRecord = { action: string; resourceId?: string; meta?: Row; tx?: unknown };
 const auditRecords: AuditRecord[] = [];
 let auditShouldFail = false;
-vi.mock('@/lib/audit', () => ({
+vi.mock('@/lib/kernel/audit', () => ({
   writeAudit: vi.fn(
     async (params: { action: string; resource_id?: string; meta_json?: Row }, tx?: unknown) => {
       if (auditShouldFail) throw new Error('simulated audit failure');
@@ -55,7 +55,7 @@ vi.mock('@/lib/audit', () => ({
 
 // with-permission mock — bypass SSO, inject a per-org session.
 const session = { current: null as SessionShape | null };
-vi.mock('@/lib/auth/with-permission', () => ({
+vi.mock('@/lib/kernel/auth/with-permission', () => ({
   withPermission:
     (_action: string, handler: (req: Request, ctx: unknown, s: SessionShape) => unknown) =>
     async (req: Request, ctx: unknown) => {
@@ -66,7 +66,7 @@ vi.mock('@/lib/auth/with-permission', () => ({
 }));
 
 async function getDb() {
-  const { db } = await import('@/lib/db/client');
+  const { db } = await import('@/lib/kernel/db/client');
   return db;
 }
 

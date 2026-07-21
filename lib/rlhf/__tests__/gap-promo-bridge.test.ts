@@ -4,8 +4,8 @@ import { describe, expect, it, vi } from 'vitest';
 // The gap-promo-bridge imports createGitHubIssue, which transitively imports
 // writeAudit -> db/client -> env validation. Mock both so the test runs in
 // pure unit mode without triggering env validation.
-vi.mock('@/lib/audit', () => ({ writeAudit: vi.fn().mockResolvedValue(undefined) }));
-vi.mock('@/lib/db/client', () => ({ db: {} }));
+vi.mock('@/lib/kernel/audit', () => ({ writeAudit: vi.fn().mockResolvedValue(undefined) }));
+vi.mock('@/lib/kernel/db/client', () => ({ db: {} }));
 import type { GitHubIssuesClient } from '@/lib/knowledge-gap/github-issue';
 import {
   type FeedbackBridgeInput,

@@ -4,7 +4,7 @@
 // (defense-in-depth on top of PersonaBar's isValidTierForRole gating);
 // hydration safety (server-injected initialTier on first render).
 import '@testing-library/jest-dom';
-import { PERSONA_COOKIE } from '@/lib/auth/persona';
+import { PERSONA_COOKIE } from '@/lib/kernel/auth/persona';
 import { fireEvent, render, screen } from '@testing-library/react';
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import PersonaBarClient from '../PersonaBarClient';

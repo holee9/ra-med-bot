@@ -3,8 +3,8 @@
 // @MX:SPEC SPEC-REGULA-ESIG-001 (REQ-ESIG-006)
 
 import { and, eq, or } from 'drizzle-orm';
-import { db } from '../db/client';
-import { conversations, messages, projects } from '../db/schema';
+import { db } from '../kernel/db/client';
+import { conversations, messages, projects } from '../kernel/db/schema';
 
 interface SignatureSession {
   user: {

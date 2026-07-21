@@ -4,9 +4,9 @@
  */
 
 import { describe, expect, it } from 'vitest';
-import { PERMISSIONS, roleSatisfiesPermission } from '../../auth/permissions';
-import { hasRole } from '../../auth/rbac';
-import type { Role } from '../../auth/rbac';
+import { PERMISSIONS, roleSatisfiesPermission } from '../../kernel/auth/permissions';
+import { hasRole } from '../../kernel/auth/rbac';
+import type { Role } from '../../kernel/auth/rbac';
 
 describe('signature.sign permission', () => {
   it('exists in PERMISSIONS matrix', () => {

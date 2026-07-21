@@ -20,7 +20,7 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 // vi.hoisted ensures the mock exists before vi.mock factories run.
 const { dbMock } = vi.hoisted(() => ({ dbMock: { execute: vi.fn() } }));
 
-vi.mock('@/lib/db/client', () => ({
+vi.mock('@/lib/kernel/db/client', () => ({
   db: dbMock,
   // withTenantScope invokes the callback synchronously with the same db handle.
   withTenantScope: vi.fn(

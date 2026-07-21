@@ -1,7 +1,7 @@
 // @MX:NOTE [AUTO] Knowledge promotion unit tests — RBAC, audit atomicity, boost, unpromote.
 // @MX:SPEC SPEC-REGULA-KNOWLEDGE-PROMO-001 (AC-01~08, REQ-001~015)
-// @MX:REASON Mirrors the rlhf-idor-runtime pattern: mock @/lib/db/client,
-//           @/lib/audit, @/lib/auth/with-permission so the REAL route handlers
+// @MX:REASON Mirrors the rlhf-idor-runtime pattern: mock @/lib/kernel/db/client,
+//           @/lib/audit, @/lib/kernel/auth/with-permission so the REAL route handlers
 //           + REAL promote/unpromote logic run against an in-memory store.
 //           Covers AC-01 (org isolation), AC-02 (promote), AC-03 (RBAC deny),
 //           AC-07 (audit), and the boost + unpromote-exclusion invariants.
@@ -211,7 +211,7 @@ function resolveRows(fromTable: string): Row[] {
   }
 }
 
-vi.mock('@/lib/db/client', () => ({
+vi.mock('@/lib/kernel/db/client', () => ({
   db: dbMock,
   withTenantScope: vi.fn(
     async <T>(_orgId: string, fn: (db: typeof dbMock) => Promise<T>): Promise<T> =>
@@ -219,7 +219,7 @@ vi.mock('@/lib/db/client', () => ({
   ),
 }));
 
-vi.mock('@/lib/audit', () => ({
+vi.mock('@/lib/kernel/audit', () => ({
   writeAudit: vi.fn(async (params: Row, tx?: { insert: unknown }) => {
     const client = (tx ?? { insert: dbMock.insert }) as { insert: unknown };
     await (client.insert as (t: unknown) => InsertChain)(Symbol.for('audit_logs') as unknown)
@@ -237,7 +237,7 @@ vi.mock('@/lib/audit', () => ({
   }),
 }));
 
-vi.mock('@/lib/auth/with-permission', () => ({
+vi.mock('@/lib/kernel/auth/with-permission', () => ({
   withPermission: vi.fn(
     (
       _action: string,

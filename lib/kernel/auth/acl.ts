@@ -1,8 +1,8 @@
 // REQ-ENTERPRISE-018: ACL membership queries — org and project membership checks.
 // Uses Drizzle ORM to query the org_members and project_members tables.
 
-import { db } from '@/lib/db/client';
-import { orgMembers, projectMembers } from '@/lib/db/schema';
+import { db } from '@/lib/kernel/db/client';
+import { orgMembers, projectMembers } from '@/lib/kernel/db/schema';
 import { and, eq } from 'drizzle-orm';
 
 /**

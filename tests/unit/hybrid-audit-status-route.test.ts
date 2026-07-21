@@ -28,7 +28,7 @@ const withPermissionMock = vi.fn(
       }),
 );
 
-vi.mock('@/lib/auth/with-permission', () => ({
+vi.mock('@/lib/kernel/auth/with-permission', () => ({
   withPermission: withPermissionMock,
 }));
 

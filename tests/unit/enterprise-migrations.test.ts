@@ -386,40 +386,40 @@ describe('Migration 6: membership tables (CF-2 fix)', () => {
 });
 
 // ---------------------------------------------------------------------------
-// lib/db/schema.ts — Phase 5 additions
+// lib/kernel/db/schema.ts — Phase 5 additions
 // ---------------------------------------------------------------------------
-describe('lib/db/schema.ts Phase 5 additions', () => {
+describe('lib/kernel/db/schema.ts Phase 5 additions', () => {
   it('exports userRoleEnum with 4 values', () => {
-    const src = readText('lib/db/schema.ts');
+    const src = readText('lib/kernel/db/schema-kernel.ts');
     expect(src).toMatch(/export const userRoleEnum\s*=/);
     expect(src).toMatch(/pgEnum\s*\(\s*'user_role'/);
   });
 
   it('users table uses userRoleEnum for role column', () => {
-    const src = readText('lib/db/schema.ts');
+    const src = readText('lib/kernel/db/schema-kernel.ts');
     // Should reference the enum rather than text()
     expect(src).toMatch(/userRoleEnum\s*\(\s*'role'\s*\)/);
   });
 
   it('users table has notificationPref column', () => {
-    const src = readText('lib/db/schema.ts');
+    const src = readText('lib/kernel/db/schema-kernel.ts');
     expect(src).toMatch(/notificationPref\s*:|notification_pref/);
     expect(src).toMatch(/jsonb/);
   });
 
   it('exports orgMembers table', () => {
-    const src = readText('lib/db/schema.ts');
+    const src = readText('lib/kernel/db/schema.ts');
     expect(src).toMatch(/export const orgMembers\s*=/);
   });
 
   it('exports projectMembers table', () => {
-    const src = readText('lib/db/schema.ts');
+    const src = readText('lib/kernel/db/schema.ts');
     expect(src).toMatch(/export const projectMembers\s*=/);
   });
 
   it('auditActionEnum stays in lock-step with AuditAction through risk management', () => {
-    const src = readText('lib/db/schema.ts');
-    const auditSrc = readText('lib/audit.ts');
+    const src = readText('lib/kernel/db/schema.ts');
+    const auditSrc = readText('lib/kernel/audit.ts');
     const values = extractAuditActionEnumValues(src);
     const typeValues = extractAuditActionTypeValues(auditSrc);
     // Lock-step = both declarations hold the same SET of audit actions. Declaration
@@ -433,14 +433,14 @@ describe('lib/db/schema.ts Phase 5 additions', () => {
   it.each(REQUIRED_RECOVERY_TABLES)(
     'exports required quality-recovery table %s as %s',
     (tableName, exportName) => {
-      const src = readText('lib/db/schema.ts');
+      const src = readText('lib/kernel/db/schema.ts');
       expect(src).toMatch(new RegExp(`export const ${exportName}\\s*=\\s*pgTable`));
       expect(src).toContain(`'${tableName}'`);
     },
   );
 
   it('uses explicit SQL defaults for text array columns so drizzle-kit push emits valid SQL', () => {
-    const src = readText('lib/db/schema.ts');
+    const src = readText('lib/kernel/db/schema.ts');
     expect(src).not.toMatch(/\.array\(\)\s*\.notNull\(\)\s*\.default\(\[\]\)/);
     expect(src).toContain(".default(sql`'{}'::text[]`)");
     expect(src).toContain(".default(sql`ARRAY['']::text[]`)");
@@ -448,17 +448,17 @@ describe('lib/db/schema.ts Phase 5 additions', () => {
 });
 
 // ---------------------------------------------------------------------------
-// lib/audit.ts — Phase 5 AuditAction type additions
+// lib/kernel/audit.ts — Phase 5 AuditAction type additions
 // ---------------------------------------------------------------------------
-describe('lib/audit.ts Phase 5 AuditAction type additions', () => {
+describe('lib/kernel/audit.ts Phase 5 AuditAction type additions', () => {
   it.each(ENTERPRISE_AUDIT_ACTIONS)('AuditAction type includes enterprise action: %s', (action) => {
-    const src = readText('lib/audit.ts');
+    const src = readText('lib/kernel/audit.ts');
     const escaped = action.replace(/\./g, '\\.');
     expect(src).toMatch(new RegExp(`'${escaped}'`));
   });
 
   it('AuditAction type includes post-enterprise regulated workflow actions through risk management', () => {
-    const src = readText('lib/audit.ts');
+    const src = readText('lib/kernel/audit.ts');
     const values = extractAuditActionTypeValues(src);
     expect(values).toEqual(
       expect.arrayContaining([
@@ -489,7 +489,7 @@ describe('lib/audit.ts Phase 5 AuditAction type additions', () => {
   it.each(REQUIRED_RECOVERY_AUDIT_ACTIONS)(
     'AuditAction type includes quality-recovery audit action: %s',
     (action) => {
-      const values = extractAuditActionTypeValues(readText('lib/audit.ts'));
+      const values = extractAuditActionTypeValues(readText('lib/kernel/audit.ts'));
       expect(values).toContain(action);
     },
   );
@@ -497,13 +497,13 @@ describe('lib/audit.ts Phase 5 AuditAction type additions', () => {
   it.each(REQUIRED_RECOVERY_AUDIT_ACTIONS)(
     'auditActionEnum includes quality-recovery audit action: %s',
     (action) => {
-      const values = extractAuditActionEnumValues(readText('lib/db/schema.ts'));
+      const values = extractAuditActionEnumValues(readText('lib/kernel/db/schema.ts'));
       expect(values).toContain(action);
     },
   );
 
   it('does NOT include auth.mfa_fail as a union value (removed in v0.3.0 H-5)', () => {
-    const src = readText('lib/audit.ts');
+    const src = readText('lib/kernel/audit.ts');
     // Must not appear as a string literal in the type union.
     // Comments mentioning it are allowed.
     const typeMatch = src.match(/export type AuditAction\s*=\s*([\s\S]*?);/);
@@ -551,24 +551,24 @@ describe('SPEC-REGULA-DELTA-SYNC-001 (Issue #45) — migration 0065', () => {
   });
 
   it.each(DELTA_SYNC_AUDIT_ACTIONS)('AuditAction type includes delta-sync action: %s', (action) => {
-    const src = readText('lib/audit.ts');
+    const src = readText('lib/kernel/audit.ts');
     const escaped = action.replace(/\./g, '\\.');
     expect(src).toMatch(new RegExp(`'${escaped}'`));
   });
 
   it.each(DELTA_SYNC_AUDIT_ACTIONS)('auditActionEnum includes delta-sync action: %s', (action) => {
-    const src = readText('lib/db/schema.ts');
+    const src = readText('lib/kernel/db/schema.ts');
     expect(src).toContain(`'${action}'`);
   });
 
   it('schema.ts exports corpusSyncRuns table', () => {
-    const src = readText('lib/db/schema.ts');
+    const src = readText('lib/kernel/db/schema.ts');
     expect(src).toMatch(/export const corpusSyncRuns\s*=\s*pgTable/);
     expect(src).toContain("'corpus_sync_runs'");
   });
 
   it('schema.ts adds updated_at and superseded_by to sourceSections', () => {
-    const src = readText('lib/db/schema.ts');
+    const src = readText('lib/kernel/db/schema.ts');
     expect(src).toMatch(/updated_at:\s*timestamp/);
     expect(src).toMatch(/superseded_by:\s*uuid/);
   });
@@ -655,7 +655,7 @@ describe('SPEC-REGULA-KNOWLEDGE-GAP-001 (Issue #35) — migration 0066', () => {
   it.each(KNOWLEDGE_GAP_AUDIT_ACTIONS)(
     'AuditAction type includes knowledge-gap action: %s',
     (action) => {
-      const src = readText('lib/audit.ts');
+      const src = readText('lib/kernel/audit.ts');
       expect(src).toContain(`'${action}'`);
     },
   );
@@ -663,26 +663,26 @@ describe('SPEC-REGULA-KNOWLEDGE-GAP-001 (Issue #35) — migration 0066', () => {
   it.each(KNOWLEDGE_GAP_AUDIT_ACTIONS)(
     'auditActionEnum includes knowledge-gap action: %s',
     (action) => {
-      const src = readText('lib/db/schema.ts');
+      const src = readText('lib/kernel/db/schema.ts');
       expect(src).toContain(`'${action}'`);
     },
   );
 
   it('schema.ts exports the 3 gap_* enums', () => {
-    const src = readText('lib/db/schema.ts');
+    const src = readText('lib/kernel/db/schema.ts');
     expect(src).toMatch(/export const gapReasonEnum\s*=\s*pgEnum/);
     expect(src).toMatch(/export const gapStatusEnum\s*=\s*pgEnum/);
     expect(src).toMatch(/export const gapClassificationEnum\s*=\s*pgEnum/);
   });
 
   it('schema.ts exports unansweredQueue table', () => {
-    const src = readText('lib/db/schema.ts');
+    const src = readText('lib/kernel/db/schema.ts');
     expect(src).toMatch(/export const unansweredQueue\s*=\s*pgTable/);
     expect(src).toContain("'unanswered_queue'");
   });
 
   it('schema.ts adds knowledgeGapRequired to messages table', () => {
-    const src = readText('lib/db/schema.ts');
+    const src = readText('lib/kernel/db/schema.ts');
     expect(src).toMatch(/knowledgeGapRequired:\s*boolean\('knowledge_gap_required'\)/);
   });
 });
@@ -728,22 +728,22 @@ describe('SPEC-REGULA-CLASSIFY-001 (Issue #59) — migration 0067', () => {
   });
 
   it("workflowTypeEnum in schema.ts includes 'classify'", () => {
-    const src = readText('lib/db/schema.ts');
+    const src = readText('lib/kernel/db/schema.ts');
     expect(src).toMatch(/export const workflowTypeEnum[\s\S]*'classify'/);
   });
 
   it("auditActionEnum in schema.ts includes 'classification_exported'", () => {
-    const src = readText('lib/db/schema.ts');
+    const src = readText('lib/kernel/db/schema.ts');
     expect(src).toContain("'classification_exported'");
   });
 
   it("AuditAction type in audit.ts includes 'classification_exported'", () => {
-    const src = readText('lib/audit.ts');
+    const src = readText('lib/kernel/audit.ts');
     expect(src).toContain("'classification_exported'");
   });
 
   it('schema.ts deviceClassifications defines workflowRunId, input, result, status columns', () => {
-    const src = readText('lib/db/schema.ts');
+    const src = readText('lib/kernel/db/schema.ts');
     expect(src).toMatch(/workflowRunId:\s*uuid\('workflow_run_id'\)/);
     expect(src).toMatch(/input:\s*jsonb\('input'\)/);
     expect(src).toMatch(/result:\s*jsonb\('result'\)/);
@@ -865,7 +865,7 @@ describe('SPEC-REGULA-TRACEABILITY-001 (Issue #47) — migration 0068', () => {
   });
 
   it('schema.ts defines the 3 new pgEnums + 3 new tables (lock-step)', () => {
-    const src = readText('lib/db/schema.ts');
+    const src = readText('lib/kernel/db/schema.ts');
     expect(src).toMatch(/export const evidenceNodeTypeEnum\s*=\s*pgEnum/);
     expect(src).toMatch(/export const evidenceEdgeRelationEnum\s*=\s*pgEnum/);
     expect(src).toMatch(/export const staleReasonEnum\s*=\s*pgEnum/);
@@ -875,7 +875,7 @@ describe('SPEC-REGULA-TRACEABILITY-001 (Issue #47) — migration 0068', () => {
   });
 
   it('auditActionEnum in schema.ts includes the 4 traceability values', () => {
-    const src = readText('lib/db/schema.ts');
+    const src = readText('lib/kernel/db/schema.ts');
     expect(src).toContain("'traceability.edge_created'");
     expect(src).toContain("'traceability.edge_deleted'");
     expect(src).toContain("'traceability.packet_exported'");
@@ -883,7 +883,7 @@ describe('SPEC-REGULA-TRACEABILITY-001 (Issue #47) — migration 0068', () => {
   });
 
   it('AuditAction type in audit.ts includes the 4 traceability values', () => {
-    const src = readText('lib/audit.ts');
+    const src = readText('lib/kernel/audit.ts');
     expect(src).toContain("'traceability.edge_created'");
     expect(src).toContain("'traceability.edge_deleted'");
     expect(src).toContain("'traceability.packet_exported'");
@@ -891,7 +891,7 @@ describe('SPEC-REGULA-TRACEABILITY-001 (Issue #47) — migration 0068', () => {
   });
 
   it('permissions.ts adds traceability.manage (ra-lead only)', () => {
-    const src = readText('lib/auth/permissions.ts');
+    const src = readText('lib/kernel/auth/permissions.ts');
     expect(src).toMatch(/'traceability.manage'/);
     expect(src).toMatch(/'traceability.manage':\s*\{[^}]*minRole:\s*'ra-lead'/);
   });
@@ -996,7 +996,7 @@ describe('SPEC-REGULA-PMS-001 (Issue #53) — migration 0069', () => {
   // assertion documents the removal (the historical 0069 migration still adds
   // them; 0103 drops them).
   it('schema.ts workflowTypeEnum NO LONGER includes the 3 PMS values (Issue #319)', () => {
-    const src = readText('lib/db/schema.ts');
+    const src = readText('lib/kernel/db/schema.ts');
     // Scope to the workflowTypeEnum definition block — removal comments elsewhere
     // legitimately mention the retired value names.
     const enumBlock =
@@ -1009,7 +1009,7 @@ describe('SPEC-REGULA-PMS-001 (Issue #53) — migration 0069', () => {
   });
 
   it('schema.ts auditActionEnum NO LONGER includes the PMS values (Issue #319)', () => {
-    const src = readText('lib/db/schema.ts');
+    const src = readText('lib/kernel/db/schema.ts');
     const enumBlock =
       src.match(/export const auditActionEnum = pgEnum\('audit_action', \[([\s\S]*?)\]\);/)?.[1] ??
       '';
@@ -1019,13 +1019,13 @@ describe('SPEC-REGULA-PMS-001 (Issue #53) — migration 0069', () => {
   });
 
   it('schema.ts NO LONGER defines pmsInputs and pmsDocuments tables (Issue #319)', () => {
-    const src = readText('lib/db/schema.ts');
+    const src = readText('lib/kernel/db/schema.ts');
     expect(src).not.toMatch(/export const pmsInputs\s*=\s*pgTable/);
     expect(src).not.toMatch(/export const pmsDocuments\s*=\s*pgTable/);
   });
 
   it('AuditAction type in audit.ts NO LONGER includes the PMS values (Issue #319)', () => {
-    const src = readText('lib/audit.ts');
+    const src = readText('lib/kernel/audit.ts');
     // Scope to the AuditAction type union body.
     const typeBlock = src.match(/export type AuditAction =\s*([\s\S]*?);/)?.[1] ?? '';
     for (const v of PMS_AUDIT_ACTIONS) {
@@ -1111,19 +1111,19 @@ describe('Migration 0071: change_control_assessment (SPEC-REGULA-CHANGE-CONTROL-
   });
 
   it('schema.ts workflowTypeEnum includes change_control_assessment', () => {
-    const src = readText('lib/db/schema.ts');
+    const src = readText('lib/kernel/db/schema.ts');
     expect(src).toContain("'change_control_assessment'");
   });
 
   it('schema.ts auditActionEnum includes the 5 change.* values', () => {
-    const src = readText('lib/db/schema.ts');
+    const src = readText('lib/kernel/db/schema.ts');
     for (const v of CHANGE_CONTROL_AUDIT_ACTIONS) {
       expect(src).toContain(`'${v}'`);
     }
   });
 
   it('schema.ts defines 4 change-control tables', () => {
-    const src = readText('lib/db/schema.ts');
+    const src = readText('lib/kernel/db/schema.ts');
     expect(src).toMatch(/export const changeAssessments\s*=\s*pgTable/);
     expect(src).toMatch(/export const changeVerdicts\s*=\s*pgTable/);
     expect(src).toMatch(/export const changeVerdictCitations\s*=\s*pgTable/);
@@ -1131,14 +1131,14 @@ describe('Migration 0071: change_control_assessment (SPEC-REGULA-CHANGE-CONTROL-
   });
 
   it('AuditAction type in audit.ts includes the 5 change.* values', () => {
-    const src = readText('lib/audit.ts');
+    const src = readText('lib/kernel/audit.ts');
     for (const v of CHANGE_CONTROL_AUDIT_ACTIONS) {
       expect(src).toContain(`'${v}'`);
     }
   });
 
   it('permissions.ts adds 3 change.* PermissionActions (REQ-012 RBAC)', () => {
-    const src = readText('lib/auth/permissions.ts');
+    const src = readText('lib/kernel/auth/permissions.ts');
     expect(src).toMatch(/'change\.assess'/);
     expect(src).toMatch(/'change\.view'/);
     expect(src).toMatch(/'change\.export'/);
@@ -1221,19 +1221,19 @@ describe('Migration 0072: labeling (SPEC-REGULA-LABELING-001)', () => {
   });
 
   it('schema.ts workflowTypeEnum includes labeling', () => {
-    const src = readText('lib/db/schema.ts');
+    const src = readText('lib/kernel/db/schema.ts');
     expect(src).toContain("'labeling'");
   });
 
   it('schema.ts auditActionEnum includes the 6 label.* values', () => {
-    const src = readText('lib/db/schema.ts');
+    const src = readText('lib/kernel/db/schema.ts');
     for (const v of LABELING_AUDIT_ACTIONS) {
       expect(src).toContain(`'${v}'`);
     }
   });
 
   it('schema.ts defines 5 labeling tables', () => {
-    const src = readText('lib/db/schema.ts');
+    const src = readText('lib/kernel/db/schema.ts');
     expect(src).toMatch(/export const labelingDocuments\s*=\s*pgTable/);
     expect(src).toMatch(/export const labelingSections\s*=\s*pgTable/);
     expect(src).toMatch(/export const labelingClaims\s*=\s*pgTable/);
@@ -1242,14 +1242,14 @@ describe('Migration 0072: labeling (SPEC-REGULA-LABELING-001)', () => {
   });
 
   it('AuditAction type in audit.ts includes the 6 label.* values', () => {
-    const src = readText('lib/audit.ts');
+    const src = readText('lib/kernel/audit.ts');
     for (const v of LABELING_AUDIT_ACTIONS) {
       expect(src).toContain(`'${v}'`);
     }
   });
 
   it('permissions.ts adds 4 label.* PermissionActions (REQ-012 RBAC)', () => {
-    const src = readText('lib/auth/permissions.ts');
+    const src = readText('lib/kernel/auth/permissions.ts');
     expect(src).toMatch(/'label\.create'/);
     expect(src).toMatch(/'label\.view'/);
     expect(src).toMatch(/'label\.approve'/);
@@ -1285,12 +1285,12 @@ describe('Migration 0074: cer_persisted audit action (Issue #255)', () => {
   });
 
   it('auditActionEnum in schema.ts includes cer_persisted', () => {
-    const src = readText('lib/db/schema.ts');
+    const src = readText('lib/kernel/db/schema.ts');
     expect(src).toContain("'cer_persisted'");
   });
 
   it('AuditAction type in audit.ts includes cer_persisted', () => {
-    const src = readText('lib/audit.ts');
+    const src = readText('lib/kernel/audit.ts');
     expect(src).toContain("'cer_persisted'");
   });
 });
@@ -1320,12 +1320,12 @@ describe('Migration 0075: traceability.matrix_viewed audit action (Issue #240)',
   });
 
   it('auditActionEnum in schema.ts includes traceability.matrix_viewed', () => {
-    const src = readText('lib/db/schema.ts');
+    const src = readText('lib/kernel/db/schema.ts');
     expect(src).toContain("'traceability.matrix_viewed'");
   });
 
   it('AuditAction type in audit.ts includes traceability.matrix_viewed', () => {
-    const src = readText('lib/audit.ts');
+    const src = readText('lib/kernel/audit.ts');
     expect(src).toContain("'traceability.matrix_viewed'");
   });
 });
@@ -1657,7 +1657,7 @@ describe('Migration 0076: clinical investigation planner (Issue #69)', () => {
   );
 
   it('workflowTypeEnum in schema.ts includes clinical_investigation', () => {
-    const src = readText('lib/db/schema.ts');
+    const src = readText('lib/kernel/db/schema.ts');
     expect(src).toContain("'clinical_investigation'");
   });
 
@@ -1671,7 +1671,7 @@ describe('Migration 0076: clinical investigation planner (Issue #69)', () => {
     'ci.closed',
     'ci.close_blocked_signoff_missing',
   ])('auditActionEnum in schema.ts includes %s', (action) => {
-    const src = readText('lib/db/schema.ts');
+    const src = readText('lib/kernel/db/schema.ts');
     expect(src).toContain(`'${action}'`);
   });
 });
@@ -1736,12 +1736,12 @@ describe('migrations/0077_model_governance.sql (SPEC-REGULA-MODEL-GOVERNANCE-001
     'modelgov.rolled_back',
     'modelgov.runtime_blocked',
   ])('auditActionEnum in schema.ts includes %s', (action) => {
-    const src = readText('lib/db/schema.ts');
+    const src = readText('lib/kernel/db/schema.ts');
     expect(src).toContain(`'${action}'`);
   });
 
   it('schema.ts defines the 4 new tables + 3 new enums', () => {
-    const src = readText('lib/db/schema.ts');
+    const src = readText('lib/kernel/db/schema.ts');
     expect(src).toMatch(/export const modelgovKindEnum/);
     expect(src).toMatch(/export const evalStatusEnum/);
     expect(src).toMatch(/export const modelgovApprovalStatusEnum/);
@@ -1814,12 +1814,12 @@ describe('migrations/0078_cyberdevice.sql (SPEC-REGULA-CYBERDEVICE-001, Issue 67
     'cyber.cve_analyzed',
     'cyber.access_denied',
   ])('auditActionEnum in schema.ts includes %s', (action) => {
-    const src = readText('lib/db/schema.ts');
+    const src = readText('lib/kernel/db/schema.ts');
     expect(src).toContain(`'${action}'`);
   });
 
   it('schema.ts defines the 4 new tables + 2 new enums', () => {
-    const src = readText('lib/db/schema.ts');
+    const src = readText('lib/kernel/db/schema.ts');
     expect(src).toMatch(/export const sbomFormatEnum/);
     expect(src).toMatch(/export const cveSeverityEnum/);
     expect(src).toMatch(/export const threatModel = pgTable/);
@@ -1880,12 +1880,12 @@ describe('SPEC-REGULA-CORPUS-LICENSE-001 (Issue #72, migration 0080)', () => {
     'corpus.expiry_warned',
     'corpus.abstract_only_enforced',
   ])('auditActionEnum in schema.ts includes %s', (action) => {
-    const src = readText('lib/db/schema.ts');
+    const src = readText('lib/kernel/db/schema.ts');
     expect(src).toContain(`'${action}'`);
   });
 
   it('schema.ts defines the 2 new tables + 3 new enums', () => {
-    const src = readText('lib/db/schema.ts');
+    const src = readText('lib/kernel/db/schema.ts');
     expect(src).toMatch(/export const licenseTypeEnum/);
     expect(src).toMatch(/export const confidentialityLevelEnum/);
     expect(src).toMatch(/export const entitlementStatusEnum/);
@@ -1956,12 +1956,12 @@ describe('SPEC-REGULA-SOURCE-GOVERNANCE-001 (Issue #48, migration 0081)', () => 
     'source.governance_updated',
     'source.delta_sync_updated',
   ])('auditActionEnum in schema.ts includes %s', (action) => {
-    const src = readText('lib/db/schema.ts');
+    const src = readText('lib/kernel/db/schema.ts');
     expect(src).toContain(`'${action}'`);
   });
 
   it('schema.ts defines the 2 new enums + sources governance columns', () => {
-    const src = readText('lib/db/schema.ts');
+    const src = readText('lib/kernel/db/schema.ts');
     expect(src).toMatch(/export const sourceAuthorityGradeEnum/);
     expect(src).toMatch(/export const sourceApprovalStatusEnum/);
     expect(src).toMatch(/authorityGrade: sourceAuthorityGradeEnum/);
@@ -1975,7 +1975,7 @@ describe('SPEC-REGULA-SOURCE-GOVERNANCE-001 (Issue #48, migration 0081)', () => 
   });
 
   it('AuditAction type includes the 8 source.* values (lock-step)', () => {
-    const src = readText('lib/audit.ts');
+    const src = readText('lib/kernel/audit.ts');
     for (const action of [
       'source.approved',
       'source.rejected',
@@ -2034,7 +2034,7 @@ describe('Migration 0059: source provenance fields (Issue #154, REQ-INTEGRATION-
   });
 
   it('schema.ts defines matching provenance columns on sources + source_sections', () => {
-    const src = readText('lib/db/schema.ts');
+    const src = readText('lib/kernel/db/schema.ts');
     for (const col of [
       'sourceHost',
       'sourceOwner',
@@ -2081,18 +2081,18 @@ describe('Migration 0091: owning-project issue routing (Issue #157)', () => {
   });
 
   it('schema.ts defines matching columns on unansweredQueue', () => {
-    const src = readText('lib/db/schema.ts');
+    const src = readText('lib/kernel/db/schema.ts');
     expect(src).toContain("owningIssueUrl: text('owning_issue_url')");
     expect(src).toContain("owningIssueTarget: text('owning_issue_target')");
   });
 
   it('schema.ts auditActionEnum + audit.ts AuditAction type include both new actions', () => {
-    const schemaSrc = readText('lib/db/schema.ts');
+    const schemaSrc = readText('lib/kernel/db/schema.ts');
     const enumValues = extractAuditActionEnumValues(schemaSrc);
     expect(enumValues).toContain('owning_issue_created');
     expect(enumValues).toContain('owning_issue_creation_failed');
 
-    const auditSrc = readText('lib/audit.ts');
+    const auditSrc = readText('lib/kernel/audit.ts');
     const typeValues = extractAuditActionTypeValues(auditSrc);
     expect(typeValues).toContain('owning_issue_created');
     expect(typeValues).toContain('owning_issue_creation_failed');
@@ -2191,25 +2191,25 @@ describe('Migration 0092: DHF + eSubmit text-vs-uuid FK fix (Issue #280)', () =>
   });
 
   it('schema.ts designHistoryFiles matches migration (org_id uuid, created_by uuid)', () => {
-    const src = readText('lib/db/schema.ts');
+    const src = readText('lib/kernel/db/schema.ts');
     expect(src).toContain("orgId: uuid('org_id')");
     expect(src).toContain("createdBy: uuid('created_by')");
   });
 
   it('schema.ts submissionPackages matches migration (org_id uuid, created_by uuid)', () => {
-    const src = readText('lib/db/schema.ts');
+    const src = readText('lib/kernel/db/schema.ts');
     expect(src).toContain("orgId: uuid('org_id')");
     expect(src).toContain("createdBy: uuid('created_by')");
   });
 
   it('schema.ts designInputs/designVerifications/designReviews match migration', () => {
-    const src = readText('lib/db/schema.ts');
+    const src = readText('lib/kernel/db/schema.ts');
     expect(src).toContain("dhfId: text('dhf_id')");
     expect(src).toContain("designInputId: text('design_input_id')");
   });
 
   it('schema.ts submissionInteractions matches migration (package_id TEXT)', () => {
-    const src = readText('lib/db/schema.ts');
+    const src = readText('lib/kernel/db/schema.ts');
     expect(src).toContain("packageId: text('package_id')");
   });
 });
@@ -2233,7 +2233,7 @@ describe('Migration 0093: RLHF quality_tag +4 confidence-breakdown (Issue #264)'
   });
 
   it('schema.ts qualityTagEnum matches migration (12 values, #264 breakdown)', () => {
-    const src = readText('lib/db/schema.ts');
+    const src = readText('lib/kernel/db/schema.ts');
     expect(src).toContain("'citation_coverage_low'");
     expect(src).toContain("'source_recency_stale'");
     expect(src).toContain("'source_authority_weak'");
@@ -2266,7 +2266,7 @@ describe('Migration 0094: messages embedding (Issue #275)', () => {
   });
 
   it('schema.ts messages table has embedding column', () => {
-    const src = readText('lib/db/schema.ts');
+    const src = readText('lib/kernel/db/schema.ts');
     expect(src).toContain('embedding: vector');
   });
 });
@@ -2312,7 +2312,7 @@ describe('Migration 0095: RLHF calibration candidates (Issue #264 sub-PR 2/3)', 
   });
 
   it('schema.ts calibrationCandidateStatusEnum matches migration (4 values)', () => {
-    const src = readText('lib/db/schema.ts');
+    const src = readText('lib/kernel/db/schema.ts');
     expect(src).toMatch(/export const calibrationCandidateStatusEnum\s*=\s*pgEnum/);
     expect(src).toMatch(/calibration_candidate_status/);
     expect(src).toContain("'pending'");
@@ -2322,7 +2322,7 @@ describe('Migration 0095: RLHF calibration candidates (Issue #264 sub-PR 2/3)', 
   });
 
   it('schema.ts calibrationCandidates table mirrors migration columns', () => {
-    const src = readText('lib/db/schema.ts');
+    const src = readText('lib/kernel/db/schema.ts');
     expect(src).toMatch(/export const calibrationCandidates\s*=\s*pgTable/);
     expect(src).toMatch(/'calibration_candidates'/);
     expect(src).toMatch(/confidenceBucket:\s*text\('confidence_bucket'\)/);
@@ -2331,8 +2331,8 @@ describe('Migration 0095: RLHF calibration candidates (Issue #264 sub-PR 2/3)', 
     expect(src).toMatch(/governanceChangeRequestId:\s*uuid\('governance_change_request_id'\)/);
   });
 
-  it('lib/audit.ts AuditAction union includes rlhf.calibration_proposed', () => {
-    const src = readText('lib/audit.ts');
+  it('lib/kernel/audit.ts AuditAction union includes rlhf.calibration_proposed', () => {
+    const src = readText('lib/kernel/audit.ts');
     expect(src).toMatch(/'rlhf\.calibration_proposed'/);
   });
 
@@ -2381,14 +2381,14 @@ describe('Migration 0095: RLHF calibration candidates (Issue #264 sub-PR 2/3)', 
   });
 
   it('schema.ts feedbackSourceEnum mirrors migration (2 values)', () => {
-    const src = readText('lib/db/schema.ts');
+    const src = readText('lib/kernel/db/schema.ts');
     expect(src).toMatch(/export const feedbackSourceEnum\s*=\s*pgEnum\('answer_feedback_source'/);
     expect(src).toContain("'explicit'");
     expect(src).toContain("'implicit_regenerate'");
   });
 
   it('schema.ts answerFeedback table has feedbackSource + variationDimensions columns', () => {
-    const src = readText('lib/db/schema.ts');
+    const src = readText('lib/kernel/db/schema.ts');
     expect(src).toMatch(
       /feedbackSource:\s*feedbackSourceEnum\('feedback_source'\)\.notNull\(\)\.default\('explicit'\)/,
     );
@@ -2400,8 +2400,8 @@ describe('Migration 0095: RLHF calibration candidates (Issue #264 sub-PR 2/3)', 
     expect(src).not.toMatch(/messageUserUnique:\s*unique\('answer_feedback_message_user_idx'\)/);
   });
 
-  it('lib/audit.ts AuditAction union includes rlhf.implicit_feedback_recorded', () => {
-    const src = readText('lib/audit.ts');
+  it('lib/kernel/audit.ts AuditAction union includes rlhf.implicit_feedback_recorded', () => {
+    const src = readText('lib/kernel/audit.ts');
     expect(src).toMatch(/'rlhf\.implicit_feedback_recorded'/);
   });
 });

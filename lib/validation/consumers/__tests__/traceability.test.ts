@@ -7,7 +7,7 @@ import { beforeEach, describe, expect, it, vi } from 'vitest';
 // dynamically-imported db. We mock all three so the org/project scoping and
 // summary extraction control flow runs without a real DB (coverage coverage 402 —
 // previously only the export was smoke-tested).
-vi.mock('@/lib/db/client', () => ({ db: {} }));
+vi.mock('@/lib/kernel/db/client', () => ({ db: {} }));
 vi.mock('@/lib/traceability/matrix', () => ({ buildMatrix: vi.fn() }));
 vi.mock('@/lib/traceability/stale-propagation', () => ({ listStaleNodeIds: vi.fn() }));
 

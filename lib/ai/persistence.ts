@@ -5,8 +5,8 @@
 // @MX:SPEC SPEC-REGULA-CHAT-001 (REQ-CHAT-018, REQ-CHAT-023, REQ-CHAT-028)
 // @MX:SPEC SPEC-REGULA-KNOWLEDGE-PROMO-001 (REQ-002 — messages embedding)
 
-import { db } from '../db/client';
-import { messageBlocks, messageSources, messages } from '../db/schema';
+import { db } from '../kernel/db/client';
+import { messageBlocks, messageSources, messages } from '../kernel/db/schema';
 import { embedForMessage } from '../knowledge-promo/embedding';
 import type { Violation } from './citation-enforce';
 import type { RetrievedChunk } from './retrievers/hybrid-search';

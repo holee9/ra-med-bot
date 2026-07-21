@@ -1,6 +1,6 @@
 // @MX:NOTE Consult sessions list page — REQ-V3-UI-050.
 // @MX:SPEC SPEC-V3-UI-001 (REQ-V3-UI-050, REQ-V3-UI-051)
-import { auth } from '@/lib/auth';
+import { auth } from '@/lib/kernel/auth';
 import { redirect } from 'next/navigation';
 import ConsultSessionListClient from './ConsultSessionListClient';
 

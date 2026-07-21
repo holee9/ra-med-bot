@@ -1,4 +1,4 @@
-import { auth } from '@/lib/auth';
+import { auth } from '@/lib/kernel/auth';
 import type { Metadata } from 'next';
 // @MX:NOTE [AUTO] Admin section layout — robots noindex + admin-only role guard.
 // @MX:SPEC SPEC-REGULA-DOCINGEST-001 (REQ-DOC-077)

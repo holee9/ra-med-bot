@@ -3,8 +3,8 @@ import { POST } from '@/app/api/ra/workflows/indication-impact/route';
 import { describe, expect, it, vi } from 'vitest';
 
 // Mock withPermission: pass-through with fixed session
-vi.mock('@/lib/audit', () => ({ writeAudit: vi.fn().mockResolvedValue(undefined) }));
-vi.mock('@/lib/auth/with-permission', () => ({
+vi.mock('@/lib/kernel/audit', () => ({ writeAudit: vi.fn().mockResolvedValue(undefined) }));
+vi.mock('@/lib/kernel/auth/with-permission', () => ({
   withPermission: vi.fn(
     (
       _action: string,

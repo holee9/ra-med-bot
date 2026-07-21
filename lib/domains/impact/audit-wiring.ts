@@ -5,7 +5,7 @@
 // `db.transaction` (see analyzer.ts) pass the `tx` here so a transient failure
 // between the two rolls back both — the audit row can never be orphaned.
 
-import { type AuditDbHandle, writeAudit } from '@/lib/audit';
+import { type AuditDbHandle, writeAudit } from '@/lib/kernel/audit';
 import type { ImpactLevel } from './types';
 
 export async function auditAssessmentCreated(

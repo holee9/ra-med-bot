@@ -7,11 +7,11 @@
 // @MX:SPEC SPEC-REGULA-VALIDATION-001 (M5, REQ-VAL-012, REQ-VAL-013, AC-5, AC-7, AC-8)
 
 import { spawn } from 'node:child_process';
-import { writeAuditReturningId } from '@/lib/audit';
-import { withPermission } from '@/lib/auth/with-permission';
-import { db } from '@/lib/db/client';
-import { validationEvidence, validationSignoff } from '@/lib/db/schema';
-import { checklistItemSchema } from '@/lib/schemas/validation';
+import { writeAuditReturningId } from '@/lib/kernel/audit';
+import { withPermission } from '@/lib/kernel/auth/with-permission';
+import { db } from '@/lib/kernel/db/client';
+import { validationEvidence, validationSignoff } from '@/lib/kernel/db/schema';
+import { checklistItemSchema } from '@/lib/kernel/schemas/validation';
 import { buildChecklist, isChecklistSatisfied, unmetItems } from '@/lib/validation/checklist';
 import { evaluateRerunGate } from '@/lib/validation/rerun-gate';
 import { eq } from 'drizzle-orm';

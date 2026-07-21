@@ -1,7 +1,7 @@
 // @MX:NOTE [AUTO] T-002 TDD RED phase — PERMISSIONS matrix static validation tests.
 // @MX:SPEC SPEC-REGULA-ENTERPRISE-001 (REQ-ENTERPRISE-020)
 
-import { PERMISSIONS, type PermissionAction } from '@/lib/auth/permissions';
+import { PERMISSIONS, type PermissionAction } from '@/lib/kernel/auth/permissions';
 import { describe, expect, it } from 'vitest';
 
 // All action strings defined in SPEC REQ-ENTERPRISE-020 plus checklist, traceability,
@@ -90,7 +90,7 @@ const EXPECTED_ACTIONS: PermissionAction[] = [
 const VALID_ROLES = ['admin', 'qa-lead', 'ra-lead', 'ra-member', 'viewer', 'auditor'] as const;
 const VALID_SCOPES = ['org', 'project', 'user', 'none'] as const;
 
-describe('lib/auth/permissions.ts (REQ-ENTERPRISE-020) — PERMISSIONS matrix', () => {
+describe('lib/kernel/auth/permissions.ts (REQ-ENTERPRISE-020) — PERMISSIONS matrix', () => {
   it('PERMISSIONS contains exactly 92 entries', () => {
     expect(Object.keys(PERMISSIONS)).toHaveLength(92); // +3 validation.* (#49 SPEC-REGULA-VALIDATION-001: read/run/approve) +3 impact.* (#345) +86 baseline
   });

@@ -1,12 +1,12 @@
 // @MX:SPEC SPEC-REGULA-DIGEST-001
 import { eq } from 'drizzle-orm';
 import { z } from 'zod';
-import { writeAudit } from '../../../../../lib/audit';
-import { withPermission } from '../../../../../lib/auth/with-permission';
-import { db } from '../../../../../lib/db/client';
-import { orgDigestPreferences, weeklyDigests } from '../../../../../lib/db/schema';
 import { generateWeeklyDigest } from '../../../../../lib/digest/digest-generator';
 import { sendDigestEmail } from '../../../../../lib/digest/email-sender';
+import { writeAudit } from '../../../../../lib/kernel/audit';
+import { withPermission } from '../../../../../lib/kernel/auth/with-permission';
+import { db } from '../../../../../lib/kernel/db/client';
+import { orgDigestPreferences, weeklyDigests } from '../../../../../lib/kernel/db/schema';
 
 const RequestSchema = z.object({
   weekId: z

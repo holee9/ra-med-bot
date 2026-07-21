@@ -21,7 +21,7 @@
 // pipeline still succeeds — GitHub tracking is a best-effort ops convenience, not a
 // safety gate. The audit log records the no-op so the SLA dashboard can flag it.
 
-import { writeAudit } from '@/lib/audit';
+import { writeAudit } from '@/lib/kernel/audit';
 
 /** Labels applied to every auto-created knowledge-gap issue (REQ-KNOWLEDGE-GAP-007). */
 export const KNOWLEDGE_GAP_LABELS = ['knowledge-gap', 'ra-auto', 'needs-classification'] as const;

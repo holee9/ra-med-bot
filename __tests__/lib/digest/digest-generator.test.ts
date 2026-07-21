@@ -35,7 +35,7 @@ const { dbMock } = vi.hoisted(() => ({
     },
   },
 }));
-vi.mock('../../../lib/db/client', () => ({
+vi.mock('../../../lib/kernel/db/client', () => ({
   db: dbMock,
   withTenantScope: vi.fn(
     async <T>(_orgId: string, fn: (db: typeof dbMock) => Promise<T>): Promise<T> =>
@@ -48,7 +48,7 @@ vi.mock('../../../lib/db/client', () => ({
 // hit the real advisory-lock execute path — writeAudit internals (lock, hash chain)
 // are covered by lib/audit + audit-chain tests; the digest route contract is
 // covered by tests/unit/api/digest-route.test.ts.
-vi.mock('../../../lib/audit', () => ({
+vi.mock('../../../lib/kernel/audit', () => ({
   writeAudit: vi.fn().mockResolvedValue(undefined),
 }));
 

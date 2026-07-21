@@ -1,7 +1,7 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 
 // Mock DB to avoid real connections
-vi.mock('../../../../lib/db/client', () => ({
+vi.mock('../../../../lib/kernel/db/client', () => ({
   withTenantScope: vi
     .fn()
     .mockImplementation(async (_orgId: string, fn: (db: unknown) => Promise<unknown>) => {
@@ -59,7 +59,7 @@ describe('internalDocsRetrieve', () => {
 
   it('sets expert_review_required when clinical_report or audit_response chunks returned', async () => {
     // Mock to return a clinical_report chunk
-    const { withTenantScope } = await import('../../../../lib/db/client');
+    const { withTenantScope } = await import('../../../../lib/kernel/db/client');
     vi.mocked(withTenantScope).mockImplementationOnce(async (_orgId, fn) => {
       return fn({
         execute: vi.fn().mockResolvedValue([

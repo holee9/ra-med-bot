@@ -15,7 +15,7 @@ const PREDICATE_AUDIT_ACTIONS = ['predicate_search', 'predicate_comparison_gener
 
 describe('workflow_type enum (REQ-PRE-010) — predicate_comparison value', () => {
   it('schema.ts workflowTypeEnum includes predicate_comparison', () => {
-    const src = readText('lib/db/schema.ts');
+    const src = readText('lib/kernel/db/schema.ts');
     const match = src.match(/workflowTypeEnum\s*=\s*pgEnum\('workflow_type',\s*\[([\s\S]*?)\]\)/);
     expect(match, 'workflowTypeEnum not found').toBeTruthy();
     const body = (match as RegExpMatchArray)[1] as string;
@@ -23,7 +23,7 @@ describe('workflow_type enum (REQ-PRE-010) — predicate_comparison value', () =
   });
 
   it('schema.ts workflowTypeEnum still includes the 3 Phase 9 values', () => {
-    const src = readText('lib/db/schema.ts');
+    const src = readText('lib/kernel/db/schema.ts');
     const match = src.match(/workflowTypeEnum\s*=\s*pgEnum\('workflow_type',\s*\[([\s\S]*?)\]\)/);
     const body = (match as RegExpMatchArray)[1] as string;
     expect(body).toMatch(/'submission_drafter'/);
@@ -32,23 +32,26 @@ describe('workflow_type enum (REQ-PRE-010) — predicate_comparison value', () =
   });
 
   it('the WorkflowType union is assignable from predicate_comparison (compile-time)', async () => {
-    const schema = (await import('@/lib/db/schema')) as Record<string, unknown>;
+    const schema = (await import('@/lib/kernel/db/schema')) as Record<string, unknown>;
     const enumDef = schema.workflowTypeEnum as { enumValues: readonly string[] };
     expect(enumDef.enumValues).toContain('predicate_comparison');
   });
 });
 
 describe('audit_action lock-step (REQ-PRE-017) — predicate actions', () => {
-  it.each(PREDICATE_AUDIT_ACTIONS)('lib/audit.ts AuditAction union includes %s', (action) => {
-    const src = readText('lib/audit.ts');
-    const typeMatch = src.match(/export type AuditAction\s*=\s*([\s\S]*?);/);
-    expect(typeMatch, 'AuditAction type not found').toBeTruthy();
-    const typeBody = (typeMatch as RegExpMatchArray)[1] as string;
-    expect(typeBody).toMatch(new RegExp(`'${action}'`));
-  });
+  it.each(PREDICATE_AUDIT_ACTIONS)(
+    'lib/kernel/audit.ts AuditAction union includes %s',
+    (action) => {
+      const src = readText('lib/kernel/audit.ts');
+      const typeMatch = src.match(/export type AuditAction\s*=\s*([\s\S]*?);/);
+      expect(typeMatch, 'AuditAction type not found').toBeTruthy();
+      const typeBody = (typeMatch as RegExpMatchArray)[1] as string;
+      expect(typeBody).toMatch(new RegExp(`'${action}'`));
+    },
+  );
 
   it.each(PREDICATE_AUDIT_ACTIONS)('schema.ts auditActionEnum array includes %s', (action) => {
-    const src = readText('lib/db/schema.ts');
+    const src = readText('lib/kernel/db/schema.ts');
     const match = src.match(/auditActionEnum\s*=\s*pgEnum\('audit_action',\s*\[([\s\S]*?)\]\)/);
     expect(match, 'auditActionEnum not found').toBeTruthy();
     const body = (match as RegExpMatchArray)[1] as string;
@@ -56,12 +59,12 @@ describe('audit_action lock-step (REQ-PRE-017) — predicate actions', () => {
   });
 
   it('audit lock-step: both predicate actions present in type AND enum (consistency)', () => {
-    const auditSrc = readText('lib/audit.ts');
-    const schemaSrc = readText('lib/db/schema.ts');
+    const auditSrc = readText('lib/kernel/audit.ts');
+    const schemaSrc = readText('lib/kernel/db/schema.ts');
     for (const action of PREDICATE_AUDIT_ACTIONS) {
       const pattern = new RegExp(`'${action}'`);
-      expect(auditSrc, `'${action}' missing from lib/audit.ts`).toMatch(pattern);
-      expect(schemaSrc, `'${action}' missing from lib/db/schema.ts`).toMatch(pattern);
+      expect(auditSrc, `'${action}' missing from lib/kernel/audit.ts`).toMatch(pattern);
+      expect(schemaSrc, `'${action}' missing from lib/kernel/db/schema.ts`).toMatch(pattern);
     }
   });
 });

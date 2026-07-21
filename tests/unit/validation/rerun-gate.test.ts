@@ -7,7 +7,7 @@ import { beforeEach, describe, expect, it, vi } from 'vitest';
 
 // Mock db with controllable select responses.
 const selectFromWhere = vi.fn();
-vi.mock('@/lib/db/client', () => ({
+vi.mock('@/lib/kernel/db/client', () => ({
   db: {
     select: vi.fn(() => ({ from: vi.fn(() => ({ where: selectFromWhere })) })),
   },
@@ -20,7 +20,7 @@ vi.mock('drizzle-orm', () => ({
   inArray: (a: unknown, b: unknown[]) => ({ type: 'inArray', a, b }),
 }));
 
-vi.mock('@/lib/db/schema', () => ({
+vi.mock('@/lib/kernel/db/schema', () => ({
   changeControl: {
     releaseId: 'release_id',
     impactLevel: 'impact_level',

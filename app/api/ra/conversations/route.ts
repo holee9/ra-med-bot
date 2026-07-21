@@ -2,9 +2,9 @@
 // @MX:SPEC SPEC-REGULA-ENTERPRISE-001 (REQ-ENTERPRISE-019)
 
 import { eq } from 'drizzle-orm';
-import { withPermission } from '../../../../lib/auth/with-permission';
-import { db } from '../../../../lib/db/client';
-import { conversations } from '../../../../lib/db/schema';
+import { withPermission } from '../../../../lib/kernel/auth/with-permission';
+import { db } from '../../../../lib/kernel/db/client';
+import { conversations } from '../../../../lib/kernel/db/schema';
 
 export const GET = withPermission('conversation.view', async (_req, _ctx, session) => {
   const rows = await db

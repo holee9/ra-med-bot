@@ -4,7 +4,7 @@
 //           convention (version ids, hashes, approver id — never prompt content).
 //           Mirrors lib/clinical-investigation/audit.ts.
 
-import { type AuditDbHandle, writeAudit } from '@/lib/audit';
+import { type AuditDbHandle, writeAudit } from '@/lib/kernel/audit';
 
 interface ModelGovAuditParams {
   actorId: string | null;

@@ -93,23 +93,23 @@ const dbStub = {
 };
 
 // vi.mock: hoisted, replaces modules before any import. The factory controls
-// behavior via the mutable state above. This is the ONLY way to mock @/lib/db
+// behavior via the mutable state above. This is the ONLY way to mock @/lib/kernel/db
 // for a route handler that imports it at module-load time.
 // #239 Phase 2: withTenantScope delegates to dbStub.transaction so the GUC-wrap
 // path in the route is exercised; the fn receives dbStub as the scoped tx handle.
-vi.mock('@/lib/db/client', () => ({
+vi.mock('@/lib/kernel/db/client', () => ({
   db: dbStub,
   withTenantScope: vi.fn(
     async <T>(_orgId: string, fn: (db: typeof dbStub) => Promise<T>): Promise<T> =>
       dbStub.transaction(async (tx: unknown) => fn(tx as typeof dbStub)) as Promise<T>,
   ),
 }));
-vi.mock('@/lib/auth', () => ({ auth: async () => SESSION }));
-vi.mock('@/lib/auth/acl', () => ({
+vi.mock('@/lib/kernel/auth', () => ({ auth: async () => SESSION }));
+vi.mock('@/lib/kernel/auth/acl', () => ({
   isOrgMember: async () => true,
   isProjectMember: async () => true,
 }));
-vi.mock('@/lib/auth/permissions', () => ({
+vi.mock('@/lib/kernel/auth/permissions', () => ({
   PERMISSIONS: { 'traceability.manage': ['ra-lead'] },
   roleSatisfiesPermission: () => true,
 }));

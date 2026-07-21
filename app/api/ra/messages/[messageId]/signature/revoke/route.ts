@@ -5,9 +5,9 @@
 // The answer is unlocked after revocation — a new signature can be applied.
 export const runtime = 'nodejs';
 
-import { writeAudit } from '@/lib/audit';
-import { withPermission } from '@/lib/auth/with-permission';
-import { db } from '@/lib/db/client';
+import { writeAudit } from '@/lib/kernel/audit';
+import { withPermission } from '@/lib/kernel/auth/with-permission';
+import { db } from '@/lib/kernel/db/client';
 import { getAuthorizedSignatureMessage } from '@/lib/signature/authorization';
 import { getActiveSignature, revokeSignature } from '@/lib/signature/queries';
 

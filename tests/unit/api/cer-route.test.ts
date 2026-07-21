@@ -13,7 +13,7 @@ let sessionUser: { id: string; role: string; organizationId: string | null } = {
   organizationId: 'org-001',
 };
 
-vi.mock('@/lib/auth/with-permission', () => ({
+vi.mock('@/lib/kernel/auth/with-permission', () => ({
   withPermission: vi.fn(
     (
       _action: string,
@@ -36,10 +36,10 @@ const mockDb = {
   ),
 };
 
-vi.mock('@/lib/db/client', () => ({ db: mockDb }));
+vi.mock('@/lib/kernel/db/client', () => ({ db: mockDb }));
 
 // --- Mock audit ---
-vi.mock('@/lib/audit', () => ({
+vi.mock('@/lib/kernel/audit', () => ({
   writeAudit: vi.fn().mockResolvedValue(undefined),
 }));
 
@@ -176,7 +176,7 @@ describe('POST /api/ra/workflows/cer — handler surface', () => {
   });
 
   it('persists workflow_runs + cer_persisted audit in transaction when projectId present', async () => {
-    const { writeAudit } = await import('@/lib/audit');
+    const { writeAudit } = await import('@/lib/kernel/audit');
     const { POST } = await import('@/app/api/ra/workflows/cer/route');
     const res = await POST(
       makePostRequest({

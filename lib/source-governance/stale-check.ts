@@ -11,9 +11,9 @@
 //   const govGate    = await verifyGovernanceFreshness(sourceIds, orgId); // governance
 //   if (!exportGate.allowed || !govGate.allowed) return blockedResponse(...);
 
-import { writeAudit } from '@/lib/audit';
-import { db } from '@/lib/db/client';
-import { sources } from '@/lib/db/schema';
+import { writeAudit } from '@/lib/kernel/audit';
+import { db } from '@/lib/kernel/db/client';
+import { sources } from '@/lib/kernel/db/schema';
 import { inArray } from 'drizzle-orm';
 import type { StaleCitationGateResult } from './types';
 

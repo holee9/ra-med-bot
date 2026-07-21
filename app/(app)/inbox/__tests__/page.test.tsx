@@ -9,12 +9,12 @@ vi.mock('next-intl', () => ({
 }));
 
 // Mock auth lib
-vi.mock('@/lib/auth', () => ({
+vi.mock('@/lib/kernel/auth', () => ({
   auth: vi.fn(),
 }));
 
 // Mock rbac
-vi.mock('@/lib/auth/rbac', () => ({
+vi.mock('@/lib/kernel/auth/rbac', () => ({
   hasRole: vi.fn(() => true),
 }));
 
@@ -36,9 +36,9 @@ describe('Inbox Page (T-014)', () => {
   });
 
   it('redirects to /chat for viewer role (non-ra-member, REQ-V3-UI-030)', async () => {
-    const { auth } = await import('@/lib/auth');
+    const { auth } = await import('@/lib/kernel/auth');
     const { redirect: mockRedirect } = await import('next/navigation');
-    const { hasRole } = await import('@/lib/auth/rbac');
+    const { hasRole } = await import('@/lib/kernel/auth/rbac');
 
     vi.mocked(auth).mockResolvedValue({ user: { role: 'viewer' } } as unknown as never);
     vi.mocked(hasRole).mockReturnValue(false);
@@ -51,8 +51,8 @@ describe('Inbox Page (T-014)', () => {
   });
 
   it('renders InboxKanban for ra-member role (AC-UI-002)', async () => {
-    const { auth } = await import('@/lib/auth');
-    const { hasRole } = await import('@/lib/auth/rbac');
+    const { auth } = await import('@/lib/kernel/auth');
+    const { hasRole } = await import('@/lib/kernel/auth/rbac');
 
     vi.mocked(auth).mockResolvedValue({ user: { role: 'ra-member' } } as unknown as never);
     vi.mocked(hasRole).mockReturnValue(true);

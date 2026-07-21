@@ -5,7 +5,7 @@
 //          This test proves (a) the verifier works against a DB stub, and (b)
 //          replayGapTest surfaces the result as `edgeIntegrity` on its return.
 
-import { evidenceNodes, staleFlags } from '@/lib/db/schema';
+import { evidenceNodes, staleFlags } from '@/lib/kernel/db/schema';
 import { describe, expect, it } from 'vitest';
 import { verifyAnswerEdges } from '../verify-edges';
 

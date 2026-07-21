@@ -5,8 +5,8 @@
 //           assertInvestigationAccess. Returns null on miss so the route surfaces 404
 //           (never 403) — UUID probing is not possible.
 
-import { db } from '@/lib/db/client';
-import { changeRequest, modelPin, promptRegistry } from '@/lib/db/schema';
+import { db } from '@/lib/kernel/db/client';
+import { changeRequest, modelPin, promptRegistry } from '@/lib/kernel/db/schema';
 import { and, eq } from 'drizzle-orm';
 
 /**

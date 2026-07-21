@@ -3,7 +3,7 @@
 //           packet that both the viewer UI and the PDF/MD exporter consume.
 // @MX:SPEC SPEC-REGULA-TRACEABILITY-001 (REQ-TRACEABILITY-007, REQ-TRACEABILITY-006)
 
-import { evidenceEdges, evidenceNodes } from '@/lib/db/schema';
+import { evidenceEdges, evidenceNodes } from '@/lib/kernel/db/schema';
 import { and, eq, inArray } from 'drizzle-orm';
 import type { EvidenceEdge, EvidenceNode, TraceabilityDb } from './graph';
 

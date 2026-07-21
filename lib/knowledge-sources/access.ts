@@ -2,8 +2,8 @@
 // @MX:REASON fan_in >= 3: All API routes (GET/POST/DELETE/[id]/sync) delegate here for org isolation.
 // @MX:SPEC Issue #307 D-2 (Knowledge Sources API)
 
-import { db } from '@/lib/db/client';
-import { knowledgeSources } from '@/lib/db/schema';
+import { db } from '@/lib/kernel/db/client';
+import { knowledgeSources } from '@/lib/kernel/db/schema';
 import { eq } from 'drizzle-orm';
 
 /**

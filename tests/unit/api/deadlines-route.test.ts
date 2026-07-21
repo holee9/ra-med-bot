@@ -3,7 +3,7 @@
 
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 
-vi.mock('@/lib/db/client', () => ({
+vi.mock('@/lib/kernel/db/client', () => ({
   db: {
     select: vi.fn(() => ({
       from: () => ({
@@ -12,8 +12,8 @@ vi.mock('@/lib/db/client', () => ({
     })),
   },
 }));
-vi.mock('@/lib/audit', () => ({ writeAudit: vi.fn().mockResolvedValue(undefined) }));
-vi.mock('@/lib/auth/with-permission', () => ({
+vi.mock('@/lib/kernel/audit', () => ({ writeAudit: vi.fn().mockResolvedValue(undefined) }));
+vi.mock('@/lib/kernel/auth/with-permission', () => ({
   withPermission: vi.fn(
     (_perm: string, handler: (req: Request, ctx: unknown, session: unknown) => Promise<Response>) =>
       async (req: Request, ctx: unknown) =>
@@ -23,7 +23,7 @@ vi.mock('@/lib/auth/with-permission', () => ({
   ),
 }));
 const isProjectMemberMock = vi.fn().mockResolvedValue(true);
-vi.mock('@/lib/auth/acl', () => ({
+vi.mock('@/lib/kernel/auth/acl', () => ({
   isProjectMember: (...a: unknown[]) => isProjectMemberMock(...a),
 }));
 

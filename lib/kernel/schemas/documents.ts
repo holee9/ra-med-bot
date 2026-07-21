@@ -2,7 +2,7 @@
 // @MX:REASON fan_in >= 3: upload form, document detail page, and ingest pipeline all validate with these.
 // @MX:SPEC SPEC-REGULA-DOCINGEST-001 (REQ-DOC-078)
 import { z } from 'zod';
-import { DocClass } from '../ingest/doc-class';
+import { DocClass } from '../../ingest/doc-class';
 
 /** Metadata schema for issued_certificate class documents. */
 export const IssuedCertificateMetaSchema = z.object({

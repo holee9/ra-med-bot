@@ -10,13 +10,13 @@ import { afterAll, afterEach, beforeAll, describe, expect, it } from 'vitest';
 const SKIP_REASON = 'Requires DATABASE_URL with pgvector + 0089/0112 migrations applied';
 
 async function getDb() {
-  const { db } = await import('@/lib/db/client');
+  const { db } = await import('@/lib/kernel/db/client');
   return db;
 }
 
 async function getTestOrg(): Promise<string> {
   const db = await getDb();
-  const { organizations } = await import('@/lib/db/schema');
+  const { organizations } = await import('@/lib/kernel/db/schema');
   const [org] = await db.select({ id: organizations.id }).from(organizations).limit(1);
   if (!org) throw new Error('test DB has no organization row — seed required');
   return org.id;
@@ -34,7 +34,7 @@ describe.skipIf(!process.env.DATABASE_URL)('SPEC-REGULA-VALIDATION-002 consumers
   });
 
   afterEach(async () => {
-    const { changeRequest, sources } = await import('@/lib/db/schema');
+    const { changeRequest, sources } = await import('@/lib/kernel/db/schema');
     const { inArray } = await import('drizzle-orm');
     if (changeRequestIds.length > 0) {
       await db.delete(changeRequest).where(inArray(changeRequest.id, [...changeRequestIds]));
@@ -52,7 +52,7 @@ describe.skipIf(!process.env.DATABASE_URL)('SPEC-REGULA-VALIDATION-002 consumers
   });
 
   it('AC-1: fetchWindowScopedChangeRequests returns ONLY rows within [windowStart, windowEnd)', async () => {
-    const { changeRequest } = await import('@/lib/db/schema');
+    const { changeRequest } = await import('@/lib/kernel/db/schema');
     const { fetchWindowScopedChangeRequests } = await import(
       '@/lib/validation/consumers/model-governance'
     );

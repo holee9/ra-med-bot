@@ -6,9 +6,9 @@
 //   A cross-org attempt returns 404 (not 403) to avoid leaking node existence.
 // @MX:SPEC SPEC-REGULA-TRACEABILITY-001 (REQ-TRACEABILITY-001, REQ-TRACEABILITY-003, REQ-TRACEABILITY-010)
 
-import { writeAudit } from '@/lib/audit';
-import { withPermission } from '@/lib/auth/with-permission';
-import { db, withTenantScope } from '@/lib/db/client';
+import { writeAudit } from '@/lib/kernel/audit';
+import { withPermission } from '@/lib/kernel/auth/with-permission';
+import { db, withTenantScope } from '@/lib/kernel/db/client';
 import {
   EdgeIdorError,
   type EvidenceEdgeRelation,

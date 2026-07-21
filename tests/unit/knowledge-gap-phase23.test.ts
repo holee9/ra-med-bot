@@ -3,7 +3,7 @@
 //   REQ-KNOWLEDGE-GAP-005 (clustering), 006/007 (github create), 014 (replay), 015 (resolve)
 //
 // Mirrors the mocking pattern in tests/unit/knowledge-gap-detector.test.ts:
-//   vi.mock('@/lib/db/client') + vi.mock('@/lib/audit') short-circuit the env-loaded
+//   vi.mock('@/lib/kernel/db/client') + vi.mock('@/lib/kernel/audit') short-circuit the env-loaded
 //   module graph so pure logic is testable without a DB.
 
 import { beforeEach, describe, expect, it, vi } from 'vitest';
@@ -40,8 +40,8 @@ const dbMock: any = {
   transaction: vi.fn(async (cb: (tx: unknown) => Promise<unknown>) => cb(dbMock)),
 };
 
-vi.mock('@/lib/db/client', () => ({ db: dbMock }));
-vi.mock('@/lib/audit', () => ({ writeAudit: vi.fn().mockResolvedValue(undefined) }));
+vi.mock('@/lib/kernel/db/client', () => ({ db: dbMock }));
+vi.mock('@/lib/kernel/audit', () => ({ writeAudit: vi.fn().mockResolvedValue(undefined) }));
 
 // Mock embedChunks so clustering tests do not call OpenAI.
 vi.mock('@/lib/ingest/embed', () => ({

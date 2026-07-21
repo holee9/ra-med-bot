@@ -5,7 +5,7 @@
 //           audit is handled separately via audit_logs). Graceful no-op when
 //           the Langfuse SDK is unconfigured (matches existing traceLlmCall).
 
-import type { qualityTagEnum } from '@/lib/db/schema';
+import type { qualityTagEnum } from '@/lib/kernel/db/schema';
 import { getLangfuseClient } from '@/lib/observability/langfuse';
 import { logger } from '@/lib/observability/logger';
 

@@ -11,8 +11,8 @@ import {
   readPersonaCookie,
   resolveTier,
   writePersonaCookie,
-} from '@/lib/auth/persona';
-import type { Role } from '@/lib/auth/rbac';
+} from '@/lib/kernel/auth/persona';
+import type { Role } from '@/lib/kernel/auth/rbac';
 import { afterEach, describe, expect, it, vi } from 'vitest';
 
 describe('personaTier — verified role→tier mapping (research.md §2.3)', () => {

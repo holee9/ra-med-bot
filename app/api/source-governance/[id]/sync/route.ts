@@ -11,7 +11,7 @@
 // orchestrator; this route emits no additional audit because the regulated
 // event IS the sync lifecycle.
 
-import { withPermission } from '@/lib/auth/with-permission';
+import { withPermission } from '@/lib/kernel/auth/with-permission';
 import { runDeltaSync } from '@/lib/radar/delta-sync';
 import { z } from 'zod';
 

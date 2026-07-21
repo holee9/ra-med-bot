@@ -1,11 +1,11 @@
-import { writeAudit } from '@/lib/audit';
-// @MX:SPEC SPEC-REGULA-CLASSIFY-001 (REQ-CLASSIFY-001, REQ-CLASSIFY-015)
-import { withPermission } from '@/lib/auth/with-permission';
-import type { AuthSession } from '@/lib/auth/with-permission';
 import { classifyDevice } from '@/lib/classification/classification-engine';
 import { parseDeviceIntent } from '@/lib/classification/intent-parser';
-import { db } from '@/lib/db/client';
-import { deviceClassifications } from '@/lib/db/schema';
+import { writeAudit } from '@/lib/kernel/audit';
+// @MX:SPEC SPEC-REGULA-CLASSIFY-001 (REQ-CLASSIFY-001, REQ-CLASSIFY-015)
+import { withPermission } from '@/lib/kernel/auth/with-permission';
+import type { AuthSession } from '@/lib/kernel/auth/with-permission';
+import { db } from '@/lib/kernel/db/client';
+import { deviceClassifications } from '@/lib/kernel/db/schema';
 import { z } from 'zod';
 
 const RequestSchema = z.object({

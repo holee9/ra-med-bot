@@ -1,7 +1,7 @@
 ---
 id: SPEC-V3-RESTRUCTURE-001
 version: 1.1.0
-status: planned
+status: in-progress
 phase: restructure
 priority: High
 created: 2026-07-02

@@ -1,8 +1,8 @@
 // @MX:NOTE [AUTO] POST /api/ra/risk/items/[id]/evaluate — evaluate severity×probability.
 // @MX:SPEC SPEC-REGULA-RISK-001 (T2.5, REQ-RISK-011~015)
 
-import { writeAudit } from '@/lib/audit';
-import { withPermission } from '@/lib/auth/with-permission';
+import { writeAudit } from '@/lib/kernel/audit';
+import { withPermission } from '@/lib/kernel/auth/with-permission';
 import { evaluateRiskLevel, validateScale } from '@/lib/risk/risk-evaluation';
 
 export const POST = withPermission('risk.update', async (req, ctx, session) => {

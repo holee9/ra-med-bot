@@ -12,10 +12,10 @@ import type { Session } from 'next-auth';
 import type { NextRequest } from 'next/server';
 import { consult, ensureConversation } from '../../../../lib/ai/consult';
 import { encodeSSE } from '../../../../lib/ai/streaming';
-import { writeAudit } from '../../../../lib/audit';
-import { withPermission } from '../../../../lib/auth/with-permission';
-import { db } from '../../../../lib/db/client';
-import { messages } from '../../../../lib/db/schema';
+import { writeAudit } from '../../../../lib/kernel/audit';
+import { withPermission } from '../../../../lib/kernel/auth/with-permission';
+import { db } from '../../../../lib/kernel/db/client';
+import { messages } from '../../../../lib/kernel/db/schema';
 import { ConsultRequestSchema } from '../../../../types/consult';
 import type { StreamEvent } from '../../../../types/streaming';
 

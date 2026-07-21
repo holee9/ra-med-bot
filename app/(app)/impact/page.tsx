@@ -1,5 +1,5 @@
-import { auth } from '@/lib/auth';
-import { hasRole } from '@/lib/auth/rbac';
+import { auth } from '@/lib/kernel/auth';
+import { hasRole } from '@/lib/kernel/auth/rbac';
 import { redirect } from 'next/navigation';
 import ImpactWizardClient from './ImpactWizardClient';
 

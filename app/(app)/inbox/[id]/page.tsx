@@ -6,7 +6,7 @@
 // (list), not to /inbox/[id] own-ticket detail.
 
 import { InboxDetailClient } from '@/components/inbox/InboxDetailClient';
-import type { Role } from '@/lib/auth/rbac';
+import type { Role } from '@/lib/kernel/auth/rbac';
 
 interface PageProps {
   params: Promise<{ id: string }>;
@@ -17,7 +17,7 @@ export default async function InboxDetailPage({ params }: PageProps) {
 
   let userRole: Role | undefined;
   try {
-    const { auth } = await import('@/lib/auth');
+    const { auth } = await import('@/lib/kernel/auth');
     const session = await auth();
     userRole = (session?.user as { role?: Role })?.role;
   } catch {

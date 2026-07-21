@@ -6,7 +6,7 @@
 // have corresponding evidence_nodes and are not flagged stale. A broken or
 // stale edge fails the replay (passed = false) with a structured reason.
 
-import { evidenceNodes, staleFlags } from '@/lib/db/schema';
+import { evidenceNodes, staleFlags } from '@/lib/kernel/db/schema';
 import { and, eq, inArray } from 'drizzle-orm';
 import type { TraceabilityDb } from './graph';
 

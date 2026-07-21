@@ -3,8 +3,8 @@
 // @MX:REASON Called by analyzer.ts and admin API route. fan_in >= 2, grows to 3+ with UI.
 // @MX:SPEC SPEC-REGULA-IMPACT-001
 
-import type { Database } from '@/lib/db/client';
-import { projects } from '@/lib/db/schema';
+import type { Database } from '@/lib/kernel/db/client';
+import { projects } from '@/lib/kernel/db/schema';
 import { eq } from 'drizzle-orm';
 import { mapSections } from './section-mapper';
 import type { ImpactLevel, ScanResult } from './types';

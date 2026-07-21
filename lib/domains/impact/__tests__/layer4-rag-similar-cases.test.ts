@@ -5,7 +5,7 @@ import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { findSimilarCases } from '../layer4-rag-similar-cases';
 
 // Mock the database - use factory function
-vi.mock('@/lib/db/client', () => {
+vi.mock('@/lib/kernel/db/client', () => {
   const mockExecute = vi.fn();
   return {
     db: {
@@ -25,7 +25,7 @@ describe('Layer 4: RAG Similar Cases', () => {
 
   beforeEach(async () => {
     vi.clearAllMocks();
-    const mod = (await import('@/lib/db/client')) as unknown as {
+    const mod = (await import('@/lib/kernel/db/client')) as unknown as {
       getMockExecute: () => typeof mockExecute;
     };
     mockExecute = mod.getMockExecute();

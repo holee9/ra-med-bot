@@ -19,7 +19,7 @@ import { auditLogs } from './db/schema';
 // audit_action values.
 // Extending this union requires:
 //   1. ALTER TYPE audit_action ADD VALUE ... (new migration)
-//   2. Update lib/db/schema.ts auditActionEnum
+//   2. Update lib/kernel/db/schema.ts auditActionEnum
 //   3. Update this type
 // Keep them in lock-step or the runtime insert will fail.
 //
@@ -330,7 +330,7 @@ export type AuditAction =
   | 'modelgov.runtime_blocked'
   // SPEC-REGULA-CYBERDEVICE-001 (Issue 67) — 9 cybersecurity lifecycle audit actions
   // for 21 CFR Part 11 traceability of medical-device cybersecurity evidence.
-  // Added via 0078_cyberdevice.sql. Mirror the auditActionEnum in lib/db/schema.ts.
+  // Added via 0078_cyberdevice.sql. Mirror the auditActionEnum in lib/kernel/db/schema.ts.
   //   cyber.threat_modeled       — threat model generated from architecture input (REQ-001)
   //   cyber.sbom_imported        — SBOM ingested (REQ-003)
   //   cyber.sbom_validated       — SBOM format validation result recorded (REQ-003)
@@ -355,7 +355,7 @@ export type AuditAction =
   | 'cyber.reassess_triggered'
   // SPEC-REGULA-CORPUS-LICENSE-001 (Issue 72) — 9 corpus-license lifecycle audit
   // actions for 21 CFR Part 11 traceability of license/entitlement state.
-  // Added via 0080_corpus_license.sql. Mirror the auditActionEnum in lib/db/schema.ts.
+  // Added via 0080_corpus_license.sql. Mirror the auditActionEnum in lib/kernel/db/schema.ts.
   //   corpus.license_set            — license metadata created or updated (REQ-001/010)
   //   corpus.ingestion_blocked      — ingestion gate blocked unlicensed source (REQ-002/003)
   //   corpus.full_text_blocked      — paid full-text blocked without entitlement (REQ-004)
@@ -503,7 +503,7 @@ export type AuditAction =
   //   workflow.draft_version  — draft version bumped on result persist
   //   workflow.expert_flagged — review gate flagged run for expert review
   //   workflow.export_blocked — export denied (review not approved)
-  // Mirror auditActionEnum in lib/db/schema.ts (3-place sync, L-013).
+  // Mirror auditActionEnum in lib/kernel/db/schema.ts (3-place sync, L-013).
   | 'workflow.llm_call'
   | 'workflow.draft_version'
   | 'workflow.expert_flagged'

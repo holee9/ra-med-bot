@@ -8,8 +8,8 @@
 //   - assertSourceInOrg: IDOR gate — cross-org source access → 404 (not 403,
 //     to avoid leaking existence). Mirrors the CAPA/PMS IDOR pattern.
 
-import { db } from '@/lib/db/client';
-import { sources } from '@/lib/db/schema';
+import { db } from '@/lib/kernel/db/client';
+import { sources } from '@/lib/kernel/db/schema';
 import { and, eq } from 'drizzle-orm';
 
 /**

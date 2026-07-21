@@ -11,7 +11,7 @@ import {
   evidenceNodes,
   riskItems,
   submissionPackages,
-} from '@/lib/db/schema';
+} from '@/lib/kernel/db/schema';
 import { describe, expect, it } from 'vitest';
 import { type MatrixFilters, buildMatrix } from '../matrix';
 

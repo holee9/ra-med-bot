@@ -3,9 +3,9 @@
 // Extended in Phase 10 with: impact_min, region, product_category, impact_type filters.
 
 import { and, eq, gte, sql } from 'drizzle-orm';
-import { withPermission } from '../../../../lib/auth/with-permission';
-import { db } from '../../../../lib/db/client';
-import { regulatoryUpdates } from '../../../../lib/db/schema';
+import { withPermission } from '../../../../lib/kernel/auth/with-permission';
+import { db } from '../../../../lib/kernel/db/client';
+import { regulatoryUpdates } from '../../../../lib/kernel/db/schema';
 
 export const GET = withPermission('dashboard.view', async (req) => {
   const { searchParams } = new URL(req.url);

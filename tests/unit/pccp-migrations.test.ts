@@ -1,7 +1,7 @@
 // @MX:SPEC SPEC-REGULA-PCCP-001 (REQ-PCCP-001, REQ-PCCP-002)
 // Verifies PCCP migration artifacts: table shape from schema + step definitions.
 
-import { pccpComponents, pccpVersions } from '@/lib/db/schema';
+import { pccpComponents, pccpVersions } from '@/lib/kernel/db/schema';
 import { PCCP_STEPS, getNextStep, getStepIndex, isValidStep } from '@/lib/workflows/pccp/steps';
 import { describe, expect, it } from 'vitest';
 

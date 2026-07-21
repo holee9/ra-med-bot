@@ -3,7 +3,7 @@
 'use client';
 
 import { ConsultSessionDetail } from '@/components/consult/ConsultSessionDetail';
-import type { Role } from '@/lib/auth/rbac';
+import type { Role } from '@/lib/kernel/auth/rbac';
 import { useConsultSession } from '@/lib/queries/useConsult';
 import { useRouter } from 'next/navigation';
 

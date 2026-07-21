@@ -1,7 +1,7 @@
 // @MX:NOTE [AUTO] Weekly cron function for knowledge sources sync.
 // @MX:SPEC Issue #307 D-2 (Knowledge Sources API)
 
-import { knowledgeSources } from '@/lib/db/schema';
+import { knowledgeSources } from '@/lib/kernel/db/schema';
 import { syncKnowledgeSource } from '@/lib/knowledge-sources/sync';
 import { and, eq } from 'drizzle-orm';
 import { inngest } from '../client';
@@ -20,7 +20,7 @@ export const knowledgeSourcesWeeklySyncFn = inngest.createFunction(
     triggers: [{ cron: KNOWLEDGE_SOURCES_CRON_SCHEDULE }],
   },
   async ({ step, logger }) => {
-    const { db } = await import('@/lib/db/client');
+    const { db } = await import('@/lib/kernel/db/client');
 
     // Fetch all knowledge sources
     const sources = await db

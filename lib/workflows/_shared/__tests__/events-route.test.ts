@@ -66,7 +66,7 @@ vi.mock('../workflow-runner', () => ({
   encodeWorkflowEvent: mockEncodeWorkflowEvent,
 }));
 
-vi.mock('@/lib/db/client', () => ({
+vi.mock('@/lib/kernel/db/client', () => ({
   db: {
     query: {
       workflowRuns: {
@@ -76,7 +76,7 @@ vi.mock('@/lib/db/client', () => ({
   },
 }));
 
-vi.mock('@/lib/db/schema', () => ({
+vi.mock('@/lib/kernel/db/schema', () => ({
   workflowRuns: {
     id: 'id',
     organizationId: 'organizationId',

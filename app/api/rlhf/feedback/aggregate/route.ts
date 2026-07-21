@@ -8,9 +8,9 @@
 //           and the feedback select joins via messages->conversations->projects
 //           scoped to the caller's org.
 
-import { withPermission } from '@/lib/auth/with-permission';
-import { withTenantScope } from '@/lib/db/client';
-import { answerFeedback, conversations, messages, projects } from '@/lib/db/schema';
+import { withPermission } from '@/lib/kernel/auth/with-permission';
+import { withTenantScope } from '@/lib/kernel/db/client';
+import { answerFeedback, conversations, messages, projects } from '@/lib/kernel/db/schema';
 import { assertMessageInOrg } from '@/lib/rlhf/access';
 import { aggregateFeedback, detectDownwardTrend } from '@/lib/rlhf/feedback-aggregator';
 import { and, eq } from 'drizzle-orm';

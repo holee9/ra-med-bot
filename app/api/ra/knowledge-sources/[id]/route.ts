@@ -1,10 +1,10 @@
 // @MX:NOTE [AUTO] DELETE /api/ra/knowledge-sources/[id] — delete knowledge source.
 // @MX:SPEC Issue #307 D-2 (Knowledge Sources API)
 
-import { writeAudit } from '@/lib/audit';
-import { withPermission } from '@/lib/auth/with-permission';
-import { db } from '@/lib/db/client';
-import { knowledgeSources } from '@/lib/db/schema';
+import { writeAudit } from '@/lib/kernel/audit';
+import { withPermission } from '@/lib/kernel/auth/with-permission';
+import { db } from '@/lib/kernel/db/client';
+import { knowledgeSources } from '@/lib/kernel/db/schema';
 import { assertKnowledgeSourceInOrg } from '@/lib/knowledge-sources/access';
 import { eq } from 'drizzle-orm';
 

@@ -104,7 +104,7 @@ export async function notifyUpdate(
   // Lazy-import writeAudit to avoid DB initialization at module load time
   // (prevents env var failures in test environments)
   try {
-    const { writeAudit } = await import('@/lib/audit');
+    const { writeAudit } = await import('@/lib/kernel/audit');
     await writeAudit({
       actor_id: null, // system-initiated
       action: 'radar.notification',

@@ -6,7 +6,7 @@
 //           of thousands of rows is ops decision (cost/time).
 
 import { eq, sql } from 'drizzle-orm';
-import { messages } from '../../db/schema';
+import { messages } from '../../kernel/db/schema';
 import { embedForMessage } from '../../knowledge-promo/embedding';
 import { logger } from '../../observability/logger';
 import { inngest } from '../client';
@@ -42,7 +42,7 @@ export const messagesEmbeddingBackfillJob = inngest.createFunction(
   async ({ step, logger: jobLogger }) => {
     // Lazy import — avoids top-level db client init (parseEnv side-effect) breaking
     // functions.test.ts which imports the Inngest registry at load time (#50 pattern).
-    const { db } = await import('../../db/client');
+    const { db } = await import('../../kernel/db/client');
     jobLogger.info('Starting messages embedding backfill');
 
     // Step 1: Count remaining messages (idempotency check).

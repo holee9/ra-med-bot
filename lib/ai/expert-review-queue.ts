@@ -2,8 +2,8 @@
 // @MX:REASON Called from consult.ts Phase C and future API endpoints. fan_in >= 3 expected.
 // @MX:SPEC SPEC-REGULA-ENTERPRISE-001 (REQ-ENTERPRISE-009)
 
-import { db } from '@/lib/db/client';
-import { expertReviews } from '@/lib/db/schema';
+import { db } from '@/lib/kernel/db/client';
+import { expertReviews } from '@/lib/kernel/db/schema';
 
 /**
  * Parameters required to enqueue a message for expert review.

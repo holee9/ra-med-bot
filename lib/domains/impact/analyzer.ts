@@ -3,13 +3,13 @@
 // @MX:REASON Called by admin API route and (future) radar notifier webhook. fan_in >= 2.
 // @MX:SPEC SPEC-REGULA-IMPACT-001
 
-import type { Database } from '@/lib/db/client';
+import type { Database } from '@/lib/kernel/db/client';
 import {
   impactActionItems,
   projects,
   regulatoryImpactAssessments,
   regulatoryUpdates,
-} from '@/lib/db/schema';
+} from '@/lib/kernel/db/schema';
 import { eq } from 'drizzle-orm';
 import { enqueueActionItems } from './action-queue';
 import {

@@ -1,9 +1,9 @@
 // @MX:NOTE [AUTO] POST/GET /api/model-governance/change-request — change request + eval trigger.
 // @MX:SPEC SPEC-REGULA-MODEL-GOVERNANCE-001 (Issue 71, REQ-MODELGOV-004/005)
 
-import { withPermission } from '@/lib/auth/with-permission';
-import { withTenantScope } from '@/lib/db/client';
-import { changeRequest } from '@/lib/db/schema';
+import { withPermission } from '@/lib/kernel/auth/with-permission';
+import { withTenantScope } from '@/lib/kernel/db/client';
+import { changeRequest } from '@/lib/kernel/db/schema';
 import { assertModelPinAccess, assertPromptAccess } from '@/lib/model-governance/access';
 import { createChangeRequest } from '@/lib/model-governance/change-workflow';
 import { createChangeRequestInputSchema } from '@/lib/model-governance/types';

@@ -1,17 +1,17 @@
 // SPEC-V3-IMPACT-001 M9: Audit logging for impact wizard operations.
 // TDD RED Phase: Write failing test first.
 
-import type { Database } from '@/lib/db/client';
+import type { Database } from '@/lib/kernel/db/client';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { logCriticalDetected, logImpactCheck, logTicketCreate } from '../audit-logger';
 
 // Mock writeAudit
-vi.mock('@/lib/audit', () => ({
+vi.mock('@/lib/kernel/audit', () => ({
   writeAudit: vi.fn().mockResolvedValue(undefined),
 }));
 
 // Mock DB for transaction
-vi.mock('@/lib/db/client', () => ({
+vi.mock('@/lib/kernel/db/client', () => ({
   db: {},
 }));
 
@@ -22,7 +22,7 @@ describe('M9: Audit Logger', () => {
 
   describe('logImpactCheck', () => {
     it('should log impact check with correct action', async () => {
-      const { writeAudit } = await import('@/lib/audit');
+      const { writeAudit } = await import('@/lib/kernel/audit');
       const mockDb = {};
 
       await logImpactCheck(mockDb as unknown as Database, {
@@ -51,7 +51,7 @@ describe('M9: Audit Logger', () => {
     });
 
     it('should include all context in meta_json', async () => {
-      const { writeAudit } = await import('@/lib/audit');
+      const { writeAudit } = await import('@/lib/kernel/audit');
       const mockDb = {};
 
       await logImpactCheck(mockDb as unknown as Database, {
@@ -72,7 +72,7 @@ describe('M9: Audit Logger', () => {
 
   describe('logTicketCreate', () => {
     it('should log ticket creation with correct action', async () => {
-      const { writeAudit } = await import('@/lib/audit');
+      const { writeAudit } = await import('@/lib/kernel/audit');
       const mockTx = {};
 
       await logTicketCreate(mockTx as unknown as Database, {
@@ -99,7 +99,7 @@ describe('M9: Audit Logger', () => {
 
   describe('logCriticalDetected', () => {
     it('should log critical detection with correct action', async () => {
-      const { writeAudit } = await import('@/lib/audit');
+      const { writeAudit } = await import('@/lib/kernel/audit');
       const mockTx = {};
 
       await logCriticalDetected(mockTx as unknown as Database, {

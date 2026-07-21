@@ -1,11 +1,11 @@
-// @MX:NOTE [AUTO] POST/GET/PUT /api/corpus-license/source-license — license metadata CRUD.
-// @MX:SPEC SPEC-REGULA-CORPUS-LICENSE-001 (REQ-CORPUSLIC-001, REQ-CORPUSLIC-010, REQ-CORPUSLIC-012)
-import { withPermission } from '@/lib/auth/with-permission';
 import { assertSourceInOrg } from '@/lib/corpus-license/access';
 import { auditCorpusAccessDenied, auditLicenseSet } from '@/lib/corpus-license/audit';
 import { sourceLicenseInputSchema } from '@/lib/corpus-license/types';
-import { db } from '@/lib/db/client';
-import { sourceLicense } from '@/lib/db/schema';
+// @MX:NOTE [AUTO] POST/GET/PUT /api/corpus-license/source-license — license metadata CRUD.
+// @MX:SPEC SPEC-REGULA-CORPUS-LICENSE-001 (REQ-CORPUSLIC-001, REQ-CORPUSLIC-010, REQ-CORPUSLIC-012)
+import { withPermission } from '@/lib/kernel/auth/with-permission';
+import { db } from '@/lib/kernel/db/client';
+import { sourceLicense } from '@/lib/kernel/db/schema';
 import { and, eq } from 'drizzle-orm';
 
 // GET — list licenses for the caller's org. REQ-CORPUSLIC-001.

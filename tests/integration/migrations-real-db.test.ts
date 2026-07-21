@@ -22,7 +22,7 @@ import { beforeAll, describe, expect, it } from 'vitest';
 const SKIP_REASON = 'Requires DATABASE_URL with pgvector + 0089 fix-up migration applied';
 
 async function getDb() {
-  const { db } = await import('@/lib/db/client');
+  const { db } = await import('@/lib/kernel/db/client');
   return db;
 }
 

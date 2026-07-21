@@ -4,7 +4,7 @@
 // RBAC: sourcegov.view (ra-member+). Returns counts (approved/pending/stale/
 // superseded), the 30-day review-due list, and stale-citation artifacts.
 
-import { withPermission } from '@/lib/auth/with-permission';
+import { withPermission } from '@/lib/kernel/auth/with-permission';
 import { getGovernanceDashboard } from '@/lib/source-governance/dashboard';
 
 export const GET = withPermission('sourcegov.view', async (_req, _ctx, session) => {

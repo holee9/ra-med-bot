@@ -5,12 +5,12 @@ import { describe, expect, it } from 'vitest';
 
 // Import after source files are created in GREEN phase.
 // Currently will fail with module-not-found — confirms RED state.
-import { ROLE_HIERARCHY, hasRole } from '@/lib/auth/rbac';
+import { ROLE_HIERARCHY, hasRole } from '@/lib/kernel/auth/rbac';
 
 const ROLES = ['admin', 'qa-lead', 'ra-lead', 'ra-member', 'viewer'] as const;
 type Role = (typeof ROLES)[number];
 
-describe('lib/auth/rbac.ts (REQ-ENTERPRISE-017) — ROLE_HIERARCHY + hasRole', () => {
+describe('lib/kernel/auth/rbac.ts (REQ-ENTERPRISE-017) — ROLE_HIERARCHY + hasRole', () => {
   describe('ROLE_HIERARCHY values', () => {
     it('admin has highest hierarchy value (4)', () => {
       expect(ROLE_HIERARCHY.admin).toBe(4);

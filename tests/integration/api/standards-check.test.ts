@@ -4,21 +4,21 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
 const authMock = vi.fn();
-vi.mock('@/lib/auth', () => ({
+vi.mock('@/lib/kernel/auth', () => ({
   auth: () => authMock(),
   handlers: {},
   signIn: vi.fn(),
   signOut: vi.fn(),
 }));
 
-vi.mock('@/lib/auth/acl', () => ({
+vi.mock('@/lib/kernel/auth/acl', () => ({
   isOrgMember: vi.fn().mockResolvedValue(true),
   isProjectMember: vi.fn().mockResolvedValue(true),
 }));
 
-vi.mock('@/lib/audit', () => ({ writeAudit: vi.fn().mockResolvedValue(undefined) }));
+vi.mock('@/lib/kernel/audit', () => ({ writeAudit: vi.fn().mockResolvedValue(undefined) }));
 
-vi.mock('@/lib/db/client', () => ({
+vi.mock('@/lib/kernel/db/client', () => ({
   withTenantScope: vi.fn(async (_orgId: string, cb: (tx: unknown) => Promise<unknown>) => cb({})),
   db: {},
 }));

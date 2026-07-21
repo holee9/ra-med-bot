@@ -4,7 +4,7 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 
 // --- Mock withPermission: pass-through with fixed session ---
-vi.mock('@/lib/auth/with-permission', () => ({
+vi.mock('@/lib/kernel/auth/with-permission', () => ({
   withPermission: vi.fn(
     (
       _action: string,
@@ -70,10 +70,10 @@ const mockDb = {
   ),
 };
 
-vi.mock('@/lib/db/client', () => ({ db: mockDb }));
+vi.mock('@/lib/kernel/db/client', () => ({ db: mockDb }));
 
 // --- Mock audit ---
-vi.mock('@/lib/audit', () => ({
+vi.mock('@/lib/kernel/audit', () => ({
   writeAudit: vi.fn().mockResolvedValue(undefined),
 }));
 
@@ -170,7 +170,7 @@ describe('POST /api/ra/expert-review — create', () => {
 
   it('calls writeAudit with expert_review.flag action', async () => {
     mockInsertChain.returning.mockResolvedValueOnce([FAKE_RECORD]);
-    const { writeAudit } = await import('@/lib/audit');
+    const { writeAudit } = await import('@/lib/kernel/audit');
     vi.mocked(writeAudit).mockClear();
 
     const { POST } = await import('@/app/api/ra/expert-review/route');

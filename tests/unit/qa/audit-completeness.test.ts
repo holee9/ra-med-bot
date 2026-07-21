@@ -13,7 +13,7 @@ import {
 describe('checkFileForAuditCoverage (REQ-ENTERPRISE-032)', () => {
   it('returns no violation when export async function POST contains writeAudit', () => {
     const content = `
-import { writeAudit } from '@/lib/audit';
+import { writeAudit } from '@/lib/kernel/audit';
 export async function POST(req: Request) {
   await writeAudit({ action: 'llm.call', actor_id: null, resource_type: 'test', resource_id: '1' });
   return new Response(null, { status: 200 });
