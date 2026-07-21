@@ -30,6 +30,10 @@ labels:
 | 1.0.0 | 2026-07-02 | manager-spec | 초기 작성. Phase C-2 완료(4도메인 아카이브) 후 잔여 14도메인 + kernel 추출 + schema 분할을 다룸. 마스터 계획 `docs/proposals/v3-architecture-revamp-plan-2026-07-02.md` 기반. |
 | 1.1.0 | 2026-07-21 | manager-spec (rescope, #531) | kernel-only 재스코프. Phase A(#530) 8도메인 아카이브 완료로 잔여 아카이브 태스크 제거. 수치 직검 정정(baseline 4815→5450, codemod 178→289, FK 261→274, migration 106→125, pgTable 86→94, schema 3232→3531). drizzle 선례 거짓 정정(신규 배선). |
 
+## Amendments
+
+- **2026-07-21** — REQ-V3R-012 / AC-11 허구 함수 → 실제 kernel re-export surface 정정. run-phase 구현 결과 반영 (REQ-V3R-004 준수). 본 SPEC은 아직 `status: in-progress`이므로 prior_completed_sha는 없고, in-place 본문 정정만 수행. 직검(`lib/kernel/index.ts`): v1.1.0 원본이 re-export 대상으로 명시했던 5개 심볼이 코드베이스에 부재 확인됨. 실제 re-export surface는 `db`, `withTenantScope`, `auth`, `withPermission`, `writeAudit`, `createKVRateLimiter`, `R2Client`. 부재 심볼 5종의 구체적 명단은 `lib/kernel/index.ts` 헤더 주석에 보존.
+
 ---
 
 ## §1 Purpose (목적)
@@ -119,7 +123,7 @@ Regula v3 아키텍처 개편 중 **Phase B(kernel 추출 + schema 분할)** 만
 | REQ-V3R-009 | **WHEN** Phase B(kernel 추출)의 codemod가 실행되면, **THEN** the system **SHALL** 289 파일(union, 동적 import 55건 포함)의 `@/lib/db`, `@/lib/auth`, `@/lib/audit`, `@/lib/schemas` import 경로를 `@/lib/kernel/db`, `@/lib/kernel/auth`, `@/lib/kernel/audit`, `@/lib/kernel/schemas`로 일괄 변경하고 변경 누락 0건을 검증하여야 한다 (L-014: 정적 + 동적 + 배럴 re-export grep) | High |
 | REQ-V3R-010 | **IF** kernel 추출 중 RLS 정책 또는 audit enum 참조가 붕괴되면, **THEN** the system **SHALL** 즉시 중단하고 사용자에게 보고하여야 한다 (완화: migration 제자리 유지로 RLS/enum은 DB에 보존) | Medium |
 | REQ-V3R-011 | **THE SYSTEM SHALL** kernel 추출을 안전 순서(B1 디렉토리 생성 → B2 schema-kernel 발췌 → B3 drizzle config 전환 → B4 kernel/index.ts → B5 codemod)로 수행하고 각 단계마다 회귀 테스트 게이트(5450+ passed)를 통과하여야 한다 | High |
-| REQ-V3R-012 | **WHEN** lib/kernel/index.ts 공개 API 작성 시, **THEN** the system **SHALL** 다음을 re-export 하여야 한다: `db`, `withTenantScope` (db/client), `getSession`, `requireRole`, `withPermission` (auth), `writeAudit`, `verifyHashChain` (audit), `rateLimit` (ratelimit), `uploadAsset` (storage) | Medium |
+| REQ-V3R-012 | **WHEN** lib/kernel/index.ts 공개 API 작성 시, **THEN** the system **SHALL** 다음을 re-export 하여야 한다: `db`, `withTenantScope` (db/client), `auth`, `withPermission` (auth), `writeAudit` (audit), `createKVRateLimiter` (ratelimit), `R2Client` (storage). v1.1.0 원본이 re-export 대상으로 명시했던 5개 허구 심볼은 코드베이스에 부재하여 REQ-V3R-004(새 추상층 금지)에 따라 합성하지 않는다 (부재 심볼 명단은 `lib/kernel/index.ts` 헤더 주석 + 2026-07-21 Amendments 참조) | Medium |
 | REQ-V3R-013 | **THE SYSTEM SHALL** .archive-manifest.json에 원본 경로, 체크섬, 복원 경로 매핑을 포함하여야 한다 (Phase A #530에서 생성 완료 — 본 SPEC은 유지만) | Medium |
 | REQ-V3R-014 | **WHEN** `next dev` 구동 중 페이지 로드 시, **THEN** the system **SHALL** 500 에러가 0건이어야 한다 (L-012: next dev 구동 중 pnpm build 금지 — `.next` chunk 충돌) | Medium |
 | REQ-V3R-015 | **IF** migration 체인 꼬임이 감지되면, **THEN** the system **SHALL** 즉시 중단하고 테이블 DROP 전면 금지, TRUNCATE만 허용 원칙을 적용하여야 한다 (L-013: 실DB 직검으로 검증) | Medium |
@@ -140,7 +144,7 @@ Regula v3 아키텍처 개편 중 **Phase B(kernel 추출 + schema 분할)** 만
 | AC-08 | **N/A (Phase A 완료, KEEP 재분류)**: 원 v1.0.0의 SHRINK 검증(rlhf→lib/ai, knowledge-gap→lib/radar)은 #519 KEEP 판정으로 수행 안 함. rlhf/knowledge-gap은 라이브 유지. | N/A |
 | AC-09 | codemod 후 `@/lib/db`, `@/lib/auth`, `@/lib/audit`, `@/lib/schemas` import 경로가 `@/lib/kernel/*`로 일괄 변경됨 (289 파일 union, 동적 import 55건 포함), 변경 누락 0건 (정적+동적+배럴 grep) | grep `@/lib/db\|@/lib/auth\|@/lib/audit\|@/lib/schemas` 결과에서 kernel 경로 미사용 파일 0건 |
 | AC-10 | `next dev` 구동 후 주요 페이지(/, /admin, /ra) 로드 시 500 에러 0건 (L-012 준수) | E2E / 수동 확인 |
-| AC-11 | lib/kernel/index.ts가 REQ-V3R-012의 re-export 항목을 모두 포함 | grep kernel/index.ts export 키워드 |
+| AC-11 | lib/kernel/index.ts가 REQ-V3R-012의 re-export 항목(`db`, `withTenantScope`, `auth`, `withPermission`, `writeAudit`, `createKVRateLimiter`, `R2Client`)을 모두 포함 | grep kernel/index.ts export 키워드 |
 
 ---
 
