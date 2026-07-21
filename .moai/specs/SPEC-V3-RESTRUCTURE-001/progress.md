@@ -85,7 +85,7 @@ m1_to_mN_commit_strategy: single-coherent-commit (B1-B7 interdependent, pre-comm
 
 ```yaml
 sync_status: ready
-sync_commit_sha: pending-backfill-<this-commit-sha-will-be-backfilled-in-follow-up-commit>
+sync_commit_sha: 4e15cf2
 sync_complete_at: 2026-07-21
 ```
 
