@@ -1,8 +1,8 @@
 // @MX:NOTE [AUTO] GET /api/traceability/[deliverableId]/packet — evidence packet.
 // @MX:SPEC SPEC-REGULA-TRACEABILITY-001 (REQ-TRACEABILITY-006, REQ-TRACEABILITY-007)
 
-import { withPermission } from '@/lib/auth/with-permission';
-import { withTenantScope } from '@/lib/db/client';
+import { withPermission } from '@/lib/kernel/auth/with-permission';
+import { withTenantScope } from '@/lib/kernel/db/client';
 import { getEvidencePacket } from '@/lib/traceability/evidence-packet';
 import { listStaleNodeIds } from '@/lib/traceability/stale-propagation';
 

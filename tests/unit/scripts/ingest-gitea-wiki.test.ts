@@ -25,7 +25,7 @@ const insertMocks = vi.hoisted(() => ({
   sources: [] as Array<Record<string, unknown>>,
   sections: [] as Array<Record<string, unknown>>,
 }));
-vi.mock('../../../lib/db/client', () => ({
+vi.mock('../../../lib/kernel/db/client', () => ({
   db: {
     select: vi.fn(() => ({
       from: vi.fn(() => ({

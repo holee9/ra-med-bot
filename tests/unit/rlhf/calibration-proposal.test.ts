@@ -38,13 +38,13 @@ function buildTx(returning: unknown[]) {
   return self as unknown as typeof mockTx;
 }
 
-vi.mock('@/lib/db/client', () => ({
+vi.mock('@/lib/kernel/db/client', () => ({
   withTenantScope: vi.fn(async (_orgId: string, cb: (tx: unknown) => Promise<unknown>) =>
     cb(mockTx),
   ),
 }));
 
-vi.mock('@/lib/db/schema', () => ({
+vi.mock('@/lib/kernel/db/schema', () => ({
   calibrationCandidates: {
     id: 'id',
     orgId: 'orgId',
@@ -57,7 +57,7 @@ vi.mock('@/lib/db/schema', () => ({
   },
 }));
 
-vi.mock('@/lib/audit', () => ({ writeAudit: writeAuditMock }));
+vi.mock('@/lib/kernel/audit', () => ({ writeAudit: writeAuditMock }));
 
 beforeEach(() => {
   writeAuditMock.mockClear();
@@ -247,7 +247,7 @@ describe('proposeCalibrationCandidates', () => {
 
     // The first candidate's insert resolves to empty (throws); the second succeeds.
     // We achieve this by swapping mockTx between calls via withTenantScope.
-    const { withTenantScope } = await import('@/lib/db/client');
+    const { withTenantScope } = await import('@/lib/kernel/db/client');
     let callCount = 0;
     vi.mocked(withTenantScope).mockImplementation(
       // biome-ignore lint/suspicious/noExplicitAny: mock impl intentionally loose

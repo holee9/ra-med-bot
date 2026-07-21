@@ -11,8 +11,8 @@
 // activation for free. Colors use semantic tokens (ink-*/brand-*) which
 // remap under [data-theme="dark"] so ci:contrast holds in both themes.
 
-import { type Tier, isValidTierForRole } from '@/lib/auth/persona';
-import type { Role } from '@/lib/auth/rbac';
+import { type Tier, isValidTierForRole } from '@/lib/kernel/auth/persona';
+import type { Role } from '@/lib/kernel/auth/rbac';
 import { useTranslations } from 'next-intl';
 
 const TIERS: readonly Tier[] = ['employee', 'ra', 'admin'] as const;

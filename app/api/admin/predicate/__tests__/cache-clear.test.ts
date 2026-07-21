@@ -14,11 +14,11 @@ let currentDepartment: 'RA' | 'Dev' | 'Exec' | 'External' | null = 'Dev';
 let authenticated = true;
 const writeAudit = vi.fn<[], Promise<void>>(async () => {});
 
-vi.mock('@/lib/audit', () => ({
+vi.mock('@/lib/kernel/audit', () => ({
   writeAudit,
 }));
 
-vi.mock('@/lib/auth/with-permission', () => ({
+vi.mock('@/lib/kernel/auth/with-permission', () => ({
   withPermission: vi.fn(
     (
       _action: string,
@@ -36,7 +36,7 @@ vi.mock('@/lib/auth/with-permission', () => ({
 }));
 
 // --- Mock db: department lookup returns currentDepartment ---
-vi.mock('@/lib/db/client', () => ({
+vi.mock('@/lib/kernel/db/client', () => ({
   db: {
     select: vi.fn(() => ({
       from: vi.fn().mockReturnThis(),

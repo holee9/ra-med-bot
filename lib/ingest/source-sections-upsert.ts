@@ -22,8 +22,8 @@
 // regulated event; preserving the prior tx boundary (no new audit inside this tx)
 // matches the pre-refactor behavior exactly.
 
-import { withTenantScope } from '@/lib/db/client';
-import { sourceSections } from '@/lib/db/schema';
+import { withTenantScope } from '@/lib/kernel/db/client';
+import { sourceSections } from '@/lib/kernel/db/schema';
 
 /**
  * Input row for insertSourceSections — one per chunk to persist.

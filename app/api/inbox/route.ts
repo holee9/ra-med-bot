@@ -3,10 +3,10 @@
 // @MX:REASON REQ-V3-INBOX-007: Kanban board query with state filter + pagination.
 //            Requires inbox.view (ra-member+) for team transparency.
 
-import { withPermission } from '@/lib/auth/with-permission';
-import { db } from '@/lib/db/client';
 import { listByTriageState } from '@/lib/domains/inbox';
 import { TRIAGE_STATES, type TriageState } from '@/lib/domains/inbox/types';
+import { withPermission } from '@/lib/kernel/auth/with-permission';
+import { db } from '@/lib/kernel/db/client';
 import { z } from 'zod';
 
 // Zod schema for query parameters. TRIAGE_STATES = single source (#321 L-1).

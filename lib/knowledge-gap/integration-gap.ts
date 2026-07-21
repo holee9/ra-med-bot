@@ -17,7 +17,7 @@
 // still return its error JSON to the caller regardless of recorder outcome.
 
 import type { HybridRaErrorKind } from '@/lib/api/hybrid-ra-client';
-import { writeAudit } from '@/lib/audit';
+import { writeAudit } from '@/lib/kernel/audit';
 
 /** Kinds that represent real bugs worth tracking (vs. 'unconfigured' = feature off). */
 const TRACKED_KINDS: ReadonlySet<HybridRaErrorKind> = new Set([

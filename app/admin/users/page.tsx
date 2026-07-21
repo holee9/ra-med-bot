@@ -1,6 +1,6 @@
-import { auth } from '@/lib/auth';
-import { db } from '@/lib/db/client';
-import { users } from '@/lib/db/schema';
+import { auth } from '@/lib/kernel/auth';
+import { db } from '@/lib/kernel/db/client';
+import { users } from '@/lib/kernel/db/schema';
 import { eq, ne } from 'drizzle-orm';
 import { redirect } from 'next/navigation';
 import AdminUsersClient from './AdminUsersClient';

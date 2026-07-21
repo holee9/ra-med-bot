@@ -23,13 +23,13 @@ const auditApprovedMock = vi.fn().mockResolvedValue(undefined);
 const writeAuditMock = vi.fn().mockResolvedValue(undefined);
 
 async function loadModule() {
-  vi.doMock('@/lib/db/client', () => ({
+  vi.doMock('@/lib/kernel/db/client', () => ({
     // withTenantScope calls cb with mockTx and returns whatever cb returns.
     // This supports both callback-returning-promise (approve select path)
     // and callback-returning-void (insert/update paths).
     withTenantScope: async (_orgId: string, cb: (tx: unknown) => Promise<unknown>) => cb(mockTx),
   }));
-  vi.doMock('@/lib/db/schema', () => ({
+  vi.doMock('@/lib/kernel/db/schema', () => ({
     changeRequest: {
       id: 'id',
       orgId: 'orgId',
@@ -55,7 +55,7 @@ async function loadModule() {
       approvedAt: 'approvedAt',
     },
   }));
-  vi.doMock('@/lib/audit', () => ({ writeAudit: writeAuditMock }));
+  vi.doMock('@/lib/kernel/audit', () => ({ writeAudit: writeAuditMock }));
   vi.doMock('@/lib/model-governance/audit', () => ({
     auditChangeRequested: auditChangeRequestedMock,
     auditEvalResult: auditEvalResultMock,
@@ -93,9 +93,9 @@ beforeEach(() => {
 });
 
 afterEach(() => {
-  vi.doUnmock('@/lib/db/client');
-  vi.doUnmock('@/lib/db/schema');
-  vi.doUnmock('@/lib/audit');
+  vi.doUnmock('@/lib/kernel/db/client');
+  vi.doUnmock('@/lib/kernel/db/schema');
+  vi.doUnmock('@/lib/kernel/audit');
   vi.doUnmock('@/lib/model-governance/audit');
 });
 

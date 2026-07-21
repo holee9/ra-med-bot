@@ -5,7 +5,7 @@
 //           restricts to ra-lead/admin. 21 CFR Part 11 atomicity via
 //           unpromoteAnswer. IDOR guard (assertPromotedAnswerInOrg).
 
-import { withPermission } from '@/lib/auth/with-permission';
+import { withPermission } from '@/lib/kernel/auth/with-permission';
 import { assertPromotedAnswerInOrg } from '@/lib/knowledge-promo/access';
 import { unpromoteAnswer } from '@/lib/knowledge-promo/promote';
 

@@ -27,7 +27,7 @@ function makeMockDb(rows: () => unknown[]) {
 beforeEach(() => {
   mockRows = [];
   vi.resetModules();
-  vi.doMock('@/lib/db/client', () => ({ db: makeMockDb(() => mockRows) }));
+  vi.doMock('@/lib/kernel/db/client', () => ({ db: makeMockDb(() => mockRows) }));
 });
 
 // ---------------------------------------------------------------------------

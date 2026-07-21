@@ -7,7 +7,7 @@ import { describe, expect, it, vi } from 'vitest';
 import { isAnswerLocked } from '../lock';
 
 // Mock the DB module — lock.ts queries answer_signatures
-vi.mock('@/lib/db/client', () => ({
+vi.mock('@/lib/kernel/db/client', () => ({
   db: {
     select: vi.fn(),
   },

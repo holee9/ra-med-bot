@@ -16,7 +16,7 @@ import { beforeEach, describe, expect, it, vi } from 'vitest';
 // it from the DB. A mutable holder lets each test set the returned department.
 let currentDepartment: 'RA' | 'Dev' | 'Exec' | 'External' | null = 'RA';
 
-vi.mock('@/lib/auth/with-permission', () => ({
+vi.mock('@/lib/kernel/auth/with-permission', () => ({
   withPermission: vi.fn(
     (
       _action: string,
@@ -48,7 +48,7 @@ const updateReturning = vi.fn(async () => [{ id: 'wfr-001' }]);
 // Stateful workflow_runs row used by the PUT approve path.
 let storedState: PredicateComparison | null = null;
 
-vi.mock('@/lib/db/client', () => {
+vi.mock('@/lib/kernel/db/client', () => {
   // Department lookup chain: .select().from().where().limit() → [{department}]
   const departmentChain = () => ({
     from: vi.fn().mockReturnThis(),
@@ -140,7 +140,7 @@ interface AuditEventArg {
   meta_json: Record<string, unknown>;
 }
 const writeAuditMock = vi.fn<[AuditEventArg], Promise<void>>(async () => {});
-vi.mock('@/lib/audit', () => ({
+vi.mock('@/lib/kernel/audit', () => ({
   writeAudit: (arg: AuditEventArg) => writeAuditMock(arg),
 }));
 
@@ -172,7 +172,7 @@ vi.mock('@/lib/predicate/comparison-builder', () => ({
   createComparisonBuilder: vi.fn(() => ({ buildComparison })),
 }));
 
-const dbModule = (await import('@/lib/db/client')) as unknown as {
+const dbModule = (await import('@/lib/kernel/db/client')) as unknown as {
   __setSelectMode: (m: 'department' | 'history' | 'state') => void;
 };
 const { POST, GET } = await import('@/app/api/ra/predicate/comparison/route');
@@ -361,7 +361,7 @@ describe('PUT /api/ra/predicate/comparison/[id]/approve — approve cell (REQ-PR
   it('denies cross-user approval (IDOR): returns 403 when userId does not match session (security)', async () => {
     // Simulate another user's comparison row by overriding the stateChain userId.
     // Cast through unknown to avoid strict vi.fn generic mismatch in test context.
-    const { db: mockDb } = (await import('@/lib/db/client')) as unknown as {
+    const { db: mockDb } = (await import('@/lib/kernel/db/client')) as unknown as {
       db: Record<string, unknown>;
     };
     const originalSelect = mockDb.select;

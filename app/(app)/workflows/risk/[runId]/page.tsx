@@ -1,7 +1,7 @@
 import { HazardTable } from '@/components/risk/HazardTable';
 import { RiskApprovalGate } from '@/components/risk/RiskApprovalGate';
 import { RiskMatrix } from '@/components/risk/RiskMatrix';
-import { auth } from '@/lib/auth';
+import { auth } from '@/lib/kernel/auth';
 // @MX:SPEC SPEC-REGULA-RISK-001 (T5.4, REQ-RISK-001~020)
 import { redirect } from 'next/navigation';
 

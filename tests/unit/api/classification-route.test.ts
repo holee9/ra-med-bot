@@ -11,7 +11,7 @@ let sessionUser: { id: string; role: string; organizationId: string | null } = {
 };
 
 // --- Mock withPermission: pass-through with injected session ---
-vi.mock('@/lib/auth/with-permission', () => ({
+vi.mock('@/lib/kernel/auth/with-permission', () => ({
   withPermission: vi.fn(
     (
       _action: string,
@@ -34,10 +34,10 @@ const mockDb = {
   ),
 };
 
-vi.mock('@/lib/db/client', () => ({ db: mockDb }));
+vi.mock('@/lib/kernel/db/client', () => ({ db: mockDb }));
 
 // --- Mock audit ---
-vi.mock('@/lib/audit', () => ({
+vi.mock('@/lib/kernel/audit', () => ({
   writeAudit: vi.fn().mockResolvedValue(undefined),
 }));
 
@@ -143,7 +143,7 @@ describe('POST /api/ra/classification', () => {
   });
 
   it('calls writeAudit with device_classified action inside transaction', async () => {
-    const { writeAudit } = await import('@/lib/audit');
+    const { writeAudit } = await import('@/lib/kernel/audit');
     vi.mocked(writeAudit).mockClear();
 
     const { POST } = await import('@/app/api/ra/classification/route');

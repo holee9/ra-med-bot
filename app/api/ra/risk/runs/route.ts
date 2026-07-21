@@ -1,8 +1,8 @@
 // @MX:NOTE [AUTO] POST /api/ra/risk/runs — create a new risk management workflow run.
 // @MX:SPEC SPEC-REGULA-RISK-001 (T2.1, REQ-RISK-028)
 
-import { writeAudit } from '@/lib/audit';
-import { withPermission } from '@/lib/auth/with-permission';
+import { writeAudit } from '@/lib/kernel/audit';
+import { withPermission } from '@/lib/kernel/auth/with-permission';
 
 export const POST = withPermission('risk.generate', async (req, _ctx, session) => {
   try {

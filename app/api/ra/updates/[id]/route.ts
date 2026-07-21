@@ -5,9 +5,9 @@ import { logger } from '@/lib/observability/logger';
 import { generateText } from 'ai';
 import { eq } from 'drizzle-orm';
 import { getLlmModel } from '../../../../../lib/ai/llm-provider';
-import { withPermission } from '../../../../../lib/auth/with-permission';
-import { db } from '../../../../../lib/db/client';
-import { regulatoryUpdates } from '../../../../../lib/db/schema';
+import { withPermission } from '../../../../../lib/kernel/auth/with-permission';
+import { db } from '../../../../../lib/kernel/db/client';
+import { regulatoryUpdates } from '../../../../../lib/kernel/db/schema';
 
 export const GET = withPermission('dashboard.view', async (req, ctx) => {
   const params = ctx.params ? await ctx.params : {};

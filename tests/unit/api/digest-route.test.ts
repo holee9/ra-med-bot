@@ -17,7 +17,7 @@ const chain = {
 
 const selectMock = vi.fn(() => chain);
 
-vi.mock('@/lib/db/client', () => ({
+vi.mock('@/lib/kernel/db/client', () => ({
   db: {
     select: selectMock,
   },

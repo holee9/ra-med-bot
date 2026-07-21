@@ -6,9 +6,9 @@
 //           deferred to a follow-up issue (see @MX:TODO below).
 
 import { createHash } from 'node:crypto';
-import { writeAudit } from '@/lib/audit';
-import { db, withTenantScope } from '@/lib/db/client';
-import { changeRequest } from '@/lib/db/schema';
+import { writeAudit } from '@/lib/kernel/audit';
+import { db, withTenantScope } from '@/lib/kernel/db/client';
+import { changeRequest } from '@/lib/kernel/db/schema';
 
 /**
  * REQ-MODELGOV-009: store an RLHF improvement proposal as a pending_review

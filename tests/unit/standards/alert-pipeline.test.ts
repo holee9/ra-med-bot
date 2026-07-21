@@ -15,11 +15,11 @@ const insertResults: any[][] = [];
 const writeAuditMock = vi.fn().mockResolvedValue(undefined);
 
 async function loadModule() {
-  vi.doMock('@/lib/db/client', () => ({
+  vi.doMock('@/lib/kernel/db/client', () => ({
     // withTenantScope calls cb with mockTx and returns its result.
     withTenantScope: async (_orgId: string, cb: (tx: unknown) => Promise<unknown>) => cb(mockTx),
   }));
-  vi.doMock('@/lib/db/schema', () => ({
+  vi.doMock('@/lib/kernel/db/schema', () => ({
     standardsUpdates: {
       id: 'id',
       orgId: 'orgId',
@@ -32,7 +32,7 @@ async function loadModule() {
       source: 'source',
     },
   }));
-  vi.doMock('@/lib/audit', () => ({ writeAudit: writeAuditMock }));
+  vi.doMock('@/lib/kernel/audit', () => ({ writeAudit: writeAuditMock }));
   vi.resetModules();
   return import('@/lib/standards/alert-pipeline');
 }
@@ -51,9 +51,9 @@ beforeEach(() => {
 });
 
 afterEach(() => {
-  vi.doUnmock('@/lib/db/client');
-  vi.doUnmock('@/lib/db/schema');
-  vi.doUnmock('@/lib/audit');
+  vi.doUnmock('@/lib/kernel/db/client');
+  vi.doUnmock('@/lib/kernel/db/schema');
+  vi.doUnmock('@/lib/kernel/audit');
 });
 
 describe('emitStandardsAlert (SPEC-REGULA-STANDARDS-001)', () => {

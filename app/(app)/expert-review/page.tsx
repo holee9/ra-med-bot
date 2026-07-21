@@ -7,11 +7,11 @@
 import { PreReviewWarning } from '@/components/expert-review/PreReviewWarning';
 import { QueueList } from '@/components/expert-review/QueueList';
 import { TriageHeader } from '@/components/expert-review/TriageHeader';
-import { auth } from '@/lib/auth';
-import { hasRole } from '@/lib/auth/rbac';
-import type { Role } from '@/lib/auth/rbac';
-import { db } from '@/lib/db/client';
-import { expertReviews } from '@/lib/db/schema';
+import { auth } from '@/lib/kernel/auth';
+import { hasRole } from '@/lib/kernel/auth/rbac';
+import type { Role } from '@/lib/kernel/auth/rbac';
+import { db } from '@/lib/kernel/db/client';
+import { expertReviews } from '@/lib/kernel/db/schema';
 import type { ExpertReview } from '@/types/expert-review';
 import { desc, eq } from 'drizzle-orm';
 import { redirect } from 'next/navigation';

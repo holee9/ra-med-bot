@@ -1,5 +1,5 @@
 // @MX:NOTE [AUTO] ExpertReview type — T-007 (REQ-ENTERPRISE-024~030).
-// Mirrors the expert_reviews DB table shape from lib/db/schema.ts.
+// Mirrors the expert_reviews DB table shape from lib/kernel/db/schema.ts.
 // @MX:SPEC SPEC-REGULA-ENTERPRISE-001 (REQ-ENTERPRISE-024)
 
 export interface ExpertReview {

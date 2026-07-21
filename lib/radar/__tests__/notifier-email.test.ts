@@ -23,7 +23,7 @@ const { selectMock, fromMock, whereMock, limitMock, setLimitResolution } = vi.ho
   };
 });
 
-vi.mock('@/lib/db/client', () => ({
+vi.mock('@/lib/kernel/db/client', () => ({
   db: {
     select: selectMock,
   },

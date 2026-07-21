@@ -1,8 +1,8 @@
 // @MX:SPEC SPEC-REGULA-DIGEST-001
 // Public shareable digest view — token-gated, no auth required.
 import { and, eq } from 'drizzle-orm';
-import { db } from '../../../../../lib/db/client';
-import { weeklyDigests } from '../../../../../lib/db/schema';
+import { db } from '../../../../../lib/kernel/db/client';
+import { weeklyDigests } from '../../../../../lib/kernel/db/schema';
 
 export async function GET(req: Request, { params }: { params: Promise<{ weekId: string }> }) {
   const { weekId } = await params;

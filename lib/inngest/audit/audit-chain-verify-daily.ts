@@ -34,9 +34,9 @@ export const auditChainVerifyDailyFn = inngest.createFunction(
   },
   async ({ step, logger }) => {
     // Lazy imports keep the cron module import-light (L-003 pattern) and avoid
-    // eagerly loading lib/db/client → lib/env at function-registration time.
-    const { verifyAuditChain } = await import('../../audit/verify-chain');
-    const { writeAudit } = await import('@/lib/audit');
+    // eagerly loading lib/kernel/db/client → lib/env at function-registration time.
+    const { verifyAuditChain } = await import('../../kernel/audit/verify-chain');
+    const { writeAudit } = await import('@/lib/kernel/audit');
 
     try {
       const result = await step.run('verify-chain', () => verifyAuditChain());

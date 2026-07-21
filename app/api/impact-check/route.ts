@@ -3,9 +3,6 @@
 // @MX:REASON Single entry point for impact assessment. fan_in >= 3 (UI, CLI, webhook).
 // @MX:SPEC SPEC-V3-IMPACT-001 (AC-IMP-01..04, AC-IMP-09, AC-IMP-13)
 
-import { writeAudit } from '@/lib/audit';
-import { withPermission } from '@/lib/auth/with-permission';
-import { db } from '@/lib/db/client';
 import {
   calculateSignal,
   classifyChangeCategory,
@@ -13,6 +10,9 @@ import {
   findSimilarCases,
   lookupRetestMatrix,
 } from '@/lib/domains/impact';
+import { writeAudit } from '@/lib/kernel/audit';
+import { withPermission } from '@/lib/kernel/auth/with-permission';
+import { db } from '@/lib/kernel/db/client';
 import { NextResponse } from 'next/server';
 import { z } from 'zod';
 

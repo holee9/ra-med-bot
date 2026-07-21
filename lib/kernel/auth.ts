@@ -16,11 +16,11 @@ import NextAuth from 'next-auth';
 import Credentials from 'next-auth/providers/credentials';
 import Google from 'next-auth/providers/google';
 import MicrosoftEntraID from 'next-auth/providers/microsoft-entra-id';
+import { getEnv } from '../env';
 import { writeAudit } from './audit';
 import { buildLoginAuditEvent, buildLogoutAuditEvent } from './auth/audit-callbacks';
 import { db, serviceDb } from './db/client';
 import { accounts, orgMembers, sessions, users, verificationTokens } from './db/schema';
-import { getEnv } from './env';
 
 // getEnv() is deferred inside the NextAuth callback to avoid ZodError during
 // `next build` — Next.js collects route data at build time before env vars are

@@ -73,10 +73,10 @@ let mockRows: Record<string, unknown[]> = {};
 
 beforeEach(() => {
   mockRows = {};
-  vi.doMock('@/lib/audit', () => ({
+  vi.doMock('@/lib/kernel/audit', () => ({
     writeAudit: vi.fn(async () => {}),
   }));
-  vi.doMock('@/lib/db/client', () => {
+  vi.doMock('@/lib/kernel/db/client', () => {
     const mockDb = makeMockDb(mockRows);
     return {
       db: mockDb,
@@ -93,7 +93,7 @@ beforeEach(() => {
 // ---------------------------------------------------------------------------
 describe('AC-01: governance fields stored + queried (REQ-SOURCE-GOV-001/002)', () => {
   it('schema.ts adds the 9 governance columns to sources', () => {
-    const src = readText('lib/db/schema.ts');
+    const src = readText('lib/kernel/db/schema.ts');
     expect(src).toMatch(/authorityGrade: sourceAuthorityGradeEnum/);
     expect(src).toMatch(/jurisdiction: text\('jurisdiction'\)/);
     expect(src).toMatch(/effectiveDate: date\('effective_date'\)/);
@@ -309,7 +309,7 @@ describe('AC-05: approval audit (REQ-SOURCE-GOV-015)', () => {
   });
 
   it('source-level: source.approved + source.rejected in AuditAction union', () => {
-    const auditSrc = readText('lib/audit.ts');
+    const auditSrc = readText('lib/kernel/audit.ts');
     expect(auditSrc).toContain("'source.approved'");
     expect(auditSrc).toContain("'source.rejected'");
   });
@@ -411,7 +411,7 @@ describe('IDOR + compose-with-license-filter', () => {
   });
 
   it('source-level: sourcegov.manage = ra-lead, sourcegov.view = ra-member', () => {
-    const src = readText('lib/auth/permissions.ts');
+    const src = readText('lib/kernel/auth/permissions.ts');
     expect(src).toMatch(/'sourcegov\.manage':\s*\{\s*minRole:\s*'ra-lead'/);
     expect(src).toMatch(/'sourcegov\.view':\s*\{\s*minRole:\s*'ra-member'/);
   });
@@ -467,8 +467,8 @@ function withScope<T>(mockDb: T) {
 
 describe('BEHAVIORAL C-2+M-1: markSuperseded (REQ-SOURCE-GOV-005/006)', () => {
   it('writes superseded_by + audits when successor is in same org', async () => {
-    vi.doMock('@/lib/audit', () => ({ writeAudit: vi.fn(async () => {}) }));
-    vi.doMock('@/lib/db/client', () => {
+    vi.doMock('@/lib/kernel/audit', () => ({ writeAudit: vi.fn(async () => {}) }));
+    vi.doMock('@/lib/kernel/db/client', () => {
       const mockDb = makeSequentialMockDb([
         [{ id: 'src-old', approvalStatus: 'approved' }], // getSourceInOrg(sourceId)
         [{ id: 'src-new', approvalStatus: 'approved' }], // getSourceInOrg(supersededBy)
@@ -492,8 +492,8 @@ describe('BEHAVIORAL C-2+M-1: markSuperseded (REQ-SOURCE-GOV-005/006)', () => {
 
   it('rejects self-cycle (sourceId === supersededBy) → ok:false, no db write', async () => {
     const db = makeSequentialMockDb([]);
-    vi.doMock('@/lib/audit', () => ({ writeAudit: vi.fn(async () => {}) }));
-    vi.doMock('@/lib/db/client', () => ({ db, withTenantScope: withScope(db) }));
+    vi.doMock('@/lib/kernel/audit', () => ({ writeAudit: vi.fn(async () => {}) }));
+    vi.doMock('@/lib/kernel/db/client', () => ({ db, withTenantScope: withScope(db) }));
     vi.resetModules();
     const { markSuperseded } = await import('@/lib/source-governance/review-workflow');
     const result = await markSuperseded({
@@ -507,8 +507,8 @@ describe('BEHAVIORAL C-2+M-1: markSuperseded (REQ-SOURCE-GOV-005/006)', () => {
   });
 
   it('returns null on IDOR miss (source not in org)', async () => {
-    vi.doMock('@/lib/audit', () => ({ writeAudit: vi.fn(async () => {}) }));
-    vi.doMock('@/lib/db/client', () => {
+    vi.doMock('@/lib/kernel/audit', () => ({ writeAudit: vi.fn(async () => {}) }));
+    vi.doMock('@/lib/kernel/db/client', () => {
       const mockDb = makeSequentialMockDb([[]]); // getSourceInOrg returns empty
       return { db: mockDb, withTenantScope: withScope(mockDb) };
     });
@@ -531,8 +531,8 @@ describe('BEHAVIORAL H-3: updateGovernanceFields sets authorityGrade (REQ-SOURCE
       [], // assessSourceChangeImpact messageSources
       [], // assessSourceChangeImpact unansweredQueue
     ]);
-    vi.doMock('@/lib/audit', () => ({ writeAudit: vi.fn(async () => {}) }));
-    vi.doMock('@/lib/db/client', () => ({ db, withTenantScope: withScope(db) }));
+    vi.doMock('@/lib/kernel/audit', () => ({ writeAudit: vi.fn(async () => {}) }));
+    vi.doMock('@/lib/kernel/db/client', () => ({ db, withTenantScope: withScope(db) }));
     vi.resetModules();
     const { updateGovernanceFields } = await import('@/lib/source-governance/review-workflow');
     const result = await updateGovernanceFields({
@@ -548,8 +548,8 @@ describe('BEHAVIORAL H-3: updateGovernanceFields sets authorityGrade (REQ-SOURCE
   });
 
   it('returns null on IDOR miss (→ 404)', async () => {
-    vi.doMock('@/lib/audit', () => ({ writeAudit: vi.fn(async () => {}) }));
-    vi.doMock('@/lib/db/client', () => {
+    vi.doMock('@/lib/kernel/audit', () => ({ writeAudit: vi.fn(async () => {}) }));
+    vi.doMock('@/lib/kernel/db/client', () => {
       const mockDb = makeSequentialMockDb([[]]);
       return { db: mockDb, withTenantScope: withScope(mockDb) };
     });
@@ -567,7 +567,7 @@ describe('BEHAVIORAL H-3: updateGovernanceFields sets authorityGrade (REQ-SOURCE
 
 describe('BEHAVIORAL H-2: assessSourceChangeImpact produces knowledge-gap impact (REQ-010)', () => {
   it('returns knowledgeGapIds derived from message_sources → unanswered_queue join', async () => {
-    vi.doMock('@/lib/db/client', () => {
+    vi.doMock('@/lib/kernel/db/client', () => {
       const mockDb = makeSequentialMockDb([
         // messageSources select: 2 messages reference this source
         [{ messageId: 'msg-1' }, { messageId: 'msg-2' }],
@@ -583,7 +583,7 @@ describe('BEHAVIORAL H-2: assessSourceChangeImpact produces knowledge-gap impact
   });
 
   it('returns empty when no messages reference the source', async () => {
-    vi.doMock('@/lib/db/client', () => {
+    vi.doMock('@/lib/kernel/db/client', () => {
       const mockDb = makeSequentialMockDb([[]]);
       return { db: mockDb, withTenantScope: withScope(mockDb) };
     });
@@ -682,7 +682,7 @@ describe('BEHAVIORAL M-1: sync route does not leak errorMessage (expert-security
 
     // Stub withPermission into a passthrough (no RBAC, synthetic session) so
     // the route can be invoked directly. The handler signature is preserved.
-    vi.doMock('@/lib/auth/with-permission', () => ({
+    vi.doMock('@/lib/kernel/auth/with-permission', () => ({
       withPermission:
         (
           _action: string,

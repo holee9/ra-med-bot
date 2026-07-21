@@ -1,6 +1,6 @@
 // @MX:NOTE Drizzle Kit configuration. Reads DATABASE_URL from env and
 // targets PostgreSQL 16 (per handoff §4 / §12). Schema location:
-// lib/db/schema.ts (created in a later phase).
+// lib/kernel/db/schema.ts (created in a later phase).
 
 import type { Config } from 'drizzle-kit';
 
@@ -17,8 +17,15 @@ if (!databaseUrl) {
 // Updated for drizzle-kit 0.31+ which uses `dialect: 'postgresql'` + `url`.
 // Previous versions used `driver: 'pg'` + `connectionString`.
 export default {
-  schema: './lib/db/schema.ts',
-  out: './lib/db/migrations',
+  // B3 (SPEC-V3-RESTRUCTURE-001): multi-file schema glob — kernel tables split
+  // into schema-kernel.ts; schema-docingest.ts now explicitly wired (previously
+  // unconfigured). drizzle-kit resolves all 3 files as a unified schema.
+  schema: [
+    './lib/kernel/db/schema-kernel.ts',
+    './lib/kernel/db/schema.ts',
+    './lib/kernel/db/schema-docingest.ts',
+  ],
+  out: './lib/kernel/db/migrations',
   dialect: 'postgresql',
   dbCredentials: {
     url: databaseUrl,

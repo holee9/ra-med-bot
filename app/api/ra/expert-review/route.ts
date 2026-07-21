@@ -3,10 +3,10 @@
 // Called from T-006 expert review queue, UI badge polling, and gating layer.
 // @MX:SPEC SPEC-REGULA-ENTERPRISE-001 (REQ-ENTERPRISE-001..005)
 
-import { writeAudit } from '@/lib/audit';
-import { withPermission } from '@/lib/auth/with-permission';
-import { db } from '@/lib/db/client';
-import { expertReviews } from '@/lib/db/schema';
+import { writeAudit } from '@/lib/kernel/audit';
+import { withPermission } from '@/lib/kernel/auth/with-permission';
+import { db } from '@/lib/kernel/db/client';
+import { expertReviews } from '@/lib/kernel/db/schema';
 import { and, desc, eq, sql } from 'drizzle-orm';
 import { z } from 'zod';
 const CreateSchema = z.object({

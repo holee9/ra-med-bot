@@ -6,7 +6,7 @@
 // event is recorded for 21 CFR Part 11 traceability. All wrappers pass-through
 // the transaction handle when provided (Part 11 atomicity — lib/audit contract).
 
-import { type AuditDbHandle, writeAudit } from '@/lib/audit';
+import { type AuditDbHandle, writeAudit } from '@/lib/kernel/audit';
 import type { ApprovalStatus } from './types';
 
 interface SourceAuditParams {

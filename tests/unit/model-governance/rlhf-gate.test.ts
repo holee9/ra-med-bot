@@ -15,11 +15,11 @@ const insertResults: any[][] = [];
 const writeAuditMock = vi.fn().mockResolvedValue(undefined);
 
 async function loadModule() {
-  vi.doMock('@/lib/db/client', () => ({
+  vi.doMock('@/lib/kernel/db/client', () => ({
     withTenantScope: async (_orgId: string, cb: (tx: unknown) => Promise<unknown>) => cb(mockTx),
     db: {},
   }));
-  vi.doMock('@/lib/db/schema', () => ({
+  vi.doMock('@/lib/kernel/db/schema', () => ({
     changeRequest: {
       id: 'id',
       orgId: 'orgId',
@@ -30,7 +30,7 @@ async function loadModule() {
       createdBy: 'createdBy',
     },
   }));
-  vi.doMock('@/lib/audit', () => ({ writeAudit: writeAuditMock }));
+  vi.doMock('@/lib/kernel/audit', () => ({ writeAudit: writeAuditMock }));
   vi.resetModules();
   return import('@/lib/model-governance/rlhf-gate');
 }
@@ -48,9 +48,9 @@ beforeEach(() => {
 });
 
 afterEach(() => {
-  vi.doUnmock('@/lib/db/client');
-  vi.doUnmock('@/lib/db/schema');
-  vi.doUnmock('@/lib/audit');
+  vi.doUnmock('@/lib/kernel/db/client');
+  vi.doUnmock('@/lib/kernel/db/schema');
+  vi.doUnmock('@/lib/kernel/audit');
 });
 
 describe('submitRlhfProposal (REQ-MODELGOV-009)', () => {

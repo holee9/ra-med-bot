@@ -14,9 +14,9 @@
 // attempting cross-org memory access leaves no trail (21 CFR Part 11 violation).
 // The assert functions below write the denial audit row before returning 403.
 
-import { writeAudit } from '@/lib/audit';
-import { db } from '@/lib/db/client';
-import { projectMemory, projects } from '@/lib/db/schema';
+import { writeAudit } from '@/lib/kernel/audit';
+import { db } from '@/lib/kernel/db/client';
+import { projectMemory, projects } from '@/lib/kernel/db/schema';
 import { eq } from 'drizzle-orm';
 
 /**

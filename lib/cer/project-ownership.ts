@@ -4,8 +4,8 @@
 //           mutation must prove projects.organization_id before writing.
 // @MX:SPEC SPEC-REGULA-PMS-001 (REQ-PMS-010)
 
-import { db } from '@/lib/db/client';
-import { projects } from '@/lib/db/schema';
+import { db } from '@/lib/kernel/db/client';
+import { projects } from '@/lib/kernel/db/schema';
 import { and, eq } from 'drizzle-orm';
 
 type ProjectAccessDb = {

@@ -9,9 +9,9 @@
 // 21 CFR Part 11 §11.10(e): every workflow_runs mutation rides the SAME
 // db.transaction as its audit rows (pattern: lib/domains/impact/analyzer.ts:67).
 
-import { writeAudit } from '@/lib/audit';
-import { db } from '@/lib/db/client';
-import { workflowRuns } from '@/lib/db/schema';
+import { writeAudit } from '@/lib/kernel/audit';
+import { db } from '@/lib/kernel/db/client';
+import { workflowRuns } from '@/lib/kernel/db/schema';
 import { logger } from '@/lib/observability/logger';
 import { aggregateScores } from '@/lib/workflows/common/confidence-aggregator';
 import { eq, sql } from 'drizzle-orm';

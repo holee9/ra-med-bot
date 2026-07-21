@@ -2,10 +2,10 @@
 // @MX:SPEC SPEC-REGULA-NOTIFICATIONS-001 (REQ-NOTIFY-002)
 export const runtime = 'nodejs';
 
-import { writeAudit } from '@/lib/audit';
-import { withPermission } from '@/lib/auth/with-permission';
-import { db } from '@/lib/db/client';
-import { users } from '@/lib/db/schema';
+import { writeAudit } from '@/lib/kernel/audit';
+import { withPermission } from '@/lib/kernel/auth/with-permission';
+import { db } from '@/lib/kernel/db/client';
+import { users } from '@/lib/kernel/db/schema';
 import { eq } from 'drizzle-orm';
 import { z } from 'zod';
 

@@ -4,9 +4,9 @@
 //   degraded=true with the catalog row's status. AC-06: withdrawn → warn + alt.
 //   21 CFR Part 11: 'standards.recognition.checked' audit row per call.
 
-import { writeAudit } from '@/lib/audit';
-import { withPermission } from '@/lib/auth/with-permission';
-import { withTenantScope } from '@/lib/db/client';
+import { writeAudit } from '@/lib/kernel/audit';
+import { withPermission } from '@/lib/kernel/auth/with-permission';
+import { withTenantScope } from '@/lib/kernel/db/client';
 import { checkRecognition } from '@/lib/standards/recognition-check';
 import { z } from 'zod';
 

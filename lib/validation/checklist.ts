@@ -5,7 +5,7 @@
 //   Unmet items surface as HTTP 409 with the failed list (AC-8).
 // @MX:SPEC SPEC-REGULA-VALIDATION-001 (REQ-VAL-013, AC-8, Issue #49)
 
-import type { ChecklistItem } from '@/lib/schemas/validation';
+import type { ChecklistItem } from '@/lib/kernel/schemas/validation';
 
 /**
  * Canonical sign-off checklist item ids. Used by build-report (rendering),

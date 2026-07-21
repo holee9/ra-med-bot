@@ -11,10 +11,10 @@
 //   - Token safety: tokens never appear in issue bodies, audit meta, or logs.
 //     The body references the triage issue by URL only (redacted question stays in triage).
 
-import { writeAudit } from '@/lib/audit';
-import { db } from '@/lib/db/client';
-import { unansweredQueue } from '@/lib/db/schema';
 import { sanitizeGiteaErrorBody } from '@/lib/gitea/sanitize';
+import { writeAudit } from '@/lib/kernel/audit';
+import { db } from '@/lib/kernel/db/client';
+import { unansweredQueue } from '@/lib/kernel/db/schema';
 import { eq } from 'drizzle-orm';
 import type { GapIssueContext, GitHubIssuesClient } from './github-issue';
 import { type OwningTarget, readOwningRepoConfig } from './owning-repos';

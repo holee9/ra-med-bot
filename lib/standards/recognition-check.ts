@@ -9,8 +9,8 @@
 // AC-06: a withdrawn standard yields tier='warn' plus an alternative-standard
 // suggestion sourced from the catalog's scope_keywords overlap.
 
-import { withTenantScope } from '@/lib/db/client';
-import { standardsOrgCatalog as standardsCatalog } from '@/lib/db/schema';
+import { withTenantScope } from '@/lib/kernel/db/client';
+import { standardsOrgCatalog as standardsCatalog } from '@/lib/kernel/db/schema';
 import { and, eq, sql } from 'drizzle-orm';
 
 export type RecognitionStatus = 'recognized' | 'not_recognized' | 'withdrawn' | 'unknown';

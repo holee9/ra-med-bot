@@ -4,19 +4,19 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 
 // Mock auth module before any import that uses it.
-vi.mock('@/lib/auth', () => ({
+vi.mock('@/lib/kernel/auth', () => ({
   auth: vi.fn(),
   handlers: {},
   signIn: vi.fn(),
   signOut: vi.fn(),
 }));
 
-vi.mock('@/lib/auth/acl', () => ({
+vi.mock('@/lib/kernel/auth/acl', () => ({
   isOrgMember: vi.fn().mockResolvedValue(true),
   isProjectMember: vi.fn().mockResolvedValue(true),
 }));
 
-vi.mock('@/lib/audit', () => ({
+vi.mock('@/lib/kernel/audit', () => ({
   writeAudit: vi.fn().mockResolvedValue(undefined),
 }));
 
@@ -27,10 +27,10 @@ describe('withPermission — integration: permission deny scenarios', () => {
 
   describe('401 — no session', () => {
     it('returns 401 with JSON error when auth() returns null', async () => {
-      const { auth } = await import('@/lib/auth');
+      const { auth } = await import('@/lib/kernel/auth');
       vi.mocked(auth).mockResolvedValueOnce(null as never);
 
-      const { withPermission } = await import('@/lib/auth/with-permission');
+      const { withPermission } = await import('@/lib/kernel/auth/with-permission');
       const handler = vi.fn();
       const wrapped = withPermission('dashboard.view', handler);
 
@@ -46,7 +46,7 @@ describe('withPermission — integration: permission deny scenarios', () => {
     it('returns 403 when viewer calls ra-lead action (conversation.delete)', async () => {
       // viewer has hierarchy=1, conversation.delete requires ra-lead (hierarchy=3)
       // Use real hasRole (not mocked in this suite)
-      const { auth } = await import('@/lib/auth');
+      const { auth } = await import('@/lib/kernel/auth');
       vi.mocked(auth).mockResolvedValueOnce({
         user: {
           id: 'viewer-user',
@@ -56,7 +56,7 @@ describe('withPermission — integration: permission deny scenarios', () => {
         },
       } as never);
 
-      const { withPermission } = await import('@/lib/auth/with-permission');
+      const { withPermission } = await import('@/lib/kernel/auth/with-permission');
       const handler = vi.fn().mockResolvedValue(Response.json({ ok: true }));
       const wrapped = withPermission('conversation.delete', handler);
 
@@ -73,7 +73,7 @@ describe('withPermission — integration: permission deny scenarios', () => {
   describe('200 — authorized access', () => {
     it('calls handler and returns its response when ra-member calls dashboard.view', async () => {
       // dashboard.view requires ra-member (hierarchy=2), ra-member has hierarchy=2 → pass
-      const { auth } = await import('@/lib/auth');
+      const { auth } = await import('@/lib/kernel/auth');
       vi.mocked(auth).mockResolvedValueOnce({
         user: {
           id: 'member-user',
@@ -84,10 +84,10 @@ describe('withPermission — integration: permission deny scenarios', () => {
       } as never);
 
       // isOrgMember is mocked to return true at the top level
-      const { isOrgMember } = await import('@/lib/auth/acl');
+      const { isOrgMember } = await import('@/lib/kernel/auth/acl');
       vi.mocked(isOrgMember).mockResolvedValueOnce(true);
 
-      const { withPermission } = await import('@/lib/auth/with-permission');
+      const { withPermission } = await import('@/lib/kernel/auth/with-permission');
       const handler = vi.fn().mockResolvedValue(Response.json({ data: [] }));
       const wrapped = withPermission('dashboard.view', handler);
 

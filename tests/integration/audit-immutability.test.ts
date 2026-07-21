@@ -12,7 +12,7 @@ const SKIP_REASON = 'Requires DATABASE_URL and FOUNDATION audit trigger (REQ-FND
 
 // Lazily resolve db so the test file can be imported without a live connection.
 async function getDb() {
-  const { db } = await import('@/lib/db/client');
+  const { db } = await import('@/lib/kernel/db/client');
   return db;
 }
 

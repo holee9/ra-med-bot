@@ -20,12 +20,12 @@ vi.mock('next/navigation', () => ({
 }));
 
 // Mock auth BEFORE importing the page
-vi.mock('@/lib/auth', () => ({
+vi.mock('@/lib/kernel/auth', () => ({
   auth: vi.fn(() => Promise.resolve({ user: { role: 'ra-member', organizationId: 'org-123' } })),
 }));
 
 // Mock rbac module
-vi.mock('@/lib/auth/rbac', () => ({
+vi.mock('@/lib/kernel/auth/rbac', () => ({
   hasRole: vi.fn(() => true),
 }));
 
@@ -75,7 +75,7 @@ describe('ImpactPage - RBAC Gate', () => {
 
       expect(container).toBeTruthy();
       // Verify auth was called to get the session
-      const { auth } = await import('@/lib/auth');
+      const { auth } = await import('@/lib/kernel/auth');
       expect(auth).toHaveBeenCalled();
     });
   });

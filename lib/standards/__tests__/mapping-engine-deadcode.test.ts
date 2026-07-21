@@ -14,7 +14,7 @@ vi.mock('@/lib/standards/applicability-engine', () => ({
 // Mock the DB client — withTenantScope passes the tx to the callback.
 const txSelect = vi.fn();
 const txFrom = vi.fn(() => ({ select: txSelect }));
-vi.mock('@/lib/db/client', () => ({
+vi.mock('@/lib/kernel/db/client', () => ({
   withTenantScope: vi.fn(async (_orgId: string, cb: (tx: unknown) => Promise<unknown>) =>
     cb({ select: txFrom }),
   ),

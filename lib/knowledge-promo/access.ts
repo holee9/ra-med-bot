@@ -22,9 +22,9 @@
 // not hold. When #239 is resolved (RLS FORCE ON), revisit these reads to rely
 // on the DB-level gate.
 
-import { writeAudit } from '@/lib/audit';
-import { db } from '@/lib/db/client';
-import { conversations, messages, projects, promotedAnswers } from '@/lib/db/schema';
+import { writeAudit } from '@/lib/kernel/audit';
+import { db } from '@/lib/kernel/db/client';
+import { conversations, messages, projects, promotedAnswers } from '@/lib/kernel/db/schema';
 import { and, eq } from 'drizzle-orm';
 
 /**

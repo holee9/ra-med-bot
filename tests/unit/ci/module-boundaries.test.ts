@@ -11,7 +11,7 @@ import * as path from 'node:path';
 import { describe, expect, it } from 'vitest';
 
 const OBS_DIR = path.join(process.cwd(), 'lib', 'observability');
-const FORBIDDEN_PATTERNS = ['writeAudit', 'lib/audit'];
+const FORBIDDEN_PATTERNS = ['writeAudit', 'lib/kernel/audit'];
 
 function checkFile(filePath: string): string[] {
   const content = fs.readFileSync(filePath, 'utf-8');
@@ -23,7 +23,7 @@ describe('module boundaries (REQ-ENTERPRISE-053)', () => {
     expect(fs.existsSync(OBS_DIR)).toBe(true);
   });
 
-  it('no observability file should import writeAudit or lib/audit', () => {
+  it('no observability file should import writeAudit or lib/kernel/audit', () => {
     if (!fs.existsSync(OBS_DIR)) return;
     const files = fs
       .readdirSync(OBS_DIR)

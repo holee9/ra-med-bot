@@ -21,7 +21,7 @@ const hoisted = vi.hoisted(() => {
 });
 
 // Mock withPermission to inject auditor session and bypass RBAC plumbing.
-vi.mock('@/lib/auth/with-permission', () => ({
+vi.mock('@/lib/kernel/auth/with-permission', () => ({
   withPermission: vi.fn(
     (
       _action: string,
@@ -39,7 +39,7 @@ vi.mock('@/lib/auth/with-permission', () => ({
   ),
 }));
 
-vi.mock('@/lib/audit', () => ({
+vi.mock('@/lib/kernel/audit', () => ({
   writeAudit: vi.fn().mockResolvedValue(undefined),
 }));
 
@@ -48,13 +48,13 @@ vi.mock('@/lib/audit', () => ({
 // `where(undefined)` is the no-filter branch — so where must accept undefined.
 const { rowsReturn, selectMock, whereMock } = hoisted;
 
-vi.mock('@/lib/db/client', () => ({
+vi.mock('@/lib/kernel/db/client', () => ({
   db: {
     select: hoisted.selectMock,
   },
 }));
 
-vi.mock('@/lib/db/schema', () => ({
+vi.mock('@/lib/kernel/db/schema', () => ({
   auditLogs: {
     id: 'id',
     createdAt: 'createdAt',

@@ -3,7 +3,7 @@
 // fan_in will reach 3+ once the consult, conversations, and project API routes all use it.
 // @MX:SPEC SPEC-REGULA-BREADTH-001 (REQ-BREADTH-058)
 
-import { auth } from '@/lib/auth';
+import { auth } from '@/lib/kernel/auth';
 import { type NextRequest, NextResponse } from 'next/server';
 
 /**

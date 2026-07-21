@@ -2,9 +2,9 @@ import { eq } from 'drizzle-orm';
 // @MX:SPEC SPEC-REGULA-DIGEST-001
 // Digest preferences settings page — authenticated.
 import { redirect } from 'next/navigation';
-import { auth } from '../../../../lib/auth';
-import { db } from '../../../../lib/db/client';
-import { orgDigestPreferences } from '../../../../lib/db/schema';
+import { auth } from '../../../../lib/kernel/auth';
+import { db } from '../../../../lib/kernel/db/client';
+import { orgDigestPreferences } from '../../../../lib/kernel/db/schema';
 import DigestPreferencesForm from './digest-preferences-form';
 
 export const metadata = { title: 'Regula — 다이제스트 설정' };

@@ -10,7 +10,7 @@
 import { type EmbeddingModel, embed } from 'ai';
 import { sql } from 'drizzle-orm';
 import { getEmbeddingModel } from '../ai/embedding-provider';
-import { type db, withTenantScope } from '../db/client';
+import { type db, withTenantScope } from '../kernel/db/client';
 import { toVectorLiteral } from './embedding';
 
 export type SearchMode = 'fulltext' | 'semantic';

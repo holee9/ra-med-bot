@@ -1,9 +1,9 @@
 // @MX:NOTE [AUTO] GET /api/ra/sources — aggregated corpus statistics for the knowledge base view.
 // @MX:SPEC SPEC-REGULA-RELEASE-HARDENING-001 (TASK-002)
 
-import { withPermission } from '@/lib/auth/with-permission';
-import { db } from '@/lib/db/client';
-import { sourceSections, sources } from '@/lib/db/schema';
+import { withPermission } from '@/lib/kernel/auth/with-permission';
+import { db } from '@/lib/kernel/db/client';
+import { sourceSections, sources } from '@/lib/kernel/db/schema';
 import { count, countDistinct, eq, isNull, max, or } from 'drizzle-orm';
 
 /**

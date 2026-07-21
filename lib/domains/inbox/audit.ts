@@ -1,8 +1,8 @@
 // @MX:NOTE [AUTO] Audit wrapper for triage state transitions.
 // @MX:SPEC SPEC-V3-INBOX-001 (REQ-V3-INBOX-021, Issue 320, #321 H-3)
 
-import type { AuditDbHandle } from '@/lib/audit';
-import { writeAudit } from '@/lib/audit';
+import type { AuditDbHandle } from '@/lib/kernel/audit';
+import { writeAudit } from '@/lib/kernel/audit';
 import type { TriageState, TriageTransitionInput } from './types';
 
 /**

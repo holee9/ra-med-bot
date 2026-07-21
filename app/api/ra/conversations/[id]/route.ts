@@ -2,10 +2,10 @@
 // @MX:SPEC SPEC-REGULA-ENTERPRISE-001 (REQ-ENTERPRISE-019)
 
 import { and, eq } from 'drizzle-orm';
-import { writeAudit } from '../../../../../lib/audit';
-import { withPermission } from '../../../../../lib/auth/with-permission';
-import { db } from '../../../../../lib/db/client';
-import { conversations } from '../../../../../lib/db/schema';
+import { writeAudit } from '../../../../../lib/kernel/audit';
+import { withPermission } from '../../../../../lib/kernel/auth/with-permission';
+import { db } from '../../../../../lib/kernel/db/client';
+import { conversations } from '../../../../../lib/kernel/db/schema';
 
 // Resolves Next.js 15 async params safely.
 async function resolveId(ctx: unknown): Promise<string> {

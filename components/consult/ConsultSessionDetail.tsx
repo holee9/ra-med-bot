@@ -1,7 +1,7 @@
 // @MX:NOTE [AUTO] ConsultSessionDetail — session detail layout with turns history.
 // @MX:SPEC SPEC-V3-UI-001 (REQ-V3-UI-054, AC-CONS-UI-003)
 
-import type { Role } from '@/lib/auth/rbac';
+import type { Role } from '@/lib/kernel/auth/rbac';
 import type { ConsultSession, ConsultTurn } from '@/lib/queries/useConsult';
 import { QuestionComposer } from './QuestionComposer';
 import { TurnHistoryItem } from './TurnHistoryItem';

@@ -3,11 +3,11 @@
 //
 // Project membership is resolved from the deadline's projectId, then enforced.
 
-import { writeAudit } from '@/lib/audit';
-import { isProjectMember } from '@/lib/auth/acl';
-import { withPermission } from '@/lib/auth/with-permission';
-import { db } from '@/lib/db/client';
-import { regulatoryDeadlines } from '@/lib/db/schema';
+import { writeAudit } from '@/lib/kernel/audit';
+import { isProjectMember } from '@/lib/kernel/auth/acl';
+import { withPermission } from '@/lib/kernel/auth/with-permission';
+import { db } from '@/lib/kernel/db/client';
+import { regulatoryDeadlines } from '@/lib/kernel/db/schema';
 import { eq } from 'drizzle-orm';
 import { NextResponse } from 'next/server';
 import { z } from 'zod';

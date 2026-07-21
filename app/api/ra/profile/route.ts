@@ -3,10 +3,10 @@
 // Called from profile page and client-side preference wiring.
 // @MX:SPEC SPEC-REGULA-ENTERPRISE-001 (REQ-ENTERPRISE-057, 058, 059)
 
-import { writeAudit } from '@/lib/audit';
-import { withPermission } from '@/lib/auth/with-permission';
-import { db } from '@/lib/db/client';
-import { users } from '@/lib/db/schema';
+import { writeAudit } from '@/lib/kernel/audit';
+import { withPermission } from '@/lib/kernel/auth/with-permission';
+import { db } from '@/lib/kernel/db/client';
+import { users } from '@/lib/kernel/db/schema';
 import { eq } from 'drizzle-orm';
 import { z } from 'zod';
 

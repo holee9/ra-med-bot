@@ -9,7 +9,7 @@ import { describe, expect, it, vi } from 'vitest';
 const root = path.resolve(__dirname, '..', '..', '..');
 
 // Mock @/lib/auth — with-auth.ts calls auth() from here.
-vi.mock('@/lib/auth', () => ({
+vi.mock('@/lib/kernel/auth', () => ({
   auth: vi.fn(),
   handlers: {},
   signIn: vi.fn(),
@@ -33,7 +33,7 @@ describe('lib/api/with-auth.ts (REQ-BREADTH-058)', () => {
   });
 
   it('returns 401 when no session exists', async () => {
-    const { auth } = await import('@/lib/auth');
+    const { auth } = await import('@/lib/kernel/auth');
     vi.mocked(auth).mockResolvedValueOnce(null as never);
 
     const { withAuth } = await import('@/lib/api/with-auth');
@@ -50,7 +50,7 @@ describe('lib/api/with-auth.ts (REQ-BREADTH-058)', () => {
   });
 
   it('returns 403 when session has no organizationId', async () => {
-    const { auth } = await import('@/lib/auth');
+    const { auth } = await import('@/lib/kernel/auth');
     vi.mocked(auth).mockResolvedValueOnce({
       user: { id: 'user-1', email: 'test@example.com' },
       // organizationId deliberately absent
@@ -70,7 +70,7 @@ describe('lib/api/with-auth.ts (REQ-BREADTH-058)', () => {
   });
 
   it('calls handler with AuthContext when session is valid', async () => {
-    const { auth } = await import('@/lib/auth');
+    const { auth } = await import('@/lib/kernel/auth');
     vi.mocked(auth).mockResolvedValueOnce({
       user: {
         id: 'user-abc',
@@ -96,7 +96,7 @@ describe('lib/api/with-auth.ts (REQ-BREADTH-058)', () => {
   });
 
   it('handler receives correct AuthContext fields', async () => {
-    const { auth } = await import('@/lib/auth');
+    const { auth } = await import('@/lib/kernel/auth');
     vi.mocked(auth).mockResolvedValueOnce({
       user: {
         id: 'user-123',

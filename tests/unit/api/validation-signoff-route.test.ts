@@ -15,7 +15,7 @@ let sessionUser: { id: string; role: string; organizationId: string | null } = {
   organizationId: 'org-001',
 };
 
-vi.mock('@/lib/auth/with-permission', () => ({
+vi.mock('@/lib/kernel/auth/with-permission', () => ({
   withPermission: vi.fn(
     (
       _action: string,
@@ -75,10 +75,10 @@ function makeInsertChain() {
   return chain;
 }
 
-vi.mock('@/lib/db/client', () => ({ db: mockDb }));
+vi.mock('@/lib/kernel/db/client', () => ({ db: mockDb }));
 
 // --- Mock audit (writeAuditReturningId for signoff) ---
-vi.mock('@/lib/audit', () => ({
+vi.mock('@/lib/kernel/audit', () => ({
   writeAuditReturningId: vi.fn().mockResolvedValue('audit-log-001'),
 }));
 
@@ -176,7 +176,7 @@ describe('POST /api/validation/signoff — handler surface', () => {
   });
 
   it('writes validation.signoff audit row via writeAuditReturningId (AC-7)', async () => {
-    const { writeAuditReturningId } = await import('@/lib/audit');
+    const { writeAuditReturningId } = await import('@/lib/kernel/audit');
     vi.mocked(writeAuditReturningId).mockClear();
     queueHappyPathSelects();
 
@@ -249,7 +249,7 @@ describe('POST /api/validation/signoff — handler surface', () => {
   });
 
   it('returns 500 audit_write_failed when writeAuditReturningId throws (21 CFR Part 11 fail closed)', async () => {
-    const { writeAuditReturningId } = await import('@/lib/audit');
+    const { writeAuditReturningId } = await import('@/lib/kernel/audit');
     vi.mocked(writeAuditReturningId).mockRejectedValueOnce(new Error('db unavailable'));
     queueHappyPathSelects();
 

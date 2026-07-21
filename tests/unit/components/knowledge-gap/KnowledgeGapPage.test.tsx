@@ -20,7 +20,7 @@ vi.mock('@/lib/knowledge-gap/queue-query', () => ({
   listQueueItems: (...args: unknown[]) => listQueueItemsMock(...args),
 }));
 
-vi.mock('@/lib/auth', () => ({
+vi.mock('@/lib/kernel/auth', () => ({
   auth: () => authMock(),
 }));
 

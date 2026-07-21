@@ -1,7 +1,7 @@
 // @MX:SPEC SPEC-REGULA-PCCP-001 (REQ-PCCP-021, REQ-PCCP-022, REQ-PCCP-023, REQ-PCCP-015, REQ-PCCP-024)
 // Audit wrappers for all PCCP-regulated events (21 CFR Part 11 compliance).
 
-import { type AuditDbHandle, writeAudit } from '@/lib/audit';
+import { type AuditDbHandle, writeAudit } from '@/lib/kernel/audit';
 import type { PccpComponentType, PccpStatus } from './types';
 
 export async function auditPccpCreated(

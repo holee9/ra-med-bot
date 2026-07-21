@@ -6,9 +6,9 @@
 
 export const runtime = 'nodejs';
 
-import { withPermission } from '@/lib/auth/with-permission';
-import { db } from '@/lib/db/client';
-import { auditLogs, users } from '@/lib/db/schema';
+import { withPermission } from '@/lib/kernel/auth/with-permission';
+import { db } from '@/lib/kernel/db/client';
+import { auditLogs, users } from '@/lib/kernel/db/schema';
 import { and, desc, eq, gte, lte } from 'drizzle-orm';
 
 const PAGE_SIZE = 50;

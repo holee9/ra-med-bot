@@ -12,7 +12,7 @@
 // streamEventsUrl pointing here. This route loads the queued run, invokes
 // runWorkflow, and streams progress events to the client.
 
-import { withPermission } from '@/lib/auth/with-permission';
+import { withPermission } from '@/lib/kernel/auth/with-permission';
 import { buildEventsResponse } from '@/lib/workflows/_shared/events-route';
 import { wireSubmissionDrafterInput } from '@/lib/workflows/_shared/input-wiring';
 import { executeStep as executeSubmissionDrafterStep } from '@/lib/workflows/submission-drafter/executor';

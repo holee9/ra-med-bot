@@ -1,9 +1,9 @@
 // @MX:NOTE [AUTO] POST /api/ra/knowledge-sources/[id]/sync — trigger manual sync.
 // @MX:SPEC Issue #307 D-2 (Knowledge Sources API)
 
-import { withPermission } from '@/lib/auth/with-permission';
-import { db } from '@/lib/db/client';
-import { knowledgeSources } from '@/lib/db/schema';
+import { withPermission } from '@/lib/kernel/auth/with-permission';
+import { db } from '@/lib/kernel/db/client';
+import { knowledgeSources } from '@/lib/kernel/db/schema';
 import { assertKnowledgeSourceInOrg } from '@/lib/knowledge-sources/access';
 import { syncKnowledgeSource } from '@/lib/knowledge-sources/sync';
 import { eq } from 'drizzle-orm';

@@ -10,8 +10,8 @@
 //   the cron + outbound channel is a follow-up to avoid an Inngest function
 //   registration churn in this tier.
 
-import { db } from '@/lib/db/client';
-import { sources } from '@/lib/db/schema';
+import { db } from '@/lib/kernel/db/client';
+import { sources } from '@/lib/kernel/db/schema';
 import { and, eq, isNull, or, sql } from 'drizzle-orm';
 
 export interface ReviewDueSource {

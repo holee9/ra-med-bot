@@ -3,9 +3,9 @@
 // @MX:REASON REQ-V3-INBOX-008: IDOR defense via assertTicketInOrg (404 on cross-org).
 //            Requires inbox.view (ra-member+) for team transparency.
 
-import { withPermission } from '@/lib/auth/with-permission';
-import { db } from '@/lib/db/client';
 import { assertTicketInOrg, getTicket } from '@/lib/domains/inbox';
+import { withPermission } from '@/lib/kernel/auth/with-permission';
+import { db } from '@/lib/kernel/db/client';
 
 // GET /api/inbox/[id] — get single ticket
 export const GET = withPermission('inbox.view', async (_req, ctx, session) => {

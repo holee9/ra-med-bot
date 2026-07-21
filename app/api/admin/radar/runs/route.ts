@@ -2,9 +2,9 @@
 // @MX:SPEC SPEC-REGULA-RADAR-001
 
 import { desc } from 'drizzle-orm';
-import { withPermission } from '../../../../../lib/auth/with-permission';
-import { db } from '../../../../../lib/db/client';
-import { crawlerRuns } from '../../../../../lib/db/schema';
+import { withPermission } from '../../../../../lib/kernel/auth/with-permission';
+import { db } from '../../../../../lib/kernel/db/client';
+import { crawlerRuns } from '../../../../../lib/kernel/db/schema';
 
 export const GET = withPermission('dashboard.view', async (_req, _ctx, session) => {
   if (session.user.role !== 'admin') {

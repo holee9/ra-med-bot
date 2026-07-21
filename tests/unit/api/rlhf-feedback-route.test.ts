@@ -19,7 +19,7 @@ let sessionUser: {
   organizationId: 'org-001',
 };
 
-vi.mock('@/lib/auth/with-permission', () => ({
+vi.mock('@/lib/kernel/auth/with-permission', () => ({
   withPermission: vi.fn(
     (
       _action: string,
@@ -66,7 +66,7 @@ const mockDb = {
   ),
 };
 
-vi.mock('@/lib/db/client', () => ({
+vi.mock('@/lib/kernel/db/client', () => ({
   db: mockDb,
   withTenantScope: vi.fn(async (_orgId: string, fn: (tx: unknown) => Promise<unknown>) =>
     mockDb.transaction(fn),
@@ -74,7 +74,7 @@ vi.mock('@/lib/db/client', () => ({
 }));
 
 // --- Mock audit ---
-vi.mock('@/lib/audit', () => ({
+vi.mock('@/lib/kernel/audit', () => ({
   writeAudit: vi.fn().mockResolvedValue(undefined),
 }));
 
@@ -144,7 +144,7 @@ describe('POST /api/rlhf/feedback — handler surface', () => {
   });
 
   it('writes feedback_submitted audit inside transaction (C-3 atomicity)', async () => {
-    const { writeAudit } = await import('@/lib/audit');
+    const { writeAudit } = await import('@/lib/kernel/audit');
     vi.mocked(writeAudit).mockClear();
     selectResults.push([]); // new row
 
@@ -163,7 +163,7 @@ describe('POST /api/rlhf/feedback — handler surface', () => {
   });
 
   it('marks revised=true and writes audit with revised:true on update branch (L-2)', async () => {
-    const { writeAudit } = await import('@/lib/audit');
+    const { writeAudit } = await import('@/lib/kernel/audit');
     vi.mocked(writeAudit).mockClear();
     selectResults.push([{ id: 'fb-existing-001' }]); // existing row → update
 
@@ -239,7 +239,7 @@ describe('POST /api/rlhf/feedback — handler surface', () => {
   });
 
   it('forces rating=down and distinct audit action for implicit_regenerate (Issue #264)', async () => {
-    const { writeAudit } = await import('@/lib/audit');
+    const { writeAudit } = await import('@/lib/kernel/audit');
     vi.mocked(writeAudit).mockClear();
     selectResults.push([]); // new row
 
@@ -298,7 +298,7 @@ describe('POST /api/rlhf/feedback — handler surface', () => {
   it('returns 500 feedback_transaction_failed when tx throws unknown error (C-3 fail closed)', async () => {
     selectResults.push([]); // new row
     // Override withTenantScope to throw inside the tx body
-    const { withTenantScope } = await import('@/lib/db/client');
+    const { withTenantScope } = await import('@/lib/kernel/db/client');
     vi.mocked(withTenantScope).mockRejectedValueOnce(new Error('db connection lost'));
 
     const { POST } = await import('@/app/api/rlhf/feedback/route');

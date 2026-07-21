@@ -13,7 +13,7 @@ import { type EmbeddingModel, embedMany } from 'ai';
 // @MX:NOTE [AUTO] gx10 Ollama exposes an OpenAI-compatible /v1/embeddings endpoint.
 // qwen3-embedding natively outputs 4096 dims but supports MRL truncation via the
 // `dimensions` request param. We truncate to 1536 to keep pgvector vector(1536)
-// (lib/db/schema.ts + schema-docingest.ts) byte-compatible — no migration needed,
+// (lib/kernel/db/schema.ts + schema-docingest.ts) byte-compatible — no migration needed,
 // corpus stays valid. Local-network (192.168.100.x) trust; Ollama ignores the API
 // key but @ai-sdk/openai requires a string, so a sentinel is supplied.
 // Direct-verified 2026-07-01: dim=1536 truncation returns 1536-dim vectors (L-013).

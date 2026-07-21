@@ -6,9 +6,9 @@
 //   in #62-A). standards.manage (ra-lead) — cron trigger is a write-adjacent
 //   operation that may emit alerts.
 
-import { writeAudit } from '@/lib/audit';
-import { withPermission } from '@/lib/auth/with-permission';
-import { withTenantScope } from '@/lib/db/client';
+import { writeAudit } from '@/lib/kernel/audit';
+import { withPermission } from '@/lib/kernel/auth/with-permission';
+import { withTenantScope } from '@/lib/kernel/db/client';
 import { detectRevisions, resolveDetectionContext } from '@/lib/standards/revision-detector';
 
 // POST /api/standards/cron/detect — run revision detection synchronously.

@@ -70,7 +70,7 @@ const withTenantScopeMock = vi.fn(
   async <T>(_orgId: string, fn: (tx: typeof dbMock) => Promise<T>) => fn(dbMock) as Promise<T>,
 );
 
-vi.mock('@/lib/db/client', () => ({
+vi.mock('@/lib/kernel/db/client', () => ({
   get db() {
     return dbMock;
   },
@@ -78,7 +78,7 @@ vi.mock('@/lib/db/client', () => ({
     withTenantScopeMock(...(args as [string, (tx: typeof dbMock) => Promise<unknown>])),
 }));
 
-vi.mock('@/lib/audit', () => ({
+vi.mock('@/lib/kernel/audit', () => ({
   writeAudit: vi.fn(async () => {}),
 }));
 
@@ -191,7 +191,7 @@ describe('AC-02 Layer 1 — injectProjectMemory real behavior', () => {
     // clause). This is the dead-code-proof assertion — a no-op select that
     // ignored projectId would not call .where() with a real condition.
     addRow({ memoryType: 'device_classification', key: 'mine', value: 'MINE' });
-    const { db } = await import('@/lib/db/client');
+    const { db } = await import('@/lib/kernel/db/client');
     const { injectProjectMemory } = await import('@/lib/project-memory/injector');
     await injectProjectMemory('BASE', PROJECT, ORG);
     // db.select was called (the query ran, not short-circuited).

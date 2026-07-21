@@ -5,10 +5,10 @@
 //            REQ-CONS-002: GET lists sessions — ra-member sees own, ra-lead/admin see all org.
 
 import { randomUUID } from 'node:crypto';
-import { writeAudit } from '@/lib/audit';
-import { withPermission } from '@/lib/auth/with-permission';
-import { db } from '@/lib/db/client';
-import { consultSessions } from '@/lib/db/schema';
+import { writeAudit } from '@/lib/kernel/audit';
+import { withPermission } from '@/lib/kernel/auth/with-permission';
+import { db } from '@/lib/kernel/db/client';
+import { consultSessions } from '@/lib/kernel/db/schema';
 import { and, desc, eq, isNull } from 'drizzle-orm';
 import { z } from 'zod';
 

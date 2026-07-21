@@ -9,15 +9,15 @@
 
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 
-vi.mock('@/lib/db/client', () => ({ db: {} }));
-vi.mock('@/lib/audit', () => ({ writeAudit: vi.fn() }));
+vi.mock('@/lib/kernel/db/client', () => ({ db: {} }));
+vi.mock('@/lib/kernel/audit', () => ({ writeAudit: vi.fn() }));
 vi.mock('../graph', () => ({
   findNodeByRef: vi.fn(),
   upsertNode: vi.fn(),
 }));
 vi.mock('../stale-propagation', () => ({ propagateStaleFromNode: vi.fn() }));
 
-import { writeAudit } from '@/lib/audit';
+import { writeAudit } from '@/lib/kernel/audit';
 import { findNodeByRef, upsertNode } from '../graph';
 import { onRegulatoryUpdateSuperseded, onSourceSectionSuperseded } from '../hooks';
 import { propagateStaleFromNode } from '../stale-propagation';

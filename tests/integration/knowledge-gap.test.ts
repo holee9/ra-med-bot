@@ -15,7 +15,7 @@
 //   AC-07 (4 event types audited)   → "all 4 audit actions appear"
 //   AC-08 (RBAC denies)             → "withPermission blocks ra-member from classify"
 //
-// DB approach: we mock @/lib/db/client with an in-memory table that supports
+// DB approach: we mock @/lib/kernel/db/client with an in-memory table that supports
 // insert + select + update, mirroring the docingest-e2e integration test pattern
 // (tests/integration/docingest-e2e.test.ts). No live Postgres required.
 
@@ -68,10 +68,10 @@ const writeAuditMock = vi.fn(
     });
   },
 );
-vi.mock('@/lib/audit', () => ({ writeAudit: writeAuditMock }));
+vi.mock('@/lib/kernel/audit', () => ({ writeAudit: writeAuditMock }));
 vi.mock('@/lib/notifications/dispatcher', () => ({ dispatch: dispatchMock }));
 
-vi.mock('@/lib/db/client', () => {
+vi.mock('@/lib/kernel/db/client', () => {
   // The mock chain mirrors Drizzle's query builder shape:
   //   db.select(...).from(t).where(...).orderBy(...)   → resolves to QueueRow[]
   //   db.update(t).set(...).where(...).returning(...)  → resolves to QueueRow[]
@@ -345,7 +345,7 @@ describe('AC-04: classification writes audit row', () => {
     // Seed a gap, then exercise the classify handler's audit logic directly.
     // (Full HTTP route test lives in the API integration suite; here we
     // validate the audit contract that AC-04 cares about.)
-    const { writeAudit } = await import('@/lib/audit');
+    const { writeAudit } = await import('@/lib/kernel/audit');
 
     const classification = 'ra_project_gap';
     await writeAudit({
@@ -533,7 +533,7 @@ describe('AC-06: replay resolves the gap', () => {
 
 describe('AC-07: 4 audit event types', () => {
   it('knowledge_gap_* actions are all recordable via writeAudit', async () => {
-    const { writeAudit } = await import('@/lib/audit');
+    const { writeAudit } = await import('@/lib/kernel/audit');
     const actions = [
       'knowledge_gap_created',
       'knowledge_gap_classified',
@@ -562,9 +562,9 @@ describe('AC-07: 4 audit event types', () => {
 
 describe('AC-08: RBAC denies unauthorized role', () => {
   it('PERMISSIONS[knowledgegap.classify].minRole is ra-lead (not ra-member)', async () => {
-    const { PERMISSIONS } = await import('@/lib/auth/permissions');
-    const { roleSatisfiesPermission } = await import('@/lib/auth/permissions');
-    const { hasRole } = await import('@/lib/auth/rbac');
+    const { PERMISSIONS } = await import('@/lib/kernel/auth/permissions');
+    const { roleSatisfiesPermission } = await import('@/lib/kernel/auth/permissions');
+    const { hasRole } = await import('@/lib/kernel/auth/rbac');
 
     const spec = PERMISSIONS['knowledgegap.classify'];
     expect(spec.minRole).toBe('ra-lead');

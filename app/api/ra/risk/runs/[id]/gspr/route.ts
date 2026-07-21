@@ -1,8 +1,8 @@
 // @MX:NOTE [AUTO] POST /api/ra/risk/runs/[id]/gspr — EU MDR GSPR mapping.
 // @MX:SPEC SPEC-REGULA-RISK-001 (T2.8, REQ-RISK-030~033)
 
-import { writeAudit } from '@/lib/audit';
-import { withPermission } from '@/lib/auth/with-permission';
+import { writeAudit } from '@/lib/kernel/audit';
+import { withPermission } from '@/lib/kernel/auth/with-permission';
 
 export const POST = withPermission('risk.update', async (req, ctx, session) => {
   const params = await (ctx.params as Promise<Record<string, string>>);

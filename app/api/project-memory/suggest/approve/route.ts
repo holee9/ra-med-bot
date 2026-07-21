@@ -6,7 +6,7 @@
 //   approver (REQ-014) + writes memory_created audit in ONE tx (21 CFR Part 11).
 //   IDOR guard (assertMemoryInOrg) before any write.
 
-import { withPermission } from '@/lib/auth/with-permission';
+import { withPermission } from '@/lib/kernel/auth/with-permission';
 import { assertMemoryInOrg } from '@/lib/project-memory/access';
 import { approveSuggestedMemory } from '@/lib/project-memory/manager';
 import { z } from 'zod';

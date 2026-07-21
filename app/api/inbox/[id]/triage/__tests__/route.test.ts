@@ -15,7 +15,7 @@ let organizationId = 'org-001';
 // Mirror the real RBAC: inbox.manage requires ra-lead/admin (other roles → 403).
 const MANAGE_ROLES = new Set(['ra-lead', 'admin']);
 
-vi.mock('@/lib/auth/with-permission', () => ({
+vi.mock('@/lib/kernel/auth/with-permission', () => ({
   withPermission: vi.fn(
     (
       action: string,
@@ -89,7 +89,7 @@ const db = {
   select: vi.fn(() => ({ from: mockFrom })),
 };
 
-vi.mock('@/lib/db/client', () => ({ db }));
+vi.mock('@/lib/kernel/db/client', () => ({ db }));
 
 const { PATCH } = await import('@/app/api/inbox/[id]/triage/route');
 

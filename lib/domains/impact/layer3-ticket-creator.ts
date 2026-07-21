@@ -4,8 +4,8 @@
 // @MX:SPEC SPEC-V3-IMPACT-001 (AC-IMP-07)
 
 import { randomUUID } from 'node:crypto';
-import type { Database } from '@/lib/db/client';
-import { inboxTickets } from '@/lib/db/schema';
+import type { Database } from '@/lib/kernel/db/client';
+import { inboxTickets } from '@/lib/kernel/db/schema';
 
 export interface TicketInput {
   orgId: string;

@@ -1,6 +1,6 @@
 import { BetaBadge } from '@/components/ui/BetaBadge';
-import { db } from '@/lib/db/client';
-import { pccpComponents, pccpVersions } from '@/lib/db/schema';
+import { db } from '@/lib/kernel/db/client';
+import { pccpComponents, pccpVersions } from '@/lib/kernel/db/schema';
 import { eq } from 'drizzle-orm';
 // @MX:SPEC SPEC-REGULA-PCCP-001 (REQ-PCCP-025)
 import { notFound } from 'next/navigation';

@@ -13,8 +13,8 @@
 //   - The caller (merge.ts) MUST call this on EVERY retrieval path (happy /
 //     cached / streaming / fallback). The integration test enumerates the paths.
 
-import { db } from '@/lib/db/client';
-import { sourceSections } from '@/lib/db/schema';
+import { db } from '@/lib/kernel/db/client';
+import { sourceSections } from '@/lib/kernel/db/schema';
 import {
   type PostRerankInvariantResult,
   verifyPostRerankInvariants,

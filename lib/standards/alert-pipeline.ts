@@ -15,9 +15,9 @@
 //   wiring is a follow-up so the pipeline is not blocked on #52.
 // @MX:TODO #62-E — Standards alert card in Regulatory Radar dashboard.
 
-import { writeAudit } from '@/lib/audit';
-import { withTenantScope } from '@/lib/db/client';
-import { standardsUpdates } from '@/lib/db/schema';
+import { writeAudit } from '@/lib/kernel/audit';
+import { withTenantScope } from '@/lib/kernel/db/client';
+import { standardsUpdates } from '@/lib/kernel/db/schema';
 import type { AlertTier } from './transition-calculator';
 
 export interface StandardsAlertInput {

@@ -21,7 +21,7 @@ let sessionUser: {
   name: 'RA Lead',
 };
 
-vi.mock('@/lib/auth/with-permission', () => ({
+vi.mock('@/lib/kernel/auth/with-permission', () => ({
   withPermission: vi.fn(
     (
       _action: string,
@@ -51,10 +51,10 @@ const mockDb = {
   ),
 };
 
-vi.mock('@/lib/db/client', () => ({ db: mockDb }));
+vi.mock('@/lib/kernel/db/client', () => ({ db: mockDb }));
 
 // --- Mock audit ---
-vi.mock('@/lib/audit', () => ({
+vi.mock('@/lib/kernel/audit', () => ({
   writeAudit: vi.fn().mockResolvedValue(undefined),
 }));
 
@@ -155,7 +155,7 @@ describe('POST /api/ra/messages/[messageId]/signature — handler surface', () =
   });
 
   it('writes signature.applied audit inside transaction (21 CFR Part 11)', async () => {
-    const { writeAudit } = await import('@/lib/audit');
+    const { writeAudit } = await import('@/lib/kernel/audit');
     const { POST } = await import('@/app/api/ra/messages/[messageId]/signature/route');
     await POST(makePostRequest(VALID_BODY), { params: { messageId: 'msg-001' } });
 

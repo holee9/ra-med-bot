@@ -1,7 +1,7 @@
 // @MX:NOTE [AUTO] Entitlement grant/revoke lifecycle helpers (REQ-CORPUSLIC-008).
 // @MX:SPEC SPEC-REGULA-CORPUS-LICENSE-001 (REQ-CORPUSLIC-008)
-import { withTenantScope } from '@/lib/db/client';
-import { entitlement, sourceLicense } from '@/lib/db/schema';
+import { withTenantScope } from '@/lib/kernel/db/client';
+import { entitlement, sourceLicense } from '@/lib/kernel/db/schema';
 import { and, eq } from 'drizzle-orm';
 import { auditEntitlementGranted, auditEntitlementRevoked } from './audit';
 

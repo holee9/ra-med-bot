@@ -8,8 +8,8 @@
 // queue directly from the DB without self-fetching its own URL. The route keeps
 // its own Zod parsing and `withPermission` gate; this helper is the pure query.
 
-import { db } from '@/lib/db/client';
-import { unansweredQueue } from '@/lib/db/schema';
+import { db } from '@/lib/kernel/db/client';
+import { unansweredQueue } from '@/lib/kernel/db/schema';
 import { type SQL, and, desc, eq } from 'drizzle-orm';
 
 export type GapStatus = 'open' | 'classified' | 'resolved';

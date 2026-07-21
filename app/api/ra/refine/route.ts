@@ -3,9 +3,9 @@
 // @MX:SPEC SPEC-REGULA-ANSWER-REFINE-001 (REQ-ANSWER-REFINE-001..004)
 export const runtime = 'nodejs';
 
-import { writeAudit } from '@/lib/audit';
-import { withPermission } from '@/lib/auth/with-permission';
-import { db } from '@/lib/db/client';
+import { writeAudit } from '@/lib/kernel/audit';
+import { withPermission } from '@/lib/kernel/auth/with-permission';
+import { db } from '@/lib/kernel/db/client';
 import { isAnswerLocked } from '@/lib/signature/lock';
 import { z } from 'zod';
 

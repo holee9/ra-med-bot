@@ -11,8 +11,8 @@ import { describe, expect, it, vi } from 'vitest';
 // Mock the DB/audit layer so module load does not trigger env validation.
 // detectKnowledgeGap() itself is a pure function; these mocks only short-circuit
 // the transitive audit.ts → db/client.ts → parseEnv import chain.
-vi.mock('@/lib/db/client', () => ({ db: {} }));
-vi.mock('@/lib/audit', () => ({ writeAudit: vi.fn().mockResolvedValue(undefined) }));
+vi.mock('@/lib/kernel/db/client', () => ({ db: {} }));
+vi.mock('@/lib/kernel/audit', () => ({ writeAudit: vi.fn().mockResolvedValue(undefined) }));
 
 import {
   type GapDetectionInput,

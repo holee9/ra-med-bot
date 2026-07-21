@@ -49,13 +49,13 @@ export const knowledgeSourcesOrphanCleanupFn = inngest.createFunction(
   },
   async ({ step, logger }) => {
     // Lazy imports — keeps the cron module import-light (L-003 pattern) and
-    // avoids eagerly loading lib/db/client → lib/env at module registration
+    // avoids eagerly loading lib/kernel/db/client → lib/env at module registration
     // time (env validation requires DATABASE_URL etc. which are absent in the
     // Inngest function-registration test environment).
-    const { db } = await import('@/lib/db/client');
-    const { withTenantScope } = await import('@/lib/db/client');
-    const { sources, sourceSections } = await import('@/lib/db/schema');
-    const { writeAudit } = await import('@/lib/audit');
+    const { db } = await import('@/lib/kernel/db/client');
+    const { withTenantScope } = await import('@/lib/kernel/db/client');
+    const { sources, sourceSections } = await import('@/lib/kernel/db/schema');
+    const { writeAudit } = await import('@/lib/kernel/audit');
     const { and, eq, inArray, notExists, sql } = await import('drizzle-orm');
 
     // Step 1: enumerate distinct org_ids that have sources (system-actor query,

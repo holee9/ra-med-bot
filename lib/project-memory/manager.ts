@@ -8,9 +8,9 @@
 //   REQ-012 same-key update = invalidate old + create new in ONE tx; the
 //   partial UNIQUE index (WHERE status='active') is the DB-level atomicity guard.
 
-import { writeAudit } from '@/lib/audit';
-import { db, withTenantScope } from '@/lib/db/client';
-import { projectMemory, type projectMemoryStatusEnum } from '@/lib/db/schema';
+import { writeAudit } from '@/lib/kernel/audit';
+import { db, withTenantScope } from '@/lib/kernel/db/client';
+import { projectMemory, type projectMemoryStatusEnum } from '@/lib/kernel/db/schema';
 import { logger } from '@/lib/observability/logger';
 import { and, desc, eq, gt, isNull, or, sql } from 'drizzle-orm';
 import { memoryBelongsToOrg, projectBelongsToOrg } from './access';

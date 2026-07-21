@@ -16,7 +16,7 @@
 //      Tests that exercise writeAudit must mock @/lib/audit rather than rely on
 //      truncating the audit table.
 
-import { organizations, projects, users } from '@/lib/db/schema';
+import { organizations, projects, users } from '@/lib/kernel/db/schema';
 import { sql } from 'drizzle-orm';
 
 /**
@@ -34,7 +34,7 @@ export const HAS_DATABASE_URL = Boolean(process.env.DATABASE_URL);
  * DATABASE_URL-guarded case.
  */
 export async function getDb() {
-  const { db } = await import('@/lib/db/client');
+  const { db } = await import('@/lib/kernel/db/client');
   return db;
 }
 
@@ -74,7 +74,7 @@ export async function truncateTables(
 /**
  * Seed the core actor rows a workflow run depends on: a user, its organization,
  * and a project owned by that organization. workflow_runs has NOT NULL FKs to
- * all three (lib/db/schema.ts REQ-WF-049), so a real INSERT fails fast on a
+ * all three (lib/kernel/db/schema.ts REQ-WF-049), so a real INSERT fails fast on a
  * dangling id — the L-013 guarantee.
  *
  * Idempotent: onConflictDoNothing lets beforeAll re-run without unique/email

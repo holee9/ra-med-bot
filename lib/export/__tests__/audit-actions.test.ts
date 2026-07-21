@@ -4,7 +4,7 @@
  */
 
 import { describe, expect, it } from 'vitest';
-import type { AuditAction } from '../../audit';
+import type { AuditAction } from '../../kernel/audit';
 
 describe('Export Audit Action Types', () => {
   it('should have export.markdown as valid AuditAction', () => {

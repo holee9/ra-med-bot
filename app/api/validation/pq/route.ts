@@ -5,7 +5,7 @@
 //   state — distinct from validation.read (transparency only).
 
 import { spawn } from 'node:child_process';
-import { withPermission } from '@/lib/auth/with-permission';
+import { withPermission } from '@/lib/kernel/auth/with-permission';
 import { z } from 'zod';
 
 const pqRequestSchema = z.object({

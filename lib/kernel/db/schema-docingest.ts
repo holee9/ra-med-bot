@@ -8,7 +8,7 @@
 // pgEnum inventory (3):
 //   doc_class_enum, doc_status_enum (8-value), doc_source
 //
-// DO NOT modify lib/db/schema.ts — all new tables live here.
+// DO NOT modify lib/kernel/db/schema.ts — all new tables live here.
 // organizations and users tables are referenced via FK from schema.ts exports.
 
 import {

@@ -23,7 +23,7 @@ describe('DocIngest migration/schema alignment', () => {
   });
 
   it('schema.ts auditActionEnum includes the six DocIngest audit actions', () => {
-    const src = readText('lib/db/schema.ts');
+    const src = readText('lib/kernel/db/schema.ts');
     const enumSection = src.match(/export const auditActionEnum\s*=[\s\S]*?\]\);/);
     expect(enumSection, 'auditActionEnum not found').toBeTruthy();
     const body = (enumSection as RegExpMatchArray)[0];

@@ -19,14 +19,14 @@ vi.mock('@/lib/model-governance/audit-metadata', () => ({
     modelVersion: combo.modelVersion,
   })),
 }));
-vi.mock('@/lib/audit', () => ({
+vi.mock('@/lib/kernel/audit', () => ({
   writeAudit: vi.fn().mockResolvedValue(undefined),
 }));
 vi.mock('@/lib/observability/logger', () => ({
   logger: { warn: vi.fn(), info: vi.fn(), error: vi.fn() },
 }));
 
-import { writeAudit } from '@/lib/audit';
+import { writeAudit } from '@/lib/kernel/audit';
 import { submitRlhfProposal } from '@/lib/model-governance/rlhf-gate';
 import { rollbackCombination } from '@/lib/model-governance/rollback';
 import {

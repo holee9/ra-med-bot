@@ -13,9 +13,9 @@
 
 export const runtime = 'nodejs';
 
-import { withPermission } from '@/lib/auth/with-permission';
-import { withTenantScope } from '@/lib/db/client';
-import { unansweredQueue } from '@/lib/db/schema';
+import { withPermission } from '@/lib/kernel/auth/with-permission';
+import { withTenantScope } from '@/lib/kernel/db/client';
+import { unansweredQueue } from '@/lib/kernel/db/schema';
 import { type SQL, and, desc, eq } from 'drizzle-orm';
 import { z } from 'zod';
 

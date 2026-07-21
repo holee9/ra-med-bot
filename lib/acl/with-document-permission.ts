@@ -2,10 +2,10 @@
 // @MX:REASON fan_in >= 3: Phase 8 document API routes will all use this wrapper.
 // @MX:SPEC SPEC-REGULA-DOCINGEST-001 (REQ-DOC-8B-3)
 
-import { writeAudit } from '@/lib/audit';
-import { auth } from '@/lib/auth';
-import type { Role } from '@/lib/auth/rbac';
 import type { DocClass } from '@/lib/ingest/doc-class';
+import { writeAudit } from '@/lib/kernel/audit';
+import { auth } from '@/lib/kernel/auth';
+import type { Role } from '@/lib/kernel/auth/rbac';
 import { type DocumentAction, checkDocumentPermission } from './document-acl';
 
 interface AuthUser {

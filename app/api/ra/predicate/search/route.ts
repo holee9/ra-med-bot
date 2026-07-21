@@ -7,11 +7,11 @@
 // which is not edge-runtime compatible.
 export const runtime = 'nodejs';
 
-import { writeAudit } from '@/lib/audit';
-import { canSearchPredicates } from '@/lib/auth/predicate-permissions';
-import { withPermission } from '@/lib/auth/with-permission';
-import { db } from '@/lib/db/client';
-import { users } from '@/lib/db/schema';
+import { writeAudit } from '@/lib/kernel/audit';
+import { canSearchPredicates } from '@/lib/kernel/auth/predicate-permissions';
+import { withPermission } from '@/lib/kernel/auth/with-permission';
+import { db } from '@/lib/kernel/db/client';
+import { users } from '@/lib/kernel/db/schema';
 import { createPredicateCache } from '@/lib/predicate/cache';
 import { createCascadeSearch } from '@/lib/predicate/cascade-search';
 import { type CreateOpenFDAClientEnv, createOpenFDAClient } from '@/lib/predicate/openfda-client';

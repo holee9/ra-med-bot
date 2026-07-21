@@ -6,7 +6,7 @@
 
 import { type EmbeddingModel, embed } from 'ai';
 import { sql } from 'drizzle-orm';
-import { db, withTenantScope } from '../../db/client';
+import { db, withTenantScope } from '../../kernel/db/client';
 import { getEmbeddingModel } from '../embedding-provider';
 
 export interface RetrievedChunk {

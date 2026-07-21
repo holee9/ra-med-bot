@@ -5,7 +5,7 @@
 //   IDOR guard (assertProjectInOrg) before any write. GET is ra-member+
 //   (projectmemory.view) — project context is shared across the RA team.
 
-import { withPermission } from '@/lib/auth/with-permission';
+import { withPermission } from '@/lib/kernel/auth/with-permission';
 import { assertProjectInOrg } from '@/lib/project-memory/access';
 import { createMemory, getValidMemories } from '@/lib/project-memory/manager';
 import { z } from 'zod';

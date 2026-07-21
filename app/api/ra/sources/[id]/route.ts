@@ -1,11 +1,11 @@
 // @MX:NOTE [AUTO] Sources GET API — returns source content with optional offset query param.
 // @MX:SPEC SPEC-REGULA-CHAT-001 (REQ-CHAT-044)
 
-import { writeAudit } from '@/lib/audit';
+import { writeAudit } from '@/lib/kernel/audit';
 import { eq } from 'drizzle-orm';
-import { withPermission } from '../../../../../lib/auth/with-permission';
-import { db } from '../../../../../lib/db/client';
-import { sourceSections, sources } from '../../../../../lib/db/schema';
+import { withPermission } from '../../../../../lib/kernel/auth/with-permission';
+import { db } from '../../../../../lib/kernel/db/client';
+import { sourceSections, sources } from '../../../../../lib/kernel/db/schema';
 
 // E2E_TEST_MODE: deterministic mock sources for non-UUID test IDs.
 // Prevents PostgreSQL UUID parse error when citation tests use 'test-src-N' IDs.

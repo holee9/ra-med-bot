@@ -1,9 +1,9 @@
-import { writeAudit } from '@/lib/audit';
+import { writeAudit } from '@/lib/kernel/audit';
 // @MX:SPEC SPEC-REGULA-PCCP-001 (REQ-PCCP-018, REQ-PCCP-019)
-import { withPermission } from '@/lib/auth/with-permission';
-import type { AuthSession } from '@/lib/auth/with-permission';
-import { db } from '@/lib/db/client';
-import { pccpComponents, pccpVersions } from '@/lib/db/schema';
+import { withPermission } from '@/lib/kernel/auth/with-permission';
+import type { AuthSession } from '@/lib/kernel/auth/with-permission';
+import { db } from '@/lib/kernel/db/client';
+import { pccpComponents, pccpVersions } from '@/lib/kernel/db/schema';
 import { exportPccpToDocx, getDocxFilename } from '@/lib/pccp/exporters/docx';
 import { exportPccpToPdf, getPdfFilename } from '@/lib/pccp/exporters/pdf';
 import type { PccpComponentRecord, PccpComponentType, PccpVersion } from '@/lib/pccp/types';

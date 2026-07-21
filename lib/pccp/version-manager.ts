@@ -2,9 +2,9 @@
 // PCCP version lifecycle: draft → submitted → cleared → superseded
 // AC-9: only one active version per device — enforced at DB level (partial UNIQUE INDEX).
 
-import type { AuditDbHandle } from '@/lib/audit';
-import { db } from '@/lib/db/client';
-import { pccpVersions } from '@/lib/db/schema';
+import type { AuditDbHandle } from '@/lib/kernel/audit';
+import { db } from '@/lib/kernel/db/client';
+import { pccpVersions } from '@/lib/kernel/db/schema';
 import { and, eq } from 'drizzle-orm';
 import type { PccpStatus } from './types';
 

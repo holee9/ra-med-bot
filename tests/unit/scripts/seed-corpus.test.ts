@@ -11,8 +11,8 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 
 // Mock the db client BEFORE importing the script under test, otherwise
-// `lib/db/client.ts` will try to connect to a real Postgres at import time.
-vi.mock('../../../lib/db/client', () => ({
+// `lib/kernel/db/client.ts` will try to connect to a real Postgres at import time.
+vi.mock('../../../lib/kernel/db/client', () => ({
   db: {},
   withTenantScope: vi.fn(),
 }));

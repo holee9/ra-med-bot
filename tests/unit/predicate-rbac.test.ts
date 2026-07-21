@@ -8,7 +8,7 @@ import {
   canManageComparisons,
   canSearchPredicates,
   canViewComparisons,
-} from '@/lib/auth/predicate-permissions';
+} from '@/lib/kernel/auth/predicate-permissions';
 import { describe, expect, it } from 'vitest';
 
 // RBAC matrix (REQ-PRE-029):

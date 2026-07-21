@@ -1,6 +1,6 @@
 // @MX:NOTE [AUTO] Project memory unit tests — manager lifecycle, injector, extractor.
 // @MX:SPEC SPEC-REGULA-PROJECT-MEMORY-001 (AC-01, AC-02, AC-03, AC-05, AC-06, AC-07)
-// @MX:REASON Mirrors knowledge-promo test pattern: mock @/lib/db/client + @/lib/audit
+// @MX:REASON Mirrors knowledge-promo test pattern: mock @/lib/kernel/db/client + @/lib/kernel/audit
 //   so the REAL manager/injector/extractor logic runs against an in-memory store.
 //   Covers AC-01 (6 memoryType CRUD), AC-02 (injection), AC-03 (pending only),
 //   AC-05 (audit), AC-06 (expiry exclusion), AC-07 (same-key supersession tx).
@@ -211,7 +211,7 @@ const withTenantScopeMock = vi.fn(
   },
 );
 
-vi.mock('@/lib/db/client', () => ({
+vi.mock('@/lib/kernel/db/client', () => ({
   get db() {
     return dbMock;
   },
@@ -219,7 +219,7 @@ vi.mock('@/lib/db/client', () => ({
     withTenantScopeMock(...(args as [string, (tx: typeof dbMock) => Promise<unknown>])),
 }));
 
-vi.mock('@/lib/audit', () => ({
+vi.mock('@/lib/kernel/audit', () => ({
   writeAudit: vi.fn(async (params: Record<string, unknown>, _tx?: unknown) => {
     auditRecords.push({
       action: String(params.action),

@@ -11,7 +11,7 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 // --- Mocks ---------------------------------------------------------------
 
 // RBAC: bypass permission check, hand back a fixed admin session.
-vi.mock('@/lib/auth/with-permission', () => ({
+vi.mock('@/lib/kernel/auth/with-permission', () => ({
   withPermission: vi.fn(
     (
       _action: string,
@@ -26,7 +26,7 @@ vi.mock('@/lib/auth/with-permission', () => ({
 
 // writeAuditReturningId — captures call + returns a deterministic UUID.
 const writeAuditReturningIdMock = vi.fn();
-vi.mock('@/lib/audit', () => ({
+vi.mock('@/lib/kernel/audit', () => ({
   writeAuditReturningId: writeAuditReturningIdMock,
 }));
 
@@ -54,7 +54,7 @@ function makeWhereChainable() {
   return thenable;
 }
 
-vi.mock('@/lib/db/client', () => ({
+vi.mock('@/lib/kernel/db/client', () => ({
   db: {
     select: vi.fn(() => ({ from: () => ({ where: () => makeWhereChainable() }) })),
     insert: vi.fn(() => ({ values: insertValuesMock })),
@@ -65,7 +65,7 @@ vi.mock('drizzle-orm', () => ({
   eq: (a: unknown, b: unknown) => ({ type: 'eq', a, b }),
 }));
 
-vi.mock('@/lib/db/schema', () => ({
+vi.mock('@/lib/kernel/db/schema', () => ({
   validationEvidence: {
     releaseId: 'release_id',
     qualificationType: 'qualification_type',

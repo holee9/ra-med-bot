@@ -8,7 +8,7 @@ import { beforeEach, describe, expect, it, vi } from 'vitest';
 
 // ---------------------------------------------------------------------------
 // Mock dependencies: db client (dynamic import), listStaleNodeIds, buildMatrix.
-// The consumer does `await import('@/lib/db/client')` then passes db to both
+// The consumer does `await import('@/lib/kernel/db/client')` then passes db to both
 // listStaleNodeIds and buildMatrix. We mock all three so no real DB is hit.
 // ---------------------------------------------------------------------------
 const listStaleNodeIdsMock = vi.fn();
@@ -22,7 +22,7 @@ beforeEach(() => {
   vi.resetModules();
   listStaleNodeIdsMock.mockReset();
   buildMatrixMock.mockReset();
-  vi.doMock('@/lib/db/client', () => ({ db: makeMockDb() }));
+  vi.doMock('@/lib/kernel/db/client', () => ({ db: makeMockDb() }));
   vi.doMock('@/lib/traceability/stale-propagation', () => ({
     listStaleNodeIds: listStaleNodeIdsMock,
   }));

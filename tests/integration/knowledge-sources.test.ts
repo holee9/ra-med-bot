@@ -2,8 +2,8 @@
 // @MX:SPEC Issue #307 D-2 (Knowledge Sources API)
 //
 // Strategy (mirrors tests/integration/capa-idor-runtime.test.ts):
-//   1. Mock @/lib/auth/with-permission — bypass RBAC, inject a session per org.
-//   2. Mock @/lib/db/client — in-memory store for knowledgeSources + auditLogs,
+//   1. Mock @/lib/kernel/auth/with-permission — bypass RBAC, inject a session per org.
+//   2. Mock @/lib/kernel/db/client — in-memory store for knowledgeSources + auditLogs,
 //      recording org-scoped select/insert/update/delete so CRUD + IDOR (cross-org)
 //      + audit behavior is verifiable without a real database.
 //   3. Mock @/lib/audit — record writeAudit calls.
@@ -245,13 +245,13 @@ async function getDrizzleMock() {
 }
 vi.mock('drizzle-orm', () => getDrizzleMock());
 
-vi.mock('@/lib/db/client', () => ({ db: dbMock }));
+vi.mock('@/lib/kernel/db/client', () => ({ db: dbMock }));
 
 // ---------------------------------------------------------------------------
 // Audit mock — record writeAudit calls into the in-memory audit store.
 // ---------------------------------------------------------------------------
 
-vi.mock('@/lib/audit', () => ({
+vi.mock('@/lib/kernel/audit', () => ({
   writeAudit: vi.fn(async (params: AuditCall) => {
     auditCalls.push(params);
     auditLogsStore.push({
@@ -275,7 +275,7 @@ let currentSession: MockSession = {
   user: { id: 'user-default', role: 'ra-lead', organizationId: 'org-default' },
 };
 
-vi.mock('@/lib/auth/with-permission', () => ({
+vi.mock('@/lib/kernel/auth/with-permission', () => ({
   withPermission: vi.fn(
     (
       _action: string,

@@ -1,8 +1,8 @@
 // @MX:NOTE [AUTO] model-pinning.ts — model provider/id/version pinning (REQ-MODELGOV-002/003).
 // @MX:SPEC SPEC-REGULA-MODEL-GOVERNANCE-001 (Issue 71, REQ-MODELGOV-002, REQ-MODELGOV-003)
 
-import { db } from '@/lib/db/client';
-import { modelPin } from '@/lib/db/schema';
+import { db } from '@/lib/kernel/db/client';
+import { modelPin } from '@/lib/kernel/db/schema';
 import { desc, eq } from 'drizzle-orm';
 import type { RegisteredModelPin } from './types';
 

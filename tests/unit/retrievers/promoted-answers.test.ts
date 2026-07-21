@@ -12,7 +12,7 @@ import { beforeEach, describe, expect, it, vi } from 'vitest';
 
 // Hoisted dbMock — vi.mock factories run before top-level const initialization.
 const { dbMock } = vi.hoisted(() => ({ dbMock: { execute: vi.fn() } }));
-vi.mock('@/lib/db/client', () => ({
+vi.mock('@/lib/kernel/db/client', () => ({
   db: dbMock,
   // withTenantScope forwards the fn to the mocked db so execute is observable.
   withTenantScope: vi.fn(
@@ -45,7 +45,7 @@ describe('PromotedAnswersRetriever — AC-04 behavior (REQ-009/010/011/014)', ()
   });
 
   it('returns boosted org-corpus results with sourceMessageId metadata (AC-04/AC-05)', async () => {
-    const { db } = await import('@/lib/db/client');
+    const { db } = await import('@/lib/kernel/db/client');
     const { embed } = await import('ai');
     const { PROMOTED_BOOST_FACTOR } = await import('@/lib/ai/retrievers/promoted-answers');
 
@@ -93,7 +93,7 @@ describe('PromotedAnswersRetriever — AC-04 behavior (REQ-009/010/011/014)', ()
   });
 
   it('respects limit option and forwards orgId to the SQL WHERE (REQ-003)', async () => {
-    const { db } = await import('@/lib/db/client');
+    const { db } = await import('@/lib/kernel/db/client');
     const { embed } = await import('ai');
 
     vi.mocked(embed).mockResolvedValueOnce({

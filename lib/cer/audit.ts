@@ -6,7 +6,7 @@
 // stage ids, export format, query length, and result counts are stored. The
 // raw literature query text is NOT persisted (query length only).
 
-import { writeAudit } from '../audit';
+import { writeAudit } from '../kernel/audit';
 
 /**
  * REQ-CER-036: a new CER workflow run was created. Fires as an autocommit

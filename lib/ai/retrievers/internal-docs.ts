@@ -1,9 +1,9 @@
-import { withTenantScope } from '../../db/client';
 import { DocClass } from '../../ingest/doc-class';
 // @MX:ANCHOR [AUTO] Phase 8 org document retriever — hybrid search with ACL filter.
 // @MX:REASON fan_in >= 3: Phase 8E router, consult pipeline, and test suite all call this.
 // @MX:SPEC SPEC-REGULA-DOCINGEST-001 (REQ-DOC-066, REQ-DOC-067, REQ-DOC-071)
 import { embedChunks } from '../../ingest/embed';
+import { withTenantScope } from '../../kernel/db/client';
 
 // Sensitivity classes that require expert review flag (REQ-DOC-071)
 const EXPERT_REVIEW_CLASSES = new Set<string>([DocClass.clinical_report, DocClass.audit_response]);

@@ -56,7 +56,7 @@ beforeEach(() => {
   activeResult = [];
   previousResult = [];
   vi.resetModules();
-  vi.doMock('@/lib/db/client', () => ({ db: makeMockDb() }));
+  vi.doMock('@/lib/kernel/db/client', () => ({ db: makeMockDb() }));
 });
 
 // ---------------------------------------------------------------------------

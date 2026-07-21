@@ -8,8 +8,8 @@
 //           assertInvestigationAccess patterns.
 // @MX:SPEC SPEC-REGULA-RLHF-001 (C-1/C-2 IDOR hardening, 21 CFR Part 11)
 
-import { db } from '@/lib/db/client';
-import { conversations, messages, projects } from '@/lib/db/schema';
+import { db } from '@/lib/kernel/db/client';
+import { conversations, messages, projects } from '@/lib/kernel/db/schema';
 import { and, eq } from 'drizzle-orm';
 
 /**

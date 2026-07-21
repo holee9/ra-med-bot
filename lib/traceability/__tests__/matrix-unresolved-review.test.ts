@@ -8,7 +8,7 @@
 //            - completed review (reviewerId set) → NOT flagged
 //            - pending/no review (reviewerId null) → flagged
 
-import { evidenceEdges, evidenceNodes } from '@/lib/db/schema';
+import { evidenceEdges, evidenceNodes } from '@/lib/kernel/db/schema';
 import { describe, expect, it } from 'vitest';
 import { buildMatrix } from '../matrix';
 

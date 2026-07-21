@@ -5,7 +5,7 @@
 //           (db.transaction wrapping insert + writeAudit). IDOR guard
 //           (assertMessageInOrg) before any write.
 
-import { withPermission } from '@/lib/auth/with-permission';
+import { withPermission } from '@/lib/kernel/auth/with-permission';
 import { assertMessageInOrg } from '@/lib/knowledge-promo/access';
 import { promoteAnswer } from '@/lib/knowledge-promo/promote';
 import { z } from 'zod';

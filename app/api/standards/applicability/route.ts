@@ -6,9 +6,9 @@
 //   (citation provenance). 21 CFR Part 11 atomicity: 'standards.mapping.generated'
 //   audit row is written in the same tx as any catalog lookup.
 
-import { writeAudit } from '@/lib/audit';
-import { withPermission } from '@/lib/auth/with-permission';
-import { withTenantScope } from '@/lib/db/client';
+import { writeAudit } from '@/lib/kernel/audit';
+import { withPermission } from '@/lib/kernel/auth/with-permission';
+import { withTenantScope } from '@/lib/kernel/db/client';
 import type { DeviceProfile } from '@/lib/standards/applicability-engine';
 import { mapApplicableStandards } from '@/lib/standards/mapping-engine';
 import { z } from 'zod';

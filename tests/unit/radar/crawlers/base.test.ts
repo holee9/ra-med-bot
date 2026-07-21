@@ -7,7 +7,7 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 const { writeAuditMock } = vi.hoisted(() => ({
   writeAuditMock: vi.fn().mockResolvedValue(undefined),
 }));
-vi.mock('@/lib/audit', () => ({ writeAudit: writeAuditMock }));
+vi.mock('@/lib/kernel/audit', () => ({ writeAudit: writeAuditMock }));
 
 import {
   RADAR_USER_AGENT,

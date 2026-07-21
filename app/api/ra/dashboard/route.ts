@@ -6,9 +6,9 @@
 // distinct active users in the last 7 days.
 
 import { countDistinct, gte, sql } from 'drizzle-orm';
-import { withPermission } from '../../../../lib/auth/with-permission';
-import { db } from '../../../../lib/db/client';
-import { conversations, sourceSections } from '../../../../lib/db/schema';
+import { withPermission } from '../../../../lib/kernel/auth/with-permission';
+import { db } from '../../../../lib/kernel/db/client';
+import { conversations, sourceSections } from '../../../../lib/kernel/db/schema';
 
 // Drizzle's count() helper returns a numeric/bigint that postgres-js may
 // surface as either number or string. This coerces both shapes to a finite

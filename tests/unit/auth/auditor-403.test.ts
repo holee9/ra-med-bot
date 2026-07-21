@@ -5,24 +5,24 @@ import { beforeEach, describe, expect, it, vi } from 'vitest';
 
 // Mock writeAudit BEFORE importing withPermission so the wrapper closes over the spy.
 const writeAuditMock = vi.fn((_event: unknown) => Promise.resolve());
-vi.mock('@/lib/audit', () => ({
+vi.mock('@/lib/kernel/audit', () => ({
   writeAudit: (event: unknown) => writeAuditMock(event),
 }));
 
 // Mock auth() so we can inject an auditor session.
 const authMock = vi.fn();
-vi.mock('@/lib/auth', () => ({
+vi.mock('@/lib/kernel/auth', () => ({
   auth: () => authMock(),
 }));
 
 // Mock ACL membership checks — auditor is org member.
-vi.mock('@/lib/auth/acl', () => ({
+vi.mock('@/lib/kernel/auth/acl', () => ({
   isOrgMember: () => Promise.resolve(true),
   isProjectMember: () => Promise.resolve(true),
 }));
 
-import type { Role } from '@/lib/auth/rbac';
-import { withPermission } from '@/lib/auth/with-permission';
+import type { Role } from '@/lib/kernel/auth/rbac';
+import { withPermission } from '@/lib/kernel/auth/with-permission';
 
 function makeSession(role: Role) {
   return {

@@ -4,8 +4,8 @@
 //           org-scoped via withTenantScope (RLS GUC — #239) + defense-in-depth
 //           eq(orgId). Tag filter uses the text[] GIN index (REQ-015).
 
-import { withTenantScope } from '@/lib/db/client';
-import { promotedAnswers } from '@/lib/db/schema';
+import { withTenantScope } from '@/lib/kernel/db/client';
+import { promotedAnswers } from '@/lib/kernel/db/schema';
 import { and, asc, eq, sql } from 'drizzle-orm';
 
 export interface LibraryEntry {

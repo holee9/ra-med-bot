@@ -8,12 +8,12 @@
 //            auto transition auto → needs-review.
 
 import { randomUUID } from 'node:crypto';
-import { writeAudit } from '@/lib/audit';
-import { withPermission } from '@/lib/auth/with-permission';
-import { db } from '@/lib/db/client';
-import { inboxTickets } from '@/lib/db/schema';
 import { assertValidTransition } from '@/lib/domains/inbox/state-machine';
 import { runTriage } from '@/lib/domains/triage';
+import { writeAudit } from '@/lib/kernel/audit';
+import { withPermission } from '@/lib/kernel/auth/with-permission';
+import { db } from '@/lib/kernel/db/client';
+import { inboxTickets } from '@/lib/kernel/db/schema';
 import { and, eq } from 'drizzle-orm';
 import { z } from 'zod';
 

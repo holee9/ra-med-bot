@@ -4,10 +4,10 @@
 // Privacy invariant (REQ-PERSONAL-002): every query filters by session.user.id.
 // No user can list, create-for, or infer the existence of another user's bookmarks.
 
-import { writeAudit } from '@/lib/audit';
-import { withPermission } from '@/lib/auth/with-permission';
-import { db } from '@/lib/db/client';
-import { personalBookmarks } from '@/lib/db/schema';
+import { writeAudit } from '@/lib/kernel/audit';
+import { withPermission } from '@/lib/kernel/auth/with-permission';
+import { db } from '@/lib/kernel/db/client';
+import { personalBookmarks } from '@/lib/kernel/db/schema';
 import { and, desc, eq, ilike, or, sql } from 'drizzle-orm';
 import { NextResponse } from 'next/server';
 import { z } from 'zod';

@@ -40,7 +40,7 @@ const mockDb = {
   })),
 };
 
-vi.mock('@/lib/db/client', () => ({
+vi.mock('@/lib/kernel/db/client', () => ({
   db: mockDb,
 }));
 
@@ -50,7 +50,7 @@ vi.mock('bcryptjs', () => ({
   },
 }));
 
-vi.mock('@/lib/auth/with-permission', () => ({
+vi.mock('@/lib/kernel/auth/with-permission', () => ({
   withPermission: vi.fn(
     (
       action: string,
@@ -75,7 +75,7 @@ vi.mock('@/lib/domains/inbox', () => ({
   promoteToApproved,
 }));
 
-vi.mock('@/lib/audit', () => ({
+vi.mock('@/lib/kernel/audit', () => ({
   writeAudit,
 }));
 

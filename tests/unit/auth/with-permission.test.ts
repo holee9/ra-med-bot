@@ -4,28 +4,28 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 
 // Mock dependencies before importing withPermission.
-vi.mock('@/lib/auth', () => ({
+vi.mock('@/lib/kernel/auth', () => ({
   auth: vi.fn(),
   handlers: {},
   signIn: vi.fn(),
   signOut: vi.fn(),
 }));
 
-vi.mock('@/lib/auth/rbac', () => ({
+vi.mock('@/lib/kernel/auth/rbac', () => ({
   hasRole: vi.fn(),
   ROLE_HIERARCHY: { admin: 4, 'ra-lead': 3, 'ra-member': 2, viewer: 1 },
 }));
 
-vi.mock('@/lib/auth/acl', () => ({
+vi.mock('@/lib/kernel/auth/acl', () => ({
   isOrgMember: vi.fn(),
   isProjectMember: vi.fn(),
 }));
 
-vi.mock('@/lib/audit', () => ({
+vi.mock('@/lib/kernel/audit', () => ({
   writeAudit: vi.fn().mockResolvedValue(undefined),
 }));
 
-describe('lib/auth/with-permission.ts (REQ-ENTERPRISE-019, 022, 023) — withPermission', () => {
+describe('lib/kernel/auth/with-permission.ts (REQ-ENTERPRISE-019, 022, 023) — withPermission', () => {
   beforeEach(() => {
     vi.resetModules();
     vi.clearAllMocks();
@@ -33,10 +33,10 @@ describe('lib/auth/with-permission.ts (REQ-ENTERPRISE-019, 022, 023) — withPer
 
   describe('401 — no session', () => {
     it('returns 401 when session is null', async () => {
-      const { auth } = await import('@/lib/auth');
+      const { auth } = await import('@/lib/kernel/auth');
       vi.mocked(auth).mockResolvedValueOnce(null as never);
 
-      const { withPermission } = await import('@/lib/auth/with-permission');
+      const { withPermission } = await import('@/lib/kernel/auth/with-permission');
       const handler = vi.fn();
       const wrapped = withPermission('conversation.view', handler);
 
@@ -50,10 +50,10 @@ describe('lib/auth/with-permission.ts (REQ-ENTERPRISE-019, 022, 023) — withPer
     });
 
     it('returns 401 when session.user is missing', async () => {
-      const { auth } = await import('@/lib/auth');
+      const { auth } = await import('@/lib/kernel/auth');
       vi.mocked(auth).mockResolvedValueOnce({} as never);
 
-      const { withPermission } = await import('@/lib/auth/with-permission');
+      const { withPermission } = await import('@/lib/kernel/auth/with-permission');
       const handler = vi.fn();
       const wrapped = withPermission('dashboard.view', handler);
 
@@ -67,15 +67,15 @@ describe('lib/auth/with-permission.ts (REQ-ENTERPRISE-019, 022, 023) — withPer
 
   describe('403 — role insufficient', () => {
     it('returns 403 when user role is insufficient', async () => {
-      const { auth } = await import('@/lib/auth');
+      const { auth } = await import('@/lib/kernel/auth');
       vi.mocked(auth).mockResolvedValueOnce({
         user: { id: 'user-1', role: 'viewer', organizationId: 'org-1', email: 'v@test.com' },
       } as never);
 
-      const { hasRole } = await import('@/lib/auth/rbac');
+      const { hasRole } = await import('@/lib/kernel/auth/rbac');
       vi.mocked(hasRole).mockReturnValue(false);
 
-      const { withPermission } = await import('@/lib/auth/with-permission');
+      const { withPermission } = await import('@/lib/kernel/auth/with-permission');
       const handler = vi.fn();
       const wrapped = withPermission('rbac.manage', handler);
 
@@ -91,17 +91,17 @@ describe('lib/auth/with-permission.ts (REQ-ENTERPRISE-019, 022, 023) — withPer
     });
 
     it('calls writeAudit on role denial', async () => {
-      const { auth } = await import('@/lib/auth');
+      const { auth } = await import('@/lib/kernel/auth');
       vi.mocked(auth).mockResolvedValueOnce({
         user: { id: 'user-2', role: 'ra-member', organizationId: 'org-2', email: 'm@test.com' },
       } as never);
 
-      const { hasRole } = await import('@/lib/auth/rbac');
+      const { hasRole } = await import('@/lib/kernel/auth/rbac');
       vi.mocked(hasRole).mockReturnValue(false);
 
-      const { writeAudit } = await import('@/lib/audit');
+      const { writeAudit } = await import('@/lib/kernel/audit');
 
-      const { withPermission } = await import('@/lib/auth/with-permission');
+      const { withPermission } = await import('@/lib/kernel/auth/with-permission');
       const wrapped = withPermission('sources.ingest', vi.fn());
 
       const req = new Request('http://localhost/api/test');
@@ -116,17 +116,17 @@ describe('lib/auth/with-permission.ts (REQ-ENTERPRISE-019, 022, 023) — withPer
     });
 
     it('audit meta includes required action and actual role on denial', async () => {
-      const { auth } = await import('@/lib/auth');
+      const { auth } = await import('@/lib/kernel/auth');
       vi.mocked(auth).mockResolvedValueOnce({
         user: { id: 'user-3', role: 'viewer', organizationId: 'org-3', email: 'v3@test.com' },
       } as never);
 
-      const { hasRole } = await import('@/lib/auth/rbac');
+      const { hasRole } = await import('@/lib/kernel/auth/rbac');
       vi.mocked(hasRole).mockReturnValue(false);
 
-      const { writeAudit } = await import('@/lib/audit');
+      const { writeAudit } = await import('@/lib/kernel/audit');
 
-      const { withPermission } = await import('@/lib/auth/with-permission');
+      const { withPermission } = await import('@/lib/kernel/auth/with-permission');
       const wrapped = withPermission('dashboard.team', vi.fn());
 
       const req = new Request('http://localhost/api/test');
@@ -146,18 +146,18 @@ describe('lib/auth/with-permission.ts (REQ-ENTERPRISE-019, 022, 023) — withPer
 
   describe('403 — not org member', () => {
     it('returns 403 when user is not an org member (org-scoped action)', async () => {
-      const { auth } = await import('@/lib/auth');
+      const { auth } = await import('@/lib/kernel/auth');
       vi.mocked(auth).mockResolvedValueOnce({
         user: { id: 'user-4', role: 'ra-member', organizationId: 'org-4', email: 'u4@test.com' },
       } as never);
 
-      const { hasRole } = await import('@/lib/auth/rbac');
+      const { hasRole } = await import('@/lib/kernel/auth/rbac');
       vi.mocked(hasRole).mockReturnValue(true);
 
-      const { isOrgMember } = await import('@/lib/auth/acl');
+      const { isOrgMember } = await import('@/lib/kernel/auth/acl');
       vi.mocked(isOrgMember).mockResolvedValue(false);
 
-      const { withPermission } = await import('@/lib/auth/with-permission');
+      const { withPermission } = await import('@/lib/kernel/auth/with-permission');
       const handler = vi.fn();
       const wrapped = withPermission('conversation.view', handler);
 
@@ -171,20 +171,20 @@ describe('lib/auth/with-permission.ts (REQ-ENTERPRISE-019, 022, 023) — withPer
     });
 
     it('calls writeAudit on org membership denial', async () => {
-      const { auth } = await import('@/lib/auth');
+      const { auth } = await import('@/lib/kernel/auth');
       vi.mocked(auth).mockResolvedValueOnce({
         user: { id: 'user-5', role: 'ra-lead', organizationId: 'org-5', email: 'u5@test.com' },
       } as never);
 
-      const { hasRole } = await import('@/lib/auth/rbac');
+      const { hasRole } = await import('@/lib/kernel/auth/rbac');
       vi.mocked(hasRole).mockReturnValue(true);
 
-      const { isOrgMember } = await import('@/lib/auth/acl');
+      const { isOrgMember } = await import('@/lib/kernel/auth/acl');
       vi.mocked(isOrgMember).mockResolvedValue(false);
 
-      const { writeAudit } = await import('@/lib/audit');
+      const { writeAudit } = await import('@/lib/kernel/audit');
 
-      const { withPermission } = await import('@/lib/auth/with-permission');
+      const { withPermission } = await import('@/lib/kernel/auth/with-permission');
       const wrapped = withPermission('dashboard.view', vi.fn());
 
       const req = new Request('http://localhost/api/test');
@@ -201,18 +201,18 @@ describe('lib/auth/with-permission.ts (REQ-ENTERPRISE-019, 022, 023) — withPer
 
   describe('200 — valid session, role, and membership', () => {
     it('calls inner handler when all checks pass (org-scoped)', async () => {
-      const { auth } = await import('@/lib/auth');
+      const { auth } = await import('@/lib/kernel/auth');
       vi.mocked(auth).mockResolvedValueOnce({
         user: { id: 'user-6', role: 'ra-member', organizationId: 'org-6', email: 'u6@test.com' },
       } as never);
 
-      const { hasRole } = await import('@/lib/auth/rbac');
+      const { hasRole } = await import('@/lib/kernel/auth/rbac');
       vi.mocked(hasRole).mockReturnValue(true);
 
-      const { isOrgMember } = await import('@/lib/auth/acl');
+      const { isOrgMember } = await import('@/lib/kernel/auth/acl');
       vi.mocked(isOrgMember).mockResolvedValue(true);
 
-      const { withPermission } = await import('@/lib/auth/with-permission');
+      const { withPermission } = await import('@/lib/kernel/auth/with-permission');
       const handler = vi.fn().mockResolvedValue(Response.json({ ok: true }));
       const wrapped = withPermission('dashboard.view', handler);
 
@@ -224,16 +224,16 @@ describe('lib/auth/with-permission.ts (REQ-ENTERPRISE-019, 022, 023) — withPer
     });
 
     it('passes req, ctx, and session to inner handler', async () => {
-      const { auth } = await import('@/lib/auth');
+      const { auth } = await import('@/lib/kernel/auth');
       const fakeSession = {
         user: { id: 'user-7', role: 'admin', organizationId: 'org-7', email: 'admin@test.com' },
       };
       vi.mocked(auth).mockResolvedValueOnce(fakeSession as never);
 
-      const { hasRole } = await import('@/lib/auth/rbac');
+      const { hasRole } = await import('@/lib/kernel/auth/rbac');
       vi.mocked(hasRole).mockReturnValue(true);
 
-      const { withPermission } = await import('@/lib/auth/with-permission');
+      const { withPermission } = await import('@/lib/kernel/auth/with-permission');
       let capturedArgs: unknown[] = [];
       const handler = vi.fn().mockImplementation(async (...args) => {
         capturedArgs = args;
@@ -251,17 +251,17 @@ describe('lib/auth/with-permission.ts (REQ-ENTERPRISE-019, 022, 023) — withPer
     });
 
     it('user-scoped action skips org membership check', async () => {
-      const { auth } = await import('@/lib/auth');
+      const { auth } = await import('@/lib/kernel/auth');
       vi.mocked(auth).mockResolvedValueOnce({
         user: { id: 'user-8', role: 'ra-member', organizationId: 'org-8', email: 'u8@test.com' },
       } as never);
 
-      const { hasRole } = await import('@/lib/auth/rbac');
+      const { hasRole } = await import('@/lib/kernel/auth/rbac');
       vi.mocked(hasRole).mockReturnValue(true);
 
-      const { isOrgMember } = await import('@/lib/auth/acl');
+      const { isOrgMember } = await import('@/lib/kernel/auth/acl');
 
-      const { withPermission } = await import('@/lib/auth/with-permission');
+      const { withPermission } = await import('@/lib/kernel/auth/with-permission');
       const handler = vi.fn().mockResolvedValue(Response.json({ ok: true }));
       const wrapped = withPermission('profile.edit', handler);
 
@@ -274,18 +274,18 @@ describe('lib/auth/with-permission.ts (REQ-ENTERPRISE-019, 022, 023) — withPer
     });
 
     it('resolves Promise params before project membership checks', async () => {
-      const { auth } = await import('@/lib/auth');
+      const { auth } = await import('@/lib/kernel/auth');
       vi.mocked(auth).mockResolvedValueOnce({
         user: { id: 'user-9', role: 'ra-lead', organizationId: 'org-9', email: 'lead@test.com' },
       } as never);
 
-      const { hasRole } = await import('@/lib/auth/rbac');
+      const { hasRole } = await import('@/lib/kernel/auth/rbac');
       vi.mocked(hasRole).mockReturnValue(true);
 
-      const { isProjectMember } = await import('@/lib/auth/acl');
+      const { isProjectMember } = await import('@/lib/kernel/auth/acl');
       vi.mocked(isProjectMember).mockResolvedValue(true);
 
-      const { withPermission } = await import('@/lib/auth/with-permission');
+      const { withPermission } = await import('@/lib/kernel/auth/with-permission');
       const handler = vi.fn().mockResolvedValue(Response.json({ ok: true }));
       const wrapped = withPermission('project.manage', handler);
 
@@ -311,20 +311,20 @@ describe('lib/auth/with-permission.ts (REQ-ENTERPRISE-019, 022, 023) — withPer
         vi.resetModules();
         vi.clearAllMocks();
 
-        const { auth } = await import('@/lib/auth');
+        const { auth } = await import('@/lib/kernel/auth');
         vi.mocked(auth).mockResolvedValueOnce({
           user: { id: `user-${role}`, role, organizationId: 'org-x', email: `${role}@test.com` },
         } as never);
 
-        const { hasRole } = await import('@/lib/auth/rbac');
+        const { hasRole } = await import('@/lib/kernel/auth/rbac');
         vi.mocked(hasRole).mockReturnValue(hasRoleResult);
 
         if (hasRoleResult) {
-          const { isOrgMember } = await import('@/lib/auth/acl');
+          const { isOrgMember } = await import('@/lib/kernel/auth/acl');
           vi.mocked(isOrgMember).mockResolvedValue(true);
         }
 
-        const { withPermission } = await import('@/lib/auth/with-permission');
+        const { withPermission } = await import('@/lib/kernel/auth/with-permission');
         const handler = vi.fn().mockResolvedValue(Response.json({ ok: true }));
         const wrapped = withPermission('rbac.manage', handler);
 

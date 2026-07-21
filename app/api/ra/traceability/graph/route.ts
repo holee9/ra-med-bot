@@ -2,7 +2,7 @@
 // @MX:SPEC SPEC-INTEGRATION-001, Issue #169
 
 import { HybridRaClientError, createHybridRaFetch } from '@/lib/api/hybrid-ra-client';
-import { withPermission } from '@/lib/auth/with-permission';
+import { withPermission } from '@/lib/kernel/auth/with-permission';
 
 export const GET = withPermission('traceability.view', async (req) => {
   try {

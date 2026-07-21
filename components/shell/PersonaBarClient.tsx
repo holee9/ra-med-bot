@@ -11,8 +11,8 @@
 // from session.user.role via resolveTier and rejects cookie escalation
 // (REQ-V3-PER-004 / REQ-V3-PER-NFR-002).
 
-import { type Tier, isValidTierForRole, writePersonaCookie } from '@/lib/auth/persona';
-import type { Role } from '@/lib/auth/rbac';
+import { type Tier, isValidTierForRole, writePersonaCookie } from '@/lib/kernel/auth/persona';
+import type { Role } from '@/lib/kernel/auth/rbac';
 import { useRouter } from 'next/navigation';
 import { useState } from 'react';
 import { PersonaBar } from './PersonaBar';

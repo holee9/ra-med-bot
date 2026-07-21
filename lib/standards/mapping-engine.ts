@@ -7,8 +7,8 @@
 // ApplicableStandard[]; this module joins DB catalog rows (org-scoped) so
 // downstream API responses are citation-complete.
 
-import { type DrizzleClient, db, withTenantScope } from '@/lib/db/client';
-import { standardsOrgCatalog as standardsCatalog } from '@/lib/db/schema';
+import { type DrizzleClient, db, withTenantScope } from '@/lib/kernel/db/client';
+import { standardsOrgCatalog as standardsCatalog } from '@/lib/kernel/db/schema';
 import { and, eq } from 'drizzle-orm';
 import {
   type ApplicableStandard,

@@ -7,8 +7,8 @@
 // which calls auth() server-side.
 // Wave 1: project-switcher dropdown + locale-aware nav-chat testid added.
 
-import type { Tier } from '@/lib/auth/persona';
-import { type Role, hasRole } from '@/lib/auth/rbac';
+import type { Tier } from '@/lib/kernel/auth/persona';
+import { type Role, hasRole } from '@/lib/kernel/auth/rbac';
 import { useProjects } from '@/lib/queries/useProjects';
 import type { ProjectSummary } from '@/lib/queries/useProjects';
 import { useUIStore } from '@/stores/ui';

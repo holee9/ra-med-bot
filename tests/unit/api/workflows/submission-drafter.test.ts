@@ -23,8 +23,8 @@ const dbMocks = vi.hoisted(() => {
 });
 
 // Mock withPermission: pass-through with fixed session
-vi.mock('@/lib/audit', () => ({ writeAudit: vi.fn().mockResolvedValue(undefined) }));
-vi.mock('@/lib/auth/with-permission', () => ({
+vi.mock('@/lib/kernel/audit', () => ({ writeAudit: vi.fn().mockResolvedValue(undefined) }));
+vi.mock('@/lib/kernel/auth/with-permission', () => ({
   withPermission: vi.fn(
     (
       _action: string,
@@ -38,7 +38,7 @@ vi.mock('@/lib/auth/with-permission', () => ({
 }));
 
 // Mock db/client for status route DB query
-vi.mock('@/lib/db/client', () => ({
+vi.mock('@/lib/kernel/db/client', () => ({
   db: {
     insert: dbMocks.insert,
     // Issue #378: route wraps INSERT + audit in db.transaction; tx reuses the

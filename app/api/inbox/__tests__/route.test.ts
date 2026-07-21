@@ -12,9 +12,9 @@ let userRole: 'viewer' | 'ra-member' | 'ra-lead' | 'admin' = 'ra-member';
 let organizationId = 'org-001';
 
 // Stub db client so route import does not spin up a real pg pool (OOM guard).
-vi.mock('@/lib/db/client', () => ({ db: {} }));
+vi.mock('@/lib/kernel/db/client', () => ({ db: {} }));
 
-vi.mock('@/lib/auth/with-permission', () => ({
+vi.mock('@/lib/kernel/auth/with-permission', () => ({
   withPermission: vi.fn(
     (
       _action: string,

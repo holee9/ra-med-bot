@@ -13,8 +13,8 @@ import { describe, expect, it, vi } from 'vitest';
 // @/lib/knowledge-gap/replay → @/lib/ai/consult → env-validated db client) does
 // not trigger ZodError on missing DATABASE_URL in the test runner. Same pattern
 // as tests/unit/knowledge-gap-detector.test.ts. SPEC-REGULA-KNOWLEDGE-GAP-001 #35.
-vi.mock('@/lib/db/client', () => ({ db: {} }));
-vi.mock('@/lib/audit', () => ({ writeAudit: vi.fn().mockResolvedValue(undefined) }));
+vi.mock('@/lib/kernel/db/client', () => ({ db: {} }));
+vi.mock('@/lib/kernel/audit', () => ({ writeAudit: vi.fn().mockResolvedValue(undefined) }));
 vi.mock('@/lib/observability/logger', () => ({
   logger: { info: vi.fn(), error: vi.fn(), warn: vi.fn(), debug: vi.fn() },
 }));

@@ -2,9 +2,9 @@
 // @MX:SPEC SPEC-REGULA-IMPACT-001
 
 import { z } from 'zod';
-import { withPermission } from '../../../../../lib/auth/with-permission';
-import { db } from '../../../../../lib/db/client';
 import { analyzeImpact } from '../../../../../lib/domains/impact/analyzer';
+import { withPermission } from '../../../../../lib/kernel/auth/with-permission';
+import { db } from '../../../../../lib/kernel/db/client';
 
 const TriggerSchema = z.object({
   regulatory_update_id: z.string().uuid(),

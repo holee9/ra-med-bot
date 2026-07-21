@@ -2,9 +2,9 @@
 // @MX:SPEC SPEC-REGULA-RADAR-001
 
 import { z } from 'zod';
-import { writeAudit } from '../../../../../lib/audit';
-import { withPermission } from '../../../../../lib/auth/with-permission';
-import { db } from '../../../../../lib/db/client';
+import { writeAudit } from '../../../../../lib/kernel/audit';
+import { withPermission } from '../../../../../lib/kernel/auth/with-permission';
+import { db } from '../../../../../lib/kernel/db/client';
 import { runCrawler } from '../../../../../lib/radar/crawlers/_base';
 import type { CrawlerContext } from '../../../../../lib/radar/crawlers/_types';
 import { crawlEuOj } from '../../../../../lib/radar/crawlers/eu-oj';

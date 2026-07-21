@@ -1,7 +1,7 @@
 /** @vitest-environment jsdom */
 // @MX:NOTE [SPEC-V3-PERSONA-001 M2] PersonaBar unit tests (ApproveDialog pattern).
 import '@testing-library/jest-dom';
-import type { Role } from '@/lib/auth/rbac';
+import type { Role } from '@/lib/kernel/auth/rbac';
 import { fireEvent, render, screen } from '@testing-library/react';
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import { PersonaBar } from '../PersonaBar';

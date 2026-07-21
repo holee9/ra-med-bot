@@ -3,7 +3,7 @@
 export const runtime = 'nodejs';
 
 import { HybridRaClientError, createHybridRaClient } from '@/lib/api/hybrid-ra-client';
-import { withPermission } from '@/lib/auth/with-permission';
+import { withPermission } from '@/lib/kernel/auth/with-permission';
 import { recordIntegrationGap } from '@/lib/knowledge-gap/integration-gap';
 import { z } from 'zod';
 

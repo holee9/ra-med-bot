@@ -14,8 +14,8 @@ export default async function LibraryPage(): Promise<React.ReactElement> {
   // re-checks via withPermission('knowledgepromo.view').
   let canViewTeam = false;
   try {
-    const { auth } = await import('@/lib/auth');
-    const { hasRole } = await import('@/lib/auth/rbac');
+    const { auth } = await import('@/lib/kernel/auth');
+    const { hasRole } = await import('@/lib/kernel/auth/rbac');
     const session = await auth();
     const userRole = (session?.user as { role?: string } | undefined)?.role;
     if (userRole) {

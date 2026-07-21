@@ -6,8 +6,8 @@
 // @MX:SPEC SPEC-REGULA-CLASSIFY-001 (REQ-CLASSIFY-001~004, REQ-CLASSIFY-019~020)
 
 import { BetaBadge } from '@/components/ui/BetaBadge';
-import { auth } from '@/lib/auth';
-import { type Role, hasRole } from '@/lib/auth/rbac';
+import { auth } from '@/lib/kernel/auth';
+import { type Role, hasRole } from '@/lib/kernel/auth/rbac';
 import type { Metadata } from 'next';
 import { ClassificationWizard } from './_components/ClassificationWizard';
 

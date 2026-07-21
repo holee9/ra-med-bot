@@ -16,11 +16,11 @@ export interface RelevantUpdate {
  * Resolve the org's digest recipient email list from orgDigestPreferences.
  * Skips when frequency is 'disabled' or recipientEmails is empty.
  * Uses dynamic import so module load does not trigger env validation
- * (lib/db/client calls getEnv() at init — would break unit tests).
+ * (lib/kernel/db/client calls getEnv() at init — would break unit tests).
  */
 async function resolveRecipients(orgId: string): Promise<string[]> {
-  const { db } = await import('@/lib/db/client');
-  const { orgDigestPreferences } = await import('@/lib/db/schema');
+  const { db } = await import('@/lib/kernel/db/client');
+  const { orgDigestPreferences } = await import('@/lib/kernel/db/schema');
   const { and, eq, ne } = await import('drizzle-orm');
 
   const rows = await db

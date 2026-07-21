@@ -1,4 +1,4 @@
-// Tests for lib/audit/cold-storage.ts
+// Tests for lib/kernel/audit/cold-storage.ts
 // RED: checksum-based dedup, R2 write confirmation, no Neon delete before R2 confirm
 
 import { describe, expect, it, vi } from 'vitest';
@@ -26,13 +26,13 @@ function makeR2Mock() {
 
 describe('archiveAuditLogs', () => {
   it('should be exported from cold-storage', async () => {
-    const mod = await import('../../../lib/audit/cold-storage');
+    const mod = await import('../../../lib/kernel/audit/cold-storage');
     expect(typeof mod.archiveAuditLogs).toBe('function');
   });
 
   it('should call R2 put with audit log payload', async () => {
-    const { archiveAuditLogs } = await import('../../../lib/audit/cold-storage');
-    const { R2Client } = await import('../../../lib/storage/r2');
+    const { archiveAuditLogs } = await import('../../../lib/kernel/audit/cold-storage');
+    const { R2Client } = await import('../../../lib/kernel/storage/r2');
 
     const bucket = makeR2Mock();
     const r2Client = new R2Client(bucket);
@@ -56,8 +56,8 @@ describe('archiveAuditLogs', () => {
   });
 
   it('should include checksum in the R2 object key or metadata (REQ-CF-048)', async () => {
-    const { archiveAuditLogs } = await import('../../../lib/audit/cold-storage');
-    const { R2Client } = await import('../../../lib/storage/r2');
+    const { archiveAuditLogs } = await import('../../../lib/kernel/audit/cold-storage');
+    const { R2Client } = await import('../../../lib/kernel/storage/r2');
 
     const bucket = makeR2Mock();
     const r2Client = new R2Client(bucket);
@@ -84,12 +84,12 @@ describe('archiveAuditLogs', () => {
 
 describe('idempotency', () => {
   it('should export isAlreadyArchived helper', async () => {
-    const mod = await import('../../../lib/audit/cold-storage');
+    const mod = await import('../../../lib/kernel/audit/cold-storage');
     expect(typeof mod.buildArchiveKey).toBe('function');
   });
 
   it('should produce deterministic keys for same batch', async () => {
-    const { buildArchiveKey } = await import('../../../lib/audit/cold-storage');
+    const { buildArchiveKey } = await import('../../../lib/kernel/audit/cold-storage');
     const key1 = buildArchiveKey('2026-01', '0001');
     const key2 = buildArchiveKey('2026-01', '0001');
     expect(key1).toBe(key2);

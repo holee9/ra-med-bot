@@ -25,7 +25,7 @@ export default async function ProjectMemoryPage({
   // memory API still re-checks via withPermission('projectmemory.manage').
   let viewerRole: string | undefined;
   try {
-    const { auth } = await import('@/lib/auth');
+    const { auth } = await import('@/lib/kernel/auth');
     const session = await auth();
     viewerRole = (session?.user as { role?: string } | undefined)?.role;
   } catch {

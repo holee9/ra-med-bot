@@ -1,4 +1,4 @@
-// Tests for lib/storage/r2.ts
+// Tests for lib/kernel/storage/r2.ts
 // RED: R2Client abstraction layer
 
 import { describe, expect, it, vi } from 'vitest';
@@ -48,12 +48,12 @@ function makeR2Mock() {
 
 describe('R2Client', () => {
   it('should export R2Client class', async () => {
-    const mod = await import('../../../lib/storage/r2');
+    const mod = await import('../../../lib/kernel/storage/r2');
     expect(mod.R2Client).toBeDefined();
   });
 
   it('should have put, get, delete, list methods', async () => {
-    const { R2Client } = await import('../../../lib/storage/r2');
+    const { R2Client } = await import('../../../lib/kernel/storage/r2');
     const bucket = makeR2Mock();
     const client = new R2Client(bucket);
     expect(typeof client.put).toBe('function');
@@ -64,7 +64,7 @@ describe('R2Client', () => {
 
   describe('put', () => {
     it('should store content in R2', async () => {
-      const { R2Client } = await import('../../../lib/storage/r2');
+      const { R2Client } = await import('../../../lib/kernel/storage/r2');
       const bucket = makeR2Mock();
       const client = new R2Client(bucket);
 
@@ -79,7 +79,7 @@ describe('R2Client', () => {
 
   describe('get', () => {
     it('should return null for missing keys', async () => {
-      const { R2Client } = await import('../../../lib/storage/r2');
+      const { R2Client } = await import('../../../lib/kernel/storage/r2');
       const bucket = makeR2Mock();
       const client = new R2Client(bucket);
 
@@ -88,7 +88,7 @@ describe('R2Client', () => {
     });
 
     it('should return the stored object', async () => {
-      const { R2Client } = await import('../../../lib/storage/r2');
+      const { R2Client } = await import('../../../lib/kernel/storage/r2');
       const bucket = makeR2Mock();
       const client = new R2Client(bucket);
 
@@ -100,7 +100,7 @@ describe('R2Client', () => {
 
   describe('delete', () => {
     it('should call R2Bucket.delete', async () => {
-      const { R2Client } = await import('../../../lib/storage/r2');
+      const { R2Client } = await import('../../../lib/kernel/storage/r2');
       const bucket = makeR2Mock();
       const client = new R2Client(bucket);
 
@@ -111,7 +111,7 @@ describe('R2Client', () => {
 
   describe('list', () => {
     it('should return a list of objects', async () => {
-      const { R2Client } = await import('../../../lib/storage/r2');
+      const { R2Client } = await import('../../../lib/kernel/storage/r2');
       const bucket = makeR2Mock();
       const client = new R2Client(bucket);
 

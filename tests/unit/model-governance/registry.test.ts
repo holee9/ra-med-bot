@@ -136,7 +136,7 @@ beforeEach(() => {
   insertResult = [];
   listResult = [];
   vi.resetModules();
-  vi.doMock('@/lib/db/client', () => ({ db: makeMockDb() }));
+  vi.doMock('@/lib/kernel/db/client', () => ({ db: makeMockDb() }));
 });
 
 // ---------------------------------------------------------------------------
@@ -174,7 +174,7 @@ describe('registerPrompt — idempotent dedup (REQ-MODELGOV-001)', () => {
         createdAt: new Date(),
       },
     ];
-    const { db } = await import('@/lib/db/client');
+    const { db } = await import('@/lib/kernel/db/client');
     const { registerPrompt } = await import('@/lib/model-governance/registry');
     await registerPrompt({
       orgId: 'org-1',
@@ -252,7 +252,7 @@ describe('registerPrompt — new version insert (REQ-MODELGOV-001)', () => {
       },
     ];
 
-    const { db } = await import('@/lib/db/client');
+    const { db } = await import('@/lib/kernel/db/client');
     const { registerPrompt } = await import('@/lib/model-governance/registry');
     await registerPrompt({
       orgId: 'org-1',
@@ -295,7 +295,7 @@ describe('registerPrompt — new version insert (REQ-MODELGOV-001)', () => {
       },
     ];
 
-    const { db } = await import('@/lib/db/client');
+    const { db } = await import('@/lib/kernel/db/client');
     const { registerPrompt } = await import('@/lib/model-governance/registry');
     await registerPrompt({
       orgId: 'org-1',

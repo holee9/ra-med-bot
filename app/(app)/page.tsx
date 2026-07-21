@@ -1,8 +1,8 @@
 import { Callout } from '@/components/ui/Callout';
 import { ReadinessBadge } from '@/components/ui/ReadinessBadge';
-import { auth } from '@/lib/auth';
-import { type Tier, resolveTier } from '@/lib/auth/persona';
-import { hasRole } from '@/lib/auth/rbac';
+import { auth } from '@/lib/kernel/auth';
+import { type Tier, resolveTier } from '@/lib/kernel/auth/persona';
+import { hasRole } from '@/lib/kernel/auth/rbac';
 import {
   BarChart3,
   BookOpenCheck,

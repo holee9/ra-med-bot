@@ -5,7 +5,7 @@
 
 /**
  * Minimal shape of a feedback record needed for aggregation. The full row lives
- * in `answer_feedback` (lib/db/schema.ts); callers project to this shape.
+ * in `answer_feedback` (lib/kernel/db/schema.ts); callers project to this shape.
  */
 export interface FeedbackRecord {
   rating: 'up' | 'down';

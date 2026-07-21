@@ -3,7 +3,7 @@
 
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 
-vi.mock('@/lib/auth/with-permission', () => ({
+vi.mock('@/lib/kernel/auth/with-permission', () => ({
   withPermission: vi.fn(
     (
       _action: string,
@@ -22,7 +22,7 @@ vi.mock('@/lib/auth/with-permission', () => ({
 }));
 
 const writeAuditMock = vi.fn().mockResolvedValue(undefined);
-vi.mock('@/lib/audit', () => ({
+vi.mock('@/lib/kernel/audit', () => ({
   writeAudit: (event: unknown) => writeAuditMock(event),
 }));
 
@@ -57,7 +57,7 @@ const citChain = chain();
 const revChain = chain();
 const repChain = chain();
 
-vi.mock('@/lib/db/client', () => ({
+vi.mock('@/lib/kernel/db/client', () => ({
   db: {
     select: vi.fn((args: unknown) => {
       // Route calls select() for different tables; distinguish by the field shape.
@@ -75,7 +75,7 @@ vi.mock('@/lib/db/client', () => ({
   },
 }));
 
-vi.mock('@/lib/db/schema', () => ({
+vi.mock('@/lib/kernel/db/schema', () => ({
   auditLogs: { id: 'id', createdAt: 'createdAt', action: 'action', actorId: 'actorId' },
   answerSignatures: { id: 'id', messageId: 'messageId', signerName: 'signerName' },
   citations: { id: 'id', sourceUrl: 'sourceUrl' },

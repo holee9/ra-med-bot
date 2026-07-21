@@ -23,7 +23,7 @@
 //      warn-and-continue. The retrieval-hook catches at its own boundary so
 //      retrieval still completes, but the error is a real health signal.
 
-import { writeAudit } from '@/lib/audit';
+import { writeAudit } from '@/lib/kernel/audit';
 import { buildAnswerVersionMetadata } from '@/lib/model-governance/audit-metadata';
 import { submitRlhfProposal } from '@/lib/model-governance/rlhf-gate';
 import { rollbackCombination } from '@/lib/model-governance/rollback';

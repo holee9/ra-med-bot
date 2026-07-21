@@ -2,8 +2,8 @@
 // @MX:SPEC SPEC-REGULA-RISK-001 (T2.6, REQ-RISK-021~027)
 
 import { createHybridRaFetch } from '@/lib/api/hybrid-ra-client';
-import { writeAudit } from '@/lib/audit';
-import { withPermission } from '@/lib/auth/with-permission';
+import { writeAudit } from '@/lib/kernel/audit';
+import { withPermission } from '@/lib/kernel/auth/with-permission';
 import { recommendControls } from '@/lib/risk/control-recommendation';
 
 export const POST = withPermission('risk.generate', async (req, _ctx, session) => {

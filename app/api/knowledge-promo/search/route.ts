@@ -5,7 +5,7 @@
 //           Org scope enforced via withPermission('knowledgepromo.view') +
 //           withTenantScope RLS GUC (#239). Cross-org rows never surface.
 
-import { withPermission } from '@/lib/auth/with-permission';
+import { withPermission } from '@/lib/kernel/auth/with-permission';
 import {
   type SearchMode,
   searchOrgConversations,

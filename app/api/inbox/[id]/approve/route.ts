@@ -5,11 +5,11 @@
 //            Atomic transaction: ticket closure + approved_answers creation + audit.
 //            Requires inbox.manage (ra-lead ONLY) — 21 CFR Part 11 regulatory signoff.
 
-import { writeAudit } from '@/lib/audit';
-import { withPermission } from '@/lib/auth/with-permission';
-import { db } from '@/lib/db/client';
-import { users } from '@/lib/db/schema';
 import { assertTicketInOrg, promoteToApproved } from '@/lib/domains/inbox';
+import { writeAudit } from '@/lib/kernel/audit';
+import { withPermission } from '@/lib/kernel/auth/with-permission';
+import { db } from '@/lib/kernel/db/client';
+import { users } from '@/lib/kernel/db/schema';
 import bcrypt from 'bcryptjs';
 import { eq } from 'drizzle-orm';
 import { z } from 'zod';

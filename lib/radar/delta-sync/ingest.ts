@@ -12,9 +12,9 @@
 // license is registered out-of-band. The production upload route (C-1) and Inngest
 // worker (C-2) are the primary gated paths. Gating this crawler is a follow-up.
 
-import { writeAudit } from '@/lib/audit';
-import { withTenantScope } from '@/lib/db/client';
-import { sourceSections } from '@/lib/db/schema';
+import { writeAudit } from '@/lib/kernel/audit';
+import { withTenantScope } from '@/lib/kernel/db/client';
+import { sourceSections } from '@/lib/kernel/db/schema';
 import { and, eq, isNull } from 'drizzle-orm';
 import type { Chunk } from '../../ingest/chunkers/base';
 import { chunk } from '../../ingest/chunkers/index';

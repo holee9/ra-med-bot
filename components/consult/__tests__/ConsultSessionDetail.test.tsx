@@ -5,7 +5,7 @@
 import '@testing-library/jest-dom';
 import { ConsultSessionDetail } from '@/components/consult/ConsultSessionDetail';
 import { TurnHistoryItem } from '@/components/consult/TurnHistoryItem';
-import type { Role } from '@/lib/auth/rbac';
+import type { Role } from '@/lib/kernel/auth/rbac';
 import type { ConsultSession, ConsultTurn } from '@/lib/queries/useConsult';
 import { render, screen } from '@testing-library/react';
 import { beforeEach, describe, expect, it, vi } from 'vitest';

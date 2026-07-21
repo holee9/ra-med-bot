@@ -16,7 +16,7 @@
 // LOGIC is verified against the real schema (L-013 — catches feedback_score
 // column/type drift a mock hides). Skipped when DATABASE_URL is unset.
 
-import { sourceSections, sources } from '@/lib/db/schema';
+import { sourceSections, sources } from '@/lib/kernel/db/schema';
 import { beforeAll, beforeEach, describe, expect, it, vi } from 'vitest';
 import { HAS_DATABASE_URL, seedCoreActors, truncateTables } from '../../tests/fixtures/database';
 
@@ -57,7 +57,7 @@ const ACTORS = {
 };
 
 async function getDb() {
-  const { db } = await import('@/lib/db/client');
+  const { db } = await import('@/lib/kernel/db/client');
   return db;
 }
 

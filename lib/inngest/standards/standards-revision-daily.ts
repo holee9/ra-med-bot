@@ -44,13 +44,13 @@ export const standardsRevisionDailyFn = inngest.createFunction(
   },
   async ({ step, logger }) => {
     // Lazy import — keeps the cron module import-light (L-003 pattern) and
-    // avoids eagerly loading lib/audit → lib/db/client → lib/env at module
+    // avoids eagerly loading lib/audit → lib/kernel/db/client → lib/env at module
     // registration time (env validation requires DATABASE_URL etc. which are
     // absent in the Inngest function-registration test environment).
     const { detectRevisions, resolveDetectionContext } = await import(
       '../../standards/revision-detector'
     );
-    const { writeAudit } = await import('@/lib/audit');
+    const { writeAudit } = await import('@/lib/kernel/audit');
 
     const detectionCtx = resolveDetectionContext();
     const detected = await step.run('detect-revisions', () => detectRevisions(detectionCtx));

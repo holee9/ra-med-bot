@@ -10,7 +10,7 @@ import {
   SubmissionSuccessMetaSchema,
   SurveillanceReportMetaSchema,
   docClassMetaSchemas,
-} from '../../../lib/schemas/documents';
+} from '../../../lib/kernel/schemas/documents';
 
 describe('IssuedCertificateMetaSchema', () => {
   it('validates valid data', () => {

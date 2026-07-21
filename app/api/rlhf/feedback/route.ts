@@ -22,11 +22,11 @@
 //   constraint (message_id, user_id, feedback_source) lets one explicit + one
 //   implicit row per (message, user) coexist without 409.
 
-import { writeAudit } from '@/lib/audit';
-import { withPermission } from '@/lib/auth/with-permission';
-import { db } from '@/lib/db/client';
-import { withTenantScope } from '@/lib/db/client';
-import { answerFeedback, messages } from '@/lib/db/schema';
+import { writeAudit } from '@/lib/kernel/audit';
+import { withPermission } from '@/lib/kernel/auth/with-permission';
+import { db } from '@/lib/kernel/db/client';
+import { withTenantScope } from '@/lib/kernel/db/client';
+import { answerFeedback, messages } from '@/lib/kernel/db/schema';
 import { redactQuestion } from '@/lib/knowledge-gap/redaction';
 import { logger } from '@/lib/observability/logger';
 import { assertMessageInOrg } from '@/lib/rlhf/access';

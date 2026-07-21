@@ -3,7 +3,7 @@
  * REQ-EXP-006: Export operations must be logged to audit trail
  */
 
-import { type AuditAction, writeAudit } from '../audit';
+import { type AuditAction, writeAudit } from '../kernel/audit';
 import { ExportFormat } from './types';
 
 /**

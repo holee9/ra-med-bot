@@ -14,7 +14,7 @@
 // and in CI identically. Thresholds are advisory floors, intentionally loose
 // to avoid CI-runner variance flakes.
 //
-// @MX:NOTE The hash logic is DUPLICATED from lib/audit/hash-chain.ts on purpose:
+// @MX:NOTE The hash logic is DUPLICATED from lib/kernel/audit/hash-chain.ts on purpose:
 // importing hash-chain pulls in db/schema (3500-line Drizzle module) which
 // dominates transform time. Duplicating ~15 lines of pure crypto logic keeps
 // this a true unit test with zero DB/env import. If hash-chain's canonical
@@ -23,7 +23,7 @@
 
 import { describe, expect, it } from 'vitest';
 
-// --- Duplicated pure logic (keep in lockstep with lib/audit/hash-chain.ts) ---
+// --- Duplicated pure logic (keep in lockstep with lib/kernel/audit/hash-chain.ts) ---
 const GENESIS_SENTINEL = '<genesis>';
 
 interface CanonicalAuditRow {

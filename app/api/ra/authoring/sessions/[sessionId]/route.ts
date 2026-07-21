@@ -2,7 +2,7 @@
 // @MX:SPEC issue #171
 
 import { HybridRaClientError, createHybridRaFetch } from '@/lib/api/hybrid-ra-client';
-import { withPermission } from '@/lib/auth/with-permission';
+import { withPermission } from '@/lib/kernel/auth/with-permission';
 
 export const GET = withPermission('authoring.view', async (_req, ctx) => {
   try {

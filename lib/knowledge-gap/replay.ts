@@ -24,9 +24,9 @@
 // no fresh PII is introduced by replay (detector redacted it at capture time).
 
 import { consult } from '@/lib/ai/consult';
-import { writeAudit } from '@/lib/audit';
-import { db } from '@/lib/db/client';
-import { unansweredQueue } from '@/lib/db/schema';
+import { writeAudit } from '@/lib/kernel/audit';
+import { db } from '@/lib/kernel/db/client';
+import { unansweredQueue } from '@/lib/kernel/db/schema';
 import { type VerifyEdgesResult, verifyAnswerEdges } from '@/lib/traceability/verify-edges';
 import type { SourceItem, StreamEvent } from '@/types/streaming';
 import { and, eq } from 'drizzle-orm';

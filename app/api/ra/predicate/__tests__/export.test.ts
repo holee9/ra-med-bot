@@ -82,7 +82,7 @@ function decodePdfStreams(pdf: Buffer): string {
 // it from the DB. A mutable holder lets each test set the returned department.
 let currentDepartment: 'RA' | 'Dev' | 'Exec' | 'External' | null = 'RA';
 
-vi.mock('@/lib/auth/with-permission', () => ({
+vi.mock('@/lib/kernel/auth/with-permission', () => ({
   withPermission: vi.fn(
     (
       _action: string,
@@ -101,7 +101,7 @@ vi.mock('@/lib/auth/with-permission', () => ({
 // call counter disambiguates, mirroring the comparison route test harness.
 let storedRow: Record<string, unknown> | null = null;
 
-vi.mock('@/lib/db/client', () => {
+vi.mock('@/lib/kernel/db/client', () => {
   const departmentChain = () => ({
     from: vi.fn().mockReturnThis(),
     where: vi.fn().mockReturnThis(),
@@ -140,7 +140,7 @@ interface AuditEventArg {
   meta_json: Record<string, unknown>;
 }
 const writeAuditMock = vi.fn<[AuditEventArg], Promise<void>>(async () => {});
-vi.mock('@/lib/audit', () => ({
+vi.mock('@/lib/kernel/audit', () => ({
   writeAudit: (arg: AuditEventArg) => writeAuditMock(arg),
 }));
 
@@ -187,7 +187,7 @@ function storedWorkflowRun(over: Record<string, unknown> = {}): Record<string, u
   };
 }
 
-const dbModule = (await import('@/lib/db/client')) as unknown as {
+const dbModule = (await import('@/lib/kernel/db/client')) as unknown as {
   __resetSelect: () => void;
 };
 const { POST } = await import('@/app/api/ra/predicate/export/route');

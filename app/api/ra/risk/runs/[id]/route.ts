@@ -1,7 +1,7 @@
 // @MX:NOTE [AUTO] GET /api/ra/risk/runs/[id] — aggregate: items + controls + mappings.
 // @MX:SPEC SPEC-REGULA-RISK-001 (T2.2, REQ-RISK-029)
 
-import { withPermission } from '@/lib/auth/with-permission';
+import { withPermission } from '@/lib/kernel/auth/with-permission';
 
 export const GET = withPermission('risk.view', async (_req, ctx) => {
   const params = await ctx.params;

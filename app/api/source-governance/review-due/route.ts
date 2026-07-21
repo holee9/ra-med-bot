@@ -4,7 +4,7 @@
 // RBAC: sourcegov.view (ra-member+). Returns sources whose review_cycle has
 // elapsed or will within 30 days. Optional ?days=N query overrides the window.
 
-import { withPermission } from '@/lib/auth/with-permission';
+import { withPermission } from '@/lib/kernel/auth/with-permission';
 import { getReviewDueSources } from '@/lib/source-governance/review-notifier';
 
 export const GET = withPermission('sourcegov.view', async (req, _ctx, session) => {

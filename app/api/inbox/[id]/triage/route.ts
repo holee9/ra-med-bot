@@ -4,12 +4,12 @@
 //            REQ-V3-INBOX-021: audit trail for every transition.
 //            Requires inbox.manage (ra-lead ONLY) — regulatory decision.
 
-import { writeAudit } from '@/lib/audit';
-import { withPermission } from '@/lib/auth/with-permission';
-import { db } from '@/lib/db/client';
-import { inboxTickets } from '@/lib/db/schema';
 import { assertTicketInOrg, assertValidTransition, auditTransition } from '@/lib/domains/inbox';
 import { TRIAGE_STATES, type TriageState } from '@/lib/domains/inbox/types';
+import { writeAudit } from '@/lib/kernel/audit';
+import { withPermission } from '@/lib/kernel/auth/with-permission';
+import { db } from '@/lib/kernel/db/client';
+import { inboxTickets } from '@/lib/kernel/db/schema';
 import { and, eq } from 'drizzle-orm';
 import { z } from 'zod';
 

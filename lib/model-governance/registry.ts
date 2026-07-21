@@ -4,8 +4,8 @@
 //           UPDATE an existing row — new content always becomes a new version.
 
 import { createHash } from 'node:crypto';
-import { db } from '@/lib/db/client';
-import { promptRegistry } from '@/lib/db/schema';
+import { db } from '@/lib/kernel/db/client';
+import { promptRegistry } from '@/lib/kernel/db/schema';
 import { and, desc, eq } from 'drizzle-orm';
 import type { RegisteredPrompt } from './types';
 

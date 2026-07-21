@@ -7,7 +7,7 @@
 //   permission_deny; evidence rows themselves are the record.
 
 import { spawn } from 'node:child_process';
-import { withPermission } from '@/lib/auth/with-permission';
+import { withPermission } from '@/lib/kernel/auth/with-permission';
 import { z } from 'zod';
 
 const iqRequestSchema = z.object({

@@ -30,7 +30,7 @@ export async function snapshotTraceability(params: {
   orgId: string;
   projectId?: string;
 }): Promise<MatrixSummary> {
-  const { db } = await import('@/lib/db/client');
+  const { db } = await import('@/lib/kernel/db/client');
 
   // Collect stale node IDs (required dependency for buildMatrix).
   const staleNodeIds = await listStaleNodeIds(db, params.orgId);

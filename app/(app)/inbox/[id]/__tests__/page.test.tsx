@@ -7,8 +7,8 @@ vi.mock('next-intl', () => ({
   useTranslations: () => (key: string) => key,
 }));
 
-vi.mock('@/lib/auth', () => ({ auth: vi.fn() }));
-vi.mock('@/lib/auth/rbac', () => ({ hasRole: vi.fn(() => true) }));
+vi.mock('@/lib/kernel/auth', () => ({ auth: vi.fn() }));
+vi.mock('@/lib/kernel/auth/rbac', () => ({ hasRole: vi.fn(() => true) }));
 
 // Next.js redirect throws in server components; mimic that semantics.
 vi.mock('next/navigation', () => ({
@@ -30,7 +30,7 @@ describe('Inbox Detail Page (T-020/T-021)', () => {
   });
 
   it('renders InboxDetailClient for viewer role (own-ticket, REQ-V3-UI-034)', async () => {
-    const { auth } = await import('@/lib/auth');
+    const { auth } = await import('@/lib/kernel/auth');
     const { redirect: mockRedirect } = await import('next/navigation');
 
     vi.mocked(auth).mockResolvedValue({ user: { role: 'viewer' } } as unknown as never);
@@ -46,8 +46,8 @@ describe('Inbox Detail Page (T-020/T-021)', () => {
   });
 
   it('renders InboxDetailClient for ra-member role', async () => {
-    const { auth } = await import('@/lib/auth');
-    const { hasRole } = await import('@/lib/auth/rbac');
+    const { auth } = await import('@/lib/kernel/auth');
+    const { hasRole } = await import('@/lib/kernel/auth/rbac');
 
     vi.mocked(auth).mockResolvedValue({ user: { role: 'ra-member' } } as unknown as never);
     vi.mocked(hasRole).mockReturnValue(true);

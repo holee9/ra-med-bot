@@ -1,4 +1,4 @@
-import { withWorkflowReview } from '@/lib/auth/with-workflow-review';
+import { withWorkflowReview } from '@/lib/kernel/auth/with-workflow-review';
 import { describe, expect, it } from 'vitest';
 
 describe('withWorkflowReview', () => {

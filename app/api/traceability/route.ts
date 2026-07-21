@@ -4,9 +4,9 @@
 // Local evidence-graph namespace — STRICTLY separate from Issue #169's
 // /api/ra/traceability/* BFF proxy (which delegates to hybrid-ra-saas).
 
-import { writeAudit } from '@/lib/audit';
-import { withPermission } from '@/lib/auth/with-permission';
-import { withTenantScope } from '@/lib/db/client';
+import { writeAudit } from '@/lib/kernel/audit';
+import { withPermission } from '@/lib/kernel/auth/with-permission';
+import { withTenantScope } from '@/lib/kernel/db/client';
 import { buildMatrix } from '@/lib/traceability/matrix';
 import { listStaleNodeIds } from '@/lib/traceability/stale-propagation';
 import { z } from 'zod';

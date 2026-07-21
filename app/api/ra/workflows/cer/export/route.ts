@@ -1,10 +1,10 @@
-import { withPermission } from '@/lib/auth/with-permission';
-import type { AuthSession } from '@/lib/auth/with-permission';
 import { auditCerExported } from '@/lib/cer/audit';
 import { assembleCer } from '@/lib/cer/cer-assembler';
 import { exportToDOCX } from '@/lib/cer/exporters/docx';
 import { exportToPDF } from '@/lib/cer/exporters/pdf';
 import type { CerStageId } from '@/lib/cer/meddev-stages';
+import { withPermission } from '@/lib/kernel/auth/with-permission';
+import type { AuthSession } from '@/lib/kernel/auth/with-permission';
 import { CerExportSchema } from '@/lib/workflows/types';
 
 const DOCX_MIME = 'application/vnd.openxmlformats-officedocument.wordprocessingml.document';

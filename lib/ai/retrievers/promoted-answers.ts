@@ -15,7 +15,7 @@ import { sql } from 'drizzle-orm';
 // @MX:REASON Top-level value import triggers lib/env.ts parseEnv at module
 //           load, breaking unit tests that import merge.ts registry without
 //           DB env vars (see tests/unit/ai/merge.test.ts). `db` is type-only.
-import type { db } from '../../db/client';
+import type { db } from '../../kernel/db/client';
 // SPEC-REGULA-KNOWLEDGE-PROMO-001 (L-4): reuse the canonical vector-literal
 // builder instead of inlining `[${embedding.join(',')}]` so the format lives
 // in one place (lib/knowledge-promo/embedding.ts toVectorLiteral).
@@ -94,7 +94,7 @@ export class PromotedAnswersRetriever implements IRetriever {
     };
 
     // Lazy import: avoids top-level lib/env.ts parseEnv at registry import time.
-    const { withTenantScope } = await import('../../db/client');
+    const { withTenantScope } = await import('../../kernel/db/client');
     const rows = (await withTenantScope(orgId, (dbs) => runQuery(dbs))) as unknown as PromotedRow[];
 
     return rows.map((r) => {

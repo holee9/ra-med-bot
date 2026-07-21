@@ -12,9 +12,9 @@
 // = session.user.organizationId. A caller only ever sees their own org's
 // heatmap.
 
-import { withPermission } from '@/lib/auth/with-permission';
-import { withTenantScope } from '@/lib/db/client';
-import { answerFeedback, conversations, messages, projects } from '@/lib/db/schema';
+import { withPermission } from '@/lib/kernel/auth/with-permission';
+import { withTenantScope } from '@/lib/kernel/db/client';
+import { answerFeedback, conversations, messages, projects } from '@/lib/kernel/db/schema';
 import { computeMessageScore } from '@/lib/rlhf/feedback-aggregator';
 import { desc, eq } from 'drizzle-orm';
 

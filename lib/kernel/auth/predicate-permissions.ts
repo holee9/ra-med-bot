@@ -5,7 +5,7 @@
 //   here silently changes the access policy across the whole feature.
 // @MX:SPEC SPEC-REGULA-PREDICATE-001
 
-// Department values mirror lib/auth/department.ts (PascalCase as stored in DB).
+// Department values mirror lib/kernel/auth/department.ts (PascalCase as stored in DB).
 // Helpers accept the raw `string | null` returned by the user lookup so callers
 // need not narrow the type before checking; any unknown value (or null) denies.
 

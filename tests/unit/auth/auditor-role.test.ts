@@ -5,8 +5,8 @@ import {
   PERMISSIONS,
   type PermissionAction,
   roleSatisfiesPermission,
-} from '@/lib/auth/permissions';
-import { ROLE_HIERARCHY, type Role, hasRole } from '@/lib/auth/rbac';
+} from '@/lib/kernel/auth/permissions';
+import { ROLE_HIERARCHY, type Role, hasRole } from '@/lib/kernel/auth/rbac';
 import { describe, expect, it } from 'vitest';
 
 describe('SPEC-REGULA-AUDITOR-VIEW-001 — auditor role', () => {

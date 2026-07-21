@@ -11,6 +11,16 @@
 
 > Placeholder for post-1.0.0 development.
 
+### SPEC-V3-RESTRUCTURE-001 — v3 구조 정리 Phase B: lib/kernel/ 추출 + schema.ts 분할 (kernel-only 재스코프, v1.1.0)
+
+- **Phase B kernel 추출 완료** — lib/kernel/에 공유 인프라(db/auth/audit)를 lib/에서 분리하여 6모듈(auth, audit, storage, ratelimit, utils, validation) + 2 barrel 파일(client.ts, schema.ts) 이동. 단일 schema.ts(3,531줄, 94 pgTable)를 3개 파일로 분할(schema-kernel.ts for users/sessions/verificationTokens, schema.ts for remaining 86 tables, schema-docingest.ts for 6 docingest tables). drizzle.config.ts에 array 형태 glob 배선.
+- **FK 274 보존** — project-root migrations/ 기준 274 FK references, 125 migration files 불변 (baseline 5450 회귀). drizzle-kit check 통과.
+- **순환 의존성 제거** — kernel↔domain 순환 0건 (grep:0). kernel 순환의존 0 (AC-03).
+- **@deprecated 7/8 도메인** — schema.ts 아카이브 8도메인 중 7개에 @deprecated 주석 추가. workflows는 workflowRuns 공유 테이블 참조로 의도적 제외 (AC-07 PASS-WITH-DEBT).
+- **codemod 0 잔존** — 289 파일 codemod 후 잔존 0 (static/dynamic/relative/barrel, AC-09 PASS).
+- **REQ-V3R-012 정정** — kernel/index.ts 실제 re-export surface 확인(db, auth, writeAudit, withPermission, createKVRateLimiter, R2Client). SPEC body의 5개 부재 심볼명(getSession/requireRole/verifyHashChain/rateLimit/uploadAsset)은 제거 (Amendment 2026-07-21).
+- **게이트 직검** — typecheck exit 0, lint exit 0 (14 pre-existing warnings), test 5450 passed/68 skipped/0 failed. TRUST 5 준수.
+
 ### SPEC-REGULA-RLS-SOURCES-001 — sources/source_sections RLS 활성화, org-isolation defense-in-depth (#317)
 
 - **배경** — #239 (SPEC-REGULA-RLS-ENFORCE-001, project-wide RLS WITH CHECK + GUC)에서 sources/source_sections(RAG corpus)가 누락. GUC `app.current_org_id`가 inert 상태 → query-layer org filter 누락 시 cross-org 노출 위험. expert-security M-2 (#313/#314).

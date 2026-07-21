@@ -25,9 +25,9 @@ type AuditInput = {
 const writeAudit = vi.fn(async () => {});
 const runTriage = vi.fn();
 
-vi.mock('@/lib/audit', () => ({ writeAudit }));
+vi.mock('@/lib/kernel/audit', () => ({ writeAudit }));
 
-vi.mock('@/lib/auth/with-permission', () => ({
+vi.mock('@/lib/kernel/auth/with-permission', () => ({
   withPermission: vi.fn(
     (
       _action: string,
@@ -45,7 +45,7 @@ vi.mock('@/lib/auth/with-permission', () => ({
 }));
 
 // db mock supports both tx1 (insert) and tx2 (update.where) chains.
-vi.mock('@/lib/db/client', () => ({
+vi.mock('@/lib/kernel/db/client', () => ({
   db: {
     transaction: vi.fn((fn: (tx: unknown) => Promise<unknown>) =>
       fn({

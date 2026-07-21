@@ -14,8 +14,8 @@
 // IDOR: the run lookup is org-scoped (row.organizationId === session.user.organizationId).
 // A run from another org returns 404 (not 403 — prevents existence disclosure).
 
-import { db } from '@/lib/db/client';
-import { workflowRuns } from '@/lib/db/schema';
+import { db } from '@/lib/kernel/db/client';
+import { workflowRuns } from '@/lib/kernel/db/schema';
 import { logger } from '@/lib/observability/logger';
 import { and, eq } from 'drizzle-orm';
 import {

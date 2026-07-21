@@ -6,7 +6,7 @@
 //   getSourceInOrg (null → 404). Audit source.governance_updated inside the same
 //   transaction as the UPDATE (21 CFR Part 11 atomicity — H2).
 
-import { withPermission } from '@/lib/auth/with-permission';
+import { withPermission } from '@/lib/kernel/auth/with-permission';
 import { updateGovernanceFields } from '@/lib/source-governance/review-workflow';
 import { updateGovernanceRequestSchema } from '@/lib/source-governance/types';
 

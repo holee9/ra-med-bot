@@ -17,7 +17,7 @@ const mocks = vi.hoisted(() => ({
   writeAudit: vi.fn(),
 }));
 
-vi.mock('@/lib/db/client', () => {
+vi.mock('@/lib/kernel/db/client', () => {
   // biome-ignore lint/suspicious/noExplicitAny: transaction callback references the mock; `any` breaks the self-referential type cycle (cf. knowledge-sources.test.ts).
   const db: any = {
     insert: vi.fn(() => ({
@@ -50,7 +50,7 @@ vi.mock('@/lib/db/client', () => {
   return { db };
 });
 
-vi.mock('@/lib/audit', () => ({
+vi.mock('@/lib/kernel/audit', () => ({
   writeAudit: mocks.writeAudit,
 }));
 

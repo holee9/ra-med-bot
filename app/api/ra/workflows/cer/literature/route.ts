@@ -4,7 +4,6 @@
 
 export const runtime = 'nodejs';
 
-import { withPermission } from '@/lib/auth/with-permission';
 import { auditCerLiteratureSearch } from '@/lib/cer/audit';
 import { formatVancouver } from '@/lib/cer/citation-formatter';
 import { synthesizeEvidence } from '@/lib/cer/evidence-synthesis';
@@ -12,8 +11,13 @@ import { appraiseEvidence } from '@/lib/cer/literature-appraisal';
 import { generatePicoQuery } from '@/lib/cer/pico-generator';
 import { searchPubMed } from '@/lib/cer/pubmed-client';
 import { screenArticles } from '@/lib/cer/screening-pipeline';
-import { db } from '@/lib/db/client';
-import { evidenceSyntheses, literatureReferences, literatureSearches } from '@/lib/db/schema';
+import { withPermission } from '@/lib/kernel/auth/with-permission';
+import { db } from '@/lib/kernel/db/client';
+import {
+  evidenceSyntheses,
+  literatureReferences,
+  literatureSearches,
+} from '@/lib/kernel/db/schema';
 import { z } from 'zod';
 
 const SSE_HEADERS = {

@@ -7,11 +7,11 @@
 // @MX:SPEC SPEC-V3-CONSULT-001 (REQ-CONS-004, REQ-CONS-005, REQ-CONS-008, AC-CONS-03..07, Issue 341)
 
 import { createHash } from 'node:crypto';
-import { writeAudit } from '@/lib/audit';
-import { withPermission } from '@/lib/auth/with-permission';
-import { db } from '@/lib/db/client';
-import { consultSessions, consultTurns } from '@/lib/db/schema';
 import { runConsult } from '@/lib/domains/consult';
+import { writeAudit } from '@/lib/kernel/audit';
+import { withPermission } from '@/lib/kernel/auth/with-permission';
+import { db } from '@/lib/kernel/db/client';
+import { consultSessions, consultTurns } from '@/lib/kernel/db/schema';
 import { and, eq, isNull, max } from 'drizzle-orm';
 import { z } from 'zod';
 

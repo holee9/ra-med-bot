@@ -7,7 +7,7 @@
 //   denial audit is written by withPermission on permission_deny.
 
 import { spawn } from 'node:child_process';
-import { withPermission } from '@/lib/auth/with-permission';
+import { withPermission } from '@/lib/kernel/auth/with-permission';
 import { z } from 'zod';
 
 const exportRequestSchema = z.object({

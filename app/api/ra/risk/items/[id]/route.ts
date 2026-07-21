@@ -1,8 +1,8 @@
 // @MX:NOTE [AUTO] PATCH/DELETE /api/ra/risk/items/[id] — edit or delete hazard item.
 // @MX:SPEC SPEC-REGULA-RISK-001 (T2.4, REQ-RISK-011~015)
 
-import { writeAudit } from '@/lib/audit';
-import { withPermission } from '@/lib/auth/with-permission';
+import { writeAudit } from '@/lib/kernel/audit';
+import { withPermission } from '@/lib/kernel/auth/with-permission';
 
 async function handlePatch(
   req: Request,

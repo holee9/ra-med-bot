@@ -75,7 +75,7 @@ function makeDbChain(returningValue: unknown[] = [{ id: 'conv-new' }]): DbChain 
 }
 
 // The factory creates a single shared chain instance internally (hoisting-safe).
-vi.mock('@/lib/db/client', async () => {
+vi.mock('@/lib/kernel/db/client', async () => {
   const chain = makeDbChain();
   return {
     db: chain,
@@ -85,13 +85,13 @@ vi.mock('@/lib/db/client', async () => {
   };
 });
 
-vi.mock('@/lib/db/schema', () => ({
+vi.mock('@/lib/kernel/db/schema', () => ({
   conversations: { id: 'conversations.id' },
   messages: { id: 'messages.id' },
   messageBlocks: { messageId: 'messageBlocks.messageId' },
 }));
 
-vi.mock('@/lib/audit', () => ({
+vi.mock('@/lib/kernel/audit', () => ({
   writeAudit: vi.fn().mockResolvedValue(undefined),
 }));
 
@@ -249,8 +249,8 @@ import { composePrompt } from '../../../lib/ai/prompt-templates';
 import { rewriteQuery } from '../../../lib/ai/query-rewrite';
 import { classifyAndRoute } from '../../../lib/ai/router';
 import { generateStructuredBlocks } from '../../../lib/ai/structured-blocks';
-import { writeAudit } from '../../../lib/audit';
-import { db } from '../../../lib/db/client';
+import { writeAudit } from '../../../lib/kernel/audit';
+import { db } from '../../../lib/kernel/db/client';
 import { captureKnowledgeGap, detectKnowledgeGap } from '../../../lib/knowledge-gap/detector';
 
 // ---------------------------------------------------------------------------

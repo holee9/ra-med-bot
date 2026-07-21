@@ -3,8 +3,8 @@
 // generates the payload, and dispatches email via the digest sender.
 
 import { and, eq, ne } from 'drizzle-orm';
-import { orgDigestPreferences } from '../../db/schema';
 import type { DigestPayload } from '../../digest/digest-generator';
+import { orgDigestPreferences } from '../../kernel/db/schema';
 import { INNGEST_EVENTS, inngest } from '../client';
 
 type DigestWeeklyTriggerData = { orgId?: string; weekId?: string };
@@ -76,7 +76,7 @@ export const weeklyDigestFn = inngest.createFunction(
   async ({ event, step, logger }) => {
     const { generateWeeklyDigest } = await import('../../digest/digest-generator');
     const { sendDigestEmail } = await import('../../digest/email-sender');
-    const { db } = await import('../../db/client');
+    const { db } = await import('../../kernel/db/client');
 
     // Cron trigger passes no data; manual event may pass { orgId?, weekId? }.
     const data = (event.data ?? {}) as DigestWeeklyTriggerData;

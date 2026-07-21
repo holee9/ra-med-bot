@@ -1,4 +1,4 @@
-// Tests for lib/auth/kv-session-store.ts
+// Tests for lib/kernel/auth/kv-session-store.ts
 // RED: test KV session adapter methods
 
 import { beforeEach, describe, expect, it, vi } from 'vitest';
@@ -29,11 +29,13 @@ interface AdapterSession {
 
 describe('getSessionAdapter', () => {
   let kv: KVNamespace;
-  let adapter: ReturnType<typeof import('../../../lib/auth/kv-session-store').getSessionAdapter>;
+  let adapter: ReturnType<
+    typeof import('../../../lib/kernel/auth/kv-session-store').getSessionAdapter
+  >;
 
   beforeEach(async () => {
     kv = makeKVMock();
-    const mod = await import('../../../lib/auth/kv-session-store');
+    const mod = await import('../../../lib/kernel/auth/kv-session-store');
     adapter = mod.getSessionAdapter(kv);
   });
 
@@ -116,7 +118,7 @@ describe('getSessionAdapter', () => {
 describe('KV key pattern', () => {
   it('should use "session:<token>" key pattern (REQ-CF-032)', async () => {
     const kv = makeKVMock();
-    const { getSessionAdapter } = await import('../../../lib/auth/kv-session-store');
+    const { getSessionAdapter } = await import('../../../lib/kernel/auth/kv-session-store');
     const adapter = getSessionAdapter(kv);
 
     await adapter.createSession?.({
@@ -133,7 +135,7 @@ describe('KV key pattern', () => {
 describe('TTL enforcement', () => {
   it('should set expirationTtl of 30 days for new sessions (REQ-CF-033)', async () => {
     const kv = makeKVMock();
-    const { getSessionAdapter } = await import('../../../lib/auth/kv-session-store');
+    const { getSessionAdapter } = await import('../../../lib/kernel/auth/kv-session-store');
     const adapter = getSessionAdapter(kv);
 
     await adapter.createSession?.({

@@ -14,9 +14,9 @@
 // Embeddings are generated from redacted text only — no PII reaches the embedding API.
 
 import { createHash } from 'node:crypto';
-import { db, withTenantScope } from '@/lib/db/client';
-import { unansweredQueue } from '@/lib/db/schema';
 import { embedChunks } from '@/lib/ingest/embed';
+import { db, withTenantScope } from '@/lib/kernel/db/client';
+import { unansweredQueue } from '@/lib/kernel/db/schema';
 import { and, eq } from 'drizzle-orm';
 
 /**

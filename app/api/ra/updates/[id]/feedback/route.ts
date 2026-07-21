@@ -3,10 +3,10 @@
 
 import { and, eq } from 'drizzle-orm';
 import { z } from 'zod';
-import { writeAudit } from '../../../../../../lib/audit';
-import { withPermission } from '../../../../../../lib/auth/with-permission';
-import { db } from '../../../../../../lib/db/client';
-import { orgUpdateRelevance } from '../../../../../../lib/db/schema';
+import { writeAudit } from '../../../../../../lib/kernel/audit';
+import { withPermission } from '../../../../../../lib/kernel/auth/with-permission';
+import { db } from '../../../../../../lib/kernel/db/client';
+import { orgUpdateRelevance } from '../../../../../../lib/kernel/db/schema';
 
 const FeedbackSchema = z.object({
   feedback: z.enum(['not_interested']),

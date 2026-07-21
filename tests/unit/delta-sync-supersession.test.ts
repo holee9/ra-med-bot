@@ -30,7 +30,7 @@ vi.mock('@/lib/traceability/hooks', () => ({
   onSourceSectionSuperseded: onSourceSectionSupersededMock,
 }));
 
-vi.mock('@/lib/audit', () => ({ writeAudit: writeAuditMock }));
+vi.mock('@/lib/kernel/audit', () => ({ writeAudit: writeAuditMock }));
 
 // Capture the tx callback so each test can invoke it with a controlled mock tx.
 let capturedTxCallback: ((tx: unknown) => Promise<unknown>) | null = null;
@@ -48,7 +48,7 @@ const mockTx = {
   }),
 };
 
-vi.mock('@/lib/db/client', () => ({
+vi.mock('@/lib/kernel/db/client', () => ({
   db: {},
   // withTenantScope sets the org GUC then calls fn(tx). In the test we skip the
   // GUC (no real connection) and just invoke the callback with the mock tx.
@@ -62,7 +62,7 @@ vi.mock('@/lib/db/client', () => ({
 
 // sourceSections schema symbol — only needs to be a stable object reference for
 // the eq()/isNull() builders; the mock tx.update ignores it.
-vi.mock('@/lib/db/schema', () => ({
+vi.mock('@/lib/kernel/db/schema', () => ({
   sourceSections: { id: 'id', superseded_by: 'superseded_by', updated_at: 'updated_at' },
 }));
 
@@ -164,7 +164,7 @@ describe('delta-sync supersession write path — E. applyOutdateOperations (AC-0
   });
 
   it('runs inside withTenantScope with the provided orgId (RLS scoping)', async () => {
-    const { withTenantScope } = await import('@/lib/db/client');
+    const { withTenantScope } = await import('@/lib/kernel/db/client');
     await applyOutdateOperations({
       orgId: 'org-eu',
       existingChunkIds: ['sec-eu'],

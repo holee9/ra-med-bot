@@ -4,12 +4,12 @@
  */
 
 import { beforeEach, describe, expect, it, vi } from 'vitest';
-import { writeAudit } from '../../audit';
+import { writeAudit } from '../../kernel/audit';
 import { logExport } from '../audit-logger';
 import { ExportFormat, ExportOptions } from '../types';
 
 // Mock writeAudit
-vi.mock('../../audit', () => ({
+vi.mock('../../kernel/audit', () => ({
   writeAudit: vi.fn(),
 }));
 

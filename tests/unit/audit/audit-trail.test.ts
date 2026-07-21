@@ -3,10 +3,10 @@
 
 import { describe, expect, it, vi } from 'vitest';
 
-import { getAuditTrail } from '../../../lib/db/queries/audit';
+import { getAuditTrail } from '../../../lib/kernel/db/queries/audit';
 
 // Mock the db module so tests do not require a real database.
-vi.mock('../../../lib/db/client', () => ({
+vi.mock('../../../lib/kernel/db/client', () => ({
   db: {},
 }));
 

@@ -7,8 +7,8 @@
 //   A dead-code definition without a call site is a SPEC violation.
 // @MX:SPEC SPEC-REGULA-SOURCE-GOVERNANCE-001 (REQ-SOURCE-GOV-009/010/015, AC-04/05)
 
-import { withTenantScope } from '@/lib/db/client';
-import { messageSources, sources, unansweredQueue } from '@/lib/db/schema';
+import { withTenantScope } from '@/lib/kernel/db/client';
+import { messageSources, sources, unansweredQueue } from '@/lib/kernel/db/schema';
 import { logger } from '@/lib/observability/logger';
 import { eq, inArray } from 'drizzle-orm';
 import { getSourceInOrg } from './access';
@@ -266,13 +266,13 @@ export async function assessSourceChangeImpact(params: {
 }): Promise<SourceChangeImpact> {
   try {
     const runRead = async <T>(
-      fn: (dbs: typeof import('@/lib/db/client')['db']) => Promise<T>,
+      fn: (dbs: typeof import('@/lib/kernel/db/client')['db']) => Promise<T>,
     ): Promise<T> => {
       if (params.orgId) {
-        const { withTenantScope } = await import('@/lib/db/client');
+        const { withTenantScope } = await import('@/lib/kernel/db/client');
         return withTenantScope(params.orgId, fn);
       }
-      const { db: fallbackDb } = await import('@/lib/db/client');
+      const { db: fallbackDb } = await import('@/lib/kernel/db/client');
       return fn(fallbackDb);
     };
 

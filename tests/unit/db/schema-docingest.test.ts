@@ -13,7 +13,7 @@ import {
   documentAccessPolicies,
   documentChunks,
   organizationDocuments,
-} from '@/lib/db/schema-docingest';
+} from '@/lib/kernel/db/schema-docingest';
 
 // ---------------------------------------------------------------------------
 // pgEnums (3)

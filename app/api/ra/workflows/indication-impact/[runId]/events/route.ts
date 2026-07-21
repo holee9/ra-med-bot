@@ -8,7 +8,7 @@
 //   → 404 Run not found (or belongs to another org — IDOR)
 //   → 409 Run is not in `queued` state
 
-import { withPermission } from '@/lib/auth/with-permission';
+import { withPermission } from '@/lib/kernel/auth/with-permission';
 import { buildEventsResponse } from '@/lib/workflows/_shared/events-route';
 import { wireIndicationImpactInput } from '@/lib/workflows/_shared/input-wiring';
 import { executeStep as executeIndicationImpactStep } from '@/lib/workflows/indication-impact/executor';

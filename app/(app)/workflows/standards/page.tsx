@@ -9,8 +9,8 @@
 //   results as "RA Lead review required" — no auto-submission affordance.
 //   Charter [지양-2]: every standard displayed carries catalog citation.
 
-import { auth } from '@/lib/auth';
-import { type Role, hasRole } from '@/lib/auth/rbac';
+import { auth } from '@/lib/kernel/auth';
+import { type Role, hasRole } from '@/lib/kernel/auth/rbac';
 import type { Metadata } from 'next';
 import { StandardsClient } from './_components/StandardsClient';
 

@@ -1,8 +1,8 @@
 import { RedactionBlockerWarning } from '@/components/admin/RedactionBlockerWarning';
 import { SensitivityPolicyStatus } from '@/components/admin/SensitivityPolicyStatus';
-import { auth } from '@/lib/auth';
 import type { DocClass } from '@/lib/ingest/doc-class';
 import { docClassLabels } from '@/lib/ingest/doc-class-labels';
+import { auth } from '@/lib/kernel/auth';
 import { ShieldCheck, Upload } from 'lucide-react';
 // @MX:NOTE [AUTO] Admin document list page — server component with client filtering.
 // @MX:SPEC SPEC-REGULA-DOCINGEST-001 (REQ-DOC-073)

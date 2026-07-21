@@ -15,15 +15,15 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 // ---------------------------------------------------------------------------
 
 const authMock = vi.fn();
-vi.mock('@/lib/auth', () => ({ auth: () => authMock() }));
+vi.mock('@/lib/kernel/auth', () => ({ auth: () => authMock() }));
 
-vi.mock('@/lib/auth/acl', () => ({
+vi.mock('@/lib/kernel/auth/acl', () => ({
   isOrgMember: vi.fn(async () => true),
   isProjectMember: vi.fn(async () => true),
 }));
 
 const writeAuditMock = vi.fn(async () => {});
-vi.mock('@/lib/audit', () => ({ writeAudit: writeAuditMock }));
+vi.mock('@/lib/kernel/audit', () => ({ writeAudit: writeAuditMock }));
 
 // C-1: upload route now requires a pre-registered licensed sourceId. Mock the
 // license gate to allow ingestion so the e2e suite exercises the post-gate
@@ -36,7 +36,7 @@ vi.mock('@/lib/corpus-license/license-gate', () => ({
 const insertedSources: unknown[] = [];
 const insertedSections: unknown[] = [];
 
-vi.mock('@/lib/db/client', () => {
+vi.mock('@/lib/kernel/db/client', () => {
   // Drizzle's `await db.insert(t).values(rows)` resolves directly, while
   // `db.insert(t).values(rows).returning(...)` resolves to the inserted rows.
   // We extend a Promise instance with a `returning` method so both shapes work

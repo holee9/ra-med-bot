@@ -2,9 +2,9 @@ import { and, eq } from 'drizzle-orm';
 // @MX:SPEC SPEC-REGULA-DIGEST-001
 // Public shareable digest view — no auth required (token-gated).
 import { notFound } from 'next/navigation';
-import { db } from '../../../../../lib/db/client';
-import { weeklyDigests } from '../../../../../lib/db/schema';
 import type { DigestPayload, DigestUpdate } from '../../../../../lib/digest/digest-generator';
+import { db } from '../../../../../lib/kernel/db/client';
+import { weeklyDigests } from '../../../../../lib/kernel/db/schema';
 
 interface PageProps {
   params: Promise<{ weekId: string }>;

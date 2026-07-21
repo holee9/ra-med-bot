@@ -1,7 +1,7 @@
 import { RedactionBlockerWarning } from '@/components/admin/RedactionBlockerWarning';
-import { auth } from '@/lib/auth';
 import type { DocClass } from '@/lib/ingest/doc-class';
 import { docClassLabels } from '@/lib/ingest/doc-class-labels';
+import { auth } from '@/lib/kernel/auth';
 // @MX:NOTE [AUTO] Admin document upload page — R2 presigned URL flow with DocClass selection.
 // @MX:SPEC SPEC-REGULA-DOCINGEST-001 (REQ-DOC-073)
 // @MX:SPEC Issue #158 (Group B4 - Admin Documents #151 redaction blocker warning on upload)
