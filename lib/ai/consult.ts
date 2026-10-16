@@ -590,6 +590,10 @@ export async function* consult(
   const forcedExpertReviewFromGate = postRerankViolation !== null;
   const effectiveRequiresExpertReview = requiresExpertReview || forcedExpertReviewFromGate;
 
+  // Hoisted so the post-persist enqueue (Stage 8.5) can reuse the exact reason
+  // the user saw in the expert_review_required event.
+  let expertReviewReason: string | null = null;
+
   if (effectiveRequiresExpertReview) {
     const reason =
       forcedExpertReviewFromGate && !requiresExpertReview
@@ -597,6 +601,7 @@ export async function* consult(
         : (lowAuthorityReason ??
           autoFlagResult.reason ??
           (citationCoverageBelow80 ? 'citation coverage < 80%' : 'unknown'));
+    expertReviewReason = reason;
 
     yield* emit({ type: 'expert_review_required', reason });
 
@@ -634,62 +639,8 @@ export async function* consult(
         }
       }
 
-      // REQ-ENTERPRISE-009: enqueue for reviewer assignment (idempotent)
-      await enqueueExpertReview({
-        conversationId,
-        messageId,
-        reason,
-        requestedBy: '00000000-0000-0000-0000-000000000001', // SYSTEM_USER_UUID
-      });
-
-      // REQ-ENTERPRISE-010: mark message as requiring expert review.
-      // 21 CFR Part 11 §11.10(e) — Issue #378: the mark UPDATE and the auto-flag
-      // audit ride the SAME transaction (withTenantScope is itself a tx; the
-      // no-org fallback opens its own db.transaction) so the flag can never be
-      // set without its audit row — and vice versa.
-      if (orgId) {
-        await withTenantScope(orgId, async (dbs) => {
-          await dbs
-            .update(messages)
-            .set({ expertReviewRequired: true })
-            .where(eq(messages.id, messageId));
-          await writeAudit(
-            {
-              actor_id: '00000000-0000-0000-0000-000000000001',
-              action: 'consult.expert_review_auto_flag',
-              resource_type: 'message',
-              resource_id: messageId,
-              conversation_id: conversationId,
-              meta_json: {
-                reason,
-                confidence_score: confidenceScore,
-              },
-            },
-            dbs,
-          );
-        });
-      } else {
-        await db.transaction(async (tx) => {
-          await tx
-            .update(messages)
-            .set({ expertReviewRequired: true })
-            .where(eq(messages.id, messageId));
-          await writeAudit(
-            {
-              actor_id: '00000000-0000-0000-0000-000000000001',
-              action: 'consult.expert_review_auto_flag',
-              resource_type: 'message',
-              resource_id: messageId,
-              conversation_id: conversationId,
-              meta_json: {
-                reason,
-                confidence_score: confidenceScore,
-              },
-            },
-            tx,
-          );
-        });
-      }
+      // REQ-ENTERPRISE-009/010 (enqueue + message mark) moved to Stage 8.5,
+      // after persistMessage — see the ordering note there.
     }
   }
 
@@ -725,7 +676,7 @@ export async function* consult(
       confidenceLevel,
       confidenceScore,
       durationMs: Date.now() - startTs,
-      expertReviewRequired: requiresExpertReview,
+      expertReviewRequired: effectiveRequiresExpertReview,
       tokensIn,
       tokensOut,
       model:
@@ -736,6 +687,72 @@ export async function* consult(
       violations,
       citedChunks,
     });
+  }
+
+  // ---- Stage 8.5: expert-review enqueue + message mark ----
+  // expert_reviews.message_id has an FK to messages.id and the mark UPDATE
+  // targets the same row, so both MUST run after persistMessage() has created
+  // the assistant message (same ordering contract as Stage 9 below). Running
+  // them in Stage 7 threw expert_reviews_message_id_messages_id_fk violations
+  // on every low-confidence consult, erroring the SSE stream with llm_failure
+  // and losing the message entirely.
+  if (expertReviewReason !== null && !signal?.aborted && !isReplay) {
+    // REQ-ENTERPRISE-009: enqueue for reviewer assignment (idempotent)
+    await enqueueExpertReview({
+      conversationId,
+      messageId,
+      reason: expertReviewReason,
+      requestedBy: '00000000-0000-0000-0000-000000000001', // SYSTEM_USER_UUID
+    });
+
+    // REQ-ENTERPRISE-010: mark message as requiring expert review.
+    // 21 CFR Part 11 §11.10(e) — Issue #378: the mark UPDATE and the auto-flag
+    // audit ride the SAME transaction (withTenantScope is itself a tx; the
+    // no-org fallback opens its own db.transaction) so the flag can never be
+    // set without its audit row — and vice versa.
+    if (orgId) {
+      await withTenantScope(orgId, async (dbs) => {
+        await dbs
+          .update(messages)
+          .set({ expertReviewRequired: true })
+          .where(eq(messages.id, messageId));
+        await writeAudit(
+          {
+            actor_id: '00000000-0000-0000-0000-000000000001',
+            action: 'consult.expert_review_auto_flag',
+            resource_type: 'message',
+            resource_id: messageId,
+            conversation_id: conversationId,
+            meta_json: {
+              reason: expertReviewReason,
+              confidence_score: confidenceScore,
+            },
+          },
+          dbs,
+        );
+      });
+    } else {
+      await db.transaction(async (tx) => {
+        await tx
+          .update(messages)
+          .set({ expertReviewRequired: true })
+          .where(eq(messages.id, messageId));
+        await writeAudit(
+          {
+            actor_id: '00000000-0000-0000-0000-000000000001',
+            action: 'consult.expert_review_auto_flag',
+            resource_type: 'message',
+            resource_id: messageId,
+            conversation_id: conversationId,
+            meta_json: {
+              reason: expertReviewReason,
+              confidence_score: confidenceScore,
+            },
+          },
+          tx,
+        );
+      });
+    }
   }
 
   // ---- Stage 9: Capture knowledge gap ----
