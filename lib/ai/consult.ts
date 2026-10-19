@@ -846,16 +846,27 @@ export async function ensureConversation(
 
 // Helpers
 
+// A sentence terminator only counts when followed by whitespace (or end of
+// text) AND not immediately preceded by a digit: a period inside a decimal
+// number ("820.30", "0.92") or an enumeration marker ("1. ", "2. ") is NOT a
+// terminator. Splitting on those inflated the denominator of citation
+// coverage with orphan fragments ("2.", "3.") that then registered as
+// uncited claims — the #538 miscalibration. Both counters MUST share this
+// split so coverage = cited / total stays on the same segmentation.
+function splitSentences(html: string): string[] {
+  return html
+    .split(/(?<![0-9][.?!。？！])(?<=[.?!。？！])\s+/)
+    .map((s) => s.trim())
+    .filter((s) => s.length > 0);
+}
+
 function countSentences(html: string): number {
-  const text = html.replace(/<[^>]+>/g, '');
-  const matches = text.match(/[.?!。？！]/g);
-  return matches ? matches.length : 0;
+  return splitSentences(html).length;
 }
 
 function countCitedSentences(html: string): number {
   // A sentence is "cited" if it contains <sup class="cite"> tag.
-  const segments = html.split(/[.?!。？！]/);
-  return segments.filter((seg) => /<sup[^>]+class="[^"]*cite[^"]*"/.test(seg)).length;
+  return splitSentences(html).filter((seg) => /<sup[^>]+class="[^"]*cite[^"]*"/.test(seg)).length;
 }
 
 function extractDataSourceIndices(html: string): Set<number> {

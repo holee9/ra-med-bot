@@ -58,6 +58,15 @@ describe('enforceCitations', () => {
     expect(violations.filter((v) => v.type === 'CLAIM_UNCITED')).toHaveLength(0);
   });
 
+  it('does not flag closing meta-summary starting with 이와 같이', () => {
+    // #538 calibration: gpt-oss closes grounded answers with a table-recap
+    // summary ("이와 같이 ... 위 표에 열거된 ...") that restates cited content
+    // without a new claim — whitelist it (REQ-CHAT-027 test-case requirement).
+    const prose = '이와 같이 위 표에 열거된 모든 문서를 체계적으로 관리해야 합니다.';
+    const { violations } = enforceCitations(prose, []);
+    expect(violations.filter((v) => v.type === 'CLAIM_UNCITED')).toHaveLength(0);
+  });
+
   it('does not flag English meta-sentence starting with The following', () => {
     const prose = 'The following is a summary.';
     const { violations } = enforceCitations(prose, []);
