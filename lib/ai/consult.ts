@@ -462,14 +462,23 @@ export async function* consult(
   const prose_done = true; // set after fullProse is assembled and sources emitted
   if (!prose_done) throw new OrderViolationError('structured');
 
+  // Blocks are buffered and persisted AFTER persistMessage (Stage 8):
+  // message_blocks.message_id FKs to messages.id, and the assistant message
+  // row only exists once persistMessage runs — inserting here (Stage 7)
+  // violated the FK on every consult and silently dropped ALL structured
+  // blocks from history. Same ordering contract as the Stage 8.5 expert
+  // review enqueue (#542 class). SSE emission stays immediate (UX unchanged).
+  const pendingBlocks: Array<{
+    blockType: 'checklist' | 'comparison' | 'timeline' | 'related';
+    blockJson: Record<string, unknown>;
+  }> = [];
+
   if (!signal?.aborted && !isReplay) {
     const topSourceMeta = citedChunks.slice(0, 3).map((c) => ({
       title: c.title,
       orgLabel: c.orgLabel,
       year: c.year,
     }));
-
-    let structuredOrderIndex = 1; // prose block is index 0 (written by persistMessage)
 
     try {
       for await (const blockEvent of generateStructuredBlocks(
@@ -494,25 +503,10 @@ export async function* consult(
         const blockType = blockTypeMap[blockEvent.type];
 
         if (blockType) {
-          // Persist block before SSE emit (REQ-STRUCT-034, REQ-STRUCT-035)
-          try {
-            const insertBlock = (client: typeof db) =>
-              client.insert(messageBlocks).values({
-                messageId,
-                blockType,
-                blockJson: blockEvent as unknown as Record<string, unknown>,
-                orderIndex: structuredOrderIndex,
-              });
-            if (orgId) {
-              await withTenantScope(orgId, (dbs) => insertBlock(dbs));
-            } else {
-              await insertBlock(db);
-            }
-            structuredOrderIndex++;
-          } catch (insertErr) {
-            // REQ-STRUCT-035: log and continue — emit even if persist fails
-            logger.error(`[consult] messageBlocks INSERT failed for ${blockEvent.type}`, insertErr);
-          }
+          pendingBlocks.push({
+            blockType,
+            blockJson: blockEvent as unknown as Record<string, unknown>,
+          });
         }
 
         yield* emit(blockEvent);
@@ -687,6 +681,34 @@ export async function* consult(
       violations,
       citedChunks,
     });
+  }
+
+  // ---- Stage 8.4: Persist structured blocks ----
+  // Must run after persistMessage (message_blocks.message_id FK — see the
+  // buffering note above). REQ-STRUCT-035: persist failures are logged and
+  // skipped — the SSE stream already delivered the blocks, so the user-visible
+  // answer is unaffected; only history persistence is best-effort.
+  if (pendingBlocks.length > 0 && !signal?.aborted && !isReplay) {
+    for (let i = 0; i < pendingBlocks.length; i++) {
+      const b = pendingBlocks[i];
+      if (!b) continue;
+      try {
+        const insertBlock = (client: Pick<typeof db, 'insert'>) =>
+          client.insert(messageBlocks).values({
+            messageId,
+            blockType: b.blockType,
+            blockJson: b.blockJson,
+            orderIndex: i + 1,
+          });
+        if (orgId) {
+          await withTenantScope(orgId, (dbs) => insertBlock(dbs));
+        } else {
+          await insertBlock(db);
+        }
+      } catch (insertErr) {
+        logger.error(`[consult] messageBlocks INSERT failed for ${b.blockType}`, insertErr);
+      }
+    }
   }
 
   // ---- Stage 8.5: expert-review enqueue + message mark ----
