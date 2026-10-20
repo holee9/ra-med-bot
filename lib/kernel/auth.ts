@@ -17,6 +17,15 @@ import Credentials from 'next-auth/providers/credentials';
 import Google from 'next-auth/providers/google';
 import MicrosoftEntraID from 'next-auth/providers/microsoft-entra-id';
 import { getEnv } from '../env';
+
+// True only when BOTH credentials of a pair are present and neither is a
+// dev-placeholder marker — see the providers block below for why absent or
+// placeholder pairs mean the provider is not registered at all.
+function hasRealSsoCredentials(id: string | undefined, secret: string | undefined): boolean {
+  return (
+    !!id && !!secret && !id.startsWith('dev-placeholder-') && !secret.startsWith('dev-placeholder-')
+  );
+}
 import { writeAudit } from './audit';
 import { buildLoginAuditEvent, buildLogoutAuditEvent } from './auth/audit-callbacks';
 import { db, serviceDb } from './db/client';
@@ -64,14 +73,27 @@ export const { handlers, auth, signIn, signOut } = NextAuth(() => {
           return { id: user.id, email: user.email, name: user.name, image: user.image };
         },
       }),
-      MicrosoftEntraID({
-        clientId: env.AUTH_MICROSOFT_ID,
-        clientSecret: env.AUTH_MICROSOFT_SECRET,
-      }),
-      Google({
-        clientId: env.AUTH_GOOGLE_ID,
-        clientSecret: env.AUTH_GOOGLE_SECRET,
-      }),
+      // SSO providers register ONLY with real (non-placeholder) credential
+      // pairs — the login UI is email/password-only, so a missing or
+      // dev-placeholder pair simply means the provider is absent. Production
+      // can never call SSO APIs with placeholder credentials (REQ-QUAL-027
+      // intent, enforced by omission).
+      ...(hasRealSsoCredentials(env.AUTH_MICROSOFT_ID, env.AUTH_MICROSOFT_SECRET)
+        ? [
+            MicrosoftEntraID({
+              clientId: env.AUTH_MICROSOFT_ID,
+              clientSecret: env.AUTH_MICROSOFT_SECRET,
+            }),
+          ]
+        : []),
+      ...(hasRealSsoCredentials(env.AUTH_GOOGLE_ID, env.AUTH_GOOGLE_SECRET)
+        ? [
+            Google({
+              clientId: env.AUTH_GOOGLE_ID,
+              clientSecret: env.AUTH_GOOGLE_SECRET,
+            }),
+          ]
+        : []),
     ],
     pages: {
       signIn: '/login',

@@ -43,22 +43,17 @@ const envSchema = z.object({
 
   // SSO providers — both Microsoft and Google are required in Phase 1
   // because the login screen renders both buttons.
-  AUTH_MICROSOFT_ID: z
-    .string()
-    .min(1, 'AUTH_MICROSOFT_ID is required')
-    .refine(isDevPlaceholderForbidden, devPlaceholderMessage('AUTH_MICROSOFT_ID')),
-  AUTH_MICROSOFT_SECRET: z
-    .string()
-    .min(1, 'AUTH_MICROSOFT_SECRET is required')
-    .refine(isDevPlaceholderForbidden, devPlaceholderMessage('AUTH_MICROSOFT_SECRET')),
-  AUTH_GOOGLE_ID: z
-    .string()
-    .min(1, 'AUTH_GOOGLE_ID is required')
-    .refine(isDevPlaceholderForbidden, devPlaceholderMessage('AUTH_GOOGLE_ID')),
-  AUTH_GOOGLE_SECRET: z
-    .string()
-    .min(1, 'AUTH_GOOGLE_SECRET is required')
-    .refine(isDevPlaceholderForbidden, devPlaceholderMessage('AUTH_GOOGLE_SECRET')),
+  // SSO providers — OPTIONAL since the 2026-10-20 production deployment:
+  // the login screen renders email/password only (SSO buttons were removed
+  // long before), and .env.local ships dev-placeholder markers. A provider
+  // whose pair is missing OR placeholder is simply not registered in
+  // lib/kernel/auth.ts — production never calls SSO APIs with garbage
+  // credentials (the REQ-QUAL-027 intent, enforced by omission instead of
+  // by refusing to boot).
+  AUTH_MICROSOFT_ID: z.string().optional(),
+  AUTH_MICROSOFT_SECRET: z.string().optional(),
+  AUTH_GOOGLE_ID: z.string().optional(),
+  AUTH_GOOGLE_SECRET: z.string().optional(),
 
   // Phase C (#318): external LLM API keys fully removed — gx10 Ollama is the
   // sole chat + embedding backend (on-prem, keyless on the 192.168.100.x trust
