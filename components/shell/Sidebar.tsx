@@ -33,49 +33,11 @@ const CHAT_LABELS: Record<string, string> = { ko: '채팅', en: 'Chat' };
 
 interface SidebarProps {
   showExpertReview?: boolean;
-  // SPEC-REGULA-PREDICATE-001 (REQ-PRE-029): Predicate Search is visible only to
-  // RA/Dev/Exec departments. Gated server-side and passed down as a prop.
-  showPredicate?: boolean;
-  // SPEC-REGULA-KNOWLEDGE-GAP-001 (Issue #35): Knowledge Gap queue is visible to
-  // roles with knowledgegap.view (ra-member+). Gated server-side and passed down.
-  showKnowledgeGap?: boolean;
-  // SPEC-REGULA-CLASSIFY-001 (Issue #59): Device Classification wizard is visible
-  // to roles with classify.view (ra-member+). Gated server-side and passed down.
-  showClassify?: boolean;
-  // SPEC-REGULA-TRACEABILITY-001 (Issue #47): Traceability matrix is visible to
-  // roles with traceability.view (ra-member+). Gated server-side and passed down.
-  showTraceability?: boolean;
-  // SPEC-REGULA-STANDARDS-001 (Issue #62): Harmonized Standards Tracker is
-  // visible to roles with standards.read (viewer+). Gated server-side and
-  // passed down.
-  showStandards?: boolean;
-  // SPEC-REGULA-CHANGE-CONTROL-001 (Issue #54): Change Control is visible to
-  // roles with change.view (ra-member+). Gated server-side and passed down.
-  showChangeControl?: boolean;
-  // SPEC-REGULA-LABELING-001 (Issue #66): Labeling workbench is visible to
-  // roles with label.view (ra-member+). Gated server-side and passed down.
-  showLabeling?: boolean;
-  // SPEC-REGULA-CLINICAL-INVESTIGATION-001 (Issue #69): Clinical Investigation planner
-  // is visible to roles with clinical_investigation.view (ra-member+).
-  showClinicalInvestigation?: boolean;
   // SPEC-REGULA-SOURCE-GOVERNANCE-001 (Issue #48): Governance dashboard is visible
   // to roles with sourcegov.view (ra-member+). Gated server-side and passed down.
   showGovernance?: boolean;
-  // SPEC-REGULA-RLHF-001 (Issue #56): Quality heatmap nav gated to ra-member+
-  // (rlhf.feedback submitters). The page route uses audit.read, but ra-member+
-  // feedback submitters also see the nav so they can track answer quality.
-  showQualityHeatmap?: boolean;
-  // SPEC-REGULA-KNOWLEDGE-PROMO-001 (Issue #50): Team Knowledge (promoted
-  // answers library) nav gated to ra-member+ (knowledgepromo.view). Gated
-  // server-side and passed down.
-  showTeamKnowledge?: boolean;
-  // Scope rationalization (2026-06-29 Issue #306): Authoring/Evidence conditional nav.
-  showAuthoring?: boolean;
-  showEvidence?: boolean;
   // SPEC-V3-UI-001 (Issue 320): Inbox nav gated to ra-member+ (inbox.view).
   showInbox?: boolean;
-  // SPEC-V3-UI-001 M6: Consult nav gated to ra-member+ (consult.session.view).
-  showConsult?: boolean;
   // 2026-06-29 사이드바 3계층: NAV_ITEMS를 userRole로 필터 (viewer 4 / ra-member+ 조건부)
   userRole?: Role;
   // SPEC-V3-PERSONA-001 (REQ-V3-PER-002/H4): tier-aware NAV filtering. When set,
@@ -94,24 +56,14 @@ export default function Sidebar(props?: SidebarProps) {
   const hidePersonaScopedItems = props?.tier === 'employee';
 
   const showExpertReview = (props?.showExpertReview ?? false) && !hidePersonaScopedItems;
-  const showPredicate = (props?.showPredicate ?? false) && !hidePersonaScopedItems;
-  const showKnowledgeGap = (props?.showKnowledgeGap ?? false) && !hidePersonaScopedItems;
-  const showClassify = (props?.showClassify ?? false) && !hidePersonaScopedItems;
-  const showTraceability = (props?.showTraceability ?? false) && !hidePersonaScopedItems;
-  const showStandards = (props?.showStandards ?? false) && !hidePersonaScopedItems;
-  const showChangeControl = (props?.showChangeControl ?? false) && !hidePersonaScopedItems;
-  const showLabeling = (props?.showLabeling ?? false) && !hidePersonaScopedItems;
-  const showClinicalInvestigation =
-    (props?.showClinicalInvestigation ?? false) && !hidePersonaScopedItems;
   const showGovernance = (props?.showGovernance ?? false) && !hidePersonaScopedItems;
-  const showQualityHeatmap = (props?.showQualityHeatmap ?? false) && !hidePersonaScopedItems;
-  const showTeamKnowledge = (props?.showTeamKnowledge ?? false) && !hidePersonaScopedItems;
-  // Scope rationalization (2026-06-29 Issue #306): Authoring/Evidence conditional props.
+  // SPEC-V3-UI-001 (Issue 320): Inbox nav gated to ra-member+ (inbox.view).
   const showInbox = (props?.showInbox ?? false) && !hidePersonaScopedItems;
-  const showAuthoring = (props?.showAuthoring ?? false) && !hidePersonaScopedItems;
-  const showEvidence = (props?.showEvidence ?? false) && !hidePersonaScopedItems;
-  // SPEC-V3-UI-001 M6: Consult nav gated to ra-member+ (consult.session.view).
-  const showConsult = (props?.showConsult ?? false) && !hidePersonaScopedItems;
+  // 2026-10-20 scope purge: 13 drifted feature navs (predicate, knowledge-gap,
+  // classify, traceability, standards, change-control, labeling, clinical-
+  // investigation, quality heatmap, team knowledge, authoring, evidence,
+  // consult) deleted outright with their routes/components/tests. Restore from
+  // git history if the RA purpose validation ever demands one.
   // 2026-06-29: default 'viewer' (최소 권한 — 명시적 role 없으면 전사 직원 사이드바).
   const userRole: Role = props?.userRole ?? 'viewer';
   const currentProjectId = useUIStore((s) => s.currentProjectId);
@@ -216,110 +168,6 @@ export default function Sidebar(props?: SidebarProps) {
         )}
       </nav>
 
-      {/* SPEC-REGULA-KNOWLEDGE-GAP-001: Knowledge Gap queue link (Issue #35). */}
-      {showKnowledgeGap && (
-        <nav className="px-2 py-1">
-          <Link
-            href="/knowledge-gap"
-            data-testid="sidebar-knowledge-gap-link"
-            className="rounded-md px-3 py-2 text-sm text-ink-700 hover:bg-ink-50 block"
-          >
-            미답변 큐
-          </Link>
-        </nav>
-      )}
-
-      {/* SPEC-REGULA-CLASSIFY-001 (Issue #59): Device Classification wizard link. */}
-      {showClassify && (
-        <nav className="px-2 py-1">
-          <Link
-            href="/workflows/classification"
-            data-testid="sidebar-classify-link"
-            className="rounded-md px-3 py-2 text-sm text-ink-700 hover:bg-ink-50 block"
-          >
-            기기 분류
-          </Link>
-        </nav>
-      )}
-
-      {/* SPEC-REGULA-TRACEABILITY-001 (Issue #47): Traceability matrix conditional link. */}
-      {showTraceability && (
-        <nav className="px-2 py-1">
-          <Link
-            href="/traceability"
-            data-testid="sidebar-traceability-link"
-            className="rounded-md px-3 py-2 text-sm text-ink-700 hover:bg-ink-50 block"
-          >
-            추적 매트릭스
-          </Link>
-        </nav>
-      )}
-
-      {/* SPEC-REGULA-STANDARDS-001 (Issue #62): Harmonized Standards Tracker conditional link. */}
-      {showStandards && (
-        <nav className="px-2 py-1">
-          <Link
-            href="/workflows/standards"
-            data-testid="sidebar-standards-link"
-            className="rounded-md px-3 py-2 text-sm text-ink-700 hover:bg-ink-50 block"
-          >
-            조화 표준 추적기
-          </Link>
-        </nav>
-      )}
-
-      {/* SPEC-REGULA-CHANGE-CONTROL-001 (Issue #54): Change Control conditional link. */}
-      {showChangeControl && (
-        <nav className="px-2 py-1">
-          <Link
-            href="/change-control"
-            data-testid="sidebar-change-control-link"
-            className="rounded-md px-3 py-2 text-sm text-ink-700 hover:bg-ink-50 block"
-          >
-            변경 관리
-          </Link>
-        </nav>
-      )}
-
-      {/* SPEC-REGULA-LABELING-001 (Issue #66): Labeling workbench conditional link. */}
-      {showLabeling && (
-        <nav className="px-2 py-1">
-          <Link
-            href="/labeling"
-            data-testid="sidebar-labeling-link"
-            className="rounded-md px-3 py-2 text-sm text-ink-700 hover:bg-ink-50 block"
-          >
-            라벨링·IFU
-          </Link>
-        </nav>
-      )}
-
-      {/* SPEC-REGULA-CLINICAL-INVESTIGATION-001 (Issue #69): Clinical Investigation conditional link. */}
-      {showClinicalInvestigation && (
-        <nav className="px-2 py-1">
-          <Link
-            href="/clinical-investigation"
-            data-testid="sidebar-clinical-investigation-link"
-            className="rounded-md px-3 py-2 text-sm text-ink-700 hover:bg-ink-50 block"
-          >
-            임상조사
-          </Link>
-        </nav>
-      )}
-
-      {/* SPEC-REGULA-PREDICATE-001: Predicate Search conditional link (REQ-PRE-029) */}
-      {showPredicate && (
-        <nav className="px-2 py-1">
-          <Link
-            href="/predicate"
-            data-testid="sidebar-predicate-link"
-            className="rounded-md px-3 py-2 text-sm text-ink-700 hover:bg-ink-50 block"
-          >
-            Predicate 검색
-          </Link>
-        </nav>
-      )}
-
       {/* T-007: Expert Review conditional link (REQ-ENTERPRISE-029) */}
       {showExpertReview && (
         <nav className="px-2 py-1">
@@ -346,54 +194,16 @@ export default function Sidebar(props?: SidebarProps) {
         </nav>
       )}
 
-      {/* SPEC-REGULA-RLHF-001 (Issue #56): Quality heatmap conditional link. */}
-      {showQualityHeatmap && (
+      {/* 운영 콘솔 — t3610 서비스 상황판 (2026-10-20). Admin-only: reads the
+          sidecar-collected status snapshot, no privileges in the web process. */}
+      {hasRole(userRole, 'admin') && !hidePersonaScopedItems && (
         <nav className="px-2 py-1">
           <Link
-            href="/quality/heatmap"
-            data-testid="sidebar-quality-heatmap-link"
+            href="/ops"
+            data-testid="sidebar-ops-link"
             className="rounded-md px-3 py-2 text-sm text-ink-700 hover:bg-ink-50 block"
           >
-            품질 히트맵
-          </Link>
-        </nav>
-      )}
-
-      {/* SPEC-REGULA-KNOWLEDGE-PROMO-001 (Issue #50): Team Knowledge (promoted
-          answers library) conditional link. Visible to ra-member+ (knowledgepromo.view). */}
-      {showTeamKnowledge && (
-        <nav className="px-2 py-1">
-          <Link
-            href="/library?tab=team"
-            data-testid="sidebar-team-knowledge-link"
-            className="rounded-md px-3 py-2 text-sm text-ink-700 hover:bg-ink-50 block"
-          >
-            팀 지식
-          </Link>
-        </nav>
-      )}
-
-      {/* Scope rationalization (Issue-306): Authoring/Evidence conditional nav. */}
-      {showAuthoring && (
-        <nav className="px-2 py-1">
-          <Link
-            href="/workflows/authoring"
-            data-testid="sidebar-authoring-link"
-            className="rounded-md px-3 py-2 text-sm text-ink-700 hover:bg-ink-50 block"
-          >
-            인허가 문서 생성
-          </Link>
-        </nav>
-      )}
-
-      {showEvidence && (
-        <nav className="px-2 py-1">
-          <Link
-            href="/workflows/evidence"
-            data-testid="sidebar-evidence-link"
-            className="rounded-md px-3 py-2 text-sm text-ink-700 hover:bg-ink-50 block"
-          >
-            근거 관리
+            운영 콘솔
           </Link>
         </nav>
       )}
@@ -407,19 +217,6 @@ export default function Sidebar(props?: SidebarProps) {
             className="rounded-md px-3 py-2 text-sm text-ink-700 hover:bg-ink-50 block"
           >
             인박스
-          </Link>
-        </nav>
-      )}
-
-      {/* SPEC-V3-UI-001 M6 (REQ-V3-UI-050): Consult session history nav gated to ra-member+ (consult.session.view). */}
-      {showConsult && (
-        <nav className="px-2 py-1">
-          <Link
-            href="/consult"
-            data-testid="sidebar-consult-link"
-            className="rounded-md px-3 py-2 text-sm text-ink-700 hover:bg-ink-50 block"
-          >
-            상담 히스토리
           </Link>
         </nav>
       )}

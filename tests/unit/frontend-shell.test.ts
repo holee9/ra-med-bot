@@ -212,9 +212,7 @@ describe('app/(app) route coverage — Phase 4 navigation contract', () => {
       'app/(app)/updates/page.tsx',
       'app/(app)/dashboard/page.tsx',
       'app/(app)/settings/page.tsx',
-      // SPEC-REGULA-KNOWLEDGE-GAP-001 (Issue #35): conditional nav, but the page
-      // file must still exist for users with knowledgegap.view.
-      'app/(app)/knowledge-gap/page.tsx',
+      'app/(app)/ops/page.tsx',
     ];
 
     for (const page of requiredPages) {
@@ -294,19 +292,8 @@ describe('components/shell/Sidebar.tsx — REQ-FND-019', () => {
     expect(hrefs).toEqual(['/', '/chat', '/history', '/settings']);
   });
 
-  // Scope rationalization (2026-06-29 Issue #306): ra-member+에 Authoring/Evidence 조건부 노출
-  it('renders Authoring/Evidence links for ra-member', async () => {
-    const mod = await import('../../components/shell/Sidebar');
-    const Sidebar = mod.default as React.ComponentType<{
-      showAuthoring?: boolean;
-      showEvidence?: boolean;
-    }>;
-    const { container } = render(
-      React.createElement(Sidebar, { showAuthoring: true, showEvidence: true }),
-    );
-    expect(container.querySelector('[data-testid="sidebar-authoring-link"]')).not.toBeNull();
-    expect(container.querySelector('[data-testid="sidebar-evidence-link"]')).not.toBeNull();
-  });
+  // 2026-10-20 scope purge: Authoring/Evidence/nav-cluster assertions removed
+  // together with the 13 deleted feature routes (see Sidebar.tsx note).
 });
 
 describe('components/shell/Topbar.tsx — REQ-FND-020', () => {
@@ -317,47 +304,8 @@ describe('components/shell/Topbar.tsx — REQ-FND-020', () => {
   });
 });
 
-// SPEC-REGULA-KNOWLEDGE-GAP-001 (Issue #35): conditional Knowledge Gap nav link.
-// The main <nav> still has 10 links (asserted above); the Knowledge Gap entry is
-// rendered in a separate conditional <nav> block, gated by showKnowledgeGap.
-describe('components/shell/Sidebar.tsx — Knowledge Gap conditional nav (Issue #35)', () => {
-  it('renders 미답변 큐 link when showKnowledgeGap=true', async () => {
-    const mod = await import('../../components/shell/Sidebar');
-    const Sidebar = mod.default as React.ComponentType<{ showKnowledgeGap?: boolean }>;
-    const { container } = render(React.createElement(Sidebar, { showKnowledgeGap: true }));
-    const link = container.querySelector('[data-testid="sidebar-knowledge-gap-link"]');
-    expect(link).not.toBeNull();
-    expect(link?.getAttribute('href')).toBe('/knowledge-gap');
-    expect(link?.textContent).toContain('미답변 큐');
-  });
-
-  it('hides 미답변 큐 link when showKnowledgeGap is false/omitted', async () => {
-    const mod = await import('../../components/shell/Sidebar');
-    const { container } = render(React.createElement(mod.default));
-    expect(container.querySelector('[data-testid="sidebar-knowledge-gap-link"]')).toBeNull();
-  });
-});
-
-// SPEC-REGULA-CLASSIFY-001 (Issue #59): conditional Classify nav link.
-// The main <nav> still has 10 links (asserted above); the Classify entry is
-// rendered in a separate conditional <nav> block, gated by showClassify.
-describe('components/shell/Sidebar.tsx — Classify conditional nav (Issue #59)', () => {
-  it('renders 기기 분류 link when showClassify=true', async () => {
-    const mod = await import('../../components/shell/Sidebar');
-    const Sidebar = mod.default as React.ComponentType<{ showClassify?: boolean }>;
-    const { container } = render(React.createElement(Sidebar, { showClassify: true }));
-    const link = container.querySelector('[data-testid="sidebar-classify-link"]');
-    expect(link).not.toBeNull();
-    expect(link?.getAttribute('href')).toBe('/workflows/classification');
-    expect(link?.textContent).toContain('기기 분류');
-  });
-
-  it('hides 기기 분류 link when showClassify is false/omitted', async () => {
-    const mod = await import('../../components/shell/Sidebar');
-    const { container } = render(React.createElement(mod.default));
-    expect(container.querySelector('[data-testid="sidebar-classify-link"]')).toBeNull();
-  });
-});
+// 2026-10-20 scope purge: Knowledge Gap / Classify conditional-nav test blocks
+// removed together with their routes and Sidebar flags.
 
 // SPEC-REGULA-PHI-REMOVAL-001 (Issue #319): PMS/PMCF conditional nav tests
 // removed along with the Sidebar /pms link, showPms prop, and PMS_WORKBENCH

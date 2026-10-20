@@ -41,11 +41,14 @@ describe('Sidebar characterization (T-006)', () => {
     expect(screen.getByTestId('sidebar-expert-review-link')).toBeInTheDocument();
   });
 
-  it('respects showPredicate prop', () => {
-    const { rerender } = render(<Sidebar showPredicate={false} />, { wrapper: createWrapper() });
-    expect(screen.queryByTestId('sidebar-predicate-link')).not.toBeInTheDocument();
-    rerender(<Sidebar showPredicate={true} />);
-    expect(screen.getByTestId('sidebar-predicate-link')).toBeInTheDocument();
+  it('renders 운영 콘솔 link for admin role', () => {
+    render(<Sidebar userRole="admin" />, { wrapper: createWrapper() });
+    expect(screen.getByTestId('sidebar-ops-link')).toBeInTheDocument();
+  });
+
+  it('hides 운영 콘솔 link for non-admin roles', () => {
+    render(<Sidebar userRole="ra-member" />, { wrapper: createWrapper() });
+    expect(screen.queryByTestId('sidebar-ops-link')).not.toBeInTheDocument();
   });
 
   it('T-007 precondition: no Inbox link yet', () => {
