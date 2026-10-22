@@ -123,6 +123,24 @@ export function getEmbeddingModel(): EmbeddingModelInstance {
   return getAiSdkProvider().embedding(getEmbeddingModelId());
 }
 
+// Native-dimension provider (qwen3-embedding at 4096, NO MRL truncation).
+// The NAS Qdrant collection (nas_ra_docs, hermes-ra operated) is embedded at
+// qwen3's native 4096 dims, so a 1536-dim query vector cannot search it —
+// this variant emits full-dimension vectors for that retriever only.
+let aiSdkProviderNative: ReturnType<typeof createOpenAI> | null = null;
+
+export function getNativeEmbeddingModel(): EmbeddingModelInstance {
+  if (!aiSdkProviderNative) {
+    aiSdkProviderNative = createOpenAI({
+      baseURL: getEmbeddingBaseUrl(),
+      apiKey: getEmbeddingApiKey(),
+      name: 'gx10-ollama-native',
+      // Deliberately NO fetch middleware — no `dimensions` injection.
+    });
+  }
+  return aiSdkProviderNative.embedding(getEmbeddingModelId());
+}
+
 /**
  * Batch-embed an array of texts using the centralized model. Used by
  * lib/ingest/embed.ts (with its PII guard) and any path that needs raw

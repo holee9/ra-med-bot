@@ -9,6 +9,7 @@ import { EuMdrRetriever } from './retrievers/eu-mdr';
 import { FdaRetriever } from './retrievers/fda';
 import { InternalSopsRetriever } from './retrievers/internal-sops';
 import { MfdsRetriever } from './retrievers/mfds';
+import { NasDocsRetriever } from './retrievers/nas-docs';
 import { NmpaRetriever } from './retrievers/nmpa';
 import { PmdaRetriever } from './retrievers/pmda';
 // SPEC-REGULA-KNOWLEDGE-PROMO-001 (Issue #50, REQ-KNOWLEDGE-PROMO-009):
@@ -38,6 +39,8 @@ const RETRIEVER_REGISTRY: Record<string, () => IRetriever> = {
   nmpa: () => new NmpaRetriever(),
   pmda: () => new PmdaRetriever(),
   'internal-sops': () => new InternalSopsRetriever(),
+  // NAS 실무문서 (Qdrant nas_ra_docs, hermes-ra 운영) — 3세션 협의 연결 (2026-10-21)
+  'nas-docs': () => new NasDocsRetriever(),
   // SPEC-REGULA-KNOWLEDGE-PROMO-001 (Issue #50, REQ-KNOWLEDGE-PROMO-009/010):
   // promoted answers corpus — gets org_ prefix so corpusType resolves to 'org'.
   org_promoted: () => new PromotedAnswersRetriever(),
