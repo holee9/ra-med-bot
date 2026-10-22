@@ -19,6 +19,12 @@ import path from 'node:path';
 const OUT_PATH = path.join(process.cwd(), 'var', 'ops-status.json');
 const HOME = process.env.HOME ?? '/home/abyz-lab';
 const REPO_ROOT = path.join(HOME, 'work', 'workspace-github', 'holee9');
+// RA intake (3-session covenant 2026-10-20): producers drop JSON metric files.
+const INTAKE_DIR = '/opt/ra-intake';
+// Confidential regulatory ledger — LOCAL ONLY (security covenant v1.0 [내부]):
+// parsed in place, never copied into any repo. Schema: the 8-column table in
+// /opt/hermes-ra/confidential/license_ledger.md.
+const LEDGER_PATH = '/opt/hermes-ra/confidential/license_ledger.md';
 
 function sh(cmd: string, args: string[], timeoutMs = 8000): Promise<string> {
   return new Promise((resolve) => {
@@ -145,10 +151,122 @@ async function main() {
     repos: await collectRepos(),
     cron: await collectCron(),
     system: await collectSystem(),
+    // RA 성장 대시보드 (B안) + 보안 규약 v1.0 구속 장치 (① 주기 점검·노출)
+    intake: await collectIntake(),
+    ledger: await collectLedger(),
+    security: await collectSecurityScan(),
   };
   await fs.mkdir(path.dirname(OUT_PATH), { recursive: true });
   await fs.writeFile(OUT_PATH, `${JSON.stringify(snapshot, null, 2)}\n`, 'utf8');
   console.log(`[ops-collector] wrote ${OUT_PATH} at ${snapshot.generatedAt}`);
+}
+
+// RA intake files — {schemaVersion, producer, generatedAt, sections:[{kind}]}.
+// Malformed files are skipped (producers are independent pipelines).
+async function collectIntake(): Promise<
+  Array<{ producer: string; generatedAt?: string; sections: unknown[] }>
+> {
+  try {
+    const names = (await fs.readdir(INTAKE_DIR)).filter((n) => n.endsWith('.json'));
+    const out = [];
+    for (const name of names) {
+      try {
+        const j = JSON.parse(await fs.readFile(path.join(INTAKE_DIR, name), 'utf8')) as {
+          producer?: string;
+          generatedAt?: string;
+          sections?: unknown[];
+        };
+        if (j?.producer && Array.isArray(j.sections)) {
+          out.push({ producer: j.producer, generatedAt: j.generatedAt, sections: j.sections });
+        }
+      } catch {
+        // skip malformed producer file
+      }
+    }
+    return out;
+  } catch {
+    return [];
+  }
+}
+
+// Confidential ledger summary — expiry countdown only, parsed locally.
+// The snapshot is served admin-only; cert numbers stay out of the summary
+// (row count + expiry status only) to keep even the admin view minimally
+// privileged. [내부] 등급 — never leaves this machine via git.
+async function collectLedger(): Promise<{
+  connected: boolean;
+  rows: number;
+  expiringSoon: Array<{ model: string; market: string; expiresInDays: number }>;
+  expired: number;
+} | null> {
+  try {
+    const md = await fs.readFile(LEDGER_PATH, 'utf8');
+    const rows = md
+      .split('\n')
+      .filter((l) => l.startsWith('|'))
+      .slice(2) // header + separator
+      .map((l) =>
+        l
+          .split('|')
+          .slice(1, 9)
+          .map((c) => c.trim()),
+      );
+    const today = Date.now();
+    let expired = 0;
+    const expiringSoon: Array<{ model: string; market: string; expiresInDays: number }> = [];
+    for (const r of rows) {
+      const model = r[1] ?? '';
+      const market = r[2] ?? '';
+      const expiry = r[7] ?? '';
+      const m = /^(\d{4})-(\d{2})-(\d{2})$/.exec(expiry);
+      if (!m) continue;
+      const days = Math.round((new Date(`${m[1]}-${m[2]}-${m[3]}`).getTime() - today) / 86_400_000);
+      if (days < 0) expired++;
+      else if (days <= 90)
+        expiringSoon.push({ model: model.slice(0, 30), market, expiresInDays: days });
+    }
+    return { connected: true, rows: rows.length, expiringSoon, expired };
+  } catch {
+    return null;
+  }
+}
+
+// Security covenant v1.0 ① — periodic confidential-pattern scan of THIS repo's
+// git-tracked files. Surfaces findings in the ops console (admin-only).
+async function collectSecurityScan(): Promise<{
+  findings: number;
+  samples: string[];
+}> {
+  const tracked = await sh('git', ['-C', process.cwd(), 'ls-files']);
+  if (!tracked) return { findings: 0, samples: [] };
+  // Patterns: real 510(k)/cert numbers (K######), Korean 사업자번호, non-example emails.
+  const patterns: Array<[RegExp, string]> = [
+    [/\bK\d{6}\b/, 'K번호'],
+    [/\b\d{3}-\d{2}-\d{5}\b/, '사업자번호'],
+    [/[A-Za-z0-9._%+-]+@(?!example\.|test\.)[A-Za-z0-9.-]+\.[A-Za-z]{2,}/, '이메일'],
+  ];
+  const samples: string[] = [];
+  let findings = 0;
+  for (const f of tracked.split('\n').slice(0, 3000)) {
+    // Skip vendored/harness trees (tool docs carry public author emails — not
+    // [내부] data) and archive fixtures.
+    if (!f || f.startsWith('.') || f.includes('node_modules') || f.startsWith('archive/')) continue;
+    if (!/\.(md|ts|tsx|json|txt|csv|yml|yaml)$/.test(f)) continue;
+    let content: string;
+    try {
+      content = await fs.readFile(f, 'utf8');
+    } catch {
+      continue;
+    }
+    for (const [re, label] of patterns) {
+      if (re.test(content)) {
+        findings++;
+        if (samples.length < 5) samples.push(`${label}: ${f}`);
+        break;
+      }
+    }
+  }
+  return { findings, samples };
 }
 
 main().catch((err) => {

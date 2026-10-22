@@ -64,7 +64,7 @@ CREATE TABLE product_markets (
   product_id  TEXT REFERENCES products(id) ON DELETE CASCADE,
   market_code TEXT NOT NULL,                     -- 'us'|'eu'|'kr'|'cn'|'jp'
   status      TEXT NOT NULL CHECK (status IN ('approved','in-review','pending','planning','blocked')),
-  path        TEXT,                              -- '510(k) K242017 · Product Code MQB'
+  path        TEXT,                              -- '510(k) KXXXXXX · Product Code XXX' (실제 번호는 로컬 기밀 원장 참조 — 공개 repo 비식별화 2026-10-20)
   since_at    DATE,
   next_event  TEXT,
   PRIMARY KEY (product_id, market_code)

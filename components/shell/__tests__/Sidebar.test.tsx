@@ -21,14 +21,9 @@ function createWrapper() {
 }
 
 describe('Sidebar characterization (T-006)', () => {
-  it('renders "새 상담" primary button', () => {
+  // 2026-10-20 scope purge #2: 중복 '새 상담' 버튼·홈 삭제 — NAV 3개.
+  it('renders NAV_ITEMS: 채팅, 히스토리, 설정', () => {
     render(<Sidebar />, { wrapper: createWrapper() });
-    expect(screen.getByText('새 상담')).toBeInTheDocument();
-  });
-
-  it('renders NAV_ITEMS: 홈, Chat, 히스토리, 설정', () => {
-    render(<Sidebar />, { wrapper: createWrapper() });
-    expect(screen.getByText('홈')).toBeInTheDocument();
     expect(screen.getByRole('link', { name: /채팅|Chat/ })).toBeInTheDocument();
     expect(screen.getByText('히스토리')).toBeInTheDocument();
     expect(screen.getByText('설정')).toBeInTheDocument();

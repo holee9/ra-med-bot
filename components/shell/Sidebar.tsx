@@ -1,83 +1,43 @@
 'use client';
 
-// @MX:NOTE Sidebar — REQ-FND-019. Fixed 260px navigation with the eight
-// canonical destinations in handoff §7 order, plus a "새 상담" primary action.
-// REQ-BREADTH-044: real project list added below nav links.
-// T-007: showExpertReview prop added (REQ-ENTERPRISE-029). Passed from AppLayout
-// which calls auth() server-side.
-// Wave 1: project-switcher dropdown + locale-aware nav-chat testid added.
+// @MX:NOTE Sidebar — REQ-FND-019. Fixed 260px navigation.
+// 2026-10-20 scope purge #2: duplicated "새 상담" primary button and 홈 entry
+// removed (both duplicated /chat — 홈 now redirects), project switcher,
+// governance nav, and the tier system deleted with their routes/components.
+// Restore from git history if the RA purpose validation ever demands one.
 
-import type { Tier } from '@/lib/kernel/auth/persona';
 import { type Role, hasRole } from '@/lib/kernel/auth/rbac';
-import { useProjects } from '@/lib/queries/useProjects';
-import type { ProjectSummary } from '@/lib/queries/useProjects';
-import { useUIStore } from '@/stores/ui';
-import { useQueryClient } from '@tanstack/react-query';
-import { ChevronDown } from 'lucide-react';
 import Link from 'next/link';
-import { useEffect, useRef, useState } from 'react';
+import { useEffect, useState } from 'react';
 
 type NavItem = { label: string; href: string; testId?: string; minRole?: Role };
 
 // @MX:ANCHOR Order is contractually fixed by REQ-FND-019; tests assert it.
 // @MX:REASON Reordering breaks UX expectations and the frontend-shell test.
-// @MX:NOTE [AUTO] Scope rationalization (2026-06-29 Issue #306) — NAV 4개 핵심 (홈·채팅·히스토리·설정).
 const NAV_ITEMS: NavItem[] = [
-  { label: '홈', href: '/', minRole: 'viewer' },
-  { label: '새 상담', href: '/chat', testId: 'nav-chat', minRole: 'viewer' },
+  { label: '채팅', href: '/chat', testId: 'nav-chat', minRole: 'viewer' },
   { label: '히스토리', href: '/history', minRole: 'viewer' },
   { label: '설정', href: '/settings', minRole: 'viewer' },
 ];
 
-const CHAT_LABELS: Record<string, string> = { ko: '채팅', en: 'Chat' };
-
 interface SidebarProps {
   showExpertReview?: boolean;
-  // SPEC-REGULA-SOURCE-GOVERNANCE-001 (Issue #48): Governance dashboard is visible
-  // to roles with sourcegov.view (ra-member+). Gated server-side and passed down.
-  showGovernance?: boolean;
   // SPEC-V3-UI-001 (Issue 320): Inbox nav gated to ra-member+ (inbox.view).
   showInbox?: boolean;
-  // 2026-06-29 사이드바 3계층: NAV_ITEMS를 userRole로 필터 (viewer 4 / ra-member+ 조건부)
   userRole?: Role;
-  // SPEC-V3-PERSONA-001 (REQ-V3-PER-002/H4): tier-aware NAV filtering. When set,
-  // employee tier hides RA/Admin-only items (self-service IA). tier undefined →
-  // existing show*-only behavior preserved (non-regression, H4).
-  tier?: Tier;
   initialLocale?: string;
 }
 
 export default function Sidebar(props?: SidebarProps) {
-  // SPEC-V3-PERSONA-001 M3 (REQ-V3-PER-002/H4): tier-aware NAV filtering.
-  // employee tier = self-service IA → hide RA/Admin-only items via show* override.
-  // tier undefined → hidePersonaScopedItems=false → existing show*-only behavior
-  // (non-regression, frontend-shell.test.ts navLinks.length===4 preserved since
-  // primary NAV_ITEMS render independently above the show* blocks).
-  const hidePersonaScopedItems = props?.tier === 'employee';
-
-  const showExpertReview = (props?.showExpertReview ?? false) && !hidePersonaScopedItems;
-  const showGovernance = (props?.showGovernance ?? false) && !hidePersonaScopedItems;
+  const showExpertReview = props?.showExpertReview ?? false;
   // SPEC-V3-UI-001 (Issue 320): Inbox nav gated to ra-member+ (inbox.view).
-  const showInbox = (props?.showInbox ?? false) && !hidePersonaScopedItems;
-  // 2026-10-20 scope purge: 13 drifted feature navs (predicate, knowledge-gap,
-  // classify, traceability, standards, change-control, labeling, clinical-
-  // investigation, quality heatmap, team knowledge, authoring, evidence,
-  // consult) deleted outright with their routes/components/tests. Restore from
-  // git history if the RA purpose validation ever demands one.
+  const showInbox = props?.showInbox ?? false;
   // 2026-06-29: default 'viewer' (최소 권한 — 명시적 role 없으면 전사 직원 사이드바).
   const userRole: Role = props?.userRole ?? 'viewer';
-  const currentProjectId = useUIStore((s) => s.currentProjectId);
-  const setCurrentProjectId = useUIStore((s) => s.setCurrentProjectId);
-  const { data = [] } = useProjects();
-  const queryClient = useQueryClient();
-  const projects = data as ProjectSummary[];
-  const currentProject = projects.find((p) => p.id === currentProjectId) ?? null;
 
   // initialLocale is passed from the server component (AppLayout) via cookies(),
   // ensuring SSR renders the correct locale without waiting for a client-side useEffect.
   const [locale, setLocale] = useState<string>(props?.initialLocale ?? 'ko');
-  const [creatingProject, setCreatingProject] = useState(false);
-  const dropdownRef = useRef<HTMLDetailsElement>(null);
 
   // Sync locale from cookie after client-side navigation (SPA transitions without full reload).
   useEffect(() => {
@@ -86,43 +46,7 @@ export default function Sidebar(props?: SidebarProps) {
     if (cookieLocale && cookieLocale !== locale) setLocale(cookieLocale);
   }, [locale]);
 
-  // Close project dropdown when clicking outside.
-  useEffect(() => {
-    function handleClickOutside(e: MouseEvent) {
-      if (dropdownRef.current && !dropdownRef.current.contains(e.target as Node)) {
-        dropdownRef.current.open = false;
-      }
-    }
-    document.addEventListener('mousedown', handleClickOutside);
-    return () => document.removeEventListener('mousedown', handleClickOutside);
-  }, []);
-
-  const chatLabel = CHAT_LABELS[locale] ?? '채팅';
-
-  async function createDefaultProject() {
-    setCreatingProject(true);
-    try {
-      const res = await fetch('/api/ra/projects', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          name: '기본 검증 프로젝트',
-          deviceClass: 'Class II',
-          targetMarkets: ['FDA'],
-        }),
-      });
-      if (res.ok) {
-        const body = (await res.json()) as { project?: ProjectSummary };
-        if (body.project?.id) {
-          setCurrentProjectId(body.project.id);
-        }
-        await queryClient.invalidateQueries({ queryKey: ['projects'] });
-        if (dropdownRef.current) dropdownRef.current.open = false;
-      }
-    } finally {
-      setCreatingProject(false);
-    }
-  }
+  const chatLabel = locale === 'en' ? 'Chat' : '채팅';
 
   return (
     <aside
@@ -130,26 +54,6 @@ export default function Sidebar(props?: SidebarProps) {
       style={{ width: 'var(--nav-w)' }}
       aria-label="주 메뉴"
     >
-      {/* project-header: shows selected project name across all pages */}
-      {currentProject && (
-        <div
-          data-testid="project-header"
-          className="border-b border-ink-100 px-4 py-2 text-xs font-medium text-brand-700 bg-brand-50 truncate"
-          title={currentProject.name}
-        >
-          {currentProject.name}
-        </div>
-      )}
-
-      <div className="px-4 py-5">
-        <Link
-          href="/chat"
-          className="flex w-full items-center justify-center rounded-md bg-brand-800 px-4 py-2.5 text-sm font-medium text-white hover:bg-brand-700"
-        >
-          새 상담
-        </Link>
-      </div>
-
       <nav aria-label="메인 내비게이션" className="flex flex-col gap-1 px-2 py-2">
         {NAV_ITEMS.filter((item) => !item.minRole || hasRole(userRole, item.minRole)).map(
           (item) => {
@@ -181,33 +85,6 @@ export default function Sidebar(props?: SidebarProps) {
         </nav>
       )}
 
-      {/* SPEC-REGULA-SOURCE-GOVERNANCE-001 (Issue #48): Governance dashboard link. */}
-      {showGovernance && (
-        <nav className="px-2 py-1">
-          <Link
-            href="/governance"
-            data-testid="sidebar-governance-link"
-            className="rounded-md px-3 py-2 text-sm text-ink-700 hover:bg-ink-50 block"
-          >
-            출처 거버넌스
-          </Link>
-        </nav>
-      )}
-
-      {/* 운영 콘솔 — t3610 서비스 상황판 (2026-10-20). Admin-only: reads the
-          sidecar-collected status snapshot, no privileges in the web process. */}
-      {hasRole(userRole, 'admin') && !hidePersonaScopedItems && (
-        <nav className="px-2 py-1">
-          <Link
-            href="/ops"
-            data-testid="sidebar-ops-link"
-            className="rounded-md px-3 py-2 text-sm text-ink-700 hover:bg-ink-50 block"
-          >
-            운영 콘솔
-          </Link>
-        </nav>
-      )}
-
       {/* SPEC-V3-UI-001 (Issue 320, REQ-V3-UI-031): Inbox Kanban board nav gated to ra-member+ (inbox.view). */}
       {showInbox && (
         <nav className="px-2 py-1">
@@ -221,72 +98,19 @@ export default function Sidebar(props?: SidebarProps) {
         </nav>
       )}
 
-      {/* REQ-BREADTH-044: Project switcher dropdown.
-          2026-06-29: viewer(전사 직원) 숨김 — 프로젝트는 RA 전문 맥락(project memory +
-          internal-docs 스코프). 일반 직원은 자연어 제품 언급으로 Q&A (projectId optional).
-          SPEC-V3-PERSONA-001 M3: employee tier에서도 숨김 (tier IA 일관성). */}
-      {hasRole(userRole, 'ra-member') && !hidePersonaScopedItems && (
-        <section className="mt-2 px-2 py-2">
-          <p className="mb-1 px-3 text-[10px] uppercase tracking-widest text-ink-500">프로젝트</p>
-          <details ref={dropdownRef} className="relative">
-            <summary
-              data-testid="project-switcher"
-              aria-haspopup="listbox"
-              className="flex w-full cursor-pointer list-none items-center justify-between rounded-md px-3 py-2 text-sm text-ink-700 hover:bg-ink-50"
-            >
-              <span className="truncate">
-                {currentProject ? currentProject.name : '프로젝트 선택'}
-              </span>
-              <ChevronDown size={14} className="shrink-0 text-ink-400" />
-            </summary>
-
-            <ul
-              data-testid="project-list"
-              role="menu"
-              aria-label="프로젝트 목록"
-              tabIndex={-1}
-              className="absolute left-0 right-0 top-full z-10 mt-1 max-h-56 overflow-y-auto rounded-md border border-ink-200 bg-white py-1 shadow-md"
-            >
-              {projects.length === 0 ? (
-                <li className="px-3 py-2 text-xs text-ink-500">
-                  <p>프로젝트 없음</p>
-                  <button
-                    type="button"
-                    data-testid="project-empty-create"
-                    disabled={creatingProject}
-                    onClick={() => void createDefaultProject()}
-                    className="mt-2 rounded border border-brand-200 bg-brand-50 px-2 py-1 text-xs font-medium text-brand-700 hover:bg-brand-100 disabled:opacity-60"
-                  >
-                    {creatingProject ? '생성 중...' : '기본 프로젝트 만들기'}
-                  </button>
-                </li>
-              ) : (
-                projects.map((project) => {
-                  const isActive = project.id === currentProjectId;
-                  return (
-                    <li key={project.id}>
-                      <button
-                        type="button"
-                        data-testid="project-item"
-                        role="menuitem"
-                        aria-current={isActive ? 'true' : undefined}
-                        onClick={() => {
-                          setCurrentProjectId(project.id);
-                          if (dropdownRef.current) dropdownRef.current.open = false;
-                        }}
-                        className={`w-full px-3 py-2 text-left text-sm transition-colors hover:bg-ink-50 ${
-                          isActive ? 'font-medium text-brand-700' : 'text-ink-700'
-                        }`}
-                      >
-                        {project.name}
-                      </button>
-                    </li>
-                  );
-                })
-              )}
-            </ul>
-          </details>
-        </section>
+      {/* 운영 콘솔 — t3610 서비스 상황판 + RA 성장 대시보드 (2026-10-20).
+          Admin-only: reads the sidecar-collected status snapshot, no
+          privileges in the web process. */}
+      {hasRole(userRole, 'admin') && (
+        <nav className="px-2 py-1">
+          <Link
+            href="/ops"
+            data-testid="sidebar-ops-link"
+            className="rounded-md px-3 py-2 text-sm text-ink-700 hover:bg-ink-50 block"
+          >
+            운영 콘솔
+          </Link>
+        </nav>
       )}
     </aside>
   );

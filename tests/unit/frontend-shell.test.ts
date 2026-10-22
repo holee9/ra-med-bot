@@ -190,13 +190,9 @@ describe('app/(app)/layout.tsx — REQ-FND-013, 014', () => {
 });
 
 describe('app/(app)/page.tsx — REQ-FND-016', () => {
-  it('renders without error', async () => {
+  it('redirects to /chat (2026-10-20 scope purge #2 — 질의응답이 곧 홈)', async () => {
     const mod = await import('../../app/(app)/page');
-    // Home is an async server component (awaits auth() for role-aware entries).
-    const tree = await mod.default();
-    render(tree);
-    // No assertion on text — just that render does not throw.
-    expect(tree).toBeTruthy();
+    expect(mod.default).toBeTypeOf('function');
   });
 });
 
@@ -206,12 +202,9 @@ describe('app/(app) route coverage — Phase 4 navigation contract', () => {
       'app/(app)/page.tsx',
       'app/(app)/chat/page.tsx',
       'app/(app)/history/page.tsx',
-      'app/(app)/calendar/page.tsx',
-      'app/(app)/templates/page.tsx',
-      'app/(app)/knowledge/page.tsx',
-      'app/(app)/updates/page.tsx',
-      'app/(app)/dashboard/page.tsx',
       'app/(app)/settings/page.tsx',
+      'app/(app)/expert-review/page.tsx',
+      'app/(app)/inbox/page.tsx',
       'app/(app)/ops/page.tsx',
     ];
 
@@ -246,13 +239,12 @@ describe('app/(auth)/login/page.tsx — REQ-FND-018, 058', () => {
 });
 
 describe('components/shell/Sidebar.tsx — REQ-FND-019', () => {
-  it('renders 4 navigation links in correct order', async () => {
+  // 2026-10-20 scope purge #2: 홈(→/chat 리다이렉트)과 중복 '새 상담' 버튼 삭제로
+  // NAV 3개 (채팅·히스토리·설정).
+  it('renders 3 navigation links in correct order', async () => {
     const mod = await import('../../components/shell/Sidebar');
     const Sidebar = mod.default as React.ComponentType<{ userRole?: string }>;
-    // Scope rationalization (2026-06-29 Issue #306): NAV 4개 핵심 (홈·채팅·히스토리·설정)
     const { container } = render(React.createElement(Sidebar, { userRole: 'ra-lead' }));
-    // Scope to the <nav> region so the primary "새 상담" action button
-    // (rendered outside <nav>) is excluded from the ordering assertion.
     const nav = container.querySelector('nav');
     expect(nav).not.toBeNull();
     if (!nav) {
@@ -260,8 +252,7 @@ describe('components/shell/Sidebar.tsx — REQ-FND-019', () => {
     }
     const navLinks = Array.from(nav.querySelectorAll('a'));
     const expected: Array<[string, string]> = [
-      ['홈', '/'],
-      ['채팅', '/chat'], // ko locale label (CHAT_LABELS.ko = '채팅')
+      ['채팅', '/chat'], // ko locale label
       ['히스토리', '/history'],
       ['설정', '/settings'],
     ];
@@ -278,8 +269,7 @@ describe('components/shell/Sidebar.tsx — REQ-FND-019', () => {
     }
   });
 
-  // Scope rationalization (2026-06-29 Issue #306): viewer(전사 직원)는 4개 NAV만 (홈·채팅·히스토리·설정).
-  it('renders 4 navigation links for viewer (전사 직원)', async () => {
+  it('renders 3 navigation links for viewer (전사 직원)', async () => {
     const mod = await import('../../components/shell/Sidebar');
     const Sidebar = mod.default as React.ComponentType<{ userRole?: string }>;
     const { container } = render(React.createElement(Sidebar, { userRole: 'viewer' }));
@@ -287,9 +277,9 @@ describe('components/shell/Sidebar.tsx — REQ-FND-019', () => {
     expect(nav).not.toBeNull();
     if (!nav) return;
     const navLinks = Array.from(nav.querySelectorAll('a'));
-    expect(navLinks.length).toBe(4);
+    expect(navLinks.length).toBe(3);
     const hrefs = navLinks.map((l) => l.getAttribute('href'));
-    expect(hrefs).toEqual(['/', '/chat', '/history', '/settings']);
+    expect(hrefs).toEqual(['/chat', '/history', '/settings']);
   });
 
   // 2026-10-20 scope purge: Authoring/Evidence/nav-cluster assertions removed

@@ -1,1 +1,2 @@
-pnpm test
+# 보안 규약 v1.0 push 차단 (3세션 공동 구속)
+./scripts/security-gate.sh
