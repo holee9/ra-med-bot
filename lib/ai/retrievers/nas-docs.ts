@@ -88,13 +88,14 @@ export class NasDocsRetriever implements IRetriever {
       });
       if (!res.ok) return [];
       const body = (await res.json()) as { result?: QdrantHit[] };
-      return (body.result ?? [])
+      const mapped = (body.result ?? [])
         .filter((h) => h.score >= MIN_SCORE && h.payload?.text)
         .map((h) => ({
           id: `nas-${String(h.id)}`,
           content: h.payload?.text ?? '',
           score: h.score,
           sourceId,
+          filename: h.payload?.filename ?? 'NAS 문서',
           metadata: {
             anchor: `${h.payload?.filename ?? 'doc'} #${h.payload?.chunk_index ?? 0}`,
             orgLabel: NAS_ORG_LABEL,
@@ -106,6 +107,16 @@ export class NasDocsRetriever implements IRetriever {
             folderCategory: h.payload?.folder_category ?? null,
           },
         }));
+      // 2026-10-23 청크 다양성: Qdrant는 유사도순이라 같은 문서의 유사 청크가
+      // 상위를 독점한다(실측: top-8 중 같은 PDF 6개). 문서당 최대 2청크로 제한해
+      // 문서 다양성을 확보 — 341만 청크에서 폭넓은 근거가 답변 품질을 만든다.
+      const perFile = new Map<string, number>();
+      return mapped.filter((m) => {
+        const n = perFile.get(m.filename) ?? 0;
+        if (n >= 2) return false;
+        perFile.set(m.filename, n + 1);
+        return true;
+      });
     } catch {
       return []; // Qdrant unreachable → other corpora still answer
     }
