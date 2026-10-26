@@ -17,11 +17,11 @@ function source(overrides: Record<string, unknown> = {}) {
     id: 'src-1',
     citeIndex: 9003,
     orgLabel: 'FDA 510(k) Database',
-    title: 'K031256',
+    title: 'KXXXXXX',
     year: 2003,
     type: 'Guidance',
     url: null,
-    anchor: 'K031256',
+    anchor: 'KXXXXXX',
     offset: 0,
     ...overrides,
   };
