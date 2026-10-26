@@ -40,11 +40,16 @@ export interface RlhfRerankableResult extends RerankableResult {
 export async function fetchFeedbackScores(
   sectionIds: readonly string[],
 ): Promise<FeedbackScoreMap> {
-  if (sectionIds.length === 0) return {};
+  // 2026-10-22 NAS 연결 후속: nas-*/wiki-* 외부 코퍼스 ID는 source_sections에
+  // 존재하지 않아 inArray 쿼리가 실패했다 — UUID만 조회하고 나머지는 neutral 0.
+  const uuidOnly = sectionIds.filter((id) =>
+    /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(id),
+  );
+  if (uuidOnly.length === 0) return {};
   const rows = await db
     .select({ id: sourceSections.id, score: sourceSections.feedbackScore })
     .from(sourceSections)
-    .where(inArray(sourceSections.id, [...sectionIds]));
+    .where(inArray(sourceSections.id, uuidOnly));
   const map: FeedbackScoreMap = {};
   for (const r of rows) {
     const num = Number(r.score);

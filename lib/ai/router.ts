@@ -122,16 +122,21 @@ export async function classifyAndRoute(
   // If no market filter applies (empty markets or unrecognized codes), use all intent corpora.
   const filtered =
     marketCorpora.length > 0
-      ? intentCorpora.filter((c) => marketCorpora.includes(c) || c === 'internal-sops')
+      ? intentCorpora.filter(
+          (c) => marketCorpora.includes(c) || c === 'internal-sops' || c === 'nas-docs',
+        )
       : intentCorpora;
 
-  // Deduplicate and always include internal-sops + org_promoted.
+  // Deduplicate and always include internal-sops + nas-docs + org_promoted.
+  // nas-docs (NAS 실무문서 Qdrant, 2026-10-21 연결): the company's actual
+  // regulatory documents live on the NAS — every query gets this baseline,
+  // mirroring the internal-sops always-include contract.
   // REQ-KNOWLEDGE-PROMO-009: org_promoted always included so team knowledge
   // participates in every RAG retrieval (boosted higher than internal docs
   // via PromotedAnswersRetriever.PROMOTED_BOOST_FACTOR). Without this,
   // PromotedAnswersRetriever is registered (merge.ts) but never selected,
   // making AC-04 dead code.
-  const corpus = [...new Set([...filtered, 'internal-sops', 'org_promoted'])];
+  const corpus = [...new Set([...filtered, 'internal-sops', 'nas-docs', 'org_promoted'])];
 
   return { intent, corpora: corpus };
 }

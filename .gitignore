@@ -1,5 +1,5 @@
 # ============================================
-# MoAI-ADK Package Distribution .gitignore
+# Project .gitignore
 # ============================================
 # Version: 0.33.0
 # Updated: 2026-01-10
@@ -114,7 +114,6 @@ logs/
 # ===========================================
 # Backups
 # ===========================================
-.moai-backups/
 *.backup/
 *-backup/
 *_backup_*/
@@ -169,8 +168,6 @@ secret-*.*
 .claude/agent-memory/
 .claude/worktrees/
 .claude/scheduled_tasks.lock
-.moai/reports/session-*.md
-.moai/specs/_generated/
 
 # Skill-specific credentials
 .claude/skills/*/.env*
@@ -184,17 +181,12 @@ secret-*.*
 # ===========================================
 # Local-Only Files (never sync via git pull)
 # ===========================================
-.moai/status_line.sh
-.moai/memory/
-.moai/worktrees/
 .worktrees/
 
 # ===========================================
 # Evolution Telemetry (local-only usage data)
 # Learnings and new-skills are git-tracked for team sharing.
 # ===========================================
-.moai/evolution/telemetry/*.jsonl
-!.moai/evolution/telemetry/.gitkeep
 
 # ===========================================
 # Node.js (for docs/Nextra)
@@ -232,3 +224,4 @@ test-results/
 .firebase/
 docs/validation/release-report-*.md
 evals/workflows/results/
+var/

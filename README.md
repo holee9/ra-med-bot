@@ -545,7 +545,7 @@ Auth.js v5 beta + Credentials 프로바이더 로그인 실패 근본 원인 및
 검증 결과:
 ```
 POST /api/auth/callback/credentials → {"url":"http://localhost:3000/"}
-GET  /api/auth/session             → {"user":{"name":"Drake Lee","email":"drake.lee@abyzr.com","mustChangePassword":true},"expires":"..."}
+GET  /api/auth/session             → {"user":{"name":"<사용자>","email":"<user@example.com>","mustChangePassword":true},"expires":"..."}
 ```
 
 ### 최신 CI 실행 결과 (2026-06-18)

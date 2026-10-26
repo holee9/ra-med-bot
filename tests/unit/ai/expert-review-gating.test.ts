@@ -5,14 +5,14 @@ import { shouldAutoFlag } from '@/lib/ai/expert-review-gating';
 import { describe, expect, it } from 'vitest';
 
 describe('shouldAutoFlag (REQ-ENTERPRISE-008)', () => {
-  it('returns flag=true when confidenceScore < 0.7', () => {
-    const result = shouldAutoFlag(0.65, '일반 질문', '일반적인 답변입니다.');
+  it('returns flag=true when confidenceScore < threshold (0.6)', () => {
+    const result = shouldAutoFlag(0.55, '일반 질문', '일반적인 답변입니다.');
     expect(result.flag).toBe(true);
   });
 
   it('reason string contains formatted confidence score when low confidence triggers flag', () => {
-    const result = shouldAutoFlag(0.65, '일반 질문', '일반적인 답변입니다.');
-    expect(result.reason).toBe('confidence score 0.65 < 0.7');
+    const result = shouldAutoFlag(0.55, '일반 질문', '일반적인 답변입니다.');
+    expect(result.reason).toBe('confidence score 0.55 < 0.6');
   });
 
   it('returns flag=false when score is high and no policy keywords present', () => {
@@ -36,16 +36,16 @@ describe('shouldAutoFlag (REQ-ENTERPRISE-008)', () => {
     expect(result.reason).toBe('policy keyword: recall avoidance');
   });
 
-  it('edge case: score exactly 0.7 does NOT trigger low confidence flag', () => {
-    const result = shouldAutoFlag(0.7, '일반 질문', '일반 답변.');
+  it('edge case: score exactly 0.6 does NOT trigger low confidence flag', () => {
+    const result = shouldAutoFlag(0.6, '일반 질문', '일반 답변.');
     expect(result.flag).toBe(false);
     expect(result.reason).toBeNull();
   });
 
-  it('edge case: score 0.699 DOES trigger low confidence flag', () => {
-    const result = shouldAutoFlag(0.699, '일반 질문', '일반 답변.');
+  it('edge case: score 0.599 DOES trigger low confidence flag', () => {
+    const result = shouldAutoFlag(0.599, '일반 질문', '일반 답변.');
     expect(result.flag).toBe(true);
-    expect(result.reason).toBe('confidence score 0.70 < 0.7');
+    expect(result.reason).toBe('confidence score 0.60 < 0.6');
   });
 
   it('priority: low confidence check runs before policy keyword check', () => {

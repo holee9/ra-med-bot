@@ -98,6 +98,29 @@ function applySecurityHeaders(res: NextResponse, nonce: string): NextResponse {
   return res;
 }
 
+/**
+ * Resolve the origin a redirect should point at, honoring proxy forwarding.
+ *
+ * Behind the Cloudflare tunnel (and any TLS-terminating proxy) the Next dev
+ * server normalizes `req.nextUrl` to its own local origin, which would send
+ * public visitors to `https://localhost:3100`. Read the forwarded host/proto
+ * instead. The forwarded host is only trusted when it matches the deployed
+ * domain family, so a direct request with a forged `x-forwarded-host` cannot
+ * turn the auth-wall redirect into an open redirect.
+ */
+function redirectOrigin(req: NextRequest): string {
+  const forwarded = req.headers.get('x-forwarded-host');
+  const host =
+    forwarded !== null &&
+    (/^localhost(:\d+)?$/.test(forwarded) || forwarded.endsWith('.abyz-lab.work'))
+      ? forwarded
+      : (req.headers.get('host') ?? req.nextUrl.host);
+  const proto =
+    req.headers.get('x-forwarded-proto') ??
+    (host.startsWith('localhost') || host.startsWith('127.') ? 'http' : 'https');
+  return `${proto}://${host}`;
+}
+
 export function middleware(req: NextRequest) {
   const isAuthed = SESSION_COOKIE_NAMES.some((name) => Boolean(req.cookies.get(name)?.value));
   const { pathname } = req.nextUrl;
@@ -118,7 +141,7 @@ export function middleware(req: NextRequest) {
     const locale = req.nextUrl.searchParams.get('locale') === 'en' ? 'en' : 'ko';
     const rawReturnTo = req.nextUrl.searchParams.get('returnTo') || '/';
     const returnTo = rawReturnTo.startsWith('/') ? rawReturnTo : '/';
-    const res = NextResponse.redirect(new URL(returnTo, req.nextUrl));
+    const res = NextResponse.redirect(new URL(returnTo, redirectOrigin(req)));
     res.cookies.set('regula-locale', locale, {
       path: '/',
       maxAge: 60 * 60 * 24 * 365,
@@ -130,7 +153,7 @@ export function middleware(req: NextRequest) {
   // Already-signed-in users hitting /login are redirected to the app root.
   // Without this, the SSO callback would loop back to /login on every visit.
   if (isAuthed && pathname.startsWith('/login')) {
-    return applySecurityHeaders(NextResponse.redirect(new URL('/', req.nextUrl)), nonce);
+    return applySecurityHeaders(NextResponse.redirect(new URL('/', redirectOrigin(req))), nonce);
   }
 
   // Unauthenticated traffic to gated paths is redirected to /login.
@@ -145,7 +168,10 @@ export function middleware(req: NextRequest) {
       });
       return applySecurityHeaders(res, nonce);
     }
-    return applySecurityHeaders(NextResponse.redirect(new URL('/login', req.nextUrl)), nonce);
+    return applySecurityHeaders(
+      NextResponse.redirect(new URL('/login', redirectOrigin(req))),
+      nonce,
+    );
   }
 
   // Authenticated request: forward with the nonce in request headers and

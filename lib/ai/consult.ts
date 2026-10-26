@@ -462,14 +462,23 @@ export async function* consult(
   const prose_done = true; // set after fullProse is assembled and sources emitted
   if (!prose_done) throw new OrderViolationError('structured');
 
+  // Blocks are buffered and persisted AFTER persistMessage (Stage 8):
+  // message_blocks.message_id FKs to messages.id, and the assistant message
+  // row only exists once persistMessage runs — inserting here (Stage 7)
+  // violated the FK on every consult and silently dropped ALL structured
+  // blocks from history. Same ordering contract as the Stage 8.5 expert
+  // review enqueue (#542 class). SSE emission stays immediate (UX unchanged).
+  const pendingBlocks: Array<{
+    blockType: 'checklist' | 'comparison' | 'timeline' | 'related';
+    blockJson: Record<string, unknown>;
+  }> = [];
+
   if (!signal?.aborted && !isReplay) {
     const topSourceMeta = citedChunks.slice(0, 3).map((c) => ({
       title: c.title,
       orgLabel: c.orgLabel,
       year: c.year,
     }));
-
-    let structuredOrderIndex = 1; // prose block is index 0 (written by persistMessage)
 
     try {
       for await (const blockEvent of generateStructuredBlocks(
@@ -494,25 +503,10 @@ export async function* consult(
         const blockType = blockTypeMap[blockEvent.type];
 
         if (blockType) {
-          // Persist block before SSE emit (REQ-STRUCT-034, REQ-STRUCT-035)
-          try {
-            const insertBlock = (client: typeof db) =>
-              client.insert(messageBlocks).values({
-                messageId,
-                blockType,
-                blockJson: blockEvent as unknown as Record<string, unknown>,
-                orderIndex: structuredOrderIndex,
-              });
-            if (orgId) {
-              await withTenantScope(orgId, (dbs) => insertBlock(dbs));
-            } else {
-              await insertBlock(db);
-            }
-            structuredOrderIndex++;
-          } catch (insertErr) {
-            // REQ-STRUCT-035: log and continue — emit even if persist fails
-            logger.error(`[consult] messageBlocks INSERT failed for ${blockEvent.type}`, insertErr);
-          }
+          pendingBlocks.push({
+            blockType,
+            blockJson: blockEvent as unknown as Record<string, unknown>,
+          });
         }
 
         yield* emit(blockEvent);
@@ -590,6 +584,10 @@ export async function* consult(
   const forcedExpertReviewFromGate = postRerankViolation !== null;
   const effectiveRequiresExpertReview = requiresExpertReview || forcedExpertReviewFromGate;
 
+  // Hoisted so the post-persist enqueue (Stage 8.5) can reuse the exact reason
+  // the user saw in the expert_review_required event.
+  let expertReviewReason: string | null = null;
+
   if (effectiveRequiresExpertReview) {
     const reason =
       forcedExpertReviewFromGate && !requiresExpertReview
@@ -597,6 +595,7 @@ export async function* consult(
         : (lowAuthorityReason ??
           autoFlagResult.reason ??
           (citationCoverageBelow80 ? 'citation coverage < 80%' : 'unknown'));
+    expertReviewReason = reason;
 
     yield* emit({ type: 'expert_review_required', reason });
 
@@ -634,62 +633,8 @@ export async function* consult(
         }
       }
 
-      // REQ-ENTERPRISE-009: enqueue for reviewer assignment (idempotent)
-      await enqueueExpertReview({
-        conversationId,
-        messageId,
-        reason,
-        requestedBy: '00000000-0000-0000-0000-000000000001', // SYSTEM_USER_UUID
-      });
-
-      // REQ-ENTERPRISE-010: mark message as requiring expert review.
-      // 21 CFR Part 11 §11.10(e) — Issue #378: the mark UPDATE and the auto-flag
-      // audit ride the SAME transaction (withTenantScope is itself a tx; the
-      // no-org fallback opens its own db.transaction) so the flag can never be
-      // set without its audit row — and vice versa.
-      if (orgId) {
-        await withTenantScope(orgId, async (dbs) => {
-          await dbs
-            .update(messages)
-            .set({ expertReviewRequired: true })
-            .where(eq(messages.id, messageId));
-          await writeAudit(
-            {
-              actor_id: '00000000-0000-0000-0000-000000000001',
-              action: 'consult.expert_review_auto_flag',
-              resource_type: 'message',
-              resource_id: messageId,
-              conversation_id: conversationId,
-              meta_json: {
-                reason,
-                confidence_score: confidenceScore,
-              },
-            },
-            dbs,
-          );
-        });
-      } else {
-        await db.transaction(async (tx) => {
-          await tx
-            .update(messages)
-            .set({ expertReviewRequired: true })
-            .where(eq(messages.id, messageId));
-          await writeAudit(
-            {
-              actor_id: '00000000-0000-0000-0000-000000000001',
-              action: 'consult.expert_review_auto_flag',
-              resource_type: 'message',
-              resource_id: messageId,
-              conversation_id: conversationId,
-              meta_json: {
-                reason,
-                confidence_score: confidenceScore,
-              },
-            },
-            tx,
-          );
-        });
-      }
+      // REQ-ENTERPRISE-009/010 (enqueue + message mark) moved to Stage 8.5,
+      // after persistMessage — see the ordering note there.
     }
   }
 
@@ -725,7 +670,7 @@ export async function* consult(
       confidenceLevel,
       confidenceScore,
       durationMs: Date.now() - startTs,
-      expertReviewRequired: requiresExpertReview,
+      expertReviewRequired: effectiveRequiresExpertReview,
       tokensIn,
       tokensOut,
       model:
@@ -736,6 +681,100 @@ export async function* consult(
       violations,
       citedChunks,
     });
+  }
+
+  // ---- Stage 8.4: Persist structured blocks ----
+  // Must run after persistMessage (message_blocks.message_id FK — see the
+  // buffering note above). REQ-STRUCT-035: persist failures are logged and
+  // skipped — the SSE stream already delivered the blocks, so the user-visible
+  // answer is unaffected; only history persistence is best-effort.
+  if (pendingBlocks.length > 0 && !signal?.aborted && !isReplay) {
+    for (let i = 0; i < pendingBlocks.length; i++) {
+      const b = pendingBlocks[i];
+      if (!b) continue;
+      try {
+        const insertBlock = (client: Pick<typeof db, 'insert'>) =>
+          client.insert(messageBlocks).values({
+            messageId,
+            blockType: b.blockType,
+            blockJson: b.blockJson,
+            orderIndex: i + 1,
+          });
+        if (orgId) {
+          await withTenantScope(orgId, (dbs) => insertBlock(dbs));
+        } else {
+          await insertBlock(db);
+        }
+      } catch (insertErr) {
+        logger.error(`[consult] messageBlocks INSERT failed for ${b.blockType}`, insertErr);
+      }
+    }
+  }
+
+  // ---- Stage 8.5: expert-review enqueue + message mark ----
+  // expert_reviews.message_id has an FK to messages.id and the mark UPDATE
+  // targets the same row, so both MUST run after persistMessage() has created
+  // the assistant message (same ordering contract as Stage 9 below). Running
+  // them in Stage 7 threw expert_reviews_message_id_messages_id_fk violations
+  // on every low-confidence consult, erroring the SSE stream with llm_failure
+  // and losing the message entirely.
+  if (expertReviewReason !== null && !signal?.aborted && !isReplay) {
+    // REQ-ENTERPRISE-009: enqueue for reviewer assignment (idempotent)
+    await enqueueExpertReview({
+      conversationId,
+      messageId,
+      reason: expertReviewReason,
+      requestedBy: '00000000-0000-0000-0000-000000000001', // SYSTEM_USER_UUID
+    });
+
+    // REQ-ENTERPRISE-010: mark message as requiring expert review.
+    // 21 CFR Part 11 §11.10(e) — Issue #378: the mark UPDATE and the auto-flag
+    // audit ride the SAME transaction (withTenantScope is itself a tx; the
+    // no-org fallback opens its own db.transaction) so the flag can never be
+    // set without its audit row — and vice versa.
+    if (orgId) {
+      await withTenantScope(orgId, async (dbs) => {
+        await dbs
+          .update(messages)
+          .set({ expertReviewRequired: true })
+          .where(eq(messages.id, messageId));
+        await writeAudit(
+          {
+            actor_id: '00000000-0000-0000-0000-000000000001',
+            action: 'consult.expert_review_auto_flag',
+            resource_type: 'message',
+            resource_id: messageId,
+            conversation_id: conversationId,
+            meta_json: {
+              reason: expertReviewReason,
+              confidence_score: confidenceScore,
+            },
+          },
+          dbs,
+        );
+      });
+    } else {
+      await db.transaction(async (tx) => {
+        await tx
+          .update(messages)
+          .set({ expertReviewRequired: true })
+          .where(eq(messages.id, messageId));
+        await writeAudit(
+          {
+            actor_id: '00000000-0000-0000-0000-000000000001',
+            action: 'consult.expert_review_auto_flag',
+            resource_type: 'message',
+            resource_id: messageId,
+            conversation_id: conversationId,
+            meta_json: {
+              reason: expertReviewReason,
+              confidence_score: confidenceScore,
+            },
+          },
+          tx,
+        );
+      });
+    }
   }
 
   // ---- Stage 9: Capture knowledge gap ----
@@ -829,16 +868,27 @@ export async function ensureConversation(
 
 // Helpers
 
+// A sentence terminator only counts when followed by whitespace (or end of
+// text) AND not immediately preceded by a digit: a period inside a decimal
+// number ("820.30", "0.92") or an enumeration marker ("1. ", "2. ") is NOT a
+// terminator. Splitting on those inflated the denominator of citation
+// coverage with orphan fragments ("2.", "3.") that then registered as
+// uncited claims — the #538 miscalibration. Both counters MUST share this
+// split so coverage = cited / total stays on the same segmentation.
+function splitSentences(html: string): string[] {
+  return html
+    .split(/(?<![0-9][.?!。？！])(?<=[.?!。？！])\s+/)
+    .map((s) => s.trim())
+    .filter((s) => s.length > 0);
+}
+
 function countSentences(html: string): number {
-  const text = html.replace(/<[^>]+>/g, '');
-  const matches = text.match(/[.?!。？！]/g);
-  return matches ? matches.length : 0;
+  return splitSentences(html).length;
 }
 
 function countCitedSentences(html: string): number {
   // A sentence is "cited" if it contains <sup class="cite"> tag.
-  const segments = html.split(/[.?!。？！]/);
-  return segments.filter((seg) => /<sup[^>]+class="[^"]*cite[^"]*"/.test(seg)).length;
+  return splitSentences(html).filter((seg) => /<sup[^>]+class="[^"]*cite[^"]*"/.test(seg)).length;
 }
 
 function extractDataSourceIndices(html: string): Set<number> {

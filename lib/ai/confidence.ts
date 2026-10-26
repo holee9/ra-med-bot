@@ -32,7 +32,16 @@ export function calculateConfidence(input: ConfidenceInput): number {
 
   const citationCoverage = totalSentences === 0 ? 0 : Math.min(citedCount / totalSentences, 1.0);
 
-  const score = 0.6 * avgChunkScore + 0.4 * citationCoverage;
+  // Weight recalibration (#538, measured 2026-10-19): under qwen3-embedding's
+  // distance distribution the avg top-8 vector score separates weakly between
+  // irrelevant (mean 0.595) and strongly relevant (mean 0.666) queries — a
+  // 0.07 gap that no normalization can turn into a usable signal. Citation
+  // coverage separates strongly AND embodies the product's core promise
+  // (evidence-grounded answers), so it carries the majority weight. Vec score
+  // is kept as a secondary tie-breaker: with the decimal-aware sentence
+  // splitter, a well-cited answer on a well-matched corpus reaches ~0.75+,
+  // while an uncited answer stays below ~0.35 regardless of retrieval quality.
+  const score = 0.35 * avgChunkScore + 0.65 * citationCoverage;
   return Math.min(Math.max(score, 0), 1);
 }
 

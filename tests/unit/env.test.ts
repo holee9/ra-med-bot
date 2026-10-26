@@ -61,9 +61,9 @@ describe('parseEnv', () => {
     ).toEqual({});
   });
 
-  it('throws ZodError when both Microsoft env-var aliases are missing', () => {
+  it('accepts missing SSO vars (providers are optional since 2026-10-20)', () => {
     const { AUTH_MICROSOFT_ID: _omit, ...rest } = validEnv;
-    expect(() => parseEnv(rest)).toThrow(ZodError);
+    expect(parseEnv(rest).AUTH_MICROSOFT_ID).toBeUndefined();
   });
 
   it('accepts AUTH_MICROSOFT_ENTRA_ID as an alias for AUTH_MICROSOFT_ID', () => {
@@ -95,10 +95,9 @@ describe('parseEnv', () => {
       ).toThrow(ZodError);
     });
 
-    it('rejects AUTH_GOOGLE_ID dev-placeholder in production', () => {
-      expect(() => parseEnv({ ...validEnv, AUTH_GOOGLE_ID: 'dev-placeholder-google' })).toThrow(
-        ZodError,
-      );
+    it('parses dev-placeholder SSO values without throwing (auth.ts omits the provider instead)', () => {
+      const env = parseEnv({ ...validEnv, AUTH_GOOGLE_ID: 'dev-placeholder-google' });
+      expect(env.AUTH_GOOGLE_ID).toBe('dev-placeholder-google');
     });
 
     it('accepts dev-placeholder values when NODE_ENV is not production', () => {
@@ -115,9 +114,9 @@ describe('parseEnv', () => {
     } catch (err) {
       expect(err).toBeInstanceOf(ZodError);
       const issues = (err as ZodError).issues;
-      // At minimum DATABASE_URL, AUTH_SECRET, NEXTAUTH_URL, both Google keys,
-      // and the Microsoft pair should each surface an issue.
-      expect(issues.length).toBeGreaterThanOrEqual(6);
+      // At minimum DATABASE_URL, AUTH_SECRET, NEXTAUTH_URL should each surface
+      // an issue (SSO vars are optional since the 2026-10-20 production deploy).
+      expect(issues.length).toBeGreaterThanOrEqual(3);
     }
   });
 

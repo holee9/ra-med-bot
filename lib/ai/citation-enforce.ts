@@ -27,6 +27,7 @@ const META_SENTENCE_WHITELIST: RegExp[] = [
   /^요약하면/,
   /^참고로/,
   /^아래 표는/,
+  /^이와 같이/,
   // English patterns
   /^The following/,
   /^In summary/,
@@ -189,6 +190,12 @@ function splitHtmlIntoSentenceSegments(html: string): string[] {
     current += ch;
 
     if (!inTag && terminators.has(ch)) {
+      // Decimal numbers ("820.30", "0.92") and enumeration markers ("1. ")
+      // are not sentence terminators — the same digit rule as consult.ts
+      // splitSentences (#538 calibration; splitting here manufactured orphan
+      // fragments that registered as CLAIM_UNCITED violations).
+      if (i > 0 && /[0-9]/.test(html.charAt(i - 1))) continue;
+
       // Greedily attach trailing whitespace and any inline <sup> tags so the
       // cite that immediately follows a sentence terminator is treated as
       // part of that sentence (e.g., "claim. <sup>1</sup>").

@@ -191,6 +191,18 @@ export const POST = withPermission('consult.create', async (req, _ctx, session) 
         process.env.E2E_TEST_MODE === 'true' && process.env.NODE_ENV !== 'production';
       let e2eAuditWritten = false;
 
+      // SSE keepalive — gpt-oss reasons silently before its first prose token,
+      // and TLS-terminating proxies (Cloudflare tunnel) cut ~100s of stream
+      // idle. A comment line every 15s keeps the connection alive without
+      // emitting a StreamEvent (browsers ignore SSE comments).
+      const heartbeat = setInterval(() => {
+        try {
+          controller.enqueue(encoder.encode(': keepalive\n\n'));
+        } catch {
+          // Controller already closed — the finally block clears the interval.
+        }
+      }, 15_000);
+
       if (isE2EMode) {
         // Create real message/audit rows up front so E2E clients that close the
         // SSE stream early still exercise the audit contract deterministically.
@@ -243,6 +255,7 @@ export const POST = withPermission('consult.create', async (req, _ctx, session) 
           message: 'Internal error. Please try again.',
         });
       } finally {
+        clearInterval(heartbeat);
         // REQ-CHAT-009 — done event as last event.
         if (!signal.aborted) {
           push({ type: 'done', duration_ms: Date.now() - startTs });

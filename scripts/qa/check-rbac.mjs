@@ -16,7 +16,16 @@ import { fileURLToPath } from 'node:url';
 
 const HTTP_METHODS = ['GET', 'POST', 'PUT', 'PATCH', 'DELETE', 'HEAD', 'OPTIONS'];
 const PLAIN = new RegExp(`export\\s+async\\s+function\\s+(${HTTP_METHODS.join('|')})\\b`);
-const exempt = ['app/api/auth', 'app/api/health', 'app/api/ra/digest/[weekId]/route.ts'];
+const exempt = [
+  'app/api/auth',
+  'app/api/health',
+  'app/api/ra/digest/[weekId]/route.ts',
+  // 운영 콘솔 상태 API (2026-10-20): 파일 읽기 전용이며 라우트 내부에서
+  // 세션 role !== 'admin' → 403 게이트를 직접 시행한다 (admin 페이지 라우트와
+  // 동일한 패턴 — withPermission 래핑 대신 자체 게이트). 권한 없는 접근은
+  // 스냅샷 파일 내용에 도달할 수 없다.
+  'app/api/ops/status/route.ts',
+];
 
 // REQ-QUAL-024: admin page route coverage matrix.
 // Each entry asserts the expected RBAC outcome for non-admin / admin users.

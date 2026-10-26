@@ -48,6 +48,32 @@ function buildModel(role: 'main' | 'fast'): LanguageModel {
   const mainModel = process.env.OLLAMA_MODEL ?? DEFAULT_OLLAMA_MODEL;
   const fastModel = process.env.OLLAMA_FAST_MODEL ?? mainModel;
   const modelName = role === 'fast' ? fastModel : mainModel;
-  const ollama = createOllama({ baseURL });
+  const ollama = createOllama({ baseURL, fetch: withThinkLevel });
   return ollama(modelName) as unknown as LanguageModel;
+}
+
+// Inject gpt-oss reasoning-effort (`think`) into /api/chat bodies at the fetch
+// layer — ollama-ai-provider 1.2.0 predates thinking-model support, so this is
+// the only non-invasive injection point (same pattern as the embedding
+// provider's MRL dimensions middleware). OFF by default: measured 2026-10-19,
+// think=low answers ~4x faster BUT the model drops citation-marker compliance
+// (markers malformed → all citations stripped → coverage 0 → every consult
+// low-confidence) and answers Korean questions in English. Citation quality IS
+// the product, so the model's default reasoning stands; set OLLAMA_THINK=low
+// to opt into the latency trade explicitly (e.g. for the fast router role).
+function withThinkLevel(url: RequestInfo | URL, init?: RequestInit): Promise<Response> {
+  const urlStr = typeof url === 'string' ? url : url.toString();
+  const think = process.env.OLLAMA_THINK;
+  let next = init;
+  if (think && think !== 'default' && init?.body && urlStr.includes('/api/chat')) {
+    try {
+      const parsed = JSON.parse(String(init.body)) as Record<string, unknown>;
+      if (parsed.think === undefined) {
+        next = { ...init, body: JSON.stringify({ ...parsed, think }) };
+      }
+    } catch {
+      // Non-JSON body — pass through unchanged.
+    }
+  }
+  return globalThis.fetch(url, next);
 }

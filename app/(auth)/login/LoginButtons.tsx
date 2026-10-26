@@ -26,7 +26,7 @@ export default function LoginButtons() {
       setError('이메일/비밀번호가 올바르지 않거나 아직 승인 대기 중입니다');
       console.error('[LoginButtons] signIn error:', result.error);
     } else {
-      router.push('/dashboard');
+      router.push('/chat');
     }
   }
 

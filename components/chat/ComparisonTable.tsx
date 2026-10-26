@@ -5,8 +5,6 @@
 // @MX:SPEC SPEC-REGULA-STRUCTURED-001 (REQ-STRUCT-022~023)
 
 import { useState } from 'react';
-import { ExportHub } from '../export/ExportHub';
-import type { ExportArtifact } from '../export/FormatOptions';
 
 interface ComparisonTableProps {
   title: string;
@@ -17,18 +15,6 @@ interface ComparisonTableProps {
 export function ComparisonTable({ title, cols, rows }: ComparisonTableProps) {
   // Client-side secondary defense — REQ-STRUCT-023
   const hasLengthMismatch = rows.some((row) => row.length !== cols.length);
-  const exportArtifact: ExportArtifact = {
-    title: title || 'Regula Comparison',
-    content: [
-      `# ${title || 'Regula Comparison'}`,
-      '',
-      `| ${cols.join(' | ')} |`,
-      `| ${cols.map(() => '---').join(' | ')} |`,
-      ...rows.map((row) => `| ${row.join(' | ')} |`),
-    ].join('\n'),
-    artifactType: 'comparison',
-    filenameBase: `comparison-${(title || 'export').toLowerCase().replace(/[^a-z0-9가-힣]+/gi, '-')}`,
-  };
 
   if (hasLengthMismatch) {
     return (
@@ -46,7 +32,6 @@ export function ComparisonTable({ title, cols, rows }: ComparisonTableProps) {
         <div className="text-xs text-ink-500">
           {rows.length}행 × {cols.length}열
         </div>
-        <ExportHub artifact={exportArtifact} />
       </div>
 
       <div className="overflow-x-auto rounded-lg border border-surface-3">

@@ -105,6 +105,55 @@ async function classify(
 }
 
 // ---------------------------------------------------------------------------
+// Internal helper: salvage a JSON payload truncated mid-generation.
+// The fast model's reasoning consumes output-token budget, so block JSON is
+// sometimes cut mid-array. Cut at the last complete element and close the
+// still-open containers — Zod validates the salvaged shape afterwards.
+// Exported for unit tests.
+// ---------------------------------------------------------------------------
+export function salvageTruncatedJson(text: string): unknown {
+  const starts = [text.indexOf('{'), text.indexOf('[')].filter((i) => i >= 0);
+  if (starts.length === 0) return null;
+  const body = text.slice(Math.min(...starts));
+  try {
+    return JSON.parse(body);
+  } catch {
+    // fall through to repair
+  }
+  const lastComplete = Math.max(body.lastIndexOf('}'), body.lastIndexOf(']'));
+  if (lastComplete < 0) return null;
+  let candidate = body.slice(0, lastComplete + 1).replace(/,\s*$/, '');
+  // Track open containers (string-aware) so we can append the closers.
+  const stack: string[] = [];
+  let inString = false;
+  let escaped = false;
+  for (const ch of candidate) {
+    if (escaped) {
+      escaped = false;
+      continue;
+    }
+    if (ch === '\\') {
+      if (inString) escaped = true;
+      continue;
+    }
+    if (ch === '"') {
+      inString = !inString;
+      continue;
+    }
+    if (inString) continue;
+    if (ch === '{' || ch === '[') stack.push(ch === '{' ? '}' : ']');
+    else if (ch === '}' || ch === ']') stack.pop();
+  }
+  if (inString) return null; // ended inside a string literal — unsafe to salvage
+  candidate += [...stack].reverse().join('');
+  try {
+    return JSON.parse(candidate);
+  } catch {
+    return null;
+  }
+}
+
+// ---------------------------------------------------------------------------
 // Internal helper: call generator and parse JSON response.
 // Returns null on parse failure (REQ-STRUCT-006: skip on Zod parse error).
 // ---------------------------------------------------------------------------
@@ -126,8 +175,12 @@ async function generate<T>(
   try {
     parsed = JSON.parse(cleaned);
   } catch {
-    logger.error(`[structured-blocks] JSON parse error. Raw snippet: ${raw.slice(0, 500)}`);
-    return null;
+    parsed = salvageTruncatedJson(cleaned);
+    if (parsed === null) {
+      logger.error(`[structured-blocks] JSON parse error. Raw snippet: ${raw.slice(0, 500)}`);
+      return null;
+    }
+    logger.warn('[structured-blocks] salvaged truncated block JSON');
   }
 
   const result = schema.safeParse(parsed);

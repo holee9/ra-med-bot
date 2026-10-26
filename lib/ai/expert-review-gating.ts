@@ -14,11 +14,24 @@ export interface FlagResult {
 }
 
 /**
+ * Confidence threshold below which a consult is auto-flagged for expert review.
+ *
+ * Recalibrated 2026-10-19 (#538): the original 0.7 was authored against the
+ * E2E-test-mode fixture (citation coverage 0.92) and never validated against
+ * real gpt-oss answers. Measured live distribution under the recalibrated
+ * score (0.35*vec + 0.65*citation-coverage): strongly-grounded answers land
+ * at 0.62–0.69, irrelevant-question answers at ~0.12. A 0.6 threshold
+ * separates the two populations with margin in BOTH directions, keeping the
+ * gate conservative (borderline answers still go to review).
+ */
+export const EXPERT_REVIEW_CONFIDENCE_THRESHOLD = 0.6;
+
+/**
  * Determines whether the consult response should be automatically flagged
  * for expert review.
  *
  * Priority:
- *  1. Low confidence score (< 0.7)
+ *  1. Low confidence score (< EXPERT_REVIEW_CONFIDENCE_THRESHOLD)
  *  2. Policy keyword detection
  *
  * @param confidenceScore - Numeric confidence score from the RAG pipeline.
@@ -32,10 +45,10 @@ export function shouldAutoFlag(
   prose: string,
 ): FlagResult {
   // Priority 1: low confidence
-  if (confidenceScore < 0.7) {
+  if (confidenceScore < EXPERT_REVIEW_CONFIDENCE_THRESHOLD) {
     return {
       flag: true,
-      reason: `confidence score ${confidenceScore.toFixed(2)} < 0.7`,
+      reason: `confidence score ${confidenceScore.toFixed(2)} < ${EXPERT_REVIEW_CONFIDENCE_THRESHOLD}`,
     };
   }
 

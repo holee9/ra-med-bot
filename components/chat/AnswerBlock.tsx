@@ -26,9 +26,6 @@ import type {
 import { FeedbackControl } from '../answer-block/feedback-control';
 import { PromoteButton } from '../answer-block/promote-button';
 import { ExpertReviewCallout } from '../expert-review/ExpertReviewCallout';
-import { ExportHub } from '../export/ExportHub';
-import type { ExportArtifact } from '../export/FormatOptions';
-import { RefinePanel } from '../refine/RefinePanel';
 import { Callout } from './Callout';
 import { Checklist } from './Checklist';
 import { ComparisonTable } from './ComparisonTable';
@@ -114,26 +111,13 @@ export function AnswerBlock({
   signatureExists = false,
   onRegenerate,
 }: AnswerBlockProps) {
-  const [refinedProse, setRefinedProse] = useState<string | null>(null);
   // #264 sub-PR 3/3 — transient disabled state while the implicit feedback
   // fire-and-forget + re-ask is in flight. Cleared on any terminal outcome
   // (success or the optimistic re-ask path always runs even on fetch failure).
   const [regenerating, setRegenerating] = useState(false);
-  const displayProse = refinedProse ?? prose;
+  const displayProse = prose;
   const sourceCount = sources?.length ?? 0;
   const durationSec = durationMs !== null ? (durationMs / 1000).toFixed(1) : null;
-  const answerExportArtifact: ExportArtifact = {
-    title: 'Regula Answer',
-    content: displayProse,
-    artifactType: 'answer',
-    filenameBase: `answer-${messageId || 'export'}`,
-    citations: sources?.map((source) => ({
-      text: `[${source.citeIndex}] ${source.title}`,
-      url: source.url ?? undefined,
-      source: source.title,
-      offset: source.offset,
-    })),
-  };
 
   return (
     <article className="flex flex-col gap-4">
@@ -159,11 +143,6 @@ export function AnswerBlock({
           >
             <Copy size={14} />
           </button>
-          <ExportHub
-            conversationId={conversationId}
-            messageId={messageId}
-            artifact={answerExportArtifact}
-          />
           <button
             type="button"
             className="rounded p-1 text-ink-400 hover:text-ink-700 transition-colors disabled:cursor-not-allowed disabled:opacity-50 motion-safe:duration-200"
@@ -216,21 +195,7 @@ export function AnswerBlock({
           <p className="section-label font-serif text-[10px] uppercase tracking-widest text-ink-400">
             요약 답변
           </p>
-          {/* REQ-ANSWER-REFINE-001: inline tone-based refinement */}
-          {conversationId && messageId && prose.length > 0 && (
-            <RefinePanel
-              messageId={messageId}
-              conversationId={conversationId}
-              prose={displayProse}
-              onRefined={(text) => setRefinedProse(text)}
-            />
-          )}
         </div>
-        {refinedProse && (
-          <p className="mb-1 text-[10px] text-brand-500 font-medium" data-testid="refined-label">
-            답변이 정제되었습니다
-          </p>
-        )}
         <div
           className="prose-sm prose max-w-none text-[15px] leading-[1.65] text-ink-800"
           data-testid="answer-prose"

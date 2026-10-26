@@ -1,8 +1,11 @@
 llm:
     mode: ""
-    team_mode: cg
+    team_mode: glm
     glm_env_var: GLM_API_KEY
     performance_tier: medium
+    profile: ""
+    profiles: {}
+    agent_overrides: {}
     claude_models:
         high: claude-opus-4-7
         medium: sonnet
@@ -13,6 +16,7 @@ llm:
             high: glm-5.1
             medium: glm-4.7
             low: glm-4.5-air
+            fable: glm-5.2
             opus: glm-5.1
             sonnet: glm-4.7
             haiku: glm-4.5-air

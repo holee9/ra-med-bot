@@ -24,13 +24,19 @@ const CITATION_DIRECTIVE_KO = `모든 사실 주장(claim)에는 반드시 출�
 형식으로 inline 인용하세요. 출처 없이 주장을 생성하지 마세요.
 사용자의 질문에 대한 답을 retrieved 출처에서 찾을 수 없으면
 "해당 질문에 대한 공식 출처를 찾을 수 없습니다"라고만 답하세요.
-상상으로 규정을 만들지 마세요.`;
+상상으로 규정을 만들지 마세요.
+인용이 없는 서론·전환·요약 문장을 최소화하세요: 답변을 구성하는 거의 모든 문장이
+특정 출처를 인용하도록 작성하세요 (신뢰도 점수가 문장별 인용 비율로 계산되므로,
+인용 없는 문장은 답변 전체의 신뢰도를 낮춰 전문가 검토 대상이 됩니다).`;
 
 const CITATION_DIRECTIVE_EN = `Every factual claim MUST include an inline citation in the form
 <sup class="cite" data-source="N" data-offset="M">N</sup>.
 Do NOT produce any claim without a citation. If you cannot answer from the
 retrieved sources, reply only with "No official source was found for this question."
-Do not invent regulations.`;
+Do not invent regulations.
+Minimize uncited intro/transition/summary sentences: nearly every sentence of the
+answer should cite a specific source (confidence is scored as the per-sentence
+citation ratio — uncited sentences lower the whole answer into expert review).`;
 
 const ROLE_FRAMING_KO = `당신은 의료기기 규제 업무(Regulatory Affairs)를 지원하는 전문가 어시스턴트 Regula입니다.
 답변은 명확하고, 근거에 충실하며, 한국어 RA 실무 용어를 사용합니다.
