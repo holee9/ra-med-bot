@@ -62,7 +62,10 @@ export function SourceCard({ source }: SourceCardProps) {
         onClick={handleOpen}
       >
         <span className="flex h-5 w-5 shrink-0 items-center justify-center rounded bg-brand-100 font-mono text-[10px] font-semibold text-brand-700">
-          {source.citeIndex}
+          {/* #541: external-enrichment sources carry 9000+ collision-avoidance
+              indexes — surface a compact ①-style badge instead of the raw
+              number. The raw citeIndex still drives handleOpen (mapping). */}
+          {source.citeIndex >= 9000 ? '＋' : source.citeIndex}
         </span>
         <span
           data-testid="citation-corpus"
