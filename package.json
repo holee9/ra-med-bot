@@ -76,6 +76,7 @@
   },
   "dependencies": {
     "@ai-sdk/openai": "^3.0.58",
+    "@auth/core": "0.41.3",
     "@auth/drizzle-adapter": "^1.4.0",
     "@fontsource/pretendard": "^5.0.0",
     "@hookform/resolvers": "^3.9.0",
@@ -86,7 +87,7 @@
     "@radix-ui/react-toast": "^1.2.1",
     "@radix-ui/react-tooltip": "^1.1.2",
     "@react-pdf/renderer": "^4.5.1",
-    "@sentry/nextjs": "^10.51.0",
+    "@sentry/nextjs": "^10.75.2",
     "@tanstack/react-query": "^5.51.0",
     "@tanstack/react-virtual": "^3.10.0",
     "@types/dompurify": "^3.2.0",
@@ -95,15 +96,15 @@
     "bcryptjs": "^3.0.3",
     "clsx": "^2.1.1",
     "docx": "^9.7.1",
-    "dompurify": "^3.4.10",
+    "dompurify": "^3.4.17",
     "drizzle-orm": "^0.45.2",
     "framer-motion": "^11.5.4",
     "htmlparser2": "^12.0.0",
-    "inngest": "^4.7.0",
+    "inngest": "^4.26.0",
     "langfuse": "^3.38.20",
     "lucide-react": "^0.451.0",
-    "next": "^15.5.18",
-    "next-auth": "^5.0.0-beta.20",
+    "next": "^15.5.28",
+    "next-auth": "5.0.0-beta.32",
     "next-intl": "^4.11.0",
     "ollama-ai-provider": "^1.2.0",
     "pdf-parse": "^2.4.5",
@@ -154,7 +155,9 @@
       "@babel/core@<=7.29.0": ">=7.29.6",
       "protobufjs@>=8.0.0 <=8.4.0": ">=8.4.1",
       "protobufjs@<=7.6.0": ">=7.6.1",
-      "@opentelemetry/core@<2.8.0": ">=2.8.0"
+      "@opentelemetry/core@<2.8.0": ">=2.8.0",
+      "@auth/core": ">=0.41.3",
+      "proxy-addr": ">=2.0.8"
     }
   },
   "devDependencies": {
