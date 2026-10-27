@@ -21,6 +21,31 @@ interface CronWatch {
   label: string;
   lastRunHoursAgo: number | null;
 }
+interface IntakeSection {
+  kind: string;
+  title?: string;
+  // metric
+  value?: string | number;
+  unit?: string;
+  // timeseries
+  points?: Array<Record<string, unknown>>;
+  // table
+  rows?: Array<Record<string, unknown>>;
+  columns?: string[];
+  // status
+  detail?: unknown;
+}
+interface IntakeProducer {
+  producer: string;
+  generatedAt?: string;
+  sections: IntakeSection[];
+}
+interface LedgerSummary {
+  connected: boolean;
+  rows: number;
+  expiringSoon: Array<{ model: string; market: string; expiresInDays: number }>;
+  expired: number;
+}
 interface Snapshot {
   stale: boolean;
   generatedAt?: string;
@@ -34,6 +59,9 @@ interface Snapshot {
     dbBackupHoursAgo: number | null;
     hostname: string;
   };
+  intake?: IntakeProducer[];
+  ledger?: LedgerSummary | null;
+  security?: { findings: number; samples: string[] };
 }
 
 function hoursLabel(h: number | null): string {
@@ -156,6 +184,92 @@ export default function OpsConsole() {
             DB 백업 {hoursLabel(snap.system?.dbBackupHoursAgo ?? null)}
           </li>
         </ul>
+      </section>
+
+      {/* RA 성장 대시보드 (B안) — 3세션 인테이크(/opt/ra-intake) + 로컬 기밀 원장 */}
+      <section>
+        <h2 className="mb-2 text-sm font-semibold text-ink-800">RA 성장 (세션 인테이크)</h2>
+        {(snap.intake ?? []).length === 0 && (
+          <p className="text-sm text-ink-500">인테이크 대기 중 (/opt/ra-intake)</p>
+        )}
+        {(snap.intake ?? []).map((p) => (
+          <div key={p.producer} className="mb-3">
+            <p className="mb-1 text-xs font-medium text-brand-700">
+              {p.producer}
+              {p.generatedAt ? ` · ${new Date(p.generatedAt).toLocaleString('ko-KR')}` : ''}
+            </p>
+            <div className="flex flex-wrap gap-2">
+              {p.sections.map((sec, i) => (
+                <div
+                  key={`${p.producer}-${i}`}
+                  className="min-w-40 rounded-md border border-ink-100 px-3 py-2 text-xs"
+                >
+                  <p className="mb-1 font-medium text-ink-700">{sec.title ?? sec.kind}</p>
+                  {sec.kind === 'metric' && (
+                    <p className="text-lg text-ink-900">
+                      {sec.value ?? '-'}
+                      {sec.unit ?? ''}
+                    </p>
+                  )}
+                  {sec.kind === 'timeseries' && (
+                    <p className="text-ink-600">
+                      최근: {JSON.stringify((sec.points ?? []).slice(-1)[0] ?? {})}
+                    </p>
+                  )}
+                  {sec.kind === 'table' && (
+                    <p className="text-ink-600">{(sec.rows ?? []).length}행</p>
+                  )}
+                  {sec.kind === 'status' && (
+                    <p className="text-ink-600">{JSON.stringify(sec.detail ?? {})}</p>
+                  )}
+                </div>
+              ))}
+            </div>
+          </div>
+        ))}
+      </section>
+
+      <section>
+        <h2 className="mb-2 text-sm font-semibold text-ink-800">인허가 원장 (로컬 기밀)</h2>
+        {snap.ledger?.connected ? (
+          <ul className="flex flex-wrap gap-2 text-sm">
+            <li className="rounded-md border border-ink-100 px-3 py-2">
+              등록 {snap.ledger.rows}건
+            </li>
+            <li className="rounded-md border border-ink-100 px-3 py-2">
+              만료 {snap.ledger.expired}건
+            </li>
+            {(snap.ledger.expiringSoon ?? []).map((e) => (
+              <li
+                key={`${e.model}-${e.expiresInDays}`}
+                className="rounded-md border border-amber-300 bg-amber-50 px-3 py-2"
+              >
+                {e.model} ({e.market}) — D-{e.expiresInDays}
+              </li>
+            ))}
+          </ul>
+        ) : (
+          <p className="text-sm text-ink-500">원장 미연결</p>
+        )}
+      </section>
+
+      <section>
+        <h2 className="mb-2 text-sm font-semibold text-ink-800">보안 (규약 v1.0 자가 점검)</h2>
+        <p className="text-sm">
+          {snap.security?.findings
+            ? `⚠️ 패턴 매칭 ${snap.security.findings}건 — 검토 필요`
+            : '✅ 스캔 무결'}{' '}
+          <span className="text-ink-500">
+            (K번호·사업자번호·비예제 이메일 패턴, 브라우저에서 상세)
+          </span>
+        </p>
+        {snap.security?.samples?.length ? (
+          <ul className="mt-1 space-y-1 text-xs text-ink-600">
+            {snap.security.samples.map((s) => (
+              <li key={s}>{s}</li>
+            ))}
+          </ul>
+        ) : null}
       </section>
     </div>
   );
