@@ -242,6 +242,9 @@ const dbMock: any = {
         }
         return created;
       }),
+      // #544: source_license companion insert uses onConflictDoNothing — treat
+      // as a successful no-op return (drizzle returns void for OCN without returning).
+      onConflictDoNothing: vi.fn(async () => undefined),
     };
     return chain;
   }),

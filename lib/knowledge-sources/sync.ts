@@ -20,7 +20,7 @@ import {
 } from '@/lib/ingest/source-sections-upsert';
 import { writeAudit } from '@/lib/kernel/audit';
 import { db } from '@/lib/kernel/db/client';
-import { corpusSyncRuns, knowledgeSources, sources } from '@/lib/kernel/db/schema';
+import { corpusSyncRuns, knowledgeSources, sourceLicense, sources } from '@/lib/kernel/db/schema';
 import { logger } from '@/lib/observability/logger';
 import { applyOutdateOperations } from '@/lib/radar/delta-sync/ingest';
 import { resolveExistingChunkIds } from '@/lib/radar/delta-sync/orchestrator';
@@ -540,11 +540,36 @@ async function resolveOrCreateFileSource(
       contentHash: computeChunkHash(file.relPath),
       ingestionRunId: ctx.runId,
       ingestedAt: new Date(),
-      approvalStatus: 'pending_review', // RA-owner gate — never reaches retriever until approved
+      // #544 (2026-10-26): internal git-repo ingestion creates its governance
+      // metadata up front instead of leaving NULLs that silently make the
+      // source invisible to retrieval (authority unknown → low-authority gate
+      // flags every answer) and unlicensed (license gate drops it entirely).
+      // approval stays pending_review — the RA-owner gate is untouched; only
+      // the mechanical defaults are pre-filled so approval is a one-click
+      // review rather than a five-field data-repair.
+      authorityGrade: 'internal_sop',
     })
     .returning({ id: sources.id });
   const id = rows[0]?.id;
   if (!id) throw new Error(`failed_to_create_source_row: ${file.relPath}`);
+
+  // Companion perpetual internal license — same row pattern the 2026-10-16
+  // manual repair seeded (#538). filterExpiredSources only passes sources that
+  // HAVE an active license row, so a source without one is invisible no matter
+  // its approval state.
+  await db
+    .insert(sourceLicense)
+    .values({
+      orgId: ctx.orgId,
+      sourceId: id,
+      licenseType: 'internal_sop',
+      permittedUse: { rag: true, search: true },
+      fullTextAllowed: true,
+      abstractOnly: false,
+      confidentialityLevel: 'internal',
+      createdBy: '00000000-0000-0000-0000-000000000001',
+    })
+    .onConflictDoNothing();
   return id;
 }
 
