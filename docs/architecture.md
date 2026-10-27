@@ -277,7 +277,7 @@ sequenceDiagram
     participant RAG as hybrid-ra-saas RAG
     participant Risk as lib/risk/*
     participant DB as PostgreSQL
-    participant Lead as RA Lead
+    participant Lead as RA
 
     U->>UI: create risk run
     UI->>API: POST /risk/runs
@@ -326,7 +326,7 @@ The electronic signature bounded context implements 21 CFR Part 11 §11.50 manif
 
 ```mermaid
 sequenceDiagram
-    participant Lead as RA Lead / QA Lead
+    participant Lead as RA
     participant API as /api/ra/messages/[messageId]/signature
     participant Authz as getAuthorizedSignatureMessage
     participant Hash as computeAnswerHash
@@ -360,7 +360,7 @@ sequenceDiagram
 
 - Signature routes authorize the answer before any signature lookup or mutation.
 - A signed answer is locked until the active signature is revoked.
-- `qa-lead` can sign through `signature.sign.additionalRoles` but does not inherit unrelated `ra-lead` permissions.
+- #547 (2026-10-27): `ra-lead`/`ra-member`/`qa-lead` unified into a single `ra` role — the `qa-lead` signature allowlist is retired; `ra` signs through hierarchy.
 - Signature audit events are append-only: `signature.applied`, `signature.revoked`.
 
 ---

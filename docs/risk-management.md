@@ -126,10 +126,10 @@ Audit actions:
 
 | Permission | Minimum role | Scope |
 |---|---|---|
-| `risk.generate` | `ra-member` | `org` |
-| `risk.view` | `ra-member` | `org` |
-| `risk.update` | `ra-member` | `org` |
-| `risk.approve` | `ra-lead` | `org` |
+| `risk.generate` | `ra` | `org` |
+| `risk.view` | `ra` | `org` |
+| `risk.update` | `ra` | `org` |
+| `risk.approve` | `ra` | `org` |
 
 `risk.approve` is the legal responsibility gate. UI gating is implemented for usability, but server-side `withPermission('risk.approve')` is the enforcement point.
 

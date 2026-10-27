@@ -18,7 +18,7 @@ CREATE TABLE users (
   email        TEXT UNIQUE NOT NULL,
   name         TEXT NOT NULL,
   initials     TEXT NOT NULL,
-  role         TEXT NOT NULL CHECK (role IN ('viewer','employee','ra-member','ra-lead','admin')),
+  role         TEXT NOT NULL CHECK (role IN ('viewer','auditor','ra','admin'))  -- #547 RA 단일화 (user_role pgEnum),
   dept         TEXT,
   title        TEXT,
   team         TEXT,

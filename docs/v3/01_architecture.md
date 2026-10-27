@@ -83,7 +83,7 @@
 | Persona (UI) | Role (DB) | Sidebar Items | 접근 가능 API |
 |---|---|---|---|
 | Employee | `employee` · `viewer` | 5 items | `/api/ask` · `/api/my-questions` · `/api/products (read)` · `/api/guides` · `/api/impact-check` |
-| RA | `ra-member` · `ra-lead` | 6 items | 위 + `/api/inbox/*` · `/api/consult/*` · `/api/submissions/*` · `/api/registry` · `/api/radar` · `/api/knowledge/*` |
+| RA | `ra` | 5 items (#547 — 인박스·전문가검토 포함) | 위 + `/api/inbox/*` · `/api/consult/*` · `/api/submissions/*` · `/api/registry` · `/api/radar` · `/api/knowledge/*` |
 | Admin | `admin` | 12 items (5 cat) | 위 + `/api/admin/*` (users · corpus · radar-src · logs · settings · personas · usability · backlog) |
 
 **Route guard 예시** (Next.js middleware):
@@ -91,10 +91,10 @@
 // middleware.ts
 const rolePolicy = {
   '/api/admin':      ['admin'],
-  '/api/inbox':      ['ra-member', 'ra-lead', 'admin'],
-  '/api/consult':    ['ra-member', 'ra-lead', 'admin'],
-  '/api/impact-check': ['employee', 'viewer', 'ra-member', 'ra-lead', 'admin'],
-  '/api/ask':        ['employee', 'viewer', 'ra-member', 'ra-lead', 'admin'],
+  '/api/inbox':      ['ra', 'admin'],
+  '/api/consult':    ['ra', 'admin'],
+  '/api/impact-check': ['employee', 'viewer', 'ra', 'admin'],
+  '/api/ask':        ['employee', 'viewer', 'ra', 'admin'],
 };
 ```
 
