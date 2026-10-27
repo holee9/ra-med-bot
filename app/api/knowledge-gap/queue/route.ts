@@ -3,7 +3,7 @@
 // @MX:SPEC SPEC-REGULA-KNOWLEDGE-GAP-001 (REQ-KNOWLEDGE-GAP-008 context, AC-08 RBAC, Issue #35)
 //
 // Returns a paginated, filterable list of unanswered_queue rows.
-//   - Permission: knowledgegap.view (ra-member+) — broader visibility than classify/replay
+//   - Permission: knowledgegap.view (ra+) — broader visibility than classify/replay
 //     so the whole RA team can see what the bot could NOT answer.
 //   - Filters: status (open|classified|resolved), reason (gap_reason), classification.
 //   - Pagination: ?page=1&pageSize=50 (capped at 50).

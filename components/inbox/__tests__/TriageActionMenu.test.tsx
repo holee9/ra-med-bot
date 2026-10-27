@@ -97,35 +97,35 @@ describe('TriageActionMenu - T-015 VALID_TRANSITIONS compliance', () => {
     expect(screen.queryByRole('button', { name: /closed/i })).toBeNull();
   });
 
-  it('should not render menu for non ra-lead users (REQ-V3-UI-032)', () => {
+  it('should not render menu for non ra users (REQ-V3-UI-032, unification)', () => {
     const { container } = render(
       <TestWrapper>
         <TriageActionMenu
           ticketId="test-4"
           currentState="auto"
           onTransition={mockOnTransition}
-          userRole="ra-member"
+          userRole="viewer"
         />
       </TestWrapper>,
     );
 
-    // Menu should not be visible for non-lead users
+    // Menu should not be visible for non-RA users
     expect(container.firstChild).toBeNull();
   });
 
-  it('should render menu for ra-lead users', () => {
+  it('should render menu for ra users', () => {
     const { container } = render(
       <TestWrapper>
         <TriageActionMenu
           ticketId="test-5"
           currentState="auto"
           onTransition={mockOnTransition}
-          userRole="ra-lead"
+          userRole="ra"
         />
       </TestWrapper>,
     );
 
-    // Menu should be visible for ra-lead
+    // Menu should be visible for ra
     expect(container.firstChild).not.toBeNull();
   });
 });

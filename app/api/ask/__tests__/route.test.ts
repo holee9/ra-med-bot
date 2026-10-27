@@ -11,7 +11,7 @@ import { beforeEach, describe, expect, it, vi } from 'vitest';
 
 // --- Mock state toggles ---
 let authenticated = true;
-let userRole: 'viewer' | 'ra-member' | 'ra-lead' | 'admin' = 'ra-member';
+let userRole: 'viewer' | 'ra' | 'admin' = 'ra';
 let organizationId = 'org-001';
 
 type AuditInput = {
@@ -100,7 +100,7 @@ const triageSuccess = {
 beforeEach(() => {
   vi.clearAllMocks();
   authenticated = true;
-  userRole = 'ra-member';
+  userRole = 'ra';
   organizationId = 'org-001';
   runTriage.mockResolvedValue(triageSuccess);
 });
@@ -248,9 +248,9 @@ describe('POST /api/ask TRIAGE hook (SPEC-V3-TRIAGE-001)', () => {
   /**
    * T-016 (REQ-TRI-008): TRIAGE runs only behind ask.create gate. Unauthenticated
    * requests never invoke runTriage (covered above) — here we confirm the gate
-   * still passes authenticated viewer/ra-member/ra-lead/admin roles through.
+   * still passes authenticated viewer/ra/ra/admin roles through.
    */
-  it.each(['viewer', 'ra-member', 'ra-lead', 'admin'] as const)(
+  it.each(['viewer', 'ra', 'ra', 'admin'] as const)(
     'T-016 permits %s role to trigger TRIAGE (ask.create gate)',
     async (role) => {
       userRole = role;

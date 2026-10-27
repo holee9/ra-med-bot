@@ -12,11 +12,8 @@ import { redirect } from 'next/navigation';
 export default async function AdminDocumentsPage() {
   const session = await auth();
 
-  // Only admin and ra-lead can access this page
-  if (
-    !session?.user ||
-    !['admin', 'ra-lead'].includes((session.user as { role?: string }).role ?? '')
-  ) {
+  // Only admin and ra can access this page
+  if (!session?.user || !['admin', 'ra'].includes((session.user as { role?: string }).role ?? '')) {
     redirect('/403');
   }
 

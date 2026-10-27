@@ -8,7 +8,7 @@ import { beforeEach, describe, expect, it, vi } from 'vitest';
 
 // --- Mock withPermission ---
 let authenticated = true;
-let userRole: 'viewer' | 'ra-member' | 'ra-lead' | 'admin' = 'ra-member';
+let userRole: 'viewer' | 'ra' | 'admin' = 'ra';
 let organizationId = 'org-001';
 
 // Stub db client so route import does not spin up a real pg pool (OOM guard).
@@ -68,7 +68,7 @@ function getReq(queryParams: Record<string, string> = {}): Request {
 beforeEach(() => {
   vi.clearAllMocks();
   authenticated = true;
-  userRole = 'ra-member';
+  userRole = 'ra';
   organizationId = 'org-001';
   listByTriageState.mockResolvedValue([
     { id: 'it-001', question: 'Test question 1', triageState: 'auto' },
@@ -110,8 +110,8 @@ describe('GET /api/inbox (REQ-V3-INBOX-007)', () => {
     expect(body.pagination).toEqual({ limit: 10, offset: 20, count: 1 });
   });
 
-  it('denies viewer role with 403 (inbox.view requires ra-member+)', async () => {
-    // viewer role test removed - inbox.view requires ra-member+
+  it('denies viewer role with 403 (inbox.view requires ra+)', async () => {
+    // viewer role test removed - inbox.view requires ra+
     // This test documents the RBAC gate
     expect(true).toBe(true); // Placeholder for documentation
   });

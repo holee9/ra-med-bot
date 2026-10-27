@@ -28,7 +28,7 @@ interface TicketCardProps {
  * - Triage state badge
  * - Assignee (if present)
  * - SLA badge (if deadline exists)
- * - Triage action menu (for ra-lead+ users)
+ * - Triage action menu (for ra+ users)
  *
  * REQ-V3-UI-001: Click navigates to /inbox/[id]
  */
@@ -52,7 +52,7 @@ export function TicketCard({ ticket, userRole = 'viewer' }: TicketCardProps) {
           </span>
         </Link>
 
-        {userRole === 'ra-lead' && (
+        {userRole === 'ra' && (
           <TriageActionMenu
             ticketId={ticket.id}
             currentState={ticket.triageState}

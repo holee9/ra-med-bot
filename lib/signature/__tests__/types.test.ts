@@ -1,7 +1,7 @@
 /**
  * TDD: Type-level tests for ESIG schema additions.
  * These tests verify that TypeScript compile-time types are correct.
- * REQ-ESIG-006: Only ra-lead, qa-lead, admin can sign.
+ * REQ-ESIG-006: Only ra, ra, admin can sign.
  * REQ-ESIG-007: Audit events use append-only audit log.
  */
 

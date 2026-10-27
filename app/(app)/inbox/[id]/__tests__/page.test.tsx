@@ -45,11 +45,11 @@ describe('Inbox Detail Page (T-020/T-021)', () => {
     expect(mockRedirect).not.toHaveBeenCalled();
   });
 
-  it('renders InboxDetailClient for ra-member role', async () => {
+  it('renders InboxDetailClient for ra role', async () => {
     const { auth } = await import('@/lib/kernel/auth');
     const { hasRole } = await import('@/lib/kernel/auth/rbac');
 
-    vi.mocked(auth).mockResolvedValue({ user: { role: 'ra-member' } } as unknown as never);
+    vi.mocked(auth).mockResolvedValue({ user: { role: 'ra' } } as unknown as never);
     vi.mocked(hasRole).mockReturnValue(true);
 
     const Page = (await import('../page')).default;

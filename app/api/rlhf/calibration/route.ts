@@ -2,7 +2,7 @@
 // @MX:SPEC SPEC-REGULA-RLHF-001 (Issue #264 sub-PR 2/3, REQ-RLHF-005/006/014/015)
 // @MX:REASON Surfaces confidence-bucket × observed-feedback aggregates + the
 //           detector's candidate list (overconfident / underconfident buckets)
-//           for RA-Lead review. Reuses rlhf.feedback RBAC (ra-member+) — no
+//           for RA-Lead review. Reuses rlhf.feedback RBAC (ra+) — no
 //           new permission action. RLS is inert project-wide (#239 debt), so
 //           org isolation is enforced at the query layer via the
 //           messages -> conversations -> projects 3-hop join scoped to the

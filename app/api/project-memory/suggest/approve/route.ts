@@ -1,7 +1,7 @@
 // @MX:NOTE [AUTO] POST /api/project-memory/suggest/approve — approve AI suggestion (Issue #51).
 // @MX:SPEC SPEC-REGULA-PROJECT-MEMORY-001 (REQ-005, REQ-014, AC-04, AC-08)
 // @MX:REASON Charter [지양-4] / REQ-005: pending -> active is the ONLY path from
-//   AI suggestion to authoritative memory, and it requires explicit ra-lead
+//   AI suggestion to authoritative memory, and it requires explicit ra
 //   approval (projectmemory.manage). approveSuggestedMemory sets createdBy =
 //   approver (REQ-014) + writes memory_created audit in ONE tx (21 CFR Part 11).
 //   IDOR guard (assertMemoryInOrg) before any write.

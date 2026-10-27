@@ -17,8 +17,8 @@ export interface DefaultPolicy {
  *
  * Policy matrix:
  *   admin:     all classes — read + write + admin
- *   ra-lead:   all classes — read + write (except audit_response write = false)
- *   ra-member: issued_certificate + submission_success — read only
+ *   ra:   all classes — read + write (except audit_response write = false)
+ *   ra: issued_certificate + submission_success — read only
  *              all others — none
  *   viewer:    issued_certificate + submission_success — read only
  */
@@ -32,19 +32,19 @@ export const DEFAULT_DOCUMENT_POLICIES: DefaultPolicy[] = [
     canAdmin: true,
   })),
 
-  // ---- ra-lead: read all, write most (not audit_response), no admin ----
+  // ---- ra: read all, write most (not audit_response), no admin ----
   ...Object.values(DocClass).map((cls) => ({
     docClass: cls,
-    role: 'ra-lead' as Role,
+    role: 'ra' as Role,
     canRead: true,
     canWrite: cls !== DocClass.audit_response,
     canAdmin: false,
   })),
 
-  // ---- ra-member: read selected, no write, no admin ----
+  // ---- ra: read selected, no write, no admin ----
   ...Object.values(DocClass).map((cls) => ({
     docClass: cls,
-    role: 'ra-member' as Role,
+    role: 'ra' as Role,
     canRead: [DocClass.issued_certificate, DocClass.submission_success].includes(cls),
     canWrite: false,
     canAdmin: false,

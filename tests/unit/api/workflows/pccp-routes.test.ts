@@ -43,7 +43,7 @@ vi.mock('@/lib/kernel/auth/with-permission', () => ({
     ) =>
       (req: Request, ctx: unknown) =>
         handler(req, ctx, {
-          user: { id: 'user-1', role: 'ra-lead', organizationId: 'org-1' },
+          user: { id: 'user-1', role: 'ra', organizationId: 'org-1' },
         }),
   ),
 }));

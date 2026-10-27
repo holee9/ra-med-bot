@@ -1,7 +1,7 @@
 // @MX:NOTE [AUTO] POST /api/validation/report/export — build Release Validation Report Markdown.
 // @MX:SPEC SPEC-REGULA-VALIDATION-001 (M5, REQ-VAL-010, REQ-VAL-014, Issue #49)
 // @MX:REASON Thin glue: Zod input → spawn build-report.ts → return file path.
-//   RBAC: validation.read (admin/qa-lead/ra-lead). The generated Markdown file IS
+//   RBAC: validation.read (admin/ra/ra). The generated Markdown file IS
 //   the regulated report artifact (21 CFR Part 11 §11.10(i)). No separate
 //   writeAudit call needed — report generation is a read-side assembly, and RBAC
 //   denial audit is written by withPermission on permission_deny.

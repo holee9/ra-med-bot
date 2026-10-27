@@ -2,7 +2,7 @@
 // @MX:NOTE [AUTO] TDD unit tests — POST /api/inbox/[id]/approve.
 // @MX:SPEC SPEC-V3-INBOX-001 (REQ-V3-INBOX-028, REQ-V3-INBOX-012, Issue 320)
 //
-// Covers: RBAC (inbox.manage, ra-lead ONLY), ESIG re-auth (password required),
+// Covers: RBAC (inbox.manage, ra ONLY), ESIG re-auth (password required),
 // IDOR defense, promoteToApproved error mapping, audit-on-failure (inbox.approve_failed).
 
 import { beforeEach, describe, expect, it, vi } from 'vitest';
@@ -14,11 +14,11 @@ const writeAudit = vi.fn();
 
 // --- Mock withPermission ---
 let authenticated = true;
-let userRole: 'viewer' | 'ra-member' | 'ra-lead' | 'admin' = 'ra-lead';
+let userRole: 'viewer' | 'ra' | 'admin' = 'ra';
 let organizationId = 'org-001';
 
-// Mirror the real RBAC: inbox.manage requires ra-lead/admin (other roles → 403).
-const MANAGE_ROLES = new Set(['ra-lead', 'admin']);
+// Mirror the real RBAC: inbox.manage requires ra/admin (other roles → 403).
+const MANAGE_ROLES = new Set(['ra', 'admin']);
 
 // Mock bcrypt for password re-auth
 const bcryptCompare = vi.fn();
@@ -107,7 +107,7 @@ function getCtx(id: string) {
 beforeEach(() => {
   vi.clearAllMocks();
   authenticated = true;
-  userRole = 'ra-lead';
+  userRole = 'ra';
   organizationId = 'org-001';
   assertTicketInOrg.mockResolvedValue(undefined);
   promoteToApproved.mockResolvedValue(undefined);
@@ -242,8 +242,8 @@ describe('POST /api/inbox/[id]/approve (REQ-V3-INBOX-028, REQ-V3-INBOX-012)', ()
     expect(body.error).toBe('Failed to promote ticket');
   });
 
-  it('denies ra-member role with 403 (inbox.manage requires ra-lead)', async () => {
-    userRole = 'ra-member';
+  it('denies viewer role with 403 (inbox.manage requires ra, unification)', async () => {
+    userRole = 'viewer';
     const res = await POST(
       postReq('it-001', { password: 'correct-password', esigSignature: 'valid' }),
       getCtx('it-001'),

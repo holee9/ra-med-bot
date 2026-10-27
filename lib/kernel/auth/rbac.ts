@@ -11,15 +11,14 @@
 // Access is granted exclusively via PERMISSIONS[*].additionalRoles on the two
 // audit-read endpoints. The auditor write-block in withPermission.ts enforces
 // read-only behavior for POST/PUT/PATCH/DELETE regardless of permission grants.
-export type Role = 'admin' | 'qa-lead' | 'ra-lead' | 'ra-member' | 'viewer' | 'auditor';
+export type Role = 'admin' | 'ra' | 'viewer' | 'auditor';
 
 export const ROLE_HIERARCHY: Record<Role, number> = {
   admin: 4,
-  'ra-lead': 3,
-  // QA lead can perform member-level work by default.
-  // Signature-specific elevation is handled by PERMISSIONS.additionalRoles.
-  'qa-lead': 2.5,
-  'ra-member': 2,
+  // 2026-10-27 (#547): ra-lead/ra-member/qa-lead unified into a single `ra`
+  // role (user directive — no RA seniority split, no QA role). Level 3 is
+  // inherited from the former ra-lead so existing minRole gates keep working.
+  ra: 3,
   viewer: 1,
   // Read-only external inspector — least privileged operational role.
   auditor: 0.5,

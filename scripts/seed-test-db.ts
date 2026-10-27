@@ -17,7 +17,7 @@ const ASSISTANT_MESSAGE_ID = '10000000-0000-4000-8000-000000000402';
 const AUDIT_LOG_ID = '10000000-0000-4000-8000-000000000501';
 const CHAT_QUERY_AUDIT_LOG_ID = '10000000-0000-4000-8000-000000000502';
 
-// Fixed password for the E2E ra-lead test user — matches E2E_TEST_USER_PASSWORD in .env.test
+// Fixed password for the E2E ra test user — matches E2E_TEST_USER_PASSWORD in .env.test
 const E2E_PASSWORD = 'TestE2EPassword123!';
 // guest 계정 전용 비밀번호 (전사 일반 직원 화면 확인용, 2026-06-29 사용자 요청)
 const QUEST_PASSWORD = 'abyz@guest';
@@ -50,7 +50,7 @@ async function main(): Promise<void> {
         )
         values
           (
-            ${RA_LEAD_ID}, 'ra.lead@example.test', 'RA Lead', 'ra-lead', 'ko', 'system', 'RA',
+            ${RA_LEAD_ID}, 'ra.lead@example.test', 'RA Lead', 'ra', 'ko', 'system', 'RA',
             ${passwordHash}, 'active', false
           ),
           (

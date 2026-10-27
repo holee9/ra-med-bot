@@ -42,7 +42,7 @@ describe('Sidebar characterization (T-006)', () => {
   });
 
   it('hides 운영 콘솔 link for non-admin roles', () => {
-    render(<Sidebar userRole="ra-member" />, { wrapper: createWrapper() });
+    render(<Sidebar userRole="ra" />, { wrapper: createWrapper() });
     expect(screen.queryByTestId('sidebar-ops-link')).not.toBeInTheDocument();
   });
 

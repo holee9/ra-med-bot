@@ -1,8 +1,8 @@
 // @MX:NOTE [AUTO] GET/POST /api/project-memory — list + create (Issue #51).
 // @MX:SPEC SPEC-REGULA-PROJECT-MEMORY-001 (REQ-006, REQ-007, REQ-011, AC-01, AC-08)
-// @MX:REASON Charter [지양-4]: POST requires ra-lead (projectmemory.manage).
+// @MX:REASON Charter [지양-4]: POST requires ra (projectmemory.manage).
 //   21 CFR Part 11 atomicity via createMemory (tx wraps insert + writeAudit).
-//   IDOR guard (assertProjectInOrg) before any write. GET is ra-member+
+//   IDOR guard (assertProjectInOrg) before any write. GET is ra+
 //   (projectmemory.view) — project context is shared across the RA team.
 
 import { withPermission } from '@/lib/kernel/auth/with-permission';
@@ -32,7 +32,7 @@ const ListQuerySchema = z.object({
   projectId: z.string().uuid(),
 });
 
-// GET /api/project-memory?projectId= — list valid memories (ra-member+).
+// GET /api/project-memory?projectId= — list valid memories (ra+).
 export const GET = withPermission('projectmemory.view', async (req, _ctx, session) => {
   const url = new URL(req.url);
   const parsed = ListQuerySchema.safeParse({ projectId: url.searchParams.get('projectId') });
@@ -58,7 +58,7 @@ export const GET = withPermission('projectmemory.view', async (req, _ctx, sessio
   return Response.json({ memories });
 });
 
-// POST /api/project-memory — create a memory (ra-lead only).
+// POST /api/project-memory — create a memory (ra only).
 /* audit-check-ignore: audit (memory action) is written inside createMemory()
    within the same tx (21 CFR Part 11 atomicity) — route-level writeAudit would duplicate */
 export const POST = withPermission('projectmemory.manage', async (req, _ctx, session) => {

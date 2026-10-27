@@ -2,7 +2,7 @@
 // @MX:SPEC SPEC-V3-CONSULT-001 (REQ-CONS-003, REQ-CONS-006, AC-CONS-02b, AC-CONS-06, AC-CONS-07, Issue 341)
 // @MX:REASON REQ-CONS-003: GET returns session + turns array (turnNumber asc, AC-CONS-02b).
 //            REQ-CONS-006: DELETE soft-deletes (deletedAt) + `consult.session.delete` audit
-//            (21 CFR Part 11). RBAC: ra-member sees own, ra-lead/admin see all org (AC-CONS-07).
+//            (21 CFR Part 11). RBAC: ra sees own, ra/admin see all org (AC-CONS-07).
 
 import { writeAudit } from '@/lib/kernel/audit';
 import { withPermission } from '@/lib/kernel/auth/with-permission';
@@ -36,8 +36,8 @@ export const GET = withPermission('consult.session.view', async (_req, ctx, sess
     )
     .limit(1);
 
-  // 404 for missing OR cross-user access by ra-member (no information leak).
-  if (!sess || (session.user.role === 'ra-member' && sess.userId !== session.user.id)) {
+  // 404 for missing OR cross-user access by ra (no information leak).
+  if (!sess || (session.user.role === 'ra' && sess.userId !== session.user.id)) {
     return Response.json({ error: 'Session not found' }, { status: 404 });
   }
 

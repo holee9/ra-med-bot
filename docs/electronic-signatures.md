@@ -63,12 +63,12 @@ Signing and revocation use `signature.sign`:
 | Role | Can sign | Notes |
 |---|---:|---|
 | `admin` | Yes | Inherits through hierarchy |
-| `ra-lead` | Yes | Meets `minRole: 'ra-lead'` |
-| `qa-lead` | Yes | Explicitly allowed through `additionalRoles` |
-| `ra-member` | No | Can view accessible manifestation through `conversation.view` |
+| `ra` | Yes | Meets `minRole: 'ra'` |
 | `viewer` | No | No signing permission |
 
-`qa-lead` is intentionally below `ra-lead` in the general role hierarchy. It does not inherit unrelated gates such as `conversation.delete`, `project.manage`, `authoring.approve`, or `risk.approve`.
+> **2026-10-27 (#547)**: `ra-lead`/`ra-member`/`qa-lead` unified into a single
+> `ra` role (user directive — no RA seniority split, no QA role). The former
+> `qa-lead` additionalRoles allowlist is retired; `ra` signs through hierarchy.
 
 ## Signing Flow
 

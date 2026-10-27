@@ -1,4 +1,4 @@
-// @MX:NOTE [AUTO] E2E spec: axe-core accessibility scan for /inbox + /inbox/[id] (ra-member view)
+// @MX:NOTE [AUTO] E2E spec: axe-core accessibility scan for /inbox + /inbox/[id] (ra view)
 // @MX:SPEC SPEC-V3-UI-001 (REQ-V3-UI-042, AC-UI-010, Issue 329)
 
 import AxeBuilder from '@axe-core/playwright';
@@ -105,7 +105,7 @@ test.describe('Inbox Accessibility — WCAG 2.1 AA (REQ-V3-UI-042)', () => {
     await page.waitForLoadState('networkidle');
 
     // TicketCard renders <Link href="/inbox/{id}">. Resolve the first ticket href
-    // straight from the rendered Kanban — same path a ra-lead takes clicking a card,
+    // straight from the rendered Kanban — same path a ra takes clicking a card,
     // and avoids coupling the a11y scan to the /api/inbox response shape.
     const ticketLink = page.locator('a[href*="/inbox/"]').first();
     const href = await ticketLink.getAttribute('href').catch(() => null);

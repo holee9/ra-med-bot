@@ -151,10 +151,12 @@ Signature endpoints must not load signatures solely by UUID. They first authoriz
 Signing and revocation use `signature.sign`:
 
 - `admin`: allowed through hierarchy
-- `ra-lead`: allowed through `minRole`
-- `qa-lead`: allowed only through `additionalRoles`
+- `ra`: allowed through `minRole` (#547 — RA 단일화)
 
-`qa-lead` is intentionally below `ra-lead` in the general role hierarchy so it does not inherit unrelated gates such as project management, authoring approval, conversation deletion, or risk approval.
+> **2026-10-27 (#547)**: the `qa-lead` additionalRoles allowlist is retired —
+> `ra-lead`/`ra-member`/`qa-lead` were unified into a single `ra` role. `viewer`
+> inherits no regulated gates (project management, authoring approval,
+> conversation deletion, risk approval).
 
 ---
 

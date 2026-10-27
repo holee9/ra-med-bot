@@ -6,7 +6,7 @@ import { beforeEach, describe, expect, it, vi } from 'vitest';
 // --- Mutable session: tests override to exercise org/403 branch ---
 let sessionUser: { id: string; role: string; organizationId: string | null } = {
   id: 'user-001',
-  role: 'ra-lead',
+  role: 'ra',
   organizationId: 'org-001',
 };
 
@@ -110,7 +110,7 @@ async function readSseEvents(res: Response): Promise<Array<Record<string, unknow
 describe('POST /api/ra/classification', () => {
   beforeEach(() => {
     vi.clearAllMocks();
-    sessionUser = { id: 'user-001', role: 'ra-lead', organizationId: 'org-001' };
+    sessionUser = { id: 'user-001', role: 'ra', organizationId: 'org-001' };
     classifyDeviceMock.mockReturnValue(FIXED_RESULT);
     parseDeviceIntentMock.mockResolvedValue(FIXED_INTENT);
     mockInsertChain.returning.mockResolvedValue([{ id: 'cls-001' }]);
@@ -165,7 +165,7 @@ describe('POST /api/ra/classification', () => {
   });
 
   it('returns 403 when session has no organizationId', async () => {
-    sessionUser = { id: 'user-001', role: 'ra-lead', organizationId: null };
+    sessionUser = { id: 'user-001', role: 'ra', organizationId: null };
 
     const { POST } = await import('@/app/api/ra/classification/route');
     const req = makePostRequest(VALID_BODY);

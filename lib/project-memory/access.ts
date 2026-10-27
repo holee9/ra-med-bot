@@ -4,13 +4,13 @@
 //           enforced at the query layer. withPermission('projectmemory.*')
 //           proves the caller is a member of their OWN org — it does not bind
 //           the request body projectId/memoryId to that org. Without this
-//           guard, an org-A ra-lead could mutate org-B project memories
+//           guard, an org-A ra could mutate org-B project memories
 //           (cross-tenant corruption of design-control decisions). Mirrors the
 //           knowledge-promo assertMessageInOrg pattern (lib/knowledge-promo/access.ts).
 //
 // AC-08: cross-org (IDOR) 403 denials MUST be audit logged. withPermission
 // logs `rbac.permission_deny` for RBAC role failures, but the IDOR 403 below
-// is a SEPARATE gate — if it returns 403 WITHOUT writing audit, a ra-lead
+// is a SEPARATE gate — if it returns 403 WITHOUT writing audit, a ra
 // attempting cross-org memory access leaves no trail (21 CFR Part 11 violation).
 // The assert functions below write the denial audit row before returning 403.
 

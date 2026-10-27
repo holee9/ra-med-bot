@@ -1,6 +1,6 @@
 // @MX:NOTE [AUTO] PATCH/DELETE /api/project-memory/[id] — update + invalidate (Issue #51).
 // @MX:SPEC SPEC-REGULA-PROJECT-MEMORY-001 (REQ-008, REQ-009, REQ-011, REQ-012, AC-07, AC-08)
-// @MX:REASON Charter [지양-4]: both require ra-lead (projectmemory.manage).
+// @MX:REASON Charter [지양-4]: both require ra (projectmemory.manage).
 //   PATCH = same-key supersession (invalidate old + create new in ONE tx, REQ-012).
 //   DELETE = soft-invalidate (valid_until + status; hard delete forbidden).
 //   21 CFR Part 11 atomicity via updateMemory / invalidateMemory.
@@ -28,7 +28,7 @@ const PatchMemorySchema = z.object({
   validUntil: z.string().datetime().nullable().optional(),
 });
 
-// PATCH /api/project-memory/[id] — same-key supersession (ra-lead only).
+// PATCH /api/project-memory/[id] — same-key supersession (ra only).
 /* audit-check-ignore: audit (memory action) is written inside updateMemory() /
    invalidateMemory() within the same tx (21 CFR Part 11 atomicity) — route-level
    writeAudit would duplicate */
@@ -87,7 +87,7 @@ export const PATCH = withPermission('projectmemory.manage', async (req, ctx, ses
   }
 });
 
-// DELETE /api/project-memory/[id] — soft-invalidate (ra-lead only).
+// DELETE /api/project-memory/[id] — soft-invalidate (ra only).
 export const DELETE = withPermission('projectmemory.manage', async (_req, ctx, session) => {
   const params = ctx.params && 'then' in ctx.params ? await ctx.params : (ctx.params ?? {});
   const memoryId = params?.id;

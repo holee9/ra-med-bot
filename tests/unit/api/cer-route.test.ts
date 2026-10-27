@@ -9,7 +9,7 @@ import { beforeEach, describe, expect, it, vi } from 'vitest';
 // --- Mutable session: IDOR / org tests flip organizationId/null ---
 let sessionUser: { id: string; role: string; organizationId: string | null } = {
   id: 'user-001',
-  role: 'ra-lead',
+  role: 'ra',
   organizationId: 'org-001',
 };
 
@@ -121,7 +121,7 @@ const CER_DOC_FIXTURE = {
 describe('POST /api/ra/workflows/cer — handler surface', () => {
   beforeEach(() => {
     vi.clearAllMocks();
-    sessionUser = { id: 'user-001', role: 'ra-lead', organizationId: 'org-001' };
+    sessionUser = { id: 'user-001', role: 'ra', organizationId: 'org-001' };
     searchPubMedMock.mockResolvedValue([ARTICLE_FIXTURE]);
     appraiseEvidenceMock.mockReturnValue(APPRAISAL_FIXTURE);
     formatVancouverMock.mockReturnValue('Smith J, Doe A. NEJM 2024.');
@@ -222,7 +222,7 @@ describe('POST /api/ra/workflows/cer — handler surface', () => {
   });
 
   it('returns 403 Forbidden when projectId present but session lacks orgId', async () => {
-    sessionUser = { id: 'user-001', role: 'ra-lead', organizationId: null };
+    sessionUser = { id: 'user-001', role: 'ra', organizationId: null };
 
     const { POST } = await import('@/app/api/ra/workflows/cer/route');
     const res = await POST(

@@ -25,14 +25,14 @@ describe('checkDocumentPermission - admin role', () => {
   });
 });
 
-describe('checkDocumentPermission - ra-lead role', () => {
-  it('ra-lead can read all DocClasses', () => {
+describe('checkDocumentPermission - ra role', () => {
+  it('ra can read all DocClasses', () => {
     for (const cls of Object.values(DocClass)) {
-      expect(checkDocumentPermission('ra-lead', cls, null, [], 'read')).toBe(true);
+      expect(checkDocumentPermission('ra', cls, null, [], 'read')).toBe(true);
     }
   });
 
-  it('ra-lead can write most DocClasses', () => {
+  it('ra can write most DocClasses', () => {
     const writableClasses = [
       DocClass.issued_certificate,
       DocClass.submission_success,
@@ -43,39 +43,33 @@ describe('checkDocumentPermission - ra-lead role', () => {
       DocClass.internal_sop,
     ];
     for (const cls of writableClasses) {
-      expect(checkDocumentPermission('ra-lead', cls, null, [], 'write')).toBe(true);
+      expect(checkDocumentPermission('ra', cls, null, [], 'write')).toBe(true);
     }
   });
 
-  it('ra-lead cannot admin DocClasses', () => {
-    expect(checkDocumentPermission('ra-lead', DocClass.issued_certificate, null, [], 'admin')).toBe(
+  it('ra cannot admin DocClasses', () => {
+    expect(checkDocumentPermission('ra', DocClass.issued_certificate, null, [], 'admin')).toBe(
       false,
     );
   });
 });
 
-describe('checkDocumentPermission - ra-member role', () => {
-  it('ra-member can read issued_certificate', () => {
-    expect(
-      checkDocumentPermission('ra-member', DocClass.issued_certificate, null, [], 'read'),
-    ).toBe(true);
+describe('checkDocumentPermission - ra role', () => {
+  it('ra can read issued_certificate', () => {
+    expect(checkDocumentPermission('ra', DocClass.issued_certificate, null, [], 'read')).toBe(true);
   });
 
-  it('ra-member can read submission_success', () => {
-    expect(
-      checkDocumentPermission('ra-member', DocClass.submission_success, null, [], 'read'),
-    ).toBe(true);
+  it('ra can read submission_success', () => {
+    expect(checkDocumentPermission('ra', DocClass.submission_success, null, [], 'read')).toBe(true);
   });
 
-  it('ra-member cannot write audit_response', () => {
-    expect(checkDocumentPermission('ra-member', DocClass.audit_response, null, [], 'write')).toBe(
-      false,
-    );
+  it('ra cannot write audit_response', () => {
+    expect(checkDocumentPermission('ra', DocClass.audit_response, null, [], 'write')).toBe(false);
   });
 
-  it('ra-member cannot admin any DocClass', () => {
+  it('ra cannot admin any DocClass', () => {
     for (const cls of Object.values(DocClass)) {
-      expect(checkDocumentPermission('ra-member', cls, null, [], 'admin')).toBe(false);
+      expect(checkDocumentPermission('ra', cls, null, [], 'admin')).toBe(false);
     }
   });
 });

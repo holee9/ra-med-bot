@@ -67,7 +67,7 @@ interface MockSession {
 }
 
 let currentSession: MockSession = {
-  user: { id: 'user-orgA', role: 'ra-lead', organizationId: ORG_A },
+  user: { id: 'user-orgA', role: 'ra', organizationId: ORG_A },
 };
 
 vi.mock('@/lib/kernel/auth/with-permission', () => ({
@@ -133,7 +133,7 @@ let postCer: typeof import('@/app/api/ra/workflows/cer/route').POST;
 // ---------------------------------------------------------------------------
 
 function setSession(orgId: string, userId = USER_A) {
-  currentSession = { user: { id: userId, role: 'ra-lead', organizationId: orgId } };
+  currentSession = { user: { id: userId, role: 'ra', organizationId: orgId } };
 }
 
 function buildCerBody(overrides: Partial<Record<string, unknown>> = {}): string {

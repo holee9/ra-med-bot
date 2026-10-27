@@ -1,7 +1,7 @@
 // @MX:NOTE [AUTO] POST /api/knowledge-promo/promote — promote a message answer.
 // @MX:SPEC SPEC-REGULA-KNOWLEDGE-PROMO-001 (REQ-006, REQ-007, REQ-013, AC-02, AC-03, AC-07)
 // @MX:REASON Charter [지양-4] no auto-finalize — withPermission('knowledgepromo.promote')
-//           restricts to ra-lead/admin. 21 CFR Part 11 atomicity via promoteAnswer
+//           restricts to ra/admin. 21 CFR Part 11 atomicity via promoteAnswer
 //           (db.transaction wrapping insert + writeAudit). IDOR guard
 //           (assertMessageInOrg) before any write.
 

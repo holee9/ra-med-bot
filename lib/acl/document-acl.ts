@@ -15,8 +15,9 @@ export interface DocumentPermission {
 
 // ACL matrix per role: which classes can be read/written/administered.
 // - admin: full access to everything
-// - ra-lead: read all, write all except audit_response, no admin
-// - ra-member: read issued_certificate + submission_success; write none of audit_response
+// - ra: read all, write all except audit_response, no admin (#547 — inherits
+//   the former ra-lead entry; the ra-member restricted read entry is retired
+//   with the seniority split)
 // - viewer: read issued_certificate + submission_success only
 type AclEntry = {
   readAll: boolean;
@@ -34,7 +35,7 @@ const ACL_MATRIX: Record<Role, AclEntry> = {
     writeClasses: [],
     canAdmin: true,
   },
-  'ra-lead': {
+  ra: {
     readAll: true,
     readClasses: [],
     writeAll: false,
@@ -47,36 +48,6 @@ const ACL_MATRIX: Record<Role, AclEntry> = {
       DocClass.surveillance_report,
       DocClass.internal_sop,
     ],
-    canAdmin: false,
-  },
-  'qa-lead': {
-    readAll: true,
-    readClasses: [],
-    writeAll: false,
-    writeClasses: [
-      DocClass.issued_certificate,
-      DocClass.submission_success,
-      DocClass.submission_inprogress,
-      DocClass.clinical_report,
-      DocClass.checklist_template,
-      DocClass.surveillance_report,
-      DocClass.internal_sop,
-    ],
-    canAdmin: false,
-  },
-  'ra-member': {
-    readAll: false,
-    readClasses: [
-      DocClass.issued_certificate,
-      DocClass.submission_success,
-      DocClass.submission_inprogress,
-      DocClass.clinical_report,
-      DocClass.checklist_template,
-      DocClass.surveillance_report,
-      DocClass.internal_sop,
-    ],
-    writeAll: false,
-    writeClasses: [],
     canAdmin: false,
   },
   viewer: {

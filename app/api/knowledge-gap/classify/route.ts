@@ -2,12 +2,12 @@
 // @MX:REASON Public API boundary for RA-lead classification of an unanswered gap
 //          into one of 4 categories (REQ-KNOWLEDGE-GAP-008). Writes the
 //          classification + status='classified' + audit row. RBAC gate is
-//          ra-lead/admin via knowledgegap.classify — classification drives KB
+//          ra/admin via knowledgegap.classify — classification drives KB
 //          augmentation, so it is a judgment call restricted to senior RA roles.
 // @MX:SPEC SPEC-REGULA-KNOWLEDGE-GAP-001 (REQ-008, REQ-009, AC-04, AC-07, AC-08, Issue #35)
 //
 // Flow:
-//   1. Auth + RBAC (knowledgegap.classify = ra-lead only).
+//   1. Auth + RBAC (knowledgegap.classify = ra only).
 //   2. Zod-validate body (queueId, classification enum, optional note).
 //   3. UPDATE unanswered_queue SET classification, status='classified' WHERE id.
 //   4. Audit knowledge_gap_classified with meta {classification, note, queueId}.

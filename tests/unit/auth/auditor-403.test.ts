@@ -151,7 +151,7 @@ describe('SPEC-REGULA-AUDITOR-VIEW-001 — auditor write-block (AC #2, #3)', () 
   });
 
   it('non-auditor role is NOT blocked by the auditor write guard (no regression)', async () => {
-    authMock.mockResolvedValue(makeSession('ra-member'));
+    authMock.mockResolvedValue(makeSession('ra'));
     const handler = vi.fn(() => Promise.resolve(new Response('ok', { status: 200 })));
     const wrapped = withPermission('consult.create', handler);
 

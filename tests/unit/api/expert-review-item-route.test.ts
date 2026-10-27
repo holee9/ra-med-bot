@@ -12,7 +12,7 @@ import { beforeEach, describe, expect, it, vi } from 'vitest';
 // --- Mutable session ---
 let sessionUser: { id: string; role: string; organizationId: string | null } = {
   id: 'user-001',
-  role: 'ra-lead',
+  role: 'ra',
   organizationId: 'org-001',
 };
 
@@ -91,7 +91,7 @@ function makePatchRequest(body: unknown): Request {
 describe('GET /api/ra/expert-review/[id] — detail', () => {
   beforeEach(() => {
     vi.clearAllMocks();
-    sessionUser = { id: 'user-001', role: 'ra-lead', organizationId: 'org-001' };
+    sessionUser = { id: 'user-001', role: 'ra', organizationId: 'org-001' };
     selectResults.length = 0;
     mockDb.select.mockImplementation(() => makeSelectChain(selectResults.shift() ?? []));
   });
@@ -127,7 +127,7 @@ describe('GET /api/ra/expert-review/[id] — detail', () => {
 describe('PATCH /api/ra/expert-review/[id] — state machine + optional fields', () => {
   beforeEach(() => {
     vi.clearAllMocks();
-    sessionUser = { id: 'user-001', role: 'ra-lead', organizationId: 'org-001' };
+    sessionUser = { id: 'user-001', role: 'ra', organizationId: 'org-001' };
     selectResults.length = 0;
     mockDb.select.mockImplementation(() => makeSelectChain(selectResults.shift() ?? []));
   });

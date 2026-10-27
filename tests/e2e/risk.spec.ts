@@ -166,11 +166,11 @@ test.describe('Risk Management Workflow (SPEC-REGULA-RISK-001)', () => {
     }
   });
 
-  test('risk workflow: non-ra-lead cannot approve risk report', async ({ request }) => {
+  test('risk workflow: non-ra cannot approve risk report', async ({ request }) => {
     const s = requiresLiveServer();
     test.skip(s.skip, s.reason);
 
-    // Use ra-member credentials (no risk.approve permission)
+    // Use ra credentials (no risk.approve permission)
     const memberToken = process.env.TEST_RA_MEMBER_SESSION_TOKEN;
     test.skip(!memberToken, 'Requires TEST_RA_MEMBER_SESSION_TOKEN');
 
@@ -185,7 +185,7 @@ test.describe('Risk Management Workflow (SPEC-REGULA-RISK-001)', () => {
       },
     });
 
-    // ra-member must be forbidden from approving
+    // ra must be forbidden from approving
     expect(approveResp.status()).toBe(403);
   });
 });

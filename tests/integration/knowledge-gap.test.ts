@@ -13,7 +13,7 @@
 //   AC-05 (daily digest + failure)  → "digest aggregation + failed-dispatch audit"
 //   AC-06 (replay → resolved)       → "replay passes and marks gap resolved"
 //   AC-07 (4 event types audited)   → "all 4 audit actions appear"
-//   AC-08 (RBAC denies)             → "withPermission blocks ra-member from classify"
+//   AC-08 (RBAC denies)             → "withPermission blocks ra from classify"
 //
 // DB approach: we mock @/lib/kernel/db/client with an in-memory table that supports
 // insert + select + update, mirroring the docingest-e2e integration test pattern
@@ -349,7 +349,7 @@ describe('AC-04: classification writes audit row', () => {
 
     const classification = 'ra_project_gap';
     await writeAudit({
-      actor_id: 'user-ra-lead',
+      actor_id: 'user-ra',
       action: 'knowledge_gap_classified',
       resource_type: 'unanswered_queue',
       resource_id: 'queue-1',
@@ -561,20 +561,20 @@ describe('AC-07: 4 audit event types', () => {
 // ---------------------------------------------------------------------------
 
 describe('AC-08: RBAC denies unauthorized role', () => {
-  it('PERMISSIONS[knowledgegap.classify].minRole is ra-lead (not ra-member)', async () => {
+  it('PERMISSIONS[knowledgegap.classify].minRole is ra (#547)', async () => {
     const { PERMISSIONS } = await import('@/lib/kernel/auth/permissions');
     const { roleSatisfiesPermission } = await import('@/lib/kernel/auth/permissions');
     const { hasRole } = await import('@/lib/kernel/auth/rbac');
 
     const spec = PERMISSIONS['knowledgegap.classify'];
-    expect(spec.minRole).toBe('ra-lead');
+    expect(spec.minRole).toBe('ra');
 
-    // ra-member does NOT satisfy → withPermission would 403 + audit rbac.permission_deny.
-    expect(roleSatisfiesPermission('ra-member', spec)).toBe(false);
-    expect(hasRole('ra-member', spec.minRole)).toBe(false);
+    // viewer does NOT satisfy → withPermission would 403 + audit rbac.permission_deny.
+    expect(roleSatisfiesPermission('viewer', spec)).toBe(false);
+    expect(hasRole('viewer', spec.minRole)).toBe(false);
 
-    // ra-lead and admin DO satisfy.
-    expect(roleSatisfiesPermission('ra-lead', spec)).toBe(true);
+    // ra and admin DO satisfy.
+    expect(roleSatisfiesPermission('ra', spec)).toBe(true);
     expect(roleSatisfiesPermission('admin', spec)).toBe(true);
   });
 });

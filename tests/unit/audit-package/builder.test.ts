@@ -16,7 +16,7 @@ function makeInput(): AuditPackageInput {
         id: 'log-1',
         createdAt: '2026-01-15T10:00:00Z',
         action: 'signature.applied',
-        actorId: 'user-ra-lead',
+        actorId: 'user-ra',
         resourceType: 'signature',
         resourceId: 'sig-1',
         metaJson: { meaning: 'approve' },
@@ -46,7 +46,7 @@ function makeInput(): AuditPackageInput {
       {
         id: 'rev-1',
         status: 'approved',
-        reviewerId: 'user-ra-lead',
+        reviewerId: 'user-ra',
         decidedAt: '2026-02-01T00:00:00Z',
         message: 'clinically validated',
       },

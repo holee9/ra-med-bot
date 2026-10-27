@@ -22,7 +22,7 @@ vi.mock('@/lib/kernel/db/client', () => ({
 }));
 
 vi.mock('@/lib/kernel/auth', () => ({
-  auth: vi.fn().mockResolvedValue({ user: { id: 'user-001', role: 'ra-member' } }),
+  auth: vi.fn().mockResolvedValue({ user: { id: 'user-001', role: 'ra' } }),
 }));
 
 vi.mock('@/lib/kernel/auth/with-permission', () => ({

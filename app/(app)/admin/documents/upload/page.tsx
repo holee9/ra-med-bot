@@ -10,10 +10,7 @@ import { redirect } from 'next/navigation';
 export default async function AdminDocumentUploadPage() {
   const session = await auth();
 
-  if (
-    !session?.user ||
-    !['admin', 'ra-lead'].includes((session.user as { role?: string }).role ?? '')
-  ) {
+  if (!session?.user || !['admin', 'ra'].includes((session.user as { role?: string }).role ?? '')) {
     redirect('/403');
   }
 

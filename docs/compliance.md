@@ -94,8 +94,8 @@ Regula implements electronic signatures for approved answer records through SPEC
 
 **Controls:**
 
-- Signing is restricted to `ra-lead`, `admin`, and the signature-specific `qa-lead` allowlist via `signature.sign`.
-- `qa-lead` does not inherit unrelated `ra-lead` permissions such as project management, risk approval, or authoring approval.
+- Signing is restricted to `ra` and `admin` via `signature.sign` (#547 — RA 단일화, 이전 qa-lead allowlist 폐지).
+- `viewer` cannot sign and does not inherit regulated gates such as project management, risk approval, or authoring approval.
 - Signature endpoints authorize the `messageId` through conversation/project ownership before loading or mutating signature state.
 - Active signatures lock answer mutation paths; refine and block PATCH handlers return `403 answer_locked`.
 - Revocation soft-revokes the signature row and writes an immutable audit event. Re-signing is required before the answer can be treated as signed again.

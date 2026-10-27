@@ -1,6 +1,6 @@
 // @MX:ANCHOR [AUTO] POST /api/traceability/edges — create/delete evidence edge.
 // @MX:REASON IDOR-sensitive 21 CFR Part 11 record. Three-layer defense:
-//   1) withPermission('traceability.manage') — ra-lead only.
+//   1) withPermission('traceability.manage') — ra only.
 //   2) createEdge/deleteEdgeByKey IDOR gate — verifies BOTH endpoints' org_id.
 //   3) RLS at the DB layer.
 //   A cross-org attempt returns 404 (not 403) to avoid leaking node existence.

@@ -1,7 +1,7 @@
 // @MX:NOTE [AUTO] POST /api/model-governance/approve — expert approval gate.
 // @MX:ANCHOR [AUTO] REQ-MODELGOV-005/012/014 — approval enforces eval_status='passed' + RBAC + audit.
 // @MX:REASON Three-layer defense:
-//             1) withPermission('modelgov.approve') — ra-lead only (REQ-014).
+//             1) withPermission('modelgov.approve') — ra only (REQ-014).
 //             2) IDOR gate via assertChangeRequestAccess (404 cross-org).
 //             3) approveChangeRequest enforces eval_status='passed' (REQ-005),
 //                activates single-active combo (REQ-013), records approver/ts/eval

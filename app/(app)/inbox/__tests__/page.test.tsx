@@ -35,7 +35,7 @@ describe('Inbox Page (T-014)', () => {
     vi.clearAllMocks();
   });
 
-  it('redirects to /chat for viewer role (non-ra-member, REQ-V3-UI-030)', async () => {
+  it('redirects to /chat for viewer role (non-ra, REQ-V3-UI-030)', async () => {
     const { auth } = await import('@/lib/kernel/auth');
     const { redirect: mockRedirect } = await import('next/navigation');
     const { hasRole } = await import('@/lib/kernel/auth/rbac');
@@ -50,11 +50,11 @@ describe('Inbox Page (T-014)', () => {
     expect(mockRedirect).toHaveBeenCalledWith('/chat');
   });
 
-  it('renders InboxKanban for ra-member role (AC-UI-002)', async () => {
+  it('renders InboxKanban for ra role (AC-UI-002)', async () => {
     const { auth } = await import('@/lib/kernel/auth');
     const { hasRole } = await import('@/lib/kernel/auth/rbac');
 
-    vi.mocked(auth).mockResolvedValue({ user: { role: 'ra-member' } } as unknown as never);
+    vi.mocked(auth).mockResolvedValue({ user: { role: 'ra' } } as unknown as never);
     vi.mocked(hasRole).mockReturnValue(true);
 
     const InboxPage = (await import('../page')).default;

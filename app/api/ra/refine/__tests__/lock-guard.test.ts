@@ -32,7 +32,7 @@ import { POST } from '../route';
 const mockSession = {
   user: {
     id: 'user-001',
-    role: 'ra-member',
+    role: 'ra',
     organizationId: 'org-001',
     email: 'user@example.com',
   },

@@ -20,7 +20,7 @@ export default async function Topbar() {
     userInitial = name.charAt(0).toUpperCase() || 'U';
     const userRole = (session?.user as { role?: string } | undefined)?.role;
     if (userRole) {
-      showExpertReview = hasRole(userRole as Parameters<typeof hasRole>[0], 'ra-lead');
+      showExpertReview = hasRole(userRole as Parameters<typeof hasRole>[0], 'ra');
     }
   } catch {
     // Non-critical in test/build environments

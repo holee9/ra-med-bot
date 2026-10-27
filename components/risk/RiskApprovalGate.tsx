@@ -1,6 +1,6 @@
 'use client';
-// @MX:ANCHOR [AUTO] RiskApprovalGate — UI-level ra-lead enforcement gate.
-// @MX:REASON Mirrors server-side risk.approve RBAC. Only renders approve button for ra-lead role.
+// @MX:ANCHOR [AUTO] RiskApprovalGate — UI-level ra enforcement gate.
+// @MX:REASON Mirrors server-side risk.approve RBAC. Only renders approve button for ra role.
 // @MX:SPEC SPEC-REGULA-RISK-001 (T4.4, T2.10, REQ-RISK-037~038)
 
 import { useState } from 'react';
@@ -9,7 +9,7 @@ interface RiskApprovalGateProps {
   runId: string;
   isApproved: boolean;
   approvedBy: string | null;
-  /** Current user's role — only 'ra-lead' can trigger approval */
+  /** Current user's role — only 'ra' can trigger approval */
   currentUserRole: string;
   onApprove?: (runId: string, comment: string) => Promise<void>;
 }
@@ -18,8 +18,8 @@ interface RiskApprovalGateProps {
  * RA-lead approval gate for risk management reports.
  *
  * Visibility rules per ISO 14971 §10 + project RBAC:
- * - ra-lead: sees approval form + submit button
- * - ra-member / other: sees read-only pending banner
+ * - ra: sees approval form + submit button
+ * - ra / other: sees read-only pending banner
  *
  * NOTE: The server-side withPermission('risk.approve') enforces the same check.
  * This component is a UX gate, NOT a security gate — never bypass server auth.
@@ -35,7 +35,7 @@ export function RiskApprovalGate({
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
-  const isRaLead = currentUserRole === 'ra-lead';
+  const isRaLead = currentUserRole === 'ra';
 
   async function handleApprove() {
     if (!onApprove) return;
@@ -67,7 +67,7 @@ export function RiskApprovalGate({
         <p className="text-sm text-yellow-800 font-semibold">Pending RA-Lead Approval</p>
         <p className="text-xs text-yellow-600 mt-1">
           This risk management report requires sign-off from an RA-Lead before distribution. Only
-          users with the ra-lead role can approve.
+          users with the ra role can approve.
         </p>
       </div>
     );

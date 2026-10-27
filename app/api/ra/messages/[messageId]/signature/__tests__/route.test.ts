@@ -3,7 +3,7 @@
  * REQ-ESIG-001: Signature captures identity, timestamp, meaning.
  * REQ-ESIG-002: SHA-256 hash links signature to answer record.
  * REQ-ESIG-004: §11.50 manifestation via GET endpoint.
- * REQ-ESIG-006: RBAC — only ra-lead, qa-lead, admin can sign.
+ * REQ-ESIG-006: RBAC — only ra, ra, admin can sign.
  */
 
 import { beforeEach, describe, expect, it, vi } from 'vitest';
@@ -55,20 +55,10 @@ import { GET, POST } from '../route';
 const mockRaLeadSession = {
   user: {
     id: 'user-lead-001',
-    role: 'ra-lead',
+    role: 'ra',
     organizationId: 'org-001',
     email: 'lead@example.com',
     name: 'Alice Lead',
-  },
-};
-
-const mockMemberSession = {
-  user: {
-    id: 'user-member-001',
-    role: 'ra-member',
-    organizationId: 'org-001',
-    email: 'member@example.com',
-    name: 'Bob Member',
   },
 };
 
@@ -106,8 +96,10 @@ describe('POST /api/ra/messages/[messageId]/signature', () => {
     expect(res.status).toBe(401);
   });
 
-  it('returns 403 when user lacks signature.sign permission (ra-member)', async () => {
-    vi.mocked(auth).mockResolvedValue(mockMemberSession as never);
+  it('returns 403 when user lacks signature.sign permission (viewer, unification)', async () => {
+    vi.mocked(auth).mockResolvedValue({
+      user: { id: 'u-viewer', role: 'viewer', organizationId: 'org-001', email: 'x@x.com' },
+    } as never);
 
     const req = makeRequest({ meaning: 'Approved' });
     const res = await POST(req, makeCtx());

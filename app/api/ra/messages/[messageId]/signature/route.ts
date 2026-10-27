@@ -23,7 +23,7 @@ const SignBodySchema = z.object({
  * POST /api/ra/messages/[messageId]/signature
  * Applies an electronic signature to an answer.
  *
- * Guards: signature.sign permission (ra-lead, qa-lead, admin)
+ * Guards: signature.sign permission (ra, ra, admin)
  * Returns 409 if already signed, 201 with signature record on success.
  */
 export const POST = withPermission('signature.sign', async (req, ctx, session) => {

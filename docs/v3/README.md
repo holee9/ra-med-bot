@@ -56,7 +56,7 @@ RA 담당자 (Manager 1 · Member 2). 사내 질의 처리와 인허가 워크�
 - `a-overview` — 시스템 헬스 + KPI + 최근 감사 로그
 
 **사용자 관리 (User)**
-- `a-users` — 사용자 · 역할 · RBAC (5 역할 · viewer/employee/ra-member/ra-lead/admin)
+- `a-users` — 사용자 · 역할 · RBAC (4 역할 · viewer/auditor/ra/admin (#547 단일화))
 
 **데이터 · 지식 (Data & Knowledge)**
 - `a-corpus` — RAG 코퍼스 (3 Git 레포 + 5 DB 스토어) · **BK-104 크론 03:00/03:20/03:40**

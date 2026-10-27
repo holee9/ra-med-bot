@@ -35,13 +35,13 @@ describe('T2.1~T2.10 — BFF route files exist', () => {
 });
 
 // ---------------------------------------------------------------------------
-// T2.10 — Source-level: approve route uses risk.approve permission (ra-lead ONLY)
+// T2.10 — Source-level: approve route uses risk.approve permission (ra ONLY)
 // ---------------------------------------------------------------------------
-describe('T2.10 — approve route enforces ra-lead permission', () => {
+describe('T2.10 — approve route enforces ra permission', () => {
   it('runs/[id]/approve/route.ts uses withPermission("risk.approve")', () => {
     const src = fs.readFileSync(path.join(routeBase, 'runs/[id]/approve/route.ts'), 'utf8');
     expect(src).toContain("'risk.approve'");
-    // Must NOT use risk.generate or risk.update (would allow ra-member)
+    // Must NOT use risk.generate or risk.update (would allow ra)
     expect(src).not.toContain("'risk.generate'");
     expect(src).not.toContain("'risk.update'");
   });
@@ -63,7 +63,7 @@ describe('T2.1 — runs route uses risk.generate permission', () => {
 describe('T2.9 — export route', () => {
   it('runs/[id]/export/route.ts uses risk.generate or risk.view permission', () => {
     const src = fs.readFileSync(path.join(routeBase, 'runs/[id]/export/route.ts'), 'utf8');
-    // Export can be triggered by ra-member (generate) or read (view)
+    // Export can be triggered by ra (generate) or read (view)
     expect(src).toMatch(/'risk\.(generate|view)'/);
   });
 

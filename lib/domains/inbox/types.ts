@@ -31,7 +31,7 @@ export type TriageState = (typeof TRIAGE_STATES)[number];
  * Approved answer lifecycle states.
  *
  * Published answers are visible to the entire org (KB material).
- * Draft answers are work-in-progress (ra-lead only).
+ * Draft answers are work-in-progress (ra only).
  */
 export type ApprovedAnswerState = 'draft' | 'published' | 'deprecated';
 
@@ -64,7 +64,7 @@ export interface Citation {
  * Promotion input for inbox.ticket → approved_answers.
  *
  * REQ-V3-INBOX-028: ESIG signature required for promotion.
- * Charter [지양-4]: NO auto-promotion — ra-lead/admin ESIG mandatory.
+ * Charter [지양-4]: NO auto-promotion — ra/admin ESIG mandatory.
  */
 export interface PromotionInput {
   ticketId: string;

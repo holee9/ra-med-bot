@@ -11,7 +11,7 @@ import { describe, expect, it } from 'vitest';
 
 describe('SPEC-REGULA-AUDITOR-VIEW-001 — auditor role', () => {
   it('Role union includes auditor', () => {
-    const roles: Role[] = ['admin', 'qa-lead', 'ra-lead', 'ra-member', 'viewer', 'auditor'];
+    const roles: Role[] = ['admin', 'ra', 'ra', 'ra', 'viewer', 'auditor'];
     expect(roles).toContain('auditor');
   });
 
@@ -81,16 +81,16 @@ describe('SPEC-REGULA-AUDITOR-VIEW-001 — auditor role', () => {
       expect(roleSatisfiesPermission('admin', PERMISSIONS['auditLogs.view'])).toBe(true);
     });
 
-    it('ra-lead still satisfies signature.sign', () => {
-      expect(roleSatisfiesPermission('ra-lead', PERMISSIONS['signature.sign'])).toBe(true);
+    it('ra still satisfies signature.sign', () => {
+      expect(roleSatisfiesPermission('ra', PERMISSIONS['signature.sign'])).toBe(true);
     });
 
-    it('qa-lead still satisfies signature.sign via additionalRoles', () => {
-      expect(roleSatisfiesPermission('qa-lead', PERMISSIONS['signature.sign'])).toBe(true);
+    it('ra still satisfies signature.sign via additionalRoles', () => {
+      expect(roleSatisfiesPermission('ra', PERMISSIONS['signature.sign'])).toBe(true);
     });
 
-    it('ra-member still satisfies consult.create', () => {
-      expect(roleSatisfiesPermission('ra-member', PERMISSIONS['consult.create'])).toBe(true);
+    it('ra still satisfies consult.create', () => {
+      expect(roleSatisfiesPermission('ra', PERMISSIONS['consult.create'])).toBe(true);
     });
   });
 });

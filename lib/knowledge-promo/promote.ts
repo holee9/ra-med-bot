@@ -1,7 +1,7 @@
 // @MX:NOTE [AUTO] Promote / unpromote logic for team knowledge library.
 // @MX:SPEC SPEC-REGULA-KNOWLEDGE-PROMO-001 (REQ-006, REQ-007, REQ-013, REQ-014, AC-02, AC-07)
 // @MX:REASON Charter [지양-4] no auto-finalize — promotion requires explicit
-//           ra-lead/admin RBAC (knowledgepromo.promote, enforced at the route
+//           ra/admin RBAC (knowledgepromo.promote, enforced at the route
 //           layer via withPermission). 21 CFR Part 11 atomicity: every promote
 //           / unpromote wraps mutation + writeAudit in ONE db.transaction so a
 //           crash between them cannot leave a promoted row without an audit

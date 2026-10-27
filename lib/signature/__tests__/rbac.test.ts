@@ -1,45 +1,36 @@
 /**
- * TDD RED: RBAC tests for signature.sign permission.
- * REQ-ESIG-006: Only ra-lead, qa-lead, admin can sign.
+ * RBAC tests for signature.sign permission.
+ * REQ-ESIG-006: Only ra, admin can sign.
+ * #547 (2026-10-27): qa-lead/ra-lead/ra-member unified — hierarchy-distinction
+ * cases retired with the split.
  */
 
 import { describe, expect, it } from 'vitest';
 import { PERMISSIONS, roleSatisfiesPermission } from '../../kernel/auth/permissions';
 import { hasRole } from '../../kernel/auth/rbac';
-import type { Role } from '../../kernel/auth/rbac';
 
 describe('signature.sign permission', () => {
   it('exists in PERMISSIONS matrix', () => {
     expect(PERMISSIONS['signature.sign']).toBeDefined();
   });
 
-  it('requires minRole of ra-lead', () => {
-    expect(PERMISSIONS['signature.sign'].minRole).toBe('ra-lead');
+  it('requires minRole of ra', () => {
+    expect(PERMISSIONS['signature.sign'].minRole).toBe('ra');
   });
 
-  it('ra-lead can sign (hasRole ra-lead >= ra-lead)', () => {
-    expect(hasRole('ra-lead', 'ra-lead')).toBe(true);
+  it('ra can sign (hasRole ra >= ra)', () => {
+    expect(hasRole('ra', 'ra')).toBe(true);
   });
 
-  it('qa-lead does not inherit all ra-lead permissions through hierarchy', () => {
-    const qaLead = 'qa-lead' as Role;
-    expect(hasRole(qaLead, 'ra-lead')).toBe(false);
+  it('ra satisfies signature.sign through hierarchy alone (unification — additionalRoles entry retired)', () => {
+    expect(roleSatisfiesPermission('ra', PERMISSIONS['signature.sign'])).toBe(true);
   });
 
-  it('qa-lead can sign via signature-specific additionalRoles', () => {
-    const qaLead = 'qa-lead' as Role;
-    expect(roleSatisfiesPermission(qaLead, PERMISSIONS['signature.sign'])).toBe(true);
+  it('admin can sign (hasRole admin >= ra)', () => {
+    expect(hasRole('admin', 'ra')).toBe(true);
   });
 
-  it('admin can sign (hasRole admin >= ra-lead)', () => {
-    expect(hasRole('admin', 'ra-lead')).toBe(true);
-  });
-
-  it('ra-member cannot sign (hasRole ra-member < ra-lead)', () => {
-    expect(hasRole('ra-member', 'ra-lead')).toBe(false);
-  });
-
-  it('viewer cannot sign (hasRole viewer < ra-lead)', () => {
-    expect(hasRole('viewer', 'ra-lead')).toBe(false);
+  it('viewer cannot sign (hasRole viewer < ra)', () => {
+    expect(hasRole('viewer', 'ra')).toBe(false);
   });
 });

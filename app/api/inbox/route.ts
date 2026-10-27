@@ -1,7 +1,7 @@
 // @MX:NOTE [AUTO] GET /api/inbox — Kanban board list (grouped by triage state).
 // @MX:SPEC SPEC-V3-INBOX-001 (REQ-V3-INBOX-007, Issue 320)
 // @MX:REASON REQ-V3-INBOX-007: Kanban board query with state filter + pagination.
-//            Requires inbox.view (ra-member+) for team transparency.
+//            Requires inbox.view (ra+) for team transparency.
 
 import { listByTriageState } from '@/lib/domains/inbox';
 import { TRIAGE_STATES, type TriageState } from '@/lib/domains/inbox/types';

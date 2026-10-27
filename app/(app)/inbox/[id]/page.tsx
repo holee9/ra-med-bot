@@ -1,6 +1,6 @@
 // @MX:NOTE [AUTO] Inbox detail page — server component, RBAC + param resolution.
 // @MX:SPEC SPEC-V3-UI-001 (REQ-V3-UI-010/032/034, AC-UI-003/009, Issue 320)
-// RBAC: ra-member+ sees full detail. Viewer sees their OWN ticket only
+// RBAC: ra+ sees full detail. Viewer sees their OWN ticket only
 // (ViewerTicketSummary, REQ-V3-UI-034) — backend IDOR (access.ts) returns 404
 // for tickets the viewer doesn't own. REQ-V3-UI-030 redirect applies to /inbox
 // (list), not to /inbox/[id] own-ticket detail.

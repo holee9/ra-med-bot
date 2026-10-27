@@ -487,10 +487,10 @@ Risk Management endpoints support SPEC-REGULA-RISK-001. All endpoints require an
 
 | Permission | Minimum role | Scope | Used by |
 |---|---|---|---|
-| `risk.generate` | `ra-member` | `org` | create runs, identify hazards, recommend controls, export report |
-| `risk.view` | `ra-member` | `org` | read run aggregate |
-| `risk.update` | `ra-member` | `org` | update/delete risk items, evaluate matrix, adopt controls, map GSPR |
-| `risk.approve` | `ra-lead` | `org` | approve final risk report |
+| `risk.generate` | `ra` | `org` | create runs, identify hazards, recommend controls, export report |
+| `risk.view` | `ra` | `org` | read run aggregate |
+| `risk.update` | `ra` | `org` | update/delete risk items, evaluate matrix, adopt controls, map GSPR |
+| `risk.approve` | `ra` | `org` | approve final risk report |
 
 ### POST /api/ra/risk/runs
 
@@ -776,7 +776,7 @@ All endpoints require an Auth.js session and message-level authorization. A call
 
 Applies an electronic signature to an answer.
 
-Permission: `signature.sign` (`admin`, `ra-lead`, and signature-specific `qa-lead`).
+Permission: `signature.sign` (`admin`, `ra` — #547 RA 단일화).
 
 ```http
 POST /api/ra/messages/8a8d0f2d-1d6a-4d74-9c4a-3f2b1a64f111/signature
@@ -785,7 +785,7 @@ Authorization: session cookie
 
 {
   "meaning": "Approved for regulatory submission",
-  "signerTitle": "QA Lead"
+  "signerTitle": "RA"
 }
 ```
 
@@ -797,7 +797,7 @@ Response `201 Created`:
   "messageId": "8a8d0f2d-1d6a-4d74-9c4a-3f2b1a64f111",
   "signerId": "user-001",
   "signerName": "Alice Lead",
-  "signerTitle": "QA Lead",
+  "signerTitle": "RA",
   "meaning": "Approved for regulatory submission",
   "recordHash": "64-char-sha256-hex",
   "signedAt": "2026-06-21T00:00:00.000Z",
@@ -832,7 +832,7 @@ Response `200 OK`:
 {
   "id": "sig-001",
   "signerName": "Alice Lead",
-  "signerTitle": "QA Lead",
+  "signerTitle": "RA",
   "meaning": "Approved for regulatory submission",
   "signedAt": "2026-06-21T00:00:00.000Z",
   "recordHash": "64-char-sha256-hex",
@@ -913,7 +913,7 @@ Response `200 OK`:
 
 ### POST /api/knowledge-gap/classify
 
-Classify an unanswered question into RA categories. Only ra-lead/admin can classify.
+Classify an unanswered question into RA categories. Only ra/admin can classify.
 
 Permission: `knowledgegap.classify`.
 
@@ -959,7 +959,7 @@ Side effects:
 
 Generate a PMS Report (PMSR) based on MDCG 2022-21 guidance section structure.
 
-Permission: `pms.manage` (ra-lead+).
+Permission: `pms.manage` (ra+).
 
 ```http
 POST /api/workflows/pms-report/run
@@ -1004,7 +1004,7 @@ Authorization: session cookie
 
 Generate a PMCF Plan based on EU MDR Annex XIV Part B checklist with AI-assisted writing.
 
-Permission: `pms.manage` (ra-lead+).
+Permission: `pms.manage` (ra+).
 
 ```http
 POST /api/workflows/pmcf-plan/run
@@ -1045,7 +1045,7 @@ Authorization: session cookie
 
 Generate a PMCF Evaluation Report draft comparing collected clinical data against PMCF plan.
 
-Permission: `pms.manage` (ra-lead+).
+Permission: `pms.manage` (ra+).
 
 ```http
 POST /api/workflows/pmcf-evaluation/run
@@ -1082,7 +1082,7 @@ Authorization: session cookie
 
 Submit complaint/vigilance data (manual entry or file upload) for PMS reporting.
 
-Permission: `pms.view` (ra-member+).
+Permission: `pms.view` (ra+).
 
 ```http
 POST /api/pms/inputs
@@ -1114,7 +1114,7 @@ Authorization: session cookie
 
 Get EU MDR Article 83-86 compliance check results for a PMS document.
 
-Permission: `pms.view` (ra-member+).
+Permission: `pms.view` (ra+).
 
 ```http
 GET /api/pms/uuid/compliance
@@ -1151,7 +1151,7 @@ Authorization: session cookie
 
 Close a PMS document with expert review gating. Only documents with `reviewStatus: 'approved'` can be closed.
 
-Permission: `pms.manage` (ra-lead+).
+Permission: `pms.manage` (ra+).
 
 ```http
 POST /api/pms/uuid/documents/uuid/close

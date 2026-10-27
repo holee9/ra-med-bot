@@ -17,7 +17,7 @@ import { and, eq } from 'drizzle-orm';
  * - Alternative: 403 + denial audit (explicit denial)
  *
  * #321 M-1 — team-transparency policy: inbox_tickets are org-scoped (NOT
- * per-author). ra-member+ see ALL tickets in their org (Kanban triage).
+ * per-author). ra+ see ALL tickets in their org (Kanban triage).
  * viewer/employee own-ticket access (REQ-V3-UI-034) is gated separately by
  * the ViewerTicketSummary path, which filters on from_user = session.user.id
  * at the query layer. This function intentionally does NOT check from_user.

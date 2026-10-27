@@ -15,7 +15,7 @@ export type PacketFormat = 'pdf' | 'md';
 /**
  * L4 fix (defense-in-depth): escape Markdown special characters in DB-sourced
  * values before interpolation. These values (refTable/refId/authority/version)
- * are written by ra-lead users or system hooks — low risk, but a regulated tool
+ * are written by ra users or system hooks — low risk, but a regulated tool
  * must not let DB content alter document structure. Escaping `#`, `*`, `_`,
  * backticks, and brackets prevents a malicious or accidental injection from
  * changing heading levels, creating links, or breaking list structure.

@@ -17,7 +17,7 @@ interface TriageActionMenuProps {
     toState: import('@/lib/domains/inbox/types').TriageState,
     reason?: string,
   ) => void;
-  userRole?: 'ra-lead' | 'ra-member' | 'viewer';
+  userRole?: 'ra' | 'viewer';
 }
 
 const REASON_REQUIRED_STATES: Set<import('@/lib/domains/inbox/types').TriageState> = new Set([
@@ -29,7 +29,7 @@ const REASON_REQUIRED_STATES: Set<import('@/lib/domains/inbox/types').TriageStat
  * Triage action menu component.
  *
  * Displays available state transitions based on VALID_TRANSITIONS.
- * Only renders for ra-lead+ users (REQ-V3-UI-032).
+ * Only renders for ra+ users (REQ-V3-UI-032).
  *
  * REQ-V3-UI-020: Button menu with possible transitions
  * REQ-V3-UI-024: Reason prompt for rejected/escalated transitions
@@ -39,7 +39,7 @@ export function TriageActionMenu({
   ticketId,
   currentState,
   onTransition,
-  userRole = 'ra-lead',
+  userRole = 'ra',
 }: TriageActionMenuProps) {
   const t = useTranslations('inbox');
   const transitionMutation = useTriageTransition();
@@ -51,7 +51,7 @@ export function TriageActionMenu({
   const [reason, setReason] = useState('');
 
   // Hide menu for non-lead users (REQ-V3-UI-032)
-  if (userRole !== 'ra-lead') {
+  if (userRole !== 'ra') {
     return null;
   }
 

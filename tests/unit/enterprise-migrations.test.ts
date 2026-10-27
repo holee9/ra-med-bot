@@ -137,19 +137,25 @@ describe('Migration 1: user_role pgEnum (REQ-ENTERPRISE-016)', () => {
   });
 
   it('creates user_role enum type with 4 values', () => {
+    // 0004 is a historical migration — it carries the original Phase 5 values
+    // (ra-lead/ra-member). The #547 unification (0117) reduces the live enum to
+    // admin/ra/viewer/auditor; both files are asserted.
     const sql = readText('migrations/0004_user_role_enum.sql');
     expect(sql).toMatch(/CREATE TYPE user_role AS ENUM/);
     expect(sql).toMatch(/'admin'/);
     expect(sql).toMatch(/'ra-lead'/);
     expect(sql).toMatch(/'ra-member'/);
     expect(sql).toMatch(/'viewer'/);
+
+    const unify = readText('migrations/0117_unify_ra_role.sql');
+    expect(unify).toMatch(/CREATE TYPE user_role AS ENUM \('admin', 'ra', 'viewer', 'auditor'\)/);
   });
 
   it('migrates existing member values to ra-member', () => {
     const sql = readText('migrations/0004_user_role_enum.sql');
     // Must UPDATE existing 'member' rows before altering column type
     expect(sql).toMatch(/UPDATE users/i);
-    expect(sql).toMatch(/member.*ra-member|ra-member.*member/);
+    expect(sql).toMatch(/member.*ra|ra.*member/);
   });
 
   it('alters users.role column to use user_role type', () => {
@@ -890,10 +896,10 @@ describe('SPEC-REGULA-TRACEABILITY-001 (Issue #47) — migration 0068', () => {
     expect(src).toContain("'traceability.stale_propagated'");
   });
 
-  it('permissions.ts adds traceability.manage (ra-lead only)', () => {
+  it('permissions.ts adds traceability.manage (ra only)', () => {
     const src = readText('lib/kernel/auth/permissions.ts');
     expect(src).toMatch(/'traceability.manage'/);
-    expect(src).toMatch(/'traceability.manage':\s*\{[^}]*minRole:\s*'ra-lead'/);
+    expect(src).toMatch(/'traceability.manage':\s*\{[^}]*minRole:\s*'ra'/);
   });
 });
 
@@ -1142,10 +1148,10 @@ describe('Migration 0071: change_control_assessment (SPEC-REGULA-CHANGE-CONTROL-
     expect(src).toMatch(/'change\.assess'/);
     expect(src).toMatch(/'change\.view'/);
     expect(src).toMatch(/'change\.export'/);
-    // ra-lead only for assess/export; ra-member+ for view
-    expect(src).toMatch(/'change\.assess':\s*\{\s*minRole:\s*'ra-lead'/);
-    expect(src).toMatch(/'change\.export':\s*\{\s*minRole:\s*'ra-lead'/);
-    expect(src).toMatch(/'change\.view':\s*\{\s*minRole:\s*'ra-member'/);
+    // ra only for assess/export; ra+ for view
+    expect(src).toMatch(/'change\.assess':\s*\{\s*minRole:\s*'ra'/);
+    expect(src).toMatch(/'change\.export':\s*\{\s*minRole:\s*'ra'/);
+    expect(src).toMatch(/'change\.view':\s*\{\s*minRole:\s*'ra'/);
   });
 });
 
@@ -1254,11 +1260,11 @@ describe('Migration 0072: labeling (SPEC-REGULA-LABELING-001)', () => {
     expect(src).toMatch(/'label\.view'/);
     expect(src).toMatch(/'label\.approve'/);
     expect(src).toMatch(/'label\.export'/);
-    // ra-lead only for approve/export; ra-member+ for create/view
-    expect(src).toMatch(/'label\.approve':\s*\{\s*minRole:\s*'ra-lead'/);
-    expect(src).toMatch(/'label\.export':\s*\{\s*minRole:\s*'ra-lead'/);
-    expect(src).toMatch(/'label\.create':\s*\{\s*minRole:\s*'ra-member'/);
-    expect(src).toMatch(/'label\.view':\s*\{\s*minRole:\s*'ra-member'/);
+    // ra only for approve/export; ra+ for create/view
+    expect(src).toMatch(/'label\.approve':\s*\{\s*minRole:\s*'ra'/);
+    expect(src).toMatch(/'label\.export':\s*\{\s*minRole:\s*'ra'/);
+    expect(src).toMatch(/'label\.create':\s*\{\s*minRole:\s*'ra'/);
+    expect(src).toMatch(/'label\.view':\s*\{\s*minRole:\s*'ra'/);
   });
 });
 

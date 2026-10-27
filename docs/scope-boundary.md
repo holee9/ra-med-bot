@@ -13,7 +13,7 @@ Charter는 "SOP 관리, 변경 제어(Change Control), CAPA, 불만 처리 → �
 
 | 구현 도메인 | 사이드바 | 운영 한정 선언 |
 |---|---|---|
-| `lib/capa` (불만·CAPA 폐루프) | **숨김** (FEATURE_CAPA, 기본 off) | **QMS 시스템이 아님.** RA Lead가 규제 문서 작성 시 참고하는 보조 워크플로우로만 사용. SOP/불만 관리 시스템(Veeva/MasterControl) 대체 불가. |
+| `lib/capa` (불만·CAPA 폐루프) | **숨김** (FEATURE_CAPA, 기본 off) | **QMS 시스템이 아님.** RA가 규제 문서 작성 시 참고하는 보조 워크플로우로만 사용. SOP/불만 관리 시스템(Veeva/MasterControl) 대체 불가. |
 | `lib/change-control` (설계 변경 제어) | **숨김** (FEATURE_CHANGE_CONTROL) | **QMS 변경 제어 시스템이 아님.** 설계 변경이 RA 문서(510(k)/CER)에 미치는 영향 평가 보조 용도. |
 | `lib/dhf` (Design History File) | (별도 라우트) | DHF 관리 시스템이 아님. RA 산출물 패키징 시 DHF 항목 참조 용도. |
 | `lib/clinical-investigation` | **숨김** (FEATURE_CLINICAL_INVESTIGATION) | 임상시험 관리 시스템이 아님. RA 문서 작성 보조. |
@@ -51,7 +51,7 @@ Charter는 "abyz 내부 6~8명용 설계. 외부 고객 온보딩, 결제, 다�
 | 순위 | 사용자 | 주요 역할 | 사이드바 |
 |------|--------|----------|----------|
 | **1순위** | 전사 직원 (viewer, 다수) | 인허가 Q&A 셀프서비스 → **RA 담당자 업무 병목 분산** | **4개**: 홈 · 채팅(Q&A) · 히스토리 · 설정 |
-| **2순위** | RA 담당자 (ra-member/lead, 1~3명) | 전문 워크벤치(Authoring·Evidence·Traceability) + 전사 Q&A 승격(전문가검토) | viewer 4개 + 전문가 검토 · Authoring(hybrid-ra-saas) · Evidence · Traceability · 프로젝트 스위처 |
+| **2순위** | RA 담당자 (ra/lead, 1~3명) | 전문 워크벤치(Authoring·Evidence·Traceability) + 전사 Q&A 승격(전문가검토) | viewer 4개 + 전문가 검토 · Authoring(hybrid-ra-saas) · Evidence · Traceability · 프로젝트 스위처 |
 
 > **정정**: 이전 "RA Lead 80%+" 기술 중심 설명을 **사용자 중심으로 재정립**. 진짜 목표는 "전사 인허가 도우미"로서 RA 담당자의 업무 포화를 분산하는 것.
 

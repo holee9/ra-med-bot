@@ -433,7 +433,7 @@ export const auditActionEnum = pgEnum('audit_action', [
   //   inbox.answered     — final_answer drafted (not yet approved)
   //   inbox.approved     — final_answer ESIG-approved (closed + promoted)
   //   inbox.closed        — ticket closed (without promotion to approved_answers)
-  //   inbox.rejected      — ticket rejected (ra-lead/admin action)
+  //   inbox.rejected      — ticket rejected (ra/admin action)
   'inbox.created',
   'inbox.triaged',
   'inbox.assigned',
@@ -3371,9 +3371,9 @@ export const consultSessions = pgTable(
     deletedAt: timestamp('deleted_at', { withTimezone: true, mode: 'date' }),
   },
   (t) => ({
-    // @MX:NOTE [AUTO] REQ-CONS-002 — org-scoped session list (ra-lead/admin see all).
+    // @MX:NOTE [AUTO] REQ-CONS-002 — org-scoped session list (ra/admin see all).
     orgIdx: index('consult_sessions_org_id_idx').on(t.orgId),
-    // @MX:NOTE [AUTO] REQ-CONS-002 — ra-member sees only own sessions.
+    // @MX:NOTE [AUTO] REQ-CONS-002 — ra sees only own sessions.
     userIdx: index('consult_sessions_user_id_idx').on(t.userId),
     // @MX:NOTE [AUTO] REQ-CONS-002 — newest-first ordering.
     createdIdx: index('consult_sessions_created_at_idx').on(t.createdAt),

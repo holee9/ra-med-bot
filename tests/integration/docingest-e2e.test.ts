@@ -166,7 +166,7 @@ describe('Document Ingestion E2E (REQ-QUAL-015..019)', () => {
 
   it('returns 403 for non-admin role (REQ-QUAL-018)', async () => {
     authMock.mockResolvedValue({
-      user: { id: 'user-2', role: 'ra-member', organizationId: 'org-1' },
+      user: { id: 'user-2', role: 'ra', organizationId: 'org-1' },
     });
 
     const res = await callPost(buildFormData({}));

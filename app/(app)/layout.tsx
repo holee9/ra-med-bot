@@ -22,7 +22,7 @@ export const metadata: Metadata = {
 export default async function AppLayout({ children }: { children: React.ReactNode }) {
   // T-007: Dynamic import avoids pulling next-auth into test bundles at module init time.
   let showExpertReview = false;
-  // SPEC-V3-UI-001 (Issue 320, REQ-V3-UI-031): Inbox nav gated to ra-member+ (inbox.view).
+  // SPEC-V3-UI-001 (Issue 320, REQ-V3-UI-031): Inbox nav gated to ra+ (inbox.view).
   let showInbox = false;
   let userRole: Role | undefined;
   try {
@@ -31,8 +31,8 @@ export default async function AppLayout({ children }: { children: React.ReactNod
     const session = await auth();
     userRole = (session?.user as { role?: string } | undefined)?.role as Role | undefined;
     if (userRole) {
-      showExpertReview = hasRole(userRole as Parameters<typeof hasRole>[0], 'ra-lead');
-      showInbox = hasRole(userRole as Parameters<typeof hasRole>[0], 'ra-member');
+      showExpertReview = hasRole(userRole as Parameters<typeof hasRole>[0], 'ra');
+      showInbox = hasRole(userRole as Parameters<typeof hasRole>[0], 'ra');
     }
     // Issue #111: force password change before any app access.
     const mustChange = (session?.user as { mustChangePassword?: boolean } | undefined)
