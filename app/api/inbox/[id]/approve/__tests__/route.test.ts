@@ -242,7 +242,7 @@ describe('POST /api/inbox/[id]/approve (REQ-V3-INBOX-028, REQ-V3-INBOX-012)', ()
     expect(body.error).toBe('Failed to promote ticket');
   });
 
-  it('denies viewer role with 403 (inbox.manage requires ra, #547)', async () => {
+  it('denies viewer role with 403 (inbox.manage requires ra, unification)', async () => {
     userRole = 'viewer';
     const res = await POST(
       postReq('it-001', { password: 'correct-password', esigSignature: 'valid' }),

@@ -22,7 +22,7 @@ describe('signature.sign permission', () => {
     expect(hasRole('ra', 'ra')).toBe(true);
   });
 
-  it('ra satisfies signature.sign through hierarchy alone (#547 — additionalRoles entry retired)', () => {
+  it('ra satisfies signature.sign through hierarchy alone (unification — additionalRoles entry retired)', () => {
     expect(roleSatisfiesPermission('ra', PERMISSIONS['signature.sign'])).toBe(true);
   });
 

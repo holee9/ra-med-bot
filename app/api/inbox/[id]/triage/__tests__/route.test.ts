@@ -153,7 +153,7 @@ describe('PATCH /api/inbox/[id]/triage (REQ-V3-INBOX-015/021)', () => {
     expect(body.error).toBe('Ticket not found');
   });
 
-  it('denies viewer role with 403 (inbox.manage requires ra, #547)', async () => {
+  it('denies viewer role with 403 (inbox.manage requires ra, unification)', async () => {
     userRole = 'viewer';
     const res = await PATCH(patchReq('it-001', { toState: 'needs-review' }), getCtx('it-001'));
     expect(res.status).toBe(403);

@@ -71,7 +71,7 @@ describe('POST /api/ra/messages/[messageId]/signature/revoke', () => {
     expect(res.status).toBe(401);
   });
 
-  it('returns 403 when user lacks signature.sign permission (viewer, #547)', async () => {
+  it('returns 403 when user lacks signature.sign permission (viewer, unification)', async () => {
     vi.mocked(auth).mockResolvedValue({
       user: { id: 'u', role: 'viewer', organizationId: 'org-001', email: 'x@x.com' },
     } as never);

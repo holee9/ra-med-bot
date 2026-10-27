@@ -33,7 +33,7 @@ describe('PromoteButton RBAC (REQ-007, AC-03)', () => {
     expect(screen.getByTestId('promote-open')).toBeDefined();
   });
 
-  it('renders NOTHING for viewer (no disabled affordance leaking the action, #547)', () => {
+  it('renders NOTHING for viewer (no disabled affordance leaking the action, unification)', () => {
     const { container } = render(<PromoteButton messageId={MSG_ID} viewerRole="viewer" />);
     expect(container.firstChild).toBeNull();
     expect(screen.queryByTestId('promote-button')).toBeNull();

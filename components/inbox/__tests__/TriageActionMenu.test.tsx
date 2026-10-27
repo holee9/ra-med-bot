@@ -97,7 +97,7 @@ describe('TriageActionMenu - T-015 VALID_TRANSITIONS compliance', () => {
     expect(screen.queryByRole('button', { name: /closed/i })).toBeNull();
   });
 
-  it('should not render menu for non ra users (REQ-V3-UI-032, #547)', () => {
+  it('should not render menu for non ra users (REQ-V3-UI-032, unification)', () => {
     const { container } = render(
       <TestWrapper>
         <TriageActionMenu

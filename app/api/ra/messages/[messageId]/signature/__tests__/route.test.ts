@@ -62,16 +62,6 @@ const mockRaLeadSession = {
   },
 };
 
-const mockMemberSession = {
-  user: {
-    id: 'user-member-001',
-    role: 'ra',
-    organizationId: 'org-001',
-    email: 'member@example.com',
-    name: 'Bob Member',
-  },
-};
-
 const makeRequest = (body: unknown) =>
   new Request('http://localhost/api/ra/messages/msg-001/signature', {
     method: 'POST',
@@ -106,7 +96,7 @@ describe('POST /api/ra/messages/[messageId]/signature', () => {
     expect(res.status).toBe(401);
   });
 
-  it('returns 403 when user lacks signature.sign permission (viewer, #547)', async () => {
+  it('returns 403 when user lacks signature.sign permission (viewer, unification)', async () => {
     vi.mocked(auth).mockResolvedValue({
       user: { id: 'u-viewer', role: 'viewer', organizationId: 'org-001', email: 'x@x.com' },
     } as never);
