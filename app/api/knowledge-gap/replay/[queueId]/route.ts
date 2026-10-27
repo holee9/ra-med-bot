@@ -1,11 +1,11 @@
 // @MX:ANCHOR [AUTO] Knowledge Gap Replay Route — POST /api/knowledge-gap/replay/[queueId].
 // @MX:REASON Public API boundary that triggers closed-loop verification. RBAC gate
-//          (ra-lead/admin only) because replay consumes LLM budget and, on pass, closes
+//          (ra/admin only) because replay consumes LLM budget and, on pass, closes
 //          a GitHub issue + writes a regulatory audit row.
 // @MX:SPEC SPEC-REGULA-KNOWLEDGE-GAP-001 (REQ-014, REQ-015, AC-06, AC-08, Issue #35)
 //
 // Flow:
-//   1. Auth + RBAC (knowledgegap.replay = ra-lead/admin).
+//   1. Auth + RBAC (knowledgegap.replay = ra/admin).
 //   2. Resolve [queueId] (Next.js 15 async params).
 //   3. replayGapTest(queueId) — re-run redacted question through consult.
 //   4. If passed: markGapResolved (status='resolved', GitHub comment, audit).

@@ -289,7 +289,7 @@ beforeEach(() => {
   vi.clearAllMocks();
   transactionShouldFail = false;
   seed();
-  currentSession = { user: { id: 'user-a', organizationId: 'org-A', role: 'ra-lead' } };
+  currentSession = { user: { id: 'user-a', organizationId: 'org-A', role: 'ra' } };
 });
 
 afterEach(() => {

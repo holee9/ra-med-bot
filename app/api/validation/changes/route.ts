@@ -1,7 +1,7 @@
 // @MX:NOTE [AUTO] POST /api/validation/changes — 7-axis change-control impact assessment.
 // @MX:SPEC SPEC-REGULA-VALIDATION-001 (M4, REQ-VAL-007/008/009, AC-5, Issue #49)
 // @MX:REASON Thin glue: Zod input → spawn classify-changes.ts → return JSON.
-//   RBAC: validation.run (admin/qa-lead). Change-control assessment mutates
+//   RBAC: validation.run (admin/ra). Change-control assessment mutates
 //   regulated state (change_control rows) — distinct from validation.read.
 
 import { spawn } from 'node:child_process';

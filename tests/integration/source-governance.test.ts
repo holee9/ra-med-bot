@@ -410,10 +410,10 @@ describe('IDOR + compose-with-license-filter', () => {
     expect(src).toContain('licenseEligible.intersection(govEligible)');
   });
 
-  it('source-level: sourcegov.manage = ra-lead, sourcegov.view = ra-member', () => {
+  it('source-level: sourcegov.manage = ra, sourcegov.view = ra', () => {
     const src = readText('lib/kernel/auth/permissions.ts');
-    expect(src).toMatch(/'sourcegov\.manage':\s*\{\s*minRole:\s*'ra-lead'/);
-    expect(src).toMatch(/'sourcegov\.view':\s*\{\s*minRole:\s*'ra-member'/);
+    expect(src).toMatch(/'sourcegov\.manage':\s*\{\s*minRole:\s*'ra'/);
+    expect(src).toMatch(/'sourcegov\.view':\s*\{\s*minRole:\s*'ra'/);
   });
 });
 
@@ -690,7 +690,7 @@ describe('BEHAVIORAL M-1: sync route does not leak errorMessage (expert-security
         ) =>
         (req: Request, ctx: unknown) =>
           handler(req, ctx, {
-            user: { id: 'user-ra-1', role: 'ra-lead', organizationId: 'org-1' },
+            user: { id: 'user-ra-1', role: 'ra', organizationId: 'org-1' },
           }),
     }));
 

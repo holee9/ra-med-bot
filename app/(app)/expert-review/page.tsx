@@ -1,5 +1,5 @@
 // @MX:NOTE [AUTO] Expert Review Queue Page — T-007 (REQ-ENTERPRISE-024).
-// Server component with RBAC check. Only ra-lead and above can access.
+// Server component with RBAC check. Only ra and above can access.
 // Queries DB directly (RSC pattern) for fresh pending reviews.
 // @MX:SPEC SPEC-REGULA-ENTERPRISE-001 (REQ-ENTERPRISE-024)
 // @MX:SPEC Issue #158 (Group B3 - Expert Review triage/SLA header, pre-review warning, status update failure feedback)
@@ -38,7 +38,7 @@ export default async function ExpertReviewQueuePage() {
   }
 
   const userRole = (session.user as { role?: Role }).role;
-  if (!userRole || !hasRole(userRole, 'ra-lead')) {
+  if (!userRole || !hasRole(userRole, 'ra')) {
     redirect('/');
   }
 

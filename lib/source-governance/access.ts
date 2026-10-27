@@ -4,7 +4,7 @@
 // sources is org-scoped via existing RLS (migrations 0067-0079 table-level
 // policy). This module adds the application-level checks the route handlers
 // need:
-//   - assertCanManageGovernance: RBAC sourcegov.manage (ra-lead)
+//   - assertCanManageGovernance: RBAC sourcegov.manage (ra)
 //   - assertSourceInOrg: IDOR gate — cross-org source access → 404 (not 403,
 //     to avoid leaking existence). Mirrors the CAPA/PMS IDOR pattern.
 

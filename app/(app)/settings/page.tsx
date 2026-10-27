@@ -6,7 +6,7 @@ import { auth } from '@/lib/kernel/auth';
 import { type Role, hasRole } from '@/lib/kernel/auth/rbac';
 
 // @MX:NOTE [AUTO] SettingsPage — server-rendered settings sections.
-// Knowledge Sources section is gated server-side to ra-lead/admin only via hasRole.
+// Knowledge Sources section is gated server-side to ra/admin only via hasRole.
 // @MX:SPEC Issue #307 D-2 Phase 2 (Knowledge Sources Settings UI)
 
 export default async function SettingsPage() {
@@ -16,8 +16,8 @@ export default async function SettingsPage() {
     const session = await auth();
     const user = session?.user as { role?: string } | undefined;
     const role = user?.role as Role | undefined;
-    // knowledgesources.manage = ra-lead+ (lib/kernel/auth/permissions.ts).
-    canManageKnowledgeSources = role ? hasRole(role, 'ra-lead') : false;
+    // knowledgesources.manage = ra+ (lib/kernel/auth/permissions.ts).
+    canManageKnowledgeSources = role ? hasRole(role, 'ra') : false;
   } catch {
     // No session context available — section stays hidden.
   }
@@ -53,7 +53,7 @@ export default async function SettingsPage() {
         <NotificationSettings />
       </section>
 
-      {/* Issue 307 D-2 Phase 2: knowledge sources management (ra-lead/admin only). */}
+      {/* Issue 307 D-2 Phase 2: knowledge sources management (ra/admin only). */}
       {canManageKnowledgeSources && (
         <section
           data-testid="knowledge-sources-settings-section"

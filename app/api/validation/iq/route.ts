@@ -1,7 +1,7 @@
 // @MX:NOTE [AUTO] POST /api/validation/iq — IQ evidence bundle collector.
 // @MX:SPEC SPEC-REGULA-VALIDATION-001 (M1, REQ-VAL-003, Issue #49)
 // @MX:REASON Thin glue: Zod input validation → spawn collect-iq.ts → return JSON.
-//   RBAC: validation.run (admin/qa-lead). Evidence collection mutates regulated
+//   RBAC: validation.run (admin/ra). Evidence collection mutates regulated
 //   state (validation_evidence rows) — distinct from validation.read which only
 //   governs transparency. writeAudit is handled by withPermission on
 //   permission_deny; evidence rows themselves are the record.

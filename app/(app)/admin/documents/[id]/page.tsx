@@ -10,10 +10,7 @@ interface DocumentDetailPageProps {
 export default async function DocumentDetailPage({ params }: DocumentDetailPageProps) {
   const session = await auth();
 
-  if (
-    !session?.user ||
-    !['admin', 'ra-lead'].includes((session.user as { role?: string }).role ?? '')
-  ) {
+  if (!session?.user || !['admin', 'ra'].includes((session.user as { role?: string }).role ?? '')) {
     redirect('/403');
   }
 

@@ -10,26 +10,26 @@ describe('FOUNDATION regression', () => {
   // RBAC hierarchy preserved
   // ---------------------------------------------------------------------------
   it('admin has all permissions (hierarchy preserved)', () => {
-    expect(hasRole('admin', 'ra-lead')).toBe(true);
-    expect(hasRole('admin', 'ra-member')).toBe(true);
+    expect(hasRole('admin', 'ra')).toBe(true);
+    expect(hasRole('admin', 'ra')).toBe(true);
     expect(hasRole('admin', 'viewer')).toBe(true);
   });
 
-  it('ra-lead has ra-member and viewer permissions', () => {
-    expect(hasRole('ra-lead', 'ra-member')).toBe(true);
-    expect(hasRole('ra-lead', 'viewer')).toBe(true);
-    expect(hasRole('ra-lead', 'admin')).toBe(false);
+  it('ra has ra and viewer permissions', () => {
+    expect(hasRole('ra', 'ra')).toBe(true);
+    expect(hasRole('ra', 'viewer')).toBe(true);
+    expect(hasRole('ra', 'admin')).toBe(false);
   });
 
-  it('viewer cannot access ra-member actions', () => {
-    expect(hasRole('viewer', 'ra-member')).toBe(false);
-    expect(hasRole('viewer', 'ra-lead')).toBe(false);
+  it('viewer cannot access ra actions', () => {
+    expect(hasRole('viewer', 'ra')).toBe(false);
+    expect(hasRole('viewer', 'ra')).toBe(false);
     expect(hasRole('viewer', 'admin')).toBe(false);
   });
 
-  it('ra-member cannot access ra-lead or admin actions', () => {
-    expect(hasRole('ra-member', 'ra-lead')).toBe(false);
-    expect(hasRole('ra-member', 'admin')).toBe(false);
+  it('viewer cannot access admin actions (#547 — ra seniority split retired)', () => {
+    expect(hasRole('viewer', 'ra')).toBe(false);
+    expect(hasRole('viewer', 'admin')).toBe(false);
   });
 
   // ---------------------------------------------------------------------------
@@ -45,7 +45,7 @@ describe('FOUNDATION regression', () => {
   it('profile.edit permission exists with user scope', () => {
     expect(PERMISSIONS['profile.edit']).toBeDefined();
     expect(PERMISSIONS['profile.edit'].scope).toBe('user');
-    expect(PERMISSIONS['profile.edit'].minRole).toBe('ra-member');
+    expect(PERMISSIONS['profile.edit'].minRole).toBe('ra');
   });
 
   // ---------------------------------------------------------------------------
@@ -81,17 +81,17 @@ describe('FOUNDATION regression', () => {
   it('user role enum has all 4 roles', async () => {
     const { userRoleEnum } = await import('@/lib/kernel/db/schema');
     expect(userRoleEnum.enumValues).toContain('admin');
-    expect(userRoleEnum.enumValues).toContain('ra-lead');
-    expect(userRoleEnum.enumValues).toContain('ra-member');
+    expect(userRoleEnum.enumValues).toContain('ra');
+    expect(userRoleEnum.enumValues).toContain('ra');
     expect(userRoleEnum.enumValues).toContain('viewer');
   });
 
   // ---------------------------------------------------------------------------
-  // Critical RBAC invariants: profile.edit min role is ra-member
+  // Critical RBAC invariants: profile.edit min role is ra
   // ---------------------------------------------------------------------------
-  it('profile.edit is accessible to ra-member (not admin-only)', () => {
+  it('profile.edit is accessible to ra (not admin-only)', () => {
     const spec = PERMISSIONS['profile.edit'];
-    expect(hasRole('ra-member', spec.minRole)).toBe(true);
+    expect(hasRole('ra', spec.minRole)).toBe(true);
     expect(hasRole('viewer', spec.minRole)).toBe(false);
   });
 
@@ -108,6 +108,6 @@ describe('FOUNDATION regression', () => {
   it('rbac.manage requires admin role', () => {
     const spec = PERMISSIONS['rbac.manage'];
     expect(hasRole('admin', spec.minRole)).toBe(true);
-    expect(hasRole('ra-lead', spec.minRole)).toBe(false);
+    expect(hasRole('ra', spec.minRole)).toBe(false);
   });
 });

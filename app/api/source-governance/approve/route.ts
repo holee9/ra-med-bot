@@ -1,7 +1,7 @@
 // @MX:NOTE [AUTO] POST /api/source-governance/approve — approve/reject a pending_review source.
 // @MX:SPEC SPEC-REGULA-SOURCE-GOVERNANCE-001 (Issue #48, REQ-SOURCE-GOV-015, AC-05)
 //
-// RBAC: sourcegov.manage (ra-lead). IDOR: approveSource returns null on cross-org
+// RBAC: sourcegov.manage (ra). IDOR: approveSource returns null on cross-org
 // access → 404 (no existence leak). Audit: source.approved / source.rejected,
 // written inside the same transaction as the state update (21 CFR Part 11 atomicity).
 

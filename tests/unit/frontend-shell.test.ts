@@ -24,20 +24,18 @@ vi.mock('next-auth/react', () => ({
 }));
 
 // Issue #158 Group C: Home + Topbar are server components that call auth() and
-// gate the expert-review link by ra-lead role. Provide an ra-lead session so
+// gate the expert-review link by ra role. Provide an ra session so
 // the shell renders role-aware content (REQ-FND-016, REQ-FND-020).
 vi.mock('@/lib/kernel/auth', () => ({
-  auth: async () => ({ user: { role: 'ra-lead' } }),
+  auth: async () => ({ user: { role: 'ra' } }),
 }));
 vi.mock('@/lib/kernel/auth/rbac', () => ({
-  // 2026-06-29: 실제 ROLE_HIERARCHY 반영 (ra-lead >= ra-member 등).
-  // 단순 === 비교 시 ra-lead가 ra-member 항목을 통과 못 함 (사이드바 필터 테스트 실패).
+  // 2026-06-29: 실제 ROLE_HIERARCHY 반영 (ra >= ra 등).
+  // 단순 === 비교 시 ra가 ra 항목을 통과 못 함 (사이드바 필터 테스트 실패).
   hasRole: (role: string, required: string) => {
     const H: Record<string, number> = {
       admin: 4,
-      'ra-lead': 3,
-      'qa-lead': 2.5,
-      'ra-member': 2,
+      ra: 3,
       viewer: 1,
       auditor: 0.5,
     };
@@ -244,7 +242,7 @@ describe('components/shell/Sidebar.tsx — REQ-FND-019', () => {
   it('renders 3 navigation links in correct order', async () => {
     const mod = await import('../../components/shell/Sidebar');
     const Sidebar = mod.default as React.ComponentType<{ userRole?: string }>;
-    const { container } = render(React.createElement(Sidebar, { userRole: 'ra-lead' }));
+    const { container } = render(React.createElement(Sidebar, { userRole: 'ra' }));
     const nav = container.querySelector('nav');
     expect(nav).not.toBeNull();
     if (!nav) {

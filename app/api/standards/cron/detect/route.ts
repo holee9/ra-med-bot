@@ -3,7 +3,7 @@
 // @MX:REASON The primary trigger is the Inngest daily cron
 //   (lib/inngest/standards/standards-revision-daily.ts). This route exists so
 //   operators can replay detection manually (e.g. after wiring a new crawler
-//   in #62-A). standards.manage (ra-lead) — cron trigger is a write-adjacent
+//   in #62-A). standards.manage (ra) — cron trigger is a write-adjacent
 //   operation that may emit alerts.
 
 import { writeAudit } from '@/lib/kernel/audit';

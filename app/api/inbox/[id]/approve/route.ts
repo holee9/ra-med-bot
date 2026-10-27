@@ -3,7 +3,7 @@
 // @MX:REASON REQ-V3-INBOX-028: ESIG signature mandatory (Charter [지양-4]).
 //            REQ-V3-INBOX-012: password re-auth required before ESIG approval.
 //            Atomic transaction: ticket closure + approved_answers creation + audit.
-//            Requires inbox.manage (ra-lead ONLY) — 21 CFR Part 11 regulatory signoff.
+//            Requires inbox.manage (ra ONLY) — 21 CFR Part 11 regulatory signoff.
 
 import { assertTicketInOrg, promoteToApproved } from '@/lib/domains/inbox';
 import { writeAudit } from '@/lib/kernel/audit';

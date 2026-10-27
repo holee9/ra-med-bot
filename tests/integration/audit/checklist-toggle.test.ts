@@ -48,7 +48,7 @@ describe('PATCH /api/ra/messages/:messageId/blocks/:blockId — checklist toggle
   const SESSION = {
     user: {
       id: 'user-uuid-001',
-      role: 'ra-member',
+      role: 'ra',
       organizationId: 'org-uuid-001',
       email: 'member@test.com',
     },

@@ -8,7 +8,7 @@ import { beforeEach, describe, expect, it, vi } from 'vitest';
 
 // --- Mock withPermission ---
 let authenticated = true;
-let userRole: 'viewer' | 'ra-member' | 'ra-lead' | 'admin' = 'ra-member';
+let userRole: 'viewer' | 'ra' | 'admin' = 'ra';
 let organizationId = 'org-001';
 
 // Stub db client so route import does not spin up a real pg pool (OOM guard).
@@ -67,7 +67,7 @@ function getCtx(id: string) {
 beforeEach(() => {
   vi.clearAllMocks();
   authenticated = true;
-  userRole = 'ra-member';
+  userRole = 'ra';
   organizationId = 'org-001';
   assertTicketInOrg.mockResolvedValue(undefined);
   getTicket.mockResolvedValue([{ id: 'it-001', question: 'Test question', triageState: 'auto' }]);
@@ -104,8 +104,8 @@ describe('GET /api/inbox/[id] (REQ-V3-INBOX-008)', () => {
     expect(body.error).toBe('Ticket not found');
   });
 
-  it('denies viewer role with 403 (inbox.view requires ra-member+)', async () => {
-    // viewer role test removed - inbox.view requires ra-member+
+  it('denies viewer role with 403 (inbox.view requires ra+)', async () => {
+    // viewer role test removed - inbox.view requires ra+
     // This test documents the RBAC gate
     expect(true).toBe(true); // Placeholder for documentation
   });

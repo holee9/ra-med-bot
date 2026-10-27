@@ -6,7 +6,7 @@
 //
 // Verified mapping (research.md §2.3):
 //   viewer, auditor            → employee  (auditor remains write-blocked via rbac.ts)
-//   ra-member, qa-lead, ra-lead → ra
+//   ra, ra, ra → ra
 //   admin                      → admin
 //
 // Cookie (`regula-persona`) is NEVER trusted — every request re-derives the tier
@@ -29,16 +29,14 @@ export const PERSONA_COOKIE = 'regula-persona';
 
 /**
  * Verified role → tier mapping (research.md §2.3).
- * qa-lead maps to RA (rbac.ts: "QA lead can perform member-level work").
+ * ra maps to RA (#547 — single RA role).
  * auditor maps to Employee tier but its write-block (withPermission) is preserved
  * independently of the PersonaBar (REQ-V3-PER-004).
  */
 const ROLE_TO_TIER: Record<Role, Tier> = {
   viewer: 'employee',
   auditor: 'employee',
-  'ra-member': 'ra',
-  'qa-lead': 'ra',
-  'ra-lead': 'ra',
+  ra: 'ra',
   admin: 'admin',
 };
 
@@ -63,8 +61,8 @@ export function personaTier(role: Role): Tier {
  * Examples:
  *   viewer  + admin   → false  (escalation blocked)
  *   admin   + employee → true   (down-tier allowed)
- *   ra-member + ra     → true
- *   ra-member + admin  → false  (escalation blocked)
+ *   ra + ra     → true
+ *   ra + admin  → false  (escalation blocked)
  */
 export function isValidTierForRole(role: Role, tier: Tier): boolean {
   return TIER_RANK[tier] <= TIER_RANK[ROLE_TO_TIER[role]];

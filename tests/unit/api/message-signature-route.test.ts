@@ -15,7 +15,7 @@ let sessionUser: {
   name?: string;
 } = {
   id: 'user-001',
-  role: 'ra-lead',
+  role: 'ra',
   organizationId: 'org-001',
   email: 'lead@regula.test',
   name: 'RA Lead',
@@ -121,7 +121,7 @@ describe('POST /api/ra/messages/[messageId]/signature — handler surface', () =
     vi.clearAllMocks();
     sessionUser = {
       id: 'user-001',
-      role: 'ra-lead',
+      role: 'ra',
       organizationId: 'org-001',
       email: 'lead@regula.test',
       name: 'RA Lead',

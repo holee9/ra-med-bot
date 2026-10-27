@@ -1,7 +1,7 @@
 // @MX:NOTE [AUTO] change-workflow.ts — change_request lifecycle (REQ-MODELGOV-004/005).
 // @MX:ANCHOR [AUTO] createChangeRequest + approveChange — the eval->approval->rollout pipeline.
 // @MX:REASON REQ-MODELGOV-004/005/012/013/014 — the workflow enforces: eval must pass
-//           before approval (REQ-005), approval requires ra-lead RBAC (REQ-014, enforced
+//           before approval (REQ-005), approval requires ra RBAC (REQ-014, enforced
 //           at the route), approval activates the combination single-active (REQ-013),
 //           and records approver/ts/eval-link in audit (REQ-012). fan_in >= 3 expected
 //           (approve route, rollback, test fixtures).

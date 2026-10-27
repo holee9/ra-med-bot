@@ -2,7 +2,7 @@
 
 // @MX:NOTE [AUTO] PromoteButton — role-gated answer-promotion island.
 // @MX:SPEC SPEC-REGULA-KNOWLEDGE-PROMO-001 (REQ-004, REQ-005, REQ-007, REQ-011, AC-02, AC-03)
-// @MX:REASON Charter [지양-4] no auto-finalize — only ra-lead/admin see the
+// @MX:REASON Charter [지양-4] no auto-finalize — only ra/admin see the
 //           button. Non-authorized roles render nothing (no disabled affordance
 //           leaking the action). The backend re-checks via withPermission, so a
 //           spoofed prop only produces a 403. The source-message provenance link
@@ -13,12 +13,12 @@ import { useEffect, useRef, useState } from 'react';
 
 /**
  * Roles permitted to promote. The backend PermissionAction is
- * `knowledgepromo.promote` (minRole: 'ra-lead'). Admin inherits via the role
+ * `knowledgepromo.promote` (minRole: 'ra'). Admin inherits via the role
  * hierarchy. Viewer role is passed from the server-rendered AnswerBlock parent
  * (resolved from auth() in the route), so this client island never touches
  * credentials.
  */
-const PROMOTE_ROLES = new Set(['ra-lead', 'admin']);
+const PROMOTE_ROLES = new Set(['ra', 'admin']);
 
 interface PromoteButtonProps {
   messageId: string;

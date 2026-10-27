@@ -118,11 +118,11 @@ test.describe('Audit log — 21 CFR Part 11 (REQ-LAUNCH-020)', () => {
     }
   });
 
-  test('ra-lead is redirected from /admin/audit-logs UI', async ({ browser, baseURL }) => {
+  test('ra is redirected from /admin/audit-logs UI', async ({ browser, baseURL }) => {
     const auth = requiresAuthState();
     test.skip(auth.skip, auth.reason);
 
-    // Default storageState (.auth.json) is ra-lead — must be redirected to /403
+    // Default storageState (.auth.json) is ra — must be redirected to /403
     const context = await browser.newContext({
       storageState: process.env.PLAYWRIGHT_AUTH_STATE ?? 'tests/e2e/fixtures/.auth.json',
     });

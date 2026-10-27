@@ -23,8 +23,8 @@ function mockFetchOk(body: unknown = { promotedId: 'pa-1' }, status = 201) {
 }
 
 describe('PromoteButton RBAC (REQ-007, AC-03)', () => {
-  it('renders the promote button for ra-lead', () => {
-    render(<PromoteButton messageId={MSG_ID} viewerRole="ra-lead" />);
+  it('renders the promote button for ra', () => {
+    render(<PromoteButton messageId={MSG_ID} viewerRole="ra" />);
     expect(screen.getByTestId('promote-open')).toBeDefined();
   });
 
@@ -33,8 +33,8 @@ describe('PromoteButton RBAC (REQ-007, AC-03)', () => {
     expect(screen.getByTestId('promote-open')).toBeDefined();
   });
 
-  it('renders NOTHING for ra-member (no disabled affordance leaking the action)', () => {
-    const { container } = render(<PromoteButton messageId={MSG_ID} viewerRole="ra-member" />);
+  it('renders NOTHING for viewer (no disabled affordance leaking the action, #547)', () => {
+    const { container } = render(<PromoteButton messageId={MSG_ID} viewerRole="viewer" />);
     expect(container.firstChild).toBeNull();
     expect(screen.queryByTestId('promote-button')).toBeNull();
     expect(screen.queryByTestId('promote-open')).toBeNull();
@@ -52,7 +52,7 @@ describe('PromoteButton promote flow (REQ-004, AC-02)', () => {
   });
 
   it('opens the dialog on click and focuses the title input', () => {
-    render(<PromoteButton messageId={MSG_ID} viewerRole="ra-lead" />);
+    render(<PromoteButton messageId={MSG_ID} viewerRole="ra" />);
     fireEvent.click(screen.getByTestId('promote-open'));
     expect(screen.getByTestId('promote-dialog')).toBeDefined();
     expect(screen.getByTestId('promote-title')).toBeDefined();
@@ -62,7 +62,7 @@ describe('PromoteButton promote flow (REQ-004, AC-02)', () => {
 
   it('submits POST with messageId/title/tags on promote', async () => {
     const fetchSpy = vi.spyOn(globalThis, 'fetch');
-    render(<PromoteButton messageId={MSG_ID} viewerRole="ra-lead" />);
+    render(<PromoteButton messageId={MSG_ID} viewerRole="ra" />);
 
     fireEvent.click(screen.getByTestId('promote-open'));
     fireEvent.change(screen.getByTestId('promote-title'), {
@@ -92,7 +92,7 @@ describe('PromoteButton promote flow (REQ-004, AC-02)', () => {
 
   it('blocks submit when title is empty (client validation)', () => {
     const fetchSpy = vi.spyOn(globalThis, 'fetch');
-    render(<PromoteButton messageId={MSG_ID} viewerRole="ra-lead" />);
+    render(<PromoteButton messageId={MSG_ID} viewerRole="ra" />);
     fireEvent.click(screen.getByTestId('promote-open'));
     // Submit button is disabled when title is empty.
     expect(screen.getByTestId('promote-submit').hasAttribute('disabled')).toBe(true);
@@ -105,7 +105,7 @@ describe('PromoteButton unpromote flow (REQ-014)', () => {
     render(
       <PromoteButton
         messageId={MSG_ID}
-        viewerRole="ra-lead"
+        viewerRole="ra"
         promotedId="pa-existing"
         sourceHref={`/chat/${MSG_ID}`}
       />,
@@ -122,7 +122,7 @@ describe('PromoteButton unpromote flow (REQ-014)', () => {
         headers: { 'Content-Type': 'application/json' },
       }),
     );
-    render(<PromoteButton messageId={MSG_ID} viewerRole="ra-lead" promotedId="pa-existing" />);
+    render(<PromoteButton messageId={MSG_ID} viewerRole="ra" promotedId="pa-existing" />);
     fireEvent.click(screen.getByTestId('promote-unpromote'));
     await waitFor(() => {
       expect(screen.getByTestId('promote-open')).toBeDefined();
@@ -142,7 +142,7 @@ describe('PromoteButton error handling (AC-03)', () => {
         headers: { 'Content-Type': 'application/json' },
       }),
     );
-    render(<PromoteButton messageId={MSG_ID} viewerRole="ra-lead" />);
+    render(<PromoteButton messageId={MSG_ID} viewerRole="ra" />);
     fireEvent.click(screen.getByTestId('promote-open'));
     fireEvent.change(screen.getByTestId('promote-title'), {
       target: { value: 'x' },
@@ -161,7 +161,7 @@ describe('PromoteButton error handling (AC-03)', () => {
         headers: { 'Content-Type': 'application/json' },
       }),
     );
-    render(<PromoteButton messageId={MSG_ID} viewerRole="ra-lead" />);
+    render(<PromoteButton messageId={MSG_ID} viewerRole="ra" />);
     fireEvent.click(screen.getByTestId('promote-open'));
     fireEvent.change(screen.getByTestId('promote-title'), {
       target: { value: 'x' },
@@ -178,7 +178,7 @@ describe('PromoteButton provenance link (REQ-011)', () => {
     render(
       <PromoteButton
         messageId={MSG_ID}
-        viewerRole="ra-lead"
+        viewerRole="ra"
         promotedId="pa-1"
         sourceHref={`/chat/abc#msg-${MSG_ID}`}
       />,

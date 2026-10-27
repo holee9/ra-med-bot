@@ -71,7 +71,7 @@ interface AnswerBlockProps {
   onSuggestionClick?: (text: string) => void;
   // SPEC-REGULA-KNOWLEDGE-PROMO-001 (Issue #50, REQ-004/007): viewer role
   // resolved server-side at the page parent (auth().user.role). Passed down so
-  // the PromoteButton client island can hide itself for non ra-lead/admin
+  // the PromoteButton client island can hide itself for non ra/admin
   // viewers without ever touching credentials. The promote API re-checks via
   // withPermission, so a spoofed prop only yields a 403.
   viewerRole?: string;
@@ -280,7 +280,7 @@ export function AnswerBlock({
       {messageId && <FeedbackControl messageId={messageId} />}
 
       {/* SPEC-REGULA-KNOWLEDGE-PROMO-001 (Issue #50, REQ-004/007/011).
-          Role-gated promote/unpromote island. Renders null for ra-member/viewer
+          Role-gated promote/unpromote island. Renders null for ra/viewer
           (Charter [지양-4]: no disabled affordance leaking the action). The
           backend re-checks via withPermission('knowledgepromo.promote'). */}
       {messageId && (

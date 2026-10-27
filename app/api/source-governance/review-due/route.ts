@@ -1,7 +1,7 @@
 // @MX:NOTE [AUTO] GET /api/source-governance/review-due — review-due source list.
 // @MX:SPEC SPEC-REGULA-SOURCE-GOVERNANCE-001 (Issue #48, REQ-SOURCE-GOV-013)
 //
-// RBAC: sourcegov.view (ra-member+). Returns sources whose review_cycle has
+// RBAC: sourcegov.view (ra+). Returns sources whose review_cycle has
 // elapsed or will within 30 days. Optional ?days=N query overrides the window.
 
 import { withPermission } from '@/lib/kernel/auth/with-permission';

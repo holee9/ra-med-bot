@@ -435,7 +435,7 @@ describe('SPEC-REGULA-MODEL-GOVERNANCE-001 — mock-DB lifecycle (AC-02/03/06/07
     const result = await approveChangeRequest({
       changeRequestId: 'cr-2',
       orgId: 'org-A',
-      approverId: 'user-ra-lead',
+      approverId: 'user-ra',
       evalResultRef: 's3://eval/run-2.json',
     });
 
@@ -443,7 +443,7 @@ describe('SPEC-REGULA-MODEL-GOVERNANCE-001 — mock-DB lifecycle (AC-02/03/06/07
     // The approval audit was written.
     const audit = state.auditLogs.find((a) => a.action === 'modelgov.approved');
     expect(audit).toBeDefined();
-    expect(String(audit?.meta_json?.approver_id)).toBe('user-ra-lead');
+    expect(String(audit?.meta_json?.approver_id)).toBe('user-ra');
   });
 });
 

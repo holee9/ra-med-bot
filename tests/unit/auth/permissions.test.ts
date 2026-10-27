@@ -87,7 +87,7 @@ const EXPECTED_ACTIONS: PermissionAction[] = [
   'impact.ra_escalate',
 ];
 
-const VALID_ROLES = ['admin', 'qa-lead', 'ra-lead', 'ra-member', 'viewer', 'auditor'] as const;
+const VALID_ROLES = ['admin', 'ra', 'ra', 'ra', 'viewer', 'auditor'] as const;
 const VALID_SCOPES = ['org', 'project', 'user', 'none'] as const;
 
 describe('lib/kernel/auth/permissions.ts (REQ-ENTERPRISE-020) — PERMISSIONS matrix', () => {
@@ -145,16 +145,16 @@ describe('lib/kernel/auth/permissions.ts (REQ-ENTERPRISE-020) — PERMISSIONS ma
       expect(PERMISSIONS['conversation.view'].minRole).toBe('viewer');
     });
 
-    it('classify.view requires ra-member (2026-06-29 정정: 사이드바 showClassify와 정렬)', () => {
-      expect(PERMISSIONS['classify.view'].minRole).toBe('ra-member');
+    it('classify.view requires ra (2026-06-29 정정: 사이드바 showClassify와 정렬)', () => {
+      expect(PERMISSIONS['classify.view'].minRole).toBe('ra');
     });
 
-    it('classify.generate requires ra-lead (지양-4: 분류 판단은 RA 담당자)', () => {
-      expect(PERMISSIONS['classify.generate'].minRole).toBe('ra-lead');
+    it('classify.generate requires ra (지양-4: 분류 판단은 RA 담당자)', () => {
+      expect(PERMISSIONS['classify.generate'].minRole).toBe('ra');
     });
 
-    it('conversation.delete requires ra-lead', () => {
-      expect(PERMISSIONS['conversation.delete'].minRole).toBe('ra-lead');
+    it('conversation.delete requires ra', () => {
+      expect(PERMISSIONS['conversation.delete'].minRole).toBe('ra');
     });
 
     it('sources.ingest requires admin', () => {
@@ -169,20 +169,20 @@ describe('lib/kernel/auth/permissions.ts (REQ-ENTERPRISE-020) — PERMISSIONS ma
       expect(PERMISSIONS['rbac.manage'].minRole).toBe('admin');
     });
 
-    it('profile.edit requires ra-member', () => {
-      expect(PERMISSIONS['profile.edit'].minRole).toBe('ra-member');
+    it('profile.edit requires ra', () => {
+      expect(PERMISSIONS['profile.edit'].minRole).toBe('ra');
     });
 
-    it('evidence.link requires ra-member', () => {
-      expect(PERMISSIONS['evidence.link'].minRole).toBe('ra-member');
+    it('evidence.link requires ra', () => {
+      expect(PERMISSIONS['evidence.link'].minRole).toBe('ra');
     });
 
-    it('evidence.binder requires ra-member', () => {
-      expect(PERMISSIONS['evidence.binder'].minRole).toBe('ra-member');
+    it('evidence.binder requires ra', () => {
+      expect(PERMISSIONS['evidence.binder'].minRole).toBe('ra');
     });
 
-    it('authoring.approve requires ra-lead', () => {
-      expect(PERMISSIONS['authoring.approve'].minRole).toBe('ra-lead');
+    it('authoring.approve requires ra', () => {
+      expect(PERMISSIONS['authoring.approve'].minRole).toBe('ra');
     });
   });
 

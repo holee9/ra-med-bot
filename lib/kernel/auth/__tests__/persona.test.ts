@@ -19,9 +19,7 @@ describe('personaTier — verified role→tier mapping (research.md §2.3)', () 
   const cases: Array<[Role, Tier]> = [
     ['viewer', 'employee'],
     ['auditor', 'employee'],
-    ['ra-member', 'ra'],
-    ['qa-lead', 'ra'],
-    ['ra-lead', 'ra'],
+    ['ra', 'ra'],
     ['admin', 'admin'],
   ];
   it.each(cases)('maps role %s → tier %s', (role, expected) => {
@@ -42,22 +40,22 @@ describe('isValidTierForRole — escalation rejection (REQ-V3-PER-001/004)', () 
     expect(isValidTierForRole('auditor', 'admin')).toBe(false);
   });
 
-  it('ra-member can switch to employee/ra, not admin', () => {
-    expect(isValidTierForRole('ra-member', 'employee')).toBe(true);
-    expect(isValidTierForRole('ra-member', 'ra')).toBe(true);
-    expect(isValidTierForRole('ra-member', 'admin')).toBe(false);
+  it('ra can switch to employee/ra, not admin', () => {
+    expect(isValidTierForRole('ra', 'employee')).toBe(true);
+    expect(isValidTierForRole('ra', 'ra')).toBe(true);
+    expect(isValidTierForRole('ra', 'admin')).toBe(false);
   });
 
-  it('qa-lead maps to RA tier range (rbac.ts member-level work)', () => {
-    expect(isValidTierForRole('qa-lead', 'employee')).toBe(true);
-    expect(isValidTierForRole('qa-lead', 'ra')).toBe(true);
-    expect(isValidTierForRole('qa-lead', 'admin')).toBe(false);
+  it('ra maps to RA tier range (rbac.ts member-level work)', () => {
+    expect(isValidTierForRole('ra', 'employee')).toBe(true);
+    expect(isValidTierForRole('ra', 'ra')).toBe(true);
+    expect(isValidTierForRole('ra', 'admin')).toBe(false);
   });
 
-  it('ra-lead can switch to employee/ra, not admin', () => {
-    expect(isValidTierForRole('ra-lead', 'employee')).toBe(true);
-    expect(isValidTierForRole('ra-lead', 'ra')).toBe(true);
-    expect(isValidTierForRole('ra-lead', 'admin')).toBe(false);
+  it('ra can switch to employee/ra, not admin', () => {
+    expect(isValidTierForRole('ra', 'employee')).toBe(true);
+    expect(isValidTierForRole('ra', 'ra')).toBe(true);
+    expect(isValidTierForRole('ra', 'admin')).toBe(false);
   });
 
   it('admin can switch to all three tiers (full range)', () => {
@@ -99,27 +97,27 @@ describe('resolveTier — server-side canonical path (REQ-V3-PER-004/NFR-002)', 
   it('uses cookie tier when valid for the role', () => {
     // admin role with cookie=employee → employee (down-tier allowed)
     expect(resolveTier('admin', makeStore('employee'))).toBe('employee');
-    // ra-member role with cookie=employee → employee
-    expect(resolveTier('ra-member', makeStore('employee'))).toBe('employee');
+    // ra role with cookie=employee → employee
+    expect(resolveTier('ra', makeStore('employee'))).toBe('employee');
   });
 
   it('falls back to role natural tier when cookie is absent', () => {
     expect(resolveTier('viewer', makeStore(undefined))).toBe('employee');
-    expect(resolveTier('ra-lead', makeStore(undefined))).toBe('ra');
+    expect(resolveTier('ra', makeStore(undefined))).toBe('ra');
     expect(resolveTier('admin', makeStore(undefined))).toBe('admin');
   });
 
   it('rejects cookie escalation and falls back to role natural tier', () => {
     // viewer + cookie=admin → escalation blocked → employee (natural)
     expect(resolveTier('viewer', makeStore('admin'))).toBe('employee');
-    // ra-member + cookie=admin → escalation blocked → ra (natural)
-    expect(resolveTier('ra-member', makeStore('admin'))).toBe('ra');
+    // ra + cookie=admin → escalation blocked → ra (natural)
+    expect(resolveTier('ra', makeStore('admin'))).toBe('ra');
     // auditor + cookie=ra → escalation blocked → employee (natural)
     expect(resolveTier('auditor', makeStore('ra'))).toBe('employee');
   });
 
   it('rejects tampered cookie and falls back to role natural tier', () => {
-    expect(resolveTier('ra-lead', makeStore('hacker'))).toBe('ra');
+    expect(resolveTier('ra', makeStore('hacker'))).toBe('ra');
     expect(resolveTier('admin', makeStore('superuser'))).toBe('admin');
   });
 });

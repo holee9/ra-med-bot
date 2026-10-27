@@ -13,7 +13,7 @@ vi.mock('@/lib/kernel/auth', () => ({
 
 vi.mock('@/lib/kernel/auth/rbac', () => ({
   hasRole: vi.fn(),
-  ROLE_HIERARCHY: { admin: 4, 'ra-lead': 3, 'ra-member': 2, viewer: 1 },
+  ROLE_HIERARCHY: { admin: 4, ra: 3, viewer: 1 },
 }));
 
 vi.mock('@/lib/kernel/auth/acl', () => ({
@@ -93,7 +93,7 @@ describe('lib/kernel/auth/with-permission.ts (REQ-ENTERPRISE-019, 022, 023) — 
     it('calls writeAudit on role denial', async () => {
       const { auth } = await import('@/lib/kernel/auth');
       vi.mocked(auth).mockResolvedValueOnce({
-        user: { id: 'user-2', role: 'ra-member', organizationId: 'org-2', email: 'm@test.com' },
+        user: { id: 'user-2', role: 'ra', organizationId: 'org-2', email: 'm@test.com' },
       } as never);
 
       const { hasRole } = await import('@/lib/kernel/auth/rbac');
@@ -148,7 +148,7 @@ describe('lib/kernel/auth/with-permission.ts (REQ-ENTERPRISE-019, 022, 023) — 
     it('returns 403 when user is not an org member (org-scoped action)', async () => {
       const { auth } = await import('@/lib/kernel/auth');
       vi.mocked(auth).mockResolvedValueOnce({
-        user: { id: 'user-4', role: 'ra-member', organizationId: 'org-4', email: 'u4@test.com' },
+        user: { id: 'user-4', role: 'ra', organizationId: 'org-4', email: 'u4@test.com' },
       } as never);
 
       const { hasRole } = await import('@/lib/kernel/auth/rbac');
@@ -173,7 +173,7 @@ describe('lib/kernel/auth/with-permission.ts (REQ-ENTERPRISE-019, 022, 023) — 
     it('calls writeAudit on org membership denial', async () => {
       const { auth } = await import('@/lib/kernel/auth');
       vi.mocked(auth).mockResolvedValueOnce({
-        user: { id: 'user-5', role: 'ra-lead', organizationId: 'org-5', email: 'u5@test.com' },
+        user: { id: 'user-5', role: 'ra', organizationId: 'org-5', email: 'u5@test.com' },
       } as never);
 
       const { hasRole } = await import('@/lib/kernel/auth/rbac');
@@ -203,7 +203,7 @@ describe('lib/kernel/auth/with-permission.ts (REQ-ENTERPRISE-019, 022, 023) — 
     it('calls inner handler when all checks pass (org-scoped)', async () => {
       const { auth } = await import('@/lib/kernel/auth');
       vi.mocked(auth).mockResolvedValueOnce({
-        user: { id: 'user-6', role: 'ra-member', organizationId: 'org-6', email: 'u6@test.com' },
+        user: { id: 'user-6', role: 'ra', organizationId: 'org-6', email: 'u6@test.com' },
       } as never);
 
       const { hasRole } = await import('@/lib/kernel/auth/rbac');
@@ -253,7 +253,7 @@ describe('lib/kernel/auth/with-permission.ts (REQ-ENTERPRISE-019, 022, 023) — 
     it('user-scoped action skips org membership check', async () => {
       const { auth } = await import('@/lib/kernel/auth');
       vi.mocked(auth).mockResolvedValueOnce({
-        user: { id: 'user-8', role: 'ra-member', organizationId: 'org-8', email: 'u8@test.com' },
+        user: { id: 'user-8', role: 'ra', organizationId: 'org-8', email: 'u8@test.com' },
       } as never);
 
       const { hasRole } = await import('@/lib/kernel/auth/rbac');
@@ -276,7 +276,7 @@ describe('lib/kernel/auth/with-permission.ts (REQ-ENTERPRISE-019, 022, 023) — 
     it('resolves Promise params before project membership checks', async () => {
       const { auth } = await import('@/lib/kernel/auth');
       vi.mocked(auth).mockResolvedValueOnce({
-        user: { id: 'user-9', role: 'ra-lead', organizationId: 'org-9', email: 'lead@test.com' },
+        user: { id: 'user-9', role: 'ra', organizationId: 'org-9', email: 'lead@test.com' },
       } as never);
 
       const { hasRole } = await import('@/lib/kernel/auth/rbac');
@@ -302,8 +302,8 @@ describe('lib/kernel/auth/with-permission.ts (REQ-ENTERPRISE-019, 022, 023) — 
   describe('multiple role scenarios', () => {
     it.each([
       ['admin', true, 200],
-      ['ra-lead', false, 403],
-      ['ra-member', false, 403],
+      ['ra', false, 403],
+      ['ra', false, 403],
       ['viewer', false, 403],
     ] as const)(
       'role %s with hasRole=%s → status %d for rbac.manage',

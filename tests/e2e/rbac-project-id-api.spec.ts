@@ -8,15 +8,15 @@ test.describe('/api/ra/projects/[id] RBAC验证', () => {
 
   // 테스트 사용자: 이메일/역할이 정확해야 함 (DB와 일치)
   const raLeadUser = {
-    email: process.env.TEST_RA_LEAD_EMAIL || 'ra-lead@example.com',
+    email: process.env.TEST_RA_LEAD_EMAIL || 'ra@example.com',
     password: process.env.TEST_RA_LEAD_PASSWORD || 'password123',
-    expectedRole: 'ra-lead',
+    expectedRole: 'ra',
   };
 
   const raMemberUser = {
-    email: process.env.TEST_RA_MEMBER_EMAIL || 'ra-member@example.com',
+    email: process.env.TEST_RA_MEMBER_EMAIL || 'ra@example.com',
     password: process.env.TEST_RA_MEMBER_PASSWORD || 'password123',
-    expectedRole: 'ra-member',
+    expectedRole: 'ra',
   };
 
   let testProjectId: string;
@@ -24,7 +24,7 @@ test.describe('/api/ra/projects/[id] RBAC验证', () => {
   let nonMemberProjectId: string;
 
   test.beforeAll(async () => {
-    // 1) ra-lead 로그인 후 자신의 프로젝트 ID 2개 가져오기
+    // 1) ra 로그인 후 자신의 프로젝트 ID 2개 가져오기
     const leadResp = await fetch(`${baseUrl}/api/auth/login`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
@@ -45,14 +45,14 @@ test.describe('/api/ra/projects/[id] RBAC验证', () => {
     expect(projectsData.projects).toBeInstanceOf(Array);
     expect(projectsData.projects.length).toBeGreaterThanOrEqual(2);
 
-    // 첫 번째 프로젝트는 ra-lead 소유 (memberProjectId)
-    // 두 번째 프로젝트도 ra-lead 소유 (nonMemberProjectId는 다른 사용자)
+    // 첫 번째 프로젝트는 ra 소유 (memberProjectId)
+    // 두 번째 프로젝트도 ra 소유 (nonMemberProjectId는 다른 사용자)
     memberProjectId = projectsData.projects[0].id;
     testProjectId = projectsData.projects[0].id;
 
-    // 2) 다른 사용자의 프로젝트 ID 얻기 (ra-member가 속하지 않은 프로젝트)
+    // 2) 다른 사용자의 프로젝트 ID 얻기 (ra가 속하지 않은 프로젝트)
     // 실제 환경에서는 프로젝트 생성 시 다른 사용자가 생성한 프로젝트가 있어야 함
-    // 테스트 목적으로 ra-member가 속하지 않은 프로젝트 ID 설정
+    // 테스트 목적으로 ra가 속하지 않은 프로젝트 ID 설정
     const memberResp = await fetch(`${baseUrl}/api/auth/login`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
@@ -70,19 +70,19 @@ test.describe('/api/ra/projects/[id] RBAC验证', () => {
     expect(memberProjectsResp.ok).toBeTruthy();
     const memberProjectsData = await memberProjectsResp.json();
 
-    // ra-member가 속한 프로젝트
+    // ra가 속한 프로젝트
     if (memberProjectsData.projects.length > 0) {
       const memberIdProject = memberProjectsData.projects[0].id;
-      // ra-member 프로젝트와 ra-lead 프로젝트가 다른지 확인
+      // ra 프로젝트와 ra 프로젝트가 다른지 확인
       nonMemberProjectId = memberIdProject !== testProjectId ? memberIdProject : testProjectId;
     } else {
-      // ra-member가 속한 프로젝트가 없는 경우, dummy ID 사용
+      // ra가 속한 프로젝트가 없는 경우, dummy ID 사용
       nonMemberProjectId = '00000000-0000-0000-0000-000000000000';
     }
   });
 
   test('GET /api/ra/projects/[id] — 멤버는 200, 비멤버는 403', async ({ request }) => {
-    // 1) ra-member 로그인
+    // 1) ra 로그인
     const loginResp = await request.post(`${baseUrl}/api/auth/login`, {
       data: raMemberUser,
     });
@@ -113,7 +113,7 @@ test.describe('/api/ra/projects/[id] RBAC验证', () => {
   });
 
   test('PATCH /api/ra/projects/[id] — 멤버는 200, 비멤버는 403', async ({ request }) => {
-    // 1) ra-lead 로그인 (project.manage 권한 있음)
+    // 1) ra 로그인 (project.manage 권한 있음)
     const loginResp = await request.post(`${baseUrl}/api/auth/login`, {
       data: raLeadUser,
     });

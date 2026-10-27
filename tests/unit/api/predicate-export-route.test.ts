@@ -11,7 +11,7 @@ import { beforeEach, describe, expect, it, vi } from 'vitest';
 // --- Mutable session ---
 let sessionUser: { id: string; role: string; organizationId: string | null } = {
   id: 'user-001',
-  role: 'ra-lead',
+  role: 'ra',
   organizationId: 'org-001',
 };
 
@@ -123,7 +123,7 @@ const WORKFLOW_RUN_ROW = {
 describe('POST /api/ra/predicate/export — handler surface', () => {
   beforeEach(() => {
     vi.clearAllMocks();
-    sessionUser = { id: 'user-001', role: 'ra-lead', organizationId: 'org-001' };
+    sessionUser = { id: 'user-001', role: 'ra', organizationId: 'org-001' };
     selectResults.length = 0;
     canExportComparisonsMock.mockReturnValue(true);
   });

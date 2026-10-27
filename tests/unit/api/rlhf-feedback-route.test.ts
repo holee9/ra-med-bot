@@ -15,7 +15,7 @@ let sessionUser: {
   organizationId: string | null;
 } = {
   id: 'user-001',
-  role: 'ra-lead',
+  role: 'ra',
   organizationId: 'org-001',
 };
 
@@ -123,7 +123,7 @@ const VALID_BODY = {
 describe('POST /api/rlhf/feedback — handler surface', () => {
   beforeEach(() => {
     vi.clearAllMocks();
-    sessionUser = { id: 'user-001', role: 'ra-lead', organizationId: 'org-001' };
+    sessionUser = { id: 'user-001', role: 'ra', organizationId: 'org-001' };
     selectResults.length = 0;
     assertMessageInOrgMock.mockResolvedValue(null); // access granted
   });
@@ -215,7 +215,7 @@ describe('POST /api/rlhf/feedback — handler surface', () => {
   });
 
   it('returns 403 no_org_context when session has no organizationId', async () => {
-    sessionUser = { id: 'user-001', role: 'ra-lead', organizationId: null };
+    sessionUser = { id: 'user-001', role: 'ra', organizationId: null };
 
     const { POST } = await import('@/app/api/rlhf/feedback/route');
     const res = await POST(makePostRequest(VALID_BODY), {});

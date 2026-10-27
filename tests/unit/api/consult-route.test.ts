@@ -9,7 +9,7 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 // --- Mutable session: rate-limit test uses a fresh userId to avoid cross-test bucket pollution ---
 let sessionUser: { id: string; role: string; organizationId: string } = {
   id: 'user-001',
-  role: 'ra-lead',
+  role: 'ra',
   organizationId: 'org-001',
 };
 
@@ -95,7 +95,7 @@ function parseSseEvents(text: string): Array<Record<string, unknown>> {
 describe('POST /api/ra/consult — handler surface', () => {
   beforeEach(() => {
     vi.clearAllMocks();
-    sessionUser = { id: 'user-001', role: 'ra-lead', organizationId: 'org-001' };
+    sessionUser = { id: 'user-001', role: 'ra', organizationId: 'org-001' };
     ensureConversationMock.mockResolvedValue('conv-001');
     // E2E mode selects the deterministic e2eTestEvents generator (no LLM calls).
     vi.stubEnv('E2E_TEST_MODE', 'true');
@@ -196,7 +196,7 @@ describe('POST /api/ra/consult — handler surface', () => {
 
   it('returns 429 when rate limit (30 req/60s) is exceeded', async () => {
     // Use a dedicated userId so prior test calls don't pollute the bucket.
-    sessionUser = { id: 'ratelimit-user', role: 'ra-lead', organizationId: 'org-001' };
+    sessionUser = { id: 'ratelimit-user', role: 'ra', organizationId: 'org-001' };
 
     const { POST } = await import('@/app/api/ra/consult/route');
 

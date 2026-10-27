@@ -1,7 +1,7 @@
 // @MX:NOTE [AUTO] POST /api/validation/pq — PQ evidence bundle (E2E + eval).
 // @MX:SPEC SPEC-REGULA-VALIDATION-001 (M3, REQ-VAL-005, AC-4, Issue #49)
 // @MX:REASON Thin glue: Zod input → spawn collect-pq.ts → return JSON.
-//   RBAC: validation.run (admin/qa-lead). Evidence collection mutates regulated
+//   RBAC: validation.run (admin/ra). Evidence collection mutates regulated
 //   state — distinct from validation.read (transparency only).
 
 import { spawn } from 'node:child_process';

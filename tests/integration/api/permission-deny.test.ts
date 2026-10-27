@@ -43,8 +43,8 @@ describe('withPermission — integration: permission deny scenarios', () => {
   });
 
   describe('403 — insufficient role (real hasRole)', () => {
-    it('returns 403 when viewer calls ra-lead action (conversation.delete)', async () => {
-      // viewer has hierarchy=1, conversation.delete requires ra-lead (hierarchy=3)
+    it('returns 403 when viewer calls ra action (conversation.delete)', async () => {
+      // viewer has hierarchy=1, conversation.delete requires ra (hierarchy=3)
       // Use real hasRole (not mocked in this suite)
       const { auth } = await import('@/lib/kernel/auth');
       vi.mocked(auth).mockResolvedValueOnce({
@@ -71,13 +71,13 @@ describe('withPermission — integration: permission deny scenarios', () => {
   });
 
   describe('200 — authorized access', () => {
-    it('calls handler and returns its response when ra-member calls dashboard.view', async () => {
-      // dashboard.view requires ra-member (hierarchy=2), ra-member has hierarchy=2 → pass
+    it('calls handler and returns its response when ra calls dashboard.view', async () => {
+      // dashboard.view requires ra (hierarchy=2), ra has hierarchy=2 → pass
       const { auth } = await import('@/lib/kernel/auth');
       vi.mocked(auth).mockResolvedValueOnce({
         user: {
           id: 'member-user',
-          role: 'ra-member',
+          role: 'ra',
           organizationId: 'org-2',
           email: 'member@test.com',
         },

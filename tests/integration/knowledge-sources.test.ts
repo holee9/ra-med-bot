@@ -272,7 +272,7 @@ vi.mock('@/lib/kernel/audit', () => ({
 // ---------------------------------------------------------------------------
 
 let currentSession: MockSession = {
-  user: { id: 'user-default', role: 'ra-lead', organizationId: 'org-default' },
+  user: { id: 'user-default', role: 'ra', organizationId: 'org-default' },
 };
 
 vi.mock('@/lib/kernel/auth/with-permission', () => ({
@@ -314,7 +314,7 @@ const { syncKnowledgeSource } = await import('@/lib/knowledge-sources/sync');
 function createMockSession(orgId: string): { session: MockSession; userId: string } {
   const userId = randomUUID();
   const session: MockSession = {
-    user: { id: userId, role: 'ra-lead', organizationId: orgId },
+    user: { id: userId, role: 'ra', organizationId: orgId },
   };
   currentSession = session;
   return { session, userId };

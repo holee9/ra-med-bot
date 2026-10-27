@@ -31,16 +31,10 @@ export const themePrefEnum = pgEnum('theme_pref', ['light', 'dark', 'system']);
 
 // REQ-ENTERPRISE-016: user_role pgEnum replaces TEXT role column on users table.
 // Migration: 0004_user_role_enum.sql (creates type, migrates 'member' → 'ra-member').
-// SPEC-REGULA-ESIG-001: 'qa-lead' added via 0061_answer_signatures.sql (REQ-ESIG-006).
+// #547 (2026-10-27): ra-lead/ra-member/qa-lead unified into single 'ra' via
+// 0117_unify_ra_role.sql (user directive — no RA seniority split, no QA role).
 // SPEC-REGULA-AUDITOR-VIEW-001: 'auditor' added via 0062_auditor_view_enums.sql.
-export const userRoleEnum = pgEnum('user_role', [
-  'admin',
-  'qa-lead',
-  'ra-lead',
-  'ra-member',
-  'viewer',
-  'auditor',
-]);
+export const userRoleEnum = pgEnum('user_role', ['admin', 'ra', 'viewer', 'auditor']);
 export const userStatusEnum = pgEnum('user_status', ['pending', 'active', 'disabled']);
 // REQ-TENANT-001: department pgEnum for secondary RBAC axis (SPEC-REGULA-TENANT-001 Tenant-Lite).
 export const userDepartmentEnum = pgEnum('user_department', ['RA', 'Dev', 'Exec', 'External']);
@@ -57,8 +51,8 @@ export const users = pgTable(
     email: text('email').notNull().unique(),
     name: text('name').notNull(),
     // REQ-ENTERPRISE-016: migrated from TEXT to user_role pgEnum via 0004_user_role_enum.sql.
-    // Default 'ra-member' replaces legacy default 'member'.
-    role: userRoleEnum('role').notNull().default('ra-member'),
+    // Default 'ra' (#547) replaces legacy defaults 'member' → 'ra-member' → 'ra'.
+    role: userRoleEnum('role').notNull().default('ra'),
     locale: localeEnum('locale').notNull().default('ko'),
     themePref: themePrefEnum('theme_pref').notNull().default('system'),
     // @MX:NOTE: [AUTO] REQ-ENTERPRISE-027: notification_pref column — write-only in Phase 5.

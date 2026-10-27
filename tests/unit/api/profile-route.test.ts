@@ -12,7 +12,7 @@ vi.mock('@/lib/kernel/auth/with-permission', () => ({
     ) =>
       (req: Request, ctx: unknown) =>
         handler(req, ctx, {
-          user: { id: 'user-001', role: 'ra-member', organizationId: 'org-001' },
+          user: { id: 'user-001', role: 'ra', organizationId: 'org-001' },
         }),
   ),
 }));
@@ -75,7 +75,7 @@ describe('GET /api/ra/profile', () => {
       id: 'user-001',
       email: 'test@example.com',
       name: 'Test User',
-      role: 'ra-member',
+      role: 'ra',
       notificationPref: {},
     };
 
@@ -89,7 +89,7 @@ describe('GET /api/ra/profile', () => {
     expect(body.id).toBe('user-001');
     expect(body.email).toBe('test@example.com');
     expect(body.name).toBe('Test User');
-    expect(body.role).toBe('ra-member');
+    expect(body.role).toBe('ra');
     expect(body.notificationPref).toEqual({});
   });
 
@@ -109,7 +109,7 @@ describe('GET /api/ra/profile', () => {
       id: 'user-001',
       email: 'test@example.com',
       name: 'Test User',
-      role: 'ra-member',
+      role: 'ra',
       notificationPref: { email: true },
     };
 
@@ -139,7 +139,7 @@ describe('PATCH /api/ra/profile', () => {
       id: 'user-001',
       email: 'test@example.com',
       name: 'Test User',
-      role: 'ra-member',
+      role: 'ra',
       notificationPref: { email: true, sms: false },
     };
 
@@ -162,7 +162,7 @@ describe('PATCH /api/ra/profile', () => {
       id: 'user-001',
       email: 'test@example.com',
       name: 'Test User',
-      role: 'ra-member',
+      role: 'ra',
       notificationPref: {},
     };
 
@@ -186,7 +186,7 @@ describe('PATCH /api/ra/profile', () => {
       id: 'user-001',
       email: 'test@example.com',
       name: 'Test User',
-      role: 'ra-member',
+      role: 'ra',
       notificationPref: {},
     };
 
@@ -210,7 +210,7 @@ describe('PATCH /api/ra/profile', () => {
       id: 'user-001',
       email: 'test@example.com',
       name: 'Test User',
-      role: 'ra-member',
+      role: 'ra',
       notificationPref: { email: true },
     };
 
@@ -273,7 +273,7 @@ describe('PATCH /api/ra/profile', () => {
       id: 'user-001',
       email: 'test@example.com',
       name: 'Test User',
-      role: 'ra-member',
+      role: 'ra',
       notificationPref: {},
     };
 

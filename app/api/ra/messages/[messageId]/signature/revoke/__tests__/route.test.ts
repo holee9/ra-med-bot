@@ -37,7 +37,7 @@ import { POST } from '../route';
 const mockRaLeadSession = {
   user: {
     id: 'user-lead-001',
-    role: 'ra-lead',
+    role: 'ra',
     organizationId: 'org-001',
     email: 'lead@example.com',
     name: 'Alice Lead',
@@ -71,9 +71,9 @@ describe('POST /api/ra/messages/[messageId]/signature/revoke', () => {
     expect(res.status).toBe(401);
   });
 
-  it('returns 403 when user lacks signature.sign permission (ra-member)', async () => {
+  it('returns 403 when user lacks signature.sign permission (viewer, #547)', async () => {
     vi.mocked(auth).mockResolvedValue({
-      user: { id: 'u', role: 'ra-member', organizationId: 'org-001', email: 'x@x.com' },
+      user: { id: 'u', role: 'viewer', organizationId: 'org-001', email: 'x@x.com' },
     } as never);
 
     const res = await POST(makeRequest(), makeCtx());

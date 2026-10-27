@@ -11,7 +11,7 @@
 // AC-03 (M-2 fix, 2026-06-26): cross-org (IDOR) 403 denials MUST be audit
 // logged. withPermission logs `rbac.permission_deny` for RBAC role failures,
 // but the IDOR 403 below is a SEPARATE gate — if it returns 403 WITHOUT
-// writing audit, a ra-lead attempting cross-org promote leaves no trail
+// writing audit, a ra attempting cross-org promote leaves no trail
 // (21 CFR Part 11 violation). The assert functions below now write the denial
 // audit row before returning 403, matching the withPermission denial pattern.
 //
@@ -70,7 +70,7 @@ export async function resolvePromotedAnswerOrg(promotedId: string): Promise<stri
 
 /**
  * Parameters for the IDOR assert helpers. The audit row attributes the denial
- * to `actorId` (the caller's session user id) so a ra-lead attempting a
+ * to `actorId` (the caller's session user id) so a ra attempting a
  * cross-org promote/unpromote leaves an inspectable trail (AC-03).
  */
 export interface AssertAccessParams {

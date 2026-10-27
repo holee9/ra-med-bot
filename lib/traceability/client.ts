@@ -101,7 +101,7 @@ export interface EdgeWriteInput {
 // ---------------------------------------------------------------------------
 
 /**
- * POST /api/traceability/edges — create or delete an edge (ra-lead only).
+ * POST /api/traceability/edges — create or delete an edge (ra only).
  * Returns `{ created: boolean }` for create, `{ deleted: boolean }` for delete.
  */
 export async function writeEdge(

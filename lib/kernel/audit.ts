@@ -200,7 +200,7 @@ export type AuditAction =
   | 'personal_bookmark.created'
   | 'personal_bookmark.deleted'
   // SPEC-REGULA-CALENDAR-001 — regulatory deadline events (Issue #44):
-  //   deadline.created — ra-lead created a regulatory deadline
+  //   deadline.created — ra created a regulatory deadline
   //   deadline.updated — deadline fields (status, due date, notes) changed
   //   deadline.deleted — deadline removed
   | 'deadline.created'
@@ -463,7 +463,7 @@ export type AuditAction =
   //   inbox.answered          — final_answer drafted (not yet approved)
   //   inbox.approved          — final_answer ESIG-approved (closed + promoted)
   //   inbox.closed            — ticket closed (without promotion to approved_answers)
-  //   inbox.rejected          — ticket rejected (ra-lead/admin action)
+  //   inbox.rejected          — ticket rejected (ra/admin action)
   //   inbox.approve_failed    — approval failed (ESIG re-auth failure or domain error, H-2 fix)
   | 'inbox.created'
   | 'inbox.triaged'
@@ -477,7 +477,7 @@ export type AuditAction =
   // SPEC-V3-CONSULT-001 (Issue 341): RA Power Chat audit actions.
   //   consult.session.create  — new consult session created (REQ-CONS-013, C-1)
   //   consult.turn.create     — new turn added to session (REQ-CONS-008)
-  //   consult.session.delete  — session soft-deleted by ra-lead/admin (REQ-CONS-009)
+  //   consult.session.delete  — session soft-deleted by ra/admin (REQ-CONS-009)
   | 'consult.session.create'
   | 'consult.turn.create'
   | 'consult.session.delete'

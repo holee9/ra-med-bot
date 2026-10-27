@@ -2,18 +2,18 @@
 // @MX:NOTE [AUTO] TDD unit tests — PATCH /api/inbox/[id]/triage.
 // @MX:SPEC SPEC-V3-INBOX-001 (REQ-V3-INBOX-015/021, Issue 320)
 //
-// Covers: RBAC (inbox.manage, ra-lead ONLY), state transition validation,
+// Covers: RBAC (inbox.manage, ra ONLY), state transition validation,
 // IDOR defense, audit (inbox.triaged).
 
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 
 // --- Mock withPermission ---
 let authenticated = true;
-let userRole: 'viewer' | 'ra-member' | 'ra-lead' | 'admin' = 'ra-lead';
+let userRole: 'viewer' | 'ra' | 'admin' = 'ra';
 let organizationId = 'org-001';
 
-// Mirror the real RBAC: inbox.manage requires ra-lead/admin (other roles → 403).
-const MANAGE_ROLES = new Set(['ra-lead', 'admin']);
+// Mirror the real RBAC: inbox.manage requires ra/admin (other roles → 403).
+const MANAGE_ROLES = new Set(['ra', 'admin']);
 
 vi.mock('@/lib/kernel/auth/with-permission', () => ({
   withPermission: vi.fn(
@@ -107,7 +107,7 @@ function getCtx(id: string) {
 beforeEach(() => {
   vi.clearAllMocks();
   authenticated = true;
-  userRole = 'ra-lead';
+  userRole = 'ra';
   organizationId = 'org-001';
   assertTicketInOrg.mockResolvedValue(undefined);
   assertValidTransition.mockReturnValue(undefined);
@@ -153,8 +153,8 @@ describe('PATCH /api/inbox/[id]/triage (REQ-V3-INBOX-015/021)', () => {
     expect(body.error).toBe('Ticket not found');
   });
 
-  it('denies ra-member role with 403 (inbox.manage requires ra-lead)', async () => {
-    userRole = 'ra-member';
+  it('denies viewer role with 403 (inbox.manage requires ra, #547)', async () => {
+    userRole = 'viewer';
     const res = await PATCH(patchReq('it-001', { toState: 'needs-review' }), getCtx('it-001'));
     expect(res.status).toBe(403);
   });

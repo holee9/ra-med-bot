@@ -1,13 +1,13 @@
 // @MX:ANCHOR [AUTO] RA-lead approval gate — RBAC critical invariant.
-// @MX:REASON risk.approve requires minRole 'ra-lead'. Only this route enforces risk report sign-off.
+// @MX:REASON risk.approve requires minRole 'ra'. Only this route enforces risk report sign-off.
 // @MX:SPEC SPEC-REGULA-RISK-001 (T2.10, REQ-RISK-037~038)
 
 import { writeAudit } from '@/lib/kernel/audit';
 import { withPermission } from '@/lib/kernel/auth/with-permission';
 
 // CRITICAL: Only withPermission('risk.approve') is acceptable here.
-// minRole 'ra-lead' is required by ISO 14971 §10 for final risk report sign-off.
-// Using any other permission action would lower the RBAC bar to ra-member, violating the standard.
+// minRole 'ra' is required by ISO 14971 §10 for final risk report sign-off.
+// Using any other permission action would lower the RBAC bar to ra, violating the standard.
 export const POST = withPermission('risk.approve', async (req, ctx, session) => {
   const params = await (ctx.params as Promise<Record<string, string>>);
   const id = params?.id as string;

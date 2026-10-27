@@ -1,7 +1,7 @@
 // @MX:NOTE [AUTO] POST /api/validation/oq — OQ evidence aggregator (CI run results).
 // @MX:SPEC SPEC-REGULA-VALIDATION-001 (M2, REQ-VAL-004, AC-3, Issue #49)
 // @MX:REASON Thin glue: Zod input → spawn collect-oq.ts → return JSON.
-//   RBAC: validation.run (admin/qa-lead). Evidence collection mutates regulated
+//   RBAC: validation.run (admin/ra). Evidence collection mutates regulated
 //   state — distinct from validation.read (transparency only).
 
 import { spawn } from 'node:child_process';

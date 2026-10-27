@@ -83,6 +83,6 @@ describe('T4.4 — RiskApprovalGate component', () => {
 
   it('references risk.approve permission gate', () => {
     const src = fs.readFileSync(path.join(componentDir, 'RiskApprovalGate.tsx'), 'utf8');
-    expect(src).toContain('ra-lead');
+    expect(src).toContain('ra');
   });
 });

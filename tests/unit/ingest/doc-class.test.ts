@@ -84,8 +84,8 @@ describe('DocClassDefaultAcl', () => {
     }
   });
 
-  it('should define ACL for admin, ra-lead, ra-member, and viewer roles', () => {
-    const requiredRoles = ['admin', 'ra-lead', 'ra-member', 'viewer'];
+  it('should define ACL for admin, ra, ra, and viewer roles', () => {
+    const requiredRoles = ['admin', 'ra', 'ra', 'viewer'];
     for (const cls of Object.values(DocClass)) {
       const acl = DocClassDefaultAcl[cls];
       for (const role of requiredRoles) {

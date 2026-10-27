@@ -47,7 +47,7 @@ export function InboxDetailClient({ ticketId, userRole }: InboxDetailClientProps
         triageState={ticket.triageState}
         assigneeId={ticket.assigneeId}
       />
-      {userRole === 'ra-lead' && ticket.triageState !== 'closed' && (
+      {userRole === 'ra' && ticket.triageState !== 'closed' && (
         <ApproveDialog ticketId={ticket.id} />
       )}
     </div>

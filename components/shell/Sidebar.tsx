@@ -22,7 +22,7 @@ const NAV_ITEMS: NavItem[] = [
 
 interface SidebarProps {
   showExpertReview?: boolean;
-  // SPEC-V3-UI-001 (Issue 320): Inbox nav gated to ra-member+ (inbox.view).
+  // SPEC-V3-UI-001 (Issue 320): Inbox nav gated to ra+ (inbox.view).
   showInbox?: boolean;
   userRole?: Role;
   initialLocale?: string;
@@ -30,7 +30,7 @@ interface SidebarProps {
 
 export default function Sidebar(props?: SidebarProps) {
   const showExpertReview = props?.showExpertReview ?? false;
-  // SPEC-V3-UI-001 (Issue 320): Inbox nav gated to ra-member+ (inbox.view).
+  // SPEC-V3-UI-001 (Issue 320): Inbox nav gated to ra+ (inbox.view).
   const showInbox = props?.showInbox ?? false;
   // 2026-06-29: default 'viewer' (최소 권한 — 명시적 role 없으면 전사 직원 사이드바).
   const userRole: Role = props?.userRole ?? 'viewer';
@@ -85,7 +85,7 @@ export default function Sidebar(props?: SidebarProps) {
         </nav>
       )}
 
-      {/* SPEC-V3-UI-001 (Issue 320, REQ-V3-UI-031): Inbox Kanban board nav gated to ra-member+ (inbox.view). */}
+      {/* SPEC-V3-UI-001 (Issue 320, REQ-V3-UI-031): Inbox Kanban board nav gated to ra+ (inbox.view). */}
       {showInbox && (
         <nav className="px-2 py-1">
           <Link

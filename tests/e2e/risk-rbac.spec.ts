@@ -9,7 +9,7 @@ const baseUrl = process.env.NEXT_PUBLIC_API_BASE_URL || 'http://localhost:3000';
 const TEST_RISK_RUN_ID = process.env.TEST_RISK_RUN_ID || 'test-risk-run-rbac-001';
 
 test.describe('Risk RBAC (SPEC-REGULA-RISK-001 REQ-RISK-019~020)', () => {
-  test('RBAC: ra-member approve returns 403', async ({ request }) => {
+  test('RBAC: ra approve returns 403', async ({ request }) => {
     const memberToken = process.env.TEST_RA_MEMBER_SESSION_TOKEN;
     if (!memberToken) {
       test.skip(true, 'Requires TEST_RA_MEMBER_SESSION_TOKEN env var');
@@ -27,7 +27,7 @@ test.describe('Risk RBAC (SPEC-REGULA-RISK-001 REQ-RISK-019~020)', () => {
       },
     });
 
-    // ra-member does not have risk.approve permission → 403
+    // ra does not have risk.approve permission → 403
     expect(resp.status()).toBe(403);
 
     const body = (await resp.json().catch(() => ({}))) as Record<string, unknown>;
@@ -36,7 +36,7 @@ test.describe('Risk RBAC (SPEC-REGULA-RISK-001 REQ-RISK-019~020)', () => {
     expect(errMsg).toMatch(/forbidden|permission|unauthorized|not_allowed/);
   });
 
-  test('RBAC: ra-lead approve returns 200 or 201', async ({ request }) => {
+  test('RBAC: ra approve returns 200 or 201', async ({ request }) => {
     const leadToken = process.env.TEST_RA_LEAD_SESSION_TOKEN;
     if (!leadToken) {
       test.skip(true, 'Requires TEST_RA_LEAD_SESSION_TOKEN env var');
@@ -54,7 +54,7 @@ test.describe('Risk RBAC (SPEC-REGULA-RISK-001 REQ-RISK-019~020)', () => {
       },
     });
 
-    // ra-lead has risk.approve permission → 200 or 201
+    // ra has risk.approve permission → 200 or 201
     expect([200, 201]).toContain(resp.status());
   });
 

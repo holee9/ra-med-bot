@@ -14,7 +14,7 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 const SESSION = {
   user: {
     id: '00000000-0000-0000-0000-000000000001',
-    role: 'ra-lead',
+    role: 'ra',
     organizationId: '00000000-0000-0000-0000-AAAAAAAAAAAA',
   },
   expires: new Date(Date.now() + 60_000).toISOString(),
@@ -110,7 +110,7 @@ vi.mock('@/lib/kernel/auth/acl', () => ({
   isProjectMember: async () => true,
 }));
 vi.mock('@/lib/kernel/auth/permissions', () => ({
-  PERMISSIONS: { 'traceability.manage': ['ra-lead'] },
+  PERMISSIONS: { 'traceability.manage': ['ra'] },
   roleSatisfiesPermission: () => true,
 }));
 vi.mock('@/lib/traceability/stale-propagation', () => ({

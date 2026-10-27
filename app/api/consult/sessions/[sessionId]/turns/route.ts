@@ -32,7 +32,7 @@ export const POST = withPermission('consult.turn.create', async (req, ctx, sessi
     return Response.json({ error: 'Missing sessionId' }, { status: 400 });
   }
 
-  // Session ownership: org-bound + not-deleted (IDOR defense). ra-member: own only.
+  // Session ownership: org-bound + not-deleted (IDOR defense). ra: own only.
   const [sess] = await db
     .select()
     .from(consultSessions)
@@ -44,7 +44,7 @@ export const POST = withPermission('consult.turn.create', async (req, ctx, sessi
       ),
     )
     .limit(1);
-  if (!sess || (session.user.role === 'ra-member' && sess.userId !== session.user.id)) {
+  if (!sess || (session.user.role === 'ra' && sess.userId !== session.user.id)) {
     return Response.json({ error: 'Session not found' }, { status: 404 });
   }
 

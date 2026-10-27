@@ -2,7 +2,7 @@
 // @MX:SPEC SPEC-V3-CONSULT-001 (REQ-CONS-001, REQ-CONS-002, AC-CONS-01, AC-CONS-02, Issue 341)
 // @MX:REASON REQ-CONS-001: POST creates a consult_sessions row + `consult.session.create`
 //            audit (REQ-CONS-013, 21 CFR Part 11 §11.10(e)) in one transaction.
-//            REQ-CONS-002: GET lists sessions — ra-member sees own, ra-lead/admin see all org.
+//            REQ-CONS-002: GET lists sessions — ra sees own, ra/admin see all org.
 
 import { randomUUID } from 'node:crypto';
 import { writeAudit } from '@/lib/kernel/audit';
@@ -77,7 +77,7 @@ export const POST = withPermission('consult.session.create', async (req, _ctx, s
 });
 
 // GET /api/consult/sessions — list sessions (AC-CONS-02).
-// ra-member: own sessions only. ra-lead/admin: all org sessions.
+// ra: own sessions only. ra/admin: all org sessions.
 const listSchema = z.object({
   limit: z.coerce.number().int().min(1).max(100).optional().default(50),
   offset: z.coerce.number().int().min(0).max(10000).optional().default(0),
@@ -99,10 +99,10 @@ export const GET = withPermission('consult.session.view', async (req, _ctx, sess
   }
   const { limit, offset } = parsed.data;
 
-  // ra-member sees only own sessions (app-level userId filter, defense-in-depth
-  // on top of consult.session.view minRole). ra-lead/admin see all org sessions.
+  // ra sees only own sessions (app-level userId filter, defense-in-depth
+  // on top of consult.session.view minRole). ra/admin see all org sessions.
   const conditions = [eq(consultSessions.orgId, organizationId), isNull(consultSessions.deletedAt)];
-  if (session.user.role === 'ra-member') {
+  if (session.user.role === 'ra') {
     conditions.push(eq(consultSessions.userId, session.user.id));
   }
 

@@ -45,54 +45,46 @@ export const DocClassPiiSensitivity: Record<DocClass, 'low' | 'medium' | 'high' 
 /** Default ACL per DocClass: role → 'read' | 'write' | 'none'. */
 export const DocClassDefaultAcl: Record<
   DocClass,
-  Record<'admin' | 'ra-lead' | 'ra-member' | 'viewer', 'read' | 'write' | 'none'>
+  Record<'admin' | 'ra' | 'viewer', 'read' | 'write' | 'none'>
 > = {
   [DocClass.issued_certificate]: {
     admin: 'write',
-    'ra-lead': 'write',
-    'ra-member': 'read',
+    ra: 'write',
     viewer: 'read',
   },
   [DocClass.submission_success]: {
     admin: 'write',
-    'ra-lead': 'write',
-    'ra-member': 'read',
+    ra: 'write',
     viewer: 'read',
   },
   [DocClass.submission_inprogress]: {
     admin: 'write',
-    'ra-lead': 'write',
-    'ra-member': 'read',
+    ra: 'write',
     viewer: 'none',
   },
   [DocClass.clinical_report]: {
     admin: 'write',
-    'ra-lead': 'write',
-    'ra-member': 'read',
+    ra: 'write',
     viewer: 'none',
   },
   [DocClass.checklist_template]: {
     admin: 'write',
-    'ra-lead': 'write',
-    'ra-member': 'read',
+    ra: 'write',
     viewer: 'none',
   },
   [DocClass.surveillance_report]: {
     admin: 'write',
-    'ra-lead': 'write',
-    'ra-member': 'read',
+    ra: 'write',
     viewer: 'none',
   },
   [DocClass.internal_sop]: {
     admin: 'write',
-    'ra-lead': 'write',
-    'ra-member': 'read',
+    ra: 'write',
     viewer: 'none',
   },
   [DocClass.audit_response]: {
     admin: 'write',
-    'ra-lead': 'write',
-    'ra-member': 'none',
+    ra: 'write',
     viewer: 'none',
   },
 };

@@ -28,7 +28,7 @@ const { withPermissionMock } = vi.hoisted(() => ({
         handler(req, ctx, {
           user: {
             id: 'user-ra-1',
-            role: 'ra-member',
+            role: 'ra',
             organizationId: 'org-1',
           },
         }),

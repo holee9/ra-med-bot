@@ -2,7 +2,7 @@
 // @MX:SPEC SPEC-REGULA-KNOWLEDGE-PROMO-001 (REQ-014, AC-07, AC-08)
 // @MX:REASON Sets status='unpromoted' (soft delete). RAG retriever excludes
 //           non-active rows (AC-08). withPermission('knowledgepromo.promote')
-//           restricts to ra-lead/admin. 21 CFR Part 11 atomicity via
+//           restricts to ra/admin. 21 CFR Part 11 atomicity via
 //           unpromoteAnswer. IDOR guard (assertPromotedAnswerInOrg).
 
 import { withPermission } from '@/lib/kernel/auth/with-permission';
