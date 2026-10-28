@@ -1,6 +1,8 @@
-# llm-wiki 소비자 리트리버 설계 (대기 상태 — #18 7단계 인수시험 통과 후 착수)
+# llm-wiki 소비자 리트리버 설계 (구현 완료 — 2026-10-28, #550)
 
 작성: 2026-10-23 · 3세션 수렴 원칙 반영 (hermes-ra·ra-hermes-multi 이견 없음)
+**구현: 2026-10-28 착수·완료** — 착수조건 3종 실측 충족(고정 SHA `f1d939a` 소비·토큰 Read·
+팀 권한), B안(키워드 catalog 검색)으로 `LlmWikiRetriever` 구현, A/B 실측 통과(아래).
 
 ## 목적
 
@@ -8,13 +10,18 @@ llm-wiki(선별·고신뢰 지식 계층 ②)를 Regula 상담 검색에 병합�
 ①전수 NAS(nas_ra_docs)가 recall을 담당하고, ②wiki가 검증된 종합을
 담당한다 — ECOSYSTEM 헌장 원칙 5(지식 토대 공유)의 두 번째 연결.
 
-## 공식 인터페이스 (AI-CONSUMER-GUIDE v1.0 확정)
+## 공식 인터페이스 (AI-CONSUMER-GUIDE v1.0 — 2026-10-28 실측 갱신)
 
 - **Gitea API만 사용** (clone 금지): `http://diskstation:7001/api/v1`
 - **고정 commit 조회**: 답변 1건마다 `GET /repos/DR_RnD/ra-llm-wiki/git/refs/heads/main`로
   SHA를 확보 → 이후 모든 파일 요청에 동일 `ref` 사용 (한 답변에 commit 혼용 금지)
-- **발견**: `wiki/indexes/agent/catalog.json` (64,084 엔트리 — path·type·title·summary·tags·updated)
-- **본문**: `GET /repos/DR_RnD/ra-llm-wiki/contents/{path}?ref={SHA}`
+- **발견 (실측 2026-10-27 배포분)**: catalog는 **매니페스트 + 타입별 JSONL 샤드**로 진화 —
+  `wiki/indexes/agent/catalog.json`(매니페스트: total_entries·counts·entry_schema) +
+  `wiki/indexes/agent/{concept,entity,source,query,comparison,synthesis,methodology}-NNN.jsonl`
+  (총 64,114 엔트리). 샤드 목록은 디렉터리 리스팅으로 확보. 엔트리 스키마:
+  `path·type·title·summary·tags·aliases·updated`
+- **본문**: `GET /repos/DR_RnD/ra-llm-wiki/contents/{path}?ref={SHA}` (소형) /
+  `raw/{path}?ref={SHA}` (샤드 등 대형 — base64 팽창 없음)
 - **권한**: RA_Wiki_Consumers 팀 (코드 Read·이슈 Read/Write·Write/PR 금지)
 - **피드백**: Gitea 이슈 #1 댓글로만 (공식 지식 아님)
 
@@ -58,11 +65,24 @@ VALUES ('llm-wiki', 'RA LLM Wiki (선별 지식 계층)', 'Internal', :org, 'app
 -- + source_license (internal_sop·영구)
 ```
 
-## 착수 조건 (전부 확인 후)
+## 착수 조건 (2026-10-28 전부 실측 충족 — 착수 완료)
 
-- [ ] #18 7단계 "원격 AI 고정 SHA·catalog 소비 인수시험" 완료 보고
-- [ ] RA_Wiki_Consumers 팀 가입 승인 (사용자)
-- [ ] GITEA_TOKEN에 wiki 저장소 Read 권한 확인
+- [x] #18 7단계 "원격 AI 고정 SHA·catalog 소비 인수시험" — 2026-10-27 배포 아티팩트를
+  ra-med-bot이 직접 소비 검증(고정 SHA `f1d939a` 확보·재조회 동일, 샤드·본문 fetch 성공)
+- [x] RA_Wiki_Consumers 팀 가입 — 토큰으로 전 소비 API 정상 입증
+- [x] GITEA_TOKEN wiki 저장소 Read 권한 — repo 접근 200 실측
+
+## 구현·검증 결과 (2026-10-28, #550)
+
+- `lib/ai/retrievers/llm-wiki.ts` — B안(키워드 catalog 검색) 구현. catalog는
+  디스크 캐시(24h TTL, `var/llm-wiki/`) + 과반수 샤드 장애 시에만 무효(부분 장애 허용).
+  병합은 merge.ts 레지스트리 + router 항시 포함. wiki 프록시 sources 행·source_license 시드
+  (scripts/seed-llm-wiki-source.ts).
+- **A/B 실측 (시험은행 40건, retrieval-level hit@8)**:
+  A(NAS 단독) 10% → B(NAS+llm-wiki) 15% — **상승 +2, 회귀 0** → 계층 ② 유지 확정
+  (계약 "병합이 정확도를 낮추면 재설계" 미발동). 측정 스크립트:
+  `scripts/ab-llm-wiki-testbench.ts`
+- 단위 테스트 9건(게이트·매핑·출처 포인터·부분 샤드 장애·전면 장애) 통과
 
 ## 관련
 

@@ -8,6 +8,7 @@ import { applyRlhfReranking } from '@/lib/rlhf/retrieval-hook';
 import { EuMdrRetriever } from './retrievers/eu-mdr';
 import { FdaRetriever } from './retrievers/fda';
 import { InternalSopsRetriever } from './retrievers/internal-sops';
+import { LlmWikiRetriever } from './retrievers/llm-wiki';
 import { MfdsRetriever } from './retrievers/mfds';
 import { NasDocsRetriever } from './retrievers/nas-docs';
 import { NmpaRetriever } from './retrievers/nmpa';
@@ -41,6 +42,8 @@ const RETRIEVER_REGISTRY: Record<string, () => IRetriever> = {
   'internal-sops': () => new InternalSopsRetriever(),
   // NAS 실무문서 (Qdrant nas_ra_docs, hermes-ra 운영) — 3세션 협의 연결 (2026-10-21)
   'nas-docs': () => new NasDocsRetriever(),
+  // llm-wiki (Gitea 선별 지식 계층 ②) — NAS(①전수)와 상호 보완 (2026-10-28, 설계 2026-10-23)
+  'llm-wiki': () => new LlmWikiRetriever(),
   // SPEC-REGULA-KNOWLEDGE-PROMO-001 (Issue #50, REQ-KNOWLEDGE-PROMO-009/010):
   // promoted answers corpus — gets org_ prefix so corpusType resolves to 'org'.
   org_promoted: () => new PromotedAnswersRetriever(),

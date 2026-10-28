@@ -123,7 +123,11 @@ export async function classifyAndRoute(
   const filtered =
     marketCorpora.length > 0
       ? intentCorpora.filter(
-          (c) => marketCorpora.includes(c) || c === 'internal-sops' || c === 'nas-docs',
+          (c) =>
+            marketCorpora.includes(c) ||
+            c === 'internal-sops' ||
+            c === 'nas-docs' ||
+            c === 'llm-wiki',
         )
       : intentCorpora;
 
@@ -131,12 +135,16 @@ export async function classifyAndRoute(
   // nas-docs (NAS 실무문서 Qdrant, 2026-10-21 연결): the company's actual
   // regulatory documents live on the NAS — every query gets this baseline,
   // mirroring the internal-sops always-include contract.
+  // llm-wiki (2026-10-28, 지식 계층 ②): 검증된 종합 계층도 항시 참여 — NAS가
+  // recall을, wiki가 종합을 담당하는 이중 계층(설계 2026-10-23).
   // REQ-KNOWLEDGE-PROMO-009: org_promoted always included so team knowledge
   // participates in every RAG retrieval (boosted higher than internal docs
   // via PromotedAnswersRetriever.PROMOTED_BOOST_FACTOR). Without this,
   // PromotedAnswersRetriever is registered (merge.ts) but never selected,
   // making AC-04 dead code.
-  const corpus = [...new Set([...filtered, 'internal-sops', 'nas-docs', 'org_promoted'])];
+  const corpus = [
+    ...new Set([...filtered, 'internal-sops', 'nas-docs', 'llm-wiki', 'org_promoted']),
+  ];
 
   return { intent, corpora: corpus };
 }
