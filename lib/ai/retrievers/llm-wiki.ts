@@ -8,8 +8,8 @@
 //   Gitea API only (no clone) — refs/heads/main → fixed SHA per retrieval;
 //   catalog manifest wiki/indexes/agent/catalog.json + per-type JSONL shards
 //   (64,114 entries); bodies via contents/{path}?ref={SHA}.
-// B-plan (keyword catalog search) first — A-plan (embedding cache) is a
-// follow-up gated on the 42-case A/B measurement.
+// A-plan (이슈 552): vector search over the pgvector-indexed catalog snapshot
+// (llm_wiki_catalog_entries, MRL 1536) with B-plan keyword scoring as fallback.
 //
 // Security (규약 v1.0): wiki 컨파일은 내부 자산 = [내부]. Chunks surface only
 // inside the authenticated app; nothing from here enters any git remote.
@@ -262,6 +262,77 @@ function extractSourcePointer(body: string, entry: WikiEntry): string | null {
   return entry.type === 'source' ? entry.path : null;
 }
 
+interface RankedEntry {
+  e: WikiEntry;
+  s: number;
+}
+
+/**
+ * A-plan vector search (이슈 552): embed the query (MRL 1536) and cosine-match
+ * against llm_wiki_catalog_entries. Returns null when the table is empty or
+ * embedding is unavailable — callers fall back to B-plan keyword scoring.
+ */
+async function vectorRank(query: string, limit: number): Promise<RankedEntry[] | null> {
+  try {
+    const { embed } = await import('ai');
+    const { getEmbeddingModel } = await import('../embedding-provider');
+    const { embedding } = await embed({
+      model: getEmbeddingModel() as never,
+      value: query,
+    });
+    const lit = `[${embedding.join(',')}]`;
+    const { db } = await import('@/lib/kernel/db/client');
+    const { sql } = await import('drizzle-orm');
+    const res = (await db.execute(sql`
+      SELECT path, type, title, summary, tags, aliases, updated_at,
+             1.0 - (embedding <=> ${lit}::vector) AS sim
+      FROM llm_wiki_catalog_entries
+      WHERE embedding IS NOT NULL
+      ORDER BY embedding <=> ${lit}::vector
+      LIMIT ${limit}
+    `)) as unknown;
+    const rows = (Array.isArray(res) ? res : ((res as { rows?: unknown[] }).rows ?? [])) as Array<{
+      path: string;
+      type: string;
+      title: string;
+      summary: string | null;
+      tags: string[] | null;
+      aliases: string[] | null;
+      updated_at: string | null;
+      sim: number | { toNumber?: () => number } | string;
+    }>;
+    if (rows.length === 0) return null; // table not indexed yet → B-plan
+    const num = (v: unknown): number =>
+      typeof v === 'number'
+        ? v
+        : typeof v === 'string'
+          ? Number(v)
+          : (v as { toNumber: () => number }).toNumber();
+    return rows
+      .map((r) => ({
+        e: {
+          path: r.path,
+          type: r.type,
+          title: r.title,
+          summary: r.summary ?? undefined,
+          tags: r.tags ?? undefined,
+          aliases: r.aliases ?? undefined,
+          updated: r.updated_at ?? undefined,
+        },
+        s: num(r.sim),
+      }))
+      .filter((r) => r.s >= 0.3); // cosine floor — below this the entry is noise
+  } catch (err) {
+    if (process.env.LLM_WIKI_DEBUG) {
+      console.error(
+        '[llm-wiki] vectorRank failed → B-plan:',
+        err instanceof Error ? `${err.message} | cause=${String(err.cause).slice(0, 120)}` : err,
+      );
+    }
+    return null; // embedding/db unavailable → B-plan keyword path
+  }
+}
+
 export class LlmWikiRetriever implements IRetriever {
   readonly corpus = 'llm-wiki';
 
@@ -277,11 +348,17 @@ export class LlmWikiRetriever implements IRetriever {
     if (!cache || cache.entries.length === 0) return [];
 
     const tokens = tokenize(query);
-    const ranked = cache.entries
-      .map((e) => ({ e, s: scoreEntry(e, tokens) }))
-      .filter((r) => r.s >= MIN_MATCH_SCORE)
-      .sort((a, b) => b.s - a.s)
-      .slice(0, MAX_DOCS);
+    // A-plan first (이슈 552): vector search over the indexed snapshot; fall back
+    // to B-plan keyword scoring when the table is empty or embedding fails.
+    const vector = await vectorRank(query, MAX_DOCS * 2);
+    const ranked =
+      vector !== null && vector.length > 0
+        ? vector.slice(0, MAX_DOCS)
+        : cache.entries
+            .map((e) => ({ e, s: scoreEntry(e, tokens) }))
+            .filter((r) => r.s >= MIN_MATCH_SCORE)
+            .sort((a, b) => b.s - a.s)
+            .slice(0, MAX_DOCS);
 
     const results: RetrievalResult[] = [];
     for (const { e, s } of ranked) {
