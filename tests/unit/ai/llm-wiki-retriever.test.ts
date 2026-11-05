@@ -5,15 +5,27 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 
 const mockDbSelect = vi.fn();
+const mockDbExecute = vi.fn();
+const mockEmbed = vi.fn();
 
 vi.mock('@/lib/kernel/db/client', () => ({
   db: {
     select: (...args: unknown[]) => mockDbSelect(...args),
+    execute: (...args: unknown[]) => mockDbExecute(...args),
   },
 }));
 
 vi.mock('@/lib/kernel/db/schema', () => ({
   sources: { id: 'id', org_label: 'org_label' },
+  llmWikiCatalogEntries: { id: 'id', contentHash: 'content_hash' },
+}));
+
+vi.mock('ai', () => ({
+  embed: (...args: unknown[]) => mockEmbed(...args),
+}));
+
+vi.mock('@/lib/ai/embedding-provider', () => ({
+  getEmbeddingModel: () => ({ modelId: 'qwen3-embedding' }),
 }));
 
 import type { LlmWikiRetriever as LlmWikiRetrieverT } from '@/lib/ai/retrievers/llm-wiki';
@@ -108,6 +120,8 @@ describe('LlmWikiRetriever (llm-wiki 지식 계층)', () => {
     vi.resetModules();
     mockDbSelect.mockReset();
     mockDbSelect.mockImplementation(fakeDbChain);
+    mockDbExecute.mockReset();
+    mockEmbed.mockReset();
     process.env.GITEA_URL = 'http://gitea.test';
     process.env.GITEA_TOKEN = 'test-token';
     // Isolated cache — the repo's real var/llm-wiki cache would shadow the mocks.
@@ -185,6 +199,47 @@ describe('LlmWikiRetriever (llm-wiki 지식 계층)', () => {
       orgId: ORG,
     });
     expect(res.length).toBeGreaterThan(0);
+  });
+
+  it('uses A-plan vector results when the embedding index is populated (이슈 552)', async () => {
+    mockEmbed.mockResolvedValue({ embedding: [0.1, 0.2] });
+    // pg rows shape — drizzle execute returns { rows }
+    mockDbExecute.mockResolvedValue({
+      rows: [
+        {
+          path: 'wiki/concepts/vector-hit.md',
+          type: 'concept',
+          title: 'Vector Search Concept',
+          summary: 'semantics',
+          tags: null,
+          aliases: null,
+          updated: '2026-10-31',
+          sim: 0.62,
+        },
+      ],
+    });
+    const urls = catalogFixtures();
+    urls['/contents/wiki/concepts/vector-hit.md?'] = {
+      content: b64('---\ntype: concept\n---\n\n# Vector\n\nsemantic body about vector search'),
+      encoding: 'base64',
+    };
+    globalThis.fetch = giteaRouter(urls);
+    const res = await (await freshRetriever()).retrieve('무시되어야 할 키워드', { orgId: ORG });
+    // keyword path would return [] for this query; vector row must win
+    expect(res.length).toBe(1);
+    expect(res[0]?.metadata.title).toBe('Vector Search Concept');
+    expect(res[0]?.score).toBeLessThanOrEqual(0.9);
+  });
+
+  it('falls back to B-plan keyword scoring when vector search is unavailable', async () => {
+    mockEmbed.mockRejectedValue(new Error('ollama down'));
+    mockDbExecute.mockResolvedValue({ rows: [] });
+    globalThis.fetch = giteaRouter(catalogFixtures());
+    const res = await (await freshRetriever()).retrieve('510k submission requirements', {
+      orgId: ORG,
+    });
+    expect(res.length).toBeGreaterThan(0);
+    expect(res[0]?.metadata.wikiPath).toBe(ENTRY_510K.path);
   });
 
   it('treats majority-unreachable shards as a broken index', async () => {

@@ -72,6 +72,15 @@ VALUES ('llm-wiki', 'RA LLM Wiki (선별 지식 계층)', 'Internal', :org, 'app
 - [x] RA_Wiki_Consumers 팀 가입 — 토큰으로 전 소비 API 정상 입증
 - [x] GITEA_TOKEN wiki 저장소 Read 권한 — repo 접근 200 실측
 
+## A안 승격 (2026-11-01, 이슈 552)
+
+- `llm_wiki_catalog_entries` pgvector 테이블 (title+summary MRL 1536, content_hash 증분 키)
+- 리트리버: **벡터 검색 우선 → B안 키워드 폴백** (테이블 비어있거나 임베딩 불가 시)
+- 색인: `scripts/index-llm-wiki-catalog.ts` — content_hash 기반 증분 (텍스트 불변 스킵),
+  일 1회 `scripts/refresh-llm-wiki.sh` (cron 03:25). 임시테이블 조인 정리
+  (청크 NOT IN 결함 — 2026-11-01 실측 수정)
+- 목적: B안 한글 재현율(영어 0.90 vs 한글 0.50) 보강
+
 ## 구현·검증 결과 (2026-10-28, #550)
 
 - `lib/ai/retrievers/llm-wiki.ts` — B안(키워드 catalog 검색) 구현. catalog는

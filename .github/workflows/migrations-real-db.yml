@@ -98,8 +98,8 @@ jobs:
       - name: Verify from-scratch schema
         run: |
           TABLES=$(psql "$DATABASE_URL" -tAc "SELECT count(*) FROM information_schema.tables WHERE table_schema='public';")
-          echo "public table count: $TABLES (expected 96)"
-          [ "$TABLES" = "96" ] || { echo "::error::Expected 96 tables, got $TABLES"; exit 1; }
+          echo "public table count: $TABLES (expected 97)"
+          [ "$TABLES" = "97" ] || { echo "::error::Expected 97 tables, got $TABLES"; exit 1; }
           TRIG=$(psql "$DATABASE_URL" -tAc "SELECT count(*) FROM pg_trigger WHERE NOT tgisinternal AND tgname='audit_logs_no_mutation';")
           echo "audit_logs_no_mutation trigger present: $TRIG (expected 1)"
           [ "$TRIG" = "1" ] || { echo "::error::audit immutability trigger missing"; exit 1; }

@@ -3494,3 +3494,29 @@ export const validationSignoff = pgTable('validation_signoff', {
   // Loose ref (not FK) — avoids conflict with audit_logs append-only trigger.
   auditLogRef: uuid('audit_log_ref'),
 });
+
+// @MX:NOTE [AUTO] llmWikiCatalogEntries — llm-wiki catalog 임베딩 캐시 (A안, 이슈 552).
+// 설계 계약(2026-10-23 A안): catalog 64K 엔트리의 title+summary를 MRL 1536으로
+// 임베딩해 pgvector에 보관, 일 1회 갱신. 질의 임베딩(getEmbeddingModel)과 동일 차원.
+// sha 스냅샷 컬럼으로 고정-SHA 소비 계약을 유지 — 갱신 시 이전 SHA 행은 대체.
+export const llmWikiCatalogEntries = pgTable(
+  'llm_wiki_catalog_entries',
+  {
+    id: uuid('id').defaultRandom().primaryKey(),
+    // provenance SHA — 갱신 시점의 wiki main (AI-CONSUMER-GUIDE 계약)
+    sha: text('sha').notNull(),
+    path: text('path').notNull(),
+    // title+summary+path 해시 — 증분 색인 키 (텍스트 불변이면 재임베딩 생략)
+    contentHash: text('content_hash').notNull(),
+    type: text('type').notNull(),
+    title: text('title').notNull().default(''),
+    summary: text('summary').notNull().default(''),
+    tags: jsonb('tags').notNull().default([]),
+    aliases: jsonb('aliases').notNull().default([]),
+    updatedAt: text('updated_at'),
+    embedding: vector('embedding'),
+  },
+  (t) => ({
+    hashUnique: unique('idx_llm_wiki_catalog_hash').on(t.contentHash),
+  }),
+);
